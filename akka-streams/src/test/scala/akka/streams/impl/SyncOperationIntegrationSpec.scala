@@ -15,7 +15,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
   "Simple chains" - {}
   "Complex chains requiring back-forth chatter" - {
     "internal source + map + fold" in {
-      val combination = instance(FromIterableSource(1 to 10).map(_ + 1).fold(0f)(_ + _.toFloat))
+      val combination = instance(Source(1 to 10).map(_ + 1).fold(0f)(_ + _.toFloat))
       val r @ BasicEffects.RequestMoreFromSource(_, 100) = combination.handleRequestMore(1)
       r.runToResult() should be(DownstreamNext(65.0) ~ DownstreamComplete)
     }
@@ -34,7 +34,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
         }
         promise.future
       }
-      val p = instance[Int](FromIterableSource(1 to 6).flatMap(mapSlow))
+      val p = instance[Int](Source(1 to 6).flatMap(mapSlow))
       p.start().runToResult() should be(Continue)
       def requestAndExpectNextEffect(e: Effect): Unit =
         p.handleRequestMore(1).runToResult() match {
@@ -51,7 +51,7 @@ class SyncOperationIntegrationSpec extends FreeSpec with ShouldMatchers with Syn
       requestAndExpectNextEffect(DownstreamNext(7) ~ DownstreamComplete)
     }
     "span + flatten == identity" in {
-      val p = instance[Int](FromIterableSource(1 to 6).span(_ % 3 == 0).flatten)
+      val p = instance[Int](Source(1 to 6).span(_ % 3 == 0).flatten)
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(1))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(2))
       p.handleRequestMore(1).runToResult() should be(DownstreamNext(3))

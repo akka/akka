@@ -72,3 +72,5 @@ trait OperationApiImplicits {
     def andThen[C](next: Source[B] ==> C): Source[C] = source.andThen(next)
   }
 }
+
+object OperationApiImplicits extends OperationApiImplicits

@@ -10,19 +10,19 @@ import Operation._
 trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
   "A producer built by an ImplementationFactory" - {
     "work in running state" - {
-      "for SingletonSource" in new InitializedChainSetup(SingletonSource("test")) {
+      "for SingletonSource" in new InitializedChainSetup(Source("test")) {
         downstreamSubscription.requestMore(2)
         downstream.expectNext("test")
         downstream.expectComplete()
       }
       "for FromIterableSource" - {
         "empty" in {
-          val producer = FromIterableSource[String](Nil).toProducer()
+          val producer = Source[String](Nil).toProducer()
           val downstream = TestKit.consumerProbe[String]()
           producer.link(downstream)
           downstream.expectComplete()
         }
-        "with elements" in new InitializedChainSetup(FromIterableSource(Seq(1, 2, 3))) {
+        "with elements" in new InitializedChainSetup(Source(Seq(1, 2, 3))) {
           downstreamSubscription.requestMore(2)
           downstream.expectNext(1)
           downstream.expectNext(2)
@@ -35,7 +35,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       "for FromProducerSource" - {
         "simple" in {
           val producerProbe = TestKit.producerProbe[String]()
-          new InitializedChainSetup[String](FromProducerSource(producerProbe))(factoryWithFanOutBuffer(1)) {
+          new InitializedChainSetup[String](Source(producerProbe))(factoryWithFanOutBuffer(1)) {
             downstreamSubscription.requestMore(2)
             val upstreamSubscription = producerProbe.expectSubscription()
             // default fan-out-box with buffer size 1 translates any incoming request to one upstream
@@ -51,7 +51,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
         }
         "single subscriber cancels subscription while receiving data" in {
           val producerProbe = TestKit.producerProbe[String]()
-          new InitializedChainSetup[String](FromProducerSource(producerProbe))(factoryWithFanOutBuffer(1)) {
+          new InitializedChainSetup[String](Source(producerProbe))(factoryWithFanOutBuffer(1)) {
             downstreamSubscription.requestMore(2)
             val upstreamSubscription = producerProbe.expectSubscription()
             upstreamSubscription.expectRequestMore(1)
@@ -67,7 +67,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
           }
         }
       }
-      "for MappedSource" in new InitializedChainSetup(FromIterableSource(Seq(1, 2, 3)).map(_ + 1)) {
+      "for MappedSource" in new InitializedChainSetup(Source(Seq(1, 2, 3)).map(_ + 1)) {
         downstreamSubscription.requestMore(2)
         downstream.expectNext(2)
         downstream.expectNext(3)
@@ -88,7 +88,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       }
     }
     "support multiple subscribers" - {
-      "properly serve multiple subscribers to completion" in new InitializedChainSetup(FromIterableSource(Seq(1, 2, 3)).map(_ + 1)) {
+      "properly serve multiple subscribers to completion" in new InitializedChainSetup(Source(Seq(1, 2, 3)).map(_ + 1)) {
         downstreamSubscription.requestMore(1)
         downstream.expectNext(2)
         downstream.expectNoMsg(100.millis.dilated)
@@ -114,7 +114,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
       }
     }
     "have proper shutdown behavior" - {
-      "after completion" in new InitializedChainSetup[String](SingletonSource("test")) {
+      "after completion" in new InitializedChainSetup[String](Source("test")) {
         downstreamSubscription.requestMore(2)
         downstream.expectNext("test")
         downstream.expectComplete()
@@ -125,7 +125,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
         downstream2.expectComplete()
       }
       object TestException extends RuntimeException
-      "after error" in new InitializedChainSetup[String](SingletonSource("test").map(_ ⇒ throw TestException)) {
+      "after error" in new InitializedChainSetup[String](Source("test").map(_ ⇒ throw TestException)) {
         downstreamSubscription.requestMore(2)
         downstream.expectError(TestException)
         downstreamSubscription.requestMore(1)
@@ -134,7 +134,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
         producer.link(downstream2)
         downstream2.expectError(TestException)
       }
-      "after all subscribers cancelled subscription" in new InitializedChainSetup[String](SingletonSource("test")) {
+      "after all subscribers cancelled subscription" in new InitializedChainSetup[String](Source("test")) {
         downstreamSubscription.cancel()
 
         val downstream2 = TestKit.consumerProbe[String]()

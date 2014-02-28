@@ -25,12 +25,12 @@ package object streams extends OperationApiImplicits {
   }
 
   implicit class SourceFromFuture[T](val future: Future[T]) extends AnyVal {
-    def toSource: Source[T] = FromFutureSource(future)
+    def toSource: Source[T] = Source(future)
   }
   implicit class SourceFromProducer[T](val producer: Producer[T]) extends AnyVal {
-    def toSource: Source[T] = FromProducerSource(producer)
+    def toSource: Source[T] = Source(producer)
   }
   implicit class SourceFromIterable[T](val iterable: Iterable[T]) extends AnyVal {
-    def toSource: Source[T] = FromIterableSource(iterable)
+    def toSource: Source[T] = Source(iterable)
   }
 }
