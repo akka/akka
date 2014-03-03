@@ -21,8 +21,8 @@ public class FSMTransitionHandlerBuilder<S> {
   /**
    * Add a case statement that matches on a from state and a to state.
    *
-   * @param fromState  the from state to match on
-   * @param toState  the to state to match on
+   * @param fromState  the from state to match on, or null for any
+   * @param toState  the to state to match on, or null for any
    * @param apply  an action to apply when the states match
    * @return the builder with the case statement added
    */
@@ -33,13 +33,47 @@ public class FSMTransitionHandlerBuilder<S> {
       new FI.TypedPredicate<Tuple2>() {
         @Override
         public boolean defined(Tuple2 t) {
-          return fromState.equals(t._1()) && toState.equals(t._2());
+          return (fromState == null || fromState.equals(t._1()))
+            && (toState == null || toState.equals(t._2()));
         }
       },
       new FI.UnitApply<Tuple2>() {
         @Override
-        public void apply(Tuple2 t) {
+        public void apply(Tuple2 t) throws Exception {
           apply.apply();
+        }
+      }
+    );
+    return this;
+  }
+
+  /**
+   * Add a case statement that matches on a from state and a to state.
+   *
+   * @param fromState  the from state to match on, or null for any
+   * @param toState  the to state to match on, or null for any
+   * @param apply  an action to apply when the states match
+   * @return the builder with the case statement added
+   */
+  public FSMTransitionHandlerBuilder<S> state(final S fromState,
+                                              final S toState,
+                                              final FI.UnitApply2<S, S> apply) {
+    builder.match(Tuple2.class,
+      new FI.TypedPredicate<Tuple2>() {
+        @Override
+        public boolean defined(Tuple2 t) {
+          return (fromState == null || fromState.equals(t._1()))
+            && (toState == null || toState.equals(t._2()));
+        }
+      },
+      new FI.UnitApply<Tuple2>() {
+        @Override
+        public void apply(Tuple2 t) throws Exception {
+          @SuppressWarnings("unchecked")
+          S sf = (S) t._1();
+          @SuppressWarnings("unchecked")
+          S st = (S) t._2();
+          apply.apply(sf, st);
         }
       }
     );

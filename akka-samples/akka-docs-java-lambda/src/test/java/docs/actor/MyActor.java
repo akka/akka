@@ -1,4 +1,8 @@
-package sample.java8;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.actor;
 
 //#imports
 import akka.actor.AbstractActor;
@@ -17,7 +21,14 @@ public class MyActor extends AbstractActor {
   @Override
   public PartialFunction<Object, BoxedUnit> receive() {
     return ReceiveBuilder.
-      match(String.class, s -> s.equals("test"), s -> log.info("received test")).
+      match(String.class, s -> {
+        log.info("Received String message: {}", s);
+        //#my-actor
+        //#reply
+        sender().tell(s, self());
+        //#reply
+        //#my-actor
+      }).
       matchAny(o -> log.info("received unknown message")).build();
   }
 }

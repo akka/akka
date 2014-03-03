@@ -1,7 +1,7 @@
-.. _lambda-fsm-java:
+.. _lambda-fsm:
 
 ################################
-FSM (Java 8 with Lambda Support)
+ FSM (Java with Lambda Support)
 ################################
 
 
@@ -30,11 +30,11 @@ send them on after the burst ended or a flush request is received.
 
 First, consider all of the below to use these import statements:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java#simple-imports
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java#simple-imports
 
 The contract of our “Buncher” actor is that it accepts or produces the following messages:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Events.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Events.java
    :include: simple-events
    :exclude: boilerplate
 
@@ -42,11 +42,10 @@ The contract of our “Buncher” actor is that it accepts or produces the follo
 ``Batches`` to be passed on; ``Queue`` will add to the internal queue while
 ``Flush`` will mark the end of a burst.
 
-
 The actor can be in two states: no message queued (aka ``Idle``) or some
 message queued (aka ``Active``). The states and the state data is defined like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java
    :include: simple-state
    :exclude: boilerplate
 
@@ -57,9 +56,9 @@ reference to send the batches to and the actual queue of messages.
 
 Now let’s take a look at the skeleton for our FSM actor:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java
    :include: simple-fsm
-   :exclude: transition-elided,unhandled-elided,termination-elided
+   :exclude: transition-elided,unhandled-elided
 
 The basic strategy is to declare the actor, by inheriting the :class:`AbstractFSM` class
 and specifying the possible states and data values as type parameters. Within
@@ -86,7 +85,7 @@ shall work identically in both states, we make use of the fact that any event
 which is not handled by the ``when()`` block is passed to the
 ``whenUnhandled()`` block:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java#unhandled-elided
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java#unhandled-elided
 
 The first case handled here is adding ``Queue()`` requests to the internal
 queue and going to the ``Active`` state (this does the obvious thing of staying
@@ -100,17 +99,18 @@ target, for which we use the ``onTransition`` mechanism: you can declare
 multiple such blocks and all of them will be tried for matching behavior in
 case a state transition occurs (i.e. only when the state actually changes).
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java#transition-elided
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java#transition-elided
 
 The transition callback is a partial function which takes as input a pair of
 states—the current and the next state. During the state change, the old state
 data is available via ``stateData`` as shown, and the new state data would be
 available as ``nextStateData``.
 
-TODO
-----
+To verify that this buncher actually works, it is quite easy to write a test
+using the :ref:`akka-testkit`, here using JUnit as an example:
 
-Add the test here
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/BuncherTest.java
+   :include: test-code
 
 Reference
 =========
@@ -121,7 +121,7 @@ The AbstractFSM Class
 The :class:`AbstractFSM` abstract class is the base class used to implement an FSM. It implements
 Actor since an Actor is created to drive the FSM.
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java
    :include: simple-fsm
    :exclude: fsm-body
 
@@ -170,9 +170,10 @@ may be changed during action processing with
 e.g. via external message.
 
 The :meth:`stateFunction` argument is a :class:`PartialFunction[Event, State]`,
-which is conveniently given using state function builder syntax as demonstrated below:
+which is conveniently given using the state function builder syntax as
+demonstrated below:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/Buncher.java
    :include: when-syntax
 
 .. warning::
@@ -184,14 +185,14 @@ It is recommended practice to declare the states as an enum and then verify that
 ``when`` clause for each of the states. If you want to leave the handling of a state
 “unhandled” (more below), it still needs to be declared like this:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java#NullFunction
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java#NullFunction
 
 Defining the Initial State
 --------------------------
 
 Each FSM needs a starting point, which is declared using
 
-  :func:`startWith(state, data[, timeout]);`
+  :func:`startWith(state, data[, timeout])`
 
 The optionally given timeout argument overrides any specification given for the
 desired initial state. If you want to cancel a default timeout, use
@@ -204,7 +205,7 @@ If a state doesn't handle a received event a warning is logged. If you want to
 do something else in this case you can specify that with
 :func:`whenUnhandled(stateFunction)`:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
    :include: unhandled-syntax
 
 Within this handler the state of the FSM may be queried using the
@@ -246,9 +247,9 @@ of the modifiers described in the following:
   This modifier sends a reply to the currently processed message and otherwise
   does not modify the state transition.
 
-All modifier can be chained to achieve a nice and concise description:
+All modifiers can be chained to achieve a nice and concise description:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
    :include: modifier-syntax
 
 The parentheses are not actually needed in all cases, but they visually
@@ -285,14 +286,15 @@ The handler is a partial function which takes a pair of states as input; no
 resulting state is needed as it is not possible to modify the transition in
 progress.
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
    :include: transition-syntax
 
-The convenience extractor :obj:`->` enables decomposition of the pair of states
-with a clear visual reminder of the transition's direction. As usual in pattern
-matches, an underscore may be used for irrelevant parts; alternatively you
-could bind the unconstrained state to a variable, e.g. for logging as shown in
-the last case.
+It is also possible to pass a function object accepting two states to
+:func:`onTransition`, in case your transition handling logic is implemented as
+a method:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
+   :include: alt-transition-syntax
 
 The handlers registered with this method are stacked, so you can intersperse
 :func:`onTransition` blocks with :func:`when` blocks as suits your design. It
@@ -367,14 +369,14 @@ state data which is available during termination handling.
    the same way as a state transition (but note that the ``return`` statement
    may not be used within a :meth:`when` block).
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
    :include: stop-syntax
 
 You can use :func:`onTermination(handler)` to specify custom code that is
 executed when the FSM is stopped. The handler is a partial function which takes
 a :class:`StopEvent(reason, stateName, stateData)` as argument:
 
-.. includecode:: ../../../akka-samples/akka-sample-java8/src/main/java/sample/java8/buncher/Buncher.java
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
    :include: termination-syntax
 
 As for the :func:`whenUnhandled` case, this handler is not stacked, so each
@@ -398,5 +400,57 @@ implementation by the :class:`AbstractFSM` class is to execute the
 Testing and Debugging Finite State Machines
 ===========================================
 
-TODO
-----
+During development and for trouble shooting FSMs need care just as any other
+actor. There are specialized tools available as described in :ref:`TestFSMRef`
+and in the following.
+
+Event Tracing
+-------------
+
+The setting ``akka.actor.debug.fsm`` in :ref:`configuration` enables logging of an
+event trace by :class:`LoggingFSM` instances:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
+   :include: logging-fsm
+   :exclude: body-elided
+
+This FSM will log at DEBUG level:
+
+  * all processed events, including :obj:`StateTimeout` and scheduled timer
+    messages
+  * every setting and cancellation of named timers
+  * all state transitions
+
+Life cycle changes and special messages can be logged as described for
+:ref:`Actors <actor.logging-scala>`.
+
+Rolling Event Log
+-----------------
+
+The :class:`AbstractLoggingFSM` class adds one more feature to the FSM: a rolling event
+log which may be used during debugging (for tracing how the FSM entered a
+certain failure state) or for other creative uses:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/fsm/FSMDocTest.java
+   :include: logging-fsm
+
+The :meth:`logDepth` defaults to zero, which turns off the event log.
+
+.. warning::
+
+  The log buffer is allocated during actor creation, which is why the
+  configuration is done using a virtual method call. If you want to override
+  with a ``val``, make sure that its initialization happens before the
+  initializer of :class:`LoggingFSM` runs, and do not change the value returned
+  by ``logDepth`` after the buffer has been allocated.
+
+The contents of the event log are available using method :meth:`getLog`, which
+returns an :class:`IndexedSeq[LogEntry]` where the oldest entry is at index
+zero.
+
+Examples
+========
+
+A bigger FSM example contrasted with Actor's :meth:`become`/:meth:`unbecome` can be found in
+the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ template named 
+`Akka FSM in Scala <http://typesafe.com/activator/template/akka-sample-fsm-java-lambda>`_

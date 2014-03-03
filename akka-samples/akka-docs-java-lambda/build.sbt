@@ -1,6 +1,6 @@
-name := "akka-sample-java8"
+name := "akka-docs-java-lambda"
 
-version := "0.0.1-SNAPSHOT"
+version := "2.3-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 

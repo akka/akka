@@ -1,10 +1,13 @@
-package sample;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.actor;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.testkit.JavaTestKit;
-import sample.java8.SampleActor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -563,11 +563,3 @@ trait Actor {
     }
   }
 }
-
-/**
- * Java API
- *
- * Abstract base class for Java Actors.
- *
- */
-abstract class AbstractActor extends akka.actor.Actor
