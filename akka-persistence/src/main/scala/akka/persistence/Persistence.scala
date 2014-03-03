@@ -93,11 +93,11 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     else DefaultPluginDispatcherId
   }
 
-  private val confirmationBatchLayer = system.asInstanceOf[ActorSystemImpl]
-    .systemActorOf(Props(classOf[DeliveredByChannelBatching], journal, settings), "confirmation-batch-layer")
+  private val confirmationBatchLayer = system.systemActorOf(
+    Props(classOf[DeliveredByChannelBatching], journal, settings), "confirmation-batch-layer")
 
-  private val deletionBatchLayer = system.asInstanceOf[ActorSystemImpl]
-    .systemActorOf(Props(classOf[DeliveredByPersistentChannelBatching], journal, settings), "deletion-batch-layer")
+  private val deletionBatchLayer = system.systemActorOf(
+    Props(classOf[DeliveredByPersistentChannelBatching], journal, settings), "deletion-batch-layer")
 
   /**
    * Creates a canonical processor id from a processor actor ref.
@@ -145,7 +145,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     val pluginClassName = pluginConfig.getString("class")
     val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
     val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
+    system.systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
   }
 
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
