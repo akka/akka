@@ -72,19 +72,25 @@ trait ActorContext extends ActorRefFactory {
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
+   * Replaces the current behavior on the top of the behavior stack.
+   */
+  def become(behavior: Actor.Receive): Unit = become(behavior, true)
+
+  /**
+   * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * This method acts upon the behavior stack as follows:
    *
    *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
    *  - if `discardOld = false` it will keep the current behavior and push the given one atop
    *
-   * The default of replacing the current behavior has been chosen to avoid memory leaks in
-   * case client code is written without consulting this documentation first (i.e. always pushing
-   * new closures and never issuing an `unbecome()`)
+   * The default of replacing the current behavior on the stack has been chosen to avoid memory
+   * leaks in case client code is written without consulting this documentation first (i.e.
+   * always pushing new behaviors and never issuing an `unbecome()`)
    */
-  def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit
+  def become(behavior: Actor.Receive, discardOld: Boolean): Unit
 
   /**
-   * Reverts the Actor behavior to the previous one in the hotswap stack.
+   * Reverts the Actor behavior to the previous one on the behavior stack.
    */
   def unbecome(): Unit
 
@@ -150,6 +156,25 @@ trait ActorContext extends ActorRefFactory {
 }
 
 /**
+ * AbstractActorContext is the AbstractActor equivalent of ActorContext,
+ * containing the Java API
+ */
+trait AbstractActorContext extends ActorContext {
+
+  /**
+   * Returns an unmodifiable Java Collection containing the linked actors,
+   * please note that the backing map is thread-safe but not immutable
+   */
+  def getChildren(): java.lang.Iterable[ActorRef]
+
+  /**
+   * Returns a reference to the named child or null if no child with
+   * that name exists.
+   */
+  def getChild(name: String): ActorRef
+}
+
+/**
  * UntypedActorContext is the UntypedActor equivalent of ActorContext,
  * containing the Java API
  */
@@ -169,7 +194,7 @@ trait UntypedActorContext extends ActorContext {
 
   /**
    * Changes the Actor's behavior to become the new 'Procedure' handler.
-   * Replaces the current behavior at the top of the hotswap stack.
+   * Replaces the current behavior on the top of the behavior stack.
    */
   def become(behavior: Procedure[Any]): Unit
 
@@ -180,9 +205,9 @@ trait UntypedActorContext extends ActorContext {
    *  - if `discardOld = true` it will replace the top element (i.e. the current behavior)
    *  - if `discardOld = false` it will keep the current behavior and push the given one atop
    *
-   * The default of replacing the current behavior has been chosen to avoid memory leaks in
-   * case client code is written without consulting this documentation first (i.e. always pushing
-   * new closures and never issuing an `unbecome()`)
+   * The default of replacing the current behavior on the stack has been chosen to avoid memory
+   * leaks in case client code is written without consulting this documentation first (i.e.
+   * always pushing new behaviors and never issuing an `unbecome()`)
    */
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit
 
@@ -347,7 +372,7 @@ private[akka] class ActorCell(
   final val props: Props, // Must be final so that it can be properly cleared in clearActorCellFields
   val dispatcher: MessageDispatcher,
   val parent: InternalActorRef)
-  extends UntypedActorContext with Cell
+  extends UntypedActorContext with AbstractActorContext with Cell
   with dungeon.ReceiveTimeout
   with dungeon.Children
   with dungeon.Dispatch

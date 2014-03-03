@@ -1,4 +1,8 @@
-package sample;
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.actor.fsm;
 
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
@@ -9,12 +13,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import java.util.LinkedList;
 
-import sample.java8.buncher.*;
-import static sample.java8.buncher.Events.Batch;
-import static sample.java8.buncher.Events.Queue;
-import static sample.java8.buncher.Events.SetTarget;
-import static sample.java8.buncher.Events.Flush.Flush;
+import docs.actor.fsm.*;
+import static docs.actor.fsm.Events.Batch;
+import static docs.actor.fsm.Events.Queue;
+import static docs.actor.fsm.Events.SetTarget;
+import static docs.actor.fsm.Events.Flush.Flush;
 
+//#test-code
 public class BuncherTest {
 
   static ActorSystem system;
@@ -31,10 +36,11 @@ public class BuncherTest {
   }
 
   @Test
-  public void testBuncherActor()
+  public void testBuncherActorBatchesCorrectly()
   {
     new JavaTestKit(system) {{
-      final ActorRef buncher = system.actorOf(Props.create(Buncher.class), "buncher-actor");
+      final ActorRef buncher =
+        system.actorOf(Props.create(Buncher.class));
       final ActorRef probe = getRef();
 
       buncher.tell(new SetTarget(probe), probe);
@@ -56,4 +62,19 @@ public class BuncherTest {
       system.stop(buncher);
     }};
   }
+
+  @Test
+  public void testBuncherActorDoesntBatchUninitialized()
+  {
+    new JavaTestKit(system) {{
+      final ActorRef buncher =
+        system.actorOf(Props.create(Buncher.class));
+      final ActorRef probe = getRef();
+
+      buncher.tell(new Queue(42), probe);
+      expectNoMsg();
+      system.stop(buncher);
+    }};
+  }
 }
+//#test-code

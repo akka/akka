@@ -266,12 +266,11 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
-  val Event: FSM.Event.type = FSM.Event
-  val StopEvent: FSM.StopEvent.type = FSM.StopEvent
-
   /*
    * “import” so that these are visible without an import
    */
+  val Event: FSM.Event.type = FSM.Event
+  val StopEvent: FSM.StopEvent.type = FSM.StopEvent
 
   /**
    * This extractor is just convenience for matching a (S, S) pair, including a
@@ -757,6 +756,21 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 
 /**
  * Java API
+ */
+object AbstractFSM {
+  /**
+   * A partial function value which does not match anything and can be used to
+   * “reset” `whenUnhandled` and `onTermination` handlers.
+   *
+   * {{{
+   * onTermination(FSM.NullFunction())
+   * }}}
+   */
+  def NullFunction[S, D]: PartialFunction[S, D] = FSM.NullFunction
+}
+
+/**
+ * Java API
  *
  * Finite State Machine actor abstract base class.
  */
@@ -835,6 +849,16 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
     onTransition(transitionHandlerBuilder.build().asInstanceOf[TransitionHandler])
 
   /**
+   * Add a handler which is called upon each state transition, i.e. not when
+   * staying in the same state.
+   *
+   * <b>Multiple handlers may be installed, and every one of them will be
+   * called, not only the first one matching.</b>
+   */
+  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
+    onTransition(transitionHandler)
+
+  /**
    * Set handler which is called upon reception of unhandled messages. Calling
    * this method again will overwrite the previous contents.
    *
@@ -880,6 +904,44 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
    *
+   * A case statement that matches on the data type and if the event compares equal.
+   *
+   * @param event  an event to compare equal against
+   * @param dataType  the data type to match on
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEventEquals[DT <: D](event: AnyRef, dataType: Class[DT], apply: Apply[DT, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches if any of the event types in the list match or any
+   * of the event instances in the list compares equal.
+   *
+   * @param eventMatches  a list of types or instances to match against
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent(eventMatches: JList[AnyRef], apply: Apply[D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventMatches, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches if the event compares equal.
+   *
+   * @param event  an event to compare equal against
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEventEquals(event: AnyRef, apply: Apply[D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().eventEquals(event, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
    * A case statement that matches on any type of event.
    *
    * @param apply  an action to apply to the event and state data if there is a match
@@ -899,6 +961,19 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchState(fromState: S, toState: S, apply: UnitApplyVoid): FSMTransitionHandlerBuilder[S] =
+    new FSMTransitionHandlerBuilder[S]().state(fromState, toState, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMTransitionHandlerBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on a from state and a to state.
+   *
+   * @param fromState  the from state to match on
+   * @param toState  the to state to match on
+   * @param apply  an action to apply when the states match
+   * @return the builder with the case statement added
+   */
+  final def matchState(fromState: S, toState: S, apply: UnitApply2[S, S]): FSMTransitionHandlerBuilder[S] =
     new FSMTransitionHandlerBuilder[S]().state(fromState, toState, apply)
 
   /**
@@ -969,6 +1044,18 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   final def goTo(nextStateName: S): State = goto(nextStateName)
 
   /**
+   * Schedule named timer to deliver message after given delay, possibly repeating.
+   * Any existing timer with the same name will automatically be canceled before
+   * adding the new timer.
+   * @param name identifier to be used with cancelTimer()
+   * @param msg message to be delivered
+   * @param timeout delay of first message delivery and between subsequent messages
+   * @return current state descriptor
+   */
+  final def setTimer(name: String, msg: Any, timeout: FiniteDuration): Unit =
+    setTimer(name, msg, timeout, false);
+
+  /**
    * Default reason if calling `stop()`.
    */
   val Normal: FSM.Reason = FSM.Normal
@@ -978,23 +1065,6 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * also applies to `Stop` supervision directive.
    */
   val Shutdown: FSM.Reason = FSM.Shutdown
-
-  /**
-   * Signifies that the [[akka.actor.FSM]] is shutting itself down because of
-   * an error, e.g. if the state to transition into does not exist. You can use
-   * this to match on a Failure in the [[akka.japi.pf.FSMStopBuilder]].
-   */
-  def Failure: Class[_ <: FSM.Reason] = classOf[FSM.Failure]
-
-  /**
-   * A partial function value which does not match anything and can be used to
-   * “reset” `whenUnhandled` and `onTermination` handlers.
-   *
-   * {{{
-   * onTermination(FSM.NullFunction)
-   * }}}
-   */
-  val NullFunction: PartialFunction[Any, Nothing] = FSM.NullFunction
 }
 
 /**

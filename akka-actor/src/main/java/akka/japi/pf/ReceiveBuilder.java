@@ -9,7 +9,9 @@ package akka.japi.pf;
  *
  * There is both a match on type only, and a match on type and predicate.
  *
- * Inside an actor you can use it like this with Java 8 to define your receive method:
+ * Inside an actor you can use it like this with Java 8 to define your receive method.
+ * <p/>
+ * Example:
  * <pre>
  * @Override
  * public PartialFunction<Object, BoxedUnit> receive() {
@@ -51,8 +53,30 @@ public class ReceiveBuilder {
    * @return           a builder with the case statement added
    */
   public static <P> UnitPFBuilder<Object> match(final Class<P> type,
-                                                   FI.TypedPredicate<P> predicate,
-                                                   FI.UnitApply<P> apply) {
+                                                FI.TypedPredicate<P> predicate,
+                                                FI.UnitApply<P> apply) {
     return UnitMatch.match(type, predicate, apply);
   }
+
+  /**
+   * Return a new {@link UnitPFBuilder} with a case statement added.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public static <P> UnitPFBuilder<Object> matchEquals(P object, FI.UnitApply<P> apply) {
+    return UnitMatch.matchEquals(object, apply);
+  }
+
+  /**
+   * Return a new {@link UnitPFBuilder} with a case statement added.
+   *
+   * @param apply      an action to apply to the argument
+   * @return           a builder with the case statement added
+   */
+  public static UnitPFBuilder<Object> matchAny(FI.UnitApply<Object> apply) {
+    return UnitMatch.matchAny(apply);
+  }
+
 }

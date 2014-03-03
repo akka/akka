@@ -82,23 +82,6 @@ class DemoActorWrapper extends Actor {
   def receive = Actor.emptyBehavior
 }
 
-class AnonymousActor extends Actor {
-  //#anonymous-actor
-  def receive = {
-    case m: DoIt =>
-      context.actorOf(Props(new Actor {
-        def receive = {
-          case DoIt(msg) =>
-            val replyMsg = doSomeDangerousWork(msg)
-            sender() ! replyMsg
-            context.stop(self)
-        }
-        def doSomeDangerousWork(msg: ImmutableMessage): String = { "done" }
-      })) forward m
-  }
-  //#anonymous-actor
-}
-
 class Hook extends Actor {
   var child: ActorRef = _
   //#preStart
@@ -279,15 +262,6 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     system.eventStream.unsubscribe(testActor)
     system.eventStream.publish(TestEvent.UnMute(filter))
-
-    system.stop(myActor)
-  }
-
-  "creating actor with constructor" in {
-    //#creating-constructor
-    // allows passing in arguments to the MyActor constructor
-    val myActor = system.actorOf(Props[MyActor], name = "myactor")
-    //#creating-constructor
 
     system.stop(myActor)
   }

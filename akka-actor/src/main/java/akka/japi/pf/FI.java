@@ -25,7 +25,7 @@ public final class FI {
      * @param i  an instance that the application is performed on
      * @return  the result of the application
      */
-    public abstract R apply(I i);
+    public R apply(I i) throws Exception;
   }
 
   /**
@@ -43,7 +43,7 @@ public final class FI {
      * @param i2  an instance that the application is performed on
      * @return  the result of the application
      */
-    public abstract R apply(I1 i1, I2 i2);
+    public R apply(I1 i1, I2 i2) throws Exception;
   }
 
   /**
@@ -58,7 +58,7 @@ public final class FI {
      * @param t  an instance that the predicate is evaluated on.
      * @return  the result of the predicate
      */
-    public abstract boolean defined(T t);
+    public boolean defined(T t);
   }
 
   /**
@@ -72,7 +72,7 @@ public final class FI {
      *
      * @param i  an instance that the application is performed on
      */
-    public abstract void apply(I i);
+    public void apply(I i) throws Exception;
   }
 
   /**
@@ -88,7 +88,7 @@ public final class FI {
      * @param i1  an instance that the application is performed on
      * @param i2  an instance that the application is performed on
      */
-    public abstract void apply(I1 i1, I2 i2);
+    public void apply(I1 i1, I2 i2) throws Exception;
   }
 
   /**
@@ -106,7 +106,7 @@ public final class FI {
      * @param i2  an instance that the application is performed on
      * @param i3  an instance that the application is performed on
      */
-    public abstract void apply(I1 i1, I2 i2, I3 i3);
+    public void apply(I1 i1, I2 i2, I3 i3) throws Exception;
   }
 
   /**
@@ -116,7 +116,7 @@ public final class FI {
     /**
      * The application to perform.
      */
-    public abstract void apply();
+    public void apply() throws Exception;
   }
 
   /**
@@ -129,7 +129,7 @@ public final class FI {
      * @param o  an instance that the predicate is evaluated on.
      * @return  the result of the predicate
      */
-    public abstract boolean defined(Object o);
+    public boolean defined(Object o);
   }
 
 

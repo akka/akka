@@ -47,6 +47,20 @@ public class Match<I, R> extends AbstractMatch<I, R> {
   }
 
   /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   * @see PFBuilder#matchEquals(Object, FI.Apply)
+   */
+  public static <F, T, P> PFBuilder<F, T> matchEquals(final P object,
+                                                      final FI.Apply<P, T> apply) {
+    return new PFBuilder<F, T>().matchEquals(object, apply);
+  }
+
+  /**
    * Create a {@link Match} from the builder.
    *
    * @param builder  a builder representing the partial function
