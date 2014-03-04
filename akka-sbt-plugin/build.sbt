@@ -4,7 +4,7 @@ organization := "com.typesafe.akka"
 
 name := "akka-sbt-plugin"
 
-version := "2.2.3"
+version := "2.2.4"
 
 scalacOptions ++= Seq(
   "-unchecked",
