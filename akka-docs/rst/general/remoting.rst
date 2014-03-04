@@ -64,8 +64,10 @@ design decisions:
 #. The role of the communicating systems are symmetric in regards to connection patterns: there
    is no system that only accepts connections, and there is no system that only initiates connections.
    
-The consequence of these decisions is that it is not possible to safely create pure client-server setups
-with predefined roles (violates assumption 2) and using setups involving NAT (violates assumption 1).
+The consequence of these decisions is that it is not possible to safely create
+pure client-server setups with predefined roles (violates assumption 2) and
+using setups involving Network Address Translation or Load Balancers (violates
+assumption 1).
 
 For client-server setups it is better to use HTTP or Akka I/O.
 
