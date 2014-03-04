@@ -87,6 +87,7 @@ private[remote] class EventPublisher(system: ActorSystem, log: LoggingAdapter, l
   // case class AssociationErrorEvent. This is properly fixed in 2.3
   def notifyListeners(message: RemotingLifecycleEvent, overrideLogLevel: Option[LogLevel]): Unit = {
     system.eventStream.publish(message)
-    if (logLevel <= overrideLogLevel.getOrElse(message.logLevel)) log.log(message.logLevel, "{}", message)
+    val effectiveLogLevel = overrideLogLevel.getOrElse(message.logLevel)
+    if (effectiveLogLevel <= logLevel) log.log(effectiveLogLevel, "{}", message)
   }
 }
