@@ -731,7 +731,9 @@ object AkkaBuild extends Build {
     if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
-  }
+  } ++ Seq(
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
+  )
 
   lazy val defaultSettings = baseSettings ++ mimaSettings ++ resolverSettings ++
     Protobuf.settings ++ Seq(
