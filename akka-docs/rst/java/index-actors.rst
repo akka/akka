@@ -15,3 +15,4 @@ Actors
    testing
    lambda-actors
    lambda-fsm
+   lambda-persistence

@@ -444,4 +444,4 @@ abstract class UntypedProcessor extends UntypedActor with Processor
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
-abstract class AbstractProcessor extends Processor
+abstract class AbstractProcessor extends AbstractActor with Processor

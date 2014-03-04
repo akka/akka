@@ -1,8 +1,8 @@
 .. _persistence-lambda-java:
 
-##########################################
-Persistence with Java 8 Lambda Expressions
-##########################################
+######################################
+Persistence (Java with Lambda Support)
+######################################
 
 
 Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor

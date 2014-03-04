@@ -10,6 +10,7 @@ import scala.collection.immutable
 
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
+import akka.actor.AbstractActor
 
 /**
  * INTERNAL API.
@@ -292,7 +293,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
  * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
  * thrown by the processor.
  */
-abstract class AbstractEventsourcedProcessor extends EventsourcedProcessor {
+abstract class AbstractEventsourcedProcessor extends AbstractActor with EventsourcedProcessor {
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event. It is guaranteed that no new commands will be received by a processor

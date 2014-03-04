@@ -203,4 +203,4 @@ abstract class UntypedView extends UntypedActor with View
  *
  * @see [[View]]
  */
-abstract class AbstractView extends View
+abstract class AbstractView extends AbstractActor with View
