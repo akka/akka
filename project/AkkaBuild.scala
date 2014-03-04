@@ -706,6 +706,9 @@ object AkkaBuild extends Build {
     // if changing this between binary and full, also change at the bottom of akka-sbt-plugin/sample/project/Build.scala
     crossVersion := CrossVersion.binary,
 
+    // do not leak internal repositories during staging
+    pomIncludeRepository := (_ => false),
+
     ivyLoggingLevel in ThisBuild := UpdateLogging.Quiet,
 
     description in lsync := "Akka is the platform for the next generation of event-driven, scalable and fault-tolerant architectures on the JVM.",
