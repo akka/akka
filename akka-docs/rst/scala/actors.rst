@@ -893,8 +893,8 @@ Extending Actors using PartialFunction chaining
 ===============================================
 
 Sometimes it can be useful to share common behavior among a few actors, or compose one actor's behavior from multiple smaller functions.
-This is is possible because an actor's :meth:`receive` method returns an ``Actor.Receive``, which is a type alias for ``PartialFunction[Any,Unit]``,
-and partial functions can be chained together using the ``PartialFunction#orElse`` method. You can chain as many functions you need,
+This is possible because an actor's :meth:`receive` method returns an ``Actor.Receive``, which is a type alias for ``PartialFunction[Any,Unit]``,
+and partial functions can be chained together using the ``PartialFunction#orElse`` method. You can chain as many functions as you need,
 however you should keep in mind that "first match" wins - which may be important when combining functions that both can handle the same type of message.
 
 For example, imagine you have a set of actors which are either ``Producers`` or ``Consumers``, yet sometimes it makes sense to
