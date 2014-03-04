@@ -27,7 +27,7 @@ Eventsourced and Akka Persistence are both :ref:`extending-akka-scala`.
 **Eventsourced:** ``EventsourcingExtension``
 
 - Must be explicitly created with an actor system and an application-defined journal actor as arguments.
-  (see `usage example <https://github.com/eligosource/eventsourced#step-1-eventsourcingextension-initialization>`_).
+  (see `example usage <https://github.com/eligosource/eventsourced#step-1-eventsourcingextension-initialization>`_).
 - `Processors <https://github.com/eligosource/eventsourced#processor>`_ and
   `Channels <https://github.com/eligosource/eventsourced#channel>`_
   must be created with the factory methods ``processorOf`` and ``channelOf`` defined on ``EventsourcingExtension``.

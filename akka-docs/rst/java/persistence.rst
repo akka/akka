@@ -240,6 +240,24 @@ request  instructs a channel to send a ``Persistent`` message to a destination. 
 ``ActorPath`` and messages are sent by the channel via that path's ``ActorSelection``. Sender references are
 preserved by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
 
+.. note::
+  
+  Sending via a channel has at-least-once delivery semantics—by virtue of either
+  the sending actor or the channel being persistent—which means that the
+  semantics do not match those of a normal :class:`ActorRef` send operation:
+
+  * it is not at-most-once delivery
+
+  * message order for the same sender–receiver pair is not retained due to
+    possible resends
+
+  * after a crash and restart of the destination messages are still
+    delivered—to the new actor incarnation
+
+  These semantics match precisely what an :class:`ActorPath` represents (see
+  :ref:`actor-lifecycle-java`), therefore you need to supply a path and not a
+  reference when constructing :class:`Deliver` messages.
+
 If a processor wants to reply to a ``Persistent`` message sender it should use the ``getSender()`` path as
 channel destination.
 
