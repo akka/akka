@@ -114,7 +114,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+  val transportSupervisor = system.systemActorOf(
     configureDispatcher(Props[TransportSupervisor]),
     "transports")
 
@@ -159,7 +159,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     endpointManager match {
       case None ⇒
         log.info("Starting remoting")
-        val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+        val manager: ActorRef = system.systemActorOf(
           configureDispatcher(Props(classOf[EndpointManager], provider.remoteSettings.config, log)).withDeploy(Deploy.local),
           Remoting.EndpointManagerName)
         endpointManager = Some(manager)

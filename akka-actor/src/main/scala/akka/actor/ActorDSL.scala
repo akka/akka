@@ -88,7 +88,7 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 
-    val boss = system.asInstanceOf[ActorSystemImpl].systemActorOf(Props(
+    val boss = system.systemActorOf(Props(
       new Actor {
         def receive = { case any ⇒ sender() ! any }
       }), "dsl").asInstanceOf[RepointableActorRef]

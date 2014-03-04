@@ -200,7 +200,6 @@ trait ConsumerBehavior {
   }
 }
 
-
 class Producer extends Actor with ProducerBehavior {
   def receive = producerBehavior
 }
@@ -209,10 +208,9 @@ class Consumer extends Actor with ActorLogging with ConsumerBehavior {
   def receive = consumerBehavior
 }
 
-
 class ProducerConsumer extends Actor with ActorLogging
   with ProducerBehavior with ConsumerBehavior {
-  
+
   def receive = producerBehavior orElse consumerBehavior
 }
 

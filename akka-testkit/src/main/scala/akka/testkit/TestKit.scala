@@ -120,7 +120,7 @@ trait TestKitBase {
    * registration as message target.
    */
   val testActor: ActorRef = {
-    val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
+    val impl = system.asInstanceOf[ExtendedActorSystem]
     val ref = impl.systemActorOf(TestActor.props(queue)
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
