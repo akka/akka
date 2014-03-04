@@ -18,9 +18,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.Try
-import scala.util.Failure
-import akka.util.Reflect
-import java.lang.reflect.ParameterizedType
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -308,7 +305,9 @@ abstract class ExecutorServiceConfigurator(config: Config, prerequisites: Dispat
 /**
  * Base class to be used for hooking in new dispatchers into Dispatchers.
  */
-abstract class MessageDispatcherConfigurator(val config: Config, val prerequisites: DispatcherPrerequisites) {
+abstract class MessageDispatcherConfigurator(_config: Config, val prerequisites: DispatcherPrerequisites) {
+
+  val config: Config = new CachingConfig(_config)
 
   /**
    * Returns an instance of MessageDispatcher given the configuration.

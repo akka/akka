@@ -381,4 +381,9 @@ The constructor signatures of the built-in dispatcher implementation have been
 adapted accordingly.  The traits describing mailbox semantics have been
 separated from the implementation traits.
 
+gracefulStop Pattern Changed
+============================
 
+The `gracefulStop` pattern was refactored to not need an implicit :class:`ActorSystem` anymore.
+
+The `gracefulStop` pattern now supports customized stop messages to be sent instead of :class:`PoisonPill`.
