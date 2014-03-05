@@ -12,6 +12,8 @@ import scala.Tuple2;
  * Builder used to create a partial function for {@link akka.actor.FSM#onTransition}.
  *
  * @param <S> the state type
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class FSMTransitionHandlerBuilder<S> {
 

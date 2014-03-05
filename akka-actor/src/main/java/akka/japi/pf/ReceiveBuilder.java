@@ -28,6 +28,7 @@ package akka.japi.pf;
  * }
  * </pre>
  *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class ReceiveBuilder {
   private ReceiveBuilder() {

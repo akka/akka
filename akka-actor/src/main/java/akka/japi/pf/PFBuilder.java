@@ -9,6 +9,8 @@ package akka.japi.pf;
  *
  * @param <I> the input type, that this PartialFunction will be applied to
  * @param <R> the return type, that the results of the application will have
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public final class PFBuilder<I, R> extends AbstractPFBuilder<I, R> {
 

@@ -755,7 +755,9 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor ⇒
 }
 
 /**
- * Java API
+ * Java API: compatible with lambda expressions
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 object AbstractFSM {
   /**
@@ -770,9 +772,11 @@ object AbstractFSM {
 }
 
 /**
- * Java API
+ * Java API: compatible with lambda expressions
  *
  * Finite State Machine actor abstract base class.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractFSM[S, D] extends FSM[S, D] {
   import akka.japi.pf._
@@ -877,6 +881,20 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
    *
+   * A case statement that matches on an event and data type and a predicate.
+   *
+   * @param eventType  the event type to match on
+   * @param dataType  the data type to match on
+   * @param predicate  a predicate to evaluate on the matched types
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, apply)
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
    * A case statement that matches on an event and data type.
    *
    * @param eventType  the event type to match on
@@ -890,6 +908,43 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
    *
+   * A case statement that matches if the event type and predicate matches.
+   *
+   * @param eventType  the event type to match on
+   * @param predicate  a predicate that will be evaluated on the data and the event
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent[ET](eventType: Class[ET], predicate: TypedPredicate2[ET, D], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventType, predicate, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches if the event type matches.
+   *
+   * @param eventType  the event type to match on
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent[ET](eventType: Class[ET], apply: Apply2[ET, D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(eventType, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches if the predicate matches.
+   *
+   * @param predicate  a predicate that will be evaluated on the data and the event
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEvent(predicate: TypedPredicate2[AnyRef, D], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().event(predicate, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
    * A case statement that matches on the data type and if any of the event types
    * in the list match or any of the event instances in the list compares equal.
    *
@@ -898,21 +953,8 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply[DT, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent[DT <: D](eventMatches: JList[AnyRef], dataType: Class[DT], apply: Apply2[AnyRef, DT, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventMatches, dataType, apply);
-
-  /**
-   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
-   *
-   * A case statement that matches on the data type and if the event compares equal.
-   *
-   * @param event  an event to compare equal against
-   * @param dataType  the data type to match on
-   * @param apply  an action to apply to the event and state data if there is a match
-   * @return the builder with the case statement added
-   */
-  final def matchEventEquals[DT <: D](event: AnyRef, dataType: Class[DT], apply: Apply[DT, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply);
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -924,8 +966,21 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEvent(eventMatches: JList[AnyRef], apply: Apply[D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEvent(eventMatches: JList[AnyRef], apply: Apply2[AnyRef, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().event(eventMatches, apply);
+
+  /**
+   * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
+   *
+   * A case statement that matches on the data type and if the event compares equal.
+   *
+   * @param event  an event to compare equal against
+   * @param dataType  the data type to match on
+   * @param apply  an action to apply to the event and state data if there is a match
+   * @return the builder with the case statement added
+   */
+  final def matchEventEquals[E, DT <: D](event: E, dataType: Class[DT], apply: Apply2[E, DT, State]): FSMStateFunctionBuilder[S, D] =
+    new FSMStateFunctionBuilder[S, D]().eventEquals(event, dataType, apply);
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
@@ -936,7 +991,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param apply  an action to apply to the event and state data if there is a match
    * @return the builder with the case statement added
    */
-  final def matchEventEquals(event: AnyRef, apply: Apply[D, State]): FSMStateFunctionBuilder[S, D] =
+  final def matchEventEquals[E](event: E, apply: Apply2[E, D, State]): FSMStateFunctionBuilder[S, D] =
     new FSMStateFunctionBuilder[S, D]().eventEquals(event, apply);
 
   /**
@@ -1068,8 +1123,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
 }
 
 /**
- * Java API
+ * Java API: compatible with lambda expressions
  *
  * Finite State Machine actor abstract base class.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractLoggingFSM[S, D] extends AbstractFSM[S, D] with LoggingFSM[S, D]

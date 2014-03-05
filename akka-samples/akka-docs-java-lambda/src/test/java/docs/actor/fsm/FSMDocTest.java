@@ -85,7 +85,7 @@ public class FSMDocTest {
     //#alt-transition-syntax
 
     //#stop-syntax
-    when(Error, matchEventEquals("stop", (data) -> {
+    when(Error, matchEventEquals("stop", (event, data) -> {
       // do cleanup ...
       return stop();
     }));
@@ -103,7 +103,7 @@ public class FSMDocTest {
 
     //#unhandled-syntax
     whenUnhandled(
-      matchEvent(X.class, null, (x, data) -> {
+      matchEvent(X.class, (x, data) -> {
         log().info("Received unhandled event: " + x);
         return stay();
       }).
@@ -146,7 +146,7 @@ public class FSMDocTest {
         target.tell("going active", self());
         return goTo(Active);
       }));
-      when(Active, matchEventEquals("stop", (data) -> {
+      when(Active, matchEventEquals("stop", (event, data) -> {
         target.tell("stopping", self());
         return stop(new Failure("This is not the error you're looking for"));
       }));
