@@ -1,7 +1,7 @@
 import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
-val akkaVersion = "2.3-SNAPSHOT"
+val akkaVersion = "2.3.0"
 
 val project = Project(
   id = "akka-sample-multi-node-scala",

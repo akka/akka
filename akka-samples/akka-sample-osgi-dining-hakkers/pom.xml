@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.typesafe.akka.akka-sample-osgi-dining-hakkers</groupId>
     <artifactId>project</artifactId>
-    <version>2.3-SNAPSHOT</version>
+    <version>2.3.0</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <akka.version>2.3-SNAPSHOT</akka.version>
+        <akka.version>2.3.0</akka.version>
         <karaf.version>2.3.1</karaf.version>
         <karaf.tooling.exam.version>${karaf.version}</karaf.tooling.exam.version>
         <netty.version>3.8.0.Final</netty.version>
