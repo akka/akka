@@ -386,3 +386,62 @@ case class RecoveryException(message: String, cause: Throwable) extends AkkaExce
  * @see [[PersistentBatch]]
  */
 abstract class UntypedProcessor extends UntypedActor with Processor
+
+/**
+ * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]).
+ * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types
+ * are not persisted.
+ *
+ * {{{
+ * import akka.persistence.AbstractProcessor;
+ * import akka.persistence.Persistent;
+ * import akka.actor.ActorRef;
+ * import akka.actor.Props;
+ * import akka.japi.pf.ReceiveBuilder;
+ * import scala.PartialFunction;
+ * import scala.runtime.BoxedUnit;
+ *
+ * class MyProcessor extends AbstractProcessor {
+ *     public PartialFunction<Object, BoxedUnit> receive() {
+ *         return ReceiveBuilder.
+ *             match(Persistent.class, p -> {
+ *                 Object payload = p.payload();
+ *                 Long sequenceNr = p.sequenceNr();
+ *                 // ...
+ *             }).build();
+ *     }
+ * }
+ *
+ * // ...
+ *
+ * ActorRef processor = context().actorOf(Props.create(MyProcessor.class), "myProcessor");
+ *
+ * processor.tell(Persistent.create("foo"), null);
+ * processor.tell("bar", null);
+ * }}}
+ *
+ * During start and restart, persistent messages are replayed to a processor so that it can recover internal
+ * state from these messages. New messages sent to a processor during recovery do not interfere with replayed
+ * messages, hence applications don't need to wait for a processor to complete its recovery.
+ *
+ * Automated recovery can be turned off or customized by overriding the [[preStart]] and [[preRestart]] life
+ * cycle hooks. If automated recovery is turned off, an application can explicitly recover a processor by
+ * sending it a [[Recover]] message.
+ *
+ * [[Persistent]] messages are assigned sequence numbers that are generated on a per-processor basis. A sequence
+ * starts at `1L` and doesn't contain gaps unless a processor (logically) deletes a message.
+ *
+ * During recovery, a processor internally buffers new messages until recovery completes, so that new messages
+ * do not interfere with replayed messages. This internal buffer (the ''processor stash'') is isolated from the
+ * ''user stash'' inherited by `akka.actor.Stash`. `Processor` implementation classes can therefore use the
+ * ''user stash'' for stashing/unstashing both persistent and transient messages.
+ *
+ * Processors can also store snapshots of internal state by calling [[saveSnapshot]]. During recovery, a saved
+ * snapshot is offered to the processor with a [[SnapshotOffer]] message, followed by replayed messages, if any,
+ * that are younger than the snapshot. Default is to offer the latest saved snapshot.
+ *
+ * @see [[Processor]]
+ * @see [[Recover]]
+ * @see [[PersistentBatch]]
+ */
+abstract class AbstractProcessor extends AbstractActor with Processor
