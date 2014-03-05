@@ -6,7 +6,7 @@ import akka.actor.ActorRefFactory
 import akka.streams.impl._
 import Operation._
 
-case class ActorBasedImplementationSettings(
+case class ActorBasedStreamGeneratorSettings(
   refFactory: ActorRefFactory,
   initialFanOutBufferSize: Int = 1,
   maxFanOutBufferSize: Int = 16,
@@ -17,7 +17,7 @@ case class ActorBasedImplementationSettings(
     s"initialFanOutBufferSize($initialFanOutBufferSize) must be <= maxFanOutBufferSize($maxFanOutBufferSize)")
 }
 
-class ActorBasedImplementationFactory(settings: ActorBasedImplementationSettings) extends ImplementationFactory {
+class ActorBasedStreamGenerator(settings: ActorBasedStreamGeneratorSettings) extends StreamGenerator {
   def toProcessor[I, O](operation: Operation[I, O]): Processor[I, O] = Implementation.toProcessor(operation, settings)
   def toProducer[O](source: Source[O]): api.Producer[O] = Implementation.toProducer(source, settings)
   def toConsumer[I](sink: Sink[I]): Consumer[I] = ???

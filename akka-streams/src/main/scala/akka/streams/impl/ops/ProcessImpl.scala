@@ -17,7 +17,8 @@ class ProcessImpl[A, B, S](upstream: Upstream, downstream: Downstream[B], op: Pr
     def handleCommand(command: Command[B, S]): Effect =
       command match {
         case Process.Continue(newState) ⇒
-          state = newState; Continue
+          state = newState
+          Continue
         case Emit(value, andThen) ⇒ downstream.next(value) ~ handleCommand(andThen)
         case Stop                 ⇒ downstream.complete ~ upstream.cancel
       }

@@ -1,6 +1,6 @@
 package akka.streams
 
-trait ImplementationFactoryConsumerSpec extends ImplementationFactorySpec {
+trait ImplementationFactoryConsumerSpec extends StreamGeneratorSpec {
   "A consumer built by an ImplementationFactory" - {
     "after being subscribed to a producer" - {
       "receives elements" in pending

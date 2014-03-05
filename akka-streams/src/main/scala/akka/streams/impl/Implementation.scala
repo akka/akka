@@ -3,7 +3,7 @@ package akka.streams.impl
 import asyncrx.api.Processor
 import asyncrx.spi.{ Publisher, Subscription, Subscriber }
 import akka.actor.{ PoisonPill, ActorRef, Props, Actor }
-import akka.streams.{ Operation, ActorBasedImplementationSettings }
+import akka.streams.{ Operation, ActorBasedStreamGeneratorSettings }
 import akka.streams.Operation._
 import asyncrx.api.Producer
 import scala.concurrent.{ Promise, Await, ExecutionContext }
@@ -11,25 +11,25 @@ import akka.util.Timeout
 import scala.util.{ Try, Success }
 
 object Implementation {
-  def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
+  def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedStreamGeneratorSettings): Processor[I, O] =
     new OperationProcessor(operation, settings)
 
-  def toProducer[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
+  def toProducer[O](source: Source[O], settings: ActorBasedStreamGeneratorSettings): Producer[O] =
     source match {
       // just unpack the internal producer
       case FromProducerSource(i: InternalProducer[O]) ⇒ i
       case _ ⇒ new SourceProducer[O](source, settings)
     }
 
-  def runPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
+  def runPipeline(pipeline: Pipeline[_], settings: ActorBasedStreamGeneratorSettings): Unit =
     settings.refFactory.actorOf(Props(new PipelineActor(pipeline, settings)))
 }
 
-private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] { outer ⇒
+private class SourceProducer[O](source: Source[O], val settings: ActorBasedStreamGeneratorSettings) extends ProducerImplementationBits[O] { outer ⇒
   protected def createActor(promise: Promise[Publisher[O]]): ActorRef = settings.refFactory.actorOf(Props(new SourceProducerActor(promise)))
 
-  class SourceProducerActor(promise: Promise[Publisher[O]]) extends Actor with ProcessorActorImpl {
-    protected def settings: ActorBasedImplementationSettings = outer.settings
+  class SourceProducerActor(promise: Promise[Publisher[O]]) extends ProcessorActor {
+    protected def settings: ActorBasedStreamGeneratorSettings = outer.settings
     promise.complete(Try {
       ActorContextEffects.internalProducer(OperationImpl(_: Downstream[O], ActorContextEffects, source), ShutdownActor).getPublisher
     })
@@ -40,7 +40,7 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedImple
   }
 }
 
-private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings)
+private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedStreamGeneratorSettings)
   extends Processor[I, O]
   with ProducerImplementationBits[O] { outer ⇒
   @volatile var finished = false
@@ -68,8 +68,8 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   case object OnComplete
   case class OnError(cause: Throwable)
 
-  class OperationProcessorActor(promise: Promise[Publisher[O]]) extends Actor with ProcessorActorImpl {
-    protected def settings: ActorBasedImplementationSettings = outer.settings
+  class OperationProcessorActor(promise: Promise[Publisher[O]]) extends ProcessorActor {
+    protected def settings: ActorBasedStreamGeneratorSettings = outer.settings
 
     case object OperationSource extends SyncSource {
       var downstream: Downstream[O] = _
@@ -139,7 +139,7 @@ private class OperationProcessor[I, O](val operation: Operation[I, O], val setti
   }
 }
 
-class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementationSettings) extends Actor with ProcessorActorImpl {
+class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedStreamGeneratorSettings) extends ProcessorActor {
   settings.effectExecutor.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
@@ -149,7 +149,7 @@ class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedImplementatio
 
 trait ProducerImplementationBits[O] extends Producer[O] {
   protected def createActor(promise: Promise[Publisher[O]]): ActorRef
-  protected def settings: ActorBasedImplementationSettings
+  protected def settings: ActorBasedStreamGeneratorSettings
 
   var getPublisher: Publisher[O] = _
   import scala.concurrent.duration._
@@ -163,8 +163,8 @@ trait ProducerImplementationBits[O] extends Producer[O] {
   }
 }
 
-trait ProcessorActorImpl { _: Actor ⇒
-  protected def settings: ActorBasedImplementationSettings
+abstract class ProcessorActor extends Actor {
+  protected def settings: ActorBasedStreamGeneratorSettings
   def shutdown(): Unit = context.stop(self)
 
   object ActorContextEffects extends AbstractContextEffects {

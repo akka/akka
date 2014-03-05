@@ -9,8 +9,8 @@ import akka.streams.Operation._
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
   def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
-    val settings = ActorBasedImplementationSettings(system, maxFanOutBufferSize = maxBufferSize)
-    implicit val abif = new ActorBasedImplementationFactory(settings)
+    val settings = ActorBasedStreamGeneratorSettings(system, maxFanOutBufferSize = maxBufferSize)
+    implicit val abif = new ActorBasedStreamGenerator(settings)
     abif.toProcessor(Identity[Int]())
   }
 
