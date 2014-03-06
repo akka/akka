@@ -15,9 +15,7 @@ import org.apache.camel.ProducerTemplate
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.util.Timeout
 import akka.pattern.ask
-import java.io.InputStream
-import org.apache.camel.model.RouteDefinition
-import akka.actor.{ ExtendedActorSystem, ActorRef, Props, ActorSystem }
+import akka.actor.{ ExtendedActorSystem, ActorRef, Props }
 
 /**
  * INTERNAL API
@@ -33,7 +31,7 @@ private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel
   private[camel] implicit val log = Logging(system, "Camel")
 
   lazy val context: DefaultCamelContext = {
-    val ctx = new DefaultCamelContext
+    val ctx = settings.ContextProvider.getContext(system)
     if (!settings.JmxStatistics) ctx.disableJMX()
     ctx.setName(system.name)
     ctx.setStreamCaching(settings.StreamingCache)

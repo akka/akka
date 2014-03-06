@@ -89,6 +89,12 @@ Below you can see how you can get access to these Apache Camel objects.
 
 One ``CamelExtension`` is only loaded once for every one ``ActorSystem``, which makes it safe to call the ``CamelExtension`` at any point in your code to get to the
 Apache Camel objects associated with it. There is one `CamelContext`_ and one `ProducerTemplate`_ for every one ``ActorSystem`` that uses a ``CamelExtension``.
+By Default, a new `CamelContext`_ is created when the ``CamelExtension`` starts. If you want to inject your own context instead,
+you can implement the `ContextProvider`_ interface and add the FQCN of your implementation in the config, as the value of the "akka.camel.context-provider".
+This interface define a single method ``getContext()`` used to load the `CamelContext`_.
+
+.. _ContextProvider: @github@/akka-camel/src/main/scala/akka/camel/ContextProvider.scala
+
 Below an example on how to add the ActiveMQ component to the `CamelContext`_, which is required when you would like to use the ActiveMQ component.
 
 .. includecode:: code/docs/camel/CamelExtensionTest.java#CamelExtensionAddComponent
