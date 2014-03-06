@@ -6,7 +6,7 @@ import scala.concurrent.duration._
 import akka.testkit.duration2TestDuration
 import Operation._
 
-trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
+trait ImplementationFactoryOperationSpec extends StreamGeneratorSpec {
   object TestException extends RuntimeException
 
   "A processor built from an ImplementationFactory" - {
@@ -371,7 +371,7 @@ trait ImplementationFactoryOperationSpec extends ImplementationFactorySpec {
   }
 
   class InitializedChainSetupWithFanOutBuffer[I, O](operation: Operation[I, O], capacity: Int) extends InitializedChainSetup(operation)(factoryWithFanOutBuffer(capacity))
-  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: ImplementationFactory) {
+  class InitializedChainSetup[I, O](operation: Operation[I, O])(implicit factory: StreamGenerator) {
     val upstream = TestKit.producerProbe[I]()
     val downstream = TestKit.consumerProbe[O]()
 

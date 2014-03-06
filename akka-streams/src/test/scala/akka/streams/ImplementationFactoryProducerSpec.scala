@@ -7,7 +7,7 @@ import akka.testkit.duration2TestDuration
 
 import Operation._
 
-trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
+trait ImplementationFactoryProducerSpec extends StreamGeneratorSpec {
   "A producer built by an ImplementationFactory" - {
     "work in running state" - {
       "for SingletonSource" in new InitializedChainSetup(Source("test")) {
@@ -144,7 +144,7 @@ trait ImplementationFactoryProducerSpec extends ImplementationFactorySpec {
     }
   }
 
-  class InitializedChainSetup[O](source: Source[O])(implicit factory: ImplementationFactory) {
+  class InitializedChainSetup[O](source: Source[O])(implicit factory: StreamGenerator) {
     val producer = source.toProducer()
 
     val downstream = TestKit.consumerProbe[O]()

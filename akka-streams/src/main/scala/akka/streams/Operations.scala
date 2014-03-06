@@ -6,20 +6,20 @@ import asyncrx.api
 import api.Consumer
 import scala.concurrent.Future
 
-sealed trait Operation[-I, +O]
+sealed abstract class Operation[-I, +O]
 
 object Operation {
   type ==>[-I, +O] = Operation[I, O] // brevity alias (should we mark it `private`?)
 
-  case class Pipeline[A](source: Source[A], sink: Sink[A])
+  final case class Pipeline[A](source: Source[A], sink: Sink[A])
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
     // TODO: find a better name
-    def finish(sink: Sink[O]): Pipeline[_] =
+    def connectTo(sink: Sink[O]): Pipeline[_] =
       sink match {
         // convert MappedSink into MappedSource
-        case MappedSink(op, sink) ⇒ andThen(op).finish(sink)
+        case MappedSink(op, sink) ⇒ andThen(op).connectTo(sink)
         case s                    ⇒ Pipeline(this, s)
       }
   }
@@ -36,29 +36,29 @@ object Operation {
     implicit def fromFuture[T](future: Future[T]): Source[T] = FromFutureSource(future)
   }
 
-  case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
-  case class SingletonSource[T](element: T) extends Source[T]
+  final case class FromIterableSource[T](iterable: Iterable[T]) extends Source[T]
+  final case class SingletonSource[T](element: T) extends Source[T]
   case object EmptySource extends Source[Nothing]
   // TODO: get rid of MappedSource and move operation into Source
-  case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
+  final case class MappedSource[I, O](source: Source[I], operation: Operation[I, O]) extends Source[O] {
     type Input = I
     override def andThen[O2](op: Operation.==>[O, O2]): Source[O2] = MappedSource(source, Operation(operation, op))
   }
-  case class FromProducerSource[T](producer: api.Producer[T]) extends Source[T]
-  case class FromFutureSource[T](future: Future[T]) extends Source[T]
-  case class ConcatSources[T](source1: Source[T], source2: Source[T]) extends Source[T]
+  final case class FromProducerSource[T](producer: api.Producer[T]) extends Source[T]
+  final case class FromFutureSource[T](future: Future[T]) extends Source[T]
+  final case class ConcatSources[T](source1: Source[T], source2: Source[T]) extends Source[T]
 
   sealed trait Sink[-I] {
-    def finish[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
+    def connectTo[I2 <: I](source: Source[I2]): Pipeline[I2] = Pipeline(source, this)
   }
   // TODO: get rid of MappedSink and push operation into Sink
-  case class MappedSink[I, O](operation: I ==> O, sink: Sink[O]) extends Sink[I]
+  final case class MappedSink[I, O](operation: I ==> O, sink: Sink[O]) extends Sink[I]
 
   implicit def fromConsumer[T](consumer: Consumer[T]) = FromConsumerSink(consumer)
-  case class FromConsumerSink[T](consumer: Consumer[T]) extends Sink[T]
+  final case class FromConsumerSink[T](consumer: Consumer[T]) extends Sink[T]
 
   // this lifts an internal Source into a full-fledged api.Producer
-  case class ExposeProducer[T]() extends (Source[T] ==> api.Producer[T])
+  final case class ExposeProducer[T]() extends (Source[T] ==> api.Producer[T])
 
   def apply[A, B, C](f: A ==> B, g: B ==> C): A ==> C =
     (f, g) match {
@@ -69,15 +69,15 @@ object Operation {
 
   // basic operation composition
   // consumes and produces no faster than the respective minimum rates of f and g
-  case class Compose[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
+  final case class Compose[A, B, C](f: A ==> B, g: B ==> C) extends (A ==> C)
 
   // adds (bounded or unbounded) pressure elasticity
   // consumes at max rate as long as `canConsume` is true,
   // produces no faster than the rate with which `expand` produces B values
-  case class Buffer[A, B, S](seed: S,
-                             compress: (S, A) ⇒ S,
-                             expand: S ⇒ (S, Option[B]),
-                             canConsume: S ⇒ Boolean) extends (A ==> B)
+  final case class Buffer[A, B, S](seed: S,
+                                   compress: (S, A) ⇒ S,
+                                   expand: S ⇒ (S, Option[B]),
+                                   canConsume: S ⇒ Boolean) extends (A ==> B)
 
   // "compresses" a fast upstream by keeping one element buffered and reducing surplus values using the given function
   // consumes at max rate, produces no faster than the upstream
@@ -128,26 +128,26 @@ object Operation {
 
   // general flatmap operation
   // consumes no faster than the downstream, produces no faster than upstream or generated sources
-  case class FlatMap[A, B](f: A ⇒ Source[B]) extends (A ==> B)
+  final case class FlatMap[A, B](f: A ⇒ Source[B]) extends (A ==> B)
 
   // flattens the upstream by concatenation
   // consumes no faster than the downstream, produces no faster than the sources in the upstream
-  case class Flatten[T]() extends (Source[T] ==> T)
+  final case class Flatten[T]() extends (Source[T] ==> T)
 
   // classic fold
   // consumes at max rate, produces only one value
-  case class Fold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
+  final case class Fold[A, B](seed: B, f: (B, A) ⇒ B) extends (A ==> B)
 
   // generalized process potentially producing several output values
   // consumes at max rate as long as `onNext` returns `Continue`
   // produces no faster than the upstream
-  case class Process[A, B, S](seed: S,
-                              onNext: (S, A) ⇒ Process.Command[B, S],
-                              onComplete: S ⇒ Seq[B]) extends (A ==> B)
+  final case class Process[A, B, S](seed: S,
+                                    onNext: (S, A) ⇒ Process.Command[B, S],
+                                    onComplete: S ⇒ Seq[B]) extends (A ==> B)
   object Process {
     sealed trait Command[+T, +S]
-    case class Emit[T, S](value: T, andThen: Command[T, S]) extends Command[T, S]
-    case class Continue[T, S](nextState: S) extends Command[T, S]
+    final case class Emit[T, S](value: T, andThen: Command[T, S]) extends Command[T, S]
+    final case class Continue[T, S](nextState: S) extends Command[T, S]
     case object Stop extends Command[Nothing, Nothing]
   }
 
@@ -158,19 +158,20 @@ object Operation {
 
   // sinks all upstream value into the given function
   // consumes at max rate
-  case class Foreach[T](f: T ⇒ Unit) extends Sink[T]
+  final case class Foreach[T](f: T ⇒ Unit) extends Sink[T]
 
   // produces the first upstream element, unsubscribes afterwards
   def Head[T](): T ==> T = Take(1)
 
-  case class SourceHeadTail[A]() extends (Source[A] ==> (A, Source[A]))
+  final case class SourceHeadTail[A]() extends (Source[A] ==> (A, Source[A]))
 
+  //TODO: Have a single instance and return the same instance for all calls
   // maps the upstream onto itself
-  case class Identity[A]() extends (A ==> A)
+  final case class Identity[A]() extends (A ==> A)
 
   // maps the given function over the upstream
   // does not affect consumption or production rates
-  case class Map[A, B](f: A ⇒ B) extends (A ==> B)
+  final case class Map[A, B](f: A ⇒ B) extends (A ==> B)
 
   // produces the first B returned by f or optionally the given default value
   // consumes at max rate until f returns a Some, unsubscribes afterwards
@@ -183,17 +184,17 @@ object Operation {
   // merges the values produced by the given source into the consumed stream
   // consumes from the upstream and the given source no faster than the downstream
   // produces no faster than the combined rate from upstream and the given source
-  case class Merge[B](source: Source[B]) extends (B ==> B)
+  final case class Merge[B](source: Source[B]) extends (B ==> B)
 
   // splits the upstream into sub-streams based on the given predicate
   // if p evaluates to true the current value is appended to the previous sub-stream,
   // otherwise the previous sub-stream is closed and a new one started
   // consumes and produces no faster than the produced sources are consumed
-  case class Span[T](p: T ⇒ Boolean) extends (T ==> Source[T])
+  final case class Span[T](p: T ⇒ Boolean) extends (T ==> Source[T])
 
   // taps into the upstream and forwards all incoming values also into the given sink
   // consumes no faster than the minimum rate of the downstream and the given sink
-  case class Tee[T](sink: Sink[T]) extends (T ==> T)
+  final case class Tee[T](sink: Sink[T]) extends (T ==> T)
 
   // drops the first upstream value and forwards the remaining upstream
   // consumes the first upstream value immediately, afterwards directly copies upstream
@@ -211,11 +212,11 @@ object Operation {
       },
       onComplete = _ ⇒ Nil)
 
-  case class TakeWhile[T](p: T ⇒ Boolean) extends (T ==> T)
+  final case class TakeWhile[T](p: T ⇒ Boolean) extends (T ==> T)
 
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)
   // consumes from the upstream no faster than the downstream consumption rate or the production rate of the given source
   // consumes from the given source no faster than the downstream consumption rate or the upstream production rate
-  case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
+  final case class Zip[A, B, C](source: Source[C]) extends (A ==> (B, C))
 }

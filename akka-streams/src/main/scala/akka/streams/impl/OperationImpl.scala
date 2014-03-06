@@ -67,7 +67,7 @@ object OperationImpl {
           onNext = {
             (running, next) ⇒
               if (p(next)) Process.Emit(next, Process.Continue(false))
-              else Process.Emit(next, Process.Continue(false))
+              else Process.Stop
           },
           onComplete = _ ⇒ Nil)
       takeWhileAsProcess(p).asInstanceOf[Operation[I, O]]
