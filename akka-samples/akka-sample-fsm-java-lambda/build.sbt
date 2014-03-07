@@ -1,8 +1,8 @@
 name := "akka-docs-java-lambda"
 
-version := "1.0"
+version := "2.3-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 

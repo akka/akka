@@ -71,10 +71,9 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(failure fallbackTo timedOut, timeout.duration) should be("Timedout")
         Await.result(timedOut fallbackTo empty, timeout.duration) should be("Timedout")
         Await.result(failure fallbackTo failure fallbackTo timedOut, timeout.duration) should be("Timedout")
-        val expected = if (scala.util.Properties.versionNumberString.startsWith("2.10.")) "last" else "br0ken"
         intercept[RuntimeException] {
           Await.result(failure fallbackTo otherFailure, timeout.duration)
-        }.getMessage should be(expected)
+        }.getMessage should be("br0ken")
       }
     }
     "completed with a result" must {
