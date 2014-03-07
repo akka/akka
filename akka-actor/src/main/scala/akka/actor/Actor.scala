@@ -60,7 +60,7 @@ case object Kill extends Kill {
  * is returned in the `ActorIdentity` message as `correlationId`.
  */
 @SerialVersionUID(1L)
-case class Identify(messageId: Any) extends AutoReceivedMessage
+final case class Identify(messageId: Any) extends AutoReceivedMessage
 
 /**
  * Reply to [[akka.actor.Identify]]. Contains
@@ -70,7 +70,7 @@ case class Identify(messageId: Any) extends AutoReceivedMessage
  * the `Identify` message.
  */
 @SerialVersionUID(1L)
-case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
+final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
   /**
    * Java API: `ActorRef` of the actor replying to the request or
    * null if no actor matched the request.
@@ -93,7 +93,7 @@ case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
  *   that the remote node hosting the watched actor was detected as unreachable
  */
 @SerialVersionUID(1L)
-case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
+final case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
   @BeanProperty val existenceConfirmed: Boolean,
   @BeanProperty val addressTerminated: Boolean) extends AutoReceivedMessage with PossiblyHarmful
 
@@ -107,7 +107,7 @@ case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
-private[akka] case class AddressTerminated(address: Address) extends AutoReceivedMessage with PossiblyHarmful
+private[akka] final case class AddressTerminated(address: Address) extends AutoReceivedMessage with PossiblyHarmful
 
 abstract class ReceiveTimeout extends PossiblyHarmful
 
@@ -128,20 +128,20 @@ case object ReceiveTimeout extends ReceiveTimeout {
  * For instance, if you try to create an Actor that doesn't extend Actor.
  */
 @SerialVersionUID(1L)
-case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
+final case class IllegalActorStateException private[akka] (message: String) extends AkkaException(message)
 
 /**
  * ActorKilledException is thrown when an Actor receives the [[akka.actor.Kill]] message
  */
 @SerialVersionUID(1L)
-case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
+final case class ActorKilledException private[akka] (message: String) extends AkkaException(message) with NoStackTrace
 
 /**
  * An InvalidActorNameException is thrown when you try to convert something, usually a String, to an Actor name
  * which doesn't validate.
  */
 @SerialVersionUID(1L)
-case class InvalidActorNameException(message: String) extends AkkaException(message)
+final case class InvalidActorNameException(message: String) extends AkkaException(message)
 
 /**
  * An ActorInitializationException is thrown when the the initialization logic for an Actor fails.
@@ -178,7 +178,7 @@ object ActorInitializationException {
  * @param messageOption is the message which was optionally passed into preRestart()
  */
 @SerialVersionUID(1L)
-case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable, messageOption: Option[Any])
+final case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable, messageOption: Option[Any])
   extends ActorInitializationException(actor,
     "exception in preRestart(" +
       (if (originalCause == null) "null" else originalCause.getClass) + ", " +
@@ -194,7 +194,7 @@ case class PreRestartException private[akka] (actor: ActorRef, cause: Throwable,
  * @param originalCause is the exception which caused the restart in the first place
  */
 @SerialVersionUID(1L)
-case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
+final case class PostRestartException private[akka] (actor: ActorRef, cause: Throwable, originalCause: Throwable)
   extends ActorInitializationException(actor,
     "exception post restart (" + (if (originalCause == null) "null" else originalCause.getClass) + ")", cause)
 
@@ -220,14 +220,14 @@ object OriginalRestartException {
  * Currently only `null` is an invalid message.
  */
 @SerialVersionUID(1L)
-case class InvalidMessageException private[akka] (message: String) extends AkkaException(message)
+final case class InvalidMessageException private[akka] (message: String) extends AkkaException(message)
 
 /**
  * A DeathPactException is thrown by an Actor that receives a Terminated(someActor) message
  * that it doesn't handle itself, effectively crashing the Actor and escalating to the supervisor.
  */
 @SerialVersionUID(1L)
-case class DeathPactException private[akka] (dead: ActorRef)
+final case class DeathPactException private[akka] (dead: ActorRef)
   extends AkkaException("Monitored actor [" + dead + "] terminated")
   with NoStackTrace
 
@@ -242,7 +242,7 @@ class ActorInterruptedException private[akka] (cause: Throwable) extends AkkaExc
  * This message is published to the EventStream whenever an Actor receives a message it doesn't understand
  */
 @SerialVersionUID(1L)
-case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
+final case class UnhandledMessage(@BeanProperty message: Any, @BeanProperty sender: ActorRef, @BeanProperty recipient: ActorRef)
 
 /**
  * Classes for passing status back to the sender.
@@ -255,14 +255,14 @@ object Status {
    * This class/message type is preferably used to indicate success of some operation performed.
    */
   @SerialVersionUID(1L)
-  case class Success(status: Any) extends Status
+  final case class Success(status: Any) extends Status
 
   /**
    * This class/message type is preferably used to indicate failure of some operation performed.
    * As an example, it is used to signal failure with AskSupport is used (ask/?).
    */
   @SerialVersionUID(1L)
-  case class Failure(cause: Throwable) extends Status
+  final case class Failure(cause: Throwable) extends Status
 }
 
 /**

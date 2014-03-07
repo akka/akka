@@ -79,7 +79,7 @@ final case class RemotingErrorEvent(cause: Throwable) extends RemotingLifecycleE
 }
 
 @SerialVersionUID(1L)
-case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLifecycleEvent {
+final case class QuarantinedEvent(address: Address, uid: Int) extends RemotingLifecycleEvent {
   override def logLevel: Logging.LogLevel = Logging.WarningLevel
   override val toString: String =
     s"Association to [$address] having UID [$uid] is irrecoverably failed. UID is now quarantined and all " +

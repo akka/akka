@@ -81,7 +81,7 @@ object ClusterRouterSettings {
  */
 @SerialVersionUID(1L)
 @deprecated("Use ClusterRouterPoolSettings or ClusterRouterGroupSettings", "2.3")
-case class ClusterRouterSettings private[akka] (
+final case class ClusterRouterSettings private[akka] (
   totalInstances: Int,
   maxInstancesPerNode: Int,
   routeesPath: String,

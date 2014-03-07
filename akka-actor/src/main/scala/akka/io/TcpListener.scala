@@ -18,11 +18,11 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  */
 private[io] object TcpListener {
 
-  case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
+  final case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
     def failureMessage = FailedRegisterIncoming(channel)
   }
 
-  case class FailedRegisterIncoming(channel: SocketChannel) extends NoSerializationVerificationNeeded
+  final case class FailedRegisterIncoming(channel: SocketChannel) extends NoSerializationVerificationNeeded
 
 }
 

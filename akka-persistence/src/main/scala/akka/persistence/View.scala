@@ -23,7 +23,7 @@ import akka.persistence.JournalProtocol._
  *                  to `Long.MaxValue` (i.e. no limit).
  */
 @SerialVersionUID(1L)
-case class Update(await: Boolean = false, replayMax: Long = Long.MaxValue)
+final case class Update(await: Boolean = false, replayMax: Long = Long.MaxValue)
 
 case object Update {
   /**

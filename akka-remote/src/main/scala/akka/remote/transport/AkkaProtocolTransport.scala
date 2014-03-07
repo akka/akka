@@ -50,13 +50,13 @@ private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remo
   val AkkaOverhead: Int = 0 //Don't know yet
   val UniqueId = new java.util.concurrent.atomic.AtomicInteger(0)
 
-  case class AssociateUnderlyingRefuseUid(
+  final case class AssociateUnderlyingRefuseUid(
     remoteAddress: Address,
     statusPromise: Promise[AssociationHandle],
     refuseUid: Option[Int]) extends NoSerializationVerificationNeeded
 }
 
-case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String])
+final case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String])
 
 /**
  * Implementation of the Akka protocol as a Transport that wraps an underlying Transport instance.
@@ -213,31 +213,31 @@ private[transport] object ProtocolStateActor {
 
   case object HeartbeatTimer extends NoSerializationVerificationNeeded
 
-  case class Handle(handle: AssociationHandle) extends NoSerializationVerificationNeeded
+  final case class Handle(handle: AssociationHandle) extends NoSerializationVerificationNeeded
 
-  case class HandleListenerRegistered(listener: HandleEventListener) extends NoSerializationVerificationNeeded
+  final case class HandleListenerRegistered(listener: HandleEventListener) extends NoSerializationVerificationNeeded
 
   sealed trait ProtocolStateData
   trait InitialProtocolStateData extends ProtocolStateData
 
   // Neither the underlying, nor the provided transport is associated
-  case class OutboundUnassociated(remoteAddress: Address, statusPromise: Promise[AssociationHandle], transport: Transport)
+  final case class OutboundUnassociated(remoteAddress: Address, statusPromise: Promise[AssociationHandle], transport: Transport)
     extends InitialProtocolStateData
 
   // The underlying transport is associated, but the handshake of the akka protocol is not yet finished
-  case class OutboundUnderlyingAssociated(statusPromise: Promise[AssociationHandle], wrappedHandle: AssociationHandle)
+  final case class OutboundUnderlyingAssociated(statusPromise: Promise[AssociationHandle], wrappedHandle: AssociationHandle)
     extends ProtocolStateData
 
   // The underlying transport is associated, but the handshake of the akka protocol is not yet finished
-  case class InboundUnassociated(associationListener: AssociationEventListener, wrappedHandle: AssociationHandle)
+  final case class InboundUnassociated(associationListener: AssociationEventListener, wrappedHandle: AssociationHandle)
     extends InitialProtocolStateData
 
   // Both transports are associated, but the handler for the handle has not yet been provided
-  case class AssociatedWaitHandler(handleListener: Future[HandleEventListener], wrappedHandle: AssociationHandle,
-                                   queue: immutable.Queue[ByteString])
+  final case class AssociatedWaitHandler(handleListener: Future[HandleEventListener], wrappedHandle: AssociationHandle,
+                                         queue: immutable.Queue[ByteString])
     extends ProtocolStateData
 
-  case class ListenerReady(listener: HandleEventListener, wrappedHandle: AssociationHandle)
+  final case class ListenerReady(listener: HandleEventListener, wrappedHandle: AssociationHandle)
     extends ProtocolStateData
 
   case object TimeoutReason

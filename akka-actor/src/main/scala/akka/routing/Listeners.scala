@@ -8,9 +8,9 @@ import akka.actor.{ Actor, ActorRef }
 import java.util.{ Set, TreeSet }
 
 sealed trait ListenerMessage
-case class Listen(listener: ActorRef) extends ListenerMessage
-case class Deafen(listener: ActorRef) extends ListenerMessage
-case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
+final case class Listen(listener: ActorRef) extends ListenerMessage
+final case class Deafen(listener: ActorRef) extends ListenerMessage
+final case class WithListeners(f: (ActorRef) ⇒ Unit) extends ListenerMessage
 
 /**
  * Listeners is a generic trait to implement listening capability on an Actor.

@@ -31,13 +31,13 @@ private[akka] object Inbox {
     def withClient(c: ActorRef): Query
     def client: ActorRef
   }
-  private case class Get(deadline: Deadline, client: ActorRef = null) extends Query {
+  private final case class Get(deadline: Deadline, client: ActorRef = null) extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
-  private case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
+  private final case class Select(deadline: Deadline, predicate: PartialFunction[Any, Any], client: ActorRef = null) extends Query {
     def withClient(c: ActorRef) = copy(client = c)
   }
-  private case class StartWatch(target: ActorRef)
+  private final case class StartWatch(target: ActorRef)
   private case object Kick
 
 }

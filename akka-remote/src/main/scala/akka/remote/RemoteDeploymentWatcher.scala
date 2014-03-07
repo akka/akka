@@ -15,7 +15,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  * INTERNAL API
  */
 private[akka] object RemoteDeploymentWatcher {
-  case class WatchRemote(actor: ActorRef, supervisor: ActorRef)
+  final case class WatchRemote(actor: ActorRef, supervisor: ActorRef)
 }
 
 /**

@@ -329,7 +329,7 @@ object MixMetricsSelector extends MixMetricsSelectorBase(
  * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
  */
 @SerialVersionUID(1L)
-case class MixMetricsSelector(
+final case class MixMetricsSelector(
   selectors: immutable.IndexedSeq[CapacityMetricsSelector])
   extends MixMetricsSelectorBase(selectors)
 
@@ -548,7 +548,7 @@ private[akka] class AdaptiveLoadBalancingMetricsListener(routingLogic: AdaptiveL
  */
 @SerialVersionUID(1L)
 @deprecated("Use AdaptiveLoadBalancingPool or AdaptiveLoadBalancingGroup", "2.3")
-case class AdaptiveLoadBalancingRouter(
+final case class AdaptiveLoadBalancingRouter(
   metricsSelector: MetricsSelector = MixMetricsSelector,
   nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil,
   override val resizer: Option[Resizer] = None,

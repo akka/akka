@@ -33,9 +33,9 @@ object EventStreamSpec {
       }
       """)
 
-  case class M(i: Int)
+  final case class M(i: Int)
 
-  case class SetTarget(ref: ActorRef)
+  final case class SetTarget(ref: ActorRef)
 
   class MyLog extends Actor {
     var dst: ActorRef = context.system.deadLetters

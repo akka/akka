@@ -122,11 +122,11 @@ abstract class AbstractTransportAdapterHandle(val originalLocalAddress: Address,
 object ActorTransportAdapter {
   sealed trait TransportOperation extends NoSerializationVerificationNeeded
 
-  case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
-  case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
-  case class ListenUnderlying(listenAddress: Address,
-                              upstreamListener: Future[AssociationEventListener]) extends TransportOperation
-  case class DisassociateUnderlying(info: DisassociateInfo = AssociationHandle.Unknown) extends TransportOperation
+  final case class ListenerRegistered(listener: AssociationEventListener) extends TransportOperation
+  final case class AssociateUnderlying(remoteAddress: Address, statusPromise: Promise[AssociationHandle]) extends TransportOperation
+  final case class ListenUnderlying(listenAddress: Address,
+                                    upstreamListener: Future[AssociationEventListener]) extends TransportOperation
+  final case class DisassociateUnderlying(info: DisassociateInfo = AssociationHandle.Unknown) extends TransportOperation
 
   implicit val AskTimeout = Timeout(5.seconds)
 }

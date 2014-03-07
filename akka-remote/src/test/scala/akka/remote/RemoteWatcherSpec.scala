@@ -45,8 +45,8 @@ object RemoteWatcherSpec {
   }
 
   object TestRemoteWatcher {
-    case class AddressTerm(address: Address)
-    case class Quarantined(address: Address, uid: Option[Int])
+    final case class AddressTerm(address: Address)
+    final case class Quarantined(address: Address, uid: Option[Int])
   }
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration) extends RemoteWatcher(createFailureDetector,

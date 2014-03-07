@@ -12,7 +12,7 @@ import akka.testkit._
 import scala.concurrent.duration._
 import scala.collection.immutable
 
-case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class LeaderElectionMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val controller = role("controller")
   val first = role("first")
   val second = role("second")

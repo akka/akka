@@ -27,7 +27,7 @@ import java.util.Random
 object TcpConnectionSpec {
   case class Ack(i: Int) extends Event
   object Ack extends Ack(0)
-  case class Registration(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
+  final case class Registration(channel: SelectableChannel, initialOps: Int) extends NoSerializationVerificationNeeded
 }
 
 class TcpConnectionSpec extends AkkaSpec("""

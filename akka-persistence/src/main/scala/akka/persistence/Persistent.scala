@@ -106,7 +106,7 @@ object ConfirmablePersistent {
  * journal. The processor receives the written messages individually as [[Persistent]] messages.
  * During recovery, they are also replayed individually.
  */
-case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) extends Message {
+final case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) extends Message {
   /**
    * INTERNAL API.
    */
@@ -141,7 +141,7 @@ trait PersistentId {
 /**
  * INTERNAL API.
  */
-private[persistence] case class PersistentIdImpl(processorId: String, sequenceNr: Long) extends PersistentId
+private[persistence] final case class PersistentIdImpl(processorId: String, sequenceNr: Long) extends PersistentId
 
 /**
  * Plugin API: representation of a persistent message in the journal plugin API.
@@ -266,7 +266,7 @@ object PersistentBatch {
 /**
  * INTERNAL API.
  */
-private[persistence] case class PersistentImpl(
+private[persistence] final case class PersistentImpl(
   payload: Any,
   sequenceNr: Long,
   processorId: String,
@@ -300,7 +300,7 @@ private[persistence] case class PersistentImpl(
 /**
  * INTERNAL API.
  */
-private[persistence] case class ConfirmablePersistentImpl(
+private[persistence] final case class ConfirmablePersistentImpl(
   payload: Any,
   sequenceNr: Long,
   processorId: String,

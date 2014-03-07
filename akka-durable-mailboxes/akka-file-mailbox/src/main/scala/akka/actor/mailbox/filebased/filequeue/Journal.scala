@@ -27,12 +27,12 @@ import scala.util.control.NonFatal
 sealed trait JournalItem
 @deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
 object JournalItem {
-  case class Add(item: QItem) extends JournalItem
+  final case class Add(item: QItem) extends JournalItem
   case object Remove extends JournalItem
   case object RemoveTentative extends JournalItem
-  case class SavedXid(xid: Int) extends JournalItem
-  case class Unremove(xid: Int) extends JournalItem
-  case class ConfirmRemove(xid: Int) extends JournalItem
+  final case class SavedXid(xid: Int) extends JournalItem
+  final case class Unremove(xid: Int) extends JournalItem
+  final case class ConfirmRemove(xid: Int) extends JournalItem
   case object EndOfFile extends JournalItem
 }
 

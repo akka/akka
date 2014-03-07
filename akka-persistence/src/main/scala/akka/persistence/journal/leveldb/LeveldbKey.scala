@@ -10,7 +10,7 @@ import java.nio.ByteBuffer
 /**
  * LevelDB key.
  */
-private[leveldb] case class Key(
+private[leveldb] final case class Key(
   processorId: Int,
   sequenceNr: Long,
   channelId: Int)

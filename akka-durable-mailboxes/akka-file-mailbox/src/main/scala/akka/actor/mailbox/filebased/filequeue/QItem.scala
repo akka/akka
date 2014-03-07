@@ -20,7 +20,7 @@ package akka.actor.mailbox.filebased.filequeue
 import java.nio.{ ByteBuffer, ByteOrder }
 
 @deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
-case class QItem(addTime: Long, expiry: Long, data: Array[Byte], var xid: Int) {
+final case class QItem(addTime: Long, expiry: Long, data: Array[Byte], var xid: Int) {
   def pack(): Array[Byte] = {
     val bytes = new Array[Byte](data.length + 16)
     val buffer = ByteBuffer.wrap(bytes)

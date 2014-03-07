@@ -24,8 +24,8 @@ object ZeromqDocSpec {
   import java.lang.management.ManagementFactory
 
   case object Tick
-  case class Heap(timestamp: Long, used: Long, max: Long)
-  case class Load(timestamp: Long, loadAverage: Double)
+  final case class Heap(timestamp: Long, used: Long, max: Long)
+  final case class Load(timestamp: Long, loadAverage: Double)
 
   class HealthProbe extends Actor {
 

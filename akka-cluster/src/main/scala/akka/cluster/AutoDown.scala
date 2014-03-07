@@ -20,7 +20,7 @@ private[cluster] object AutoDown {
   def props(autoDownUnreachableAfter: FiniteDuration): Props =
     Props(classOf[AutoDown], autoDownUnreachableAfter)
 
-  case class UnreachableTimeout(node: UniqueAddress)
+  final case class UnreachableTimeout(node: UniqueAddress)
 }
 
 /**

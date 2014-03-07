@@ -124,8 +124,8 @@ object ProcessorSpec {
     override def receive = failOnReplayedA orElse super.receive
   }
 
-  case class Delete1(snr: Long)
-  case class DeleteN(toSnr: Long)
+  final case class Delete1(snr: Long)
+  final case class DeleteN(toSnr: Long)
 
   class DeleteMessageTestProcessor(name: String) extends RecoverTestProcessor(name) {
     override def receive = {

@@ -386,7 +386,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
 
   // now add deployments, if so desired
 
-  private case class Replacement(tag: String, role: RoleName) {
+  private final case class Replacement(tag: String, role: RoleName) {
     lazy val addr = node(role).address.toString
   }
   private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))

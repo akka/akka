@@ -49,27 +49,27 @@ private[camel] object CamelSupervisor {
    * INTERNAL API
    * Registers a consumer or a producer.
    */
-  case class Register(actorRef: ActorRef, endpointUri: String, config: Option[ConsumerConfig] = None) extends NoSerializationVerificationNeeded
+  final case class Register(actorRef: ActorRef, endpointUri: String, config: Option[ConsumerConfig] = None) extends NoSerializationVerificationNeeded
 
   /**
    * INTERNAL API
    * De-registers a producer or a consumer.
    */
   @SerialVersionUID(1L)
-  case class DeRegister(actorRef: ActorRef) extends CamelSupervisorMessage
+  final case class DeRegister(actorRef: ActorRef) extends CamelSupervisorMessage
 
   /**
    * INTERNAL API
    * Adds a watch for the actor
    */
   @SerialVersionUID(1L)
-  case class AddWatch(actorRef: ActorRef) extends CamelSupervisorMessage
+  final case class AddWatch(actorRef: ActorRef) extends CamelSupervisorMessage
 
   /**
    * INTERNAL API
    * Provides a Producer with the required camel objects to function.
    */
-  case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor) extends NoSerializationVerificationNeeded
+  final case class CamelProducerObjects(endpoint: Endpoint, processor: SendProcessor) extends NoSerializationVerificationNeeded
 }
 
 /**

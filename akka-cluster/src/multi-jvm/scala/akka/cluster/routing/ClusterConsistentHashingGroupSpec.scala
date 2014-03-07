@@ -23,7 +23,7 @@ import akka.testkit._
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 
   case object Get
-  case class Collected(messages: Set[Any])
+  final case class Collected(messages: Set[Any])
 
   class Destination extends Actor {
     var receivedMessages = Set.empty[Any]

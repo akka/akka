@@ -20,4 +20,4 @@ package akka.actor.mailbox.filebased.filequeue
 import java.io.IOException
 
 @deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
-case class BrokenItemException(lastValidPosition: Long, cause: Throwable) extends IOException(cause)
+final case class BrokenItemException(lastValidPosition: Long, cause: Throwable) extends IOException(cause)

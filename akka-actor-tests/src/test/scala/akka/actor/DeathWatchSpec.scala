@@ -27,13 +27,13 @@ object DeathWatchSpec {
    * Forwarding `Terminated` to non-watching testActor is not possible,
    * and therefore the `Terminated` message is wrapped.
    */
-  case class WrappedTerminated(t: Terminated)
+  final case class WrappedTerminated(t: Terminated)
 
-  case class W(ref: ActorRef)
-  case class U(ref: ActorRef)
-  case class FF(fail: Failed)
+  final case class W(ref: ActorRef)
+  final case class U(ref: ActorRef)
+  final case class FF(fail: Failed)
 
-  case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
+  final case class Latches(t1: TestLatch, t2: TestLatch) extends NoSerializationVerificationNeeded
 }
 
 trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout ⇒

@@ -39,13 +39,13 @@ object ConsistentHashingRouterSpec {
     }
   }
 
-  case class Msg(key: Any, data: String) extends ConsistentHashable {
+  final case class Msg(key: Any, data: String) extends ConsistentHashable {
     override def consistentHashKey = key
   }
 
-  case class MsgKey(name: String)
+  final case class MsgKey(name: String)
 
-  case class Msg2(key: Any, data: String)
+  final case class Msg2(key: Any, data: String)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

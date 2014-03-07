@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
-case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class SplitBrainMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")

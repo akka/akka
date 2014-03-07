@@ -340,7 +340,7 @@ trait ActorRefFactory {
 /**
  * Internal Akka use only, used in implementation of system.stop(child).
  */
-private[akka] case class StopChild(child: ActorRef)
+private[akka] final case class StopChild(child: ActorRef)
 
 /**
  * INTERNAL API

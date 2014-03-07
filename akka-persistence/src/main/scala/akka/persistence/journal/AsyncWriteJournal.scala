@@ -117,7 +117,7 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
  * INTERNAL API.
  */
 private[persistence] object AsyncWriteJournal {
-  case class Desequenced(msg: Any, snr: Long, target: ActorRef, sender: ActorRef)
+  final case class Desequenced(msg: Any, snr: Long, target: ActorRef, sender: ActorRef)
 
   class Resequencer extends Actor {
     import scala.collection.mutable.Map

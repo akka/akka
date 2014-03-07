@@ -13,7 +13,7 @@ import scala.concurrent.{ Future, Promise, Await }
 import scala.concurrent.duration._
 
 object PatternSpec {
-  case class Work(duration: Duration)
+  final case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
       case (testLatch: TestLatch, duration: FiniteDuration) ⇒

@@ -120,10 +120,10 @@ private[akka] object ClientFSM {
   case object Connected extends State
   case object Failed extends State
 
-  case class Data(channel: Option[Channel], runningOp: Option[(String, ActorRef)])
+  final case class Data(channel: Option[Channel], runningOp: Option[(String, ActorRef)])
 
-  case class Connected(channel: Channel) extends NoSerializationVerificationNeeded
-  case class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
+  final case class Connected(channel: Channel) extends NoSerializationVerificationNeeded
+  final case class ConnectionFailure(msg: String) extends RuntimeException(msg) with NoStackTrace
   case object Disconnected
 }
 

@@ -37,16 +37,16 @@ object TestActor {
     def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
-  case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
-  case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
-  case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
-  case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
+  final case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
+  final case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  final case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  final case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
 
   trait Message {
     def msg: AnyRef
     def sender: ActorRef
   }
-  case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
+  final case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
   case object NullMessage extends Message {
     override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
     override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")

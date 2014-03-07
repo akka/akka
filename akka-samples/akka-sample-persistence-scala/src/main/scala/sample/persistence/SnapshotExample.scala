@@ -4,7 +4,7 @@ import akka.actor._
 import akka.persistence._
 
 object SnapshotExample extends App {
-  case class ExampleState(received: List[String] = Nil) {
+  final case class ExampleState(received: List[String] = Nil) {
     def update(s: String) = copy(s :: received)
     override def toString = received.reverse.toString
   }

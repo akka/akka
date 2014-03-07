@@ -103,11 +103,11 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
   }
 }
 
-case class CreateRegistrars(number: Int)
-case class RegisterConsumersAndProducers(endpointUri: String)
-case class DeRegisterConsumersAndProducers()
-case class Activations()
-case class DeActivations()
+final case class CreateRegistrars(number: Int)
+final case class RegisterConsumersAndProducers(endpointUri: String)
+final case class DeRegisterConsumersAndProducers()
+final case class Activations()
+final case class DeActivations()
 
 class Registrar(val start: Int, val number: Int, activationsPromise: Promise[List[ActorRef]],
                 deActivationsPromise: Promise[List[ActorRef]]) extends Actor with ActorLogging {

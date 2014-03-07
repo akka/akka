@@ -14,7 +14,7 @@ import org.scalatest.BeforeAndAfterEach
 import java.net.{ InetSocketAddress, InetAddress }
 
 object BarrierSpec {
-  case class Failed(ref: ActorRef, thr: Throwable)
+  final case class Failed(ref: ActorRef, thr: Throwable)
   val config = """
     akka.testconductor.barrier-timeout = 5s
     akka.actor.provider = akka.remote.RemoteActorRefProvider

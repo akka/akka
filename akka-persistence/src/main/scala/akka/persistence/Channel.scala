@@ -27,7 +27,7 @@ import akka.persistence.JournalProtocol._
  *                                 Alternatively, it can also confirm these messages, preventing further redeliveries.
  */
 @SerialVersionUID(1L)
-case class ChannelSettings(
+final case class ChannelSettings(
   val redeliverMax: Int = 5,
   val redeliverInterval: FiniteDuration = 5.seconds,
   val redeliverFailureListener: Option[ActorRef] = None) {
@@ -187,7 +187,7 @@ object Channel {
  * @param destination persistent message destination.
  */
 @SerialVersionUID(1L)
-case class Deliver(persistent: Persistent, destination: ActorPath) extends Message
+final case class Deliver(persistent: Persistent, destination: ActorPath) extends Message
 
 object Deliver {
   /**
@@ -215,7 +215,7 @@ trait Delivered extends Message {
 /**
  * Plugin API.
  */
-case class DeliveredByChannel(
+final case class DeliveredByChannel(
   processorId: String,
   channelId: String,
   persistentSequenceNr: Long,
@@ -270,7 +270,7 @@ private[persistence] class DeliveredByChannelBatching(journal: ActorRef, setting
  * Notification message to inform channel listeners about messages that have reached the maximum
  * number of redeliveries.
  */
-case class RedeliverFailure(messages: immutable.Seq[ConfirmablePersistent]) {
+final case class RedeliverFailure(messages: immutable.Seq[ConfirmablePersistent]) {
   /**
    * Java API.
    */
@@ -317,12 +317,12 @@ private object ReliableDelivery {
   type DeliveryAttempts = immutable.SortedMap[Long, DeliveryAttempt]
   type FailedAttempts = Vector[ConfirmablePersistentImpl]
 
-  case class DeliveryAttempt(persistent: ConfirmablePersistentImpl, destination: ActorPath, sender: ActorRef, timestamp: Long = System.nanoTime) {
+  final case class DeliveryAttempt(persistent: ConfirmablePersistentImpl, destination: ActorPath, sender: ActorRef, timestamp: Long = System.nanoTime) {
     def incrementRedeliveryCount =
       copy(persistent.update(redeliveries = persistent.redeliveries + 1))
   }
 
-  case class Redeliver(attempts: DeliveryAttempts, redeliveryMax: Int)
+  final case class Redeliver(attempts: DeliveryAttempts, redeliveryMax: Int)
 }
 
 /**

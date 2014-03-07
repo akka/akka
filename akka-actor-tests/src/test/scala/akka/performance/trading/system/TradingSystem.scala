@@ -31,7 +31,7 @@ trait TradingSystem {
 
   def shutdown()
 
-  case class MatchingEngineInfo(primary: ME, standby: Option[ME], orderbooks: List[Orderbook])
+  final case class MatchingEngineInfo(primary: ME, standby: Option[ME], orderbooks: List[Orderbook])
 }
 
 class AkkaTradingSystem(val system: ActorSystem) extends TradingSystem {

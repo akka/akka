@@ -42,11 +42,11 @@ object SerializationTests {
   """
 
   @BeanInfo
-  case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
+  final case class Address(no: String, street: String, city: String, zip: String) { def this() = this("", "", "", "") }
   @BeanInfo
-  case class Person(name: String, age: Int, address: Address) { def this() = this("", 0, null) }
+  final case class Person(name: String, age: Int, address: Address) { def this() = this("", 0, null) }
 
-  case class Record(id: Int, person: Person)
+  final case class Record(id: Int, person: Person)
 
   class SimpleMessage(s: String) extends TestSerializable
 
@@ -424,6 +424,6 @@ protected[akka] class TestSerializer extends Serializer {
 }
 
 @SerialVersionUID(1)
-protected[akka] case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
+protected[akka] final case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
   override def fillInStackTrace = null
 }

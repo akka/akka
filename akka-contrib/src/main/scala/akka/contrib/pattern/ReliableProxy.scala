@@ -81,8 +81,8 @@ object ReliableProxy {
   def receiver(target: ActorRef, currentSerial: Int): Props = Props(classOf[Receiver], target, currentSerial)
 
   // Internal messages
-  case class Message(msg: Any, sender: ActorRef, serial: Int)
-  private case class Ack(serial: Int)
+  final case class Message(msg: Any, sender: ActorRef, serial: Int)
+  private final case class Ack(serial: Int)
   private case object Tick
   private case object ReconnectTick
 
@@ -91,14 +91,14 @@ object ReliableProxy {
    * the target and when the target `ActorRef` has changed (for example, the target system
    * crashed and has been restarted).
    */
-  case class TargetChanged(ref: ActorRef)
+  final case class TargetChanged(ref: ActorRef)
 
   /**
    * `ProxyTerminated` is sent to transition subscribers during `postStop`.  Any outstanding
    * unsent messages are contained the `Unsent` object.
    */
-  case class ProxyTerminated(actor: ActorRef, outstanding: Unsent)
-  case class Unsent(queue: Vector[Message])
+  final case class ProxyTerminated(actor: ActorRef, outstanding: Unsent)
+  final case class Unsent(queue: Vector[Message])
 
   sealed trait State
   case object Idle extends State

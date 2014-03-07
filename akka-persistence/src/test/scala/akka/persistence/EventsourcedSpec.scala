@@ -13,8 +13,8 @@ import akka.actor._
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 
 object EventsourcedSpec {
-  case class Cmd(data: Any)
-  case class Evt(data: Any)
+  final case class Cmd(data: Any)
+  final case class Evt(data: Any)
 
   abstract class ExampleProcessor(name: String) extends NamedProcessor(name) with EventsourcedProcessor {
     var events: List[Any] = Nil

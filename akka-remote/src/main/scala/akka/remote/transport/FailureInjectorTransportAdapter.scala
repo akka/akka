@@ -17,7 +17,7 @@ import scala.util.control.NoStackTrace
 import scala.util.Try
 
 @SerialVersionUID(1L)
-case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
+final case class FailureInjectorException(msg: String) extends AkkaException(msg) with NoStackTrace
 
 class FailureInjectorProvider extends TransportAdapterProvider {
 
@@ -34,9 +34,9 @@ private[remote] object FailureInjectorTransportAdapter {
 
   trait FailureInjectorCommand
   @SerialVersionUID(1L)
-  case class All(mode: GremlinMode)
+  final case class All(mode: GremlinMode)
   @SerialVersionUID(1L)
-  case class One(remoteAddress: Address, mode: GremlinMode)
+  final case class One(remoteAddress: Address, mode: GremlinMode)
 
   sealed trait GremlinMode
   @SerialVersionUID(1L)
@@ -47,7 +47,7 @@ private[remote] object FailureInjectorTransportAdapter {
     def getInstance = this
   }
   @SerialVersionUID(1L)
-  case class Drop(outboundDropP: Double, inboundDropP: Double) extends GremlinMode
+  final case class Drop(outboundDropP: Double, inboundDropP: Double) extends GremlinMode
 }
 
 /**
@@ -141,8 +141,8 @@ private[remote] class FailureInjectorTransportAdapter(wrappedTransport: Transpor
 /**
  * INTERNAL API
  */
-private[remote] case class FailureInjectorHandle(_wrappedHandle: AssociationHandle,
-                                                 private val gremlinAdapter: FailureInjectorTransportAdapter)
+private[remote] final case class FailureInjectorHandle(_wrappedHandle: AssociationHandle,
+                                                       private val gremlinAdapter: FailureInjectorTransportAdapter)
   extends AbstractTransportAdapterHandle(_wrappedHandle, FailureInjectorSchemeIdentifier)
   with HandleEventListener {
   import gremlinAdapter.extendedSystem.dispatcher

@@ -219,7 +219,7 @@ object MemberStatus {
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[cluster] case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
+private[cluster] final case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
   override def hashCode = uid
 
   def compare(that: UniqueAddress): Int = {

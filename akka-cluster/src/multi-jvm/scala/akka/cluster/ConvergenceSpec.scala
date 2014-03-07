@@ -12,7 +12,7 @@ import akka.testkit._
 import scala.concurrent.duration._
 import akka.actor.Address
 
-case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class ConvergenceMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")

@@ -34,16 +34,16 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  case class Heartbeat(from: Address) extends ClusterMessage
+  final case class Heartbeat(from: Address) extends ClusterMessage
 
   /**
    * Sent as reply to [[Heartbeat]] messages.
    */
-  case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage
+  final case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage
 
   // sent to self only
   case object HeartbeatTick
-  case class ExpectedFirstHeartbeat(from: UniqueAddress)
+  final case class ExpectedFirstHeartbeat(from: UniqueAddress)
 
 }
 
@@ -164,7 +164,7 @@ private[cluster] final class ClusterHeartbeatSender extends Actor with ActorLogg
  * State of [[ClusterHeartbeatSender]]. Encapsulated to facilitate unit testing.
  * It is immutable, but it updates the failureDetector.
  */
-private[cluster] case class ClusterHeartbeatSenderState(
+private[cluster] final case class ClusterHeartbeatSenderState(
   ring: HeartbeatNodeRing,
   unreachable: Set[UniqueAddress],
   failureDetector: FailureDetectorRegistry[Address]) {
@@ -224,7 +224,7 @@ private[cluster] case class ClusterHeartbeatSenderState(
  *
  * It is immutable, i.e. the methods return new instances.
  */
-private[cluster] case class HeartbeatNodeRing(selfAddress: UniqueAddress, nodes: Set[UniqueAddress], monitoredByNrOfMembers: Int) {
+private[cluster] final case class HeartbeatNodeRing(selfAddress: UniqueAddress, nodes: Set[UniqueAddress], monitoredByNrOfMembers: Int) {
 
   require(nodes contains selfAddress, s"nodes [${nodes.mkString(", ")}] must contain selfAddress [${selfAddress}]")
 

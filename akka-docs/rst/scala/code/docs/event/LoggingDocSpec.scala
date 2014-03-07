@@ -51,7 +51,7 @@ object LoggingDocSpec {
   //#mdc-actor
   import Logging.MDC
 
-  case class Req(work: String, visitorId: Int)
+  final case class Req(work: String, visitorId: Int)
 
   class MdcActorMixin extends Actor with akka.actor.DiagnosticActorLogging {
     var reqId = 0

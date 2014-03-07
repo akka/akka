@@ -22,7 +22,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
  * @param minor
  * @param patch
  */
-case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
+final case class ZeroMQVersion(major: Int, minor: Int, patch: Int) {
   override def toString: String = "%d.%d.%d".format(major, minor, patch)
 }
 

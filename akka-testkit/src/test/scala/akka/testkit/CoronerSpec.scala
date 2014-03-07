@@ -63,7 +63,7 @@ class CoronerSpec extends WordSpec with Matchers {
       // that the other wants to synchronize on. BOOM! Deadlock. Generate a
       // report, then clean up and check the report contents.
 
-      case class LockingThread(name: String, thread: Thread, ready: Semaphore, proceed: Semaphore)
+      final case class LockingThread(name: String, thread: Thread, ready: Semaphore, proceed: Semaphore)
 
       def lockingThread(name: String, initialLocks: List[ReentrantLock]): LockingThread = {
         val ready = new Semaphore(0)

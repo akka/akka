@@ -30,7 +30,7 @@ private[akka] sealed trait DaemonMsg
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
+private[akka] final case class DaemonMsgCreate(props: Props, deploy: Deploy, path: String, supervisor: ActorRef) extends DaemonMsg
 
 /**
  * INTERNAL API

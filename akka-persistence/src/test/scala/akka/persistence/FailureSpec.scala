@@ -32,10 +32,10 @@ object FailureSpec {
   val numMessages = 10
 
   case object Start
-  case class Done(ints: Vector[Int])
+  final case class Done(ints: Vector[Int])
 
-  case class ProcessingFailure(i: Int)
-  case class JournalingFailure(i: Int)
+  final case class ProcessingFailure(i: Int)
+  final case class JournalingFailure(i: Int)
 
   trait ChaosSupport { this: Actor ⇒
     def random = ThreadLocalRandom.current

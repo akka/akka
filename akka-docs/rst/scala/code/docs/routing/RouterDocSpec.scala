@@ -200,7 +200,7 @@ akka.actor.deployment {
 router-dispatcher {}
 """
 
-  case class Work(payload: String)
+  final case class Work(payload: String)
 
   //#router-in-actor
   import akka.routing.ActorRefRoutee

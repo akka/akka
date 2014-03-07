@@ -65,10 +65,10 @@ private[io] object SelectionHandler {
     def failureMessage: Any
   }
 
-  case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry ⇒ Props)
+  final case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry ⇒ Props)
     extends NoSerializationVerificationNeeded
 
-  case class Retry(command: WorkerForCommand, retriesLeft: Int) extends NoSerializationVerificationNeeded { require(retriesLeft >= 0) }
+  final case class Retry(command: WorkerForCommand, retriesLeft: Int) extends NoSerializationVerificationNeeded { require(retriesLeft >= 0) }
 
   case object ChannelConnectable
   case object ChannelAcceptable

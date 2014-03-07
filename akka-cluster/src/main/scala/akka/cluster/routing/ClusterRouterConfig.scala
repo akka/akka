@@ -55,7 +55,7 @@ object ClusterRouterGroupSettings {
  * `totalInstances` of cluster router must be > 0
  */
 @SerialVersionUID(1L)
-case class ClusterRouterGroupSettings(
+final case class ClusterRouterGroupSettings(
   totalInstances: Int,
   routeesPaths: immutable.Seq[String],
   allowLocalRoutees: Boolean,
@@ -109,7 +109,7 @@ object ClusterRouterPoolSettings {
  * `maxInstancesPerNode` of cluster router must be 1 when routeesPath is defined
  */
 @SerialVersionUID(1L)
-case class ClusterRouterPoolSettings(
+final case class ClusterRouterPoolSettings(
   totalInstances: Int,
   maxInstancesPerNode: Int,
   allowLocalRoutees: Boolean,

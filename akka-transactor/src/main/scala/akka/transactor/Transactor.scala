@@ -13,7 +13,7 @@ import scala.concurrent.stm.InTxn
  * Used for specifying actor refs and messages to send to during coordination.
  */
 @deprecated("akka.transactor will be removed", "2.3")
-case class SendTo(actor: ActorRef, message: Option[Any] = None)
+final case class SendTo(actor: ActorRef, message: Option[Any] = None)
 
 /**
  * An actor with built-in support for coordinated transactions.

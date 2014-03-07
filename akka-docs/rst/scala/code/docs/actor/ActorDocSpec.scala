@@ -31,8 +31,8 @@ class MyActor extends Actor {
 }
 //#my-actor
 
-case class DoIt(msg: ImmutableMessage)
-case class Message(s: String)
+final case class DoIt(msg: ImmutableMessage)
+final case class Message(s: String)
 
 //#context-actorOf
 class FirstActor extends Actor {
@@ -216,7 +216,7 @@ class ProducerConsumer extends Actor with ActorLogging
 
 // protocol
 case object GiveMeThings
-case class Give(thing: Any)
+final case class Give(thing: Any)
 
 //#receive-orElse
 
@@ -524,7 +524,7 @@ class ActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#ask-pipeTo
     import akka.pattern.{ ask, pipe }
     import system.dispatcher // The ExecutionContext that will be used
-    case class Result(x: Int, s: String, d: Double)
+    final case class Result(x: Int, s: String, d: Double)
     case object Request
 
     implicit val timeout = Timeout(5 seconds) // needed for `?` below

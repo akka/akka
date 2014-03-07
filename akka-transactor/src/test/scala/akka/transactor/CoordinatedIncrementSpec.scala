@@ -31,7 +31,7 @@ object CoordinatedIncrement {
     }
   """
 
-  case class Increment(friends: immutable.Seq[ActorRef])
+  final case class Increment(friends: immutable.Seq[ActorRef])
   case object GetCount
 
   class Counter(name: String) extends Actor {

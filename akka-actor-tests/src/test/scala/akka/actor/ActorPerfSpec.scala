@@ -13,11 +13,11 @@ import scala.util.Try
 
 object ActorPerfSpec {
 
-  case class Create(number: Int, props: () ⇒ Props)
+  final case class Create(number: Int, props: () ⇒ Props)
   case object Created
   case object IsAlive
   case object Alive
-  case class WaitForChildren(number: Int)
+  final case class WaitForChildren(number: Int)
   case object Waited
 
   class EmptyActor extends Actor {

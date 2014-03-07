@@ -9,7 +9,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 
 object AckedDeliverySpec {
 
-  case class Sequenced(seq: SeqNo, body: String) extends HasSequenceNumber {
+  final case class Sequenced(seq: SeqNo, body: String) extends HasSequenceNumber {
     override def toString = s"MSG[${seq.rawValue}]"
   }
 

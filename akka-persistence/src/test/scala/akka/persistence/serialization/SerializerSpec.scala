@@ -204,8 +204,8 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
   }
 }
 
-case class MyPayload(data: String)
-case class MySnapshot(data: String)
+final case class MyPayload(data: String)
+final case class MySnapshot(data: String)
 
 class MyPayloadSerializer extends Serializer {
   val MyPayloadClass = classOf[MyPayload]

@@ -54,7 +54,7 @@ object Configuration {
     }
                      """
 
-  case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int)
+  final case class CipherConfig(runTest: Boolean, config: Config, cipher: String, localPort: Int, remotePort: Int)
 
   def getCipherConfig(cipher: String, enabled: String*): CipherConfig = {
     val localPort, remotePort = { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }

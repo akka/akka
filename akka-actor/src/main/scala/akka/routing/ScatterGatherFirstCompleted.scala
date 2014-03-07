@@ -39,7 +39,7 @@ final case class ScatterGatherFirstCompletedRoutingLogic(within: FiniteDuration)
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class ScatterGatherFirstCompletedRoutees(
+private[akka] final case class ScatterGatherFirstCompletedRoutees(
   routees: immutable.IndexedSeq[Routee], within: FiniteDuration) extends Routee {
 
   override def send(message: Any, sender: ActorRef): Unit = {

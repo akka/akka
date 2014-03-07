@@ -68,7 +68,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * the connection actor will reply with the given object as soon as the datagram
    * has been successfully enqueued to the O/S kernel.
    */
-  case class Send(payload: ByteString, ack: Any) extends Command {
+  final case class Send(payload: ByteString, ack: Any) extends Command {
     require(ack
       != null, "ack must be non-null. Use NoAck if you don't want acks.")
 
@@ -84,10 +84,10 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * which is restricted to sending to and receiving from the given `remoteAddress`.
    * All received datagrams will be sent to the designated `handler` actor.
    */
-  case class Connect(handler: ActorRef,
-                     remoteAddress: InetSocketAddress,
-                     localAddress: Option[InetSocketAddress] = None,
-                     options: immutable.Traversable[SocketOption] = Nil) extends Command
+  final case class Connect(handler: ActorRef,
+                           remoteAddress: InetSocketAddress,
+                           localAddress: Option[InetSocketAddress] = None,
+                           options: immutable.Traversable[SocketOption] = Nil) extends Command
 
   /**
    * Send this message to a connection actor (which had previously sent the
@@ -119,13 +119,13 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * When a connection actor receives a datagram from its socket it will send
    * it to the handler designated in the [[Udp.Bind]] message using this message type.
    */
-  case class Received(data: ByteString) extends Event
+  final case class Received(data: ByteString) extends Event
 
   /**
    * When a command fails it will be replied to with this message type,
    * wrapping the failing command object.
    */
-  case class CommandFailed(cmd: Command) extends Event
+  final case class CommandFailed(cmd: Command) extends Event
 
   /**
    * This message is sent by the connection actor to the actor which sent the
