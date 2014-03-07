@@ -5,6 +5,8 @@ import scala.language.implicitConversions
 import asyncrx.api
 import api.Consumer
 import scala.concurrent.Future
+import akka.util.Collections.EmptyImmutableSeq
+import scala.collection.immutable
 
 sealed abstract class Operation[-I, +O]
 
@@ -15,7 +17,6 @@ object Operation {
 
   sealed trait Source[+O] {
     def andThen[O2](op: O ==> O2): Source[O2] = MappedSource(this, op)
-    // TODO: find a better name
     def connectTo(sink: Sink[O]): Pipeline[_] =
       sink match {
         // convert MappedSink into MappedSource
@@ -23,6 +24,15 @@ object Operation {
         case s                    ⇒ Pipeline(this, s)
       }
   }
+
+  final object Constants {
+    val SomeTrue = Some(true)
+    val SomeFalse = Some(false)
+
+    private[this] final val _unit = Process.Continue[Nothing, Unit](())
+    def ContinueUnit[T]: Process.Continue[T, Unit] = _unit.asInstanceOf[Process.Continue[T, Unit]]
+  }
+
   object Source {
     def empty[T]: Source[T] = EmptySource
     def apply[T](t: T): Source[T] = SingletonSource(t)
@@ -84,10 +94,13 @@ object Operation {
   def Compress[A, B](seed: B, f: (B, A) ⇒ B): A ==> B =
     Buffer[A, B, Either[B, B]]( // Left(b) = we need to request from upstream first, Right(b) = we can dispatch to downstream
       seed = Left(seed),
-      compress = (either, a) ⇒ Right(f(either.fold(identity, identity), a)),
+      compress = (either, a) ⇒ Right(f(either match {
+        case Left(x)  ⇒ x
+        case Right(x) ⇒ x
+      }, a)),
       expand = {
-        case x @ Left(_) ⇒ x -> None
-        case Right(b)    ⇒ Left(b) -> Some(b)
+        case x @ Left(_) ⇒ (x, None)
+        case Right(b)    ⇒ (Left(b), Some(b))
       },
       canConsume = _ ⇒ true)
 
@@ -97,12 +110,12 @@ object Operation {
     Process[T, T, Int](
       seed = n,
       onNext = (n, x) ⇒ if (n <= 0) Process.Emit(x, Process.Continue(0)) else Process.Continue(n - 1),
-      onComplete = _ ⇒ Nil)
+      onComplete = _ ⇒ EmptyImmutableSeq)
 
   // produces one boolean for the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
   def Exists[T](p: T ⇒ Boolean): T ==> Boolean =
-    MapFind[T, Boolean](x ⇒ if (p(x)) Some(true) else None, Some(false))
+    MapFind[T, Boolean](x ⇒ if (p(x)) Constants.SomeTrue else None, Constants.SomeFalse)
 
   // "expands" a slow upstream by buffering the last upstream element and producing it whenever requested
   // consumes at max rate, produces at max rate once the first upstream value has been buffered
@@ -110,7 +123,7 @@ object Operation {
     Buffer[T, T, Option[T]](
       seed = None,
       compress = (_, x) ⇒ Some(x),
-      expand = s ⇒ s -> s,
+      expand = s ⇒ (s, s),
       canConsume = _ ⇒ true)
 
   // filters a streams according to the given predicate
@@ -118,8 +131,8 @@ object Operation {
   def Filter[T](p: T ⇒ Boolean): T ==> T =
     Process[T, T, Unit](
       seed = (),
-      onNext = (_, x) ⇒ if (p(x)) Process.Emit(x, Process.Continue(())) else Process.Continue(()),
-      onComplete = _ ⇒ Nil)
+      onNext = (_, x) ⇒ if (p(x)) Process.Emit(x, Constants.ContinueUnit) else Constants.ContinueUnit,
+      onComplete = _ ⇒ EmptyImmutableSeq)
 
   // produces the first T that satisfies p
   // consumes at max rate until p(t) becomes true, unsubscribes afterwards
@@ -141,20 +154,21 @@ object Operation {
   // generalized process potentially producing several output values
   // consumes at max rate as long as `onNext` returns `Continue`
   // produces no faster than the upstream
+  //FIXME add a "name" String and fix toString so it is easy to delegate to Process and still retain proper toStrings
   final case class Process[A, B, S](seed: S,
                                     onNext: (S, A) ⇒ Process.Command[B, S],
-                                    onComplete: S ⇒ Seq[B]) extends (A ==> B)
-  object Process {
+                                    onComplete: S ⇒ immutable.Seq[B]) extends (A ==> B)
+  final object Process {
     sealed trait Command[+T, +S]
     final case class Emit[T, S](value: T, andThen: Command[T, S]) extends Command[T, S]
     final case class Continue[T, S](nextState: S) extends Command[T, S]
-    case object Stop extends Command[Nothing, Nothing]
+    final case object Stop extends Command[Nothing, Nothing]
   }
 
   // produces one boolean (if all upstream values satisfy p emits true otherwise false)
   // consumes at max rate until p(t) becomes false, unsubscribes afterwards
   def ForAll[T](p: T ⇒ Boolean): T ==> Boolean =
-    MapFind[T, Boolean](x ⇒ if (!p(x)) Some(false) else None, Some(true))
+    MapFind[T, Boolean](x ⇒ if (!p(x)) Constants.SomeFalse else None, Constants.SomeTrue)
 
   // sinks all upstream value into the given function
   // consumes at max rate
@@ -165,9 +179,14 @@ object Operation {
 
   final case class SourceHeadTail[A]() extends (Source[A] ==> (A, Source[A]))
 
-  //TODO: Have a single instance and return the same instance for all calls
   // maps the upstream onto itself
-  final case class Identity[A]() extends (A ==> A)
+  sealed trait Identity[A] extends (A ==> A)
+  final object Identity extends Identity[Nothing] {
+    private[this] final val unapplied = Some(this)
+    def apply[T](): Identity[T] = this.asInstanceOf[Identity[T]]
+    def unapply[I, O](operation: I ==> O): Option[Identity[I]] =
+      if (operation eq this) unapplied.asInstanceOf[Option[Identity[I]]] else None
+  }
 
   // maps the given function over the upstream
   // does not affect consumption or production rates
@@ -178,8 +197,14 @@ object Operation {
   def MapFind[A, B](f: A ⇒ Option[B], default: ⇒ Option[B]): A ==> B =
     Process[A, B, Unit](
       seed = (),
-      onNext = (_, x) ⇒ f(x).fold[Process.Command[B, Unit]](Process.Continue(()))(Process.Emit(_, Process.Stop)),
-      onComplete = _ ⇒ default.toSeq)
+      onNext = (_, x) ⇒ f(x) match {
+        case Some(value) ⇒ Process.Emit(value, Process.Stop)
+        case None        ⇒ Constants.ContinueUnit
+      },
+      onComplete = _ ⇒ default match {
+        case Some(value) ⇒ value :: Nil
+        case None        ⇒ EmptyImmutableSeq
+      })
 
   // merges the values produced by the given source into the consumed stream
   // consumes from the upstream and the given source no faster than the downstream
@@ -210,9 +235,15 @@ object Operation {
         case 1           ⇒ Process.Emit(x, Process.Stop)
         case _           ⇒ Process.Emit(x, Process.Continue(n - 1))
       },
-      onComplete = _ ⇒ Nil)
+      onComplete = _ ⇒ EmptyImmutableSeq)
 
-  final case class TakeWhile[T](p: T ⇒ Boolean) extends (T ==> T)
+  //final case class TakeWhile[T](p: T ⇒ Boolean) extends (T ==> T)
+
+  def TakeWhile[T](p: T ⇒ Boolean): T ==> T =
+    Process[T, T, Boolean](
+      seed = true,
+      onNext = (running, next) ⇒ if (running && p(next)) Process.Emit(next, Process.Continue(false)) else Process.Stop,
+      onComplete = _ ⇒ EmptyImmutableSeq)
 
   // combines the upstream and the given source into tuples
   // produces at the rate of the slower upstream (i.e. no values are dropped)

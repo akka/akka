@@ -11,7 +11,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
   def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     val settings = ActorBasedStreamGeneratorSettings(system, maxFanOutBufferSize = maxBufferSize)
     implicit val abif = new ActorBasedStreamGenerator(settings)
-    abif.toProcessor(Identity[Int]())
+    abif.createProcessor(Identity[Int]())
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {

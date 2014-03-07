@@ -30,7 +30,7 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedStrea
 
   class SourceProducerActor(promise: Promise[Publisher[O]]) extends ProcessorActor {
     protected def settings: ActorBasedStreamGeneratorSettings = outer.settings
-    promise.complete(Try {
+    promise.complete(Try { //FIXME This design choice means that if the SourceProducerActor is restarted, this complete will fail—sounds bad.
       ActorContextEffects.internalProducer(OperationImpl(_: Downstream[O], ActorContextEffects, source), ShutdownActor).getPublisher
     })
 
@@ -40,9 +40,8 @@ private class SourceProducer[O](source: Source[O], val settings: ActorBasedStrea
   }
 }
 
-private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedStreamGeneratorSettings)
-  extends Processor[I, O]
-  with ProducerImplementationBits[O] { outer ⇒
+private class OperationProcessor[I, O](val operation: Operation[I, O],
+                                       val settings: ActorBasedStreamGeneratorSettings) extends Processor[I, O] with ProducerImplementationBits[O] { outer ⇒
   @volatile var finished = false
 
   // TODO: refactor into ConsumerImplementationBits to implement SinkConsumer
@@ -158,7 +157,7 @@ trait ProducerImplementationBits[O] extends Producer[O] {
     val publisherPromise = Promise[Publisher[O]]()
     val res = createActor(publisherPromise)
 
-    getPublisher = Await.result(publisherPromise.future, 1.seconds)
+    getPublisher = Await.result(publisherPromise.future, 1.seconds) //FIXME We shouldn't have to pull the Publisher out like this
     res
   }
 }

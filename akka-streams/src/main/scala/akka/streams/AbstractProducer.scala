@@ -1,9 +1,8 @@
 package akka.streams
 
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 import asyncrx.api
-import asyncrx.spi.{ Subscriber, Publisher }
+import asyncrx.spi
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
 /**
@@ -11,7 +10,7 @@ import ResizableMultiReaderRingBuffer.NothingToReadException
  * with configurable and adaptive output buffer size.
  */
 abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
-  extends api.Producer[T] with Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
+  extends api.Producer[T] with spi.Publisher[T] with ResizableMultiReaderRingBuffer.Cursors {
   import AbstractProducer._
 
   // we keep an element (ring) buffer which serves two purposes:
@@ -33,7 +32,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   private[this] var pendingFromUpstream: Long = 0
 
   // if non-null, holds the end-of-stream state
-  private[this] var endOfStream: EndOfStream = _
+  private[this] var endOfStream: EndOfStream = NotReached
 
   // called when we are ready to consume more elements from our upstream
   // the implementation of this method is allowed to synchronously call `pushToDownstream`
@@ -44,60 +43,52 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
   // but shut-down due to the last subscriber having cancelled its subscription
   protected def cancelUpstream(): Unit
 
-  // called when the Publisher/Processor is ready to be shut down.
+  // called when the spi.Publisher/Processor is ready to be shut down.
   protected def shutdown(): Unit
 
-  def getPublisher: Publisher[T] = this
+  def getPublisher: spi.Publisher[T] = this
   def cursors = subscriptions
 
   // called from anywhere, i.e. potentially from another thread,
   // override to add synchronization with itself, `moreRequested` and `unregisterSubscription`
-  def subscribe(subscriber: Subscriber[T]): Unit = {
-    def doSubscribe(): Unit = {
-      @tailrec def allDifferentFromNewSubscriber(remaining: List[Subscription]): Boolean =
-        remaining match {
-          case head :: tail ⇒ if (head.subscriber ne subscriber) allDifferentFromNewSubscriber(tail) else false
-          case _            ⇒ true
-        }
-      val subs = subscriptions
-      if (allDifferentFromNewSubscriber(subs)) {
-        val newSubscription = new Subscription(subscriber)
-        subscriptions = newSubscription :: subs
-        buffer.initCursor(newSubscription)
-        subscriber.onSubscribe(newSubscription)
-      } else subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
-    }
-
-    if (endOfStream eq null) doSubscribe()
-    else endOfStream(subscriber)
+  def subscribe(subscriber: spi.Subscriber[T]): Unit = endOfStream match {
+    case NotReached if subscriptions.exists(_.subscriber == subscriber) ⇒
+      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+    case NotReached ⇒
+      val newSubscription = new Subscription(subscriber)
+      subscriptions ::= newSubscription
+      buffer.initCursor(newSubscription)
+      subscriber.onSubscribe(newSubscription)
+    case eos ⇒
+      eos(subscriber)
   }
 
   // called from `Subscription::requestMore`, i.e. from another thread,
   // override to add synchronization with itself, `subscribe` and `unregisterSubscription`
   protected def moreRequested(subscription: Subscription, elements: Int): Unit =
     if (subscription.isActive) {
-      val eos = endOfStream
 
-      // returns Int.MinValue if the subscription is to be terminated
-      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long): Long =
+      // returns Long.MinValue if the subscription is to be terminated
+      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long, eos: EndOfStream): Long =
         if (requested == 0) {
           // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
-          if ((eos ne null) && buffer.count(subscription) == 0) Long.MinValue else 0
+          if ((eos ne NotReached) && buffer.count(subscription) == 0) Long.MinValue else 0
         } else {
           val x =
             try {
-              val element = buffer.read(subscription)
-              subscription.dispatch(element) // as long as we can produce elements from our buffer we do so synchronously
+              subscription.dispatch(buffer.read(subscription)) // as long as we can produce elements from our buffer we do so synchronously
               -1 // we can't directly tailrec from here since we are in a try/catch, so signal with special value
             } catch {
-              case NothingToReadException ⇒ if (eos ne null) Long.MinValue else requested // terminate or request from upstream
+              case NothingToReadException ⇒ if (eos ne NotReached) Long.MinValue else requested // terminate or request from upstream
             }
-          if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1) else x
+          if (x == -1) dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos) else x
         }
 
-      eos match {
-        case null | Completed ⇒
-          dispatchFromBufferAndReturnRemainingRequested(subscription.requested + elements) match {
+      endOfStream match {
+        case eos @ (NotReached | Completed) ⇒
+          val demand = subscription.requested + elements
+          assert(demand >= 0)
+          dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
             case Long.MinValue ⇒
               eos(subscription.subscriber)
               unregisterSubscriptionInternal(subscription)
@@ -106,31 +97,29 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
               requestFromUpstreamIfRequired()
             case requested ⇒
               subscription.requested = requested
-              requestFromUpstreamIfPossible(capAtIntMaxValue(requested))
+              requestFromUpstreamIfPossible(requested)
           }
-        case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+        case ErrorCompleted(_) ⇒ // ignore, the spi.Subscriber might not have seen our error event yet
       }
     }
 
-  private def requestFromUpstreamIfRequired(): Unit = {
+  private[this] final def requestFromUpstreamIfRequired(): Unit = {
     @tailrec def maxRequested(remaining: List[Subscription], result: Long = 0): Long =
       remaining match {
         case head :: tail ⇒ maxRequested(tail, math.max(head.requested, result))
         case _            ⇒ result
       }
     if (pendingFromUpstream == 0)
-      requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested(subscriptions)))
+      requestFromUpstreamIfPossible(maxRequested(subscriptions))
   }
 
-  private def requestFromUpstreamIfPossible(elements: Int): Unit = {
-    val toBeRequested = buffer.potentiallyAvailable(elements)
+  private[this] final def requestFromUpstreamIfPossible(elements: Long): Unit = {
+    val toBeRequested = buffer.potentiallyAvailable(math.min(elements, Int.MaxValue).toInt) // Cap at Int.MaxValue
     if (toBeRequested > 0) {
       pendingFromUpstream += toBeRequested
       requestFromUpstream(toBeRequested)
     }
   }
-
-  private def capAtIntMaxValue(long: Long): Int = math.min(long, Int.MaxValue).toInt
 
   // this method must be called by the implementing class whenever a new value is available to be pushed downstream
   protected def pushToDownstream(value: T): Unit = {
@@ -151,22 +140,22 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
         case _ ⇒ result
       }
 
-    if (endOfStream eq null) {
-      pendingFromUpstream -= 1
-      val writtenOk = buffer.write(value)
-      if (!writtenOk) throw new IllegalStateException("Output buffer overflow")
-      val maxRequested = dispatchAndReturnMaxRequested(subscriptions)
-      if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(capAtIntMaxValue(maxRequested))
-    } else // don't throw if we have transitioned into shutdown in the mean-time, since there is an expected
-    if (endOfStream ne ShutDown) // race condition between `cancelUpstream` and `pushToDownstream`
-      throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
+    endOfStream match {
+      case NotReached ⇒
+        pendingFromUpstream -= 1
+        if (buffer.write(value) == false) throw new IllegalStateException("Output buffer overflow")
+        val maxRequested = dispatchAndReturnMaxRequested(subscriptions)
+        if (pendingFromUpstream == 0) requestFromUpstreamIfPossible(maxRequested)
+      case ShutDown ⇒ // don't throw if we have transitioned into shutdown in the mean-time, since there is an expected
+      case _ ⇒ // race condition between `cancelUpstream` and `pushToDownstream`
+        throw new IllegalStateException("pushToDownStream(...) after completeDownstream() or abortDownstream(...)")
+    }
   }
 
   // this method must be called by the implementing class whenever
   // it has been determined that no more elements will be produced
   protected def completeDownstream(): Unit = {
-    if (endOfStream eq null) {
-      endOfStream = Completed
+    if (endOfStream eq NotReached) {
       // we complete all subscriptions that have no more buffered elements
       // is non-tail recursion acceptable here? (it's the fastest impl but might stack overflow for large numbers of subscribers)
       @tailrec def completeDoneSubscriptions(remaining: List[Subscription], result: List[Subscription] = Nil): List[Subscription] =
@@ -181,6 +170,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
             completeDoneSubscriptions(tail, newResult)
           case _ ⇒ result
         }
+      endOfStream = Completed
       subscriptions = completeDoneSubscriptions(subscriptions)
       if (subscriptions.isEmpty) shutdown()
     } // else ignore, we need to be idempotent
@@ -211,7 +201,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
       buffer.onCursorRemoved(subscription)
       subscription.deactivate()
       if (subscriptions.isEmpty) {
-        if (endOfStream eq null) {
+        if (endOfStream eq NotReached) {
           endOfStream = ShutDown
           cancelUpstream()
         }
@@ -220,7 +210,7 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
     } // else ignore, we need to be idempotent
   }
 
-  protected class Subscription(val subscriber: Subscriber[T])
+  protected class Subscription(val subscriber: spi.Subscriber[T])
     extends asyncrx.spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
 
     def requestMore(elements: Int): Unit =
@@ -245,13 +235,16 @@ abstract class AbstractProducer[T](initialBufferSize: Int, maxBufferSize: Int)
 
 object AbstractProducer {
   private sealed trait EndOfStream {
-    def apply[T](subscriber: Subscriber[T]): Unit
+    def apply[T](subscriber: spi.Subscriber[T]): Unit
+  }
+  private object NotReached extends EndOfStream {
+    def apply[T](subscriber: spi.Subscriber[T]): Unit = throw new IllegalStateException("Called apply on NotReached")
   }
   private object Completed extends EndOfStream {
-    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onComplete()
+    def apply[T](subscriber: spi.Subscriber[T]): Unit = subscriber.onComplete()
   }
   private case class ErrorCompleted(cause: Throwable) extends EndOfStream {
-    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
+    def apply[T](subscriber: spi.Subscriber[T]): Unit = subscriber.onError(cause)
   }
-  private val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down Publisher"))
+  private val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down spi.Publisher"))
 }
