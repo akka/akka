@@ -101,9 +101,9 @@ case class Terminated private[akka] (@BeanProperty actor: ActorRef)(
  * INTERNAL API
  *
  * Used for remote death watch. Failure detector publish this to the
- * `eventStream` when a remote node is detected to be unreachable and/or decided to
+ * [[akka.event.AddressTerminatedTopic]] when a remote node is detected to be unreachable and/or decided to
  * be removed.
- * The watcher ([[akka.actor.dungeon.DeathWatch]]) subscribes to the `eventStream`
+ * The watcher ([[akka.actor.dungeon.DeathWatch]]) subscribes to the `AddressTerminatedTopic`
  * and translates this event to [[akka.actor.Terminated]], which is sent itself.
  */
 @SerialVersionUID(1L)
