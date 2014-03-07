@@ -20,6 +20,7 @@ import akka.actor.SelectChildPattern
 import akka.actor.Identify
 import akka.actor.ActorIdentity
 import akka.actor.EmptyLocalActorRef
+import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -52,7 +53,7 @@ private[akka] class RemoteSystemDaemon(
 
   private val terminating = new Switch(false)
 
-  system.eventStream.subscribe(this, classOf[AddressTerminated])
+  AddressTerminatedTopic(system).subscribe(this)
 
   /**
    * Find the longest matching path which we know about and return that ref

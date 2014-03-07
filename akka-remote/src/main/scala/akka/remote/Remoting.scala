@@ -22,6 +22,7 @@ import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -398,7 +399,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. Reason: {}",
           remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
@@ -406,7 +407,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
@@ -416,7 +417,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
           case _ ⇒ // disabled
         }
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
@@ -424,7 +425,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case NonFatal(e) ⇒

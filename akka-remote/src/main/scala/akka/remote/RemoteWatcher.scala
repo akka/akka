@@ -19,6 +19,7 @@ import akka.actor.InternalActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.Watch
 import akka.actor.Deploy
+import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -79,7 +80,7 @@ private[akka] object RemoteWatcher {
  * to the peer actor on the other node, which replies with [[RemoteWatcher.HeartbeatRsp]]
  * message back. The failure detector on the watching side monitors these heartbeat messages.
  * If arrival of hearbeat messages stops it will be detected and this actor will publish
- * [[akka.actor.AddressTerminated]] to the `eventStream`.
+ * [[akka.actor.AddressTerminated]] to the [[akka.event.AddressTerminatedTopic]].
  *
  * When all actors on a node have been unwatched it will stop sending heartbeat messages.
  *
@@ -171,7 +172,7 @@ private[akka] class RemoteWatcher(
     }
 
   def publishAddressTerminated(address: Address): Unit =
-    context.system.eventStream.publish(AddressTerminated(address))
+    AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
 
   def quarantine(address: Address, uid: Option[Int]): Unit =
     remoteProvider.quarantine(address, uid)
