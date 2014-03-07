@@ -1,8 +1,8 @@
 name := "akka-sample-persistence-scala"
 
-version := "1.0"
+version := "2.3-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-persistence-experimental" % "2.4-SNAPSHOT"
