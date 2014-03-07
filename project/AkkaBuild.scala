@@ -741,6 +741,7 @@ object AkkaBuild extends Build {
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
     javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),
+    incOptions := incOptions.value.withNameHashing(true),
 
     crossVersion := CrossVersion.binary,
 
