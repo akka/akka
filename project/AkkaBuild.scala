@@ -14,6 +14,7 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, defaultOsgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -38,7 +39,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.3-SNAPSHOT",
+    version      := "2.4-SNAPSHOT",
     scalaVersion := requestedScalaVersion,
     scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
@@ -288,7 +289,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
-      previousArtifact := akkaPreviousArtifact("akka-persistence")
+      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
 
@@ -794,10 +795,17 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF"),
 
     // don't save test output to a file
-    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value))
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+    
+    validatePullRequestTask,
+    // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
+    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    
   ) ++ mavenLocalResolverSettings
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
+  // the tasks that to run for validation is defined in defaultSettings
+  val validatePullRequestTask = validatePullRequest := ()
 
   def githubUrl(v: String): String = {
     val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
@@ -961,13 +969,21 @@ object AkkaBuild extends Build {
     else
       file
   }
+  
+  lazy val mimaIgnoredProblems = {
+     import com.typesafe.tools.mima.core._
+     Seq(
+       // add filters here, see release-2.2 branch
+     )
+  }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
-    previousArtifact := None
+    previousArtifact := None,
+    binaryIssueFilters ++= mimaIgnoredProblems
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.2.0", 
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0", 
       crossVersion: String = "2.10"): Option[sbt.ModuleID] =
     if (enableMiMa) {
       val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
@@ -1054,7 +1070,7 @@ object AkkaBuild extends Build {
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.4,2.5)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[1.2.0,1.3.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
