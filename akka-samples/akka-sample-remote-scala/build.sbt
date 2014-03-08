@@ -1,6 +1,6 @@
 name := "akka-sample-remote-scala"
 
-version := "1.0"
+version := "2.3-SNAPSHOT"
 
 scalaVersion := "2.10.3"
 
