@@ -8,7 +8,7 @@ val project = Project(
   base = file("."),
   settings = Project.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
     name := "akka-sample-multi-node-scala",
-    version := "1.0",
+    version := "2.3-SNAPSHOT",
     scalaVersion := "2.10.3",
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-remote" % akkaVersion,
