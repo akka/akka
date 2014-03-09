@@ -531,6 +531,8 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-osgi-dining-hakkers/uncommons"),
     settings = sampleSettings ++ osgiSampleSettings ++ OSGi.osgiDiningHakkersSampleUncommons ++ Seq(
       libraryDependencies ++= Dependencies.uncommons,
+      // allow publishLocal/publishM2 to overwrite
+      isSnapshot := true,
       version := "1.2.0"
     )
   )
