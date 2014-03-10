@@ -3,7 +3,7 @@ package akka.streams
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import asyncrx.spi.Subscriber
+import asyncrx.spi
 
 /**
  * An efficient producer for iterators.
@@ -15,7 +15,7 @@ import asyncrx.spi.Subscriber
 class IteratorProducer[T](iterator: Iterator[T],
                           maxBufferSize: Int = 16,
                           maxRecursionLevel: Int = 32,
-                          maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext)
+                          maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
   extends AbstractStrictProducer[T](initialBufferSize = 1, maxBufferSize, maxRecursionLevel, maxSyncBatchSize) {
 
   if (!iterator.hasNext) completeDownstream()
@@ -45,7 +45,7 @@ class IteratorProducer[T](iterator: Iterator[T],
 abstract class AbstractStrictProducer[T](initialBufferSize: Int,
                                          maxBufferSize: Int,
                                          maxRecursionLevel: Int = 32,
-                                         maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext)
+                                         maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
   extends AbstractProducer[T](initialBufferSize, maxBufferSize) {
 
   private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
@@ -81,15 +81,14 @@ abstract class AbstractStrictProducer[T](initialBufferSize: Int,
 
   private def schedule(newPending: Long): Unit = {
     pending = newPending
-    executor.execute {
+    executor.execute(
       new Runnable {
-        def run(): Unit =
+        @tailrec def run(): Unit =
           if (locked.compareAndSet(false, true)) {
             try produce(pending)
             finally locked.set(false)
           } else run()
-      }
-    }
+      })
   }
 
   protected def shutdown(): Unit = cancelUpstream()
@@ -97,7 +96,7 @@ abstract class AbstractStrictProducer[T](initialBufferSize: Int,
 
   // outside Publisher interface, can potentially called from another thread,
   // so we need to wrap with synchronization
-  @tailrec final override def subscribe(subscriber: Subscriber[T]): Unit =
+  @tailrec final override def subscribe(subscriber: spi.Subscriber[T]): Unit =
     if (locked.compareAndSet(false, true)) {
       try super.subscribe(subscriber)
       finally locked.set(false)

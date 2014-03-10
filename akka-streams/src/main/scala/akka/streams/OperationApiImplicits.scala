@@ -4,7 +4,9 @@ import scala.language.{ implicitConversions, higherKinds }
 
 import asyncrx.api
 import Operation._
+import scala.collection.immutable
 
+//FIXME Redo these so that the operations are on Source etc (no implicits)
 trait OperationApiImplicits {
   implicit def producer2Ops1[T](producer: api.Producer[T]) = SourceOps1[T](producer)
   implicit def producerOps2[I, O](op: I ==> api.Producer[O]) = OperationOps2(OperationOps1(op).map(FromProducerSource(_)))
@@ -27,7 +29,7 @@ trait OperationApiImplicits {
     def map[C](f: B ⇒ C): Res[C] = andThen(Map(f))
     def mapFind[C](f: B ⇒ Option[C], default: ⇒ Option[C]): Res[C] = andThen(MapFind(f, default))
     def merge[B2 >: B](source: Source[B2]): Res[B2] = andThen(Merge(source))
-    def process[S, C](seed: S)(f: (S, B) ⇒ Process.Command[C, S])(onComplete: S ⇒ Seq[C]): Res[C] = andThen(Process(seed, f, onComplete))
+    def process[S, C](seed: S)(f: (S, B) ⇒ Process.Command[C, S])(onComplete: S ⇒ immutable.Seq[C]): Res[C] = andThen(Process(seed, f, onComplete))
     def span(p: B ⇒ Boolean): Res[Source[B]] = andThen(Span(p))
     def tee(sink: Sink[B]): Res[B] = andThen(Tee(sink))
     def tail: Res[B] = andThen(Tail())

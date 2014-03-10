@@ -3,7 +3,7 @@ package akka
 import asyncrx.api.{ Processor, Consumer, Producer }
 import akka.streams.Operation.{ FromFutureSource, FromProducerSource, FromIterableSource }
 import scala.concurrent.Future
-
+//FIXME Not sure we should have these at all
 package object streams extends OperationApiImplicits {
   import Operation.{ Sink, Source, Pipeline }
 
@@ -12,13 +12,13 @@ package object streams extends OperationApiImplicits {
     def link(consumer: Consumer[I]): Unit = producer.getPublisher.subscribe(consumer.getSubscriber)
   }
   implicit class CreateProcessor[I, O](operation: Operation[I, O])(implicit factory: StreamGenerator) {
-    def toProcessor(): Processor[I, O] = factory.toProcessor(operation)
+    def toProcessor(): Processor[I, O] = factory.createProcessor(operation)
   }
   implicit class CreateProducer[O](source: Source[O])(implicit factory: StreamGenerator) {
-    def toProducer(): Producer[O] = factory.toProducer(source)
+    def toProducer(): Producer[O] = factory.createProducer(source)
   }
   implicit class CreateConsumer[I](sink: Sink[I])(implicit factory: StreamGenerator) {
-    def toConsumer(): Consumer[I] = factory.toConsumer(sink)
+    def toConsumer(): Consumer[I] = factory.createConsumer(sink)
   }
   implicit class RunPipeline(val pipeline: Pipeline[_])(implicit factory: StreamGenerator) {
     def run(): Unit = factory.runPipeline(pipeline)
