@@ -14,6 +14,7 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, defaultOsgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -32,7 +33,7 @@ object AkkaBuild extends Build {
   // Load system properties from a file to make configuration from Jenkins easier
   loadSystemProperties("project/akka-build.properties")
 
-  val enableMiMa = false
+  val enableMiMa = true
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
 
@@ -71,7 +72,6 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz")) 
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
@@ -288,7 +288,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
-      previousArtifact := akkaPreviousArtifact("akka-persistence")
+      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
 
@@ -794,10 +794,17 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF"),
 
     // don't save test output to a file
-    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value))
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+    
+    validatePullRequestTask,
+    // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
+    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    
   ) ++ mavenLocalResolverSettings
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
+  // the tasks that to run for validation is defined in defaultSettings
+  val validatePullRequestTask = validatePullRequest := ()
 
   def githubUrl(v: String): String = {
     val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
@@ -961,13 +968,21 @@ object AkkaBuild extends Build {
     else
       file
   }
+    
+  lazy val mimaIgnoredProblems = {
+    import com.typesafe.tools.mima.core._
+    Seq(
+      // add filters here, see release-2.2 branch
+    )
+  }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
-    previousArtifact := None
+    previousArtifact := None,
+    binaryIssueFilters ++= mimaIgnoredProblems
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.2.0", 
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0", 
       crossVersion: String = "2.10"): Option[sbt.ModuleID] =
     if (enableMiMa) {
       val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
