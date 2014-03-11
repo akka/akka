@@ -1212,7 +1212,7 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val akkaStreams = Seq(testNG, Test.scalatest, asyncrxSpi, Test.asyncrxTck)
+  val akkaStreams = Seq(testNG, Test.scalatest, Test.scalacheck, asyncrxSpi, Test.asyncrxTck)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
