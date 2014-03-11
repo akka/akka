@@ -149,7 +149,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     "not be canceled if cancel is performed after execution" in {
       val latch = TestLatch(1)
       val task = collectCancellable(system.scheduler.scheduleOnce(10 millis)(latch.countDown()))
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
       task.cancel() should be(false)
       task.isCancelled should be(false)
       task.cancel() should be(false)

@@ -95,7 +95,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))))
       watch(router)
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
       router ! CurrentRoutees
       val routees = expectMsgType[RouterRoutees].routees
       routees.size should be(2)
@@ -156,7 +156,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         }
       }
       val router = system.actorOf(Props[TestActor].withRouter(RoundRobinRouter(resizer = Some(resizer))), "router3")
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
       router ! CurrentRoutees
       expectMsgType[RouterRoutees].routees.size should be(3)
       system.stop(router)
@@ -296,7 +296,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
       routedActor ! Broadcast("end")
       //now wait some and do validations.
-      Await.ready(doneLatch, remaining)
+      Await.ready(doneLatch, remainingOrDefault)
 
       for (i ← 0 until connectionCount)
         counters(i).get should be((iterationCount * (i + 1)))
@@ -326,7 +326,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      Await.ready(doneLatch, remaining)
+      Await.ready(doneLatch, remainingOrDefault)
 
       counter1.get should be(1)
       counter2.get should be(1)
@@ -364,7 +364,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! Broadcast(1)
       routedActor ! Broadcast("end")
 
-      Await.ready(doneLatch, remaining)
+      Await.ready(doneLatch, remainingOrDefault)
 
       counter1.get should be(1)
       counter2.get should be(1)
@@ -455,7 +455,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ! 1
       routedActor ! "end"
 
-      Await.ready(doneLatch, remaining)
+      Await.ready(doneLatch, remainingOrDefault)
 
       counter1.get should be(1)
       counter2.get should be(1)
@@ -486,7 +486,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       routedActor ? 1
       routedActor ! "end"
 
-      Await.ready(doneLatch, remaining)
+      Await.ready(doneLatch, remainingOrDefault)
 
       counter1.get should be(1)
       counter2.get should be(1)

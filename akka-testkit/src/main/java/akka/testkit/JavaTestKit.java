@@ -371,7 +371,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectMsgEquals(remaining(), obj)</code>, but correctly
+   * Same as <code>expectMsgEquals(remainingOrDefault(), obj)</code>, but correctly
    * treating the timeFactor.
    */
   public <T> T expectMsgEquals(T msg) {
@@ -390,7 +390,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectMsgClass(remaining(), clazz)</code>, but correctly
+   * Same as <code>expectMsgClass(remainingOrDefault(), clazz)</code>, but correctly
    * treating the timeFactor.
    */
   public <T> T expectMsgClass(Class<T> clazz) {
@@ -409,7 +409,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectMsgAnyOf(remaining(), obj...)</code>, but correctly
+   * Same as <code>expectMsgAnyOf(remainingOrDefault(), obj...)</code>, but correctly
    * treating the timeFactor.
    */
   public Object expectMsgAnyOf(Object... msgs) {
@@ -428,7 +428,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectMsgAllOf(remaining(), obj...)</code>, but correctly
+   * Same as <code>expectMsgAllOf(remainingOrDefault(), obj...)</code>, but correctly
    * treating the timeFactor.
    */
   public Object[] expectMsgAllOf(Object... msgs) {
@@ -447,7 +447,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectMsgAnyClassOf(remaining(), obj...)</code>, but
+   * Same as <code>expectMsgAnyClassOf(remainingOrDefault(), obj...)</code>, but
    * correctly treating the timeFactor.
    */
   @SuppressWarnings("unchecked")
@@ -468,7 +468,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectNoMsg(remaining())</code>, but correctly treating the
+   * Same as <code>expectNoMsg(remainingOrDefault())</code>, but correctly treating the
    * timeFactor.
    */
   public void expectNoMsg() {
@@ -492,7 +492,7 @@ public class JavaTestKit {
   }
 
   /**
-   * Same as <code>expectTerminated(remaining(), target)</code>,
+   * Same as <code>expectTerminated(remainingOrDefault(), target)</code>,
    * but correctly treating the timeFactor.
    * Don't forget to 'watch' it first!
    */
