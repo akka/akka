@@ -5,7 +5,7 @@
 package akka.io
 
 import java.net.InetSocketAddress
-import java.net.Socket
+import java.nio.channels.SocketChannel
 import akka.io.Inet._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
@@ -56,7 +56,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      * For more information see [[java.net.Socket.setKeepAlive]]
      */
     case class KeepAlive(on: Boolean) extends SocketOption {
-      override def afterConnect(s: Socket): Unit = s.setKeepAlive(on)
+      override def afterConnect(c: SocketChannel): Unit = c.socket.setKeepAlive(on)
     }
 
     /**
@@ -67,7 +67,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      * For more information see [[java.net.Socket.setOOBInline]]
      */
     case class OOBInline(on: Boolean) extends SocketOption {
-      override def afterConnect(s: Socket): Unit = s.setOOBInline(on)
+      override def afterConnect(c: SocketChannel): Unit = c.socket.setOOBInline(on)
     }
 
     // SO_LINGER is handled by the Close code
@@ -81,7 +81,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      * For more information see [[java.net.Socket.setTcpNoDelay]]
      */
     case class TcpNoDelay(on: Boolean) extends SocketOption {
-      override def afterConnect(s: Socket): Unit = s.setTcpNoDelay(on)
+      override def afterConnect(c: SocketChannel): Unit = c.socket.setTcpNoDelay(on)
     }
 
   }
