@@ -547,7 +547,7 @@ trait ProducesMessageQueue[T <: MessageQueue]
 /**
  * UnboundedMailbox is the default unbounded MailboxType used by Akka Actors.
  */
-case class UnboundedMailbox() extends MailboxType with ProducesMessageQueue[UnboundedMailbox.MessageQueue] {
+final case class UnboundedMailbox() extends MailboxType with ProducesMessageQueue[UnboundedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
@@ -566,7 +566,7 @@ object UnboundedMailbox {
  * the only drawback is that you can't have multiple consumers,
  * which rules out using it with BalancingPool (BalancingDispatcher) for instance.
  */
-case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with ProducesMessageQueue[NodeMessageQueue] {
+final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with ProducesMessageQueue[NodeMessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
@@ -576,7 +576,7 @@ case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with Produce
 /**
  * BoundedMailbox is the default bounded MailboxType used by Akka Actors.
  */
-case class BoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
+final case class BoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
   extends MailboxType with ProducesMessageQueue[BoundedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),
@@ -639,7 +639,7 @@ object BoundedPriorityMailbox {
 /**
  * UnboundedDequeBasedMailbox is an unbounded MailboxType, backed by a Deque.
  */
-case class UnboundedDequeBasedMailbox() extends MailboxType with ProducesMessageQueue[UnboundedDequeBasedMailbox.MessageQueue] {
+final case class UnboundedDequeBasedMailbox() extends MailboxType with ProducesMessageQueue[UnboundedDequeBasedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 

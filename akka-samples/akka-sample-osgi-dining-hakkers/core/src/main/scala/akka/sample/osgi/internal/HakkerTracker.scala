@@ -10,13 +10,13 @@ import akka.sample.osgi.api.TrackHakker
 
 object HakkerTracker {
   sealed trait DomainEvent
-  case class StartedEating(name: String) extends DomainEvent
-  case class StoppedEating(name: String) extends DomainEvent
+  final case class StartedEating(name: String) extends DomainEvent
+  final case class StoppedEating(name: String) extends DomainEvent
 
   object State {
     val empty: State = new State(Map.empty)
   }
-  case class State private (eatingCounts: Map[String, Int]) {
+  final case class State private (eatingCounts: Map[String, Int]) {
     def updated(event: DomainEvent): State = event match {
       case StartedEating(name) =>
         val c = eatingCounts.getOrElse(name, 0) + 1

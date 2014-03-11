@@ -239,7 +239,7 @@ trait ScalaActorSelection {
  * message is delivered by traversing the various actor paths involved.
  */
 @SerialVersionUID(1L)
-private[akka] case class ActorSelectionMessage(msg: Any, elements: immutable.Iterable[SelectionPathElement])
+private[akka] final case class ActorSelectionMessage(msg: Any, elements: immutable.Iterable[SelectionPathElement])
   extends AutoReceivedMessage with PossiblyHarmful {
 
   def identifyRequest: Option[Identify] = msg match {
@@ -258,7 +258,7 @@ private[akka] sealed trait SelectionPathElement
  * INTERNAL API
  */
 @SerialVersionUID(2L)
-private[akka] case class SelectChildName(name: String) extends SelectionPathElement {
+private[akka] final case class SelectChildName(name: String) extends SelectionPathElement {
   override def toString: String = name
 }
 
@@ -266,7 +266,7 @@ private[akka] case class SelectChildName(name: String) extends SelectionPathElem
  * INTERNAL API
  */
 @SerialVersionUID(2L)
-private[akka] case class SelectChildPattern(patternStr: String) extends SelectionPathElement {
+private[akka] final case class SelectChildPattern(patternStr: String) extends SelectionPathElement {
   val pattern: Pattern = Helpers.makePattern(patternStr)
   override def toString: String = patternStr
 }
@@ -284,5 +284,5 @@ private[akka] case object SelectParent extends SelectionPathElement {
  * `Future` is completed with this failure.
  */
 @SerialVersionUID(1L)
-case class ActorNotFound(selection: ActorSelection) extends RuntimeException("Actor not found for: " + selection)
+final case class ActorNotFound(selection: ActorSelection) extends RuntimeException("Actor not found for: " + selection)
 

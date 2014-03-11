@@ -50,7 +50,7 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
   }
 
   case object AllocateMemory
-  case class Reply(address: Address)
+  final case class Reply(address: Address)
 
   val first = role("first")
   val second = role("second")

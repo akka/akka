@@ -322,7 +322,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
 private[akka] object PromiseActorRef {
   private case object Registering
   private case object Stopped
-  private case class StoppedWithPath(path: ActorPath)
+  private final case class StoppedWithPath(path: ActorPath)
 
   def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef = {
     val result = Promise[Any]()

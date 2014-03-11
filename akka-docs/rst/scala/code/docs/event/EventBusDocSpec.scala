@@ -14,7 +14,7 @@ object EventBusDocSpec {
   import akka.event.EventBus
   import akka.event.LookupClassification
 
-  case class MsgEnvelope(topic: String, payload: Any)
+  final case class MsgEnvelope(topic: String, payload: Any)
 
   /**
    * Publishes the payload of the MsgEnvelope when the topic of the
@@ -124,7 +124,7 @@ object EventBusDocSpec {
   import akka.event.ActorClassification
   import akka.event.ActorClassifier
 
-  case class Notification(ref: ActorRef, id: Int)
+  final case class Notification(ref: ActorRef, id: Int)
 
   class ActorBusImpl extends ActorEventBus with ActorClassifier with ActorClassification {
     type Event = Notification

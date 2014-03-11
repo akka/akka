@@ -25,7 +25,7 @@ object RemoteDeliveryMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("akka.loglevel=INFO")))
 
-  case class Letter(n: Int, route: List[ActorRef])
+  final case class Letter(n: Int, route: List[ActorRef])
 
   class Postman extends Actor {
     def receive = {

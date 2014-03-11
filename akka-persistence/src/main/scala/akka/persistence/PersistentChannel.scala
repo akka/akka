@@ -36,7 +36,7 @@ import akka.persistence.JournalProtocol._
  *                    made after the configured timeout.
  */
 @SerialVersionUID(1L)
-case class PersistentChannelSettings(
+final case class PersistentChannelSettings(
   val redeliverMax: Int = 5,
   val redeliverInterval: FiniteDuration = 5.seconds,
   val redeliverFailureListener: Option[ActorRef] = None,
@@ -183,7 +183,7 @@ object PersistentChannel {
 /**
  * Plugin API.
  */
-case class DeliveredByPersistentChannel(
+final case class DeliveredByPersistentChannel(
   channelId: String,
   persistentSequenceNr: Long,
   deliverySequenceNr: Long = 0L,

@@ -30,7 +30,7 @@ object ClusterSpec {
     # akka.loglevel = DEBUG
     """
 
-  case class GossipTo(address: Address)
+  final case class GossipTo(address: Address)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

@@ -49,8 +49,8 @@ object FutureSpec {
     }
   }
 
-  case class Req[T](req: T)
-  case class Res[T](res: T)
+  final case class Req[T](req: T)
+  final case class Res[T](res: T)
 }
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
@@ -704,22 +704,22 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   }
 
   sealed trait IntAction { def apply(that: Int): Int }
-  case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
-  case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
-  case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
-  case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
+  final case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
+  final case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
+  final case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
+  final case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
 
   sealed trait FutureAction {
     def /:(that: Try[Int]): Try[Int]
     def /:(that: Future[Int]): Future[Int]
   }
 
-  case class MapAction(action: IntAction) extends FutureAction {
+  final case class MapAction(action: IntAction) extends FutureAction {
     def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that map action.apply
   }
 
-  case class FlatMapAction(action: IntAction) extends FutureAction {
+  final case class FlatMapAction(action: IntAction) extends FutureAction {
     def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
   }

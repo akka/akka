@@ -29,7 +29,7 @@ private[akka] case object ChildNameReserved extends ChildStats
  * ChildRestartStats is the statistics kept by every parent Actor for every child Actor
  * and is used for SupervisorStrategies to know how to deal with problems that occur for the children.
  */
-case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
+final case class ChildRestartStats(child: ActorRef, var maxNrOfRetriesCount: Int = 0, var restartTimeWindowStartNanos: Long = 0L)
   extends ChildStats {
 
   def uid: Int = child.path.uid
@@ -459,4 +459,3 @@ case class OneForOneStrategy(
       context.stop(child) //TODO optimization to drop child here already?
   }
 }
-

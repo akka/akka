@@ -194,7 +194,7 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-probe
 
     //#test-special-probe
-    case class Update(id: Int, value: String)
+    final case class Update(id: Int, value: String)
 
     val probe = new TestProbe(system) {
       def expectUpdate(x: Int) = {

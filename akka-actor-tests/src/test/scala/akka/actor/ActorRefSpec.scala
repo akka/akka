@@ -18,7 +18,7 @@ import akka.TestUtils.verifyActorTermination
 
 object ActorRefSpec {
 
-  case class ReplyTo(sender: ActorRef)
+  final case class ReplyTo(sender: ActorRef)
 
   class ReplyActor extends Actor {
     var replyTo: ActorRef = null

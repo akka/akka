@@ -313,7 +313,7 @@ trait Processor extends Actor with Recovery {
  * @param cause failure cause.
  */
 @SerialVersionUID(1L)
-case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
+final case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
 
 /**
  * Sent to a [[Processor]] if a journal fails to replay messages or fetch that processor's
@@ -321,7 +321,7 @@ case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
  * processor.
  */
 @SerialVersionUID(1L)
-case class RecoveryFailure(cause: Throwable)
+final case class RecoveryFailure(cause: Throwable)
 
 /**
  * Thrown by a [[Processor]] if a journal fails to replay messages or fetch that processor's
@@ -329,7 +329,7 @@ case class RecoveryFailure(cause: Throwable)
  * [[RecoveryFailure]] messages.
  */
 @SerialVersionUID(1L)
-case class RecoveryException(message: String, cause: Throwable) extends AkkaException(message, cause)
+final case class RecoveryException(message: String, cause: Throwable) extends AkkaException(message, cause)
 
 /**
  * Java API: an actor that persists (journals) messages of type [[Persistent]]. Messages of other types

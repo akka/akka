@@ -394,7 +394,7 @@ private[akka] class LocalActorRef private[akka] (
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class SerializedActorRef private (path: String) {
+private[akka] final case class SerializedActorRef private (path: String) {
   import akka.serialization.JavaSerializer.currentSystem
 
   def this(actorRef: ActorRef) = {
@@ -451,7 +451,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * to the ActorSystem's EventStream
  */
 @SerialVersionUID(1L)
-case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) {
+final case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) {
   require(sender ne null, "DeadLetter sender may not be null")
   require(recipient ne null, "DeadLetter recipient may not be null")
 }

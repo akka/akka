@@ -29,16 +29,16 @@ private[remote] object AkkaPduCodec {
    * Trait that represents decoded Akka PDUs (Protocol Data Units)
    */
   sealed trait AkkaPdu
-  case class Associate(info: HandshakeInfo) extends AkkaPdu
-  case class Disassociate(reason: AssociationHandle.DisassociateInfo) extends AkkaPdu
+  final case class Associate(info: HandshakeInfo) extends AkkaPdu
+  final case class Disassociate(reason: AssociationHandle.DisassociateInfo) extends AkkaPdu
   case object Heartbeat extends AkkaPdu
-  case class Payload(bytes: ByteString) extends AkkaPdu
+  final case class Payload(bytes: ByteString) extends AkkaPdu
 
-  case class Message(recipient: InternalActorRef,
-                     recipientAddress: Address,
-                     serializedMessage: SerializedMessage,
-                     senderOption: Option[ActorRef],
-                     seqOption: Option[SeqNo]) extends HasSequenceNumber {
+  final case class Message(recipient: InternalActorRef,
+                           recipientAddress: Address,
+                           serializedMessage: SerializedMessage,
+                           senderOption: Option[ActorRef],
+                           seqOption: Option[SeqNo]) extends HasSequenceNumber {
 
     def reliableDeliveryEnabled = seqOption.isDefined
 
@@ -68,7 +68,7 @@ private[remote] trait AkkaPduCodec {
    * form as a [[akka.util.ByteString]].
    *
    * For the same effect the constructXXX methods might be called directly, taking method parameters instead of the
-   * [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] case classes.
+   * [[akka.remote.transport.AkkaPduCodec.AkkaPdu]] final case classes.
    *
    * @param pdu
    *   The Akka Protocol Data Unit to be encoded

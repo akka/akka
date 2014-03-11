@@ -19,7 +19,7 @@ object Transport {
    * hostname, etc.).
    */
   @SerialVersionUID(1L)
-  case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
+  final case class InvalidAssociationException(msg: String, cause: Throwable = null) extends AkkaException(msg, cause) with NoStackTrace
 
   /**
    * Message sent to a [[akka.remote.transport.Transport.AssociationEventListener]] registered to a transport
@@ -28,7 +28,7 @@ object Transport {
    * @param association
    *   The handle for the inbound association.
    */
-  case class InboundAssociation(association: AssociationHandle) extends AssociationEvent
+  final case class InboundAssociation(association: AssociationHandle) extends AssociationEvent
 
   /**
    * An interface that needs to be implemented by the user of a transport to listen to association events
@@ -47,7 +47,7 @@ object Transport {
    * forward event objects as messages to the provided ActorRef.
    * @param actor
    */
-  case class ActorAssociationEventListener(actor: ActorRef) extends AssociationEventListener {
+  final case class ActorAssociationEventListener(actor: ActorRef) extends AssociationEventListener {
     override def notify(ev: AssociationEvent): Unit = actor ! ev
   }
 
@@ -154,7 +154,7 @@ object AssociationHandle {
    * @param payload
    *   The raw bytes that were sent by the remote endpoint.
    */
-  case class InboundPayload(payload: ByteString) extends HandleEvent {
+  final case class InboundPayload(payload: ByteString) extends HandleEvent {
     override def toString: String = s"InboundPayload(size = ${payload.length} bytes)"
   }
 
@@ -164,7 +164,7 @@ object AssociationHandle {
    * @param info
    *   information about the reason of disassociation
    */
-  case class Disassociated(info: DisassociateInfo) extends HandleEvent
+  final case class Disassociated(info: DisassociateInfo) extends HandleEvent
 
   /**
    * Supertype of possible disassociation reasons
@@ -192,7 +192,7 @@ object AssociationHandle {
    * forward event objects as messages to the provided ActorRef.
    * @param actor
    */
-  case class ActorHandleEventListener(actor: ActorRef) extends HandleEventListener {
+  final case class ActorHandleEventListener(actor: ActorRef) extends HandleEventListener {
     override def notify(ev: HandleEvent): Unit = actor ! ev
   }
 }

@@ -105,7 +105,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "be able to send their routees" in {
-      case class TestRun(id: String, names: immutable.Iterable[String], actors: Int)
+      final case class TestRun(id: String, names: immutable.Iterable[String], actors: Int)
       val actor = system.actorOf(Props(new Actor {
         def receive = {
           case TestRun(id, names, actors) ⇒
@@ -543,7 +543,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       Await.result(routedActor ? Broadcast(0), timeout.duration) should be(14)
     }
 
-    case class Stop(id: Option[Int] = None)
+    final case class Stop(id: Option[Int] = None)
 
     def newActor(id: Int, shudownLatch: Option[TestLatch] = None) = system.actorOf(Props(new Actor {
       def receive = {

@@ -10,10 +10,10 @@ import scala.concurrent.duration._
 * First we define our messages, they basically speak for themselves
 */
 sealed trait DiningHakkerMessage
-case class Busy(chopstick: ActorRef) extends DiningHakkerMessage
-case class Put(hakker: ActorRef) extends DiningHakkerMessage
-case class Take(hakker: ActorRef) extends DiningHakkerMessage
-case class Taken(chopstick: ActorRef) extends DiningHakkerMessage
+final case class Busy(chopstick: ActorRef) extends DiningHakkerMessage
+final case class Put(hakker: ActorRef) extends DiningHakkerMessage
+final case class Take(hakker: ActorRef) extends DiningHakkerMessage
+final case class Taken(chopstick: ActorRef) extends DiningHakkerMessage
 object Eat extends DiningHakkerMessage
 object Think extends DiningHakkerMessage
 

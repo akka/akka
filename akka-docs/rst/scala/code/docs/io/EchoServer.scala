@@ -81,7 +81,7 @@ class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
 
   import Tcp._
 
-  case class Ack(offset: Int) extends Event
+  final case class Ack(offset: Int) extends Event
 
   // sign death pact: this actor terminates when connection breaks
   context watch connection

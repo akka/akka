@@ -24,13 +24,13 @@ object ConsistentHashingRouterDocSpec {
     }
   }
 
-  case class Evict(key: String)
+  final case class Evict(key: String)
 
-  case class Get(key: String) extends ConsistentHashable {
+  final case class Get(key: String) extends ConsistentHashable {
     override def consistentHashKey: Any = key
   }
 
-  case class Entry(key: String, value: String)
+  final case class Entry(key: String, value: String)
   //#cache-actor
 
 }

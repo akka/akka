@@ -49,7 +49,7 @@ class FileBenchResultRepository extends BenchResultRepository {
   private def htmlDirExists: Boolean = new File(htmlDir).exists
   protected val maxHistorical = 7
 
-  case class Key(name: String, load: Int)
+  final case class Key(name: String, load: Int)
 
   def add(stats: Stats): Unit = synchronized {
     val values = statsByName.getOrElseUpdate(stats.name, Vector.empty)

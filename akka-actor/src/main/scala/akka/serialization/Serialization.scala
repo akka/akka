@@ -42,7 +42,7 @@ object Serialization {
    * Serialization information needed for serializing local actor refs.
    * INTERNAL API
    */
-  private[akka] case class Information(address: Address, system: ActorSystem)
+  private[akka] final case class Information(address: Address, system: ActorSystem)
 
   /**
    * The serialized path of an actorRef, based on the current transport serialization information.

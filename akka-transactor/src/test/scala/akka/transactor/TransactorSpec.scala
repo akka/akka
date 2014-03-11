@@ -16,7 +16,7 @@ import akka.testkit._
 import akka.pattern.{ AskTimeoutException, ask }
 
 object TransactorIncrement {
-  case class Increment(friends: immutable.Seq[ActorRef], latch: TestLatch)
+  final case class Increment(friends: immutable.Seq[ActorRef], latch: TestLatch)
   case object GetCount
 
   class Counter(name: String) extends Transactor {
@@ -63,7 +63,7 @@ object TransactorIncrement {
 }
 
 object SimpleTransactor {
-  case class Set(ref: Ref[Int], value: Int, latch: TestLatch)
+  final case class Set(ref: Ref[Int], value: Int, latch: TestLatch)
 
   class Setter extends Transactor {
     def atomically = implicit txn ⇒ {

@@ -42,7 +42,7 @@ import akka.dispatch.{ MailboxType, MessageDispatcher }
  */
 @deprecated("Use GetRoutees", "2.3")
 @SerialVersionUID(1L)
-case class RouterRoutees(routees: immutable.IndexedSeq[ActorRef]) {
+final case class RouterRoutees(routees: immutable.IndexedSeq[ActorRef]) {
   /**
    * Java API
    */
@@ -99,9 +99,9 @@ object RoundRobinRouter {
  */
 @SerialVersionUID(1L)
 @deprecated("Use RoundRobinPool or RoundRobinGroup", "2.3")
-case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                            val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                            val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
+final case class RoundRobinRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                                  val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                  val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
   extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[RoundRobinRouter] {
 
   /**
@@ -193,9 +193,9 @@ object RandomRouter {
  */
 @SerialVersionUID(1L)
 @deprecated("Use RandomPool or RandomGroup", "2.3")
-case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                        val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                        val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
+final case class RandomRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                              val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                              val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
   extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[RandomRouter] {
 
   /**
@@ -297,9 +297,9 @@ object SmallestMailboxRouter {
  */
 @SerialVersionUID(1L)
 @deprecated("Use SmallestMailboxPool", "2.3")
-case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                                 val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
+final case class SmallestMailboxRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                                       val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                       val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
   extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[SmallestMailboxRouter] {
 
   /**
@@ -391,9 +391,9 @@ object BroadcastRouter {
  */
 @SerialVersionUID(1L)
 @deprecated("Use BroadcastPool or BroadcastGroup", "2.3")
-case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-                           val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                           val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
+final case class BroadcastRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
+                                 val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                 val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
   extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[BroadcastRouter] {
 
   /**
@@ -488,10 +488,10 @@ object ScatterGatherFirstCompletedRouter {
  */
 @SerialVersionUID(1L)
 @deprecated("Use ScatterGatherFirstCompletedPool or ScatterGatherFirstCompletedGroup", "2.3")
-case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, within: FiniteDuration,
-                                             override val resizer: Option[Resizer] = None,
-                                             val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-                                             val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
+final case class ScatterGatherFirstCompletedRouter(nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, within: FiniteDuration,
+                                                   override val resizer: Option[Resizer] = None,
+                                                   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
+                                                   val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
   extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[ScatterGatherFirstCompletedRouter] {
 
   if (within <= Duration.Zero) throw new IllegalArgumentException(

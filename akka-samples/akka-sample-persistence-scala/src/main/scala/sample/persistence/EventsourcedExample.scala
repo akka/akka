@@ -4,10 +4,10 @@ package sample.persistence
 import akka.actor._
 import akka.persistence._
 
-case class Cmd(data: String)
-case class Evt(data: String)
+final case class Cmd(data: String)
+final case class Evt(data: String)
 
-case class ExampleState(events: List[String] = Nil) {
+final case class ExampleState(events: List[String] = Nil) {
   def update(evt: Evt) = copy(evt.data :: events)
   def size = events.length
   override def toString: String = events.reverse.toString

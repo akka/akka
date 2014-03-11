@@ -19,7 +19,7 @@ object PerformanceSpec {
 
   case object StartMeasure
   case object StopMeasure
-  case class FailAt(sequenceNr: Long)
+  final case class FailAt(sequenceNr: Long)
 
   trait Measure extends { this: Actor ⇒
     val NanoToSecond = 1000.0 * 1000 * 1000

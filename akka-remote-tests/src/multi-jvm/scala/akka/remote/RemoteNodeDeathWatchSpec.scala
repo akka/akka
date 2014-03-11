@@ -32,15 +32,15 @@ object RemoteNodeDeathWatchMultiJvmSpec extends MultiNodeConfig {
       akka.remote.watch-failure-detector.acceptable-heartbeat-pause = 3 s
                               """)))
 
-  case class WatchIt(watchee: ActorRef)
-  case class UnwatchIt(watchee: ActorRef)
+  final case class WatchIt(watchee: ActorRef)
+  final case class UnwatchIt(watchee: ActorRef)
   case object Ack
 
   /**
    * Forwarding `Terminated` to non-watching testActor is not possible,
    * and therefore the `Terminated` message is wrapped.
    */
-  case class WrappedTerminated(t: Terminated)
+  final case class WrappedTerminated(t: Terminated)
 
   class ProbeActor(testActor: ActorRef) extends Actor {
     def receive = {

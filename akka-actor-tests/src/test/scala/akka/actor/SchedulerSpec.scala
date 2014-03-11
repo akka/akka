@@ -192,7 +192,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
     "never fire prematurely" taggedAs TimingTest in {
       val ticks = new TestLatch(300)
 
-      case class Msg(ts: Long)
+      final case class Msg(ts: Long)
 
       val actor = system.actorOf(Props(new Actor {
         def receive = {

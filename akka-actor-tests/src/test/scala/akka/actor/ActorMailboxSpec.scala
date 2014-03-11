@@ -171,7 +171,7 @@ object ActorMailboxSpec {
     classOf[BoundedDequeBasedMessageQueueSemantics])
 
   trait MCBoundedMessageQueueSemantics extends MessageQueue with MultipleConsumerSemantics
-  case class MCBoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
+  final case class MCBoundedMailbox(val capacity: Int, val pushTimeOut: FiniteDuration)
     extends MailboxType with ProducesMessageQueue[MCBoundedMessageQueueSemantics] {
 
     def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"),

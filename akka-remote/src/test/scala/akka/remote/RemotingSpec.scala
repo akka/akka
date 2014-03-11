@@ -17,8 +17,8 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 
 object RemotingSpec {
 
-  case class ActorForReq(s: String)
-  case class ActorSelReq(s: String)
+  final case class ActorForReq(s: String)
+  final case class ActorSelReq(s: String)
 
   class Echo1 extends Actor {
     var target: ActorRef = context.system.deadLetters

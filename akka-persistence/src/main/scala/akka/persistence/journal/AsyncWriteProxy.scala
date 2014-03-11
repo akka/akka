@@ -64,7 +64,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
  * INTERNAL API.
  */
 private[persistence] object AsyncWriteProxy {
-  case class SetStore(ref: ActorRef)
+  final case class SetStore(ref: ActorRef)
 }
 
 /**
@@ -72,28 +72,28 @@ private[persistence] object AsyncWriteProxy {
  */
 private[persistence] object AsyncWriteTarget {
   @SerialVersionUID(1L)
-  case class WriteMessages(messages: immutable.Seq[PersistentRepr])
+  final case class WriteMessages(messages: immutable.Seq[PersistentRepr])
 
   @SerialVersionUID(1L)
-  case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation])
+  final case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation])
 
   @SerialVersionUID(1L)
-  case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean)
+  final case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class DeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean)
+  final case class DeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class ReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
+  final case class ReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
 
   @SerialVersionUID(1L)
   case object ReplaySuccess
 
   @SerialVersionUID(1L)
-  case class ReplayFailure(cause: Throwable)
+  final case class ReplayFailure(cause: Throwable)
 
   @SerialVersionUID(1L)
-  case class ReadHighestSequenceNr(processorId: String, fromSequenceNr: Long)
+  final case class ReadHighestSequenceNr(processorId: String, fromSequenceNr: Long)
 }
 
 /**

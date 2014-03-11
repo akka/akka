@@ -101,7 +101,7 @@ object FSMActorSpec {
     private def doUnlock(): Unit = unlockedLatch.open()
   }
 
-  case class CodeState(soFar: String, code: String)
+  final case class CodeState(soFar: String, code: String)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

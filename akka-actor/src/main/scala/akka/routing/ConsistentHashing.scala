@@ -414,7 +414,7 @@ final case class ConsistentHashingGroup(
  * isn't a good representation, because LocalActorRef doesn't include the
  * host and port.
  */
-private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
+private[akka] final case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
 
   override def toString: String = routee match {
     case ActorRefRoutee(ref)       ⇒ toStringWithfullAddress(ref.path)
@@ -481,7 +481,7 @@ private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) 
  */
 @SerialVersionUID(1L)
 @deprecated("Use ConsistentHashingPool or ConsistentHashingGroup", "2.3")
-case class ConsistentHashingRouter(
+final case class ConsistentHashingRouter(
   nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
   val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
@@ -561,7 +561,7 @@ case class ConsistentHashingRouter(
  * host and port.
  */
 @deprecated("Replaced by ConsistentRoutee", "2.3")
-private[akka] case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
+private[akka] final case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
   override def toString: String = {
     actorRef.path.address match {
       case Address(_, _, None, None) ⇒ actorRef.path.toStringWithAddress(selfAddress)

@@ -31,35 +31,35 @@ object ActorModelSpec {
 
   sealed trait ActorModelMessage extends NoSerializationVerificationNeeded
 
-  case class TryReply(expect: Any) extends ActorModelMessage
+  final case class TryReply(expect: Any) extends ActorModelMessage
 
-  case class Reply(expect: Any) extends ActorModelMessage
+  final case class Reply(expect: Any) extends ActorModelMessage
 
-  case class Forward(to: ActorRef, msg: Any) extends ActorModelMessage
+  final case class Forward(to: ActorRef, msg: Any) extends ActorModelMessage
 
-  case class CountDown(latch: CountDownLatch) extends ActorModelMessage
+  final case class CountDown(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Increment(counter: AtomicLong) extends ActorModelMessage
+  final case class Increment(counter: AtomicLong) extends ActorModelMessage
 
-  case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
+  final case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
+  final case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
 
-  case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
+  final case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Wait(time: Long) extends ActorModelMessage
+  final case class Wait(time: Long) extends ActorModelMessage
 
-  case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
+  final case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
 
   case object Interrupt extends ActorModelMessage
 
-  case class InterruptNicely(expect: Any) extends ActorModelMessage
+  final case class InterruptNicely(expect: Any) extends ActorModelMessage
 
   case object Restart extends ActorModelMessage
 
   case object DoubleStop extends ActorModelMessage
 
-  case class ThrowException(e: Throwable) extends ActorModelMessage
+  final case class ThrowException(e: Throwable) extends ActorModelMessage
 
   val Ping = "Ping"
   val Pong = "Pong"

@@ -49,7 +49,7 @@ package docs.serialization {
   //#my-own-serializer
 
   trait MyOwnSerializable
-  case class Customer(name: String) extends MyOwnSerializable
+  final case class Customer(name: String) extends MyOwnSerializable
 
   class SerializationDocSpec extends AkkaSpec {
     "demonstrate configuration of serialize messages" in {

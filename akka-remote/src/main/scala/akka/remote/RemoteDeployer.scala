@@ -13,7 +13,7 @@ import akka.routing.Pool
 import akka.remote.routing.RemoteRouterConfig
 
 @SerialVersionUID(1L)
-case class RemoteScope(node: Address) extends Scope {
+final case class RemoteScope(node: Address) extends Scope {
   def withFallback(other: Scope): Scope = this
 }
 

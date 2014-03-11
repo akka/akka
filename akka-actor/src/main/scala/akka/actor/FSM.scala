@@ -29,26 +29,26 @@ object FSM {
    * [[akka.actor.FSM.SubscribeTransitionCallBack]] before sending any
    * [[akka.actor.FSM.Transition]] messages.
    */
-  case class CurrentState[S](fsmRef: ActorRef, state: S)
+  final case class CurrentState[S](fsmRef: ActorRef, state: S)
 
   /**
    * Message type which is used to communicate transitions between states to
    * all subscribed listeners (use [[akka.actor.FSM.SubscribeTransitionCallBack]]).
    */
-  case class Transition[S](fsmRef: ActorRef, from: S, to: S)
+  final case class Transition[S](fsmRef: ActorRef, from: S, to: S)
 
   /**
    * Send this to an [[akka.actor.FSM]] to request first the [[FSM.CurrentState]]
    * and then a series of [[FSM.Transition]] updates. Cancel the subscription
    * using [[FSM.UnsubscribeTransitionCallBack]].
    */
-  case class SubscribeTransitionCallBack(actorRef: ActorRef)
+  final case class SubscribeTransitionCallBack(actorRef: ActorRef)
 
   /**
    * Unsubscribe from [[akka.actor.FSM.Transition]] notifications which was
    * effected by sending the corresponding [[akka.actor.FSM.SubscribeTransitionCallBack]].
    */
-  case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
+  final case class UnsubscribeTransitionCallBack(actorRef: ActorRef)
 
   /**
    * Reason why this [[akka.actor.FSM]] is shutting down.
@@ -71,7 +71,7 @@ object FSM {
    * an error, e.g. if the state to transition into does not exist. You can use
    * this to communicate a more precise cause to the [[akka.actor.FSM.onTermination]] block.
    */
-  case class Failure(cause: Any) extends Reason
+  final case class Failure(cause: Any) extends Reason
 
   /**
    * This case object is received in case of a state timeout.
@@ -81,13 +81,13 @@ object FSM {
   /**
    * INTERNAL API
    */
-  private case class TimeoutMarker(generation: Long)
+  private final case class TimeoutMarker(generation: Long)
 
   /**
    * INTERNAL API
    */
   // FIXME: what about the cancellable?
-  private[akka] case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
+  private[akka] final case class Timer(name: String, msg: Any, repeat: Boolean, generation: Int)(context: ActorContext)
     extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
@@ -116,14 +116,14 @@ object FSM {
   /**
    * Log Entry of the [[akka.actor.LoggingFSM]], can be obtained by calling `getLog`.
    */
-  case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
+  final case class LogEntry[S, D](stateName: S, stateData: D, event: Any)
 
   /**
    * This captures all of the managed state of the [[akka.actor.FSM]]: the state
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
 
     /**
      * Modify state transition descriptor to include a state timeout for the
@@ -165,13 +165,13 @@ object FSM {
    * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
    * `Event`, which allows pattern matching to extract both state and data.
    */
-  case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
+  final case class Event[D](event: Any, stateData: D) extends NoSerializationVerificationNeeded
 
   /**
    * Case class representing the state of the [[akka.actor.FSM]] whithin the
    * `onTermination` block.
    */
-  case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
+  final case class StopEvent[S, D](reason: Reason, currentState: S, stateData: D) extends NoSerializationVerificationNeeded
 
 }
 

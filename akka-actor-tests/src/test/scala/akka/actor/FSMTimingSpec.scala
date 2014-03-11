@@ -170,7 +170,7 @@ object FSMTimingSpec {
   case object Cancel
   case object SetHandler
 
-  case class Unhandled(msg: AnyRef)
+  final case class Unhandled(msg: AnyRef)
 
   class StateMachine(tester: ActorRef) extends Actor with FSM[State, Int] {
     import FSM._

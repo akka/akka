@@ -34,7 +34,7 @@ object ClusterRoundRobinRoutedActorMultiJvmSpec extends MultiNodeConfig {
     }
   }
 
-  case class Reply(routeeType: RouteeType, ref: ActorRef)
+  final case class Reply(routeeType: RouteeType, ref: ActorRef)
 
   sealed trait RouteeType extends Serializable
   object DeployRoutee extends RouteeType

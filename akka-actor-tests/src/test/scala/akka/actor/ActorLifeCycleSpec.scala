@@ -128,7 +128,7 @@ class ActorLifeCycleSpec extends AkkaSpec("akka.actor.serialize-messages=off") w
     }
 
     "clear the behavior stack upon restart" in {
-      case class Become(recv: ActorContext ⇒ Receive)
+      final case class Become(recv: ActorContext ⇒ Receive)
       val a = system.actorOf(Props(new Actor {
         def receive = {
           case Become(beh) ⇒ { context.become(beh(context), discardOld = false); sender() ! "ok" }

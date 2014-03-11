@@ -22,8 +22,8 @@ import akka.pattern.{ AskTimeoutException, ask }
 import akka.util.Timeout
 
 object FickleFriends {
-  case class FriendlyIncrement(friends: immutable.Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
-  case class Increment(friends: immutable.Seq[ActorRef])
+  final case class FriendlyIncrement(friends: immutable.Seq[ActorRef], timeout: Timeout, latch: CountDownLatch)
+  final case class Increment(friends: immutable.Seq[ActorRef])
   case object GetCount
 
   /**

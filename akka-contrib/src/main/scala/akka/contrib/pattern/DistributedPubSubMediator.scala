@@ -63,20 +63,20 @@ object DistributedPubSubMediator {
    */
   def defaultProps(role: String): Props = props(Internal.roleOption(role))
 
-  @SerialVersionUID(1L) case class Put(ref: ActorRef)
-  @SerialVersionUID(1L) case class Remove(path: String)
-  @SerialVersionUID(1L) case class Subscribe(topic: String, ref: ActorRef)
-  @SerialVersionUID(1L) case class Unsubscribe(topic: String, ref: ActorRef)
-  @SerialVersionUID(1L) case class SubscribeAck(subscribe: Subscribe)
-  @SerialVersionUID(1L) case class UnsubscribeAck(unsubscribe: Unsubscribe)
-  @SerialVersionUID(1L) case class Publish(topic: String, msg: Any) extends DistributedPubSubMessage
-  @SerialVersionUID(1L) case class Send(path: String, msg: Any, localAffinity: Boolean) extends DistributedPubSubMessage {
+  @SerialVersionUID(1L) final case class Put(ref: ActorRef)
+  @SerialVersionUID(1L) final case class Remove(path: String)
+  @SerialVersionUID(1L) final case class Subscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L) final case class Unsubscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L) final case class SubscribeAck(subscribe: Subscribe)
+  @SerialVersionUID(1L) final case class UnsubscribeAck(unsubscribe: Unsubscribe)
+  @SerialVersionUID(1L) final case class Publish(topic: String, msg: Any) extends DistributedPubSubMessage
+  @SerialVersionUID(1L) final case class Send(path: String, msg: Any, localAffinity: Boolean) extends DistributedPubSubMessage {
     /**
      * Convenience constructor with `localAffinity` false
      */
     def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
   }
-  @SerialVersionUID(1L) case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) extends DistributedPubSubMessage {
+  @SerialVersionUID(1L) final case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false) extends DistributedPubSubMessage {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
   }
 
@@ -90,20 +90,20 @@ object DistributedPubSubMediator {
     case object Prune
 
     @SerialVersionUID(1L)
-    case class Bucket(
+    final case class Bucket(
       owner: Address,
       version: Long,
       content: Map[String, ValueHolder])
 
     @SerialVersionUID(1L)
-    case class ValueHolder(version: Long, ref: Option[ActorRef]) {
+    final case class ValueHolder(version: Long, ref: Option[ActorRef]) {
       @transient lazy val routee: Option[Routee] = ref map ActorRefRoutee
     }
 
     @SerialVersionUID(1L)
-    case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
+    final case class Status(versions: Map[Address, Long]) extends DistributedPubSubMessage
     @SerialVersionUID(1L)
-    case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
+    final case class Delta(buckets: immutable.Iterable[Bucket]) extends DistributedPubSubMessage
 
     case object GossipTick
 

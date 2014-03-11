@@ -97,7 +97,7 @@ class PhiAccrualFailureDetector(
    * Implement using optimistic lockless concurrency, all state is represented
    * by this immutable case class and managed by an AtomicReference.
    */
-  private case class State(history: HeartbeatHistory, timestamp: Option[Long])
+  private final case class State(history: HeartbeatHistory, timestamp: Option[Long])
 
   private val state = new AtomicReference[State](State(history = firstHeartbeat, timestamp = None))
 
@@ -203,7 +203,7 @@ private[akka] object HeartbeatHistory {
  * The stats (mean, variance, stdDeviation) are not defined for
  * for empty HeartbeatHistory, i.e. throws AritmeticException.
  */
-private[akka] case class HeartbeatHistory private (
+private[akka] final case class HeartbeatHistory private (
   maxSampleSize: Int,
   intervals: immutable.IndexedSeq[Long],
   intervalSum: Long,

@@ -53,7 +53,7 @@ object ClusterEvent {
   /**
    * Current snapshot state of the cluster. Sent to new subscriber.
    */
-  case class CurrentClusterState(
+  final case class CurrentClusterState(
     members: immutable.SortedSet[Member] = immutable.SortedSet.empty,
     unreachable: Set[Member] = Set.empty,
     seenBy: Set[Address] = Set.empty,
@@ -122,7 +122,7 @@ object ClusterEvent {
   /**
    * Member status changed to Up.
    */
-  case class MemberUp(member: Member) extends MemberEvent {
+  final case class MemberUp(member: Member) extends MemberEvent {
     if (member.status != Up) throw new IllegalArgumentException("Expected Up status, got: " + member)
   }
 
@@ -130,7 +130,7 @@ object ClusterEvent {
    * Member status changed to [[MemberStatus.Exiting]] and will be removed
    * when all members have seen the `Exiting` status.
    */
-  case class MemberExited(member: Member) extends MemberEvent {
+  final case class MemberExited(member: Member) extends MemberEvent {
     if (member.status != Exiting) throw new IllegalArgumentException("Expected Exiting status, got: " + member)
   }
 
@@ -141,7 +141,7 @@ object ClusterEvent {
    * When `previousStatus` is `MemberStatus.Exiting` the node was removed
    * after graceful leaving and exiting.
    */
-  case class MemberRemoved(member: Member, previousStatus: MemberStatus) extends MemberEvent {
+  final case class MemberRemoved(member: Member, previousStatus: MemberStatus) extends MemberEvent {
     if (member.status != Removed) throw new IllegalArgumentException("Expected Removed status, got: " + member)
   }
 
@@ -149,7 +149,7 @@ object ClusterEvent {
    * Leader of the cluster members changed. Published when the state change
    * is first seen on a node.
    */
-  case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
+  final case class LeaderChanged(leader: Option[Address]) extends ClusterDomainEvent {
     /**
      * Java API
      * @return address of current leader, or null if none
@@ -161,7 +161,7 @@ object ClusterEvent {
    * First member (leader) of the members within a role set changed.
    * Published when the state change is first seen on a node.
    */
-  case class RoleLeaderChanged(role: String, leader: Option[Address]) extends ClusterDomainEvent {
+  final case class RoleLeaderChanged(role: String, leader: Option[Address]) extends ClusterDomainEvent {
     /**
      * Java API
      * @return address of current leader, or null if none
@@ -178,19 +178,19 @@ object ClusterEvent {
   /**
    * A member is considered as unreachable by the failure detector.
    */
-  case class UnreachableMember(member: Member) extends ReachabilityEvent
+  final case class UnreachableMember(member: Member) extends ReachabilityEvent
 
   /**
    * A member is considered as reachable by the failure detector
    * after having been unreachable.
    * @see [[UnreachableMember]]
    */
-  case class ReachableMember(member: Member) extends ReachabilityEvent
+  final case class ReachableMember(member: Member) extends ReachabilityEvent
 
   /**
    * Current snapshot of cluster node metrics. Published to subscribers.
    */
-  case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
+  final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
     /**
      * Java API
      */
@@ -202,17 +202,17 @@ object ClusterEvent {
    * INTERNAL API
    * The nodes that have seen current version of the Gossip.
    */
-  private[cluster] case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
+  private[cluster] final case class SeenChanged(convergence: Boolean, seenBy: Set[Address]) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
-  private[cluster] case class ReachabilityChanged(reachability: Reachability) extends ClusterDomainEvent
+  private[cluster] final case class ReachabilityChanged(reachability: Reachability) extends ClusterDomainEvent
 
   /**
    * INTERNAL API
    */
-  private[cluster] case class CurrentInternalStats(
+  private[cluster] final case class CurrentInternalStats(
     gossipStats: GossipStats,
     vclockStats: VectorClockStats) extends ClusterDomainEvent
 

@@ -13,8 +13,8 @@ import scala.concurrent.duration._
 sealed trait ChopstickMessage
 object Take extends ChopstickMessage
 object Put extends ChopstickMessage
-case class Taken(chopstick: ActorRef) extends ChopstickMessage
-case class Busy(chopstick: ActorRef) extends ChopstickMessage
+final case class Taken(chopstick: ActorRef) extends ChopstickMessage
+final case class Busy(chopstick: ActorRef) extends ChopstickMessage
 
 /**
  * Some states the chopstick can be in
@@ -26,7 +26,7 @@ case object Taken extends ChopstickState
 /**
  * Some state container for the chopstick
  */
-case class TakenBy(hakker: ActorRef)
+final case class TakenBy(hakker: ActorRef)
 
 /*
 * A chopstick is an actor, it can be taken, and put back
@@ -77,7 +77,7 @@ case object Eating extends FSMHakkerState
 /**
  * Some state container to keep track of which chopsticks we have
  */
-case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
+final case class TakenChopsticks(left: Option[ActorRef], right: Option[ActorRef])
 
 /*
 * A fsm hakker is an awesome dude or dudette who either thinks about hacking or has to eat ;-)

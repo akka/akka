@@ -22,7 +22,7 @@ import akka.dispatch.AbstractNodeQueue
  * This exception is thrown by Scheduler.schedule* when scheduling is not
  * possible, e.g. after shutting down the Scheduler.
  */
-private case class SchedulerException(msg: String) extends akka.AkkaException(msg) with NoStackTrace
+private final case class SchedulerException(msg: String) extends akka.AkkaException(msg) with NoStackTrace
 
 // The Scheduler trait is included in the documentation. KEEP THE LINES SHORT!!!
 //#scheduler

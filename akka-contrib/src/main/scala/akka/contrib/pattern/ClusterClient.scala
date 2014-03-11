@@ -63,16 +63,16 @@ object ClusterClient {
   }
 
   @SerialVersionUID(1L)
-  case class Send(path: String, msg: Any, localAffinity: Boolean) {
+  final case class Send(path: String, msg: Any, localAffinity: Boolean) {
     /**
      * Convenience constructor with `localAffinity` false
      */
     def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
   }
   @SerialVersionUID(1L)
-  case class SendToAll(path: String, msg: Any)
+  final case class SendToAll(path: String, msg: Any)
   @SerialVersionUID(1L)
-  case class Publish(topic: String, msg: Any)
+  final case class Publish(topic: String, msg: Any)
 
   /**
    * INTERNAL API
@@ -313,7 +313,7 @@ object ClusterReceptionist {
     @SerialVersionUID(1L)
     case object GetContacts
     @SerialVersionUID(1L)
-    case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
+    final case class Contacts(contactPoints: immutable.IndexedSeq[ActorSelection])
     @SerialVersionUID(1L)
     case object Ping
 
