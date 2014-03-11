@@ -161,8 +161,35 @@ Akka comes shipped with a number of mailbox implementations:
 
   - Configuration name: "akka.dispatch.BoundedPriorityMailbox"
 
+* UnboundedControlAwareMailbox
+
+  - Delivers messages that extend ``akka.dispatch.ControlMessage`` with higher priority
+
+  - Backed by two ``java.util.concurrent.ConcurrentLinkedQueue``
+
+  - Blocking: No
+
+  - Bounded: No
+
+  - Configuration name: "akka.dispatch.UnboundedControlAwareMailbox"
+
+* BoundedControlAwareMailbox
+
+  - Delivers messages that extend ``akka.dispatch.ControlMessage`` with higher priority
+
+  - Backed by two ``java.util.concurrent.ConcurrentLinkedQueue`` and blocking on enqueue if capacity has been reached
+
+  - Blocking: Yes
+
+  - Bounded: Yes
+
+  - Configuration name: "akka.dispatch.BoundedControlAwareMailbox"
+
 Mailbox configuration examples
 ==============================
+
+PriorityMailbox
+---------------
 
 How to create a PriorityMailbox:
 
@@ -189,6 +216,23 @@ Or code like this:
 
 .. includecode:: code/docs/dispatcher/DispatcherDocTest.java#defining-mailbox-in-code
 
+ControlAwareMailbox
+-------------------
+
+A ``ControlAwareMailbox`` can be very useful if an actor needs to be able to receive control messages
+immediately no matter how many other messages are already in its mailbox.
+
+It can be configured like this:
+
+.. includecode:: ../scala/code/docs/dispatcher/DispatcherDocSpec.scala#control-aware-mailbox-config
+
+Control messages need to extend the ``ControlMessage`` trait:
+
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#control-aware-mailbox-messages
+
+And then an example on how you would use it:
+
+.. includecode:: ../java/code/docs/dispatcher/DispatcherDocTest.java#control-aware-dispatcher
 
 Creating your own Mailbox type
 ==============================

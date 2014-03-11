@@ -175,6 +175,14 @@ object DispatcherDocSpec {
       mailbox-type = "docs.dispatcher.MyUnboundedMailbox"
     }
     //#custom-mailbox-config
+
+    //#control-aware-mailbox-config
+    control-aware-dispatcher {
+      mailbox-type = "akka.dispatch.UnboundedControlAwareMailbox"
+      //Other dispatcher configuration goes here
+    }
+    //#control-aware-mailbox-config
+
   """
 
   //#prio-mailbox
@@ -201,6 +209,12 @@ object DispatcherDocSpec {
         case otherwise     => 1
       })
   //#prio-mailbox
+
+  //#control-aware-mailbox-messages
+  import akka.dispatch.ControlMessage
+
+  case object MyControlMessage extends ControlMessage
+  //#control-aware-mailbox-messages
 
   class MyActor extends Actor {
     def receive = {
@@ -325,6 +339,39 @@ class DispatcherDocSpec extends AkkaSpec(DispatcherDocSpec.config) {
        * 'lowpriority
        */
       //#prio-dispatcher
+
+      watch(a)
+      expectMsgPF() { case Terminated(`a`) => () }
+    }
+  }
+
+  "defining control aware dispatcher" in {
+    new AnyRef {
+      //#control-aware-dispatcher
+
+      // We create a new Actor that just prints out what it processes
+      class Logger extends Actor {
+        val log: LoggingAdapter = Logging(context.system, this)
+
+        self ! 'foo
+        self ! 'bar
+        self ! MyControlMessage
+        self ! PoisonPill
+
+        def receive = {
+          case x => log.info(x.toString)
+        }
+      }
+      val a = system.actorOf(Props(classOf[Logger], this).withDispatcher(
+        "control-aware-dispatcher"))
+
+      /*
+       * Logs:
+       * MyControlMessage
+       * 'foo
+       * 'bar
+       */
+      //#control-aware-dispatcher
 
       watch(a)
       expectMsgPF() { case Terminated(`a`) => () }
