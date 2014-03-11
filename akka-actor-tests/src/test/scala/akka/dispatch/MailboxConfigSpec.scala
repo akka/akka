@@ -194,6 +194,14 @@ class PriorityMailboxSpec extends MailboxSpec {
   }
 }
 
+class ControlAwareMailboxSpec extends MailboxSpec {
+  lazy val name = "The control aware mailbox implementation"
+  def factory = {
+    case UnboundedMailbox()                    ⇒ new UnboundedControlAwareMailbox().create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedControlAwareMailbox(capacity, pushTimeOut).create(None, None)
+  }
+}
+
 object CustomMailboxSpec {
   val config = """
     my-dispatcher {
