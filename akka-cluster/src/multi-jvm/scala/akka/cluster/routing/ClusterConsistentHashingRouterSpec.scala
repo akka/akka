@@ -70,7 +70,7 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
   lazy val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
 
   def currentRoutees(router: ActorRef) =
-    Await.result(router ? GetRoutees, remaining).asInstanceOf[Routees].routees
+    Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
   /**
    * Fills in self address for local ActorRef

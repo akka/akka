@@ -127,7 +127,7 @@ abstract class ClusterRoundRobinRoutedActorSpec extends MultiNodeSpec(ClusterRou
   }
 
   def currentRoutees(router: ActorRef) =
-    Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees
+    Await.result(router ? CurrentRoutees, timeout.duration).asInstanceOf[RouterRoutees].routees
 
   "A cluster router with a RoundRobin router" must {
     "start cluster with 2 nodes" taggedAs LongRunningTest in {

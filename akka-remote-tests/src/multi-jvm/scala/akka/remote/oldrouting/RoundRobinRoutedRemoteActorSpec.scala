@@ -124,7 +124,7 @@ class RoundRobinRoutedRemoteActorSpec extends MultiNodeSpec(RoundRobinRoutedRemo
         val repliesFrom: Set[ActorRef] =
           (for (n ← 2 to 8) yield {
             actor ! "hit"
-            awaitCond(Await.result(actor ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size == n)
+            awaitCond(Await.result(actor ? CurrentRoutees, timeout.duration).asInstanceOf[RouterRoutees].routees.size == n)
             expectMsgType[ActorRef]
           }).toSet
 

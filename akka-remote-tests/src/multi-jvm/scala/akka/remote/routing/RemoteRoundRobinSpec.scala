@@ -141,7 +141,7 @@ class RemoteRoundRobinSpec extends MultiNodeSpec(RemoteRoundRobinMultiJvmSpec)
           (for (n ← 3 to 9) yield {
             // each message trigger a resize, incrementing number of routees with 1
             actor ! "hit"
-            Await.result(actor ? GetRoutees, remaining).asInstanceOf[Routees].routees.size should be(n)
+            Await.result(actor ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size should be(n)
             expectMsgType[ActorRef]
           }).toSet
 

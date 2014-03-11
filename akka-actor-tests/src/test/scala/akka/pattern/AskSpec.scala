@@ -43,7 +43,7 @@ class AskSpec extends AkkaSpec {
       val f = ask(null: ActorRef, 3.14)
       f.isCompleted should be(true)
       intercept[IllegalArgumentException] {
-        Await.result(f, remaining)
+        Await.result(f, timeout.duration)
       }.getMessage should be("Unsupported recipient ActorRef type, question not sent to [null]")
     }
 
@@ -53,7 +53,7 @@ class AskSpec extends AkkaSpec {
       val f = echo ? "foo"
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
-        Await.result(f, remaining)
+        Await.result(f, timeout.duration)
       }.getMessage should be(expectedMsg)
     }
 
@@ -63,7 +63,7 @@ class AskSpec extends AkkaSpec {
       val f = echo ? "foo"
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
       intercept[IllegalArgumentException] {
-        Await.result(f, remaining)
+        Await.result(f, timeout.duration)
       }.getMessage should be(expectedMsg)
     }
 
@@ -72,7 +72,7 @@ class AskSpec extends AkkaSpec {
       val silentOne = system.actorOf(Props.empty, "silent")
       val f = silentOne ? "noreply"
       intercept[AskTimeoutException] {
-        Await.result(f, remaining)
+        Await.result(f, 1 second)
       }.getMessage.contains("/user/silent") should be(true)
     }
 
@@ -80,7 +80,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(0.5 seconds)
       val f = system.actorOf(Props.empty) ? "noreply"
       intercept[AskTimeoutException] {
-        Await.result(f, remaining)
+        Await.result(f, 1 second)
       }.getMessage should include(timeout.duration.toMillis.toString)
     }
 

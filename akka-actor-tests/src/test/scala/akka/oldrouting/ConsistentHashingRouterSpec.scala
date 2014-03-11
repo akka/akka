@@ -57,7 +57,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
   "consistent hashing router" must {
     "create routees from configuration" in {
-      val currentRoutees = Await.result(router1 ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees]
+      val currentRoutees = Await.result(router1 ? CurrentRoutees, remainingOrDefault).asInstanceOf[RouterRoutees]
       currentRoutees.routees.size should be(3)
     }
 

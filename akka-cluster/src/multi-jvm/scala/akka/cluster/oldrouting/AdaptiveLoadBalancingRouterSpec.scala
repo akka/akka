@@ -94,7 +94,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
   import AdaptiveLoadBalancingRouterMultiJvmSpec._
 
   def currentRoutees(router: ActorRef) =
-    Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees
+    Await.result(router ? CurrentRoutees, timeout.duration).asInstanceOf[RouterRoutees].routees
 
   def receiveReplies(expectedReplies: Int): Map[Address, Int] = {
     val zero = Map.empty[Address, Int] ++ roles.map(address(_) -> 0)

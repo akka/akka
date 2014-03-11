@@ -100,7 +100,7 @@ abstract class RestartFirstSeedNodeSpec
 
       // shutdown seed1System
       runOn(seed1) {
-        shutdown(seed1System, remaining)
+        shutdown(seed1System, remainingOrDefault)
       }
       runOn(seed2, seed3) {
         awaitMembersUp(2, canNotBePartOfMemberRing = Set(seedNodes.head))

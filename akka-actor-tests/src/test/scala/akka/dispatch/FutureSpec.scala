@@ -385,7 +385,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "fold" in {
-        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remaining) should be(55)
+        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remainingOrDefault) should be(55)
       }
 
       "zip" in {
@@ -417,7 +417,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldFoldResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remaining) }.getMessage should be("shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remainingOrDefault) }.getMessage should be("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -443,7 +443,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "reduce results" in {
         val futures = (1 to 10).toList map { i ⇒ Future(i) }
-        assert(Await.result(Future.reduce(futures)(_ + _), remaining) === 55)
+        assert(Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) === 55)
       }
 
       "reduce results with Exception" in {
@@ -452,7 +452,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remaining) }.getMessage should be("shouldReduceResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) }.getMessage should be("shouldReduceResultsWithException: expected")
         }
       }
 

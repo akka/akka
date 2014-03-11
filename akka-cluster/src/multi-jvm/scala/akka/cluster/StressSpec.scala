@@ -802,7 +802,7 @@ abstract class StressSpec
       clusterResultAggregator match {
         case Some(r) ⇒
           watch(r)
-          expectMsgPF(remaining) { case Terminated(a) if a.path == r.path ⇒ true }
+          expectMsgPF() { case Terminated(a) if a.path == r.path ⇒ true }
         case None ⇒ // ok, already terminated
       }
     }
@@ -829,7 +829,7 @@ abstract class StressSpec
         runOn(currentRoles.last) {
           cluster.join(roles.head)
         }
-        awaitMembersUp(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
       }
 
     }
@@ -849,7 +849,7 @@ abstract class StressSpec
             if (toSeedNodes) cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
             else cluster.join(roles.head)
           }
-          awaitMembersUp(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
         }
 
       }
@@ -892,14 +892,14 @@ abstract class StressSpec
             testConductor.exit(removeRole, 0).await
           }
         }
-        awaitMembersUp(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
         awaitAllReachable()
       }
     }
 
     runOn(roles.head) {
       val expectedPath = RootActorPath(removeAddress) / "user" / "watchee"
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Terminated(a) if a.path == expectedPath ⇒ true
       }
     }
@@ -927,7 +927,7 @@ abstract class StressSpec
               testConductor.exit(r, 0).await
             }
           }
-          awaitMembersUp(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
           awaitAllReachable()
         }
       }
@@ -978,7 +978,7 @@ abstract class StressSpec
               awaitMembersUp(
                 nbrUsedRoles + activeRoles.size,
                 canNotBePartOfMemberRing = allPreviousAddresses,
-                timeout = remaining)
+                timeout = remainingOrDefault)
               awaitAllReachable()
             }
             val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
@@ -1000,7 +1000,7 @@ abstract class StressSpec
     loop(1, None, Set.empty) foreach { as ⇒ TestKit.shutdownActorSystem(as) }
     within(loopDuration) {
       runOn(usedRoles: _*) {
-        awaitMembersUp(nbrUsedRoles, timeout = remaining)
+        awaitMembersUp(nbrUsedRoles, timeout = remainingOrDefault)
         awaitAllReachable()
         phiObserver ! Reset
         statsObserver ! Reset
@@ -1142,7 +1142,7 @@ abstract class StressSpec
       runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
         reportResult {
           cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
-          awaitMembersUp(size, timeout = remaining)
+          awaitMembersUp(size, timeout = remainingOrDefault)
         }
       }
 

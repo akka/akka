@@ -96,7 +96,7 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
         // master system is supposed to be shutdown after slave
         // this should be triggered by slave system shutdown
-        expectMsgPF(remaining) { case Terminated(`actor`) ⇒ true }
+        expectMsgPF() { case Terminated(`actor`) ⇒ true }
       }
 
       runOn(slave) {

@@ -18,7 +18,7 @@ import akka.actor.ActorRef
 class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
   def routeeSize(router: ActorRef): Int =
-    Await.result(router ? GetRoutees, remaining).asInstanceOf[Routees].routees.size
+    Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees.size
 
   "round robin pool" must {
 

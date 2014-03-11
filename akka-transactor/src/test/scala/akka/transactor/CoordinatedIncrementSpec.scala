@@ -86,7 +86,7 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
       counters(0) ! coordinated(Increment(counters.tail))
       coordinated.await
       for (counter ← counters) {
-        Await.result((counter ? GetCount).mapTo[Int], remaining) should be(1)
+        Await.result((counter ? GetCount).mapTo[Int], timeout.duration) should be(1)
       }
       counters foreach (system.stop(_))
       system.stop(failer)
@@ -103,7 +103,7 @@ class CoordinatedIncrementSpec extends AkkaSpec(CoordinatedIncrement.config) wit
         counters(0) ! Coordinated(Increment(counters.tail :+ failer))
         coordinated.await
         for (counter ← counters) {
-          Await.result(counter ? GetCount, remaining) should be(0)
+          Await.result(counter ? GetCount, timeout.duration) should be(0)
         }
         counters foreach (system.stop(_))
         system.stop(failer)

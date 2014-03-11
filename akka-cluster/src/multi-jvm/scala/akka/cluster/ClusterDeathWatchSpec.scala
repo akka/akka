@@ -236,7 +236,7 @@ abstract class ClusterDeathWatchSpec
 
         enterBarrier("first-unavailable")
 
-        val timeout = remaining
+        val timeout = remainingOrDefault
         try system.awaitTermination(timeout) catch {
           case _: TimeoutException ⇒
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,

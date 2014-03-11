@@ -96,7 +96,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(
         routeeProps = Props[TestActor]))
       watch(router)
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
       router ! GetRoutees
       val routees = expectMsgType[Routees].routees
       routees.size should be(2)
@@ -132,7 +132,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
       val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(
         routeeProps = Props[TestActor]), "router3")
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
       router ! GetRoutees
       expectMsgType[Routees].routees.size should be(3)
       system.stop(router)

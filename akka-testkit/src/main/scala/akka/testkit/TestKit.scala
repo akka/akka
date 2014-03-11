@@ -183,7 +183,17 @@ trait TestKitBase {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: FiniteDuration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+  def remainingOrDefault = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or throw an [[AssertionError]] if no `within` block surrounds this
+   * call.
+   */
+  def remaining: FiniteDuration = end match {
+    case f: FiniteDuration ⇒ f - now
+    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+  }
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
@@ -196,7 +206,7 @@ trait TestKitBase {
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
-    case x if x eq Duration.Undefined ⇒ remaining
+    case x if x eq Duration.Undefined ⇒ remainingOrDefault
     case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
     case f: FiniteDuration            ⇒ f.dilated
   }
@@ -309,9 +319,9 @@ trait TestKitBase {
   def within[T](max: FiniteDuration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
-   * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
    */
-  def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)
+  def expectMsg[T](obj: T): T = expectMsg_internal(remainingOrDefault, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -380,9 +390,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgType[T](remaining)`, but correctly treating the timeFactor.
+   * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remaining, t.runtimeClass.asInstanceOf[Class[T]])
+  def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Receive one message from the test actor and assert that it conforms to the
@@ -394,9 +404,9 @@ trait TestKitBase {
   def expectMsgType[T](max: FiniteDuration)(implicit t: ClassTag[T]): T = expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
-   * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.
+   * Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor.
    */
-  def expectMsgClass[C](c: Class[C]): C = expectMsgClass_internal(remaining, c)
+  def expectMsgClass[C](c: Class[C]): C = expectMsgClass_internal(remainingOrDefault, c)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -415,9 +425,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAnyOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remaining, obj: _*)
+  def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
@@ -436,9 +446,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAnyClassOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remaining, obj: _*)
+  def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -457,9 +467,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAllOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remaining, obj: _*)
+  def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -492,9 +502,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAllClassOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(remaining, obj: _*)
+  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -515,9 +525,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAllConformingOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllConformingOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(remaining, obj: _*)
+  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -541,9 +551,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
+   * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectNoMsg() { expectNoMsg_internal(remaining) }
+  def expectNoMsg() { expectNoMsg_internal(remainingOrDefault) }
 
   /**
    * Assert that no message is received for the specified time.
@@ -607,7 +617,7 @@ trait TestKitBase {
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * Duration.timeFactor.
    */
-  def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remaining)
+  def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remainingOrDefault)
 
   /**
    * Receive N messages in a row before the given deadline.

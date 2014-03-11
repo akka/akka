@@ -50,7 +50,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
   }
 
   def routeeSize(router: ActorRef): Int =
-    Await.result(router ? CurrentRoutees, remaining).asInstanceOf[RouterRoutees].routees.size
+    Await.result(router ? CurrentRoutees, remainingOrDefault).asInstanceOf[RouterRoutees].routees.size
 
   "DefaultResizer" must {
 
@@ -108,7 +108,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       router ! latch
       router ! latch
 
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
 
       // messagesPerResize is 10 so there is no risk of additional resize
       routeeSize(router) should be(2)
@@ -123,7 +123,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       router ! latch
       router ! latch
 
-      Await.ready(latch, remaining)
+      Await.ready(latch, remainingOrDefault)
 
       routeeSize(router) should be(2)
     }

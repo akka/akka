@@ -215,7 +215,7 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
    * Join the specific node within the given period by sending repeated join
    * requests at periodic intervals until we succeed.
    */
-  def joinWithin(joinNode: RoleName, max: Duration = remaining, interval: Duration = 1.second): Unit = {
+  def joinWithin(joinNode: RoleName, max: Duration = remainingOrDefault, interval: Duration = 1.second): Unit = {
     def memberInState(member: Address, status: Seq[MemberStatus]): Boolean =
       clusterView.members.exists { m ⇒ (m.address == member) && status.contains(m.status) }
 

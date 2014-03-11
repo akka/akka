@@ -146,7 +146,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
           val ps = for (i ← (1 to enqueueN by step).toList) yield createProducer(i, Math.min(enqueueN, i + step - 1))
 
           if (parallel == false)
-            ps foreach { Await.ready(_, remaining) }
+            ps foreach { Await.ready(_, remainingOrDefault) }
 
           ps
         }
@@ -162,8 +162,8 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
         val consumers = List.fill(maxConsumers)(createConsumer)
 
-        val ps = producers.map(Await.result(_, remaining))
-        val cs = consumers.map(Await.result(_, remaining))
+        val ps = producers.map(Await.result(_, remainingOrDefault))
+        val cs = consumers.map(Await.result(_, remainingOrDefault))
 
         ps.map(_.size).sum should be(enqueueN) //Must have produced 1000 messages
         cs.map(_.size).sum should be(dequeueN) //Must have consumed all produced messages
