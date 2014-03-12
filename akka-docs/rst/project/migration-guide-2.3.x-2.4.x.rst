@@ -44,3 +44,6 @@ The following, previously deprecated, features have been removed:
 * JavaLoggingEventHandler, replaced by JavaLogger
 
 * UntypedActorFactory
+
+* Java API TestKit.dilated, moved to JavaTestKit.dilated
+
