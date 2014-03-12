@@ -218,7 +218,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, failureDetector }
-  import cluster.settings.{ AutoDown ⇒ _, _ }
+  import cluster.settings._
   import cluster.InfoLogger._
 
   protected def selfUniqueAddress = cluster.selfUniqueAddress

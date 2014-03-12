@@ -28,3 +28,4 @@ The following, previously deprecated, features have been removed:
 * akka-transactor
 * durable mailboxes (akka-mailboxes-common, akka-file-mailbox)
 * Cluster.publishCurrentClusterState
+* akka.cluster.auto-down, replaced by akka.cluster.auto-down-unreachable-after in Akka 2.3
