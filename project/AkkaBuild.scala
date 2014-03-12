@@ -75,7 +75,7 @@ object AkkaBuild extends Build {
       // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
@@ -249,16 +249,6 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent,
       previousArtifact := akkaPreviousArtifact("akka-agent")
-    )
-  )
-
-  lazy val transactor = Project(
-    id = "akka-transactor",
-    base = file("akka-transactor"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.transactor ++ Seq(
-      libraryDependencies ++= Dependencies.transactor,
-      previousArtifact := akkaPreviousArtifact("akka-transactor")
     )
   )
 
@@ -1029,8 +1019,6 @@ object AkkaBuild extends Build {
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
 
-    val transactor = exports(Seq("akka.transactor.*"))
-
     val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
 
     val testkit = exports(Seq("akka.testkit.*"))
@@ -1150,8 +1138,6 @@ object Dependencies {
   val slf4j = Seq(slf4jApi, Test.logback)
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
-
-  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 

@@ -25,4 +25,5 @@ Removed Deprecated Features
 The following, previously deprecated, features have been removed:
 
 * akka-dataflow
+* akka-transactor
 
