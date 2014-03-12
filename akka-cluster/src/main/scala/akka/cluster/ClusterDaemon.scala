@@ -137,10 +137,9 @@ private[cluster] object InternalClusterAction {
   final case class Subscribe(subscriber: ActorRef, initialStateMode: SubscriptionInitialStateMode, to: Set[Class[_]]) extends SubscriptionMessage
   final case class Unsubscribe(subscriber: ActorRef, to: Option[Class[_]]) extends SubscriptionMessage
   /**
-   * @param receiver if `receiver` is defined the event will only be sent to that
-   *   actor, otherwise it will be sent to all subscribers via the `eventStream`.
+   * @param receiver [[akka.cluster.ClusterEvent.CurrentClusterState]] will be sent to the `receiver`
    */
-  final case class PublishCurrentClusterState(receiver: Option[ActorRef]) extends SubscriptionMessage
+  final case class SendCurrentClusterState(receiver: ActorRef) extends SubscriptionMessage
 
   sealed trait PublishMessage
   final case class PublishChanges(newGossip: Gossip) extends PublishMessage
