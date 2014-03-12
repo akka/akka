@@ -75,7 +75,7 @@ object AkkaBuild extends Build {
       // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
@@ -83,7 +83,7 @@ object AkkaBuild extends Build {
     id = "akka-scala-nightly",
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
-    // samples and dataflow don't work with dbuild right now
+    // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
       persistence, mailboxes, kernel, osgi, contrib, multiNodeTestkit)
   )
@@ -152,25 +152,6 @@ object AkkaBuild extends Build {
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
       previousArtifact := akkaPreviousArtifact("akka-actor")
-    )
-  )
-
-  val cpsPlugin = Seq(
-    libraryDependencies <++= scalaVersion { v =>
-      if (v.startsWith("2.10.")) Seq(compilerPlugin("org.scala-lang.plugins" % "continuations" % v))
-      else Seq(
-        compilerPlugin("org.scala-lang.plugins" %% "scala-continuations-plugin" % Dependencies.Versions.scalaContinuationsVersion),
-        "org.scala-lang.plugins" %% "scala-continuations-library" % Dependencies.Versions.scalaContinuationsVersion)
-    },
-    scalacOptions += "-P:continuations:enable"
-  )
-
-  lazy val dataflow = Project(
-    id = "akka-dataflow",
-    base = file("akka-dataflow"),
-    dependencies = Seq(testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-dataflow")
     )
   )
 
@@ -565,7 +546,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
       persistence % "compile;test->test"),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
@@ -1047,8 +1028,6 @@ object AkkaBuild extends Build {
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
-
-    val dataflow = exports(Seq("akka.dataflow.*"))
 
     val transactor = exports(Seq("akka.transactor.*"))
 
