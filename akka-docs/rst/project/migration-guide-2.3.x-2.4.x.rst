@@ -41,3 +41,4 @@ The following, previously deprecated, features have been removed:
 
 * Timeout constructor without unit
  
+* JavaLoggingEventHandler, replaced by JavaLogger
