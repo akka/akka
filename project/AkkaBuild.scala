@@ -50,7 +50,6 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
       SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, remoteTests.id),
@@ -76,7 +75,7 @@ object AkkaBuild extends Build {
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -85,7 +84,7 @@ object AkkaBuild extends Build {
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, osgi, contrib, multiNodeTestkit)
+      persistence, kernel, osgi, contrib, multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -261,36 +260,6 @@ object AkkaBuild extends Build {
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
-    )
-  )
-
-  val testMailbox = SettingKey[Boolean]("test-mailbox")
-
-  lazy val mailboxes = Project(
-    id = "akka-durable-mailboxes",
-    base = file("akka-durable-mailboxes"),
-    settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, fileMailbox)
-  )
-
-  lazy val mailboxesCommon = Project(
-    id = "akka-mailboxes-common",
-    base = file("akka-durable-mailboxes/akka-mailboxes-common"),
-    dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.mailboxesCommon ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes,
-      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
-      publishArtifact in Test := true
-    )
-  )
-
-  lazy val fileMailbox = Project(
-    id = "akka-file-mailbox",
-    base = file("akka-durable-mailboxes/akka-file-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.fileMailbox ++ Seq(
-      libraryDependencies ++= Dependencies.fileMailbox,
-      previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
     )
   )
 
@@ -1001,10 +970,6 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
-
-    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
-
     val osgi = exports(Seq("akka.osgi.*"))
 
     val osgiDiningHakkersSampleApi = exports(Seq("akka.sample.osgi.api"))
@@ -1140,10 +1105,6 @@ object Dependencies {
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
-
-  val mailboxes = Seq(Test.scalatest, Test.junit)
-
-  val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
   val kernel = Seq(Test.scalatest, Test.junit)
 

@@ -26,4 +26,4 @@ The following, previously deprecated, features have been removed:
 
 * akka-dataflow
 * akka-transactor
-
+* durable mailboxes (akka-mailboxes-common, akka-file-mailbox)
