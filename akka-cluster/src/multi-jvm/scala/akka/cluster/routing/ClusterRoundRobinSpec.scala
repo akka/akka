@@ -20,7 +20,6 @@ import akka.testkit._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.routing.FromConfig
 import akka.routing.RoundRobinPool
-import akka.routing.RouterRoutees
 import akka.routing.ActorRefRoutee
 import akka.routing.ActorSelectionRoutee
 import akka.routing.RoutedActorRef
@@ -52,7 +51,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
     withFallback(ConfigFactory.parseString("""
       akka.actor.deployment {
         /router1 {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 10
           cluster {
             enabled = on
@@ -60,7 +59,7 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
           }
         }
         /router3 {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 10
           cluster {
             enabled = on
@@ -69,13 +68,13 @@ object ClusterRoundRobinMultiJvmSpec extends MultiNodeConfig {
           }
         }
         /router4 {
-          router = round-robin
+          router = round-robin-group
           nr-of-instances = 10
           routees.paths = ["/user/myserviceA", "/user/myserviceB"]
           cluster.enabled = on
         }
         /router5 {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 10
           cluster {
             enabled = on
@@ -173,7 +172,9 @@ abstract class ClusterRoundRobinSpec extends MultiNodeSpec(ClusterRoundRobinMult
 
       runOn(first) {
         // 2 nodes, 2 routees on each node
-        awaitAssert(currentRoutees(router4).size should be(4))
+        within(10.seconds) {
+          awaitAssert(currentRoutees(router4).size should be(4))
+        }
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {

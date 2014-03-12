@@ -19,7 +19,6 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.routing.GetRoutees
 import akka.routing.FromConfig
-import akka.routing.RouterRoutees
 import akka.testkit._
 import akka.routing.ActorRefRoutee
 import akka.routing.ConsistentHashingPool
@@ -40,7 +39,7 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
   commonConfig(debugConfig(on = false).
     withFallback(ConfigFactory.parseString("""
       common-router-settings = {
-        router = consistent-hashing
+        router = consistent-hashing-pool
         nr-of-instances = 10
         cluster {
           enabled = on

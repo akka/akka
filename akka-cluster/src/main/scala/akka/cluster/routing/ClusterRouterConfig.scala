@@ -39,7 +39,6 @@ import akka.actor.ActorSystem
 import akka.routing.RoutingLogic
 import akka.actor.RelativeActorPath
 import com.typesafe.config.Config
-import akka.routing.DeprecatedRouterConfig
 import akka.japi.Util.immutableSeq
 
 object ClusterRouterGroupSettings {
@@ -61,26 +60,11 @@ final case class ClusterRouterGroupSettings(
   allowLocalRoutees: Boolean,
   useRole: Option[String]) extends ClusterRouterSettingsBase {
 
-  @deprecated("Use constructor with routeesPaths Seq", "2.3")
-  def this(
-    totalInstances: Int,
-    routeesPath: String,
-    allowLocalRoutees: Boolean,
-    useRole: Option[String]) =
-    this(totalInstances, List(routeesPath), allowLocalRoutees, useRole)
-
   /**
    * Java API
    */
   def this(totalInstances: Int, routeesPaths: java.lang.Iterable[String], allowLocalRoutees: Boolean, useRole: String) =
     this(totalInstances, immutableSeq(routeesPaths), allowLocalRoutees, ClusterRouterSettingsBase.useRoleOption(useRole))
-
-  /**
-   * Java API
-   */
-  @deprecated("Use constructor with routeesPaths Iterable", "2.3")
-  def this(totalInstances: Int, routeesPath: String, allowLocalRoutees: Boolean, useRole: String) =
-    this(totalInstances, routeesPath, allowLocalRoutees, ClusterRouterSettingsBase.useRoleOption(useRole))
 
   if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
   if ((routeesPaths eq null) || routeesPaths.isEmpty || routeesPaths.head == "")
@@ -150,7 +134,7 @@ private[akka] trait ClusterRouterSettingsBase {
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
  * Delegates other duties to the local [[akka.routing.RouterConfig]],
  * which makes it possible to mix this with the built-in routers such as
- * [[akka.routing.RoundRobinRouter]] or custom routers.
+ * [[akka.routing.RoundRobinGroup]] or custom routers.
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSettings) extends Group with ClusterRouterConfigBase {
@@ -167,8 +151,6 @@ final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSe
       "ClusterRouterGroup is not allowed to wrap a ClusterRouterGroup")
     case ClusterRouterGroup(local, _) ⇒
       copy(local = this.local.withFallback(local).asInstanceOf[Group])
-    case ClusterRouterConfig(local, _) ⇒
-      copy(local = this.local.withFallback(local).asInstanceOf[Group])
     case _ ⇒
       copy(local = this.local.withFallback(other).asInstanceOf[Group])
   }
@@ -179,7 +161,7 @@ final case class ClusterRouterGroup(local: Group, settings: ClusterRouterGroupSe
  * [[akka.routing.RouterConfig]] implementation for deployment on cluster nodes.
  * Delegates other duties to the local [[akka.routing.RouterConfig]],
  * which makes it possible to mix this with the built-in routers such as
- * [[akka.routing.RoundRobinRouter]] or custom routers.
+ * [[akka.routing.RoundRobinGroup]] or custom routers.
  */
 @SerialVersionUID(1L)
 final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSettings) extends Pool with ClusterRouterConfigBase {
@@ -216,8 +198,6 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
     case ClusterRouterPool(_: ClusterRouterPool, _) ⇒ throw new IllegalStateException(
       "ClusterRouterPool is not allowed to wrap a ClusterRouterPool")
     case ClusterRouterPool(otherLocal, _) ⇒
-      copy(local = this.local.withFallback(otherLocal).asInstanceOf[Pool])
-    case ClusterRouterConfig(otherLocal, _) ⇒
       copy(local = this.local.withFallback(otherLocal).asInstanceOf[Pool])
     case _ ⇒
       copy(local = this.local.withFallback(other).asInstanceOf[Pool])
@@ -302,7 +282,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
   val group = cell.routerConfig match {
     case x: Group ⇒ x
     case other ⇒
-      throw ActorInitializationException("ClusterRouterGroupActor can only be used with Nozle, not " + other.getClass)
+      throw ActorInitializationException("ClusterRouterGroupActor can only be used with group, not " + other.getClass)
   }
 
   override def receive = clusterReceive orElse super.receive

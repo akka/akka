@@ -25,7 +25,16 @@ Removed Deprecated Features
 The following, previously deprecated, features have been removed:
 
 * akka-dataflow
+
 * akka-transactor
+
 * durable mailboxes (akka-mailboxes-common, akka-file-mailbox)
+
 * Cluster.publishCurrentClusterState
+
 * akka.cluster.auto-down, replaced by akka.cluster.auto-down-unreachable-after in Akka 2.3
+
+* Old routers and configuration.
+
+  Note that in router configuration you must now specify if it is a ``pool`` or a ``group``
+  in the way that was introduced in Akka 2.3.

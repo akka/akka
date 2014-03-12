@@ -18,7 +18,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import akka.util.Helpers.Requiring
 import akka.util.SerializedSuspendableExecutionContext
 import akka.actor._
-import akka.routing.RandomRouter
+import akka.routing.RandomPool
 import akka.event.Logging
 
 abstract class SelectionHandlerSettings(config: Config) {
@@ -80,7 +80,7 @@ private[io] object SelectionHandler {
     override def supervisorStrategy = connectionSupervisorStrategy
 
     val selectorPool = context.actorOf(
-      props = RandomRouter(nrOfSelectors).props(Props(classOf[SelectionHandler], selectorSettings)).withDeploy(Deploy.local),
+      props = RandomPool(nrOfSelectors).props(Props(classOf[SelectionHandler], selectorSettings)).withDeploy(Deploy.local),
       name = "selectors")
 
     final def workerForCommandHandler(pf: PartialFunction[HasFailureMessage, ChannelRegistry ⇒ Props]): Receive = {

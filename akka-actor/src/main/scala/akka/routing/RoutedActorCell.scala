@@ -105,12 +105,6 @@ private[akka] class RoutedActorCell(
     // create the initial routees before scheduling the Router actor
     _router = routerConfig.createRouter(system)
     routerConfig match {
-      case old: DeprecatedRouterConfig ⇒
-        if (old.nrOfInstances > 0)
-          addRoutees(Vector.fill(old.nrOfInstances)(old.newRoutee(routeeProps, this)))
-        val paths = old.paths
-        if (paths.nonEmpty)
-          addRoutees(paths.map(p ⇒ old.routeeFor(p, this))(collection.breakOut))
       case pool: Pool ⇒
         if (pool.nrOfInstances > 0)
           addRoutees(Vector.fill(pool.nrOfInstances)(pool.newRoutee(routeeProps, this)))
@@ -136,9 +130,6 @@ private[akka] class RoutedActorCell(
 
   /**
    * Route the message via the router to the selected destination.
-   *
-   * When [[akka.routing.CurrentRoutees]] is sent to the RoutedActorRef it
-   * replies with [[akka.routing.RouterRoutees]].
    */
   override def sendMessage(envelope: Envelope): Unit = {
     if (routerConfig.isManagementMessage(envelope.message))
@@ -167,8 +158,6 @@ private[akka] class RouterActor extends Actor {
   def receive = {
     case GetRoutees ⇒
       sender() ! Routees(cell.router.routees)
-    case CurrentRoutees ⇒
-      context.actorOf(Props(classOf[CollectRouteeRefs], cell.router.routees, sender()))
     case AddRoutee(routee) ⇒
       cell.addRoutee(routee)
     case RemoveRoutee(routee) ⇒
@@ -184,34 +173,6 @@ private[akka] class RouterActor extends Actor {
 
   override def preRestart(cause: Throwable, msg: Option[Any]): Unit = {
     // do not scrap children
-  }
-}
-
-/**
- * INTERNAL API
- * Backwards compatibility glue to support CurrentRoutees/RouterRoutees containing refs of
- * the routees. This class is not needed when CurrentRoutees/RouterRoutees are removed.
- */
-private[akka] class CollectRouteeRefs(routees: immutable.IndexedSeq[Routee], replyTo: ActorRef) extends Actor {
-
-  var collected = Vector.empty[ActorRef]
-  var count = 0
-  routees.foreach(_.send(Identify(None), self))
-
-  import context.dispatcher
-  context.system.scheduler.scheduleOnce(10.seconds, self, ReceiveTimeout)
-
-  def receive = {
-    case ActorIdentity(_, refOption) ⇒
-      refOption foreach { ref ⇒ collected = collected :+ ref }
-      count += 1
-      if (count == routees.size) done()
-    case ReceiveTimeout ⇒ done()
-  }
-
-  def done(): Unit = {
-    replyTo ! RouterRoutees(collected)
-    context.stop(self)
   }
 }
 

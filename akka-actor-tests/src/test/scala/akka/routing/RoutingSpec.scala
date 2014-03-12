@@ -239,10 +239,10 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
 
     "allow external configuration" in {
       val sys = ActorSystem("FromConfig", ConfigFactory
-        .parseString("akka.actor.deployment./routed.router=round-robin")
+        .parseString("akka.actor.deployment./routed.router=round-robin-pool")
         .withFallback(system.settings.config))
       try {
-        sys.actorOf(FromConfig.props(), "routed")
+        sys.actorOf(FromConfig.props(routeeProps = Props[TestActor]), "routed")
       } finally {
         shutdown(sys)
       }

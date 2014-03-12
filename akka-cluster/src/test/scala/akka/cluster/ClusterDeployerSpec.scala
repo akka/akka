@@ -17,7 +17,7 @@ object ClusterDeployerSpec {
       akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
       akka.actor.deployment {
         /user/service1 {
-          router = round-robin
+          router = round-robin-pool
           nr-of-instances = 20
           cluster.enabled = on
           cluster.max-nr-of-instances-per-node = 3
@@ -26,21 +26,11 @@ object ClusterDeployerSpec {
         /user/service2 {
           dispatcher = mydispatcher
           mailbox = mymailbox
-          router = round-robin
+          router = round-robin-group
           nr-of-instances = 20
           routees.paths = ["/user/myservice"]
           cluster.enabled = on
           cluster.allow-local-routees = off
-        }
-        # deprecated cluster.routees-path
-        /user/service3 {
-          dispatcher = mydispatcher
-          mailbox = mymailbox
-          router = round-robin
-          nr-of-instances = 20
-          cluster.enabled = on
-          cluster.allow-local-routees = off
-          cluster.routees-path = "/user/myservice"
         }
       }
       akka.remote.netty.tcp.port = 0
@@ -75,22 +65,6 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
 
     "be able to parse 'akka.actor.deployment._' with specified cluster group" in {
       val service = "/user/service2"
-      val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
-      deployment should not be (None)
-
-      deployment should be(Some(
-        Deploy(
-          service,
-          deployment.get.config,
-          ClusterRouterGroup(RoundRobinGroup(List("/user/myservice")), ClusterRouterGroupSettings(
-            totalInstances = 20, routeesPaths = List("/user/myservice"), allowLocalRoutees = false, useRole = None)),
-          ClusterScope,
-          "mydispatcher",
-          "mymailbox")))
-    }
-
-    "be able to parse 'akka.actor.deployment._' with deprecated 'cluster.routees-path'" in {
-      val service = "/user/service3"
       val deployment = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(service.split("/").drop(1))
       deployment should not be (None)
 
