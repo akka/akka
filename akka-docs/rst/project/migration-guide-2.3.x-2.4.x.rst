@@ -38,3 +38,6 @@ The following, previously deprecated, features have been removed:
 
   Note that in router configuration you must now specify if it is a ``pool`` or a ``group``
   in the way that was introduced in Akka 2.3.
+
+* Timeout constructor without unit
+ 
