@@ -7,8 +7,8 @@
 Commercial Support
 ^^^^^^^^^^^^^^^^^^
 
-Commercial support is provided by `Typesafe <http://typesafe.com>`_.
-Akka is now part of the `Typesafe Stack <http://typesafe.com/stack>`_.
+Commercial support is provided by `Typesafe <http://www.typesafe.com>`_.
+Akka is part of the `Typesafe Reactive Platform <http://www.typesafe.com/platform>`_.
 
 Mailing List
 ^^^^^^^^^^^^
@@ -21,7 +21,7 @@ Mailing List
 Downloads
 ^^^^^^^^^
 
-`<http://typesafe.com/stack/downloads/akka/>`_
+`<http://akka.io/downloads>`_
 
 
 Source Code

@@ -490,8 +490,8 @@ the ``persist`` call and the execution(s) of the associated event handler. This 
 calls in context of a single command. The example also shows how to switch between command different command handlers
 with ``getContext().become()`` and ``getContext().unbecome()``.
 
-The easiest way to run this example yourself is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-and open the tutorial named `Akka Persistence Samples with Java <http://typesafe.com/activator/template/akka-sample-persistence-java>`_.
+The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+and open the tutorial named `Akka Persistence Samples with Java <http://www.typesafe.com/activator/template/akka-sample-persistence-java>`_.
 It contains instructions on how to run the ``EventsourcedExample``.
 
 Reliable event delivery
