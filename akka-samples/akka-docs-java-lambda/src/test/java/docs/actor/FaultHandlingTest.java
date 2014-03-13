@@ -4,23 +4,20 @@
 package docs.actor;
 
 //#testkit
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.SupervisorStrategy;
+import akka.actor.*;
+
 import static akka.actor.SupervisorStrategy.resume;
 import static akka.actor.SupervisorStrategy.restart;
 import static akka.actor.SupervisorStrategy.stop;
 import static akka.actor.SupervisorStrategy.escalate;
-import akka.actor.SupervisorStrategy.Directive;
-import akka.actor.OneForOneStrategy;
-import akka.actor.Props;
-import akka.actor.Terminated;
-import akka.actor.UntypedActor;
-import scala.collection.immutable.Seq;
+import akka.japi.pf.DeciderBuilder;
+import akka.japi.pf.ReceiveBuilder;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import scala.PartialFunction;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import scala.concurrent.duration.Duration;
-import akka.testkit.AkkaSpec;
 import akka.testkit.TestProbe;
 
 //#testkit
@@ -30,37 +27,35 @@ import akka.testkit.TestEvent;
 import akka.testkit.JavaTestKit;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
-import akka.japi.Function;
 import scala.Option;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
 import org.junit.AfterClass;
+import scala.runtime.BoxedUnit;
 
 //#testkit
 public class FaultHandlingTest {
-  //#testkit
+//#testkit
+
+  public static Config config = ConfigFactory.parseString(
+    "akka {\n" +
+    "  loggers = [\"akka.testkit.TestEventListener\"]\n" +
+    "  loglevel = \"WARNING\"\n" +
+    "  stdout-loglevel = \"WARNING\"\n" +
+    "}\n");
+
   static
   //#supervisor
-  public class Supervisor extends UntypedActor {
+  public class Supervisor extends AbstractActor {
 
     //#strategy
     private static SupervisorStrategy strategy =
-      new OneForOneStrategy(10, Duration.create("1 minute"),
-        new Function<Throwable, Directive>() {
-          @Override
-          public Directive apply(Throwable t) {
-            if (t instanceof ArithmeticException) {
-              return resume();
-            } else if (t instanceof NullPointerException) {
-              return restart();
-            } else if (t instanceof IllegalArgumentException) {
-              return stop();
-            } else {
-              return escalate();
-            }
-          }
-        });
+      new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
+        match(ArithmeticException.class, e -> resume()).
+        match(NullPointerException.class, e -> restart()).
+        match(IllegalArgumentException.class, e -> stop()).
+        matchAny(o -> escalate()).build());
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -69,12 +64,12 @@ public class FaultHandlingTest {
 
     //#strategy
 
-    public void onReceive(Object o) {
-      if (o instanceof Props) {
-        getSender().tell(getContext().actorOf((Props) o), getSelf());
-      } else {
-        unhandled(o);
-      }
+    @Override
+    public PartialFunction<Object, BoxedUnit> receive() {
+      return ReceiveBuilder.
+        match(Props.class, props -> {
+          sender().tell(context().actorOf(props), self());
+        }).build();
     }
   }
 
@@ -82,25 +77,15 @@ public class FaultHandlingTest {
 
   static
   //#supervisor2
-  public class Supervisor2 extends UntypedActor {
+  public class Supervisor2 extends AbstractActor {
 
     //#strategy2
-    private static SupervisorStrategy strategy = new OneForOneStrategy(10,
-      Duration.create("1 minute"),
-        new Function<Throwable, Directive>() {
-          @Override
-          public Directive apply(Throwable t) {
-            if (t instanceof ArithmeticException) {
-              return resume();
-            } else if (t instanceof NullPointerException) {
-              return restart();
-            } else if (t instanceof IllegalArgumentException) {
-              return stop();
-            } else {
-              return escalate();
-            }
-          }
-        });
+    private static SupervisorStrategy strategy =
+      new OneForOneStrategy(10, Duration.create("1 minute"), DeciderBuilder.
+        match(ArithmeticException.class, e -> resume()).
+        match(NullPointerException.class, e -> restart()).
+        match(IllegalArgumentException.class, e -> stop()).
+        matchAny(o -> escalate()).build());
 
     @Override
     public SupervisorStrategy supervisorStrategy() {
@@ -109,12 +94,12 @@ public class FaultHandlingTest {
 
     //#strategy2
 
-    public void onReceive(Object o) {
-      if (o instanceof Props) {
-        getSender().tell(getContext().actorOf((Props) o), getSelf());
-      } else {
-        unhandled(o);
-      }
+    @Override
+    public PartialFunction<Object, BoxedUnit> receive() {
+      return ReceiveBuilder.
+        match(Props.class, props -> {
+          sender().tell(context().actorOf(props), self());
+        }).build();
     }
 
     @Override
@@ -127,19 +112,15 @@ public class FaultHandlingTest {
 
   static
   //#child
-  public class Child extends UntypedActor {
+  public class Child extends AbstractActor {
     int state = 0;
 
-    public void onReceive(Object o) throws Exception {
-      if (o instanceof Exception) {
-        throw (Exception) o;
-      } else if (o instanceof Integer) {
-        state = (Integer) o;
-      } else if (o.equals("get")) {
-        getSender().tell(state, getSelf());
-      } else {
-        unhandled(o);
-      }
+    @Override
+    public PartialFunction<Object, BoxedUnit> receive() {
+      return ReceiveBuilder.
+        match(Exception.class, exception -> { throw exception; }).
+        match(Integer.class, i -> state = i).
+        matchEquals("get", s -> sender().tell(state, self())).build();
     }
   }
 
@@ -151,7 +132,7 @@ public class FaultHandlingTest {
 
   @BeforeClass
   public static void start() {
-    system = ActorSystem.create("test", AkkaSpec.testConf());
+    system = ActorSystem.create("FaultHandlingTest", config);
   }
 
   @AfterClass
@@ -169,8 +150,7 @@ public class FaultHandlingTest {
     EventFilter ex3 = new ErrorFilter(IllegalArgumentException.class);
     EventFilter ex4 = new ErrorFilter(Exception.class);
     EventFilter[] ignoreExceptions = { ex1, ex2, ex3, ex4 };
-    Seq<EventFilter> seq = immutableSeq(ignoreExceptions);
-    system.eventStream().publish(new TestEvent.Mute(seq));
+    system.eventStream().publish(new TestEvent.Mute(immutableSeq(ignoreExceptions)));
 
     //#create
     Props superprops = Props.create(Supervisor.class);

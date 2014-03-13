@@ -18,7 +18,7 @@ case class Timeout(duration: FiniteDuration) {
    */
   @deprecated("please be explicit about the time unit and use the two-argument version", "2.3")
   def this(timeout: Long) = this(Duration(timeout, TimeUnit.MILLISECONDS))
-  
+
   /**
    * Construct a Timeout from the given time unit and factor.
    */
@@ -40,7 +40,7 @@ object Timeout {
    */
   @deprecated("please be explicit about the time unit and use the two-argument version", "2.3")
   def apply(timeout: Long): Timeout = new Timeout(timeout)
-  
+
   /**
    * Construct a Timeout from the given time unit and factor.
    */

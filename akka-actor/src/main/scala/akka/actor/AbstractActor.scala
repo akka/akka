@@ -55,6 +55,15 @@ abstract class AbstractActor extends Actor {
 /**
  * Java API: compatible with lambda expressions
  *
+ * Actor base class that mixes in logging into the Actor.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+ */
+abstract class AbstractLoggingActor extends AbstractActor with ActorLogging
+
+/**
+ * Java API: compatible with lambda expressions
+ *
  * Actor base class that should be extended to create an actor with a stash.
  *
  * The stash enables an actor to temporarily stash away messages that can not or
