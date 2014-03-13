@@ -10,7 +10,7 @@ later installed on you machine.
 Getting Started Guides and Template Projects
 --------------------------------------------
 
-The best way to start learning Akka is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
+The best way to start learning Akka is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and try out one of Akka Template Projects.
 
 Download
@@ -69,7 +69,7 @@ How to see the JARs dependencies of each Akka module is described in the
 Using a release distribution
 ----------------------------
 
-Download the release you need from http://typesafe.com/stack/downloads/akka and unzip it.
+Download the release you need from http://akka.io/downloads and unzip it.
 
 Using a snapshot version
 ------------------------
@@ -117,8 +117,8 @@ Using Akka with Maven
 ---------------------
 
 The simplest way to get started with Akka and Maven is to check out the
-`Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-tutorial named `Akka Main in Java <http://typesafe.com/activator/template/akka-sample-main-java>`_.
+`Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+tutorial named `Akka Main in Java <http://www.typesafe.com/activator/template/akka-sample-main-java>`_.
 
 Since Akka is published to Maven Central (for versions since 2.1-M2), is it
 enough to add the Akka dependencies to the POM. For example, here is the
@@ -139,7 +139,7 @@ Using Akka with SBT
 -------------------
 
 The simplest way to get started with Akka and SBT is to check out the
-`Akka/SBT template <http://typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+`Akka/SBT template <http://www.typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
 project.
 
 Summary of the essential parts for using Akka with SBT:
@@ -237,7 +237,7 @@ Need help?
 
 If you have questions you can get help on the `Akka Mailing List <http://groups.google.com/group/akka-user>`_.
 
-You can also ask for `commercial support <http://typesafe.com>`_.
+You can also ask for `commercial support <http://www.typesafe.com>`_.
 
 Thanks for being a part of the Akka community.
 

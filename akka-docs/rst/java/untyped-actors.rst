@@ -151,7 +151,7 @@ __ Props_
 Techniques for dependency injection and integration with dependency injection frameworks
 are described in more depth in the
 `Using Akka with Dependency Injection <http://letitcrash.com/post/55958814293/akka-dependency-injection>`_
-guideline and the `Akka Java Spring <http://typesafe.com/activator/template/akka-java-spring>`_ tutorial
+guideline and the `Akka Java Spring <http://www.typesafe.com/activator/template/akka-java-spring>`_ tutorial
 in Typesafe Activator.
 
 The Inbox
