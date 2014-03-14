@@ -750,14 +750,6 @@ object TestKit {
   def now: Duration = System.nanoTime().nanos
 
   /**
-   * Java API: Scale timeouts (durations) during tests with the configured
-   * 'akka.test.timefactor'.
-   */
-  @deprecated("Use JavaTestKit.dilated", "2.3")
-  def dilated(duration: Duration, system: ActorSystem): Duration =
-    duration * TestKitExtension(system).TestTimeFactor
-
-  /**
    * Shut down an actor system and wait for termination.
    * On failure debug output will be logged about the remaining actors in the system.
    *

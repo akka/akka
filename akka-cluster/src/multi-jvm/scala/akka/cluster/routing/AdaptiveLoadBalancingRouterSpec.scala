@@ -18,7 +18,6 @@ import akka.pattern.ask
 import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
 import akka.routing.GetRoutees
 import akka.routing.FromConfig
-import akka.routing.RouterRoutees
 import akka.testkit.{ LongRunningTest, DefaultTimeout, ImplicitSender }
 import akka.routing.ActorRefRoutee
 import akka.routing.Routees
@@ -62,12 +61,12 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
       akka.cluster.metrics.moving-average-half-life = 2s
       akka.actor.deployment {
         /router3 = {
-          router = adaptive
+          router = adaptive-pool
           metrics-selector = cpu
           nr-of-instances = 9
         }
         /router4 = {
-          router = adaptive
+          router = adaptive-pool
           metrics-selector = "akka.cluster.routing.TestCustomMetricsSelector"
           nr-of-instances = 10
           cluster {

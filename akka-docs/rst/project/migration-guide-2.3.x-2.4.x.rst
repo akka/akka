@@ -18,3 +18,32 @@ In earlier versions of Akka `TestKit.remaining` returned the default timeout con
 "akka.test.single-expect-default". This was a bit confusing and thus it has been changed to throw an
 AssertionError if called outside of within. The old behavior however can still be achieved by
 calling `TestKit.remainingOrDefault` instead.
+
+Removed Deprecated Features
+===========================
+
+The following, previously deprecated, features have been removed:
+
+* akka-dataflow
+
+* akka-transactor
+
+* durable mailboxes (akka-mailboxes-common, akka-file-mailbox)
+
+* Cluster.publishCurrentClusterState
+
+* akka.cluster.auto-down, replaced by akka.cluster.auto-down-unreachable-after in Akka 2.3
+
+* Old routers and configuration.
+
+  Note that in router configuration you must now specify if it is a ``pool`` or a ``group``
+  in the way that was introduced in Akka 2.3.
+
+* Timeout constructor without unit
+ 
+* JavaLoggingEventHandler, replaced by JavaLogger
+
+* UntypedActorFactory
+
+* Java API TestKit.dilated, moved to JavaTestKit.dilated
+

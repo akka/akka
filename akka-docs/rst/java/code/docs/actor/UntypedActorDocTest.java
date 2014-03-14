@@ -61,7 +61,6 @@ import akka.actor.Terminated;
 //#import-terminated
 //#import-untypedActor
 import akka.actor.UntypedActor;
-import akka.actor.UntypedActorFactory;
 //#import-untypedActor
 //#import-stash
 import akka.actor.UntypedActorWithStash;

@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Address, Props, Deploy, OneForOneStrategy, SupervisorStrategy }
 import akka.remote.{ DaemonMsgCreate, RemoteScope }
-import akka.routing.{ RoundRobinRouter, FromConfig }
+import akka.routing.{ RoundRobinPool, FromConfig }
 import scala.concurrent.duration._
 
 object DaemonMsgCreateSerializerSpec {
@@ -64,7 +64,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
         val deploy1 = Deploy(
           path = "path1",
           config = ConfigFactory.parseString("a=1"),
-          routerConfig = RoundRobinRouter(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
+          routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
           scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
           dispatcher = "mydispatcher")
         val deploy2 = Deploy(

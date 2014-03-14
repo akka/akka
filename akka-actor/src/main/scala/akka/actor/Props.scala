@@ -278,7 +278,6 @@ trait IndirectActorProducer {
 }
 
 private[akka] object IndirectActorProducer {
-  val UntypedActorFactoryConsumerClass = classOf[UntypedActorFactoryConsumer]
   val CreatorFunctionConsumerClass = classOf[CreatorFunctionConsumer]
   val CreatorConsumerClass = classOf[CreatorConsumer]
   val TypedCreatorFunctionConsumerClass = classOf[TypedCreatorFunctionConsumer]
@@ -292,8 +291,6 @@ private[akka] object IndirectActorProducer {
       clazz match {
         case TypedCreatorFunctionConsumerClass ⇒
           new TypedCreatorFunctionConsumer(get1stArg, get2ndArg)
-        case UntypedActorFactoryConsumerClass ⇒
-          new UntypedActorFactoryConsumer(get1stArg)
         case CreatorFunctionConsumerClass ⇒
           new CreatorFunctionConsumer(get1stArg)
         case CreatorConsumerClass ⇒
@@ -306,14 +303,6 @@ private[akka] object IndirectActorProducer {
       else new ArgsReflectConstructor(clazz.asInstanceOf[Class[_ <: Actor]], args)
     } else throw new IllegalArgumentException(s"unknown actor creator [$clazz]")
   }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class UntypedActorFactoryConsumer(factory: UntypedActorFactory) extends IndirectActorProducer {
-  override def actorClass = classOf[Actor]
-  override def produce() = factory.create()
 }
 
 /**

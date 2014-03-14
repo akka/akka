@@ -590,7 +590,7 @@ private[akka] class ActorCell(
         e match {
           case i: InstantiationException ⇒ throw ActorInitializationException(self,
             """exception during creation, this problem is likely to occur because the class of the Actor you tried to create is either,
-               a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new UntypedActorFactory ... )
+               a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new Creator ... )
                or is missing an appropriate, reachable no-args constructor.
               """, i.getCause)
           case x ⇒ throw ActorInitializationException(self, "exception during creation", x)

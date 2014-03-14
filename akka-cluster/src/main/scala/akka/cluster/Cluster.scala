@@ -101,9 +101,6 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
   logInfo("Starting up...")
 
-  if (settings.AutoDown)
-    log.warning("[akka.cluster.auto-down] setting is replaced by [akka.cluster.auto-down-unreachable-after]")
-
   val failureDetector: FailureDetectorRegistry[Address] = {
     def createFailureDetector(): FailureDetector =
       FailureDetectorLoader.load(settings.FailureDetectorImplementationClass, settings.FailureDetectorConfig, system)
@@ -249,24 +246,13 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     clusterCore ! InternalClusterAction.Unsubscribe(subscriber, Some(to))
 
   /**
-   * Publish current (full) state of the cluster to subscribers,
-   * that are subscribing to [[akka.cluster.ClusterEvent.ClusterDomainEvent]]
-   * or [[akka.cluster.ClusterEvent.CurrentClusterState]].
-   * If you want this to happen periodically you need to schedule a call to
-   * this method yourself.
-   */
-  @deprecated("Use sendCurrentClusterState instead of publishCurrentClusterState", "2.3")
-  def publishCurrentClusterState(): Unit =
-    clusterCore ! InternalClusterAction.PublishCurrentClusterState(None)
-
-  /**
-   * Publish current (full) state of the cluster to the specified
+   * Send current (full) state of the cluster to the specified
    * receiver. If you want this to happen periodically you need to schedule
    * a call to this method yourself. Note that you can also retrieve the current
    * state with [[#state]].
    */
   def sendCurrentClusterState(receiver: ActorRef): Unit =
-    clusterCore ! InternalClusterAction.PublishCurrentClusterState(Some(receiver))
+    clusterCore ! InternalClusterAction.SendCurrentClusterState(receiver)
 
   /**
    * Try to join this cluster node with the node specified by 'address'.
