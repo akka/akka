@@ -1116,7 +1116,7 @@ object Dependencies {
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
     // mirrored in OSGi sample
-    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.7"         // ApacheV2
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
