@@ -34,6 +34,10 @@ public class ClusterSingletonManagerTest {
     system.actorOf(ClusterSingletonManager.defaultProps(Props.create(Consumer.class, queue, testActor), "consumer",
         new End(), "worker"), "singleton");
     //#create-singleton-manager
+
+    //#create-singleton-proxy
+    system.actorOf(ClusterSingletonProxy.defaultProps("user/singleton/consumer", "worker"), "consumerProxy");
+    //#create-singleton-proxy
   }
 
   static//documentation of how to keep track of the oldest member in user land
