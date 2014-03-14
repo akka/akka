@@ -5,6 +5,7 @@ import akka.actor.ActorSystem
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.contrib.pattern.ClusterSingletonManager
+import akka.contrib.pattern.ClusterSingletonProxy
 
 object StatsSampleOneMaster {
   def main(args: Array[String]): Unit = {
@@ -32,7 +33,11 @@ object StatsSampleOneMaster {
         terminationMessage = PoisonPill, role = Some("compute")),
         name = "singleton")
       //#create-singleton-manager
-      system.actorOf(Props[StatsFacade], name = "statsFacade")
+
+      //#singleton-proxy
+      system.actorOf(ClusterSingletonProxy.props(singletonPath = "/user/singleton/statsService",
+        role = Some("compute")), name = "statsServiceProxy")
+      //#singleton-proxy
     }
   }
 }
@@ -41,7 +46,7 @@ object StatsSampleOneMasterClient {
   def main(args: Array[String]): Unit = {
     // note that client is not a compute node, role not defined
     val system = ActorSystem("ClusterSystem")
-    system.actorOf(Props(classOf[StatsSampleClient], "/user/statsFacade"), "client")
+    system.actorOf(Props(classOf[StatsSampleClient], "/user/statsServiceProxy"), "client")
   }
 }
 
