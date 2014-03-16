@@ -105,8 +105,8 @@ object ClusterSingletonManager {
      */
     case object TakeOverFromMe
 
-    case class HandOverRetry(count: Int)
-    case class TakeOverRetry(count: Int)
+    final case class HandOverRetry(count: Int)
+    final case class TakeOverRetry(count: Int)
     case object Cleanup
     case object StartOldestChangedBuffer
 
@@ -120,12 +120,12 @@ object ClusterSingletonManager {
     case object End extends State
 
     case object Uninitialized extends Data
-    case class YoungerData(oldestOption: Option[Address]) extends Data
-    case class BecomingOldestData(previousOldestOption: Option[Address]) extends Data
-    case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
-    case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
-                             newOldestOption: Option[Address]) extends Data
-    case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
+    final case class YoungerData(oldestOption: Option[Address]) extends Data
+    final case class BecomingOldestData(previousOldestOption: Option[Address]) extends Data
+    final case class OldestData(singleton: ActorRef, singletonTerminated: Boolean = false) extends Data
+    final case class WasOldestData(singleton: ActorRef, singletonTerminated: Boolean,
+                                   newOldestOption: Option[Address]) extends Data
+    final case class HandingOverData(singleton: ActorRef, handOverTo: Option[ActorRef]) extends Data
     case object EndData extends Data
 
     val HandOverRetryTimer = "hand-over-retry"
@@ -145,9 +145,9 @@ object ClusterSingletonManager {
       /**
        * The first event, corresponding to CurrentClusterState.
        */
-      case class InitialOldestState(oldest: Option[Address], memberCount: Int)
+      final case class InitialOldestState(oldest: Option[Address], memberCount: Int)
 
-      case class OldestChanged(oldest: Option[Address])
+      final case class OldestChanged(oldest: Option[Address])
     }
 
     /**

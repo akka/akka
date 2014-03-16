@@ -60,7 +60,7 @@ private[cluster] object Gossip {
  * removed node telling it to shut itself down.
  */
 @SerialVersionUID(1L)
-private[cluster] case class Gossip(
+private[cluster] final case class Gossip(
   members: immutable.SortedSet[Member], // sorted set of members with their status, sorted by address
   overview: GossipOverview = GossipOverview(),
   version: VectorClock = VectorClock()) { // vector clock version
@@ -212,7 +212,7 @@ private[cluster] case class Gossip(
  * Represents the overview of the cluster, holds the cluster convergence table and set with unreachable nodes.
  */
 @SerialVersionUID(1L)
-private[cluster] case class GossipOverview(
+private[cluster] final case class GossipOverview(
   seen: Set[UniqueAddress] = Set.empty,
   reachability: Reachability = Reachability.empty) {
 
@@ -275,4 +275,4 @@ private[cluster] class GossipEnvelope private (
  * it replies with its `GossipStatus`. Same versions ends the chat immediately.
  */
 @SerialVersionUID(1L)
-private[cluster] case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage
+private[cluster] final case class GossipStatus(from: UniqueAddress, version: VectorClock) extends ClusterMessage

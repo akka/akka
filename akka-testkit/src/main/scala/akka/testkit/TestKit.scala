@@ -37,16 +37,16 @@ object TestActor {
     def run(sender: ActorRef, msg: Any): AutoPilot = sys.error("must not call")
   }
 
-  case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
-  case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
-  case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
-  case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
+  final case class SetIgnore(i: Ignore) extends NoSerializationVerificationNeeded
+  final case class Watch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  final case class UnWatch(ref: ActorRef) extends NoSerializationVerificationNeeded
+  final case class SetAutoPilot(ap: AutoPilot) extends NoSerializationVerificationNeeded
 
   trait Message {
     def msg: AnyRef
     def sender: ActorRef
   }
-  case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
+  final case class RealMessage(msg: AnyRef, sender: ActorRef) extends Message
   case object NullMessage extends Message {
     override def msg: AnyRef = throw new IllegalActorStateException("last receive did not dequeue a message")
     override def sender: ActorRef = throw new IllegalActorStateException("last receive did not dequeue a message")
@@ -120,7 +120,7 @@ trait TestKitBase {
    * registration as message target.
    */
   val testActor: ActorRef = {
-    val impl = system.asInstanceOf[ActorSystemImpl] //TODO ticket #1559
+    val impl = system.asInstanceOf[ExtendedActorSystem]
     val ref = impl.systemActorOf(TestActor.props(queue)
       .withDispatcher(CallingThreadDispatcher.Id),
       "testActor" + TestKit.testActorId.incrementAndGet)
@@ -183,7 +183,17 @@ trait TestKitBase {
    * block or missing that it returns the properly dilated default for this
    * case from settings (key "akka.test.single-expect-default").
    */
-  def remaining: FiniteDuration = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+  def remainingOrDefault = remainingOr(testKitSettings.SingleExpectDefaultTimeout.dilated)
+
+  /**
+   * Obtain time remaining for execution of the innermost enclosing `within`
+   * block or throw an [[AssertionError]] if no `within` block surrounds this
+   * call.
+   */
+  def remaining: FiniteDuration = end match {
+    case f: FiniteDuration ⇒ f - now
+    case _                 ⇒ throw new AssertionError("`remaining` may not be called outside of `within`")
+  }
 
   /**
    * Obtain time remaining for execution of the innermost enclosing `within`
@@ -196,7 +206,7 @@ trait TestKitBase {
   }
 
   private def remainingOrDilated(max: Duration): FiniteDuration = max match {
-    case x if x eq Duration.Undefined ⇒ remaining
+    case x if x eq Duration.Undefined ⇒ remainingOrDefault
     case x if !x.isFinite             ⇒ throw new IllegalArgumentException("max duration cannot be infinite")
     case f: FiniteDuration            ⇒ f.dilated
   }
@@ -223,7 +233,7 @@ trait TestKitBase {
     @tailrec
     def poll(t: Duration) {
       if (!p) {
-        assert(now < stop, "timeout " + _max + " expired: " + message)
+        assert(now < stop, s"timeout ${_max} expired: $message")
         Thread.sleep(t.toMillis)
         poll((stop - now) min interval)
       }
@@ -273,18 +283,18 @@ trait TestKitBase {
    * Note that the timeout is scaled using Duration.dilated, which uses the
    * configuration entry "akka.test.timefactor", while the min Duration is not.
    *
-   * <pre>
+   * {{{
    * val ret = within(50 millis) {
-   *         test ! "ping"
-   *         expectMsgClass(classOf[String])
-   *       }
-   * </pre>
+   *   test ! "ping"
+   *   expectMsgClass(classOf[String])
+   * }
+   * }}}
    */
   def within[T](min: FiniteDuration, max: FiniteDuration)(f: ⇒ T): T = {
     val _max = max.dilated
     val start = now
     val rem = if (end == Duration.Undefined) Duration.Inf else end - start
-    assert(rem >= min, "required min time " + min + " not possible, only " + format(min.unit, rem) + " left")
+    assert(rem >= min, s"required min time $min not possible, only ${format(min.unit, rem)} left")
 
     lastWasNoMsg = false
 
@@ -295,9 +305,9 @@ trait TestKitBase {
     val ret = try f finally end = prev_end
 
     val diff = now - start
-    assert(min <= diff, "block took " + format(min.unit, diff) + ", should at least have been " + min)
+    assert(min <= diff, s"block took ${format(min.unit, diff)}, should at least have been $min")
     if (!lastWasNoMsg) {
-      assert(diff <= max_diff, "block took " + format(_max.unit, diff) + ", exceeding " + format(_max.unit, max_diff))
+      assert(diff <= max_diff, s"block took ${format(_max.unit, diff)}, exceeding ${format(_max.unit, max_diff)}")
     }
 
     ret
@@ -309,9 +319,9 @@ trait TestKitBase {
   def within[T](max: FiniteDuration)(f: ⇒ T): T = within(0 seconds, max)(f)
 
   /**
-   * Same as `expectMsg(remaining, obj)`, but correctly treating the timeFactor.
+   * Same as `expectMsg(remainingOrDefault, obj)`, but correctly treating the timeFactor.
    */
-  def expectMsg[T](obj: T): T = expectMsg_internal(remaining, obj)
+  def expectMsg[T](obj: T): T = expectMsg_internal(remainingOrDefault, obj)
 
   /**
    * Receive one message from the test actor and assert that it equals the
@@ -324,8 +334,8 @@ trait TestKitBase {
 
   private def expectMsg_internal[T](max: Duration, obj: T): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout (" + max + ") during expectMsg while waiting for " + obj)
-    assert(obj == o, "expected " + obj + ", found " + o)
+    assert(o ne null, s"timeout ($max) during expectMsg while waiting for $obj")
+    assert(obj == o, s"expected $obj, found $o")
     o.asInstanceOf[T]
   }
 
@@ -342,8 +352,8 @@ trait TestKitBase {
   def expectMsgPF[T](max: Duration = Duration.Undefined, hint: String = "")(f: PartialFunction[Any, T]): T = {
     val _max = remainingOrDilated(max)
     val o = receiveOne(_max)
-    assert(o ne null, "timeout (" + _max + ") during expectMsg: " + hint)
-    assert(f.isDefinedAt(o), "expected: " + hint + " but got unexpected message " + o)
+    assert(o ne null, s"timeout (${_max}) during expectMsg: $hint")
+    assert(f.isDefinedAt(o), s"expected: $hint but got unexpected message $o")
     f(o)
   }
 
@@ -372,17 +382,17 @@ trait TestKitBase {
     @tailrec
     def recv: Any = {
       val o = receiveOne(end - now)
-      assert(o ne null, "timeout (" + _max + ") during fishForMessage, hint: " + hint)
-      assert(f.isDefinedAt(o), "fishForMessage(" + hint + ") found unexpected message " + o)
+      assert(o ne null, s"timeout (${_max}) during fishForMessage, hint: $hint")
+      assert(f.isDefinedAt(o), s"fishForMessage($hint) found unexpected message $o")
       if (f(o)) o else recv
     }
     recv
   }
 
   /**
-   * Same as `expectMsgType[T](remaining)`, but correctly treating the timeFactor.
+   * Same as `expectMsgType[T](remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remaining, t.runtimeClass.asInstanceOf[Class[T]])
+  def expectMsgType[T](implicit t: ClassTag[T]): T = expectMsgClass_internal(remainingOrDefault, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
    * Receive one message from the test actor and assert that it conforms to the
@@ -394,9 +404,9 @@ trait TestKitBase {
   def expectMsgType[T](max: FiniteDuration)(implicit t: ClassTag[T]): T = expectMsgClass_internal(max.dilated, t.runtimeClass.asInstanceOf[Class[T]])
 
   /**
-   * Same as `expectMsgClass(remaining, c)`, but correctly treating the timeFactor.
+   * Same as `expectMsgClass(remainingOrDefault, c)`, but correctly treating the timeFactor.
    */
-  def expectMsgClass[C](c: Class[C]): C = expectMsgClass_internal(remaining, c)
+  def expectMsgClass[C](c: Class[C]): C = expectMsgClass_internal(remainingOrDefault, c)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -409,15 +419,15 @@ trait TestKitBase {
 
   private def expectMsgClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout (" + max + ") during expectMsgClass waiting for " + c)
-    assert(BoxedType(c) isInstance o, "expected " + c + ", found " + o.getClass)
+    assert(o ne null, s"timeout ($max) during expectMsgClass waiting for $c")
+    assert(BoxedType(c) isInstance o, s"expected $c, found ${o.getClass}")
     o.asInstanceOf[C]
   }
 
   /**
-   * Same as `expectMsgAnyOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAnyOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remaining, obj: _*)
+  def expectMsgAnyOf[T](obj: T*): T = expectMsgAnyOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it equals one of
@@ -430,15 +440,15 @@ trait TestKitBase {
 
   private def expectMsgAnyOf_internal[T](max: FiniteDuration, obj: T*): T = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout (" + max + ") during expectMsgAnyOf waiting for " + obj.mkString("(", ", ", ")"))
-    assert(obj exists (_ == o), "found unexpected " + o)
+    assert(o ne null, s"timeout ($max) during expectMsgAnyOf waiting for ${obj.mkString("(", ", ", ")")}")
+    assert(obj exists (_ == o), s"found unexpected $o")
     o.asInstanceOf[T]
   }
 
   /**
-   * Same as `expectMsgAnyClassOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAnyClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remaining, obj: _*)
+  def expectMsgAnyClassOf[C](obj: Class[_ <: C]*): C = expectMsgAnyClassOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive one message from the test actor and assert that it conforms to
@@ -451,15 +461,15 @@ trait TestKitBase {
 
   private def expectMsgAnyClassOf_internal[C](max: FiniteDuration, obj: Class[_ <: C]*): C = {
     val o = receiveOne(max)
-    assert(o ne null, "timeout (" + max + ") during expectMsgAnyClassOf waiting for " + obj.mkString("(", ", ", ")"))
-    assert(obj exists (c ⇒ BoxedType(c) isInstance o), "found unexpected " + o)
+    assert(o ne null, s"timeout ($max) during expectMsgAnyClassOf waiting for ${obj.mkString("(", ", ", ")")}")
+    assert(obj exists (c ⇒ BoxedType(c) isInstance o), s"found unexpected $o")
     o.asInstanceOf[C]
   }
 
   /**
-   * Same as `expectMsgAllOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remaining, obj: _*)
+  def expectMsgAllOf[T](obj: T*): immutable.Seq[T] = expectMsgAllOf_internal(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -492,9 +502,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAllClassOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllClassOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(remaining, obj: _*)
+  def expectMsgAllClassOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllClassOf(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -515,9 +525,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectMsgAllConformingOf(remaining, obj...)`, but correctly treating the timeFactor.
+   * Same as `expectMsgAllConformingOf(remainingOrDefault, obj...)`, but correctly treating the timeFactor.
    */
-  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(remaining, obj: _*)
+  def expectMsgAllConformingOf[T](obj: Class[_ <: T]*): immutable.Seq[T] = internalExpectMsgAllConformingOf(remainingOrDefault, obj: _*)
 
   /**
    * Receive a number of messages from the test actor matching the given
@@ -541,9 +551,9 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMsg(remaining)`, but correctly treating the timeFactor.
+   * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
    */
-  def expectNoMsg() { expectNoMsg_internal(remaining) }
+  def expectNoMsg() { expectNoMsg_internal(remainingOrDefault) }
 
   /**
    * Assert that no message is received for the specified time.
@@ -552,27 +562,28 @@ trait TestKitBase {
 
   private def expectNoMsg_internal(max: FiniteDuration) {
     val o = receiveOne(max)
-    assert(o eq null, "received unexpected message " + o)
+    assert(o eq null, s"received unexpected message $o")
     lastWasNoMsg = true
   }
 
   /**
    * Receive a series of messages until one does not match the given partial
    * function or the idle timeout is met (disabled by default) or the overall
-   * maximum duration is elapsed. Returns the sequence of messages.
+   * maximum duration is elapsed or expected messages count is reached.
+   * Returns the sequence of messages.
    *
    * Note that it is not an error to hit the `max` duration in this case.
    *
    * One possible use of this method is for testing whether messages of
    * certain characteristics are generated at a certain rate:
    *
-   * <pre>
+   * {{{
    * test ! ScheduleTicks(100 millis)
    * val series = receiveWhile(750 millis) {
    *     case Tick(count) => count
    * }
    * assert(series == (1 to 7).toList)
-   * </pre>
+   * }}}
    */
   def receiveWhile[T](max: Duration = Duration.Undefined, idle: Duration = Duration.Inf, messages: Int = Int.MaxValue)(f: PartialFunction[AnyRef, T]): immutable.Seq[T] = {
     val stop = now + remainingOrDilated(max)
@@ -607,7 +618,7 @@ trait TestKitBase {
    * Same as `receiveN(n, remaining)` but correctly taking into account
    * Duration.timeFactor.
    */
-  def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remaining)
+  def receiveN(n: Int): immutable.Seq[AnyRef] = receiveN_internal(n, remainingOrDefault)
 
   /**
    * Receive N messages in a row before the given deadline.
@@ -619,7 +630,7 @@ trait TestKitBase {
     for { x ← 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
-      assert(o ne null, "timeout (" + max + ") while expecting " + n + " messages")
+      assert(o ne null, s"timeout ($max) while expecting $n messages")
       o
     }
   }
@@ -671,23 +682,23 @@ trait TestKitBase {
  * examined using the `expectMsg...` methods. Assertions and bounds concerning
  * timing are available in the form of `within` blocks.
  *
- * <pre>
+ * {{{
  * class Test extends TestKit(ActorSystem()) {
- *     try {
+ *   try {
  *
- *       val test = system.actorOf(Props[SomeActor]
+ *     val test = system.actorOf(Props[SomeActor]
  *
- *       within (1 second) {
- *         test ! SomeWork
- *         expectMsg(Result1) // bounded to 1 second
- *         expectMsg(Result2) // bounded to the remainder of the 1 second
- *       }
- *
- *     } finally {
- *       system.shutdown()
+ *     within (1 second) {
+ *       test ! SomeWork
+ *       expectMsg(Result1) // bounded to 1 second
+ *       expectMsg(Result2) // bounded to the remainder of the 1 second
  *     }
+ *
+ *   } finally {
+ *     system.shutdown()
+ *   }
  * }
- * </pre>
+ * }}}
  *
  * Beware of two points:
  *
@@ -722,7 +733,7 @@ object TestKit {
         val toSleep = stop - now
         if (toSleep <= Duration.Zero) {
           if (noThrow) false
-          else throw new AssertionError("timeout " + max + " expired")
+          else throw new AssertionError(s"timeout $max expired")
         } else {
           Thread.sleep((toSleep min interval).toMillis)
           poll()
@@ -739,21 +750,13 @@ object TestKit {
   def now: Duration = System.nanoTime().nanos
 
   /**
-   * Java API: Scale timeouts (durations) during tests with the configured
-   * 'akka.test.timefactor'.
-   */
-  @deprecated("Use JavaTestKit.dilated", "2.3")
-  def dilated(duration: Duration, system: ActorSystem): Duration =
-    duration * TestKitExtension(system).TestTimeFactor
-
-  /**
    * Shut down an actor system and wait for termination.
    * On failure debug output will be logged about the remaining actors in the system.
    *
    * If verifySystemShutdown is true, then an exception will be thrown on failure.
    */
   def shutdownActorSystem(actorSystem: ActorSystem,
-                          duration: Duration = 10 seconds,
+                          duration: Duration = 10.seconds,
                           verifySystemShutdown: Boolean = false): Unit = {
     actorSystem.shutdown()
     try actorSystem.awaitTermination(duration) catch {
@@ -820,7 +823,7 @@ trait DefaultTimeout { this: TestKitBase ⇒
  * `apply(x)`—with the same `x` of course.</i></b>
  *
  * `match(x)` will be called for `isDefinedAt(x)` only, and its semantics
- * are the same as for [[akka.japi.PurePartialFunction]] (apart from the
+ * are the same as for [[akka.japi.JavaPartialFunction]] (apart from the
  * missing because unneeded boolean argument).
  *
  * This class is used internal to JavaTestKit and should not be extended

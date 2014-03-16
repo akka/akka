@@ -60,12 +60,12 @@ object ConfiguredLocalRoutingSpec {
     override def createRouter(system: ActorSystem): Router = Router(MyRoutingLogic(config))
   }
 
-  case class MyRoutingLogic(config: Config) extends RoutingLogic {
+  final case class MyRoutingLogic(config: Config) extends RoutingLogic {
     override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =
       MyRoutee(config.getString(message.toString))
   }
 
-  case class MyRoutee(reply: String) extends Routee {
+  final case class MyRoutee(reply: String) extends Routee {
     override def send(message: Any, sender: ActorRef): Unit =
       sender ! reply
   }

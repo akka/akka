@@ -13,6 +13,8 @@ import scala.runtime.BoxedUnit;
  *
  * @param <S> the state type
  * @param <D> the data type
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class FSMStopBuilder<S, D> {
 
@@ -36,7 +38,7 @@ public class FSMStopBuilder<S, D> {
         }
       },
       new FI.UnitApply<FSM.StopEvent>() {
-        public void apply(FSM.StopEvent e) {
+        public void apply(FSM.StopEvent e) throws Exception {
           @SuppressWarnings("unchecked")
           S s = (S) e.currentState();
           @SuppressWarnings("unchecked")
@@ -94,7 +96,7 @@ public class FSMStopBuilder<S, D> {
         }
       },
       new FI.UnitApply<FSM.StopEvent>() {
-        public void apply(FSM.StopEvent e) {
+        public void apply(FSM.StopEvent e) throws Exception {
           @SuppressWarnings("unchecked")
           P p = (P) e.reason();
           @SuppressWarnings("unchecked")

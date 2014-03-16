@@ -27,7 +27,7 @@ import akka.japi.Util.immutableSeq
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
  * target nodes. Delegates other duties to the local [[akka.routing.Pool]],
  * which makes it possible to mix this with the built-in routers such as
- * [[akka.routing.RoundRobinRouter]] or custom routers.
+ * [[akka.routing.RoundRobinGroup]] or custom routers.
  */
 @SerialVersionUID(1L)
 final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) extends Pool {

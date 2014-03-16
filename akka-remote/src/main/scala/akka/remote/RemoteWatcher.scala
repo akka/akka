@@ -19,6 +19,7 @@ import akka.actor.InternalActorRef
 import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.Watch
 import akka.actor.Deploy
+import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -36,19 +37,19 @@ private[akka] object RemoteWatcher {
     Props(classOf[RemoteWatcher], failureDetector, heartbeatInterval, unreachableReaperInterval,
       heartbeatExpectedResponseAfter).withDeploy(Deploy.local)
 
-  case class WatchRemote(watchee: ActorRef, watcher: ActorRef)
-  case class UnwatchRemote(watchee: ActorRef, watcher: ActorRef)
-  case class RewatchRemote(watchee: ActorRef, watcher: ActorRef)
+  final case class WatchRemote(watchee: ActorRef, watcher: ActorRef)
+  final case class UnwatchRemote(watchee: ActorRef, watcher: ActorRef)
+  final case class RewatchRemote(watchee: ActorRef, watcher: ActorRef)
   @SerialVersionUID(1L)
   class Rewatch(watchee: InternalActorRef, watcher: InternalActorRef) extends Watch(watchee, watcher)
 
   @SerialVersionUID(1L) case object Heartbeat
-  @SerialVersionUID(1L) case class HeartbeatRsp(addressUid: Int)
+  @SerialVersionUID(1L) final case class HeartbeatRsp(addressUid: Int)
 
   // sent to self only
   case object HeartbeatTick
   case object ReapUnreachableTick
-  case class ExpectedFirstHeartbeat(from: Address)
+  final case class ExpectedFirstHeartbeat(from: Address)
 
   // test purpose
   object Stats {
@@ -56,7 +57,7 @@ private[akka] object RemoteWatcher {
     def counts(watching: Int, watchingNodes: Int): Stats =
       new Stats(watching, watchingNodes)(Set.empty)
   }
-  case class Stats(watching: Int, watchingNodes: Int)(val watchingRefs: Set[(ActorRef, ActorRef)]) {
+  final case class Stats(watching: Int, watchingNodes: Int)(val watchingRefs: Set[(ActorRef, ActorRef)]) {
     override def toString: String = {
       def formatWatchingRefs: String =
         if (watchingRefs.isEmpty) ""
@@ -79,7 +80,7 @@ private[akka] object RemoteWatcher {
  * to the peer actor on the other node, which replies with [[RemoteWatcher.HeartbeatRsp]]
  * message back. The failure detector on the watching side monitors these heartbeat messages.
  * If arrival of hearbeat messages stops it will be detected and this actor will publish
- * [[akka.actor.AddressTerminated]] to the `eventStream`.
+ * [[akka.actor.AddressTerminated]] to the [[akka.event.AddressTerminatedTopic]].
  *
  * When all actors on a node have been unwatched it will stop sending heartbeat messages.
  *
@@ -171,7 +172,7 @@ private[akka] class RemoteWatcher(
     }
 
   def publishAddressTerminated(address: Address): Unit =
-    context.system.eventStream.publish(AddressTerminated(address))
+    AddressTerminatedTopic(context.system).publish(AddressTerminated(address))
 
   def quarantine(address: Address, uid: Option[Int]): Unit =
     remoteProvider.quarantine(address, uid)

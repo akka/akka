@@ -8,7 +8,7 @@ trait Order {
   def withNanoTime: Order
 }
 
-case class Bid(
+final case class Bid(
   orderbookSymbol: String,
   price: Long,
   volume: Long,
@@ -22,7 +22,7 @@ case class Bid(
   def withNanoTime: Bid = copy(nanoTime = System.nanoTime)
 }
 
-case class Ask(
+final case class Ask(
   orderbookSymbol: String,
   price: Long,
   volume: Long,

@@ -8,9 +8,9 @@ package akka.actor
 object Chameneos {
 
   sealed trait ChameneosEvent
-  case class Meet(from: ActorRef, colour: Colour) extends ChameneosEvent
-  case class Change(colour: Colour) extends ChameneosEvent
-  case class MeetingCount(count: Int) extends ChameneosEvent
+  final case class Meet(from: ActorRef, colour: Colour) extends ChameneosEvent
+  final case class Change(colour: Colour) extends ChameneosEvent
+  final case class MeetingCount(count: Int) extends ChameneosEvent
   case object Exit extends ChameneosEvent
 
   abstract class Colour

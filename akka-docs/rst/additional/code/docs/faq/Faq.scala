@@ -6,18 +6,18 @@ import akka.actor.Actor
 object MyActor {
   // these are the messages we accept
   sealed abstract trait Message
-  case class FooMessage(foo: String) extends Message
-  case class BarMessage(bar: Int) extends Message
+  final case class FooMessage(foo: String) extends Message
+  final case class BarMessage(bar: Int) extends Message
 
   // these are the replies we send
   sealed abstract trait Reply
-  case class BazMessage(baz: String) extends Reply
+  final case class BazMessage(baz: String) extends Reply
 }
 
 class MyActor extends Actor {
   import MyActor._
   def receive = {
-    case message: Message ⇒ message match {
+    case message: Message => message match {
       case BarMessage(bar) => sender ! BazMessage("Got " + bar)
       // warning here: 
       // "match may not be exhaustive. It would fail on the following input: FooMessage(_)"

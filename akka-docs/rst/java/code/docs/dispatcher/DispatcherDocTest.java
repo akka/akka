@@ -3,6 +3,7 @@
  */
 package docs.dispatcher;
 
+import akka.dispatch.ControlMessage;
 import akka.dispatch.RequiresMessageQueue;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
@@ -150,6 +151,41 @@ public class DispatcherDocTest {
     probe.expectMsgClass(Terminated.class);
   }
 
+  @Test
+  public void controlAwareDispatcher() throws Exception {
+    JavaTestKit probe = new JavaTestKit(system);
+    //#control-aware-dispatcher
+
+    class Demo extends UntypedActor {
+      LoggingAdapter log = Logging.getLogger(getContext().system(), this);
+      {
+        for (Object msg : new Object[] { "foo", "bar", new MyControlMessage(),
+                PoisonPill.getInstance() }) {
+          getSelf().tell(msg, getSelf());
+        }
+      }
+
+      public void onReceive(Object message) {
+        log.info(message.toString());
+      }
+    }
+
+    // We create a new Actor that just prints out what it processes
+    ActorRef myActor = system.actorOf(Props.create(Demo.class, this)
+            .withDispatcher("control-aware-dispatcher"));
+
+    /*
+    Logs:
+      'MyControlMessage
+      'foo
+      'bar
+    */
+    //#control-aware-dispatcher
+
+    probe.watch(myActor);
+    probe.expectMsgClass(Terminated.class);
+  }
+
   static
   //#prio-mailbox
   public class MyPrioMailbox extends UnboundedPriorityMailbox {
@@ -172,6 +208,11 @@ public class DispatcherDocTest {
     }
   }
   //#prio-mailbox
+
+  static
+  //#control-aware-mailbox-messages
+  public class MyControlMessage implements ControlMessage {}
+  //#control-aware-mailbox-messages
 
   @Test
   public void requiredMailboxDispatcher() throws Exception {

@@ -25,15 +25,15 @@ case object Checking extends AccountType
 case object Savings extends AccountType
 case object MoneyMarket extends AccountType
 
-case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
-case class GetAccountBalances(id: Long)
+final case class GetCustomerAccountBalances(id: Long, accountTypes: Set[AccountType])
+final case class GetAccountBalances(id: Long)
 
-case class AccountBalances(accountType: AccountType,
-                           balance: Option[List[(Long, BigDecimal)]])
+final case class AccountBalances(accountType: AccountType,
+                                 balance: Option[List[(Long, BigDecimal)]])
 
-case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
-case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
-case class MoneyMarketAccountBalances(balances: Option[List[(Long, BigDecimal)]])
+final case class CheckingAccountBalances(balances: Option[List[(Long, BigDecimal)]])
+final case class SavingsAccountBalances(balances: Option[List[(Long, BigDecimal)]])
+final case class MoneyMarketAccountBalances(balances: Option[List[(Long, BigDecimal)]])
 
 case object TimedOut
 case object CantUnderstand
@@ -132,11 +132,11 @@ class AccountBalanceRetriever extends Actor with Aggregator {
 //#demo-code
 
 //#chain-sample
-case class InitialRequest(name: String)
-case class Request(name: String)
-case class Response(name: String, value: String)
-case class EvaluationResults(name: String, eval: List[Int])
-case class FinalResponse(qualifiedValues: List[String])
+final case class InitialRequest(name: String)
+final case class Request(name: String)
+final case class Response(name: String, value: String)
+final case class EvaluationResults(name: String, eval: List[Int])
+final case class FinalResponse(qualifiedValues: List[String])
 
 /**
  * An actor sample demonstrating use of unexpect and chaining.
@@ -211,7 +211,7 @@ class AggregatorSpec extends TestKit(ActorSystem("test")) with ImplicitSender wi
   }
 }
 
-case class TestEntry(id: Int)
+final case class TestEntry(id: Int)
 
 class WorkListSpec extends FunSuiteLike {
 

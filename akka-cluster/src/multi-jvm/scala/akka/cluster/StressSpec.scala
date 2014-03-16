@@ -227,12 +227,12 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     def form: String = d.formatted("%.2f")
   }
 
-  case class ClusterResult(
+  final case class ClusterResult(
     address: Address,
     duration: Duration,
     clusterStats: GossipStats)
 
-  case class AggregatedClusterResult(title: String, duration: Duration, clusterStats: GossipStats)
+  final case class AggregatedClusterResult(title: String, duration: Duration, clusterStats: GossipStats)
 
   /**
    * Central aggregator of cluster statistics and metrics.
@@ -652,29 +652,29 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   case object RetryTick
   case object ReportTick
   case object PhiTick
-  case class PhiResult(from: Address, phiValues: immutable.SortedSet[PhiValue])
-  case class PhiValue(address: Address, countAboveOne: Int, count: Int, max: Double) extends Ordered[PhiValue] {
+  final case class PhiResult(from: Address, phiValues: immutable.SortedSet[PhiValue])
+  final case class PhiValue(address: Address, countAboveOne: Int, count: Int, max: Double) extends Ordered[PhiValue] {
     import akka.cluster.Member.addressOrdering
     def compare(that: PhiValue) = addressOrdering.compare(this.address, that.address)
   }
-  case class ReportTo(ref: Option[ActorRef])
-  case class StatsResult(from: Address, stats: CurrentInternalStats)
+  final case class ReportTo(ref: Option[ActorRef])
+  final case class StatsResult(from: Address, stats: CurrentInternalStats)
 
   type JobId = Int
   trait Job { def id: JobId }
-  case class SimpleJob(id: JobId, payload: Any) extends Job
-  case class TreeJob(id: JobId, payload: Any, idx: Int, levels: Int, width: Int) extends Job
-  case class Ack(id: JobId)
-  case class JobState(deadline: Deadline, job: Job)
-  case class WorkResult(duration: Duration, sendCount: Long, ackCount: Long) {
+  final case class SimpleJob(id: JobId, payload: Any) extends Job
+  final case class TreeJob(id: JobId, payload: Any, idx: Int, levels: Int, width: Int) extends Job
+  final case class Ack(id: JobId)
+  final case class JobState(deadline: Deadline, job: Job)
+  final case class WorkResult(duration: Duration, sendCount: Long, ackCount: Long) {
     def retryCount: Long = sendCount - ackCount
     def jobsPerSecond: Double = ackCount * 1000.0 / duration.toMillis
   }
   case object SendBatch
-  case class CreateTree(levels: Int, width: Int)
+  final case class CreateTree(levels: Int, width: Int)
 
   case object GetChildrenCount
-  case class ChildrenCount(numberOfChildren: Int, numberOfChildRestarts: Int)
+  final case class ChildrenCount(numberOfChildren: Int, numberOfChildRestarts: Int)
   case object Reset
 
 }
@@ -802,7 +802,7 @@ abstract class StressSpec
       clusterResultAggregator match {
         case Some(r) ⇒
           watch(r)
-          expectMsgPF(remaining) { case Terminated(a) if a.path == r.path ⇒ true }
+          expectMsgPF() { case Terminated(a) if a.path == r.path ⇒ true }
         case None ⇒ // ok, already terminated
       }
     }
@@ -829,7 +829,7 @@ abstract class StressSpec
         runOn(currentRoles.last) {
           cluster.join(roles.head)
         }
-        awaitMembersUp(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
       }
 
     }
@@ -849,7 +849,7 @@ abstract class StressSpec
             if (toSeedNodes) cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
             else cluster.join(roles.head)
           }
-          awaitMembersUp(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
         }
 
       }
@@ -892,14 +892,14 @@ abstract class StressSpec
             testConductor.exit(removeRole, 0).await
           }
         }
-        awaitMembersUp(currentRoles.size, timeout = remaining)
+        awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
         awaitAllReachable()
       }
     }
 
     runOn(roles.head) {
       val expectedPath = RootActorPath(removeAddress) / "user" / "watchee"
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Terminated(a) if a.path == expectedPath ⇒ true
       }
     }
@@ -927,7 +927,7 @@ abstract class StressSpec
               testConductor.exit(r, 0).await
             }
           }
-          awaitMembersUp(currentRoles.size, timeout = remaining)
+          awaitMembersUp(currentRoles.size, timeout = remainingOrDefault)
           awaitAllReachable()
         }
       }
@@ -978,7 +978,7 @@ abstract class StressSpec
               awaitMembersUp(
                 nbrUsedRoles + activeRoles.size,
                 canNotBePartOfMemberRing = allPreviousAddresses,
-                timeout = remaining)
+                timeout = remainingOrDefault)
               awaitAllReachable()
             }
             val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
@@ -1000,7 +1000,7 @@ abstract class StressSpec
     loop(1, None, Set.empty) foreach { as ⇒ TestKit.shutdownActorSystem(as) }
     within(loopDuration) {
       runOn(usedRoles: _*) {
-        awaitMembersUp(nbrUsedRoles, timeout = remaining)
+        awaitMembersUp(nbrUsedRoles, timeout = remainingOrDefault)
         awaitAllReachable()
         phiObserver ! Reset
         statsObserver ! Reset
@@ -1142,7 +1142,7 @@ abstract class StressSpec
       runOn((seedNodes ++ otherNodesJoiningSeedNodes): _*) {
         reportResult {
           cluster.joinSeedNodes(seedNodes.toIndexedSeq map address)
-          awaitMembersUp(size, timeout = remaining)
+          awaitMembersUp(size, timeout = remainingOrDefault)
         }
       }
 

@@ -5,13 +5,12 @@ package akka.event
 
 import language.postfixOps
 
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
 import akka.testkit._
 import org.scalatest.WordSpec
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
-import java.util.Properties
 import akka.actor._
 
 object LoggingReceiveSpec {
@@ -23,7 +22,7 @@ object LoggingReceiveSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAndAfterAll {
+class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseMap(Map("akka.logLevel" -> "DEBUG").asJava).withFallback(AkkaSpec.testConf)
@@ -46,7 +45,7 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
     }
   }
 
-  override def afterAll {
+  override def afterAll() {
     TestKit.shutdownActorSystem(appLogging)
     TestKit.shutdownActorSystem(appAuto)
     TestKit.shutdownActorSystem(appLifecycle)
@@ -97,7 +96,6 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
 
         within(500 millis) {
           actor ! "bah"
-          val deadletters = system.deadLetters
           expectMsgPF() {
             case UnhandledMessage("bah", testActor, `actor`) ⇒ true
           }
@@ -142,51 +140,74 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterEach with BeforeAnd
       }
     }
 
-    "log LifeCycle changes if requested" in {
+    "log Supervision events if requested" in {
       new TestKit(appLifecycle) {
-        val impl = system.asInstanceOf[ActorSystemImpl]
-        val sys = impl.systemGuardian.path.toString
-        ignoreMute(this)
-        ignoreMsg {
-          case Logging.Debug(`sys`, _, _) ⇒ true
-        }
         system.eventStream.subscribe(testActor, classOf[Logging.Debug])
-        system.eventStream.subscribe(testActor, classOf[Logging.Error])
         within(3 seconds) {
           val lifecycleGuardian = appLifecycle.asInstanceOf[ActorSystemImpl].guardian
           val lname = lifecycleGuardian.path.toString
           val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
           val sname = supervisor.path.toString
+
+          fishForMessage(hint = "now supervising") {
+            case Logging.Debug(`lname`, _, msg: String) if msg startsWith "now supervising" ⇒ true
+            case _ ⇒ false
+          }
+
+          TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
+
+          fishForMessage(hint = "now supervising") {
+            case Logging.Debug(`sname`, _, msg: String) if msg startsWith "now supervising" ⇒ true
+            case _ ⇒ false
+          }
+        }
+      }
+    }
+
+    "log DeathWatch events if requested" in {
+      new TestKit(appLifecycle) {
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        within(3 seconds) {
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
+          val sclass = classOf[TestLogActor]
+          val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
+          val aname = actor.path.toString
+
+          supervisor watch actor
+          fishForMessage(hint = "now watched by") {
+            case Logging.Debug(`aname`, `sclass`, msg: String) if msg.startsWith("now watched by") ⇒ true
+            case _ ⇒ false
+          }
+
+          supervisor unwatch actor
+          expectMsgPF(hint = "no longer watched by") {
+            case Logging.Debug(`aname`, `sclass`, msg: String) if msg.startsWith("no longer watched by") ⇒
+          }
+        }
+      }
+    }
+
+    "log LifeCycle events if requested" in {
+      new TestKit(appLifecycle) {
+        system.eventStream.subscribe(testActor, classOf[Logging.Debug])
+        system.eventStream.subscribe(testActor, classOf[Logging.Error])
+        within(3 seconds) {
+          val supervisor = TestActorRef[TestLogActor](Props[TestLogActor])
+          val sname = supervisor.path.toString
           val sclass = classOf[TestLogActor]
 
-          val supervisorSet = receiveWhile(messages = 2) {
-            case Logging.Debug(`lname`, _, msg: String) if msg startsWith "now supervising" ⇒ 1
-            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started"  ⇒ 2
-          }.toSet
-          expectNoMsg(Duration.Zero)
-          assert(supervisorSet == Set(1, 2), supervisorSet + " was not Set(1, 2)")
+          fishForMessage(hint = "started") {
+            case Logging.Debug(`sname`, `sclass`, msg: String) if msg startsWith "started" ⇒ true
+            case _ ⇒ false
+          }
 
           val actor = TestActorRef[TestLogActor](Props[TestLogActor], supervisor, "none")
           val aname = actor.path.toString
           val aclass = classOf[TestLogActor]
 
-          val set = receiveWhile(messages = 2) {
-            case Logging.Debug(`sname`, _, msg: String) if msg startsWith "now supervising" ⇒ 1
-            case Logging.Debug(`aname`, `aclass`, msg: String) if msg startsWith "started"  ⇒ 2
-          }.toSet
-          expectNoMsg(Duration.Zero)
-          assert(set == Set(1, 2), set + " was not Set(1, 2)")
-
-          supervisor watch actor
-          expectMsgPF(hint = "now monitoring") {
-            case Logging.Debug(ref, `sclass`, msg: String) ⇒
-              ref == supervisor.underlyingActor && msg.startsWith("now monitoring")
-          }
-
-          supervisor unwatch actor
-          expectMsgPF(hint = "stopped monitoring") {
-            case Logging.Debug(ref, `sclass`, msg: String) ⇒
-              ref == supervisor.underlyingActor && msg.startsWith("stopped monitoring")
+          fishForMessage(hint = "started") {
+            case Logging.Debug(`aname`, `aclass`, msg: String) if msg startsWith "started" ⇒ true
+            case _ ⇒ false
           }
 
           EventFilter[ActorKilledException](occurrences = 1) intercept {

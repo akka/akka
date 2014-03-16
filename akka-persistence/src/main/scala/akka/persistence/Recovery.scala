@@ -259,7 +259,7 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
  * @param replayMax maximum number of messages to replay. Default is no limit.
  */
 @SerialVersionUID(1L)
-case class Recover(fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest, toSequenceNr: Long = Long.MaxValue, replayMax: Long = Long.MaxValue)
+final case class Recover(fromSnapshot: SnapshotSelectionCriteria = SnapshotSelectionCriteria.Latest, toSequenceNr: Long = Long.MaxValue, replayMax: Long = Long.MaxValue)
 
 object Recover {
   /**

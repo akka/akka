@@ -67,7 +67,7 @@ class Listener extends Actor with ActorLogging {
 object Worker {
   case object Start
   case object Do
-  case class Progress(percent: Double)
+  final case class Progress(percent: Double)
 }
 //#messages
 
@@ -112,9 +112,9 @@ class Worker extends Actor with ActorLogging {
 
 //#messages
 object CounterService {
-  case class Increment(n: Int)
+  final case class Increment(n: Int)
   case object GetCurrentCount
-  case class CurrentCount(key: String, count: Long)
+  final case class CurrentCount(key: String, count: Long)
   class ServiceUnavailable(msg: String) extends RuntimeException(msg)
 
   private case object Reconnect
@@ -212,7 +212,7 @@ class CounterService extends Actor {
 
 //#messages
 object Counter {
-  case class UseStorage(storage: Option[ActorRef])
+  final case class UseStorage(storage: Option[ActorRef])
 }
 //#messages
 
@@ -253,9 +253,9 @@ class Counter(key: String, initialValue: Long) extends Actor {
 
 //#messages
 object Storage {
-  case class Store(entry: Entry)
-  case class Get(key: String)
-  case class Entry(key: String, value: Long)
+  final case class Store(entry: Entry)
+  final case class Get(key: String)
+  final case class Entry(key: String, value: Long)
   class StorageException(msg: String) extends RuntimeException(msg)
 }
 //#messages

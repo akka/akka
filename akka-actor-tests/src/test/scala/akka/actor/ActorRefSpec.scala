@@ -18,7 +18,7 @@ import akka.TestUtils.verifyActorTermination
 
 object ActorRefSpec {
 
-  case class ReplyTo(sender: ActorRef)
+  final case class ReplyTo(sender: ActorRef)
 
   class ReplyActor extends Actor {
     var replyTo: ActorRef = null
@@ -388,7 +388,7 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "stop when sent a poison pill" in {
-      val timeout = Timeout(20000)
+      val timeout = Timeout(20.seconds)
       val ref = system.actorOf(Props(new Actor {
         def receive = {
           case 5 ⇒ sender() ! "five"
@@ -441,8 +441,8 @@ class ActorRefSpec extends AkkaSpec with DefaultTimeout {
         def receive = { case name: String ⇒ sender() ! context.child(name).isDefined }
       }), "parent")
 
-      assert(Await.result((parent ? "child"), remaining) === true)
-      assert(Await.result((parent ? "whatnot"), remaining) === false)
+      assert(Await.result((parent ? "child"), timeout.duration) === true)
+      assert(Await.result((parent ? "whatnot"), timeout.duration) === false)
     }
   }
 }

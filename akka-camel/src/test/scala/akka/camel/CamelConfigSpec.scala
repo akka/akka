@@ -46,6 +46,10 @@ class CamelConfigSpec extends WordSpec with Matchers {
       conversions.getString("file") should be("java.io.InputStream")
       conversions.entrySet.size should be(1)
     }
+
+    "have correct Context Provider" in {
+      settings.ContextProvider.isInstanceOf[DefaultContextProvider] should be(true)
+    }
   }
 }
 

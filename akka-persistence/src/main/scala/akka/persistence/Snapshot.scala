@@ -13,7 +13,7 @@ package akka.persistence
  * @param timestamp time at which the snapshot was saved.
  */
 @SerialVersionUID(1L) //#snapshot-metadata
-case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Long = 0L)
+final case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
 /**
@@ -22,7 +22,7 @@ case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Lo
  * @param metadata snapshot metadata.
  */
 @SerialVersionUID(1L)
-case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
+final case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
 
 /**
  * Sent to a [[Processor]] after failed saving of a snapshot.
@@ -31,14 +31,14 @@ case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
  * @param cause failure cause.
  */
 @SerialVersionUID(1L)
-case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
+final case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
 
 /**
  * Offers a [[Processor]] a previously saved `snapshot` during recovery. This offer is received
  * before any further replayed messages.
  */
 @SerialVersionUID(1L)
-case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
+final case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
 
 /**
  * Selection criteria for loading and deleting snapshots.
@@ -49,7 +49,7 @@ case class SnapshotOffer(metadata: SnapshotMetadata, snapshot: Any)
  * @see [[Recover]]
  */
 @SerialVersionUID(1L)
-case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {
+final case class SnapshotSelectionCriteria(maxSequenceNr: Long = Long.MaxValue, maxTimestamp: Long = Long.MaxValue) {
   /**
    * INTERNAL API.
    */
@@ -97,7 +97,7 @@ object SnapshotSelectionCriteria {
  * @param metadata snapshot metadata.
  * @param snapshot snapshot.
  */
-case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
+final case class SelectedSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
 object SelectedSnapshot {
   /**
@@ -120,14 +120,14 @@ private[persistence] object SnapshotProtocol {
    * @param criteria criteria for selecting a snapshot from which recovery should start.
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
-  case class LoadSnapshot(processorId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
+  final case class LoadSnapshot(processorId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
 
   /**
    * Response message to a [[LoadSnapshot]] message.
    *
    * @param snapshot loaded snapshot, if any.
    */
-  case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
+  final case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
 
   /**
    * Instructs snapshot store to save a snapshot.
@@ -135,14 +135,14 @@ private[persistence] object SnapshotProtocol {
    * @param metadata snapshot metadata.
    * @param snapshot snapshot.
    */
-  case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
+  final case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
 
   /**
    * Instructs snapshot store to delete a snapshot.
    *
    * @param metadata snapshot metadata.
    */
-  case class DeleteSnapshot(metadata: SnapshotMetadata)
+  final case class DeleteSnapshot(metadata: SnapshotMetadata)
 
   /**
    * Instructs snapshot store to delete all snapshots that match `criteria`.
@@ -150,5 +150,5 @@ private[persistence] object SnapshotProtocol {
    * @param processorId processor id.
    * @param criteria criteria for selecting snapshots to be deleted.
    */
-  case class DeleteSnapshots(processorId: String, criteria: SnapshotSelectionCriteria)
+  final case class DeleteSnapshots(processorId: String, criteria: SnapshotSelectionCriteria)
 }

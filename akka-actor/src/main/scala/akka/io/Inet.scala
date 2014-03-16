@@ -35,7 +35,7 @@ object Inet {
      *
      * For more information see [[java.net.Socket.setReceiveBufferSize]]
      */
-    case class ReceiveBufferSize(size: Int) extends SocketOption {
+    final case class ReceiveBufferSize(size: Int) extends SocketOption {
       require(size > 0, "ReceiveBufferSize must be > 0")
       override def beforeServerSocketBind(s: ServerSocket): Unit = s.setReceiveBufferSize(size)
       override def beforeDatagramBind(s: DatagramSocket): Unit = s.setReceiveBufferSize(size)
@@ -49,7 +49,7 @@ object Inet {
      *
      * For more information see [[java.net.Socket.setReuseAddress]]
      */
-    case class ReuseAddress(on: Boolean) extends SocketOption {
+    final case class ReuseAddress(on: Boolean) extends SocketOption {
       override def beforeServerSocketBind(s: ServerSocket): Unit = s.setReuseAddress(on)
       override def beforeDatagramBind(s: DatagramSocket): Unit = s.setReuseAddress(on)
       override def beforeConnect(s: Socket): Unit = s.setReuseAddress(on)
@@ -60,7 +60,7 @@ object Inet {
      *
      * For more information see [[java.net.Socket.setSendBufferSize]]
      */
-    case class SendBufferSize(size: Int) extends SocketOption {
+    final case class SendBufferSize(size: Int) extends SocketOption {
       require(size > 0, "SendBufferSize must be > 0")
       override def afterConnect(s: Socket): Unit = s.setSendBufferSize(size)
     }
@@ -72,7 +72,7 @@ object Inet {
      *
      * For more information see [[java.net.Socket.setTrafficClass]]
      */
-    case class TrafficClass(tc: Int) extends SocketOption {
+    final case class TrafficClass(tc: Int) extends SocketOption {
       require(0 <= tc && tc <= 255, "TrafficClass needs to be in the interval [0, 255]")
       override def afterConnect(s: Socket): Unit = s.setTrafficClass(tc)
     }

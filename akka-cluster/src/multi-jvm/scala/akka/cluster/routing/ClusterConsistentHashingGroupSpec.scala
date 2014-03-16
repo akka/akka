@@ -23,7 +23,7 @@ import akka.testkit._
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 
   case object Get
-  case class Collected(messages: Set[Any])
+  final case class Collected(messages: Set[Any])
 
   class Destination extends Actor {
     var receivedMessages = Set.empty[Any]
@@ -59,7 +59,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
   }
 
   def currentRoutees(router: ActorRef) =
-    Await.result(router ? GetRoutees, remaining).asInstanceOf[Routees].routees
+    Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
 
   "A cluster router with a consistent hashing group" must {
     "start cluster with 3 nodes" taggedAs LongRunningTest in {

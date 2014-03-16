@@ -13,6 +13,8 @@ import scala.PartialFunction;
  *
  * @param <I> the input type, that this PartialFunction will be applied to
  * @param <R> the return type, that the results of the application will have
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class Match<I, R> extends AbstractMatch<I, R> {
 
@@ -44,6 +46,20 @@ public class Match<I, R> extends AbstractMatch<I, R> {
                                                 final FI.TypedPredicate<P> predicate,
                                                 final FI.Apply<P, T> apply) {
     return new PFBuilder<F, T>().match(type, predicate, apply);
+  }
+
+  /**
+   * Convenience function to create a {@link PFBuilder} with the first
+   * case statement added.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   * @see PFBuilder#matchEquals(Object, FI.Apply)
+   */
+  public static <F, T, P> PFBuilder<F, T> matchEquals(final P object,
+                                                      final FI.Apply<P, T> apply) {
+    return new PFBuilder<F, T>().matchEquals(object, apply);
   }
 
   /**

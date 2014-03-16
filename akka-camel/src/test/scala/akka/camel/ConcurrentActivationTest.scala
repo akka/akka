@@ -10,7 +10,7 @@ import scala.concurrent.{ Promise, Await, Future }
 import scala.collection.immutable
 import akka.camel.TestSupport.NonSharedCamelSystem
 import akka.actor.{ ActorRef, Props, Actor }
-import akka.routing.BroadcastRouter
+import akka.routing.BroadcastGroup
 import scala.concurrent.duration._
 import akka.testkit._
 import akka.util.Timeout
@@ -85,7 +85,7 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
       var allActivationFutures = List[Future[List[ActorRef]]]()
       var allDeactivationFutures = List[Future[List[ActorRef]]]()
 
-      val routees = (1 to number).map { i ⇒
+      val routeePaths = (1 to number).map { i ⇒
         val activationListPromise = Promise[List[ActorRef]]()
         val deactivationListPromise = Promise[List[ActorRef]]()
         val activationListFuture = activationListPromise.future
@@ -93,21 +93,22 @@ class ConsumerBroadcast(promise: Promise[(Future[List[List[ActorRef]]], Future[L
 
         allActivationFutures = allActivationFutures :+ activationListFuture
         allDeactivationFutures = allDeactivationFutures :+ deactivationListFuture
-        context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise), "registrar-" + i)
+        val routee = context.actorOf(Props(classOf[Registrar], i, number, activationListPromise, deactivationListPromise), "registrar-" + i)
+        routee.path.toString
       }
       promise.success(Future.sequence(allActivationFutures) -> Future.sequence(allDeactivationFutures))
 
-      broadcaster = Some(context.actorOf(Props.empty withRouter (BroadcastRouter(routees)), "registrarRouter"))
+      broadcaster = Some(context.actorOf(BroadcastGroup(routeePaths).props(), "registrarRouter"))
     case reg: Any ⇒
       broadcaster.foreach(_.forward(reg))
   }
 }
 
-case class CreateRegistrars(number: Int)
-case class RegisterConsumersAndProducers(endpointUri: String)
-case class DeRegisterConsumersAndProducers()
-case class Activations()
-case class DeActivations()
+final case class CreateRegistrars(number: Int)
+final case class RegisterConsumersAndProducers(endpointUri: String)
+final case class DeRegisterConsumersAndProducers()
+final case class Activations()
+final case class DeActivations()
 
 class Registrar(val start: Int, val number: Int, activationsPromise: Promise[List[ActorRef]],
                 deActivationsPromise: Promise[List[ActorRef]]) extends Actor with ActorLogging {

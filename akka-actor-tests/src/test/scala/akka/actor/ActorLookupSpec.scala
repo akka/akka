@@ -12,13 +12,13 @@ import akka.pattern.ask
 
 object ActorLookupSpec {
 
-  case class Create(child: String)
+  final case class Create(child: String)
 
   trait Query
-  case class LookupElems(path: Iterable[String]) extends Query
-  case class LookupString(path: String) extends Query
-  case class LookupPath(path: ActorPath) extends Query
-  case class GetSender(to: ActorRef) extends Query
+  final case class LookupElems(path: Iterable[String]) extends Query
+  final case class LookupString(path: String) extends Query
+  final case class LookupPath(path: ActorPath) extends Query
+  final case class GetSender(to: ActorRef) extends Query
 
   val p = Props[Node]
 

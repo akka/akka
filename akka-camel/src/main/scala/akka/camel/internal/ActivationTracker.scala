@@ -113,11 +113,11 @@ private[camel] class ActivationTracker extends Actor with ActorLogging {
  * A request message to the ActivationTracker for the status of activation.
  * @param ref the actorRef
  */
-private[camel] case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
+private[camel] final case class AwaitActivation(ref: ActorRef) extends ActivationMessage(ref)
 
 /**
  * INTERNAL API
  * A request message to the ActivationTracker for the status of de-activation.
  * @param ref the actorRef
  */
-private[camel] case class AwaitDeActivation(ref: ActorRef) extends ActivationMessage(ref)
+private[camel] final case class AwaitDeActivation(ref: ActorRef) extends ActivationMessage(ref)

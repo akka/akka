@@ -67,11 +67,11 @@ object ClusterShardingSpec extends MultiNodeConfig {
   //#counter-actor
   case object Increment
   case object Decrement
-  case class Get(counterId: Long)
-  case class EntryEnvelope(id: Long, payload: Any)
+  final case class Get(counterId: Long)
+  final case class EntryEnvelope(id: Long, payload: Any)
 
   case object Stop
-  case class CounterChanged(delta: Int)
+  final case class CounterChanged(delta: Int)
 
   class Counter extends EventsourcedProcessor {
     import ShardRegion.Passivate

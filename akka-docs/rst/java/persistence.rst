@@ -4,6 +4,10 @@
 Persistence
 ###########
 
+
+Java 8 lambda expressions are also supported now. (See section :ref:`persistence-lambda-java`)
+
+
 Akka persistence enables stateful actors to persist their internal state so that it can be recovered when an actor
 is started, restarted after a JVM crash or by a supervisor, or migrated in a cluster. The key concept behind Akka
 persistence is that only changes to an actor's internal state are persisted but never its current state directly
@@ -13,6 +17,10 @@ changes to these actors from which they can rebuild internal state. This can be 
 or starting from a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
 communication channels with at-least-once message delivery semantics.
 
+.. Lambda warning::
+
+  Java 8 lambda expressions are also supported now. (See section :ref:`persistence-lambda-java`)
+
 .. warning::
 
   This module is marked as **“experimental”** as of its introduction in Akka 2.3.0. We will continue to
@@ -20,8 +28,9 @@ communication channels with at-least-once message delivery semantics.
   changes to a minimum the binary compatibility guarantee for maintenance releases does not apply to the
   contents of the ``akka.persistence`` package.
 
-Akka persistence is inspired by the `eventsourced`_ library. It follows the same concepts and architecture of
-`eventsourced`_ but significantly differs on API and implementation level.
+Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
+concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
+:ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
@@ -63,7 +72,7 @@ Architecture
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing-java`)
 
-.. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
+.. _Community plugins: http://akka.io/community/
 
 .. _processors-java:
 
@@ -238,6 +247,24 @@ A channel is ready to use once it has been created, no recovery or further activ
 request  instructs a channel to send a ``Persistent`` message to a destination. A destination is provided as
 ``ActorPath`` and messages are sent by the channel via that path's ``ActorSelection``. Sender references are
 preserved by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
+
+.. note::
+  
+  Sending via a channel has at-least-once delivery semantics—by virtue of either
+  the sending actor or the channel being persistent—which means that the
+  semantics do not match those of a normal :class:`ActorRef` send operation:
+
+  * it is not at-most-once delivery
+
+  * message order for the same sender–receiver pair is not retained due to
+    possible resends
+
+  * after a crash and restart of the destination messages are still
+    delivered—to the new actor incarnation
+
+  These semantics match precisely what an :class:`ActorPath` represents (see
+  :ref:`actor-lifecycle-java`), therefore you need to supply a path and not a
+  reference when constructing :class:`Deliver` messages.
 
 If a processor wants to reply to a ``Persistent`` message sender it should use the ``getSender()`` path as
 channel destination.

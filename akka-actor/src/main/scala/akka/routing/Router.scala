@@ -40,7 +40,7 @@ trait Routee {
 /**
  * [[Routee]] that sends the messages to an [[akka.actor.ActorRef]].
  */
-case class ActorRefRoutee(ref: ActorRef) extends Routee {
+final case class ActorRefRoutee(ref: ActorRef) extends Routee {
   override def send(message: Any, sender: ActorRef): Unit =
     ref.tell(message, sender)
 }
@@ -48,7 +48,7 @@ case class ActorRefRoutee(ref: ActorRef) extends Routee {
 /**
  * [[Routee]] that sends the messages to an [[akka.actor.ActorSelection]].
  */
-case class ActorSelectionRoutee(selection: ActorSelection) extends Routee {
+final case class ActorSelectionRoutee(selection: ActorSelection) extends Routee {
   override def send(message: Any, sender: ActorRef): Unit =
     selection.tell(message, sender)
 }
@@ -65,7 +65,7 @@ object NoRoutee extends Routee {
 /**
  * [[Routee]] that sends each message to all `routees`.
  */
-case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends Routee {
+final case class SeveralRoutees(routees: immutable.IndexedSeq[Routee]) extends Routee {
 
   /**
    * Java API
@@ -175,7 +175,7 @@ final case class Router(val logic: RoutingLogic, val routees: immutable.IndexedS
  * envelope will be stripped off.
  */
 @SerialVersionUID(1L)
-case class Broadcast(message: Any) extends RouterEnvelope
+final case class Broadcast(message: Any) extends RouterEnvelope
 
 /**
  * Only the contained message will be forwarded to the

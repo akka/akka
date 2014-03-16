@@ -23,7 +23,7 @@ import scala.util.control.{ NonFatal, ControlThrowable }
 
 object ActorSystem {
 
-  val Version: String = "2.3-SNAPSHOT"
+  val Version: String = "2.4-SNAPSHOT"
 
   val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
     case null | "" | "." ⇒ None
@@ -464,6 +464,12 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def systemGuardian: InternalActorRef
 
   /**
+   * Create an actor in the "/system" namespace. This actor will be shut down
+   * during system shutdown only after all user actors have terminated.
+   */
+  def systemActorOf(props: Props, name: String): ActorRef
+
+  /**
    * A ThreadFactory that can be used if the transport needs to create any Threads
    */
   def threadFactory: ThreadFactory
@@ -541,7 +547,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   protected def systemImpl: ActorSystemImpl = this
 
-  private[akka] def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
+  def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
 
   def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name, systemService = false)
 

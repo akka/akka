@@ -53,18 +53,18 @@ object SupervisorHierarchySpec {
     }
   }
 
-  case class Ready(ref: ActorRef)
-  case class Died(path: ActorPath)
+  final case class Ready(ref: ActorRef)
+  final case class Died(path: ActorPath)
   case object Abort
   case object PingOfDeath
   case object PongOfDeath
-  case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
-  case class ErrorLog(msg: String, log: Vector[Event])
-  case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, val failConstr: Int, stopKids: Int)
+  final case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
+  final case class ErrorLog(msg: String, log: Vector[Event])
+  final case class Failure(directive: Directive, stop: Boolean, depth: Int, var failPre: Int, var failPost: Int, val failConstr: Int, stopKids: Int)
     extends RuntimeException("Failure") with NoStackTrace {
     override def toString = productPrefix + productIterator.mkString("(", ",", ")")
   }
-  case class Dump(level: Int)
+  final case class Dump(level: Int)
 
   val config = ConfigFactory.parseString("""
     hierarchy {
@@ -112,7 +112,7 @@ object SupervisorHierarchySpec {
    * upon Restart or would have to be managed by the highest supervisor (which
    * is undesirable).
    */
-  case class HierarchyState(log: Vector[Event], kids: Map[ActorPath, Int], failConstr: Failure)
+  final case class HierarchyState(log: Vector[Event], kids: Map[ActorPath, Int], failConstr: Failure)
   val stateCache = new ConcurrentHashMap[ActorPath, HierarchyState]()
   @volatile var ignoreFailConstr = false
 
@@ -320,11 +320,11 @@ object SupervisorHierarchySpec {
   }
 
   case object Work
-  case class GCcheck(kids: Vector[WeakReference[ActorRef]])
+  final case class GCcheck(kids: Vector[WeakReference[ActorRef]])
 
   sealed trait Action
-  case class Ping(ref: ActorRef) extends Action
-  case class Fail(ref: ActorRef, directive: Directive) extends Action
+  final case class Ping(ref: ActorRef) extends Action
+  final case class Fail(ref: ActorRef, directive: Directive) extends Action
 
   sealed trait State
   case object Idle extends State

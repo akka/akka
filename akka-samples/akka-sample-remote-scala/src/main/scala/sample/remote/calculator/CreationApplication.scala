@@ -1,6 +1,3 @@
-/**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
- */
 package sample.remote.calculator
 
 import scala.concurrent.duration._

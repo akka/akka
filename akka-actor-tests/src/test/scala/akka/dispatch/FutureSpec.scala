@@ -49,8 +49,8 @@ object FutureSpec {
     }
   }
 
-  case class Req[T](req: T)
-  case class Res[T](res: T)
+  final case class Req[T](req: T)
+  final case class Res[T](res: T)
 }
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
@@ -385,7 +385,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
 
       "fold" in {
-        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remaining) should be(55)
+        Await.result(Future.fold((1 to 10).toList map { i ⇒ Future(i) })(0)(_ + _), remainingOrDefault) should be(55)
       }
 
       "zip" in {
@@ -417,7 +417,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldFoldResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remaining) }.getMessage should be("shouldFoldResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.fold(futures)(0)(_ + _), remainingOrDefault) }.getMessage should be("shouldFoldResultsWithException: expected")
         }
       }
 
@@ -443,7 +443,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
 
       "reduce results" in {
         val futures = (1 to 10).toList map { i ⇒ Future(i) }
-        assert(Await.result(Future.reduce(futures)(_ + _), remaining) === 55)
+        assert(Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) === 55)
       }
 
       "reduce results with Exception" in {
@@ -452,7 +452,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
             case 6 ⇒ Future(throw new IllegalArgumentException("shouldReduceResultsWithException: expected"))
             case i ⇒ Future(i)
           }
-          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remaining) }.getMessage should be("shouldReduceResultsWithException: expected")
+          intercept[Throwable] { Await.result(Future.reduce(futures)(_ + _), remainingOrDefault) }.getMessage should be("shouldReduceResultsWithException: expected")
         }
       }
 
@@ -704,22 +704,22 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
   }
 
   sealed trait IntAction { def apply(that: Int): Int }
-  case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
-  case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
-  case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
-  case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
+  final case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
+  final case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
+  final case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
+  final case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
 
   sealed trait FutureAction {
     def /:(that: Try[Int]): Try[Int]
     def /:(that: Future[Int]): Future[Int]
   }
 
-  case class MapAction(action: IntAction) extends FutureAction {
+  final case class MapAction(action: IntAction) extends FutureAction {
     def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that map action.apply
   }
 
-  case class FlatMapAction(action: IntAction) extends FutureAction {
+  final case class FlatMapAction(action: IntAction) extends FutureAction {
     def /:(that: Try[Int]): Try[Int] = that map action.apply
     def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
   }

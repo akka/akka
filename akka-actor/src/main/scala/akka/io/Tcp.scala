@@ -55,7 +55,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      *
      * For more information see [[java.net.Socket.setKeepAlive]]
      */
-    case class KeepAlive(on: Boolean) extends SocketOption {
+    final case class KeepAlive(on: Boolean) extends SocketOption {
       override def afterConnect(s: Socket): Unit = s.setKeepAlive(on)
     }
 
@@ -66,7 +66,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      *
      * For more information see [[java.net.Socket.setOOBInline]]
      */
-    case class OOBInline(on: Boolean) extends SocketOption {
+    final case class OOBInline(on: Boolean) extends SocketOption {
       override def afterConnect(s: Socket): Unit = s.setOOBInline(on)
     }
 
@@ -80,7 +80,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
      *
      * For more information see [[java.net.Socket.setTcpNoDelay]]
      */
-    case class TcpNoDelay(on: Boolean) extends SocketOption {
+    final case class TcpNoDelay(on: Boolean) extends SocketOption {
       override def afterConnect(s: Socket): Unit = s.setTcpNoDelay(on)
     }
 
@@ -110,11 +110,11 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to the [[SO]] object for a list of all supported options.
    */
-  case class Connect(remoteAddress: InetSocketAddress,
-                     localAddress: Option[InetSocketAddress] = None,
-                     options: immutable.Traversable[SocketOption] = Nil,
-                     timeout: Option[FiniteDuration] = None,
-                     pullMode: Boolean = false) extends Command
+  final case class Connect(remoteAddress: InetSocketAddress,
+                           localAddress: Option[InetSocketAddress] = None,
+                           options: immutable.Traversable[SocketOption] = Nil,
+                           timeout: Option[FiniteDuration] = None,
+                           pullMode: Boolean = false) extends Command
 
   /**
    * The Bind message is send to the TCP manager actor, which is obtained via
@@ -135,11 +135,11 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *
    * @param options Please refer to the [[SO]] object for a list of all supported options.
    */
-  case class Bind(handler: ActorRef,
-                  localAddress: InetSocketAddress,
-                  backlog: Int = 100,
-                  options: immutable.Traversable[SocketOption] = Nil,
-                  pullMode: Boolean = false) extends Command
+  final case class Bind(handler: ActorRef,
+                        localAddress: InetSocketAddress,
+                        backlog: Int = 100,
+                        options: immutable.Traversable[SocketOption] = Nil,
+                        pullMode: Boolean = false) extends Command
 
   /**
    * This message must be sent to a TCP connection actor after receiving the
@@ -159,7 +159,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    *                notification until [[ResumeWriting]] is received. This can
    *                be used to implement NACK-based write backpressure.
    */
-  case class Register(handler: ActorRef, keepOpenOnPeerClosed: Boolean = false, useResumeWriting: Boolean = true) extends Command
+  final case class Register(handler: ActorRef, keepOpenOnPeerClosed: Boolean = false, useResumeWriting: Boolean = true) extends Command
 
   /**
    * In order to close down a listening socket, send this message to that socket’s
@@ -316,7 +316,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  case class Write(data: ByteString, ack: Event) extends SimpleWriteCommand
+  final case class Write(data: ByteString, ack: Event) extends SimpleWriteCommand
   object Write {
     /**
      * The empty Write doesn't write anything and isn't acknowledged.
@@ -343,7 +343,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
+  final case class WriteFile(filePath: String, position: Long, count: Long, ack: Event) extends SimpleWriteCommand {
     require(position >= 0, "WriteFile.position must be >= 0")
     require(count > 0, "WriteFile.count must be > 0")
   }
@@ -356,7 +356,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * If the sub commands contain `ack` requests they will be honored as soon as the
    * respective write has been written completely.
    */
-  case class CompoundWrite(override val head: SimpleWriteCommand, tailCommand: WriteCommand) extends WriteCommand
+  final case class CompoundWrite(override val head: SimpleWriteCommand, tailCommand: WriteCommand) extends WriteCommand
     with immutable.Iterable[SimpleWriteCommand] {
 
     def iterator: Iterator[SimpleWriteCommand] =
@@ -399,7 +399,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * for connection actors.
    * @param batchSize The number of connections to accept before waiting for the next resume command
    */
-  case class ResumeAccepting(batchSize: Int) extends Command
+  final case class ResumeAccepting(batchSize: Int) extends Command
 
   /// EVENTS
   /**
@@ -411,7 +411,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * Whenever data are read from a socket they will be transferred within this
    * class to the handler actor which was designated in the [[Register]] message.
    */
-  case class Received(data: ByteString) extends Event
+  final case class Received(data: ByteString) extends Event
 
   /**
    * The connection actor sends this message either to the sender of a [[Connect]]
@@ -419,13 +419,13 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * in the [[Bind]] message. The connection is characterized by the `remoteAddress`
    * and `localAddress` TCP endpoints.
    */
-  case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
+  final case class Connected(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress) extends Event
 
   /**
    * Whenever a command cannot be completed, the queried actor will reply with
    * this message, wrapping the original command which failed.
    */
-  case class CommandFailed(cmd: Command) extends Event
+  final case class CommandFailed(cmd: Command) extends Event
 
   /**
    * When `useResumeWriting` is in effect as indicated in the [[Register]] message,
@@ -442,7 +442,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * in this form. If the bind address indicated a 0 port number, then the contained
    * `localAddress` can be used to find out which port was automatically assigned.
    */
-  case class Bound(localAddress: InetSocketAddress) extends Event
+  final case class Bound(localAddress: InetSocketAddress) extends Event
 
   /**
    * The sender of an [[Unbind]] command will receive confirmation through this
@@ -507,7 +507,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   /**
    * The connection has been closed due to an IO error.
    */
-  case class ErrorClosed(cause: String) extends ConnectionClosed {
+  final case class ErrorClosed(cause: String) extends ConnectionClosed {
     override def isErrorClosed = true
     override def getErrorCause = cause
   }
@@ -556,7 +556,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
    *
    */
   val manager: ActorRef = {
-    system.asInstanceOf[ActorSystemImpl].systemActorOf(
+    system.systemActorOf(
       props = Props(classOf[TcpManager], this).withDispatcher(Settings.ManagementDispatcher).withDeploy(Deploy.local),
       name = "IO-TCP")
   }

@@ -22,7 +22,6 @@ import akka.remote.RemoteDeployer
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing.RouterConfig
 import akka.routing.DefaultResizer
-import akka.cluster.routing.AdaptiveLoadBalancingRouter
 import akka.cluster.routing.MixMetricsSelector
 import akka.cluster.routing.HeapMetricsSelector
 import akka.cluster.routing.SystemLoadAverageMetricsSelector
@@ -36,7 +35,6 @@ import akka.routing.Group
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterGroup
 import com.typesafe.config.ConfigFactory
-import akka.routing.DeprecatedRouterConfig
 import akka.cluster.routing.ClusterRouterPoolSettings
 import akka.cluster.routing.ClusterRouterGroupSettings
 
@@ -90,13 +88,7 @@ private[akka] class ClusterActorRefProvider(
 private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: DynamicAccess) extends RemoteDeployer(_settings, _pm) {
   override def parseConfig(path: String, config: Config): Option[Deploy] = {
 
-    // For backwards compatibility we must transform 'cluster.routees-path' to 'routees.paths'
-    val config2 =
-      if (config.hasPath("cluster.routees-path"))
-        config.withFallback(ConfigFactory.parseString(s"""routees.paths=["${config.getString("cluster.routees-path")}"]"""))
-      else config
-
-    super.parseConfig(path, config2) match {
+    super.parseConfig(path, config) match {
       case d @ Some(deploy) ⇒
         if (deploy.config.getBoolean("cluster.enabled")) {
           if (deploy.scope != NoScopeGiven)
@@ -105,13 +97,6 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
             throw new ConfigurationException("Cluster deployment can't be combined with [%s]".format(deploy.routerConfig))
 
           deploy.routerConfig match {
-            case r: DeprecatedRouterConfig ⇒
-              if (config.hasPath("cluster.routees-path"))
-                Some(deploy.copy(
-                  routerConfig = ClusterRouterGroup(r, ClusterRouterGroupSettings.fromConfig(deploy.config)), scope = ClusterScope))
-              else
-                Some(deploy.copy(
-                  routerConfig = ClusterRouterPool(r, ClusterRouterPoolSettings.fromConfig(deploy.config)), scope = ClusterScope))
             case r: Pool ⇒
               Some(deploy.copy(
                 routerConfig = ClusterRouterPool(r, ClusterRouterPoolSettings.fromConfig(deploy.config)), scope = ClusterScope))

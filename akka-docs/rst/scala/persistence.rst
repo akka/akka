@@ -21,7 +21,8 @@ communication channels with at-least-once message delivery semantics.
   contents of the ``akka.persistence`` package.
 
 Akka persistence is inspired by and the official replacement of the `eventsourced`_ library. It follows the same
-concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level.
+concepts and architecture of `eventsourced`_ but significantly differs on API and implementation level. See also
+:ref:`migration-eventsourced-2.3`
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
@@ -59,7 +60,7 @@ Architecture
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing`)
 
-.. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
+.. _Community plugins: http://akka.io/community/
 
 .. _processors:
 
@@ -80,6 +81,8 @@ so that the sender can re-send the message, if needed.
 A ``Processor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#usage
+
+.. _recovery:
 
 Recovery
 --------
@@ -234,6 +237,24 @@ request  instructs a channel to send a ``Persistent`` message to a destination. 
 ``ActorPath`` and messages are sent by the channel via that path's ``ActorSelection``. Sender references are
 preserved by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
 
+.. note::
+  
+  Sending via a channel has at-least-once delivery semantics—by virtue of either
+  the sending actor or the channel being persistent—which means that the
+  semantics do not match those of a normal :class:`ActorRef` send operation:
+
+  * it is not at-most-once delivery
+
+  * message order for the same sender–receiver pair is not retained due to
+    possible resends
+
+  * after a crash and restart of the destination messages are still
+    delivered—to the new actor incarnation
+
+  These semantics match precisely what an :class:`ActorPath` represents (see
+  :ref:`actor-lifecycle-scala`), therefore you need to supply a path and not a
+  reference when constructing :class:`Deliver` messages.
+
 If a processor wants to reply to a ``Persistent`` message sender it should use the ``sender`` path as channel
 destination.
 
@@ -295,6 +316,8 @@ If an application wants to have more control how sequence numbers are assigned t
 application-specific sequence number generator and include the generated sequence numbers into the ``payload``
 of ``Persistent`` messages.
 
+.. _persistent-channels:
+
 Persistent channels
 -------------------
 
@@ -333,6 +356,8 @@ creating the channel with the ``replyPersistent`` configuration parameter set to
 With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``
 message. In case the latter case, the sender should re-send the message.
 
+.. _processor-identifiers:
+
 Identifiers
 -----------
 
@@ -343,6 +368,8 @@ a channel identifier, it should be provided as argument ``Channel.props(String)`
 (recommended to generate stable identifiers).
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#channel-id-override
+
+.. _persistent-messages:
 
 Persistent messages
 ===================
@@ -490,6 +517,8 @@ In larger integration scenarios, channel destinations may be actors that submit 
 message broker, for example. After having successfully submitted an event, they should call ``confirm()`` on the
 received ``ConfirmablePersistent`` message.
 
+.. _batch-writes:
+
 Batch writes
 ============
 
@@ -520,6 +549,8 @@ Confirmation and deletion operations performed by :ref:`channels` are also batch
 and deletion batch sizes are configurable with ``akka.persistence.journal.max-confirmation-batch-size`` and
 ``akka.persistence.journal.max-deletion-batch-size``, respectively.
 
+.. _storage-plugins:
+
 Storage plugins
 ===============
 
@@ -530,6 +561,8 @@ plugins by implementing a plugin API and activate them by configuration. Plugin 
 imports:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#plugin-imports
+
+.. _journal-plugin-api:
 
 Journal plugin API
 ------------------
@@ -570,6 +603,8 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
+
+.. _pre-packaged-plugins:
 
 Pre-packaged plugins
 ====================
@@ -634,6 +669,8 @@ the local filesystem. The default storage location is a directory named ``snapsh
 directory. This can be changed by configuration where the specified path can be relative or absolute:
 
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-config
+
+.. _custom-serialization:
 
 Custom serialization
 ====================

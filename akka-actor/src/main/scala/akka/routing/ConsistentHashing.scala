@@ -98,19 +98,6 @@ object ConsistentHashingRouter {
       mapper.hashKey(message)
   }
 
-  /**
-   * Creates a new ConsistentHashingRouter, routing to the specified routees
-   */
-  @deprecated("Use ConsistentHashingGroup", "2.3")
-  def apply(routees: immutable.Iterable[ActorRef]): ConsistentHashingRouter =
-    new ConsistentHashingRouter(routees = routees map (_.path.toString))
-
-  /**
-   * Java API to create router with the supplied 'routees' actors.
-   */
-  @deprecated("Use ConsistentHashingGroup", "2.3")
-  def create(routees: java.lang.Iterable[ActorRef]): ConsistentHashingRouter = apply(immutableSeq(routees))
-
 }
 
 object ConsistentHashingRoutingLogic {
@@ -330,10 +317,9 @@ final case class ConsistentHashingPool(
    * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
    */
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter          ⇒ this.overrideUnsetConfig(other)
-    case otherRouter: ConsistentHashingPool   ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
-    case otherRouter: ConsistentHashingRouter ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
-    case _                                    ⇒ throw new IllegalArgumentException("Expected ConsistentHashingPool, got [%s]".format(other))
+    case _: FromConfig | _: NoRouter        ⇒ this.overrideUnsetConfig(other)
+    case otherRouter: ConsistentHashingPool ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
+    case _                                  ⇒ throw new IllegalArgumentException("Expected ConsistentHashingPool, got [%s]".format(other))
   }
 
 }
@@ -414,7 +400,7 @@ final case class ConsistentHashingGroup(
  * isn't a good representation, because LocalActorRef doesn't include the
  * host and port.
  */
-private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
+private[akka] final case class ConsistentRoutee(routee: Routee, selfAddress: Address) {
 
   override def toString: String = routee match {
     case ActorRefRoutee(ref)       ⇒ toStringWithfullAddress(ref.path)
@@ -426,146 +412,6 @@ private[akka] case class ConsistentRoutee(routee: Routee, selfAddress: Address) 
     path.address match {
       case Address(_, _, None, None) ⇒ path.toStringWithAddress(selfAddress)
       case a                         ⇒ path.toString
-    }
-  }
-}
-
-/**
- * A Router that uses consistent hashing to select a connection based on the
- * sent message.
- *
- * There is 3 ways to define what data to use for the consistent hash key.
- *
- * 1. You can define `hashMapping` / `withHashMapper`
- * of the router to map incoming messages to their consistent hash key.
- * This makes the decision transparent for the sender.
- *
- * 2. The messages may implement [[akka.routing.ConsistentHashingRouter.ConsistentHashable]].
- * The key is part of the message and it's convenient to define it together
- * with the message definition.
- *
- * 3. The messages can be be wrapped in a [[akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope]]
- * to define what data to use for the consistent hash key. The sender knows
- * the key to use.
- *
- * These ways to define the consistent hash key can be use together and at
- * the same time for one router. The `hashMapping` is tried first.
- *
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical
- * sense as this means that the router should both create new actors and use the 'routees'
- * actor(s). In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
- * be ignored if the router is defined in the configuration file for the actor being used.
- *
- * <h1>Supervision Setup</h1>
- *
- * Any routees that are created by a router will be created as the router's children.
- * The router is therefore also the children's supervisor.
- *
- * The supervision strategy of the router actor can be configured with
- * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
- * a strategy of “always escalate”. This means that errors are passed up to the
- * router's supervisor for handling.
- *
- * The router's supervisor will treat the error as an error with the router itself.
- * Therefore a directive to stop or restart will cause the router itself to stop or
- * restart. The router, in turn, will cause its children to stop and restart.
- *
- * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
- * @param virtualNodesFactor number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
- * @param hashMapping partial function from message to the data to
- *   use for the consistent hash key
- */
-@SerialVersionUID(1L)
-@deprecated("Use ConsistentHashingPool or ConsistentHashingGroup", "2.3")
-case class ConsistentHashingRouter(
-  nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil, override val resizer: Option[Resizer] = None,
-  val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
-  val virtualNodesFactor: Int = 0,
-  val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping)
-  extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[ConsistentHashingRouter] {
-
-  /**
-   * Java API: Constructor that sets nrOfInstances to be created.
-   */
-  def this(nr: Int) = this(nrOfInstances = nr)
-
-  /**
-   * Java API: Constructor that sets the routees to be used.
-   *
-   * @param routeePaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
-   */
-  def this(routeePaths: java.lang.Iterable[String]) = this(routees = immutableSeq(routeePaths))
-
-  /**
-   * Java API: Constructor that sets the resizer to be used.
-   */
-  def this(resizer: Resizer) = this(resizer = Some(resizer))
-
-  override def paths: immutable.Iterable[String] = routees
-
-  /**
-   * Java API for setting routerDispatcher
-   */
-  def withDispatcher(dispatcherId: String): ConsistentHashingRouter = copy(routerDispatcher = dispatcherId)
-
-  /**
-   * Java API for setting the supervisor strategy to be used for the “head”
-   * Router actor.
-   */
-  def withSupervisorStrategy(strategy: SupervisorStrategy): ConsistentHashingRouter = copy(supervisorStrategy = strategy)
-
-  /**
-   * Java API for setting the resizer to be used.
-   */
-  def withResizer(resizer: Resizer): ConsistentHashingRouter = copy(resizer = Some(resizer))
-
-  /**
-   * Java API for setting the number of virtual nodes per node, used in [[akka.routing.ConsistentHash]]
-   */
-  def withVirtualNodesFactor(vnodes: Int): ConsistentHashingRouter = copy(virtualNodesFactor = vnodes)
-
-  /**
-   * Java API for setting the mapping from message to the data to use for the consistent hash key.
-   */
-  def withHashMapper(mapping: ConsistentHashingRouter.ConsistentHashMapper) =
-    copy(hashMapping = ConsistentHashingRouter.hashMappingAdapter(mapping))
-
-  /**
-   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
-   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
-   * resizer was not defined in config.
-   * Uses the the `hashMapping` defined in code, since that can't be defined in configuration.
-   */
-  override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter          ⇒ this.overrideUnsetConfig(other)
-    case otherRouter: ConsistentHashingRouter ⇒ (copy(hashMapping = otherRouter.hashMapping)).overrideUnsetConfig(other)
-    case _                                    ⇒ throw new IllegalArgumentException("Expected ConsistentHashingRouter, got [%s]".format(other))
-  }
-
-  override def createRouter(system: ActorSystem): Router =
-    new Router(ConsistentHashingRoutingLogic(system, virtualNodesFactor, hashMapping))
-}
-
-/**
- * INTERNAL API
- * Important to use ActorRef with full address, with host and port, in the hash ring,
- * so that same ring is produced on different nodes.
- * The ConsistentHash uses toString of the ring nodes, and the ActorRef itself
- * isn't a good representation, because LocalActorRef doesn't include the
- * host and port.
- */
-@deprecated("Replaced by ConsistentRoutee", "2.3")
-private[akka] case class ConsistentActorRef(actorRef: ActorRef, selfAddress: Address) {
-  override def toString: String = {
-    actorRef.path.address match {
-      case Address(_, _, None, None) ⇒ actorRef.path.toStringWithAddress(selfAddress)
-      case a                         ⇒ actorRef.path.toString
     }
   }
 }

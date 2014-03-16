@@ -95,9 +95,9 @@ object JavaPartialFunction {
  * }
  * }}}
  *
- * i.e. it will first call `PurePartialFunction.apply(x, true)` and if that
+ * i.e. it will first call `JavaPartialFunction.apply(x, true)` and if that
  * does not throw `noMatch()` it will continue with calling
- * `PurePartialFunction.apply(x, false)`.
+ * `JavaPartialFunction.apply(x, false)`.
  */
 abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
   import JavaPartialFunction._

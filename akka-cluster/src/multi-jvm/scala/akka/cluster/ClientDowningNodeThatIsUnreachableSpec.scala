@@ -10,7 +10,7 @@ import akka.testkit._
 import akka.actor.Address
 import scala.collection.immutable
 
-case class ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
+final case class ClientDowningNodeThatIsUnreachableMultiNodeConfig(failureDetectorPuppet: Boolean) extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")

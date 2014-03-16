@@ -30,7 +30,7 @@ object ClusterSpec {
     # akka.loglevel = DEBUG
     """
 
-  case class GossipTo(address: Address)
+  final case class GossipTo(address: Address)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -81,19 +81,6 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       try {
         cluster.subscribe(testActor, ClusterEvent.InitialStateAsEvents, classOf[ClusterEvent.MemberEvent])
         expectMsgClass(classOf[ClusterEvent.MemberUp])
-      } finally {
-        cluster.unsubscribe(testActor)
-      }
-    }
-
-    "publish CurrentClusterState to subscribers when requested" in {
-      try {
-        cluster.subscribe(testActor, classOf[ClusterEvent.ClusterDomainEvent], classOf[ClusterEvent.CurrentClusterState])
-        // first, is in response to the subscription
-        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
-
-        cluster.publishCurrentClusterState()
-        expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
       } finally {
         cluster.unsubscribe(testActor)
       }

@@ -35,6 +35,7 @@ object SharedLeveldbJournalSpec {
         loglevel = ERROR
         log-dead-letters = 0
         log-dead-letters-during-shutdown = off
+        test.single-expect-default = 10s
       }
     """
 

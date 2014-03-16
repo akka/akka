@@ -69,7 +69,7 @@ object LoggerSpec {
       }
     """).withFallback(AkkaSpec.testConf)
 
-  case class SetTarget(ref: ActorRef, qualifier: Int)
+  final case class SetTarget(ref: ActorRef, qualifier: Int)
 
   class TestLogger1 extends TestLogger(1)
   class TestLogger2 extends TestLogger(2)

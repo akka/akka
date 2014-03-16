@@ -29,8 +29,8 @@ object SnapshotSpec {
     override def preStart() = ()
   }
 
-  case class Delete1(metadata: SnapshotMetadata)
-  case class DeleteN(criteria: SnapshotSelectionCriteria)
+  final case class Delete1(metadata: SnapshotMetadata)
+  final case class DeleteN(criteria: SnapshotSelectionCriteria)
 
   class DeleteSnapshotTestProcessor(name: String, probe: ActorRef) extends LoadSnapshotTestProcessor(name, probe) {
     override def receive = {

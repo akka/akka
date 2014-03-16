@@ -7,7 +7,7 @@ package akka.actor;
 import akka.event.Logging;
 import akka.event.Logging.LoggerInitialized;
 import akka.japi.Creator;
-import akka.routing.CurrentRoutees;
+import akka.routing.GetRoutees;
 import akka.routing.FromConfig;
 import akka.routing.NoRouter;
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -38,7 +38,7 @@ public class JavaAPI {
 
     final LoggerInitialized x = Logging.loggerInitialized();
 
-    final CurrentRoutees r = CurrentRoutees.getInstance();
+    final GetRoutees r = GetRoutees.getInstance();
     final NoRouter nr = NoRouter.getInstance();
     final FromConfig fc = FromConfig.getInstance();
   }
@@ -48,7 +48,7 @@ public class JavaAPI {
     ActorRef ref = system.actorOf(Props.create(JavaAPITestActor.class));
     assertNotNull(ref);
   }
-  
+
   public static Props mkProps() {
     return Props.create(new Creator<Actor>() {
       public Actor create() {

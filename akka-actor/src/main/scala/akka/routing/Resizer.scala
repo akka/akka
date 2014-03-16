@@ -24,6 +24,7 @@ import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
+import java.lang.{ Double ⇒ JDouble }
 
 /**
  * [[Pool]] routers with dynamically resizable number of routees are implemented by providing a Resizer
@@ -86,12 +87,12 @@ case class DefaultResizer(
   /**
    * The fewest number of routees the router should ever have.
    */
-  lowerBound: Int = 1,
+  val lowerBound: Int = 1,
   /**
  * The most number of routees the router should ever have.
  * Must be greater than or equal to `lowerBound`.
  */
-  upperBound: Int = 10,
+  val upperBound: Int = 10,
   /**
  * Threshold to evaluate if routee is considered to be busy (under pressure).
  * Implementation depends on this value (default is 1).
@@ -104,13 +105,13 @@ case class DefaultResizer(
  *           default UnboundedMailbox is O(N) operation.</li>
  * </ul>
  */
-  pressureThreshold: Int = 1,
+  val pressureThreshold: Int = 1,
   /**
  * Percentage to increase capacity whenever all routees are busy.
  * For example, 0.2 would increase 20% (rounded up), i.e. if current
  * capacity is 6 it will request an increase of 2 more routees.
  */
-  rampupRate: Double = 0.2,
+  val rampupRate: Double = 0.2,
   /**
  * Minimum fraction of busy routees before backing off.
  * For example, if this is 0.3, then we'll remove some routees only when
@@ -120,19 +121,19 @@ case class DefaultResizer(
  *
  * Use 0.0 or negative to avoid removal of routees.
  */
-  backoffThreshold: Double = 0.3,
+  val backoffThreshold: Double = 0.3,
   /**
  * Fraction of routees to be removed when the resizer reaches the
  * backoffThreshold.
  * For example, 0.1 would decrease 10% (rounded up), i.e. if current
  * capacity is 9 it will request an decrease of 1 routee.
  */
-  backoffRate: Double = 0.1,
+  val backoffRate: Double = 0.1,
   /**
  * Number of messages between resize operation.
  * Use 1 to resize before each message.
  */
-  messagesPerResize: Int = 10) extends Resizer {
+  val messagesPerResize: Int = 10) extends Resizer {
 
   /**
    * Java API constructor for default values except bounds.
@@ -240,7 +241,6 @@ case class DefaultResizer(
     if (backoffThreshold > 0.0 && backoffRate > 0.0 && capacity > 0 && pressure.toDouble / capacity < backoffThreshold)
       math.floor(-1.0 * backoffRate * capacity).toInt
     else 0
-
 }
 
 /**

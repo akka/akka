@@ -16,10 +16,10 @@ import scala.concurrent.duration._
 import akka.remote.testconductor.TestConductorProtocol.BarrierOp
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 
-case class RoleName(name: String)
+final case class RoleName(name: String)
 
-private[akka] case class ToClient(msg: ClientOp with NetworkOp)
-private[akka] case class ToServer(msg: ServerOp with NetworkOp)
+private[akka] final case class ToClient(msg: ClientOp with NetworkOp)
+private[akka] final case class ToServer(msg: ServerOp with NetworkOp)
 
 private[akka] sealed trait ClientOp // messages sent to from Conductor to Player
 private[akka] sealed trait ServerOp // messages sent to from Player to Conductor
@@ -31,30 +31,30 @@ private[akka] sealed trait ConfirmedClientOp extends ClientOp
 /**
  * First message of connection sets names straight.
  */
-private[akka] case class Hello(name: String, addr: Address) extends NetworkOp
+private[akka] final case class Hello(name: String, addr: Address) extends NetworkOp
 
-private[akka] case class EnterBarrier(name: String, timeout: Option[FiniteDuration]) extends ServerOp with NetworkOp
-private[akka] case class FailBarrier(name: String) extends ServerOp with NetworkOp
-private[akka] case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
+private[akka] final case class EnterBarrier(name: String, timeout: Option[FiniteDuration]) extends ServerOp with NetworkOp
+private[akka] final case class FailBarrier(name: String) extends ServerOp with NetworkOp
+private[akka] final case class BarrierResult(name: String, success: Boolean) extends UnconfirmedClientOp with NetworkOp
 
-private[akka] case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float) extends CommandOp
-private[akka] case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class Throttle(node: RoleName, target: RoleName, direction: Direction, rateMBit: Float) extends CommandOp
+private[akka] final case class ThrottleMsg(target: Address, direction: Direction, rateMBit: Float) extends ConfirmedClientOp with NetworkOp
 
-private[akka] case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
-private[akka] case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
+private[akka] final case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
-private[akka] case class Terminate(node: RoleName, exitValue: Option[Int]) extends CommandOp
-private[akka] case class TerminateMsg(exitValue: Option[Int]) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class Terminate(node: RoleName, exitValue: Option[Int]) extends CommandOp
+private[akka] final case class TerminateMsg(exitValue: Option[Int]) extends ConfirmedClientOp with NetworkOp
 
-private[akka] case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
-private[akka] case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
+private[akka] final case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
+private[akka] final case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
 
 private[akka] abstract class Done extends ServerOp with UnconfirmedClientOp with NetworkOp
 private[akka] case object Done extends Done {
   def getInstance: Done = this
 }
 
-private[akka] case class Remove(node: RoleName) extends CommandOp
+private[akka] final case class Remove(node: RoleName) extends CommandOp
 
 private[akka] class MsgEncoder extends OneToOneEncoder {
 

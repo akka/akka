@@ -1,8 +1,8 @@
 package sample.cluster.transformation
 
 //#messages
-case class TransformationJob(text: String)
-case class TransformationResult(text: String)
-case class JobFailed(reason: String, job: TransformationJob)
+final case class TransformationJob(text: String)
+final case class TransformationResult(text: String)
+final case class JobFailed(reason: String, job: TransformationJob)
 case object BackendRegistration
 //#messages

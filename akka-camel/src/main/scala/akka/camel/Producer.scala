@@ -158,12 +158,12 @@ trait Producer extends ProducerSupport { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
+private final case class MessageResult(message: CamelMessage) extends NoSerializationVerificationNeeded
 
 /**
  * INTERNAL API
  */
-private case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
+private final case class FailureResult(cause: Throwable, headers: Map[String, Any] = Map.empty) extends NoSerializationVerificationNeeded
 
 /**
  * A one-way producer.

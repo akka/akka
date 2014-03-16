@@ -14,6 +14,7 @@ import com.typesafe.sbt.osgi.SbtOsgi.{ OsgiKeys, defaultOsgiSettings }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -38,7 +39,7 @@ object AkkaBuild extends Build {
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
-    version      := "2.3-SNAPSHOT",
+    version      := "2.4-SNAPSHOT",
     scalaVersion := requestedScalaVersion,
     scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
@@ -49,7 +50,6 @@ object AkkaBuild extends Build {
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
       SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
-      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, remoteTests.id),
@@ -74,17 +74,17 @@ object AkkaBuild extends Build {
       // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
+      persistence, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
     id = "akka-scala-nightly",
     base = file("akka-scala-nightly"),
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
-    // samples and dataflow don't work with dbuild right now
+    // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, osgi, contrib, multiNodeTestkit)
+      persistence, kernel, osgi, contrib, multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -151,25 +151,6 @@ object AkkaBuild extends Build {
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
       previousArtifact := akkaPreviousArtifact("akka-actor")
-    )
-  )
-
-  val cpsPlugin = Seq(
-    libraryDependencies <++= scalaVersion { v =>
-      if (v.startsWith("2.10.")) Seq(compilerPlugin("org.scala-lang.plugins" % "continuations" % v))
-      else Seq(
-        compilerPlugin("org.scala-lang.plugins" %% "scala-continuations-plugin" % Dependencies.Versions.scalaContinuationsVersion),
-        "org.scala-lang.plugins" %% "scala-continuations-library" % Dependencies.Versions.scalaContinuationsVersion)
-    },
-    scalacOptions += "-P:continuations:enable"
-  )
-
-  lazy val dataflow = Project(
-    id = "akka-dataflow",
-    base = file("akka-dataflow"),
-    dependencies = Seq(testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-dataflow")
     )
   )
 
@@ -270,16 +251,6 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val transactor = Project(
-    id = "akka-transactor",
-    base = file("akka-transactor"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.transactor ++ Seq(
-      libraryDependencies ++= Dependencies.transactor,
-      previousArtifact := akkaPreviousArtifact("akka-transactor")
-    )
-  )
-
   lazy val persistence = Project(
     id = "akka-persistence-experimental",
     base = file("akka-persistence"),
@@ -288,37 +259,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
-      previousArtifact := akkaPreviousArtifact("akka-persistence")
-    )
-  )
-
-  val testMailbox = SettingKey[Boolean]("test-mailbox")
-
-  lazy val mailboxes = Project(
-    id = "akka-durable-mailboxes",
-    base = file("akka-durable-mailboxes"),
-    settings = parentSettings,
-    aggregate = Seq(mailboxesCommon, fileMailbox)
-  )
-
-  lazy val mailboxesCommon = Project(
-    id = "akka-mailboxes-common",
-    base = file("akka-durable-mailboxes/akka-mailboxes-common"),
-    dependencies = Seq(remote, testkit % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.mailboxesCommon ++ Seq(
-      libraryDependencies ++= Dependencies.mailboxes,
-      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
-      publishArtifact in Test := true
-    )
-  )
-
-  lazy val fileMailbox = Project(
-    id = "akka-file-mailbox",
-    base = file("akka-durable-mailboxes/akka-file-mailbox"),
-    dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.fileMailbox ++ Seq(
-      libraryDependencies ++= Dependencies.fileMailbox,
-      previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
+      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
 
@@ -564,7 +505,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
       persistence % "compile;test->test"),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
@@ -731,7 +672,9 @@ object AkkaBuild extends Build {
     if(System.getProperty("akka.build.useSnapshotSonatypeResolver", "false").toBoolean)
       Seq(resolvers += Resolver.sonatypeRepo("snapshots"))
     else Seq.empty
-  }
+  } ++ Seq(
+    pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
+  )
 
   lazy val defaultSettings = baseSettings ++ mimaSettings ++ resolverSettings ++
     Protobuf.settings ++ Seq(
@@ -792,10 +735,17 @@ object AkkaBuild extends Build {
     testOptions in Test += Tests.Argument("-oDF"),
 
     // don't save test output to a file
-    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value))
+    testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+    
+    validatePullRequestTask,
+    // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
+    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    
   ) ++ mavenLocalResolverSettings
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
+  // the tasks that to run for validation is defined in defaultSettings
+  val validatePullRequestTask = validatePullRequest := ()
 
   def githubUrl(v: String): String = {
     val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
@@ -959,13 +909,21 @@ object AkkaBuild extends Build {
     else
       file
   }
+  
+  lazy val mimaIgnoredProblems = {
+     import com.typesafe.tools.mima.core._
+     Seq(
+       // add filters here, see release-2.2 branch
+     )
+  }
 
   lazy val mimaSettings = mimaDefaultSettings ++ Seq(
     // MiMa
-    previousArtifact := None
+    previousArtifact := None,
+    binaryIssueFilters ++= mimaIgnoredProblems
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.2.0", 
+  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0", 
       crossVersion: String = "2.10"): Option[sbt.ModuleID] =
     if (enableMiMa) {
       val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
@@ -1012,10 +970,6 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
-    val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
-
-    val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
-
     val osgi = exports(Seq("akka.osgi.*"))
 
     val osgiDiningHakkersSampleApi = exports(Seq("akka.sample.osgi.api"))
@@ -1029,10 +983,6 @@ object AkkaBuild extends Build {
     val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
     val slf4j = exports(Seq("akka.event.slf4j.*"))
-
-    val dataflow = exports(Seq("akka.dataflow.*"))
-
-    val transactor = exports(Seq("akka.transactor.*"))
 
     val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
 
@@ -1052,7 +1002,7 @@ object AkkaBuild extends Build {
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.4,2.5)\"".format(packageName)
     def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[1.2.0,1.3.0)\"".format(packageName)
     def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
     def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
@@ -1098,7 +1048,7 @@ object Dependencies {
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
     // mirrored in OSGi sample
-    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.5"         // ApacheV2
+    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.7"         // ApacheV2
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
@@ -1154,13 +1104,7 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
-
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
-
-  val mailboxes = Seq(Test.scalatest, Test.junit)
-
-  val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
   val kernel = Seq(Test.scalatest, Test.junit)
 

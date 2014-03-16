@@ -23,7 +23,7 @@ import akka.persistence.JournalProtocol._
  *                  to `Long.MaxValue` (i.e. no limit).
  */
 @SerialVersionUID(1L)
-case class Update(await: Boolean = false, replayMax: Long = Long.MaxValue)
+final case class Update(await: Boolean = false, replayMax: Long = Long.MaxValue)
 
 case object Update {
   /**
@@ -197,3 +197,10 @@ trait View extends Actor with Recovery {
  * @see [[View]]
  */
 abstract class UntypedView extends UntypedActor with View
+
+/**
+ * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]])
+ *
+ * @see [[View]]
+ */
+abstract class AbstractView extends AbstractActor with View

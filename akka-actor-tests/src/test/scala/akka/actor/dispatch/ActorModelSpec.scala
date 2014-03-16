@@ -31,35 +31,35 @@ object ActorModelSpec {
 
   sealed trait ActorModelMessage extends NoSerializationVerificationNeeded
 
-  case class TryReply(expect: Any) extends ActorModelMessage
+  final case class TryReply(expect: Any) extends ActorModelMessage
 
-  case class Reply(expect: Any) extends ActorModelMessage
+  final case class Reply(expect: Any) extends ActorModelMessage
 
-  case class Forward(to: ActorRef, msg: Any) extends ActorModelMessage
+  final case class Forward(to: ActorRef, msg: Any) extends ActorModelMessage
 
-  case class CountDown(latch: CountDownLatch) extends ActorModelMessage
+  final case class CountDown(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Increment(counter: AtomicLong) extends ActorModelMessage
+  final case class Increment(counter: AtomicLong) extends ActorModelMessage
 
-  case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
+  final case class AwaitLatch(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
+  final case class Meet(acknowledge: CountDownLatch, waitFor: CountDownLatch) extends ActorModelMessage
 
-  case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
+  final case class CountDownNStop(latch: CountDownLatch) extends ActorModelMessage
 
-  case class Wait(time: Long) extends ActorModelMessage
+  final case class Wait(time: Long) extends ActorModelMessage
 
-  case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
+  final case class WaitAck(time: Long, latch: CountDownLatch) extends ActorModelMessage
 
   case object Interrupt extends ActorModelMessage
 
-  case class InterruptNicely(expect: Any) extends ActorModelMessage
+  final case class InterruptNicely(expect: Any) extends ActorModelMessage
 
   case object Restart extends ActorModelMessage
 
   case object DoubleStop extends ActorModelMessage
 
-  case class ThrowException(e: Throwable) extends ActorModelMessage
+  final case class ThrowException(e: Throwable) extends ActorModelMessage
 
   val Ping = "Ping"
   val Pong = "Pong"
@@ -445,12 +445,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                 stack foreach (s ⇒ println(s"\t$s"))
             }
           }
-          assert(Await.result(f1, remaining) === "foo")
-          assert(Await.result(f2, remaining) === "bar")
-          assert(Await.result(f4, remaining) === "foo2")
-          assert(intercept[ActorInterruptedException](Await.result(f3, remaining)).getCause.getMessage === "Ping!")
-          assert(Await.result(f6, remaining) === "bar2")
-          assert(intercept[ActorInterruptedException](Await.result(f5, remaining)).getCause.getMessage === "Ping!")
+          assert(Await.result(f1, timeout.duration) === "foo")
+          assert(Await.result(f2, timeout.duration) === "bar")
+          assert(Await.result(f4, timeout.duration) === "foo2")
+          assert(intercept[ActorInterruptedException](Await.result(f3, timeout.duration)).getCause.getMessage === "Ping!")
+          assert(Await.result(f6, timeout.duration) === "bar2")
+          assert(intercept[ActorInterruptedException](Await.result(f5, timeout.duration)).getCause.getMessage === "Ping!")
           c.cancel()
           Thread.sleep(300) // give the EventFilters a chance of catching all messages
         }
@@ -467,12 +467,12 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = a ? InterruptNicely("baz2")
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, remaining) === "foo")
-        assert(Await.result(f2, remaining) === "bar")
-        assert(Await.result(f3, remaining) === "baz")
-        assert(Await.result(f4, remaining) === "foo2")
-        assert(Await.result(f5, remaining) === "baz2")
-        assert(Await.result(f6, remaining) === "bar2")
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f3, timeout.duration) === "baz")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(Await.result(f5, timeout.duration) === "baz2")
+        assert(Await.result(f6, timeout.duration) === "bar2")
         // clear the interrupted flag (only needed for the CallingThreadDispatcher) so the next test can continue normally
         Thread.interrupted()
       }
@@ -489,10 +489,10 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
         val f5 = a ? ThrowException(new RemoteException("RemoteException"))
         val f6 = a ? Reply("bar2")
 
-        assert(Await.result(f1, remaining) === "foo")
-        assert(Await.result(f2, remaining) === "bar")
-        assert(Await.result(f4, remaining) === "foo2")
-        assert(Await.result(f6, remaining) === "bar2")
+        assert(Await.result(f1, timeout.duration) === "foo")
+        assert(Await.result(f2, timeout.duration) === "bar")
+        assert(Await.result(f4, timeout.duration) === "foo2")
+        assert(Await.result(f6, timeout.duration) === "bar2")
         assert(f3.value.isEmpty)
         assert(f5.value.isEmpty)
       }

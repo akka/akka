@@ -207,32 +207,32 @@ private[akka] trait StashWhenFailed
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Create(failure: Option[ActorInitializationException]) extends SystemMessage // sent to self from Dispatcher.register
+private[akka] final case class Create(failure: Option[ActorInitializationException]) extends SystemMessage // sent to self from Dispatcher.register
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Recreate(cause: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.restart
+private[akka] final case class Recreate(cause: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.restart
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Suspend() extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.suspend
+private[akka] final case class Suspend() extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.suspend
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Resume(causedByFailure: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.resume
+private[akka] final case class Resume(causedByFailure: Throwable) extends SystemMessage with StashWhenWaitingForChildren // sent to self from ActorCell.resume
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
+private[akka] final case class Terminate() extends SystemMessage // sent to self from ActorCell.stop
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Supervise(child: ActorRef, async: Boolean) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
+private[akka] final case class Supervise(child: ActorRef, async: Boolean) extends SystemMessage // sent to supervisor ActorRef from ActorCell.start
 /**
  * INTERNAL API
  */
@@ -242,7 +242,7 @@ private[akka] case class Watch(watchee: InternalActorRef, watcher: InternalActor
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
+private[akka] final case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
 /**
  * INTERNAL API
  */
@@ -253,12 +253,12 @@ private[akka] case object NoMessage extends SystemMessage // switched into the m
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Failed(child: ActorRef, cause: Throwable, uid: Int) extends SystemMessage
+private[akka] final case class Failed(child: ActorRef, cause: Throwable, uid: Int) extends SystemMessage
   with StashWhenFailed
   with StashWhenWaitingForChildren
 
 @SerialVersionUID(1L)
-private[akka] case class DeathWatchNotification(
+private[akka] final case class DeathWatchNotification(
   actor: ActorRef,
   existenceConfirmed: Boolean,
   addressTerminated: Boolean) extends SystemMessage

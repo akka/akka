@@ -122,7 +122,7 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
     "increment failure count on callTimeout" in {
       val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
       breaker().withSyncCircuitBreaker(Thread.sleep(100.millis.dilated.toMillis))
-      awaitCond(breaker().currentFailureCount == 1, remaining)
+      awaitCond(breaker().currentFailureCount == 1)
     }
   }
 

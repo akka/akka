@@ -29,6 +29,11 @@ class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {
       }
     }
 
-  }
+    "throw if `remaining` is called outside of `within`" in {
+      intercept[AssertionError] {
+        remaining
+      }
+    }
 
+  }
 }

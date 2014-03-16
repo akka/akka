@@ -35,10 +35,10 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
     """))
 
   object TestChatUser {
-    case class Whisper(path: String, msg: Any)
-    case class Talk(path: String, msg: Any)
-    case class TalkToOthers(path: String, msg: Any)
-    case class Shout(topic: String, msg: Any)
+    final case class Whisper(path: String, msg: Any)
+    final case class Talk(path: String, msg: Any)
+    final case class TalkToOthers(path: String, msg: Any)
+    final case class Shout(topic: String, msg: Any)
   }
 
   class TestChatUser(mediator: ActorRef, testActor: ActorRef) extends Actor {

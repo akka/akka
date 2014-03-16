@@ -54,7 +54,7 @@ sealed trait SocketOptionQuery extends Request
  *
  * @param endpoint URI (ex. tcp://127.0.0.1:5432)
  */
-case class Connect(endpoint: String) extends SocketConnectOption
+final case class Connect(endpoint: String) extends SocketConnectOption
 
 /**
  * Companion object for a ZeroMQ I/O thread pool
@@ -144,26 +144,26 @@ object SocketType {
  * An option containing the listener for the socket
  * @param listener
  */
-case class Listener(listener: ActorRef) extends SocketMeta
+final case class Listener(listener: ActorRef) extends SocketMeta
 
 /**
  * An option containing the configuration key for the poller loop dispatcher
  * @param name
  */
-case class PollDispatcher(name: String) extends SocketMeta
+final case class PollDispatcher(name: String) extends SocketMeta
 
 /**
  * An option containing the duration a poll cycle should wait for a message before it loops
  * @param duration
  */
-case class PollTimeoutDuration(duration: FiniteDuration = 100 millis) extends SocketMeta
+final case class PollTimeoutDuration(duration: FiniteDuration = 100 millis) extends SocketMeta
 
 /**
  * Start listening with this server socket on the specified address
  *
  * @param endpoint
  */
-case class Bind(endpoint: String) extends SocketConnectOption
+final case class Bind(endpoint: String) extends SocketConnectOption
 
 /**
  * The [[akka.zeromq.Subscribe]] option establishes a new message filter on a [[akka.zeromq.SocketType.Pub]] socket.
@@ -177,7 +177,7 @@ case class Bind(endpoint: String) extends SocketConnectOption
  *
  * @param payload the topic to subscribe to
  */
-case class Subscribe(payload: ByteString) extends PubSubOption {
+final case class Subscribe(payload: ByteString) extends PubSubOption {
   def this(topic: String) = this(ByteString(topic))
 }
 object Subscribe {
@@ -197,7 +197,7 @@ object Subscribe {
  *
  * @param payload
  */
-case class Unsubscribe(payload: ByteString) extends PubSubOption {
+final case class Unsubscribe(payload: ByteString) extends PubSubOption {
   def this(topic: String) = this(ByteString(topic))
 }
 object Unsubscribe {
@@ -208,13 +208,13 @@ object Unsubscribe {
  * Send a message over the zeromq socket
  * @param frames
  */
-case class Send(frames: immutable.Seq[ByteString]) extends Request
+final case class Send(frames: immutable.Seq[ByteString]) extends Request
 
 /**
  * A message received over the zeromq socket
  * @param frames
  */
-case class ZMQMessage(frames: immutable.Seq[ByteString]) {
+final case class ZMQMessage(frames: immutable.Seq[ByteString]) {
   def frame(frameIndex: Int): ByteString = frames(frameIndex)
 }
 object ZMQMessage {
@@ -260,7 +260,7 @@ object ZMQMessage {
  *
  * @param value The value in milliseconds for the linger option
  */
-case class Linger(value: Long) extends SocketOption
+final case class Linger(value: Long) extends SocketOption
 
 /**
  * Gets the linger option @see [[akka.zeromq.Linger]]
@@ -279,7 +279,7 @@ object Linger extends SocketOptionQuery {
  *
  * @param value The interval in seconds
  */
-case class ReconnectIVL(value: Long) extends SocketOption
+final case class ReconnectIVL(value: Long) extends SocketOption
 
 /**
  * Gets the recover interval @see [[akka.zeromq.ReconnectIVL]]
@@ -299,7 +299,7 @@ object ReconnectIVL extends SocketOptionQuery
  *
  * @param value
  */
-case class ReconnectIVLMax(value: Long) extends SocketOption
+final case class ReconnectIVLMax(value: Long) extends SocketOption
 /**
  * Gets the max reconnect IVL
  * @see [[akka.zeromq.ReconnectIVLMax]]
@@ -313,7 +313,7 @@ object ReconnectIVLMax extends SocketOptionQuery
  *
  * @param value
  */
-case class Backlog(value: Long) extends SocketOption
+final case class Backlog(value: Long) extends SocketOption
 /**
  * Gets the backlog
  * @see [[akka.zeromq.Backlog]]
@@ -329,7 +329,7 @@ object Backlog extends SocketOptionQuery
  *
  * @param value
  */
-case class MaxMsgSize(value: Long) extends SocketOption
+final case class MaxMsgSize(value: Long) extends SocketOption
 object MaxMsgSize extends SocketOptionQuery
 
 /**
@@ -344,7 +344,7 @@ object MaxMsgSize extends SocketOptionQuery
  *
  * @param value
  */
-case class SendHighWatermark(value: Long) extends SocketOption
+final case class SendHighWatermark(value: Long) extends SocketOption
 
 /**
  * Gets the SendHWM
@@ -364,7 +364,7 @@ object SendHighWatermark extends SocketOptionQuery
  *
  * @param value
  */
-case class ReceiveHighWatermark(value: Long) extends SocketOption
+final case class ReceiveHighWatermark(value: Long) extends SocketOption
 
 /**
  * Gets the ReceiveHighWatermark
@@ -383,7 +383,7 @@ object ReceiveHighWatermark extends SocketOptionQuery
  *
  * @param value
  */
-case class HighWatermark(value: Long) extends SocketOption
+final case class HighWatermark(value: Long) extends SocketOption
 
 /**
  * The [[akka.zeromq.Swap]] option shall set the disk offload (swap) size for the specified socket.
@@ -394,7 +394,7 @@ case class HighWatermark(value: Long) extends SocketOption
  *
  * @param value
  */
-case class Swap(value: Long) extends SocketOption
+final case class Swap(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.Swap]]
@@ -414,7 +414,7 @@ object Swap extends SocketOptionQuery
  *
  * @param value
  */
-case class Affinity(value: Long) extends SocketOption
+final case class Affinity(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.Affinity]] value
@@ -436,7 +436,7 @@ object Affinity extends SocketOptionQuery
  *
  * @param value The identity string for this socket
  */
-case class Identity(value: Array[Byte]) extends SocketOption
+final case class Identity(value: Array[Byte]) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.Identity]] value
@@ -448,7 +448,7 @@ object Identity extends SocketOptionQuery
  *
  * @param value The kilobits per second
  */
-case class Rate(value: Long) extends SocketOption
+final case class Rate(value: Long) extends SocketOption
 
 /**
  * Gets the send or receive rate for the socket
@@ -465,7 +465,7 @@ object Rate extends SocketOptionQuery
  *
  * @param value The interval in seconds
  */
-case class RecoveryInterval(value: Long) extends SocketOption
+final case class RecoveryInterval(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.RecoveryInterval]]
@@ -480,7 +480,7 @@ object RecoveryInterval extends SocketOptionQuery
  *
  * @param value Flag indicating whether or not loopback multicast is enabled
  */
-case class MulticastLoop(value: Boolean) extends SocketOption
+final case class MulticastLoop(value: Boolean) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.MulticastLoop]]
@@ -495,7 +495,7 @@ object MulticastLoop extends SocketOptionQuery
  *
  * @param value
  */
-case class MulticastHops(value: Long) extends SocketOption
+final case class MulticastHops(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.MulticastHops]]
@@ -511,7 +511,7 @@ object MulticastHops extends SocketOptionQuery
  *
  * @param value
  */
-case class SendBufferSize(value: Long) extends SocketOption
+final case class SendBufferSize(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.SendBufferSize]]
@@ -524,7 +524,7 @@ object SendBufferSize extends SocketOptionQuery
  * For details refer to your operating system documentation for the SO_RCVBUF socket option.
  * @param value
  */
-case class ReceiveBufferSize(value: Long) extends SocketOption
+final case class ReceiveBufferSize(value: Long) extends SocketOption
 
 /**
  * Gets the [[akka.zeromq.ReceiveBufferSize]]

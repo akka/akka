@@ -41,7 +41,7 @@ object TestEvent {
   object Mute {
     def apply(filter: EventFilter, filters: EventFilter*): Mute = new Mute(filter +: filters.to[immutable.Seq])
   }
-  case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
+  final case class Mute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API: create a Mute command from a list of filters
      */
@@ -50,7 +50,7 @@ object TestEvent {
   object UnMute {
     def apply(filter: EventFilter, filters: EventFilter*): UnMute = new UnMute(filter +: filters.to[immutable.Seq])
   }
-  case class UnMute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
+  final case class UnMute(filters: immutable.Seq[EventFilter]) extends TestEvent with NoSerializationVerificationNeeded {
     /**
      * Java API: create an UnMute command from a list of filters
      */
@@ -261,7 +261,7 @@ object EventFilter {
  * </ul>
  * If you want to match all Error events, the most efficient is to use <code>Left("")</code>.
  */
-case class ErrorFilter(
+final case class ErrorFilter(
   throwable: Class[_],
   override val source: Option[String],
   override val message: Either[String, Regex],
@@ -313,7 +313,7 @@ case class ErrorFilter(
  * </ul>
  * If you want to match all Warning events, the most efficient is to use <code>Left("")</code>.
  */
-case class WarningFilter(
+final case class WarningFilter(
   override val source: Option[String],
   override val message: Either[String, Regex],
   override val complete: Boolean)(occurrences: Int) extends EventFilter(occurrences) {
@@ -356,7 +356,7 @@ case class WarningFilter(
  * </ul>
  * If you want to match all Info events, the most efficient is to use <code>Left("")</code>.
  */
-case class InfoFilter(
+final case class InfoFilter(
   override val source: Option[String],
   override val message: Either[String, Regex],
   override val complete: Boolean)(occurrences: Int) extends EventFilter(occurrences) {
@@ -399,7 +399,7 @@ case class InfoFilter(
  * </ul>
  * If you want to match all Debug events, the most efficient is to use <code>Left("")</code>.
  */
-case class DebugFilter(
+final case class DebugFilter(
   override val source: Option[String],
   override val message: Either[String, Regex],
   override val complete: Boolean)(occurrences: Int) extends EventFilter(occurrences) {
@@ -439,7 +439,7 @@ case class DebugFilter(
  *
  * If the partial function is defined and returns true, filter the event.
  */
-case class CustomEventFilter(test: PartialFunction[LogEvent, Boolean])(occurrences: Int) extends EventFilter(occurrences) {
+final case class CustomEventFilter(test: PartialFunction[LogEvent, Boolean])(occurrences: Int) extends EventFilter(occurrences) {
   def matches(event: LogEvent) = {
     test.isDefinedAt(event) && test(event)
   }
@@ -453,7 +453,7 @@ object DeadLettersFilter {
  * Filter which matches DeadLetter events, if the wrapped message conforms to the
  * given type.
  */
-case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int) extends EventFilter(occurrences) {
+final case class DeadLettersFilter(val messageClass: Class[_])(occurrences: Int) extends EventFilter(occurrences) {
 
   def matches(event: LogEvent) = {
     event match {

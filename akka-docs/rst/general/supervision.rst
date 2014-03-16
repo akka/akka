@@ -22,7 +22,7 @@ a choice of the following four options:
 
 #. Resume the subordinate, keeping its accumulated internal state
 #. Restart the subordinate, clearing out its accumulated internal state
-#. Terminate the subordinate permanently
+#. Stop the subordinate permanently
 #. Escalate the failure, thereby failing itself
 
 It is important to always view an actor as part of a supervision hierarchy,

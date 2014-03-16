@@ -46,4 +46,4 @@ class AkkaOrderReceiver extends Actor with OrderReceiver with ActorLogging {
   }
 }
 
-case class MatchingEngineRouting[ME](mapping: Map[ME, List[String]])
+final case class MatchingEngineRouting[ME](mapping: Map[ME, List[String]])

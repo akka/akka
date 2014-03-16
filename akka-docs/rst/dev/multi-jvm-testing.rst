@@ -17,13 +17,13 @@ You can add it as a plugin by adding the following to your project/plugins.sbt:
 
 .. includecode:: ../../../project/plugins.sbt#sbt-multi-jvm
 
-You can then add multi-JVM testing to ``project/Build.scala`` by including the ``MultiJvm``
+You can then add multi-JVM testing to ``build.sbt`` or ``project/Build.scala`` by including the ``MultiJvm``
 settings and config. Please note that MultiJvm test sources are located in ``src/multi-jvm/...``,
 and not in ``src/test/...``.
 
-Here is an example Build.scala file for sbt 0.13 that uses the MultiJvm plugin:
+Here is an example ``build.sbt`` file for sbt 0.13 that uses the MultiJvm plugin:
 
-.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/project/Build.scala
+.. includecode:: ../../../akka-samples/akka-sample-multi-node-scala/build.sbt
 
 You can specify JVM options for the forked JVMs::
 

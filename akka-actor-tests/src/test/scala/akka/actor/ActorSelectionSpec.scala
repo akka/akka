@@ -12,13 +12,13 @@ import akka.pattern.ask
 
 object ActorSelectionSpec {
 
-  case class Create(child: String)
+  final case class Create(child: String)
 
   trait Query
-  case class SelectString(path: String) extends Query
-  case class SelectPath(path: ActorPath) extends Query
-  case class GetSender(to: ActorRef) extends Query
-  case class Forward(path: String, msg: Any) extends Query
+  final case class SelectString(path: String) extends Query
+  final case class SelectPath(path: ActorPath) extends Query
+  final case class GetSender(to: ActorRef) extends Query
+  final case class Forward(path: String, msg: Any) extends Query
 
   val p = Props[Node]
 

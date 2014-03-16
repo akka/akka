@@ -178,9 +178,6 @@ final case class AdaptiveLoadBalancingPool(
       case otherRouter: AdaptiveLoadBalancingPool ⇒
         if (otherRouter.supervisorStrategy eq Pool.defaultSupervisorStrategy) this
         else this.withSupervisorStrategy(otherRouter.supervisorStrategy)
-      case otherRouter: AdaptiveLoadBalancingRouter ⇒
-        if (otherRouter.supervisorStrategy eq Pool.defaultSupervisorStrategy) this
-        else this.withSupervisorStrategy(otherRouter.supervisorStrategy)
       case _ ⇒ throw new IllegalArgumentException("Expected AdaptiveLoadBalancingPool, got [%s]".format(other))
     }
 
@@ -329,7 +326,7 @@ object MixMetricsSelector extends MixMetricsSelectorBase(
  * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
  */
 @SerialVersionUID(1L)
-case class MixMetricsSelector(
+final case class MixMetricsSelector(
   selectors: immutable.IndexedSeq[CapacityMetricsSelector])
   extends MixMetricsSelectorBase(selectors)
 
@@ -512,111 +509,3 @@ private[akka] class AdaptiveLoadBalancingMetricsListener(routingLogic: AdaptiveL
 
 }
 
-/**
- * A Router that performs load balancing of messages to cluster nodes based on
- * cluster metric data.
- *
- * It uses random selection of routees based on probabilities derived from
- * the remaining capacity of corresponding node.
- *
- * Please note that providing both 'nrOfInstances' and 'routees' does not make logical
- * sense as this means that the router should both create new actors and use the 'routees'
- * actor(s). In this case the 'nrOfInstances' will be ignored and the 'routees' will be used.
- * <br>
- * <b>The</b> configuration parameter trumps the constructor arguments. This means that
- * if you provide either 'nrOfInstances' or 'routees' during instantiation they will
- * be ignored if the router is defined in the configuration file for the actor being used.
- *
- * <h1>Supervision Setup</h1>
- *
- * Any routees that are created by a router will be created as the router's children.
- * The router is therefore also the children's supervisor.
- *
- * The supervision strategy of the router actor can be configured with
- * [[#withSupervisorStrategy]]. If no strategy is provided, routers default to
- * a strategy of “always escalate”. This means that errors are passed up to the
- * router's supervisor for handling.
- *
- * The router's supervisor will treat the error as an error with the router itself.
- * Therefore a directive to stop or restart will cause the router itself to stop or
- * restart. The router, in turn, will cause its children to stop and restart.
- *
- * @param metricsSelector decides what probability to use for selecting a routee, based
- *   on remaining capacity as indicated by the node metrics
- * @param routees string representation of the actor paths of the routees that will be looked up
- *   using `actorFor` in [[akka.actor.ActorRefProvider]]
- */
-@SerialVersionUID(1L)
-@deprecated("Use AdaptiveLoadBalancingPool or AdaptiveLoadBalancingGroup", "2.3")
-case class AdaptiveLoadBalancingRouter(
-  metricsSelector: MetricsSelector = MixMetricsSelector,
-  nrOfInstances: Int = 0, routees: immutable.Iterable[String] = Nil,
-  override val resizer: Option[Resizer] = None,
-  val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
-  val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy)
-  extends DeprecatedRouterConfig with PoolOverrideUnsetConfig[AdaptiveLoadBalancingRouter] {
-
-  /**
-   * Java API: Constructor that sets nrOfInstances to be created.
-   *
-   * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
-   * @param nr number of routees to create
-   */
-  def this(selector: MetricsSelector, nr: Int) = this(metricsSelector = selector, nrOfInstances = nr)
-
-  /**
-   * Java API: Constructor that sets the routees to be used.
-   *
-   * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
-   * @param routeesPaths string representation of the actor paths of the routees that will be looked up
-   *   using `actorFor` in [[akka.actor.ActorRefProvider]]
-   */
-  def this(selector: MetricsSelector, routeesPaths: java.lang.Iterable[String]) =
-    this(metricsSelector = selector, routees = immutableSeq(routeesPaths))
-
-  /**
-   * Java API: Constructor that sets the resizer to be used.
-   *
-   * @param selector the selector is responsible for producing weighted mix of routees from the node metrics
-   */
-  def this(selector: MetricsSelector, resizer: Resizer) =
-    this(metricsSelector = selector, resizer = Some(resizer))
-
-  override def paths: immutable.Iterable[String] = routees
-
-  /**
-   * Java API for setting routerDispatcher
-   */
-  def withDispatcher(dispatcherId: String): AdaptiveLoadBalancingRouter =
-    copy(routerDispatcher = dispatcherId)
-
-  /**
-   * Java API for setting the supervisor strategy to be used for the “head”
-   * Router actor.
-   */
-  def withSupervisorStrategy(strategy: SupervisorStrategy): AdaptiveLoadBalancingRouter =
-    copy(supervisorStrategy = strategy)
-
-  /**
-   * Java API for setting the resizer to be used.
-   */
-  def withResizer(resizer: Resizer): AdaptiveLoadBalancingRouter = copy(resizer = Some(resizer))
-
-  /**
-   * Uses the resizer and/or the supervisor strategy of the given Routerconfig
-   * if this RouterConfig doesn't have one, i.e. the resizer defined in code is used if
-   * resizer was not defined in config.
-   */
-  override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case _: FromConfig | _: NoRouter | _: AdaptiveLoadBalancingRouter ⇒ this.overrideUnsetConfig(other)
-    case _ ⇒ throw new IllegalArgumentException("Expected AdaptiveLoadBalancingRouter, got [%s]".format(other))
-  }
-
-  override def createRouter(system: ActorSystem): Router =
-    new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
-
-  override def routingLogicController(routingLogic: RoutingLogic): Option[Props] =
-    Some(Props(classOf[AdaptiveLoadBalancingMetricsListener],
-      routingLogic.asInstanceOf[AdaptiveLoadBalancingRoutingLogic]))
-
-}

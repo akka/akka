@@ -31,7 +31,7 @@ trait DispatcherPrerequisites {
 /**
  * INTERNAL API
  */
-private[akka] case class DefaultDispatcherPrerequisites(
+private[akka] final case class DefaultDispatcherPrerequisites(
   val threadFactory: ThreadFactory,
   val eventStream: EventStream,
   val scheduler: Scheduler,

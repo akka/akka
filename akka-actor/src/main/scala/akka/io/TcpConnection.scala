@@ -443,20 +443,20 @@ private[io] object TcpConnection {
    * Used to transport information to the postStop method to notify
    * interested party about a connection close.
    */
-  case class CloseInformation(notificationsTo: Set[ActorRef], closedEvent: Event)
+  final case class CloseInformation(notificationsTo: Set[ActorRef], closedEvent: Event)
 
   /**
    * Groups required connection-related data that are only available once the connection has been fully established.
    */
-  case class ConnectionInfo(registration: ChannelRegistration,
-                            handler: ActorRef,
-                            keepOpenOnPeerClosed: Boolean,
-                            useResumeWriting: Boolean)
+  final case class ConnectionInfo(registration: ChannelRegistration,
+                                  handler: ActorRef,
+                                  keepOpenOnPeerClosed: Boolean,
+                                  useResumeWriting: Boolean)
 
   // INTERNAL MESSAGES
 
-  case class UpdatePendingWrite(remainingWrite: PendingWrite) extends NoSerializationVerificationNeeded
-  case class WriteFileFailed(e: IOException)
+  final case class UpdatePendingWrite(remainingWrite: PendingWrite) extends NoSerializationVerificationNeeded
+  final case class WriteFileFailed(e: IOException)
 
   sealed abstract class PendingWrite {
     def commander: ActorRef

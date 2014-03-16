@@ -13,7 +13,7 @@ import scala.concurrent.{ Future, Promise, Await }
 import scala.concurrent.duration._
 
 object PatternSpec {
-  case class Work(duration: Duration)
+  final case class Work(duration: Duration)
   class TargetActor extends Actor {
     def receive = {
       case (testLatch: TestLatch, duration: FiniteDuration) ⇒
@@ -44,8 +44,8 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
     "complete Future with AskTimeoutException when actor not terminated within timeout" in {
       val target = system.actorOf(Props[TargetActor])
       val latch = TestLatch()
-      target ! ((latch, remaining))
-      intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remaining) }
+      target ! ((latch, remainingOrDefault))
+      intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remainingOrDefault) }
       latch.open()
     }
   }
@@ -56,7 +56,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
       val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.successful(5).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      Await.result(r, remaining) should be(5)
+      Await.result(r, remainingOrDefault) should be(5)
     }
 
     "be completed abnormally eventually" in {
@@ -64,7 +64,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
       val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      intercept[IllegalStateException] { Await.result(r, remaining) }.getMessage should be("Mexico")
+      intercept[IllegalStateException] { Await.result(r, remainingOrDefault) }.getMessage should be("Mexico")
     }
   }
 }

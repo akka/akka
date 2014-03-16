@@ -338,10 +338,10 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
  */
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
-  case class Start(typeName: String, entryProps: Option[Props], idExtractor: ShardRegion.IdExtractor,
-                   shardResolver: ShardRegion.ShardResolver, allocationStrategy: ShardAllocationStrategy)
+  final case class Start(typeName: String, entryProps: Option[Props], idExtractor: ShardRegion.IdExtractor,
+                         shardResolver: ShardRegion.ShardResolver, allocationStrategy: ShardAllocationStrategy)
     extends NoSerializationVerificationNeeded
-  case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
+  final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
 }
 
 /**
@@ -542,7 +542,7 @@ object ShardRegion {
    *
    * [[akka.actor.PoisonPill]] is a perfectly fine `stopMessage`.
    */
-  @SerialVersionUID(1L) case class Passivate(stopMessage: Any) extends ShardRegionCommand
+  @SerialVersionUID(1L) final case class Passivate(stopMessage: Any) extends ShardRegionCommand
 
   private case object Retry extends ShardRegionCommand
 
@@ -978,24 +978,24 @@ object ShardCoordinator {
     /**
      * `ShardRegion` registers to `ShardCoordinator`, until it receives [[RegisterAck]]. 
      */
-    @SerialVersionUID(1L) case class Register(shardRegion: ActorRef) extends CoordinatorCommand
+    @SerialVersionUID(1L) final case class Register(shardRegion: ActorRef) extends CoordinatorCommand
     /**
      * `ShardRegion` in proxy only mode registers to `ShardCoordinator`, until it receives [[RegisterAck]]. 
      */
-    @SerialVersionUID(1L) case class RegisterProxy(shardRegionProxy: ActorRef) extends CoordinatorCommand
+    @SerialVersionUID(1L) final case class RegisterProxy(shardRegionProxy: ActorRef) extends CoordinatorCommand
     /**
      * Acknowledgement from `ShardCoordinator` that [[Register]] or [[RegisterProxy]] was sucessful.
      */
-    @SerialVersionUID(1L) case class RegisterAck(coordinator: ActorRef) extends CoordinatorMessage
+    @SerialVersionUID(1L) final case class RegisterAck(coordinator: ActorRef) extends CoordinatorMessage
     /**
      * `ShardRegion` requests the location of a shard by sending this message
      * to the `ShardCoordinator`.
      */
-    @SerialVersionUID(1L) case class GetShardHome(shard: ShardId) extends CoordinatorCommand
+    @SerialVersionUID(1L) final case class GetShardHome(shard: ShardId) extends CoordinatorCommand
     /**
      * `ShardCoordinator` replies with this message for [[GetShardHome]] requests.
      */
-    @SerialVersionUID(1L) case class ShardHome(shard: ShardId, ref: ActorRef) extends CoordinatorMessage
+    @SerialVersionUID(1L) final case class ShardHome(shard: ShardId, ref: ActorRef) extends CoordinatorMessage
     /**
      * `ShardCoordinator` initiates rebalancing process by sending this message
      * to all registered `ShardRegion` actors (including proxy only). They are
@@ -1004,31 +1004,31 @@ object ShardCoordinator {
      * When all have replied the `ShardCoordinator` continues by sending
      * [[HandOff]] to the `ShardRegion` responsible for the shard.
      */
-    @SerialVersionUID(1L) case class BeginHandOff(shard: ShardId) extends CoordinatorMessage
+    @SerialVersionUID(1L) final case class BeginHandOff(shard: ShardId) extends CoordinatorMessage
     /**
      * Acknowledgement of [[BeginHandOff]]
      */
-    @SerialVersionUID(1L) case class BeginHandOffAck(shard: ShardId) extends CoordinatorCommand
+    @SerialVersionUID(1L) final case class BeginHandOffAck(shard: ShardId) extends CoordinatorCommand
     /**
      * When all `ShardRegion` actors have acknoledged the [[BeginHandOff]] the
      * ShardCoordinator` sends this message to the `ShardRegion` responsible for the
      * shard. The `ShardRegion` is supposed to stop all entries in that shard and when
      * all entries have terminated reply with `ShardStopped` to the `ShardCoordinator`.
      */
-    @SerialVersionUID(1L) case class HandOff(shard: ShardId) extends CoordinatorMessage
+    @SerialVersionUID(1L) final case class HandOff(shard: ShardId) extends CoordinatorMessage
     /**
      * Reply to [[HandOff]] when all entries in the shard have been terminated.
      */
-    @SerialVersionUID(1L) case class ShardStopped(shard: ShardId) extends CoordinatorCommand
+    @SerialVersionUID(1L) final case class ShardStopped(shard: ShardId) extends CoordinatorCommand
 
     // DomainEvents for the persistent state of the event sourced ShardCoordinator
     sealed trait DomainEvent
-    @SerialVersionUID(1L) case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
-    @SerialVersionUID(1L) case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
-    @SerialVersionUID(1L) case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
-    @SerialVersionUID(1L) case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
-    @SerialVersionUID(1L) case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
-    @SerialVersionUID(1L) case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
+    @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
 
     object State {
       val empty = State()
@@ -1037,7 +1037,7 @@ object ShardCoordinator {
     /**
      * Persistent state of the event sourced ShardCoordinator.
      */
-    @SerialVersionUID(1L) case class State private (
+    @SerialVersionUID(1L) final case class State private (
       // region for each shard   
       val shards: Map[ShardId, ActorRef] = Map.empty,
       // shards for each region
@@ -1080,7 +1080,7 @@ object ShardCoordinator {
   /**
    * End of rebalance process performed by [[RebalanceWorker]]
    */
-  private case class RebalanceDone(shard: ShardId, ok: Boolean)
+  private final case class RebalanceDone(shard: ShardId, ok: Boolean)
 
   private case object AfterRecover
 

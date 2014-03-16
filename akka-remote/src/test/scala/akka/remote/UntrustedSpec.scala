@@ -26,8 +26,8 @@ import akka.event.Logging
 import akka.testkit.EventFilter
 
 object UntrustedSpec {
-  case class IdentifyReq(path: String)
-  case class StopChild(name: String)
+  final case class IdentifyReq(path: String)
+  final case class StopChild(name: String)
 
   class Receptionist(testActor: ActorRef) extends Actor {
     context.actorOf(Props(classOf[Child], testActor), "child1")

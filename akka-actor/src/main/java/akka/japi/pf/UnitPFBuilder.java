@@ -12,6 +12,8 @@ import scala.runtime.BoxedUnit;
  * void methods to {@link scala.runtime.BoxedUnit}.
  *
  * @param <I> the input type, that this PartialFunction to be applied to
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public final class UnitPFBuilder<I> extends AbstractPFBuilder<I, BoxedUnit> {
 
@@ -67,6 +69,24 @@ public final class UnitPFBuilder<I> extends AbstractPFBuilder<I, BoxedUnit> {
     return this;
   }
 
+  /**
+   * Add a new case statement to this builder.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public <P> UnitPFBuilder<I> matchEquals(final P object,
+                                          final FI.UnitApply<P> apply) {
+    addStatement(new UnitCaseStatement<I, P>(
+      new FI.Predicate() {
+        @Override
+        public boolean defined(Object o) {
+          return object.equals(o);
+          }
+        }, apply));
+    return this;
+  }
   /**
    * Add a new case statement to this builder, that matches any argument.
    * @param apply  an action to apply to the argument

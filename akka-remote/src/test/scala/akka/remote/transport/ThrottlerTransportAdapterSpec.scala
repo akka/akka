@@ -60,7 +60,7 @@ object ThrottlerTransportAdapterSpec {
     }
   }
 
-  case class Lost(msg: String)
+  final case class Lost(msg: String)
 }
 
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {

@@ -22,6 +22,7 @@ import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -33,7 +34,7 @@ private[remote] object AddressUrlEncoder {
 /**
  * INTERNAL API
  */
-private[remote] case class RARP(provider: RemoteActorRefProvider) extends Extension {
+private[remote] final case class RARP(provider: RemoteActorRefProvider) extends Extension {
   def configureDispatcher(props: Props): Props = provider.remoteSettings.configureDispatcher(props)
 }
 /**
@@ -81,7 +82,7 @@ private[remote] object Remoting {
     }
   }
 
-  case class RegisterTransportActor(props: Props, name: String) extends NoSerializationVerificationNeeded
+  final case class RegisterTransportActor(props: Props, name: String) extends NoSerializationVerificationNeeded
 
   private[Remoting] class TransportSupervisor extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
     override def supervisorStrategy = OneForOneStrategy() {
@@ -114,7 +115,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  val transportSupervisor = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+  val transportSupervisor = system.systemActorOf(
     configureDispatcher(Props[TransportSupervisor]),
     "transports")
 
@@ -159,7 +160,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
     endpointManager match {
       case None ⇒
         log.info("Starting remoting")
-        val manager: ActorRef = system.asInstanceOf[ActorSystemImpl].systemActorOf(
+        val manager: ActorRef = system.systemActorOf(
           configureDispatcher(Props(classOf[EndpointManager], provider.remoteSettings.config, log)).withDeploy(Deploy.local),
           Remoting.EndpointManagerName)
         endpointManager = Some(manager)
@@ -220,10 +221,6 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   // Not used anywhere only to keep compatibility with RemoteTransport interface
   protected def useUntrustedMode: Boolean = provider.remoteSettings.UntrustedMode
 
-  // Not used anywhere only to keep compatibility with RemoteTransport interface
-  @deprecated("Use the LogRemoteLifecycleEvents setting instead.", "2.3")
-  protected def logRemoteLifeCycleEvents: Boolean = LogRemoteLifecycleEvents
-
 }
 
 /**
@@ -233,10 +230,10 @@ private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
   sealed trait RemotingCommand extends NoSerializationVerificationNeeded
-  case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
+  final case class Listen(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]]) extends RemotingCommand
   case object StartupFinished extends RemotingCommand
   case object ShutdownAndFlush extends RemotingCommand
-  case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
+  final case class Send(message: Any, senderOption: Option[ActorRef], recipient: RemoteActorRef, seqOpt: Option[SeqNo] = None)
     extends RemotingCommand with HasSequenceNumber {
     override def toString = s"Remote message $senderOption -> $recipient"
 
@@ -244,22 +241,22 @@ private[remote] object EndpointManager {
     // acknowledged delivery buffers
     def seq = seqOpt.get
   }
-  case class Quarantine(remoteAddress: Address, uid: Option[Int]) extends RemotingCommand
-  case class ManagementCommand(cmd: Any) extends RemotingCommand
-  case class ManagementCommandAck(status: Boolean)
+  final case class Quarantine(remoteAddress: Address, uid: Option[Int]) extends RemotingCommand
+  final case class ManagementCommand(cmd: Any) extends RemotingCommand
+  final case class ManagementCommandAck(status: Boolean)
 
   // Messages internal to EndpointManager
   case object Prune extends NoSerializationVerificationNeeded
-  case class ListensResult(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]],
-                           results: Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
+  final case class ListensResult(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]],
+                                 results: Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])])
     extends NoSerializationVerificationNeeded
-  case class ListensFailure(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]], cause: Throwable)
+  final case class ListensFailure(addressesPromise: Promise[Seq[(AkkaProtocolTransport, Address)]], cause: Throwable)
     extends NoSerializationVerificationNeeded
 
   // Helper class to store address pairs
-  case class Link(localAddress: Address, remoteAddress: Address)
+  final case class Link(localAddress: Address, remoteAddress: Address)
 
-  case class ResendState(uid: Int, buffer: AckedReceiveBuffer[Message])
+  final case class ResendState(uid: Int, buffer: AckedReceiveBuffer[Message])
 
   sealed trait EndpointPolicy {
 
@@ -268,13 +265,13 @@ private[remote] object EndpointManager {
      */
     def isTombstone: Boolean
   }
-  case class Pass(endpoint: ActorRef) extends EndpointPolicy {
+  final case class Pass(endpoint: ActorRef) extends EndpointPolicy {
     override def isTombstone: Boolean = false
   }
-  case class Gated(timeOfRelease: Deadline) extends EndpointPolicy {
+  final case class Gated(timeOfRelease: Deadline) extends EndpointPolicy {
     override def isTombstone: Boolean = true
   }
-  case class Quarantined(uid: Int, timeOfRelease: Deadline) extends EndpointPolicy {
+  final case class Quarantined(uid: Int, timeOfRelease: Deadline) extends EndpointPolicy {
     override def isTombstone: Boolean = true
   }
 
@@ -398,7 +395,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. Reason: {}",
           remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
@@ -406,7 +403,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
@@ -416,7 +413,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
           case _ ⇒ // disabled
         }
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
@@ -424,7 +421,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
           remoteAddress, settings.RetryGateClosedFor.toMillis)
         endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
-        context.system.eventStream.publish(AddressTerminated(remoteAddress))
+        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case NonFatal(e) ⇒

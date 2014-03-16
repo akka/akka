@@ -24,7 +24,7 @@ class CircuitBreakerMTSpec extends AkkaSpec {
         Await.result(breaker.withCircuitBreaker(Future(throw new RuntimeException("FAIL"))) recover {
           case _: CircuitBreakerOpenException ⇒ true
           case _                              ⇒ false
-        }, remaining)
+        }, remainingOrDefault)
 
       // fire some failing calls
       1 to (maxFailures + 1) foreach { _ ⇒ failingCall() }

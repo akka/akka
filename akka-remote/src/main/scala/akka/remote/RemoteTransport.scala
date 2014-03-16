@@ -95,9 +95,4 @@ private[akka] abstract class RemoteTransport(val system: ExtendedActorSystem, va
    */
   protected def useUntrustedMode: Boolean
 
-  /**
-   * When this method returns true, RemoteLifeCycleEvents will be logged as well as be put onto the eventStream.
-   */
-  protected def logRemoteLifeCycleEvents: Boolean
-
 }

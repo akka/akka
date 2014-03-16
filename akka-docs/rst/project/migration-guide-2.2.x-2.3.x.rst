@@ -29,9 +29,6 @@ configured time of unreachability. This feature is disabled by default, as it al
 
 During the deprecation phase ``akka.cluster.auto-down=on`` is interpreted at as instant auto-down.
 
-
-
-=======
 Routers
 =======
 
@@ -251,3 +248,14 @@ Akka OSGi Aries Blueprint is Removed
 
 ``akka-osgi-aries`` has been removed. Similar can be implemented outside of Akka if needed.
  
+TestKit: reworked time dilation
+===============================
+
+``TestDuration`` has been changed into an implicit value class plus a Java API in JavaTestKit. Please change::
+
+    import akka.testkit.duration2TestDuration
+
+into::
+
+    import akka.testkit.TestDuration
+

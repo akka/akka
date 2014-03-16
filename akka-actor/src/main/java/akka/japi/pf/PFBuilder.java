@@ -9,6 +9,8 @@ package akka.japi.pf;
  *
  * @param <I> the input type, that this PartialFunction will be applied to
  * @param <R> the return type, that the results of the application will have
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public final class PFBuilder<I, R> extends AbstractPFBuilder<I, R> {
 
@@ -58,6 +60,25 @@ public final class PFBuilder<I, R> extends AbstractPFBuilder<I, R> {
             P p = (P) o;
             return predicate.defined(p);
           }
+        }
+      }, apply));
+    return this;
+  }
+
+  /**
+   * Add a new case statement to this builder.
+   *
+   * @param object  the object to compare equals with
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public <P> PFBuilder<I, R> matchEquals(final P object,
+                                         final FI.Apply<P, R> apply) {
+    addStatement(new CaseStatement<I, P, R>(
+      new FI.Predicate() {
+        @Override
+        public boolean defined(Object o) {
+          return object.equals(o);
         }
       }, apply));
     return this;

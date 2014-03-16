@@ -76,7 +76,7 @@ abstract class RemoteDeploymentDeathWatchSpec
 
         sleep()
         // if the remote deployed actor is not removed the system will not shutdown
-        val timeout = remaining
+        val timeout = remainingOrDefault
         try system.awaitTermination(timeout) catch {
           case _: TimeoutException ⇒
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,

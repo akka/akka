@@ -40,7 +40,7 @@ object Throttler {
    * @param duration the length of the period
    * @see [[akka.contrib.throttle.Throttler]]
    */
-  case class Rate(val numberOfCalls: Int, val duration: FiniteDuration) {
+  final case class Rate(val numberOfCalls: Int, val duration: FiniteDuration) {
     /**
      * The duration in milliseconds.
      */
@@ -60,7 +60,7 @@ object Throttler {
    *  and eventually be delivered when a new target is set. If `target` is not `None`, the currently queued messages
    *  as well as any messages received in the future will be delivered to the new target at a rate not exceeding the current throttler's rate.
    */
-  case class SetTarget(target: Option[ActorRef]) {
+  final case class SetTarget(target: Option[ActorRef]) {
     /**
      * Java API:
      * @param target if `target` is `null`, the throttler will stop delivering messages and the messages already received
@@ -79,7 +79,7 @@ object Throttler {
    *
    * @param rate the rate at which messages will be delivered to the target of the throttler
    */
-  case class SetRate(rate: Rate)
+  final case class SetRate(rate: Rate)
 
   import language.implicitConversions
 
@@ -110,12 +110,12 @@ private[throttle] object TimerBasedThrottler {
   case object Active extends State
 
   // Messages, as we queue them to be sent later
-  case class Message(message: Any, sender: ActorRef)
+  final case class Message(message: Any, sender: ActorRef)
 
   // The data of the FSM
-  case class Data(target: Option[ActorRef],
-                  callsLeftInThisPeriod: Int,
-                  queue: Q[Message])
+  final case class Data(target: Option[ActorRef],
+                        callsLeftInThisPeriod: Int,
+                        queue: Q[Message])
 }
 
 /**

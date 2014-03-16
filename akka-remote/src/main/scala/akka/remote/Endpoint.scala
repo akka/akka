@@ -120,21 +120,21 @@ private[remote] trait AssociationProblem
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[remote] case class ShutDownAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+private[remote] final case class ShutDownAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
   extends EndpointException("Shut down address: " + remoteAddress, cause) with AssociationProblem
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[remote] case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
+private[remote] final case class InvalidAssociation(localAddress: Address, remoteAddress: Address, cause: Throwable)
   extends EndpointException("Invalid address: " + remoteAddress, cause) with AssociationProblem
 
 /**
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[remote] case class HopelessAssociation(localAddress: Address, remoteAddress: Address, uid: Option[Int], cause: Throwable)
+private[remote] final case class HopelessAssociation(localAddress: Address, remoteAddress: Address, uid: Option[Int], cause: Throwable)
   extends EndpointException("Catastrophic association error.") with AssociationProblem
 
 /**
@@ -161,7 +161,7 @@ private[remote] class OversizedPayloadException(msg: String) extends EndpointExc
 private[remote] object ReliableDeliverySupervisor {
   case object Ungate
   case object AttemptSysMsgRedelivery
-  case class GotUid(uid: Int)
+  final case class GotUid(uid: Int)
 
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
@@ -451,17 +451,17 @@ private[remote] object EndpointWriter {
    * used instead.
    * @param handle Handle of the new inbound association.
    */
-  case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
-  case class TookOver(writer: ActorRef, handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  final case class TakeOver(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  final case class TookOver(writer: ActorRef, handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
   case object BackoffTimer
   case object FlushAndStop
   case object AckIdleCheckTimer
-  case class StopReading(writer: ActorRef)
-  case class StoppedReading(writer: ActorRef)
+  final case class StopReading(writer: ActorRef)
+  final case class StoppedReading(writer: ActorRef)
 
-  case class Handle(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
+  final case class Handle(handle: AkkaProtocolHandle) extends NoSerializationVerificationNeeded
 
-  case class OutboundAck(ack: Ack)
+  final case class OutboundAck(ack: Ack)
 
   sealed trait State
   case object Initializing extends State

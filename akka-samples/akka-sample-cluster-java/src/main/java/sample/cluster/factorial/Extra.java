@@ -1,6 +1,3 @@
-/**
- * Copyright (C) 2011-2014 Typesafe <http://typesafe.com/>
- */
 package sample.cluster.factorial;
 
 import java.util.Arrays;

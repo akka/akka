@@ -37,13 +37,13 @@ object ConsistentHashingRouterSpec {
     }
   }
 
-  case class Msg(key: Any, data: String) extends ConsistentHashable {
+  final case class Msg(key: Any, data: String) extends ConsistentHashable {
     override def consistentHashKey = key
   }
 
-  case class MsgKey(name: String)
+  final case class MsgKey(name: String)
 
-  case class Msg2(key: Any, data: String)
+  final case class Msg2(key: Any, data: String)
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -55,7 +55,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
 
   "consistent hashing router" must {
     "create routees from configuration" in {
-      val currentRoutees = Await.result(router1 ? GetRoutees, remaining).asInstanceOf[Routees]
+      val currentRoutees = Await.result(router1 ? GetRoutees, timeout.duration).asInstanceOf[Routees]
       currentRoutees.routees.size should be(3)
     }
 

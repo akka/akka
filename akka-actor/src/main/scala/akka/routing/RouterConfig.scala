@@ -376,7 +376,7 @@ case object NoRouter extends NoRouter {
  * Message used to carry information about what routees the router is currently using.
  */
 @SerialVersionUID(1L)
-case class Routees(routees: immutable.IndexedSeq[Routee]) {
+final case class Routees(routees: immutable.IndexedSeq[Routee]) {
   /**
    * Java API
    */
@@ -391,7 +391,7 @@ case class Routees(routees: immutable.IndexedSeq[Routee]) {
  * It may be handled after other messages.
  */
 @SerialVersionUID(1L)
-case class AddRoutee(routee: Routee) extends RouterManagementMesssage
+final case class AddRoutee(routee: Routee) extends RouterManagementMesssage
 
 /**
  * Remove a specific routee by sending this message to the router.
@@ -403,7 +403,7 @@ case class AddRoutee(routee: Routee) extends RouterManagementMesssage
  *
  */
 @SerialVersionUID(1L)
-case class RemoveRoutee(routee: Routee) extends RouterManagementMesssage
+final case class RemoveRoutee(routee: Routee) extends RouterManagementMesssage
 
 /**
  * Increase or decrease the number of routees in a [[Pool]].
@@ -417,4 +417,4 @@ case class RemoveRoutee(routee: Routee) extends RouterManagementMesssage
  * lost.
  */
 @SerialVersionUID(1L)
-case class AdjustPoolSize(change: Int) extends RouterManagementMesssage
+final case class AdjustPoolSize(change: Int) extends RouterManagementMesssage

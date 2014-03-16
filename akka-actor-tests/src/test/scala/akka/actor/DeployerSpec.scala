@@ -32,33 +32,33 @@ object DeployerSpec {
           mailbox = my-mailbox
         }
         /service-round-robin {
-          router = round-robin
+          router = round-robin-pool
         }
         /service-random {
-          router = random
+          router = random-pool
         }
         /service-scatter-gather {
-          router = scatter-gather
+          router = scatter-gather-pool
           within = 2 seconds
         }
         /service-consistent-hashing {
-          router = consistent-hashing
+          router = consistent-hashing-pool
         }
         /service-resizer {
-          router = round-robin
+          router = round-robin-pool
           resizer {
             lower-bound = 1
             upper-bound = 10
           }
         }
         /some/random-service {
-          router = round-robin
+          router = round-robin-pool
         }
         "/some/*" {
-          router = random
+          router = random-pool
         }
         "/*/some" {
-          router = scatter-gather
+          router = scatter-gather-pool
         }
       }
       """, ConfigParseOptions.defaults)
@@ -126,7 +126,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         val invalidDeployerConf = ConfigFactory.parseString("""
             akka.actor.deployment {
               /service-invalid-number-of-instances {
-                router = round-robin
+                router = round-robin-pool
                 nr-of-instances = boom
               }
             }
@@ -141,7 +141,7 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
         val invalidDeployerConf = ConfigFactory.parseString("""
             akka.actor.deployment {
               /gul/ubåt {
-                router = round-robin
+                router = round-robin-pool
                 nr-of-instances = 2
               }
             }

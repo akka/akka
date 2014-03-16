@@ -89,7 +89,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
   def assertMyDispatcherIsUsed(actor: ActorRef): Unit = {
     actor ! "what's the name?"
     val Expected = "(DispatchersSpec-myapp.mydispatcher-[1-9][0-9]*)".r
-    expectMsgPF(remaining) {
+    expectMsgPF() {
       case Expected(x) ⇒
     }
   }
@@ -143,7 +143,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "include system name and dispatcher id in thread names for thread-pool-executor" in {
       system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.thread-pool-dispatcher")) ! "what's the name?"
       val Expected = "(DispatchersSpec-myapp.thread-pool-dispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Expected(x) ⇒
       }
     }
@@ -151,7 +151,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "include system name and dispatcher id in thread names for default-dispatcher" in {
       system.actorOf(Props[ThreadNameEcho]) ! "what's the name?"
       val Expected = "(DispatchersSpec-akka.actor.default-dispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Expected(x) ⇒
       }
     }
@@ -159,7 +159,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "include system name and dispatcher id in thread names for pinned dispatcher" in {
       system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher")) ! "what's the name?"
       val Expected = "(DispatchersSpec-myapp.my-pinned-dispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Expected(x) ⇒
       }
     }
@@ -167,7 +167,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     "include system name and dispatcher id in thread names for balancing dispatcher" in {
       system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.balancing-dispatcher")) ! "what's the name?"
       val Expected = "(DispatchersSpec-myapp.balancing-dispatcher-[1-9][0-9]*)".r
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Expected(x) ⇒
       }
     }
@@ -187,7 +187,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       val routee = expectMsgType[ActorIdentity].ref.get
       routee ! "what's the name?"
       val Expected = """(DispatchersSpec-akka\.actor\.deployment\./pool1\.pool-dispatcher-[1-9][0-9]*)""".r
-      expectMsgPF(remaining) {
+      expectMsgPF() {
         case Expected(x) ⇒
       }
     }
