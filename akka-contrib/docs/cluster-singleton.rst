@@ -104,8 +104,8 @@ In Java:
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterSingletonManagerTest.java#create-singleton-proxy
 
-A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-tutorial named `Distributed workers with Akka and Scala! <http://typesafe.com/activator/template/akka-distributed-workers>`_
-and `Distributed workers with Akka and Java! <http://typesafe.com/activator/template/akka-distributed-workers-java>`_.
+A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+tutorial named `Distributed workers with Akka and Scala! <http://www.typesafe.com/activator/template/akka-distributed-workers>`_
+and `Distributed workers with Akka and Java! <http://www.typesafe.com/activator/template/akka-distributed-workers-java>`_.
 
 

@@ -10,7 +10,7 @@ Typesafe is the company behind the Akka Project, Scala Programming Language,
 Play Web Framework, Scala IDE, Simple Build Tool and many other open source
 projects. It also provides the Typesafe Stack, a full-featured development
 stack consisting of AKka, Play and Scala. Learn more at
-`typesafe.com <http://typesafe.com>`_.
+`typesafe.com <http://www.typesafe.com>`_.
 
 YourKit
 -------
