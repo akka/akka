@@ -36,8 +36,7 @@ public class BuncherTest {
   }
 
   @Test
-  public void testBuncherActorBatchesCorrectly()
-  {
+  public void testBuncherActorBatchesCorrectly() {
     new JavaTestKit(system) {{
       final ActorRef buncher =
         system.actorOf(Props.create(Buncher.class));
@@ -64,8 +63,7 @@ public class BuncherTest {
   }
 
   @Test
-  public void testBuncherActorDoesntBatchUninitialized()
-  {
+  public void testBuncherActorDoesntBatchUninitialized() {
     new JavaTestKit(system) {{
       final ActorRef buncher =
         system.actorOf(Props.create(Buncher.class));
