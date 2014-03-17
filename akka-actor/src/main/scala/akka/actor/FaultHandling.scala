@@ -387,14 +387,45 @@ case class AllForOneStrategy(
 
   import SupervisorStrategy._
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.Decider) =
+    this(maxNrOfRetries = maxNrOfRetries, withinTimeRange = withinTimeRange)(decider)
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(loggingEnabled: Boolean, decider: SupervisorStrategy.Decider) =
+    this(loggingEnabled = loggingEnabled)(decider)
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(decider: SupervisorStrategy.Decider) =
+    this()(decider)
+
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon
    *  every call to requestRestartPermission, assuming that strategies are shared
@@ -432,14 +463,44 @@ case class OneForOneStrategy(
   override val loggingEnabled: Boolean = true)(val decider: SupervisorStrategy.Decider)
   extends SupervisorStrategy {
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider, loggingEnabled: Boolean) =
     this(maxNrOfRetries, withinTimeRange, loggingEnabled)(SupervisorStrategy.makeDecider(decider))
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.JDecider) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(decider))
 
+  /**
+   * Java API
+   */
   def this(maxNrOfRetries: Int, withinTimeRange: Duration, trapExit: JIterable[Class[_ <: Throwable]]) =
     this(maxNrOfRetries, withinTimeRange)(SupervisorStrategy.makeDecider(trapExit))
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(maxNrOfRetries: Int, withinTimeRange: Duration, decider: SupervisorStrategy.Decider) =
+    this(maxNrOfRetries = maxNrOfRetries, withinTimeRange = withinTimeRange)(decider)
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(loggingEnabled: Boolean, decider: SupervisorStrategy.Decider) =
+    this(loggingEnabled = loggingEnabled)(decider)
+
+  /**
+   * Java API: compatible with lambda expressions
+   * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+   */
+  def this(decider: SupervisorStrategy.Decider) =
+    this()(decider)
 
   /*
    *  this is a performance optimization to avoid re-allocating the pairs upon

@@ -13,6 +13,3 @@ Actors
    fsm
    persistence
    testing
-   lambda-actors
-   lambda-fsm
-   lambda-persistence
