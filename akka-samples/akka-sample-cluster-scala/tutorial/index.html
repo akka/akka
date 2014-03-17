@@ -351,17 +351,16 @@ in the contrib module. The <code>ClusterSingletonManager</code> is started on ea
 
 <p>
 We also need an actor on each node that keeps track of where current single master exists and
-delegates jobs to the <code>StatsService</code>. That is handled by the 
-<a href="#code/src/main/scala/sample/cluster/stats/StatsFacade.scala" class="shortcut">StatsFacade.scala</a>
+delegates jobs to the <code>StatsService</code>. That is provided by the <code>ClusterSingletonProxy</code>. 
 </p>
 
 <p>
-The <code>StatsFacade</code> receives text from users and delegates to the current <code>StatsService</code>, the single
+The <code>ClusterSingletonProxy</code> receives text from users and delegates to the current <code>StatsService</code>, the single
 master. It listens to cluster events to lookup the <code>StatsService</code> on the oldest node.
 </p>
 
 <p>
-All nodes start <code>StatsFacade</code> and the <code>ClusterSingletonManager</code>. The router is now configured in
+All nodes start <code>ClusterSingletonProxy</code> and the <code>ClusterSingletonManager</code>. The router is now configured in
 <a href="#code/src/main/resources/stats2.conf" class="shortcut">stats2.conf</a>
 </p>
 

@@ -514,14 +514,14 @@ in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#create-singleton-manager
 
 We also need an actor on each node that keeps track of where current single master exists and
-delegates jobs to the ``StatsService``.
+delegates jobs to the ``StatsService``.  That is provided by the ``ClusterSingletonProxy``.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsFacade.scala#facade
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#singleton-proxy
 
-The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
+The ``ClusterSingletonProxy`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
 
-All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
+All nodes start ``ClusterSingletonProxy`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/stats2.conf#config-router-deploy
 
