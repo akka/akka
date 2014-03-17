@@ -4,6 +4,8 @@
 
 package akka.actor
 
+import akka.japi.pf.UnitPFBuilder;
+
 /**
  * Java API: compatible with lambda expressions
  *
@@ -14,6 +16,10 @@ object AbstractActor {
    * emptyBehavior is a Receive-expression that matches no messages at all, ever.
    */
   final val emptyBehavior = Actor.emptyBehavior
+
+  trait ReceiveDefinition {
+    def define(builder: UnitPFBuilder[Any]): UnitPFBuilder[Any]
+  }
 }
 
 /**
@@ -44,6 +50,16 @@ object AbstractActor {
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActor extends Actor {
+  import akka.actor.AbstractActor._
+
+  private var _initialReceive: Receive = emptyBehavior;
+
+  protected def initialReceive(definition: ReceiveDefinition): Unit = {
+    _initialReceive = definition.define(new UnitPFBuilder[Any]()).build().asInstanceOf[Receive]
+  }
+
+  override def receive: Receive = _initialReceive
+
   /**
    * Returns this AbstractActor's AbstractActorContext
    * The AbstractActorContext is not thread safe so do not expose it outside of the
