@@ -56,6 +56,14 @@ function check {
   type -P "$@" &> /dev/null || fail "command not found: $@"
 }
 
+# run mvn clean test using the specified java home in the specified directory
+function mvncleantest {
+  tmp="$script_dir/../../$2"
+  try cd  "$tmp" "can't step into project directory: $tmp"
+  export JAVA_HOME="$1"
+  try mvn clean test "mvn execution in $2 failed"
+}
+
 # initialize variables with defaults and override from environment
 declare java_home="$default_java_home"
 if [ $AKKA_BUILD_JAVA_HOME ]; then
@@ -88,17 +96,10 @@ check "$java8_path"
 check mvn
 
 # now do some work
-tmp="$script_dir/../../akka-samples/akka-docs-java-lambda"
-try cd  "$tmp" "can't step into project directory: $tmp"
-export JAVA_HOME="$java8_home"
-try mvn clean test "mvn execution in akka-docs-java-lambda failed"
+mvncleantest "$java8_home" "akka-samples/akka-docs-java-lambda"
 
-tmp="$script_dir/../../akka-samples/akka-sample-fsm-java-lambda"
-try cd  "$tmp" "can't step into project directory: $tmp"
-export JAVA_HOME="$java8_home"
-try mvn clean test "mvn execution in akka-sample-fsm-java-lambda failed"
+mvncleantest "$java8_home" "akka-samples/akka-sample-fsm-java-lambda"
 
-tmp="$script_dir/../../akka-samples/akka-sample-persistence-java8"
-try cd  "$tmp" "can't step into project directory: $tmp"
-export JAVA_HOME="$java8_home"
-try mvn clean test "mvn execution in akka-sample-fsm-java-lambda failed"
+mvncleantest "$java8_home" "akka-samples/akka-sample-persistence-java8"
+
+mvncleantest "$java8_home" "akka-samples/akka-sample-supervision-java-lambda"
