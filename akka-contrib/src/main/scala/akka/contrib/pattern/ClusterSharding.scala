@@ -34,6 +34,7 @@ import akka.cluster.MemberStatus
 import akka.pattern.ask
 import akka.persistence.EventsourcedProcessor
 import akka.cluster.ClusterEvent.ClusterDomainEvent
+import akka.persistence.PersistenceFailure
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SaveSnapshotFailure
@@ -1256,6 +1257,8 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
       persistentState.regionProxies.foreach(context.watch)
       persistentState.regions.foreach { case (a, _) ⇒ context.watch(a) }
 
+    case PersistenceFailure(_, _, reason) ⇒
+      log.warning("Persistent failure: {}", reason.getMessage)
   }
 
 }
