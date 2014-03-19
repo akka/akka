@@ -113,11 +113,21 @@ abstract class SurviveNetworkInstabilitySpec
     runOn(alive: _*) {
       for (to ← alive) {
         val sel = system.actorSelection(node(to) / "user" / "echo")
+        val msg = s"ping$to"
         awaitAssert {
-          sel ! "ping"
-          expectMsg(1.second, "ping")
+          sel ! msg
+          fishForMessage(1.second, msg) {
+            case `msg`     ⇒ true
+            case _: String ⇒ false
+          }
         }
       }
+      // ignore all left-over pings
+      val leftovers = receiveWhile(2.seconds) {
+        case _: String ⇒ Nil
+        case other     ⇒ List(other)
+      }
+      leftovers.flatten(identity) should be(Nil)
     }
     enterBarrier("ping-ok")
   }
@@ -269,7 +279,10 @@ abstract class SurviveNetworkInstabilitySpec
         for (_ ← 1 to sysMsgBufferSize + 1) {
           // remote deployment to third
           parent ! Props[RemoteChild]
-          val child = expectMsgType[ActorRef]
+          val child = receiveOne(remainingOrDefault) match {
+            case a: ActorRef ⇒ a
+            case other       ⇒ fail(s"expected ActorRef, got $other")
+          }
           child ! "hello"
           expectMsg("hello")
           lastSender.path.address should be(address(third))
