@@ -23,10 +23,14 @@ private[persistence] trait Eventsourced extends Processor {
    * `processingCommands`
    */
   private val recovering: State = new State {
+    // cache the recoveryBehavior since it's a def for binary compatibility in 2.3.x
+    private val _recoveryBehavior: Receive = recoveryBehavior
+
     override def toString: String = "recovering"
 
     def aroundReceive(receive: Receive, message: Any) {
-      Eventsourced.super.aroundReceive(receive, message)
+      // Since we are recovering we can ignore the receive behavior from the stack
+      Eventsourced.super.aroundReceive(_recoveryBehavior, message)
       message match {
         case _: ReadHighestSequenceNrSuccess | _: ReadHighestSequenceNrFailure ⇒
           currentState = processingCommands
@@ -91,6 +95,21 @@ private[persistence] trait Eventsourced extends Processor {
         processorStash.unstash()
       }
     }
+  }
+
+  /**
+   * INTERNAL API.
+   *
+   * This is a def and not a val because of binary compatibility in 2.3.x.
+   * It is cached where it is used.
+   */
+  private def recoveryBehavior: Receive = {
+    case Persistent(payload, _) if recoveryRunning && receiveRecover.isDefinedAt(payload) ⇒
+      receiveRecover(payload)
+    case s: SnapshotOffer if receiveRecover.isDefinedAt(s) ⇒
+      receiveRecover(s)
+    case f: RecoveryFailure if receiveRecover.isDefinedAt(f) ⇒
+      receiveRecover(f)
   }
 
   private var persistInvocations: List[(Any, Any ⇒ Unit)] = Nil
@@ -190,14 +209,10 @@ private[persistence] trait Eventsourced extends Processor {
 
   /**
    * INTERNAL API.
+   *
+   * Only here for binary compatibility in 2.3.x.
    */
-  protected[persistence] val initialBehavior: Receive = {
-    case Persistent(payload, _) if receiveRecover.isDefinedAt(payload) && recoveryRunning ⇒
-      receiveRecover(payload)
-    case s: SnapshotOffer if receiveRecover.isDefinedAt(s) ⇒
-      receiveRecover(s)
-    case f: RecoveryFailure if receiveRecover.isDefinedAt(f) ⇒
-      receiveRecover(f)
+  protected[persistence] val initialBehavior: Receive = recoveryBehavior orElse {
     case msg if receiveCommand.isDefinedAt(msg) ⇒
       receiveCommand(msg)
   }
@@ -207,14 +222,14 @@ private[persistence] trait Eventsourced extends Processor {
  * An event sourced processor.
  */
 trait EventsourcedProcessor extends Processor with Eventsourced {
-  final def receive = initialBehavior
+  final def receive = receiveCommand
 }
 
 /**
  * Java API: an event sourced processor.
  */
 abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
-  final def onReceive(message: Any) = initialBehavior(message)
+  final def onReceive(message: Any) = onReceiveCommand(message)
 
   final def receiveRecover: Receive = {
     case msg ⇒ onReceiveRecover(msg)

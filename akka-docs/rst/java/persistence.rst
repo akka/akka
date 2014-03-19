@@ -487,12 +487,19 @@ about successful state changes by publishing events.
 
 When persisting events with ``persist`` it is guaranteed that the processor will not receive further commands between
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
-calls in context of a single command. The example also shows how to switch between command different command handlers
-with ``getContext().become()`` and ``getContext().unbecome()``.
+calls in context of a single command.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples with Java <http://www.typesafe.com/activator/template/akka-sample-persistence-java>`_.
 It contains instructions on how to run the ``EventsourcedExample``.
+
+.. note::
+
+  It's also possible to switch between different command handlers during normal processing and recovery
+  with ``getContext().become()`` and ``getContext().unbecome()``. To get the actor into the same state after
+  recovery you need to take special care to perform the same state transitions with ``become`` and
+  ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
+
 
 Reliable event delivery
 -----------------------
