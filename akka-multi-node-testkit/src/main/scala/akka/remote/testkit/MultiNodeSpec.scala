@@ -389,34 +389,39 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   private final case class Replacement(tag: String, role: RoleName) {
     lazy val addr = node(role).address.toString
   }
-  private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
-  private val deployer = system.asInstanceOf[ExtendedActorSystem].provider.deployer
-  deployments(myself) foreach { str ⇒
-    val deployString = (str /: replacements) {
-      case (base, r @ Replacement(tag, _)) ⇒
-        base.indexOf(tag) match {
-          case -1 ⇒ base
-          case start ⇒
-            val replaceWith = try
-              r.addr
-            catch {
-              case NonFatal(e) ⇒
-                // might happen if all test cases are ignored (excluded) and
-                // controller node is finished/exited before r.addr is run
-                // on the other nodes
-                val unresolved = "akka://unresolved-replacement-" + r.role.name
-                log.warning(unresolved + " due to: " + e.getMessage)
-                unresolved
-            }
-            base.replace(tag, replaceWith)
-        }
-    }
-    import scala.collection.JavaConverters._
-    ConfigFactory.parseString(deployString).root.asScala foreach {
-      case (key, value: ConfigObject) ⇒ deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
-      case (key, x)                   ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
+
+  protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
+    val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
+    val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer
+    deployments(role) foreach { str ⇒
+      val deployString = (str /: replacements) {
+        case (base, r @ Replacement(tag, _)) ⇒
+          base.indexOf(tag) match {
+            case -1 ⇒ base
+            case start ⇒
+              val replaceWith = try
+                r.addr
+              catch {
+                case NonFatal(e) ⇒
+                  // might happen if all test cases are ignored (excluded) and
+                  // controller node is finished/exited before r.addr is run
+                  // on the other nodes
+                  val unresolved = "akka://unresolved-replacement-" + r.role.name
+                  log.warning(unresolved + " due to: " + e.getMessage)
+                  unresolved
+              }
+              base.replace(tag, replaceWith)
+          }
+      }
+      import scala.collection.JavaConverters._
+      ConfigFactory.parseString(deployString).root.asScala foreach {
+        case (key, value: ConfigObject) ⇒ deployer.parseConfig(key, value.toConfig) foreach deployer.deploy
+        case (key, x)                   ⇒ throw new IllegalArgumentException(s"key $key must map to deployment section, not simple value $x")
+      }
     }
   }
+
+  injectDeployments(system, myself)
 
   // useful to see which jvm is running which role, used by LogRoleReplace utility
   log.info("Role [{}] started with address [{}]", myself.name,
