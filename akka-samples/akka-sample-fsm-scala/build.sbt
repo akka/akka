@@ -1,4 +1,4 @@
-name := "akka-sample-main-scala"
+name := "akka-sample-fsm-scala"
 
 version := "1.0"
 
