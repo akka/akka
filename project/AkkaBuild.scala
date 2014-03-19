@@ -36,6 +36,7 @@ object AkkaBuild extends Build {
   val enableMiMa = true
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
+  val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -1069,11 +1070,12 @@ object AkkaBuild extends Build {
       OsgiKeys.exportPackage := packages
     )
     def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
-    def akkaImport(packageName: String = "akka.*") = "%s;version=\"[2.3,2.4)\"".format(packageName)
-    def configImport(packageName: String = "com.typesafe.config.*") = "%s;version=\"[1.2.0,1.3.0)\"".format(packageName)
-    def protobufImport(packageName: String = "com.google.protobuf.*") = "%s;version=\"[2.5.0,2.6.0)\"".format(packageName)
-    def scalaImport(packageName: String = "scala.*") = "%s;version=\"[2.10,2.11)\"".format(packageName)
+    def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.3", "2.4")
+    def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.2.0", "1.3.0")
+    def protobufImport(packageName: String = "com.google.protobuf.*") = versionedImport(packageName, "2.5.0", "2.6.0")
+    def scalaImport(packageName: String = "scala.*") = versionedImport(packageName, s"$scalaEpoch.$scalaMajor", s"$scalaEpoch.${scalaMajor+1}")
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
+    def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
   }
 }
 
