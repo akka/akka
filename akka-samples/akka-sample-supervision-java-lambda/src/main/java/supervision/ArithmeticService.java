@@ -61,15 +61,15 @@ class ArithmeticService extends AbstractLoggingActor {
     }
   }
 
-  @Override
-  public PartialFunction<Object, BoxedUnit> receive() {
-    return ReceiveBuilder.
+  ArithmeticService() {
+    receive(ReceiveBuilder.
       match(Expression.class, expr -> {
         // We delegate the dangerous task of calculation to a worker, passing the
         // expression as a constructor argument to the actor.
         ActorRef worker = context().actorOf(FlakyExpressionCalculator.props(expr, Left));
         pendingWorkers.put(worker, sender());
       }).
-      match(Result.class, r -> notifyConsumerSuccess(sender(), r.getValue())).build();
+      match(Result.class, r -> notifyConsumerSuccess(sender(), r.getValue())).build()
+    );
   }
 }

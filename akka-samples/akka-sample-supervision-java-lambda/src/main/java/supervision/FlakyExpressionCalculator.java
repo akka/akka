@@ -67,11 +67,6 @@ public class FlakyExpressionCalculator extends AbstractLoggingActor {
   private final Expression expr;
   private final Position myPosition;
 
-  public FlakyExpressionCalculator(Expression expr, Position myPosition) {
-    this.expr = expr;
-    this.myPosition = myPosition;
-  }
-
   private Expression getExpr() {
     return expr;
   }
@@ -107,9 +102,11 @@ public class FlakyExpressionCalculator extends AbstractLoggingActor {
     }
   }
 
-  @Override
-  public PartialFunction<Object, BoxedUnit> receive() {
-    return ReceiveBuilder.
+  public FlakyExpressionCalculator(Expression expr, Position myPosition) {
+    this.expr = expr;
+    this.myPosition = myPosition;
+
+    receive(ReceiveBuilder.
       match(Result.class, r -> expected.contains(r.getPosition()), r -> {
         expected.remove(r.getPosition());
         results.put(r.getPosition(), r.getValue());
@@ -126,7 +123,7 @@ public class FlakyExpressionCalculator extends AbstractLoggingActor {
       throw new IllegalStateException("Expected results for positions " +
         expected.stream().map(Object::toString).collect(Collectors.joining(", ")) +
         " but got position " + r.getPosition());
-    }).build();
+    }).build());
   }
 
   private Integer evaluate(Expression expr, Integer left, Integer right) {

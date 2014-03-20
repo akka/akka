@@ -43,8 +43,8 @@ public class DiningHakkersOnBecome {
       }).build();
 
     //A Chopstick begins its existence as available
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return available;
+    public Chopstick() {
+      receive(available);
     }
   }
 
@@ -125,11 +125,11 @@ public class DiningHakkersOnBecome {
       }).build();
 
     //All hakkers start in a non-eating state
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return ReceiveBuilder.matchEquals(Think, m -> {
+    public Hakker() {
+      receive(ReceiveBuilder.matchEquals(Think, m -> {
         System.out.println(String.format("%s starts to think", name));
         startThinking(Duration.create(5, SECONDS));
-      }).build();
+      }).build());
     }
 
     private void startThinking(FiniteDuration duration) {

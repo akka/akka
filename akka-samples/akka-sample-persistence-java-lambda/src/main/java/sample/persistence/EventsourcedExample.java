@@ -80,13 +80,15 @@ class ExampleProcessor extends AbstractEventsourcedProcessor {
         return state.size();
     }
 
-    @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+  @Override
+  public PartialFunction<Object, BoxedUnit> receiveRecover() {
         return ReceiveBuilder.
             match(Evt.class, state::update).
             match(SnapshotOffer.class, ss -> state = (ExampleState) ss.snapshot()).build();
     }
 
-    @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+  @Override
+  public PartialFunction<Object, BoxedUnit> receiveCommand() {
         return ReceiveBuilder.match(Cmd.class, c -> {
             final String data = c.getData();
             final Evt evt1 = new Evt(data + "-" + getNumEvents());

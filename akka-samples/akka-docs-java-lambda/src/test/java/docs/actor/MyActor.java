@@ -9,8 +9,6 @@ import akka.actor.AbstractActor;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 import akka.japi.pf.ReceiveBuilder;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 //#imports
 
@@ -18,9 +16,8 @@ import scala.runtime.BoxedUnit;
 public class MyActor extends AbstractActor {
   private final LoggingAdapter log = Logging.getLogger(context().system(), this);
 
-  @Override
-  public PartialFunction<Object, BoxedUnit> receive() {
-    return ReceiveBuilder.
+  public MyActor() {
+    receive(ReceiveBuilder.
       match(String.class, s -> {
         log.info("Received String message: {}", s);
         //#my-actor
@@ -29,7 +26,8 @@ public class MyActor extends AbstractActor {
         //#reply
         //#my-actor
       }).
-      matchAny(o -> log.info("received unknown message")).build();
+      matchAny(o -> log.info("received unknown message")).build()
+    );
   }
 }
 //#my-actor

@@ -38,11 +38,13 @@ Creating Actors
 Defining an Actor class
 -----------------------
 
-Actor classes are implemented by extending the :class:`AbstractActor` class and implementing
-the :meth:`receive` method. The :meth:`receive` method should define a series of match
-statements (which has the type ``PartialFunction<Object, BoxedUnit>``) that defines
-which messages your Actor can handle, along with the implementation of how the
-messages should be processed.
+Actor classes are implemented by extending the :class:`AbstractActor` class and setting
+the “initial behavior” in the constructor by calling the :meth:`receive` method in
+the :class:`AbstractActor`.
+
+The argument to the :meth:`receive` method is a ``PartialFunction<Object,BoxedUnit>``
+that defines which messages your Actor can handle, along with the implementation of
+how the messages should be processed.
 
 Don't let the type signature scare you. To allow you to easily build up a partial
 function there is a builder named ``ReceiveBuilder`` that you can use.
@@ -64,7 +66,7 @@ Note further that the return type of the behavior defined above is ``Unit``; if
 the actor shall reply to the received message then this must be done explicitly
 as explained below.
 
-The result of the :meth:`receive` method is a partial function object, which is
+The argument to the :meth:`receive` method is a partial function object, which is
 stored within the actor as its “initial behavior”, see `Become/Unbecome`_ for
 further information on changing the behavior of an actor after its
 construction.
@@ -218,8 +220,8 @@ last line.  Watching an actor is quite simple as well:
 Actor API
 =========
 
-The :class:`AbstractActor` class defines only one abstract method, the above mentioned
-:meth:`receive`, which implements the behavior of the actor.
+The :class:`AbstractActor` class defines a method called :meth:`receive`,
+that is used to set the “initial behavior” of the actor.
 
 If the current actor behavior does not match a received message,
 :meth:`unhandled` is called, which by default publishes an
@@ -592,13 +594,21 @@ routers, load-balancers, replicators etc.
 Receive messages
 ================
 
-An Actor has to implement the ``receive`` method to receive messages:
+An Actor either has to set its initial receive behavior in the constructor by
+calling the :meth:`receive` method in the :class:`AbstractActor`:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java
+   :include: receive-constructor
+   :exclude: and-some-behavior
+
+or by implementing the :meth:`receive` method in the :class:`Actor` interface:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java#receive
 
-The :meth:`receive` method should define a series of match statements (which has the type
-``PartialFunction<Object, BoxedUnit>``) that defines which messages your Actor can handle,
-along with the implementation of how the messages should be processed.
+Both the argument to the :class:`AbstractActor` :meth:`receive` method and the return
+type of the :class:`Actor` :meth:`receive` method is a ``PartialFunction<Object, BoxedUnit>``
+that defines which messages your Actor can handle, along with the implementation of how the messages
+should be processed.
 
 Don't let the type signature scare you. To allow you to easily build up a partial
 function there is a builder named ``ReceiveBuilder`` that you can use.
@@ -764,9 +774,6 @@ behavior is not the default).
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java#swapper
 
-
-Stash
-=====
 
 Stash
 =====
