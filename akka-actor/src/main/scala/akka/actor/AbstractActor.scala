@@ -25,9 +25,9 @@ object AbstractActor {
  * <pre>
  * public class MyActor extends AbstractActor {
  *   int count = 0;
- *   @Override
- *   public PartialFunction<Object, BoxedUnit> receive() {
- *     return ReceiveBuilder.
+ *
+ *   public MyActor() {
+ *     receive(ReceiveBuilder.
  *       match(Double.class, d -> {
  *         sender().tell(d.isNaN() ? 0 : d, self());
  *       }).
@@ -36,7 +36,8 @@ object AbstractActor {
  *       }).
  *       match(String.class, s -> s.startsWith("foo"), s -> {
  *         sender().tell(s.toUpperCase(), self());
- *       }).build();
+ *       }).build()
+ *     );
  *   }
  * }
  * </pre>
@@ -44,12 +45,30 @@ object AbstractActor {
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 abstract class AbstractActor extends Actor {
+
+  private var _receive: Receive = null
+
+  /**
+   * Set up the initial receive behavior of the Actor.
+   *
+   * @param receive  The receive behavior.
+   */
+  @throws(classOf[IllegalActorStateException])
+  protected def receive(receive: Receive): Unit =
+    if (_receive == null) _receive = receive
+    else throw IllegalActorStateException("Actor behavior has already been set with receive(...), " +
+      "use context().become(...) to change it later")
+
   /**
    * Returns this AbstractActor's AbstractActorContext
    * The AbstractActorContext is not thread safe so do not expose it outside of the
    * AbstractActor.
    */
   def getContext(): AbstractActorContext = context.asInstanceOf[AbstractActorContext]
+
+  override def receive =
+    if (_receive != null) _receive
+    else throw IllegalActorStateException("Actor behavior has not been set with receive(...)")
 }
 
 /**
@@ -73,9 +92,9 @@ abstract class AbstractLoggingActor extends AbstractActor with ActorLogging
  * <pre>
  * public class MyActorWithStash extends AbstractActorWithStash {
  *   int count = 0;
- *   @Override
- *   public PartialFunction<Object, BoxedUnit> receive() {
- *     return ReceiveBuilder.match(String.class, s -> {
+ *
+ *   public MyActorWithStash() {
+ *     receive(ReceiveBuilder. match(String.class, s -> {
  *       if (count < 0) {
  *         sender().tell(new Integer(s.length()), self());
  *       } else if (count == 2) {
@@ -84,8 +103,8 @@ abstract class AbstractLoggingActor extends AbstractActor with ActorLogging
  *       } else {
  *         count += 1;
  *         stash();
- *       }
- *     }).build();
+ *       }}).build()
+ *     );
  *   }
  * }
  * </pre>

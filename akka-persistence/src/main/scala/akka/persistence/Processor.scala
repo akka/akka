@@ -388,28 +388,23 @@ case class RecoveryException(message: String, cause: Throwable) extends AkkaExce
 abstract class UntypedProcessor extends UntypedActor with Processor
 
 /**
- * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]).
+ * Java API: compatible with lambda expressions
+ *
  * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types
  * are not persisted.
- *
- * {{{
- * import akka.persistence.AbstractProcessor;
- * import akka.persistence.Persistent;
- * import akka.actor.ActorRef;
- * import akka.actor.Props;
- * import akka.japi.pf.ReceiveBuilder;
- * import scala.PartialFunction;
- * import scala.runtime.BoxedUnit;
- *
+ * <p/>
+ * Example:
+ * <pre>
  * class MyProcessor extends AbstractProcessor {
- *     public PartialFunction<Object, BoxedUnit> receive() {
- *         return ReceiveBuilder.
- *             match(Persistent.class, p -> {
- *                 Object payload = p.payload();
- *                 Long sequenceNr = p.sequenceNr();
+ *   public MyProcessor() {
+ *     receive(ReceiveBuilder.
+ *       match(Persistent.class, p -> {
+ *         Object payload = p.payload();
+ *         Long sequenceNr = p.sequenceNr();
  *                 // ...
- *             }).build();
- *     }
+ *       }).build()
+ *     );
+ *   }
  * }
  *
  * // ...
@@ -418,7 +413,7 @@ abstract class UntypedProcessor extends UntypedActor with Processor
  *
  * processor.tell(Persistent.create("foo"), null);
  * processor.tell("bar", null);
- * }}}
+ * </pre>
  *
  * During start and restart, persistent messages are replayed to a processor so that it can recover internal
  * state from these messages. New messages sent to a processor during recovery do not interfere with replayed

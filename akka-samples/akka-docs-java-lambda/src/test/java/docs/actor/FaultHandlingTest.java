@@ -64,12 +64,12 @@ public class FaultHandlingTest {
 
     //#strategy
 
-    @Override
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return ReceiveBuilder.
+    public Supervisor() {
+      receive(ReceiveBuilder.
         match(Props.class, props -> {
           sender().tell(context().actorOf(props), self());
-        }).build();
+        }).build()
+      );
     }
   }
 
@@ -94,12 +94,12 @@ public class FaultHandlingTest {
 
     //#strategy2
 
-    @Override
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return ReceiveBuilder.
+    public Supervisor2() {
+      receive(ReceiveBuilder.
         match(Props.class, props -> {
           sender().tell(context().actorOf(props), self());
-        }).build();
+        }).build()
+      );
     }
 
     @Override
@@ -115,12 +115,12 @@ public class FaultHandlingTest {
   public class Child extends AbstractActor {
     int state = 0;
 
-    @Override
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return ReceiveBuilder.
+    public Child() {
+      receive(ReceiveBuilder.
         match(Exception.class, exception -> { throw exception; }).
         match(Integer.class, i -> state = i).
-        matchEquals("get", s -> sender().tell(state, self())).build();
+        matchEquals("get", s -> sender().tell(state, self())).build()
+      );
     }
   }
 

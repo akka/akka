@@ -18,9 +18,8 @@ public class SampleActor extends AbstractActor {
       context().unbecome();
     }).build();
 
-  @Override
-  public PartialFunction<Object, BoxedUnit> receive() {
-    return ReceiveBuilder.
+  public SampleActor() {
+    receive(ReceiveBuilder.
       match(Double.class, d -> {
         sender().tell(d.isNaN() ? 0 : d, self());
       }).
@@ -30,7 +29,8 @@ public class SampleActor extends AbstractActor {
       match(String.class, s -> s.startsWith("guard"), s -> {
         sender().tell("startsWith(guard): " + s.toUpperCase(), self());
         context().become(guarded, false);
-      }).build();
+      }).build()
+    );
   }
 }
 //#sample-actor

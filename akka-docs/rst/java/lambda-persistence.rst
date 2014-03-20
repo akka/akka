@@ -41,7 +41,7 @@ Architecture
 ============
 
 * *Processor*: A processor is a persistent, stateful actor. Messages sent to a processor are written to a journal
-  before its ``receive`` method is called. When a processor is started or restarted, journaled messages are replayed
+  before its behavior is called. When a processor is started or restarted, journaled messages are replayed
   to that processor, so that it can recover internal state from these messages.
 
 * *View*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
@@ -71,13 +71,13 @@ Architecture
 Processors
 ==========
 
-A processor can be implemented by extending ``AbstractProcessor`` class and implementing the
-``receive`` method.
+A processor can be implemented by extending ``AbstractProcessor`` class and setting
+the “initial behavior” in the constructor by calling the :meth:`receive` method
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#definition
 
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
-When a processor's ``receive`` method is called with a ``Persistent`` message it can safely assume that this message
+When a processor's behavior is called with a ``Persistent`` message it can safely assume that this message
 has been successfully written to the journal. If a journal fails to write a ``Persistent`` message then the processor
 is stopped, by default. If a processor should continue running on persistence failures it must handle
 ``PersistenceFailure`` messages. In this case, a processor may want to inform the sender about the failure,
@@ -164,9 +164,8 @@ Overriding ``processorId`` is the recommended way to generate stable identifiers
 Views
 =====
 
-Views can be implemented by extending the ``AbstractView`` abstract class and implementing the ``receive`` and the
-``processorId``
-methods.
+Views can be implemented by extending the ``AbstractView`` abstract class, implement the ``processorId`` method
+and setting the “initial behavior” in the constructor by calling the :meth:`receive` method.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view
 
