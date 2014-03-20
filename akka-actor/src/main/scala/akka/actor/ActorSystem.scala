@@ -648,6 +648,13 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     guardian.stop()
   }
 
+  @volatile var aborting = false
+
+  def abort(): Unit = {
+    aborting = true
+    shutdown()
+  }
+
   //#create-scheduler
   /**
    * Create the scheduler service. This one needs one special behavior: if

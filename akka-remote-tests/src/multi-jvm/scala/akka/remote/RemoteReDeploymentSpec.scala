@@ -12,11 +12,12 @@ import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
 import scala.concurrent.duration._
 import akka.actor.ActorLogging
+import akka.remote.testconductor.TestConductor
+import akka.testkit.TestProbe
 
 object RemoteReDeploymentMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
-  val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(
     """akka.remote.transport-failure-detector {
@@ -61,7 +62,6 @@ object RemoteReDeploymentMultiJvmSpec extends MultiNodeConfig {
 
 class RemoteReDeploymentFastMultiJvmNode1 extends RemoteReDeploymentFastMultiJvmSpec
 class RemoteReDeploymentFastMultiJvmNode2 extends RemoteReDeploymentFastMultiJvmSpec
-class RemoteReDeploymentFastMultiJvmNode3 extends RemoteReDeploymentFastMultiJvmSpec
 abstract class RemoteReDeploymentFastMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
   override def sleepAfterKill = 0.seconds // new association will come in while old is still “healthy”
   override def expectQuarantine = false
@@ -69,7 +69,6 @@ abstract class RemoteReDeploymentFastMultiJvmSpec extends RemoteReDeploymentMult
 
 class RemoteReDeploymentMediumMultiJvmNode1 extends RemoteReDeploymentMediumMultiJvmSpec
 class RemoteReDeploymentMediumMultiJvmNode2 extends RemoteReDeploymentMediumMultiJvmSpec
-class RemoteReDeploymentMediumMultiJvmNode3 extends RemoteReDeploymentMediumMultiJvmSpec
 abstract class RemoteReDeploymentMediumMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
   override def sleepAfterKill = 1.seconds // new association will come in while old is gated in ReliableDeliverySupervisor
   override def expectQuarantine = false
@@ -77,9 +76,8 @@ abstract class RemoteReDeploymentMediumMultiJvmSpec extends RemoteReDeploymentMu
 
 class RemoteReDeploymentSlowMultiJvmNode1 extends RemoteReDeploymentSlowMultiJvmSpec
 class RemoteReDeploymentSlowMultiJvmNode2 extends RemoteReDeploymentSlowMultiJvmSpec
-class RemoteReDeploymentSlowMultiJvmNode3 extends RemoteReDeploymentSlowMultiJvmSpec
 abstract class RemoteReDeploymentSlowMultiJvmSpec extends RemoteReDeploymentMultiJvmSpec {
-  override def sleepAfterKill = 4.seconds // new association will come in after old has been quarantined
+  override def sleepAfterKill = 10.seconds // new association will come in after old has been quarantined
   override def expectQuarantine = true
 }
 
@@ -113,25 +111,32 @@ abstract class RemoteReDeploymentMultiJvmSpec extends MultiNodeSpec(RemoteReDepl
 
       runOn(first) {
         testConductor.blackhole(second, first, Both).await
-        testConductor.exit(second, 0).await
+        testConductor.shutdown(second, abort = true).await
         if (expectQuarantine)
           within(sleepAfterKill) {
             expectMsg("PostStop")
             expectNoMsg()
           }
         else expectNoMsg(sleepAfterKill)
+        awaitAssert(node(second), 10.seconds, 100.millis)
+      }
+
+      var sys: ActorSystem = null
+
+      runOn(second) {
+        system.awaitTermination(30.seconds)
+        expectNoMsg(sleepAfterKill)
+        sys = startNewSystem()
       }
 
       enterBarrier("cable-cut")
 
-      runOn(third) {
-        val config = ConfigFactory.parseString(s"akka.remote.netty.tcp{port=${address.port.get}\nhostname=${address.host.get}}")
-          .withFallback(system.settings.config)
-        val sys = ActorSystem(system.name, config)
-        injectDeployments(sys, second)
-        sys.actorOf(echoProps(testActor), "echo")
+      runOn(second) {
+        val p = TestProbe()(sys)
+        implicit val self = p.ref
+        sys.actorOf(echoProps(p.ref), "echo")
         sys.actorOf(Props[Parent], "parent") ! ((Props[Hello], "hello"))
-        expectMsg("HelloParent")
+        p.expectMsg("HelloParent")
       }
 
       enterBarrier("re-deployed")

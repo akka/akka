@@ -58,25 +58,27 @@ private[akka] class RemoteSystemDaemon(
   AddressTerminatedTopic(system).subscribe(this)
 
   private val parent2children = new ConcurrentHashMap[ActorRef, Set[ActorRef]]
-  @tailrec private def addParentChildNeedsWatch(parent: ActorRef, child: ActorRef): Boolean =
+
+  @tailrec private def addChildParentNeedsWatch(parent: ActorRef, child: ActorRef): Boolean =
     parent2children.get(parent) match {
       case null ⇒
         if (parent2children.putIfAbsent(parent, Set(child)) == null) true
-        else addParentChildNeedsWatch(parent, child)
+        else addChildParentNeedsWatch(parent, child)
       case children ⇒
         if (parent2children.replace(parent, children, children + child)) false
-        else addParentChildNeedsWatch(parent, child)
+        else addChildParentNeedsWatch(parent, child)
     }
-  @tailrec private def removeParentChildNeedsUnwatch(parent: ActorRef, child: ActorRef): Boolean = {
+
+  @tailrec private def removeChildParentNeedsUnwatch(parent: ActorRef, child: ActorRef): Boolean = {
     parent2children.get(parent) match {
       case null ⇒ false // no-op
       case children ⇒
         val next = children - child
         if (next.isEmpty) {
-          if (!parent2children.remove(parent, children)) removeParentChildNeedsUnwatch(parent, child)
+          if (!parent2children.remove(parent, children)) removeChildParentNeedsUnwatch(parent, child)
           else true
         } else {
-          if (!parent2children.replace(parent, children, next)) removeParentChildNeedsUnwatch(parent, child)
+          if (!parent2children.replace(parent, children, next)) removeChildParentNeedsUnwatch(parent, child)
           else false
         }
     }
@@ -115,7 +117,7 @@ private[akka] class RemoteSystemDaemon(
       terminating.locked {
         removeChild(child.path.elements.drop(1).mkString("/"), child)
         val parent = child.getParent
-        if (removeParentChildNeedsUnwatch(parent, child)) parent.sendSystemMessage(Unwatch(parent, this))
+        if (removeChildParentNeedsUnwatch(parent, child)) parent.sendSystemMessage(Unwatch(parent, this))
         terminationHookDoneWhenNoChildren()
       }
     case DeathWatchNotification(parent: ActorRef with ActorRefScope, _, _) if !parent.isLocal ⇒
@@ -158,7 +160,7 @@ private[akka] class RemoteSystemDaemon(
                 addChild(childName, actor)
                 actor.sendSystemMessage(Watch(actor, this))
                 actor.start()
-                if (addParentChildNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
+                if (addChildParentNeedsWatch(parent, actor)) parent.sendSystemMessage(Watch(parent, this))
               }
               if (isTerminating) log.error("Skipping [{}] to RemoteSystemDaemon on [{}] while terminating", message, p.address)
             case _ ⇒

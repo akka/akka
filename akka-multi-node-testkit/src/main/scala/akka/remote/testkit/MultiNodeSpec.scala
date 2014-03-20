@@ -327,7 +327,7 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    * been started either in Conductor or Player mode when the constructor of
    * MultiNodeSpec finishes, i.e. do not call the start*() methods yourself!
    */
-  val testConductor: TestConductorExt = TestConductor(system)
+  var testConductor: TestConductorExt = null
 
   /**
    * Execute the given block of code only on the given nodes (names according
@@ -376,13 +376,22 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
    */
 
   private val controllerAddr = new InetSocketAddress(serverName, serverPort)
-  if (selfIndex == 0) {
-    Await.result(testConductor.startController(initialParticipants, myself, controllerAddr),
-      testConductor.Settings.BarrierTimeout.duration)
-  } else {
-    Await.result(testConductor.startClient(myself, controllerAddr),
-      testConductor.Settings.BarrierTimeout.duration)
+
+  protected def attachConductor(tc: TestConductorExt): Unit = {
+    val timeout = tc.Settings.BarrierTimeout.duration
+    try
+      if (selfIndex == 0) {
+        Await.result(tc.startController(initialParticipants, myself, controllerAddr), timeout)
+      } else {
+        Await.result(tc.startClient(myself, controllerAddr), timeout)
+      }
+    catch {
+      case NonFatal(x) ⇒ throw new RuntimeException("failure while attaching new conductor", x)
+    }
+    testConductor = tc
   }
+
+  attachConductor(TestConductor(system))
 
   // now add deployments, if so desired
 
@@ -390,8 +399,9 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
     lazy val addr = node(role).address.toString
   }
 
+  private val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
+
   protected def injectDeployments(sys: ActorSystem, role: RoleName): Unit = {
-    val replacements = roles map (r ⇒ Replacement("@" + r.name + "@", r))
     val deployer = sys.asInstanceOf[ExtendedActorSystem].provider.deployer
     deployments(role) foreach { str ⇒
       val deployString = (str /: replacements) {
@@ -424,9 +434,17 @@ abstract class MultiNodeSpec(val myself: RoleName, _system: ActorSystem, _roles:
   injectDeployments(system, myself)
 
   // useful to see which jvm is running which role, used by LogRoleReplace utility
-  log.info("Role [{}] started with address [{}]", myself.name,
-    system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress)
+  protected val myAddress = system.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
+  log.info("Role [{}] started with address [{}]", myself.name, myAddress)
 
+  protected def startNewSystem(): ActorSystem = {
+    val config = ConfigFactory.parseString(s"akka.remote.netty.tcp{port=${myAddress.port.get}\nhostname=${myAddress.host.get}}")
+      .withFallback(system.settings.config)
+    val sys = ActorSystem(system.name, config)
+    injectDeployments(sys, myself)
+    attachConductor(TestConductor(sys))
+    sys
+  }
 }
 
 /**
