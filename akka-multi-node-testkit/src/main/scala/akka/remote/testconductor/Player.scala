@@ -239,10 +239,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           import context.dispatcher // FIXME is this the right EC for the future below?
           // FIXME: Currently ignoring, needs support from Remoting
           stay
-        case TerminateMsg(None) ⇒
+        case TerminateMsg(Left(false)) ⇒
           context.system.shutdown()
           stay
-        case TerminateMsg(Some(exitValue)) ⇒
+        case TerminateMsg(Left(true)) ⇒
+          context.system.asInstanceOf[ActorSystemImpl].abort()
+          stay
+        case TerminateMsg(Right(exitValue)) ⇒
           System.exit(exitValue)
           stay // needed because Java doesn’t have Nothing
         case _: Done ⇒ stay //FIXME what should happen?

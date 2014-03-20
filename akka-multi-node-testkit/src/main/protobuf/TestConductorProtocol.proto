@@ -49,6 +49,7 @@ enum FailType {
   Abort = 3;
   Exit = 4;
   Shutdown = 5;
+  ShutdownAbort = 6;
 }
 
 enum Direction {
