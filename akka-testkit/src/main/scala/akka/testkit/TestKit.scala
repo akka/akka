@@ -630,7 +630,7 @@ trait TestKitBase {
     for { x ← 1 to n } yield {
       val timeout = stop - now
       val o = receiveOne(timeout)
-      assert(o ne null, s"timeout ($max) while expecting $n messages")
+      assert(o ne null, s"timeout ($max) while expecting $n messages (got ${x - 1})")
       o
     }
   }

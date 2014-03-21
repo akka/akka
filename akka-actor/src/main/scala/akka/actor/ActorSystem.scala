@@ -648,6 +648,19 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     guardian.stop()
   }
 
+  @volatile var aborting = false
+
+  /**
+   * This kind of shutdown attempts to bring the system down and release its
+   * resources more forcefully than plain shutdown. For example it will not
+   * wait for remote-deployed child actors to terminate before terminating their
+   * parents.
+   */
+  def abort(): Unit = {
+    aborting = true
+    shutdown()
+  }
+
   //#create-scheduler
   /**
    * Create the scheduler service. This one needs one special behavior: if
