@@ -564,6 +564,7 @@ private[akka] class VirtualPathContainer(
         // this can happen from RemoteSystemDaemon if a new child is created
         // before the old is removed from RemoteSystemDaemon children
         log.debug("{} replacing child {} ({} -> {})", path, name, old, ref)
+        old.stop()
     }
   }
 
