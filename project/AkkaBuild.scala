@@ -969,11 +969,23 @@ object AkkaBuild extends Build {
     else
       file
   }
+
+  case class FilterAnyProblem(name: String) extends com.typesafe.tools.mima.core.ProblemFilter {
+    import com.typesafe.tools.mima.core._
+    override def apply(p: Problem): Boolean = p match {
+      case t: TemplateProblem => t.ref.fullName != name && t.ref.fullName != (name + '$')
+      case m: MemberProblem => m.ref.owner.fullName != name && m.ref.owner.fullName != (name + '$')
+    }
+  }
     
   lazy val mimaIgnoredProblems = {
     import com.typesafe.tools.mima.core._
     Seq(
       // add filters here, see release-2.2 branch
+      FilterAnyProblem("akka.remote.testconductor.Terminate"),
+      FilterAnyProblem("akka.remote.testconductor.TerminateMsg"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testconductor.Conductor.shutdown"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.testkit.MultiNodeSpec.akka$remote$testkit$MultiNodeSpec$$deployer")
     )
   }
 
