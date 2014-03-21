@@ -269,7 +269,7 @@ private[remote] object EndpointManager {
      */
     def isTombstone: Boolean
   }
-  case class Pass(endpoint: ActorRef) extends EndpointPolicy {
+  case class Pass(endpoint: ActorRef, uid: Option[Int]) extends EndpointPolicy {
     override def isTombstone: Boolean = false
   }
   case class Gated(timeOfRelease: Deadline) extends EndpointPolicy {
@@ -286,13 +286,21 @@ private[remote] object EndpointManager {
     private var addressToReadonly = HashMap[Address, ActorRef]()
     private var readonlyToAddress = HashMap[ActorRef, Address]()
 
-    def registerWritableEndpoint(address: Address, endpoint: ActorRef): ActorRef = addressToWritable.get(address) match {
-      case Some(Pass(e)) ⇒
+    def registerWritableEndpoint(address: Address, uid: Option[Int], endpoint: ActorRef): ActorRef = addressToWritable.get(address) match {
+      case Some(Pass(e, _)) ⇒
         throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint [$e] with [$endpoint]")
       case _ ⇒
-        addressToWritable += address -> Pass(endpoint)
+        addressToWritable += address -> Pass(endpoint, uid)
         writableToAddress += endpoint -> address
         endpoint
+    }
+
+    def registerWritableEndpointUid(writer: ActorRef, uid: Int): Unit = {
+      val address = writableToAddress(writer)
+      addressToWritable.get(address) match {
+        case Some(Pass(ep, _)) ⇒ addressToWritable += address -> Pass(ep, Some(uid))
+        case other             ⇒ // the GotUid might have lost the race with some failure
+      }
     }
 
     def registerReadOnlyEndpoint(address: Address, endpoint: ActorRef): ActorRef = {
@@ -317,8 +325,8 @@ private[remote] object EndpointManager {
     def writableEndpointWithPolicyFor(address: Address): Option[EndpointPolicy] = addressToWritable.get(address)
 
     def hasWritableEndpointFor(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
-      case Some(Pass(_)) ⇒ true
-      case _             ⇒ false
+      case Some(Pass(_, _)) ⇒ true
+      case _                ⇒ false
     }
 
     def readOnlyEndpointFor(address: Address): Option[ActorRef] = addressToReadonly.get(address)
@@ -391,6 +399,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   else None
 
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
+  var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
 
   override val supervisorStrategy =
     OneForOneStrategy(loggingEnabled = false) {
@@ -483,7 +492,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Quarantine(address, uidOption) ⇒
       // Stop writers
       endpoints.writableEndpointWithPolicyFor(address) match {
-        case Some(Pass(endpoint)) ⇒
+        case Some(Pass(endpoint, _)) ⇒
           context.stop(endpoint)
           if (uidOption.isEmpty) {
             log.warning("Association to [{}] with unknown UID is reported as quarantined, but " +
@@ -509,6 +518,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       def createAndRegisterWritingEndpoint(refuseUid: Option[Int]): ActorRef =
         endpoints.registerWritableEndpoint(
           recipientAddress,
+          None,
           createEndpoint(
             recipientAddress,
             recipientRef.localAddressToUse,
@@ -519,7 +529,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             refuseUid))
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
-        case Some(Pass(endpoint)) ⇒
+        case Some(Pass(endpoint, _)) ⇒
           endpoint ! s
         case Some(Gated(timeOfRelease)) ⇒
           if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(refuseUid = None) ! s
@@ -533,7 +543,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       }
 
-    case InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
+    case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒
         pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
         pendingReadHandoffs += endpoint -> handle
@@ -542,33 +552,21 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
           handle.disassociate(AssociationHandle.Quarantined)
         else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
-          case Some(Pass(ep)) ⇒
-            pendingReadHandoffs.get(ep) foreach (_.disassociate())
-            pendingReadHandoffs += ep -> handle
-            ep ! EndpointWriter.StopReading(ep)
-          case _ ⇒
-            val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
-            eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, inbound = true))
-            val endpoint = createEndpoint(
-              handle.remoteAddress,
-              handle.localAddress,
-              transportMapping(handle.localAddress),
-              settings,
-              Some(handle),
-              writing,
-              refuseUid = None)
-            if (writing)
-              endpoints.registerWritableEndpoint(handle.remoteAddress, endpoint)
-            else {
-              endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
-              endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
-                case Some(Pass(_)) ⇒ // Leave it alone
-                case _ ⇒
-                  // Since we just communicated with the guy we can lift gate, quarantine, etc. New writer will be
-                  // opened at first write.
-                  endpoints.removePolicy(handle.remoteAddress)
-              }
+          case Some(Pass(ep, None)) ⇒
+            stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
+          case Some(Pass(ep, Some(uid))) ⇒
+            if (handle.handshakeInfo.uid == uid) {
+              pendingReadHandoffs.get(ep) foreach (_.disassociate())
+              pendingReadHandoffs += ep -> handle
+              ep ! EndpointWriter.StopReading(ep)
+            } else {
+              context.stop(ep)
+              endpoints.unregisterEndpoint(ep)
+              pendingReadHandoffs -= ep
+              createAndRegisterEndpoint(handle, Some(uid))
             }
+          case state ⇒
+            createAndRegisterEndpoint(handle, None)
         }
     }
     case EndpointWriter.StoppedReading(endpoint) ⇒
@@ -576,8 +574,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Terminated(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
       endpoints.unregisterEndpoint(endpoint)
+      stashedInbound -= endpoint
     case EndpointWriter.TookOver(endpoint, handle) ⇒
       removePendingReader(takingOverFrom = endpoint, withHandle = handle)
+    case ReliableDeliverySupervisor.GotUid(uid) ⇒
+      endpoints.registerWritableEndpointUid(sender, uid)
+      stashedInbound.getOrElse(sender, Vector.empty) foreach (self ! _)
+      stashedInbound -= sender
     case Prune ⇒
       endpoints.prune()
     case ShutdownAndFlush ⇒
@@ -606,6 +609,25 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case s: Send                                   ⇒ extendedSystem.deadLetters ! s
     case InboundAssociation(h: AkkaProtocolHandle) ⇒ h.disassociate(AssociationHandle.Shutdown)
     case Terminated(_)                             ⇒ // why should we care now?
+  }
+
+  private def createAndRegisterEndpoint(handle: AkkaProtocolHandle, refuseUid: Option[Int]): Unit = {
+    val writing = settings.UsePassiveConnections && !endpoints.hasWritableEndpointFor(handle.remoteAddress)
+    eventPublisher.notifyListeners(AssociatedEvent(handle.localAddress, handle.remoteAddress, inbound = true))
+    val endpoint = createEndpoint(
+      handle.remoteAddress,
+      handle.localAddress,
+      transportMapping(handle.localAddress),
+      settings,
+      Some(handle),
+      writing,
+      refuseUid = refuseUid)
+    if (writing)
+      endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), endpoint)
+    else {
+      endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
+      endpoints.removePolicy(handle.remoteAddress)
+    }
   }
 
   private def listens: Future[Seq[(AkkaProtocolTransport, Address, Promise[AssociationEventListener])]] = {
