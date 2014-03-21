@@ -16,6 +16,7 @@ import akka.actor.OneForOneStrategy;
 import akka.actor.Props;
 import akka.actor.Terminated;
 import akka.actor.UntypedActor;
+import scala.collection.immutable.Seq;
 import scala.concurrent.Await;
 import static akka.pattern.Patterns.ask;
 import scala.concurrent.duration.Duration;
@@ -31,7 +32,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static akka.japi.Util.immutableSeq;
 import akka.japi.Function;
 import scala.Option;
-import scala.collection.immutable.Seq;
 
 import org.junit.Test;
 import org.junit.BeforeClass;
@@ -164,12 +164,13 @@ public class FaultHandlingTest {
   public void mustEmploySupervisorStrategy() throws Exception {
     // code here
     //#testkit
-    EventFilter ex1 = (EventFilter) new ErrorFilter(ArithmeticException.class);
-    EventFilter ex2 = (EventFilter) new ErrorFilter(NullPointerException.class);
-    EventFilter ex3 = (EventFilter) new ErrorFilter(IllegalArgumentException.class);
-    EventFilter ex4 = (EventFilter) new ErrorFilter(Exception.class);
-    Seq<EventFilter> ignoreExceptions = seq(ex1, ex2, ex3, ex4);
-    system.eventStream().publish(new TestEvent.Mute(ignoreExceptions));
+    EventFilter ex1 = new ErrorFilter(ArithmeticException.class);
+    EventFilter ex2 = new ErrorFilter(NullPointerException.class);
+    EventFilter ex3 = new ErrorFilter(IllegalArgumentException.class);
+    EventFilter ex4 = new ErrorFilter(Exception.class);
+    EventFilter[] ignoreExceptions = { ex1, ex2, ex3, ex4 };
+    Seq<EventFilter> seq = immutableSeq(ignoreExceptions);
+    system.eventStream().publish(new TestEvent.Mute(seq));
 
     //#create
     Props superprops = Props.create(Supervisor.class);
@@ -219,11 +220,5 @@ public class FaultHandlingTest {
     //#testkit
   }
 
-  //#testkit
-  @SuppressWarnings("unchecked")
-  public <A> Seq<A> seq(A... args) {
-    return immutableSeq(args);
-  }
-  //#testkit
 }
 //#testkit

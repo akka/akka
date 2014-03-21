@@ -1,0 +1,254 @@
+<html>
+<head>
+    <title>Actor Supervision Java with Lambda Support</title>
+</head>
+<body>
+<div>
+    <h2>Quick Overview</h2>
+
+    <p>Congratulations! You have just created your first fault-resilient Akka
+        application, nice job!</p>
+
+    <p>Let's start with an overview and discuss the problem we want
+        to solve. This tutorial application demonstrates the use of Akka
+        supervision hierarchies to implement reliable systems. This particular
+        example demonstrates a calculator service that calculates arithmetic
+        expressions. We will visit each of the components shortly, but you might
+        want to take a quick look at the components before we move on.</p>
+
+    <ul>
+        <li><a href="#code/src/main/java/supervision/Expression.java" class="shortcut">Expression.java</a>
+            contains our "domain model", a very simple representation of
+            arithmetic expressions
+        </li>
+        <li><a href="#code/src/main/java/supervision/ArithmeticService.java"
+               class="shortcut">ArithmeticService.java</a> is the entry point
+            for our calculation service
+        </li>
+        <li><a href="#code/src/main/java/supervision/FlakyExpressionCalculator.java"
+               class="shortcut">FlakyExpressionCalculator.java</a> is our
+            heavy-lifter, a worker actor that can evaluate an expression
+            concurrently
+        </li>
+        <li><a href="#code/src/main/java/supervision/Main.java" class="shortcut">Main.java</a>
+            example code that starts up the calculator service and sends a few
+            jobs to it
+        </li>
+    </ul>
+</div>
+<div>
+    <h2>The Expression Model</h2>
+
+    <p>Our service deals with arithmetic expressions on integers involving
+        addition, multiplication and (integer) division. In
+        <a href="#code/src/main/java/supervision/Expression.java" class="shortcut">Expression.java</a>
+        you can see a very simple model of these kind of expressions.</p>
+
+    <p>Any arithmetic expression is a descendant of <code>Expression</code>, and
+        have a left and right side (<code>Const</code> is the only exception)
+        which is also an <code>Expression</code>.</p>
+
+    <p>For example, the expression (3 + 5) / (2 * (1 + 1)) could be constructed
+        as:</p>
+
+
+<code><pre>
+new Divide(
+  new Add(
+    new Const(3),
+    new Const(5)
+  ),        // (3 + 5)
+  new Multiply(
+    new Const(2),
+    new Add(
+      new Const(1),
+      new Const(1)
+    )       // (1 + 1)
+  )         // (2 * (1 + 1))
+);          // (3 + 5) / (2 * (1 + 1))
+</pre></code>
+
+    <p>Apart from the encoding of an expression and some pretty printing, our
+        model does not provide other services, so lets move on, and see how we
+        can calculate the result of such expressions.</p>
+</div>
+<div>
+    <h2>Arithmetic Service</h2>
+
+    <p>Our entry point is the <a
+            href="#code/src/main/java/supervision/ArithmeticService.java"
+            class="shortcut">ArithmeticService</a> actor that accepts arithmetic
+        expressions, calculates them and returns the result to the original
+        sender of the <code>Expression</code>.This
+        logic is implemented in the <code>receive</code> block. The actor
+        handles <code>Expression</code> messages and starts a worker for them,
+        carefully recording which worker belongs to which requester in the
+        <code>pendingWorkers</code> map.
+    </p>
+
+    <p>Who calculates
+        the expression? As you see, on the reception of an
+        <code>Expression</code> message we create a <code>FlakyExpressionCalculator</code>
+        actor and pass the expression as a parameter to its <code>Props</code>.
+        What happens here is that we delegate the calculation work to a worker
+        actor because the work can be "dangerous". After the worker
+        finishes its job, it replies to its parent (in this
+        case <code>ArithmeticService</code>) with a <code>Result</code>
+        message. At this point the top level service actor looks up which
+        actor it needs to send the final result to, and forwards it the value
+        of the computation.</p>
+</div>
+
+<div>
+    <h2>The Dangers of Arithmetic</h2>
+
+    <p>At first, it might feel strange that we don't calculate the result
+        directly but we delegate it to a new actor. The reason for that, is that
+        we want to treat the calculation as a dangerous task and isolate its
+        execution in a different actor to keep the top level service safe.</p>
+
+    <p>In our example we will see two kinds of failures</p>
+    <ul>
+        <li><code>FlakinessException</code> is a dummy exception that we throw
+            randomly to simulate transient failures. We will assume that
+            flakiness is temporary, and retrying the calculation is enough to
+            eventually get rid of the failure.
+        </li>
+        <li>Fatal failures, like <code>ArithmeticException</code> that will not
+            go away no matter how many times we retry the task. Division by zero
+            is a good example, since it indicates that the expression is
+            invalid, and no amount of attempts to calculate it again will fix
+            it.
+        </li>
+    </ul>
+
+    <p>To handle these kind of failure modes differently we customized the
+        supervisor strategy of <a
+                href="#code/src/main/java/supervision/ArithmeticService.java"
+                class="shortcut">ArithmeticService</a>. Our strategy here
+        is to restart the child when a recoverable error is detected (in our
+        case the dummy <code>FlakinessException</code>), but when arithmetic
+        errors happen &mdash; like division by zero &mdash; we have no hope to recover
+        and therefore we stop the worker. In addition,
+        we have to notify the original requester of the calculation job
+        about the failure.</p>
+
+    <p>We used <code>OneForOneStrategy</code>, since we only want to act on the
+        failing child, not on all of our children at the same time.</p>
+
+    <p>We set <code>loggingEnabled</code> to false, since we wanted to use our
+        custom logging instead of the built-in reporting.</p>
+
+
+
+</div>
+
+<div>
+
+    <h2>The Joy of Calculation</h2>
+
+    <p>We have now seen our <code>Expression</code> model, our fault modes
+        and how we deal with them at the top level, delegating the dangerous
+        work to child workers to isolate the failure, and setting
+        <code>Stop</code> or <code>Restart</code> directives depending on the
+        nature of the failure (fatal or transient). Now it's time to
+        calculate and visit <a href="#code/src/main/java/supervision/FlakyExpressionCalculator.java"
+                               class="shortcut">FlakyExpressionCalculator.java</a>!
+    </p>
+
+    <p>Let's review first our evaluation strategy. When we are facing an
+        expression like ((4 * 4) / (3 + 1)) we might be tempted to calculate (4
+        * 4) first, then (3 + 1), and then the final division. We can do better:
+        Let's calculate the two sides of the division in parallel!</p>
+
+    <p>To achieve this, our worker delegates the calculation of the left and
+        right side of the expression it has been given to two child workers of
+        the same type (except in the case of constant, where it just sends its
+        value as <code>Result</code> to its parent.
+        This logic is in <code>preStart()</code>
+        since this is the code that will be executed when an actor starts (and
+        during restarts if the <code>postRestart()</code> is not
+        overridden).</p>
+
+    <p>Since any of the sides of the original expression can finish before the
+        other, we have to indicate somehow which side has been calculated, that
+        is why we pass a <code>Position</code> as an argument to workers which
+        they will put in their <code>Result</code> which they send after the
+        calculation finished successfully.</p>
+
+</div>
+<div>
+
+
+    <h2>Failing Calculations</h2>
+
+    <p>As you might have observed, we added a method called
+        <code>flakiness()</code> that sometimes just misbehaves
+        (throws a <code>FlakinessException</code>).
+        This simulates a transient failure. Let's see how our
+        FlakyExpressionCalculator deals with failure situations.</p>
+
+    <p>A supervisor strategy is applied to the children of an actor. Since our
+        children are actually workers for calculating the left and right side of
+        our subexpression, we have to think what different failures mean for
+        us.</p>
+
+    <p>If we encounter a <code>FlakinessException</code> it indicates that one
+        of our workers
+        just made a hiccup and failed to calculate the answer. Since we know
+        this failure is recoverable, we just restart the responsible worker.</p>
+
+    <p>In case of fatal failures we cannot really do anything ourselves. First
+        of all, it indicates that the expression is invalid so restart does not
+        help, second, we are not necessarily the top level worker for the
+        expression. When an unknown failure is encountered it
+        is escalated to the parent. The parent of this actor is either another
+        <code>FlakyExpressionCalculator</code> or the
+        <code>ArithmeticService </code>. Since the calculators all escalate, no
+        matter how deep the failure happened, the <code>ArithmeticService</code>
+        will decide on the fate of the job (in our case, stop it).</p>
+</div>
+<div>
+    <h2>When to Split Work? A Small Detour.</h2>
+
+    <p>In our example we split expressions recursively and calculated the left
+       and right sides of each of the expressions. The question naturally
+       arises: do we gain anything here regarding performance?</p>
+
+    <p>In this example more probably not. There is an additional overhead of
+       splitting up tasks and collecting results, and this case the actual
+       subtasks consist of simple arithmetic operations which are very fast.
+       To really gain in performance in practice, the actual subtasks have to
+       be more heavyweight than this &mdash; but the pattern will be the
+       same.</p>
+
+</div>
+<div>
+    <h2>Where to go from here?</h2>
+
+    <p>After getting comfortable with the code, you can test your
+        understanding by trying to solve the following small exercises:</p>
+    <ul>
+        <li>Add <code>flakiness()</code> to various places in the calculator and
+            see what happens
+        </li>
+        <li>Try devising more calculation intensive nested jobs instead of
+            arithmetic expressions (for example transformations of a text
+            document) where parallelism improves performance
+        </li>
+    </ul>
+
+    <p>You should also visit</p>
+    <ul>
+        <li><a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java.html"
+               target="_blank">The Akka documentation</a></li>
+        <li><a
+               href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/java/lambda-fault-tolerance.html"
+               target="_blank">Documentation of supervision</a></li>
+        <li><a href="http://letitcrash.com" target="_blank">The Akka Team blog</a></li>
+    </ul>
+</div>
+
+
+</body>
+</html>

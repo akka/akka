@@ -15,6 +15,7 @@ import akka.cluster.MemberStatus
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberUp
 import akka.contrib.pattern.ClusterSingletonManager
+import akka.contrib.pattern.ClusterSingletonProxy
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
@@ -35,7 +36,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.cluster.roles = [compute]
     # don't use sigar for tests, native lib not in path
     akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
-    #//#router-deploy-config  
+    #//#router-deploy-config
     akka.actor.deployment {
       /singleton/statsService/workerRouter {
           router = consistent-hashing-pool
@@ -48,7 +49,7 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
           }
         }
     }
-    #//#router-deploy-config  
+    #//#router-deploy-config
     """))
 
 }
@@ -91,18 +92,19 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
         terminationMessage = PoisonPill,
         role = null), name = "singleton")
 
-      system.actorOf(Props[StatsFacade], "statsFacade")
+      system.actorOf(ClusterSingletonProxy.defaultProps("/user/singleton/statsService",
+        "compute"), "statsServiceProxy");
 
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsFacade" in within(40 seconds) {
-      val facade = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsFacade")
+    "show usage of the statsServiceProxy" in within(40 seconds) {
+      val proxy = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsServiceProxy")
 
       // eventually the service should be ok,
       // service and worker nodes might not be up yet
       awaitAssert {
-        facade ! new StatsJob("this is the text that will be analyzed")
+        proxy ! new StatsJob("this is the text that will be analyzed")
         expectMsgType[StatsResult](1.second).getMeanWordLength should be(3.875 +- 0.001)
       }
 

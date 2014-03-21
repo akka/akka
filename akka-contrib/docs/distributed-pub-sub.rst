@@ -108,8 +108,8 @@ It can publish messages to the topic from anywhere in the cluster:
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/DistributedPubSubMediatorSpec.scala#publish-message
 
-A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-tutorial named `Akka Clustered PubSub with Scala! <http://typesafe.com/activator/template/akka-clustering>`_.
+A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+tutorial named `Akka Clustered PubSub with Scala! <http://www.typesafe.com/activator/template/akka-clustering>`_.
 
 DistributedPubSubExtension
 --------------------------

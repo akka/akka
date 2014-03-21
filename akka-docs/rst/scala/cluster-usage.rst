@@ -41,8 +41,8 @@ An actor that uses the cluster extension may look like this:
 The actor registers itself as subscriber of certain cluster events. It receives events corresponding to the current state
 of the cluster when the subscription starts and then it receives events for changes that happen in the cluster.
 
-The easiest way to run this example yourself is to download `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-and open the tutorial named `Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+and open the tutorial named `Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
 It contains instructions of how to run the ``SimpleClusterApp``.
 
 Joining to Seed Nodes
@@ -235,8 +235,8 @@ network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the ``Terminated`` message to the watching actor when the 
 unreachable cluster node has been downed and removed.
 
-The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
 contains the full source code and instructions of how to run the **Worker Dial-in Example**.
 
 Node Roles
@@ -478,8 +478,8 @@ The router is configured with ``routees.paths``:
 This means that user requests can be sent to ``StatsService`` on any node and it will use
 ``StatsWorker`` on all nodes.
 
-The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
 contains the full source code and instructions of how to run the **Router Example with Group of Routees**.
 
 Router with Pool of Remote Deployed Routees
@@ -514,19 +514,19 @@ in the contrib module. The ``ClusterSingletonManager`` is started on each node.
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#create-singleton-manager
 
 We also need an actor on each node that keeps track of where current single master exists and
-delegates jobs to the ``StatsService``.
+delegates jobs to the ``StatsService``.  That is provided by the ``ClusterSingletonProxy``.
 
-.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsFacade.scala#facade
+.. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/stats/StatsSampleOneMaster.scala#singleton-proxy
 
-The ``StatsFacade`` receives text from users and delegates to the current ``StatsService``, the single
+The ``ClusterSingletonProxy`` receives text from users and delegates to the current ``StatsService``, the single
 master. It listens to cluster events to lookup the ``StatsService`` on the oldest node.
 
-All nodes start ``StatsFacade`` and the ``ClusterSingletonManager``. The router is now configured like this:
+All nodes start ``ClusterSingletonProxy`` and the ``ClusterSingletonManager``. The router is now configured like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/resources/stats2.conf#config-router-deploy
 
-The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
 contains the full source code and instructions of how to run the **Router Example with Pool of Remote Deployed Routees**.
 
 Cluster Metrics
@@ -586,8 +586,8 @@ The same type of router could also have been defined in code:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/main/scala/sample/cluster/factorial/Extra.scala#router-deploy-in-code
 
-The `Typesafe Activator <http://typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Scala <http://typesafe.com/activator/template/akka-sample-cluster-scala>`_.
+The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
+`Akka Cluster Samples with Scala <http://www.typesafe.com/activator/template/akka-sample-cluster-scala>`_.
 contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
 
 Subscribe to Metrics Events

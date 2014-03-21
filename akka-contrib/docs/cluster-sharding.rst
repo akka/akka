@@ -110,8 +110,8 @@ first message for a specific entry is delivered.
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-usage
 
-A more comprehensive sample is available in the `Typesafe Activator <http://typesafe.com/platform/getstarted>`_
-tutorial named `Akka Cluster Sharding with Scala! <http://typesafe.com/activator/template/akka-cluster-sharding-scala>`_.
+A more comprehensive sample is available in the `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
+tutorial named `Akka Cluster Sharding with Scala! <http://www.typesafe.com/activator/template/akka-cluster-sharding-scala>`_.
 
 How it works
 ------------

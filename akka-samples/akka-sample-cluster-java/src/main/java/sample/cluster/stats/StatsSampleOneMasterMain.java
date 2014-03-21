@@ -7,6 +7,7 @@ import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.contrib.pattern.ClusterSingletonManager;
+import akka.contrib.pattern.ClusterSingletonProxy;
 
 public class StatsSampleOneMasterMain {
 
@@ -36,7 +37,10 @@ public class StatsSampleOneMasterMain {
           PoisonPill.getInstance(), "compute"), "singleton");
       //#create-singleton-manager
 
-      system.actorOf(Props.create(StatsFacade.class), "statsFacade");
+      //#singleton-proxy
+      system.actorOf(ClusterSingletonProxy.defaultProps("/user/singleton/statsService",
+        "compute"), "statsServiceProxy");
+      //#singleton-proxy
     }
 
   }

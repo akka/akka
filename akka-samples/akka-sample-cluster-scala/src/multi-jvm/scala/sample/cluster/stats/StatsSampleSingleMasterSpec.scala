@@ -10,6 +10,7 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.actor.RootActorPath
 import akka.contrib.pattern.ClusterSingletonManager
+import akka.contrib.pattern.ClusterSingletonProxy
 import akka.cluster.Cluster
 import akka.cluster.Member
 import akka.cluster.MemberStatus
@@ -88,18 +89,19 @@ abstract class StatsSampleSingleMasterSpec extends MultiNodeSpec(StatsSampleSing
         singletonProps = Props[StatsService], singletonName = "statsService",
         terminationMessage = PoisonPill, role = Some("compute")), name = "singleton")
 
-      system.actorOf(Props[StatsFacade], "statsFacade")
+      system.actorOf(ClusterSingletonProxy.props(singletonPath = "/user/singleton/statsService",
+        role = Some("compute")), name = "statsServiceProxy")
 
       testConductor.enter("all-up")
     }
 
-    "show usage of the statsFacade" in within(40 seconds) {
-      val facade = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsFacade")
+    "show usage of the statsServiceProxy" in within(40 seconds) {
+      val proxy = system.actorSelection(RootActorPath(node(third).address) / "user" / "statsServiceProxy")
 
       // eventually the service should be ok,
       // service and worker nodes might not be up yet
       awaitAssert {
-        facade ! StatsJob("this is the text that will be analyzed")
+        proxy ! StatsJob("this is the text that will be analyzed")
         expectMsgType[StatsResult](1.second).meanWordLength should be(
           3.875 +- 0.001)
       }

@@ -73,6 +73,20 @@ public class ReceiveBuilder {
   /**
    * Return a new {@link UnitPFBuilder} with a case statement added.
    *
+   * @param object  the object to compare equals with
+   * @param predicate  a predicate that will be evaluated on the argument if the object compares equal
+   * @param apply  an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   */
+  public static <P> UnitPFBuilder<Object> matchEquals(P object,
+                                                      FI.TypedPredicate<P> predicate,
+                                                      FI.UnitApply<P> apply) {
+    return UnitMatch.matchEquals(object, predicate, apply);
+  }
+
+  /**
+   * Return a new {@link UnitPFBuilder} with a case statement added.
+   *
    * @param apply      an action to apply to the argument
    * @return           a builder with the case statement added
    */
