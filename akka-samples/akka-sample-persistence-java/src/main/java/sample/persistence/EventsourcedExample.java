@@ -88,7 +88,6 @@ class ExampleProcessor extends UntypedEventsourcedProcessor {
                     state.update(evt);
                     if (evt.equals(evt2)) {
                         getContext().system().eventStream().publish(evt);
-                        if (data.equals("foo")) getContext().become(otherCommandHandler);
                     }
                 }
             });
@@ -100,22 +99,6 @@ class ExampleProcessor extends UntypedEventsourcedProcessor {
             System.out.println(state);
         }
     }
-
-    private Procedure<Object> otherCommandHandler = new Procedure<Object>() {
-        public void apply(Object msg) throws Exception {
-            if (msg instanceof Cmd && ((Cmd)msg).getData().equals("bar")) {
-                persist(new Evt("bar-" + getNumEvents()), new Procedure<Evt>() {
-                    public void apply(Evt event) throws Exception {
-                        state.update(event);
-                        getContext().unbecome();
-                    }
-                });
-                unstashAll();
-            } else {
-                stash();
-            }
-        }
-    };
 }
 //#eventsourced-example
 

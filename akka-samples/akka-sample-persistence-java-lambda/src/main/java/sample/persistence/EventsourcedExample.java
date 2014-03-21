@@ -95,23 +95,12 @@ class ExampleProcessor extends AbstractEventsourcedProcessor {
                 state.update(evt);
                 if (evt.equals(evt2)) {
                     context().system().eventStream().publish(evt);
-                    if (data.equals("foo")) { context().become(och, true); }
                 }
             });
         }).
             match(String.class, s -> s.equals("snap"), s -> saveSnapshot(state.copy())).
             match(String.class, s -> s.equals("print"), s -> System.out.println(state)).build();
     }
-
-    PartialFunction<Object, BoxedUnit> och = ReceiveBuilder.
-        match(Cmd.class, cmd -> cmd.getData().equals("bar"), cmd -> {
-            persist(new Evt("bar-" + getNumEvents()), event -> {
-                state.update(event);
-                context().unbecome();
-            });
-            unstashAll();
-        }).
-        matchAny(o -> stash()).build();
 }
 //#eventsourced-example
 

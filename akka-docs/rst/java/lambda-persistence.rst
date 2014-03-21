@@ -74,7 +74,7 @@ Processors
 A processor can be implemented by extending ``AbstractProcessor`` class and implementing the
 ``receive`` method.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#definition
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#definition
 
 Processors only write messages of type ``Persistent`` to the journal, others are received without being persisted.
 When a processor's ``receive`` method is called with a ``Persistent`` message it can safely assume that this message
@@ -85,7 +85,7 @@ so that the sender can re-send the message, if needed.
 
 An ``AbstractProcessor`` itself is an ``Actor`` and can therefore be instantiated with ``actorOf``.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#usage
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#usage
 
 Recovery
 --------
@@ -99,28 +99,28 @@ Recovery customization
 
 Automated recovery on start can be disabled by overriding ``preStart`` with an empty implementation.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-disabled
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-disabled
 
 In this case, a processor must be recovered explicitly by sending it a ``Recover`` message.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#recover-explicit
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-explicit
 
 If not overridden, ``preStart`` sends a ``Recover`` message to ``self()``. Applications may also override
 ``preStart`` to define further ``Recover`` parameters such as an upper sequence number bound, for example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-custom
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-start-custom
 
 Upper sequence number bounds can be used to recover a processor to past state instead of current state. Automated
 recovery on restart can be disabled by overriding ``preRestart`` with an empty implementation.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-restart-disabled
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-on-restart-disabled
 
 Recovery status
 ^^^^^^^^^^^^^^^
 
 A processor can query its own recovery status via the methods
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-status
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-status
 
 .. _failure-handling-java-lambda:
 
@@ -130,7 +130,7 @@ Failure handling
 A persistent message that caused an exception will be received again by a processor after restart. To prevent
 a replay of that message during recovery it can be deleted.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#deletion
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#deletion
 
 Message deletion
 ----------------
@@ -149,13 +149,13 @@ A processor must have an identifier that doesn't change across different actor i
 ``String`` representation of processor's path without the address part and can be obtained via the ``processorId``
 method.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id
 
 Applications can customize a processor's id by specifying an actor name during processor creation as shown in
 section :ref:`processors-java`. This changes that processor's name in its actor hierarchy and hence influences only
 part of the processor id. To fully customize a processor's id, the ``processorId`` method must be overridden.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id-override
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id-override
 
 Overriding ``processorId`` is the recommended way to generate stable identifiers.
 
@@ -168,7 +168,7 @@ Views can be implemented by extending the ``AbstractView`` abstract class and im
 ``processorId``
 methods.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#view
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view
 
 The ``processorId`` identifies the processor from which the view receives journaled messages. It is not necessary
 the referenced processor is actually running. Views read messages from a processor's journal directly. When a
@@ -186,7 +186,7 @@ The default update interval of all views of an actor system is configurable:
 interval for a specific view class or view instance. Applications may also trigger additional updates at
 any time by sending a view an ``Update`` message.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#view-update
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view-update
 
 If the ``await`` parameter is set to ``true``, messages that follow the ``Update`` request are processed when the
 incremental message replay, triggered by that update request, completed. If set to ``false`` (default), messages
@@ -234,7 +234,7 @@ destinations). The following discusses channels in context of processors but thi
 Channels prevent redundant delivery of replayed messages to destinations during processor recovery. A replayed
 message is retained by a channel if its delivery has been confirmed by a destination.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#channel-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#channel-example
 
 A channel is ready to use once it has been created, no recovery or further activation is needed. A ``Deliver``
 request  instructs a channel to send a ``Persistent`` message to a destination. A destination is provided as
@@ -244,7 +244,7 @@ preserved by a channel, therefore, a destination can reply to the sender of a ``
 If a processor wants to reply to a ``Persistent`` message sender it should use the ``sender()`` path as
 channel destination.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#channel-example-reply
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#channel-example-reply
 
 Persistent messages delivered by a channel are of type ``ConfirmablePersistent``. ``ConfirmablePersistent`` extends
 ``Persistent`` by adding the methods ``confirm`` and ``redeliveries`` (see also :ref:`redelivery-java-lambda`). A
@@ -264,13 +264,13 @@ This timeout can be specified as ``redeliverInterval`` when creating a channel, 
 maximum number of re-deliveries a channel should attempt for each unconfirmed message. The number of re-delivery
 attempts can be obtained via the ``redeliveries`` method on ``ConfirmablePersistent``.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#channel-custom-settings
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#channel-custom-settings
 
 A channel keeps messages in memory until their successful delivery has been confirmed or the maximum number of
 re-deliveries is reached. To be notified about messages that have reached the maximum number of re-deliveries,
 applications can register a listener at channel creation.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#channel-custom-listener
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#channel-custom-listener
 
 A listener receives ``RedeliverFailure`` notifications containing all messages that could not be delivered. On
 receiving a ``RedeliverFailure`` message, an application may decide to restart the sending processor to enforce
@@ -313,13 +313,13 @@ Persistent channels are like transient channels but additionally persist message
 that have been persisted by a persistent channel are deleted when destinations confirm their delivery. A persistent
 channel can be created with ``PersistentChannel.props`` and configured with a ``PersistentChannelSettings`` object.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-example
 
 A persistent channel is useful for delivery of messages to slow destinations or destinations that are unavailable
 for a long time. It can constrain the number of pending confirmations based on the ``pendingConfirmationsMax``
 and ``pendingConfirmationsMin`` parameters of ``PersistentChannelSettings``.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-watermarks
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-watermarks
 
 It suspends delivery when the number of pending confirmations reaches ``pendingConfirmationsMax`` and resumes
 delivery again when this number falls below ``pendingConfirmationsMin``. This prevents both, flooding destinations
@@ -335,7 +335,7 @@ case of a sender JVM crash is an issue, persistent channels should be used. In t
 receive replies from the channel whether messages have been successfully persisted or not. This can be enabled by
 creating the channel with the ``replyPersistent`` configuration parameter set to ``true``:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-reply
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistent-channel-reply
 
 With this setting, either the successfully persisted message is replied to the sender or a ``PersistenceFailure``
 message. In case the latter case, the sender should re-send the message.
@@ -349,7 +349,7 @@ that channel's name in its actor hierarchy and hence influences only part of the
 a channel identifier, it should be provided as argument ``Channel.props(String)`` or ``PersistentChannel.props(String)``
 (recommended to generate stable identifiers).
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#channel-id-override
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#channel-id-override
 
 Persistent messages
 ===================
@@ -362,7 +362,7 @@ must be derived from the current persistent message before sending them via a ch
 or ``Persistent.create(..., getCurrentPersistentMessage())`` where ``getCurrentPersistentMessage()`` is defined on
 ``AbstractProcessor``.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#current-message
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#current-message
 
 This is necessary for delivery confirmations to work properly. Both
 ways are equivalent but we recommend using ``p.withPayload(...)`` for clarity. It is not allowed to send a message
@@ -387,12 +387,12 @@ in context of processors but this is also applicable to views.
 Processors can save snapshots of internal state by calling the  ``saveSnapshot`` method. If saving of a snapshot
 succeeds, the processor receives a ``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#save-snapshot
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#save-snapshot
 
 During recovery, the processor is offered a previously saved snapshot via a ``SnapshotOffer`` message from
 which it can initialize internal state.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-offer
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-offer
 
 The replayed messages that follow the ``SnapshotOffer`` message, if any, are younger than the offered snapshot.
 They finally recover the processor to its current (i.e. latest) state.
@@ -400,7 +400,7 @@ They finally recover the processor to its current (i.e. latest) state.
 In general, a processor is only offered a snapshot if that processor has previously saved one or more snapshots
 and at least one of these snapshots matches the ``SnapshotSelectionCriteria`` that can be specified for recovery.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-criteria
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#snapshot-criteria
 
 If not specified, they default to ``SnapshotSelectionCriteria.latest()`` which selects the latest (= youngest) snapshot.
 To disable snapshot-based recovery, applications should use ``SnapshotSelectionCriteria.none()``. A recovery where no
@@ -441,7 +441,7 @@ event sourcing as a pattern on top of command sourcing). A processor that extend
 ``AbstractEventsourcedProcessor`` is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is
 demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/sample/persistence/EventsourcedExample.java#eventsourced-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/EventsourcedExample.java#eventsourced-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
@@ -462,12 +462,19 @@ about successful state changes by publishing events.
 
 When persisting events with ``persist`` it is guaranteed that the processor will not receive further commands between
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
-calls in context of a single command. The example also shows how to switch between command different command handlers
-with ``context().become()`` and ``context().unbecome()``.
+calls in context of a single command.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
-and open the tutorial named `Akka Persistence Samples with Java <http://www.typesafe.com/activator/template/akka-sample-persistence-java8>`_.
+and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.typesafe.com/activator/template/akka-sample-persistence-java-lambda>`_.
 It contains instructions on how to run the ``EventsourcedExample``.
+
+.. note::
+
+  It's also possible to switch between different command handlers during normal processing and recovery
+  with ``context().become()`` and ``context().unbecome()``. To get the actor into the same state after
+  recovery you need to take special care to perform the same state transitions with ``become`` and
+  ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
+
 
 Reliable event delivery
 -----------------------
@@ -476,7 +483,7 @@ Sending events from an event handler to another actor has at-most-once delivery 
 :ref:`channels-java-lambda` must be used. In this case, also replayed events (received by ``receiveRecover``) must be
 sent to a channel, as shown in the following example:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#reliable-event-delivery
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#reliable-event-delivery
 
 In larger integration scenarios, channel destinations may be actors that submit received events to an external
 message broker, for example. After having successfully submitted an event, they should call ``confirm()`` on the
@@ -498,7 +505,7 @@ writing the previous batch. Batch writes are never timer-based which keeps laten
 Applications that want to have more explicit control over batch writes and batch sizes can send processors
 ``PersistentBatch`` messages.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistenceDocTest.java#batch-write
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#batch-write
 
 ``Persistent`` messages contained in a ``PersistentBatch`` are always written atomically, even if the batch
 size is greater than ``max-message-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
@@ -522,7 +529,7 @@ snapshots as individual files to the local filesystem (see :ref:`local-snapshot-
 provide their own plugins by implementing a plugin API and activate them by configuration. Plugin development
 requires the following imports:
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistencePluginDocTest.java#plugin-imports
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#plugin-imports
 
 Journal plugin API
 ------------------
@@ -611,7 +618,7 @@ plugin.
 This plugin must be initialized by injecting the (remote) ``SharedLeveldbStore`` actor reference. Injection is
 done by calling the ``SharedLeveldbJournal.setStore`` method with the actor reference as argument.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java8/src/main/java/doc/LambdaPersistencePluginDocTest.java#shared-store-usage
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#shared-store-usage
 
 Internal journal commands (sent by processors) are buffered until injection completes. Injection is idempotent
 i.e. only the first injection is used.

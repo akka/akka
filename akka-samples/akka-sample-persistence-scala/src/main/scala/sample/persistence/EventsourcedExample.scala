@@ -33,21 +33,11 @@ class ExampleProcessor extends EventsourcedProcessor {
       persist(Evt(s"${data}-${numEvents + 1}")) { event =>
         updateState(event)
         context.system.eventStream.publish(event)
-        if (data == "foo") context.become(otherCommandHandler)
       }
     case "snap"  => saveSnapshot(state)
     case "print" => println(state)
   }
 
-  val otherCommandHandler: Receive = {
-    case Cmd("bar") =>
-      persist(Evt(s"bar-${numEvents}")) { event =>
-        updateState(event)
-        context.unbecome()
-      }
-      unstashAll()
-    case other => stash()
-  }
 }
 //#eventsourced-example
 
@@ -57,7 +47,7 @@ object EventsourcedExample extends App {
   val processor = system.actorOf(Props[ExampleProcessor], "processor-4-scala")
 
   processor ! Cmd("foo")
-  processor ! Cmd("baz") // will be stashed
+  processor ! Cmd("baz")
   processor ! Cmd("bar")
   processor ! "snap"
   processor ! Cmd("buzz")
