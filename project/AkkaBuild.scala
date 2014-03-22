@@ -1033,7 +1033,7 @@ object Dependencies {
     //   akka-samples/akka-sample-osgi-dining-hakkers/pom.xml
 
     // Compile
-    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.10.3" exclude("org.slf4j", "slf4j-api") // ApacheV2
+    val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val config        = "com.typesafe"                % "config"                       % "1.2.0"       // ApacheV2
     // mirrored in OSGi sample
