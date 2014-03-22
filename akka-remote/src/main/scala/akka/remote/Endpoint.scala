@@ -306,7 +306,8 @@ private[remote] class ReliableDeliverySupervisor(
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty)
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
       context.become(idle)
-    case GotUid(receivedUid) ⇒
+    case g @ GotUid(receivedUid) ⇒
+      context.parent ! g
       // New system that has the same address as the old - need to start from fresh state
       uidConfirmed = true
       if (uid.exists(_ != receivedUid)) reset()

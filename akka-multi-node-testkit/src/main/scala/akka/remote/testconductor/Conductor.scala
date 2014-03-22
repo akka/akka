@@ -185,7 +185,7 @@ trait Conductor { this: TestConductorExt ⇒
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    controller ? Terminate(node, Some(exitValue)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+    controller ? Terminate(node, Right(exitValue)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
 
   /**
@@ -194,12 +194,21 @@ trait Conductor { this: TestConductorExt ⇒
    *
    * @param node is the symbolic name of the node which is to be affected
    */
-  def shutdown(node: RoleName): Future[Done] = {
+  def shutdown(node: RoleName): Future[Done] = shutdown(node, abort = false)
+
+  /**
+   * Tell the actor system at the remote node to shut itself down without
+   * awaiting termination of remote-deployed children. The node will also be
+   * removed, so that the remaining nodes may still pass subsequent barriers.
+   *
+   * @param node is the symbolic name of the node which is to be affected
+   */
+  def shutdown(node: RoleName, abort: Boolean): Future[Done] = {
     import Settings.QueryTimeout
     import system.dispatcher
     // the recover is needed to handle ClientDisconnectedException exception,
     // which is normal during shutdown
-    controller ? Terminate(node, None) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
+    controller ? Terminate(node, Left(abort)) mapTo classTag[Done] recover { case _: ClientDisconnectedException ⇒ Done }
   }
 
   /**
@@ -455,9 +464,10 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
         case Disconnect(node, target, abort) ⇒
           val t = nodes(target)
           nodes(node).fsm forward ToClient(DisconnectMsg(t.addr, abort))
-        case Terminate(node, exitValue) ⇒
+        case Terminate(node, shutdownOrExit) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
-          nodes(node).fsm forward ToClient(TerminateMsg(exitValue))
+          nodes(node).fsm forward ToClient(TerminateMsg(shutdownOrExit))
+          nodes -= node
         case Remove(node) ⇒
           barrier ! BarrierCoordinator.RemoveClient(node)
       }

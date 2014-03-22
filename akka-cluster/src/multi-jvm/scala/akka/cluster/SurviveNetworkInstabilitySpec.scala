@@ -20,6 +20,7 @@ import akka.actor.ExtendedActorSystem
 import akka.remote.RemoteActorRefProvider
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.Failed
+import akka.actor.PoisonPill
 
 object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -113,10 +114,13 @@ abstract class SurviveNetworkInstabilitySpec
     runOn(alive: _*) {
       for (to ← alive) {
         val sel = system.actorSelection(node(to) / "user" / "echo")
+        val msg = s"ping-$to"
+        val p = TestProbe()
         awaitAssert {
-          sel ! "ping"
-          expectMsg(1.second, "ping")
+          sel.tell(msg, p.ref)
+          p.expectMsg(1.second, msg)
         }
+        p.ref ! PoisonPill
       }
     }
     enterBarrier("ping-ok")
@@ -269,7 +273,10 @@ abstract class SurviveNetworkInstabilitySpec
         for (_ ← 1 to sysMsgBufferSize + 1) {
           // remote deployment to third
           parent ! Props[RemoteChild]
-          val child = expectMsgType[ActorRef]
+          val child = receiveOne(remaining) match {
+            case a: ActorRef ⇒ a
+            case other       ⇒ fail(s"expected ActorRef, got $other")
+          }
           child ! "hello"
           expectMsg("hello")
           lastSender.path.address should be(address(third))
