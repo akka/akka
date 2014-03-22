@@ -14,8 +14,8 @@ package akka.japi.pf;
  * Example:
  * <pre>
  * @Override
- * public PartialFunction<Object, BoxedUnit> receive() {
- *   return ReceiveBuilder.
+ * public Actor() {
+ *   receive(ReceiveBuilder.
  *     match(Double.class, d -> {
  *       sender().tell(d.isNaN() ? 0 : d, self());
  *     }).
@@ -24,7 +24,8 @@ package akka.japi.pf;
  *     }).
  *     match(String.class, s -> s.startsWith("foo"), s -> {
  *       sender().tell(s.toUpperCase(), self());
- *     }).build();
+ *     }).build()
+ *   );
  * }
  * </pre>
  *
