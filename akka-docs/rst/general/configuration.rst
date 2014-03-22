@@ -422,16 +422,10 @@ akka-actor
 .. literalinclude:: ../../../akka-actor/src/main/resources/reference.conf
    :language: none
 
-akka-remote
-~~~~~~~~~~~
+akka-agent
+~~~~~~~~~~
 
-.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
-   :language: none
-
-akka-testkit
-~~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
    :language: none
 
 akka-camel
@@ -446,16 +440,28 @@ akka-cluster
 .. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
    :language: none
 
-akka-agent
-~~~~~~~~~~
+akka-multi-node-testkit
+~~~~~~~~~~~~~~~~~~~~~~~
 
-.. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
+.. literalinclude:: ../../../akka-multi-node-testkit/src/main/resources/reference.conf
    :language: none
 
 akka-persistence
 ~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../../akka-persistence/src/main/resources/reference.conf
+   :language: none
+
+akka-remote
+~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
+   :language: none
+
+akka-testkit
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
 akka-zeromq
