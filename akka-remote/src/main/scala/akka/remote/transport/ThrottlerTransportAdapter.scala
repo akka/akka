@@ -453,7 +453,7 @@ private[transport] class ThrottledAssociation(
       sender() ! SetThrottleAck
       stay()
     case Event(Disassociated(info), _) ⇒
-      stop()
+      stop() // not notifying the upstream handler is intentional: we are relying on heartbeating
   }
 
   // This method captures ASSOCIATE packets and extracts the origin address

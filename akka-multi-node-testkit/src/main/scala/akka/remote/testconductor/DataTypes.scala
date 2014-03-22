@@ -43,8 +43,8 @@ private[akka] final case class ThrottleMsg(target: Address, direction: Direction
 private[akka] final case class Disconnect(node: RoleName, target: RoleName, abort: Boolean) extends CommandOp
 private[akka] final case class DisconnectMsg(target: Address, abort: Boolean) extends ConfirmedClientOp with NetworkOp
 
-private[akka] final case class Terminate(node: RoleName, exitValue: Option[Int]) extends CommandOp
-private[akka] final case class TerminateMsg(exitValue: Option[Int]) extends ConfirmedClientOp with NetworkOp
+private[akka] final case class Terminate(node: RoleName, shutdownOrExit: Either[Boolean, Int]) extends CommandOp
+private[akka] final case class TerminateMsg(shutdownOrExit: Either[Boolean, Int]) extends ConfirmedClientOp with NetworkOp
 
 private[akka] final case class GetAddress(node: RoleName) extends ServerOp with NetworkOp
 private[akka] final case class AddressReply(node: RoleName, addr: Address) extends UnconfirmedClientOp with NetworkOp
@@ -94,10 +94,12 @@ private[akka] class MsgEncoder extends OneToOneEncoder {
         case DisconnectMsg(target, abort) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setAddress(target)
             .setFailure(if (abort) TCP.FailType.Abort else TCP.FailType.Disconnect))
-        case TerminateMsg(Some(exitValue)) ⇒
+        case TerminateMsg(Right(exitValue)) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Exit).setExitValue(exitValue))
-        case TerminateMsg(None) ⇒
+        case TerminateMsg(Left(false)) ⇒
           w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.Shutdown))
+        case TerminateMsg(Left(true)) ⇒
+          w.setFailure(TCP.InjectFailure.newBuilder.setFailure(TCP.FailType.ShutdownAbrupt))
         case GetAddress(node) ⇒
           w.setAddr(TCP.AddressRequest.newBuilder.setNode(node.name))
         case AddressReply(node, addr) ⇒
@@ -139,11 +141,12 @@ private[akka] class MsgDecoder extends OneToOneDecoder {
         val f = w.getFailure
         import TCP.{ FailType ⇒ FT }
         f.getFailure match {
-          case FT.Throttle   ⇒ ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
-          case FT.Abort      ⇒ DisconnectMsg(f.getAddress, true)
-          case FT.Disconnect ⇒ DisconnectMsg(f.getAddress, false)
-          case FT.Exit       ⇒ TerminateMsg(Some(f.getExitValue))
-          case FT.Shutdown   ⇒ TerminateMsg(None)
+          case FT.Throttle       ⇒ ThrottleMsg(f.getAddress, f.getDirection, f.getRateMBit)
+          case FT.Abort          ⇒ DisconnectMsg(f.getAddress, true)
+          case FT.Disconnect     ⇒ DisconnectMsg(f.getAddress, false)
+          case FT.Exit           ⇒ TerminateMsg(Right(f.getExitValue))
+          case FT.Shutdown       ⇒ TerminateMsg(Left(false))
+          case FT.ShutdownAbrupt ⇒ TerminateMsg(Left(true))
         }
       } else if (w.hasAddr) {
         val a = w.getAddr
