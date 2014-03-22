@@ -243,8 +243,14 @@ ReliableProxy Constructor Changed
 The constructor of ``ReliableProxy`` in ``akka-contrib`` has been changed to take an ``ActorPath`` instead of
 an ``ActorRef``.  Also it takes new parameters to support reconnection.  Use the new props factory methods, ``ReliableProxy.props``.
 
-Akka OSGi Aries Blueprint is Removed
-====================================
+OSGi Changes
+============
+
+``akka-osgi`` no longer contains the ``akka-actor`` classes, instead
+``akka-actor`` is a bundle now. ``akka-osgi`` only contains a few OSGi helpers,
+most notably the ``BundleDelegatingClassLoader`` which resolves e.g.
+``reference.conf`` files (hence these are not copied into the ``akka-osgi``
+bundle any longer either).
 
 ``akka-osgi-aries`` has been removed. Similar can be implemented outside of Akka if needed.
  

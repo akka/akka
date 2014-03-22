@@ -15,12 +15,12 @@ import scala.util.Success
 import scala.util.Failure
 import scala.annotation.tailrec
 
-/*
+/**
  * Companion object to create bundle delegating ClassLoader instances
  */
 object BundleDelegatingClassLoader {
 
-  /*
+  /**
    * Create a bundle delegating ClassLoader for the bundle context's bundle
    */
   def apply(context: BundleContext): BundleDelegatingClassLoader = new BundleDelegatingClassLoader(context.getBundle, null)
@@ -29,7 +29,7 @@ object BundleDelegatingClassLoader {
     new BundleDelegatingClassLoader(context.getBundle, fallBackCLassLoader.orNull)
 }
 
-/*
+/**
  * A bundle delegating ClassLoader implementation - this will try to load classes and resources from the bundle
  * and the bundles transitive dependencies. If there's a ClassLoader specified, that will be used as a fallback.
  */
