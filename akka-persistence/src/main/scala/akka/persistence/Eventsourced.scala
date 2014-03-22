@@ -222,7 +222,7 @@ private[persistence] trait Eventsourced extends Processor {
  * An event sourced processor.
  */
 trait EventsourcedProcessor extends Processor with Eventsourced {
-  final def receive = receiveCommand
+  def receive = receiveCommand
 }
 
 /**
@@ -344,4 +344,10 @@ abstract class AbstractEventsourcedProcessor extends AbstractActor with Eventsou
    */
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  override def receive = super[EventsourcedProcessor].receive
+
+  override def receive(receive: Receive): Unit = {
+    throw new IllegalArgumentException("Define the behavior by overriding receiveRecover and receiveCommand")
+  }
 }

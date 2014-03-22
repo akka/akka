@@ -32,21 +32,21 @@ public class InitializationDocTest {
   }
 
   public static class MessageInitExample extends AbstractActor {
-    //#messageInit
     private String initializeMe = null;
 
-    @Override
-    public PartialFunction<Object, BoxedUnit> receive() {
-      return ReceiveBuilder.
+    public MessageInitExample() {
+      //#messageInit
+      receive(ReceiveBuilder.
         matchEquals("init", m1 -> {
           initializeMe = "Up and running";
           context().become(ReceiveBuilder.
             matchEquals("U OK?", m2 -> {
               sender().tell(initializeMe, self());
             }).build());
-        }).build();
+        }).build()
+      //#messageInit
+      );
     }
-    //#messageInit
   }
 
   @Test

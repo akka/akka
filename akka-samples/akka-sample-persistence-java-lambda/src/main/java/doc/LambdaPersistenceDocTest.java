@@ -35,24 +35,25 @@ public class LambdaPersistenceDocTest {
   static Object o1 = new Object() {
     //#definition
     class MyProcessor extends AbstractProcessor {
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, p -> {
-              // message successfully written to journal
-              Object payload = p.payload();
-              Long sequenceNr = p.sequenceNr();
-              // ...
-            }).
-            match(PersistenceFailure.class, failure -> {
-              // message failed to be written to journal
-              Object payload = failure.payload();
-              Long sequenceNr = failure.sequenceNr();
-              Throwable cause = failure.cause();
-              // ...
-            }).
-            matchAny(otherwise -> {
-              // message not written to journal
-            }).build();
+      public MyProcessor() {
+        receive(ReceiveBuilder.
+          match(Persistent.class, p -> {
+            // message successfully written to journal
+            Object payload = p.payload();
+            Long sequenceNr = p.sequenceNr();
+            // ...
+          }).
+          match(PersistenceFailure.class, failure -> {
+            // message failed to be written to journal
+            Object payload = failure.payload();
+            Long sequenceNr = failure.sequenceNr();
+            Throwable cause = failure.cause();
+            // ...
+          }).
+          matchAny(otherwise -> {
+            // message not written to journal
+          }).build()
+        );
       }
     }
     //#definition
@@ -67,11 +68,10 @@ public class LambdaPersistenceDocTest {
         processor.tell(Persistent.create("foo"), null);
         processor.tell("bar", null);
         //#usage
-      }
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, received -> {/* ... */}).build();
+        receive(ReceiveBuilder.
+          match(Persistent.class, received -> {/* ... */}).build()
+        );
       }
 
       private void recover() {
@@ -124,9 +124,10 @@ public class LambdaPersistenceDocTest {
       }
 
       //#processor-id-override
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, received -> {/* ... */}).build();
+      public MyProcessor4() {
+        receive(ReceiveBuilder.
+          match(Persistent.class, received -> {/* ... */}).build()
+        );
       }
     }
   };
@@ -140,27 +141,27 @@ public class LambdaPersistenceDocTest {
       public MyProcessor() {
         this.destination = context().actorOf(Props.create(MyDestination.class));
         this.channel = context().actorOf(Channel.props(), "myChannel");
-      }
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, p -> {
-              Persistent out = p.withPayload("done " + p.payload());
-              channel.tell(Deliver.create(out, destination.path()), self());
-            }).build();
+        receive(ReceiveBuilder.
+          match(Persistent.class, p -> {
+            Persistent out = p.withPayload("done " + p.payload());
+            channel.tell(Deliver.create(out, destination.path()), self());
+          }).build()
+        );
       }
     }
 
     class MyDestination extends AbstractActor {
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(ConfirmablePersistent.class, p -> {
-              Object payload = p.payload();
-              Long sequenceNr = p.sequenceNr();
-              int redeliveries = p.redeliveries();
-              // ...
-              p.confirm();
-            }).build();
+      public MyDestination() {
+        receive(ReceiveBuilder.
+          match(ConfirmablePersistent.class, p -> {
+            Object payload = p.payload();
+            Long sequenceNr = p.sequenceNr();
+            int redeliveries = p.redeliveries();
+            // ...
+            p.confirm();
+          }).build()
+        );
       }
     }
     //#channel-example
@@ -177,39 +178,38 @@ public class LambdaPersistenceDocTest {
 
         //#channel-custom-settings
         context().actorOf(
-            Channel.props(ChannelSettings.create()
-                            .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
-                            .withRedeliverMax(15)));
+          Channel.props(ChannelSettings.create()
+            .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
+            .withRedeliverMax(15)));
         //#channel-custom-settings
 
         //#channel-custom-listener
         class MyListener extends AbstractActor {
-          @Override public PartialFunction<Object, BoxedUnit> receive() {
-            return ReceiveBuilder.
-                match(RedeliverFailure.class, r -> {
-                  Iterable<ConfirmablePersistent> messages = r.getMessages();
-                  // ...
-                }).build();
+          public MyListener() {
+            receive(ReceiveBuilder.
+              match(RedeliverFailure.class, r -> {
+                Iterable<ConfirmablePersistent> messages = r.getMessages();
+                // ...
+              }).build()
+            );
           }
         }
 
         final ActorRef myListener = context().actorOf(Props.create(MyListener.class));
         context().actorOf(Channel.props(
-            ChannelSettings.create().withRedeliverFailureListener(null)));
+          ChannelSettings.create().withRedeliverFailureListener(null)));
         //#channel-custom-listener
 
-      }
+        receive(ReceiveBuilder.
+          match(Persistent.class, p -> {
+            Persistent out = p.withPayload("done " + p.payload());
+            channel.tell(Deliver.create(out, destination.path()), self());
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, p -> {
-              Persistent out = p.withPayload("done " + p.payload());
-              channel.tell(Deliver.create(out, destination.path()), self());
-
-              //#channel-example-reply
-              channel.tell(Deliver.create(out, sender().path()), self());
-              //#channel-example-reply
-            }).build();
+            //#channel-example-reply
+            channel.tell(Deliver.create(out, sender().path()), self());
+            //#channel-example-reply
+          }).build()
+        );
       }
     }
   };
@@ -219,18 +219,19 @@ public class LambdaPersistenceDocTest {
     class MyProcessor extends AbstractProcessor {
       private Object state;
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(String.class, s -> s.equals("snap"),
-                  s -> saveSnapshot(state)).
-            match(SaveSnapshotSuccess.class, ss -> {
-              SnapshotMetadata metadata = ss.metadata();
-              // ...
-            }).
-            match(SaveSnapshotFailure.class, sf -> {
-              SnapshotMetadata metadata = sf.metadata();
-              // ...
-            }).build();
+      public MyProcessor() {
+        receive(ReceiveBuilder.
+          match(String.class, s -> s.equals("snap"),
+            s -> saveSnapshot(state)).
+          match(SaveSnapshotSuccess.class, ss -> {
+            SnapshotMetadata metadata = ss.metadata();
+            // ...
+          }).
+          match(SaveSnapshotFailure.class, sf -> {
+            SnapshotMetadata metadata = sf.metadata();
+            // ...
+          }).build()
+        );
       }
     }
     //#save-snapshot
@@ -241,13 +242,14 @@ public class LambdaPersistenceDocTest {
     class MyProcessor extends AbstractProcessor {
       private Object state;
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(SnapshotOffer.class, s -> {
-              state = s.snapshot();
-              // ...
-            }).
-            match(Persistent.class, p -> {/* ...*/}).build();
+      public MyProcessor() {
+        receive(ReceiveBuilder.
+          match(SnapshotOffer.class, s -> {
+            state = s.snapshot();
+            // ...
+          }).
+          match(Persistent.class, p -> {/* ...*/}).build()
+        );
       }
     }
     //#snapshot-offer
@@ -257,17 +259,16 @@ public class LambdaPersistenceDocTest {
 
       public MyActor() {
         processor = context().actorOf(Props.create(MyProcessor.class));
-      }
-
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.match(Object.class, o -> {/* ... */}).build();
+        receive(ReceiveBuilder.
+          match(Object.class, o -> {/* ... */}).build()
+        );
       }
 
       private void recover() {
         //#snapshot-criteria
         processor.tell(Recover.create(
-            SnapshotSelectionCriteria
-                .create(457L, System.currentTimeMillis())), null);
+          SnapshotSelectionCriteria
+            .create(457L, System.currentTimeMillis())), null);
         //#snapshot-criteria
       }
     }
@@ -276,12 +277,13 @@ public class LambdaPersistenceDocTest {
   static Object o6 = new Object() {
     //#batch-write
     class MyProcessor extends AbstractProcessor {
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, p -> p.payload().equals("a"),
-                  p -> {/* ... */}).
-            match(Persistent.class, p -> p.payload().equals("b"),
-                  p -> {/* ... */}).build();
+      public MyProcessor() {
+        receive(ReceiveBuilder.
+          match(Persistent.class, p -> p.payload().equals("a"),
+            p -> {/* ... */}).
+          match(Persistent.class, p -> p.payload().equals("b"),
+            p -> {/* ... */}).build()
+        );
       }
     }
 
@@ -291,8 +293,8 @@ public class LambdaPersistenceDocTest {
 
       public void batchWrite() {
         processor.tell(PersistentBatch
-                  .create(asList(Persistent.create("a"),
-                                 Persistent.create("b"))), null);
+          .create(asList(Persistent.create("a"),
+            Persistent.create("b"))), null);
       }
 
       // ...
@@ -307,18 +309,18 @@ public class LambdaPersistenceDocTest {
       public void foo() {
         //#persistent-channel-example
         final ActorRef channel = context().actorOf(
-            PersistentChannel.props(
-                PersistentChannelSettings.create()
-                    .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
-                    .withRedeliverMax(15)),
-            "myPersistentChannel");
+          PersistentChannel.props(
+            PersistentChannelSettings.create()
+              .withRedeliverInterval(Duration.create(30, TimeUnit.SECONDS))
+              .withRedeliverMax(15)),
+          "myPersistentChannel");
 
         channel.tell(Deliver.create(Persistent.create("example"), destination.path()), self());
         //#persistent-channel-example
         //#persistent-channel-watermarks
         PersistentChannelSettings.create()
-              .withPendingConfirmationsMax(10000)
-              .withPendingConfirmationsMin(2000);
+          .withPendingConfirmationsMax(10000)
+          .withPendingConfirmationsMin(2000);
         //#persistent-channel-watermarks
         //#persistent-channel-reply
         PersistentChannelSettings.create().withReplyPersistent(true);
@@ -343,19 +345,19 @@ public class LambdaPersistenceDocTest {
         // ...
         // reliably deliver events
         channel.tell(Deliver.create(
-              Persistent.create(event, getCurrentPersistentMessage()),
-              destination.path()), self());
+          Persistent.create(event, getCurrentPersistentMessage()),
+          destination.path()), self());
       }
 
       @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
         return ReceiveBuilder.
-            match(String.class, this::handleEvent).build();
+          match(String.class, this::handleEvent).build();
       }
 
       @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
         return ReceiveBuilder.
-            match(String.class, s -> s.equals("cmd"),
-                  s -> persist("evt", this::handleEvent)).build();
+          match(String.class, s -> s.equals("cmd"),
+            s -> persist("evt", this::handleEvent)).build();
       }
     }
     //#reliable-event-delivery
@@ -369,11 +371,12 @@ public class LambdaPersistenceDocTest {
         return "some-processor-id";
       }
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(Persistent.class, peristent -> {
-              // ...
-            }).build();
+      public MyView() {
+        receive(ReceiveBuilder.
+          match(Persistent.class, persistent -> {
+            // ...
+          }).build()
+        );
       }
     }
     //#view

@@ -37,16 +37,17 @@ public class LambdaPersistencePluginDocTest {
         selection.tell(new Identify(1), self());
       }
 
-      @Override public PartialFunction<Object, BoxedUnit> receive() {
-        return ReceiveBuilder.
-            match(ActorIdentity.class, ai -> {
-              if (ai.correlationId().equals(1)) {
-                ActorRef store = ai.getRef();
-                if (store != null) {
-                  SharedLeveldbJournal.setStore(store, context().system());
-                }
+      public SharedStorageUsage() {
+        receive(ReceiveBuilder.
+          match(ActorIdentity.class, ai -> {
+            if (ai.correlationId().equals(1)) {
+              ActorRef store = ai.getRef();
+              if (store != null) {
+                SharedLeveldbJournal.setStore(store, context().system());
               }
-            }).build();
+            }
+          }).build()
+        );
       }
     }
     //#shared-store-usage
