@@ -100,6 +100,6 @@ mvncleantest "$java8_home" "akka-samples/akka-docs-java-lambda"
 
 mvncleantest "$java8_home" "akka-samples/akka-sample-fsm-java-lambda"
 
-mvncleantest "$java8_home" "akka-samples/akka-sample-persistence-java8"
+mvncleantest "$java8_home" "akka-samples/akka-sample-persistence-java-lambda"
 
 mvncleantest "$java8_home" "akka-samples/akka-sample-supervision-java-lambda"

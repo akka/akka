@@ -137,6 +137,23 @@ object EventsourcedSpec {
     }
   }
 
+  class SnapshottingBecomingEventsourcedProcessor(name: String, probe: ActorRef) extends SnapshottingEventsourcedProcessor(name, probe) {
+    val becomingRecover: Receive = {
+      case msg: SnapshotOffer ⇒
+        context.become(becomingCommand)
+        // sending ourself a normal message here also tests
+        // that we stash them until recovery is complete
+        self ! "It's changing me"
+        super.receiveRecover(msg)
+    }
+
+    override def receiveRecover = becomingRecover.orElse(super.receiveRecover)
+
+    val becomingCommand: Receive = receiveCommand orElse {
+      case "It's changing me" ⇒ probe ! "I am becoming"
+    }
+  }
+
   class ReplyInEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ persist(Evt("a"))(evt ⇒ sender ! evt.data)
@@ -294,6 +311,21 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
 
       val processor2 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
       expectMsg("offered")
+      processor2 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+    }
+    "support context.become during recovery" in {
+      val processor1 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      processor1 ! Cmd("b")
+      processor1 ! "snap"
+      processor1 ! Cmd("c")
+      expectMsg("saved")
+      processor1 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+
+      val processor2 = system.actorOf(Props(classOf[SnapshottingBecomingEventsourcedProcessor], name, testActor))
+      expectMsg("offered")
+      expectMsg("I am becoming")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
     }
