@@ -10,6 +10,7 @@ import akka.actor._
 import akka.persistence.Persistence
 import akka.persistence.journal._
 import akka.util.Timeout
+import akka.util.Helpers.ConfigOps
 
 /**
  * INTERNAL API.
@@ -24,7 +25,8 @@ private[persistence] class LeveldbJournal extends { val configPath = "akka.persi
  * Journal backed by a [[SharedLeveldbStore]]. For testing only.
  */
 private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
-  val timeout: Timeout = Timeout(10 seconds) // TODO: make configurable
+  val timeout: Timeout = context.system.settings.config.getMillisDuration(
+    "akka.persistence.journal.leveldb-shared.timeout")
 }
 
 object SharedLeveldbJournal {
