@@ -121,3 +121,9 @@ You can create a ``Req`` connection through the::
 
 More documentation and examples will follow soon.
 
+Configuration
+=============
+
+There are several configuration properties for the zeromq module, please refer
+to the :ref:`reference configuration <config-akka-zeromq>`.
+

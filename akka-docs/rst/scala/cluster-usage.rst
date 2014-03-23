@@ -725,12 +725,8 @@ Example of system properties to enable remote monitoring and management::
 Configuration
 ^^^^^^^^^^^^^
 
-There are several configuration properties for the cluster. We refer to the following
-reference file for more information:
-
-
-.. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
-   :language: none
+There are several configuration properties for the cluster. We refer to the 
+:ref:`reference configuration <config-akka-cluster>` for more information.
 
 Cluster Info Logging
 --------------------

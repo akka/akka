@@ -492,11 +492,8 @@ and related resources for troubleshooting.
 Remote Configuration
 ^^^^^^^^^^^^^^^^^^^^
 
-There are lots of configuration properties that are related to remoting in Akka. We refer to the following
-reference file for more information:
-
-.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
-   :language: none
+There are lots of configuration properties that are related to remoting in Akka. We refer to the 
+:ref:`reference configuration <config-akka-remote>` for more information.
 
 .. note::
 

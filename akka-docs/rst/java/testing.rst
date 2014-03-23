@@ -634,4 +634,9 @@ full logging of actor activities using this configuration fragment::
     }
   }
 
+Configuration
+=============
+
+There are several configuration properties for the TestKit module, please refer
+to the :ref:`reference configuration <config-akka-testkit>`.
 
