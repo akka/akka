@@ -1,8 +1,8 @@
 .. _agents-java:
 
-##############
+########
  Agents
-##############
+########
 
 Agents in Akka are inspired by `agents in Clojure`_.
 
@@ -26,7 +26,7 @@ dispatched to the same agent from other threads.
 
 
 Creating Agents
-============================
+===============
 
 Agents are created by invoking ``new Agent<ValueType>(value, executionContext)`` – passing in the Agent's initial
 value and providing an ``ExecutionContext`` to be used for it:
@@ -92,6 +92,12 @@ See :ref:`futures-java` for more information on ``Futures``.
 .. includecode:: code/docs/agent/AgentDocTest.java
    :include: import-future,import-function,alter-off
    :language: java
+
+Configuration
+=============
+
+There are several configuration properties for the agents module, please refer
+to the :ref:`reference configuration <config-akka-agent>`.
 
 Deprecated Transactional Agents
 ===============================

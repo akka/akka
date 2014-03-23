@@ -1,8 +1,8 @@
 .. _agents-scala:
 
-################
+########
  Agents
-################
+########
 
 Agents in Akka are inspired by `agents in Clojure`_.
 
@@ -32,7 +32,7 @@ dispatched to the same agent from other threads.
   read or update the Agent.
  
 Creating Agents
-============================
+===============
 
 Agents are created by invoking ``Agent(value)`` passing in the Agent's initial
 value and providing an implicit ``ExecutionContext`` to be used for it, for these
@@ -105,6 +105,12 @@ as-is. They are so-called 'persistent'.
 Example of monadic usage:
 
 .. includecode:: code/docs/agent/AgentDocSpec.scala#monadic-example
+
+Configuration
+=============
+
+There are several configuration properties for the agents module, please refer
+to the :ref:`reference configuration <config-akka-agent>`.
 
 Deprecated Transactional Agents
 ===============================

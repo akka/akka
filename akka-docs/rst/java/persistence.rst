@@ -679,3 +679,10 @@ or
 .. includecode:: ../scala/code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-native-config
 
 in your Akka configuration. The LevelDB Java port is for testing purposes only.
+
+Configuration
+=============
+
+There are several configuration properties for the persistence module, please refer
+to the :ref:`reference configuration <config-akka-persistence>`.
+

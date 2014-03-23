@@ -710,3 +710,10 @@ State machines
 State machines can be persisted by mixing in the ``FSM`` trait into processors.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#fsm-example
+
+Configuration
+=============
+
+There are several configuration properties for the persistence module, please refer
+to the :ref:`reference configuration <config-akka-persistence>`.
+
