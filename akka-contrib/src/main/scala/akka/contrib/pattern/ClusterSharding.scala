@@ -180,6 +180,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     }
     val HasNecessaryClusterRole: Boolean = Role.forall(cluster.selfRoles.contains)
     val GuardianName: String = config.getString("guardian-name")
+    val CoordinatorFailureBackoff = config.getDuration("coordinator-failure-backoff", MILLISECONDS).millis
     val RetryInterval: FiniteDuration = config.getDuration("retry-interval", MILLISECONDS).millis
     val BufferSize: Int = config.getInt("buffer-size")
     val HandOffTimeout: FiniteDuration = config.getDuration("handoff-timeout", MILLISECONDS).millis
@@ -359,11 +360,12 @@ private[akka] class ClusterShardingGuardian extends Actor {
     case Start(typeName, entryProps, idExtractor, shardResolver, allocationStrategy) ⇒
       val encName = URLEncoder.encode(typeName, "utf-8")
       val coordinatorSingletonManagerName = encName + "Coordinator"
-      val coordinatorPath = (self.path / coordinatorSingletonManagerName / "singleton").toStringWithoutAddress
+      val coordinatorPath = (self.path / coordinatorSingletonManagerName / "singleton" / "coordinator").toStringWithoutAddress
       val shardRegion = context.child(encName).getOrElse {
         if (HasNecessaryClusterRole && context.child(coordinatorSingletonManagerName).isEmpty) {
-          val singletonProps = ShardCoordinator.props(handOffTimeout = HandOffTimeout, rebalanceInterval = RebalanceInterval,
-            snapshotInterval = SnapshotInterval, allocationStrategy)
+          val coordinatorProps = ShardCoordinator.props(handOffTimeout = HandOffTimeout,
+            rebalanceInterval = RebalanceInterval, snapshotInterval = SnapshotInterval, allocationStrategy)
+          val singletonProps = ShardCoordinatorSupervisor.props(CoordinatorFailureBackoff, coordinatorProps)
           context.actorOf(ClusterSingletonManager.props(
             singletonProps,
             singletonName = "singleton",
@@ -849,6 +851,40 @@ class ShardRegion(
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+object ShardCoordinatorSupervisor {
+  /**
+   * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
+   */
+  def props(failureBackoff: FiniteDuration, coordinatorProps: Props): Props =
+    Props(classOf[ShardCoordinatorSupervisor], failureBackoff, coordinatorProps)
+
+  /**
+   * INTERNAL API
+   */
+  private case object StartCoordinator
+}
+
+class ShardCoordinatorSupervisor(failureBackoff: FiniteDuration, coordinatorProps: Props) extends Actor {
+  import ShardCoordinatorSupervisor._
+
+  def startCoordinator(): Unit = {
+    // it will be stopped in case of PersistenceFailure
+    context.watch(context.actorOf(coordinatorProps, "coordinator"))
+  }
+
+  override def preStart(): Unit = startCoordinator()
+
+  def receive = {
+    case Terminated(_) ⇒
+      import context.dispatcher
+      context.system.scheduler.scheduleOnce(failureBackoff, self, StartCoordinator)
+    case StartCoordinator ⇒ startCoordinator()
+  }
+}
+
+/**
+ * @see [[ClusterSharding$ ClusterSharding extension]]
+ */
 object ShardCoordinator {
 
   import ShardRegion.ShardId
@@ -941,7 +977,10 @@ object ShardCoordinator {
    * i.e. new members in the cluster. There is a configurable threshold of how large the difference
    * must be to begin the rebalancing. The number of ongoing rebalancing processes can be limited.
    */
-  class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int) extends ShardAllocationStrategy {
+  @SerialVersionUID(1L)
+  class LeastShardAllocationStrategy(rebalanceThreshold: Int, maxSimultaneousRebalance: Int)
+    extends ShardAllocationStrategy with Serializable {
+
     override def allocateShard(requester: ActorRef, shardId: ShardId,
                                currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]]): ActorRef = {
       val (regionWithLeastShards, _) = currentShardAllocations.minBy { case (_, v) ⇒ v.size }

@@ -91,7 +91,8 @@ trait Processor extends Actor with Recovery {
         else {
           val errorMsg = "Processor killed after persistence failure " +
             s"(processor id = [${processorId}], sequence nr = [${p.sequenceNr}], payload class = [${p.payload.getClass.getName}]). " +
-            "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages."
+            "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages. " +
+            "PersistenceFailure was caused by: " + cause
           throw new ActorKilledException(errorMsg)
         }
       case LoopMessageSuccess(m) ⇒ process(receive, m)

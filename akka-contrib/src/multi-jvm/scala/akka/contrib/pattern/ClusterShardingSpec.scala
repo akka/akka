@@ -45,9 +45,9 @@ object ClusterShardingSpec extends MultiNodeConfig {
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
     akka.persistence.journal.leveldb-shared.store {
       native = off
-      dir = "target/shared-journal"
+      dir = "target/journal-ClusterShardingSpec"
     }
-    akka.persistence.snapshot-store.local.dir = "target/snapshots"
+    akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingSpec"
     akka.contrib.cluster.sharding {
       role = backend
       retry-interval = 1 s
@@ -159,9 +159,10 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
   def createCoordinator(): Unit = {
     val allocationStrategy = new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1)
+    val coordinatorProps = ShardCoordinator.props(handOffTimeout = 10.second, rebalanceInterval = 2.seconds,
+      snapshotInterval = 3600.seconds, allocationStrategy)
     system.actorOf(ClusterSingletonManager.props(
-      singletonProps = ShardCoordinator.props(handOffTimeout = 10.second, rebalanceInterval = 2.seconds,
-        snapshotInterval = 3600.seconds, allocationStrategy),
+      singletonProps = ShardCoordinatorSupervisor.props(failureBackoff = 5.seconds, coordinatorProps),
       singletonName = "singleton",
       terminationMessage = PoisonPill,
       role = None),
@@ -171,7 +172,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
   lazy val region = system.actorOf(ShardRegion.props(
     entryProps = Props[Counter],
     role = None,
-    coordinatorPath = "/user/counterCoordinator/singleton",
+    coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
     retryInterval = 1.second,
     bufferSize = 1000,
     idExtractor = idExtractor,
@@ -441,7 +442,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     runOn(sixth) {
       val proxy = system.actorOf(ShardRegion.proxyProps(
         role = None,
-        coordinatorPath = "/user/counterCoordinator/singleton",
+        coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
         retryInterval = 1.second,
         bufferSize = 1000,
         idExtractor = idExtractor,
