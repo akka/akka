@@ -416,35 +416,15 @@ Listing of the Reference Configuration
 
 Each Akka module has a reference configuration file with the default values.
 
+.. _config-akka-actor:
+
 akka-actor
 ~~~~~~~~~~
 
 .. literalinclude:: ../../../akka-actor/src/main/resources/reference.conf
    :language: none
 
-akka-remote
-~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
-   :language: none
-
-akka-testkit
-~~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
-   :language: none
-
-akka-camel
-~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-camel/src/main/resources/reference.conf
-   :language: none
-
-akka-cluster
-~~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
-   :language: none
+.. _config-akka-agent:
 
 akka-agent
 ~~~~~~~~~~
@@ -452,11 +432,55 @@ akka-agent
 .. literalinclude:: ../../../akka-agent/src/main/resources/reference.conf
    :language: none
 
+.. _config-akka-camel:
+
+akka-camel
+~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-camel/src/main/resources/reference.conf
+   :language: none
+
+.. _config-akka-cluster:
+
+akka-cluster
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-cluster/src/main/resources/reference.conf
+   :language: none
+
+.. _config-akka-multi-node-testkit:
+
+akka-multi-node-testkit
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-multi-node-testkit/src/main/resources/reference.conf
+   :language: none
+
+.. _config-akka-persistence:
+
 akka-persistence
 ~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../../akka-persistence/src/main/resources/reference.conf
    :language: none
+
+.. _config-akka-remote:
+
+akka-remote
+~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-remote/src/main/resources/reference.conf
+   :language: none
+
+.. _config-akka-testkit:
+
+akka-testkit
+~~~~~~~~~~~~
+
+.. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
+   :language: none
+
+.. _config-akka-zeromq:
 
 akka-zeromq
 ~~~~~~~~~~~
