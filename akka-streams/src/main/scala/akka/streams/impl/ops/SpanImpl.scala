@@ -3,9 +3,13 @@ package akka.streams.impl.ops
 import akka.streams.Operation.{ SingletonSource, Source, Span }
 import akka.streams.impl._
 
-class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: Span[I]) extends DynamicSyncOperation[I] {
+class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], ctx: ContextEffects, span: Span[I]) extends DynamicSyncOperation[I] {
+  override def toString: String = s"Span(${span.p.getClass.getSimpleName})"
+
   def initial: State = WaitingForRequest
   val subSource = new DynamicSyncSource {
+    override def toString: String = "SpanChildSource"
+
     def initial: State = SubCompleted
   }
 
@@ -33,14 +37,14 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
       subStreamsRequested -= 1
 
       if (span.p(element)) {
-        downstream.next(SingletonSource(element)) ~ {
+        downstream.next(Source(element)) ~ {
           if (subStreamsRequested > 0) upstream.requestMore(1)
           else Continue
         }
       } else {
         val running = new Subscribing(element)
         become(running)
-        downstream.next(InternalSource(running.onSubscribed))
+        downstream.next(ctx.internalProducer(running.onSubscribed))
       }
     }
     def handleComplete(): Effect = downstream.complete
@@ -48,11 +52,11 @@ class SpanImpl[I](upstream: Upstream, downstream: Downstream[Source[I]], span: S
   }
   class Subscribing(firstElement: I) extends RejectNext {
     var completed = false
-    def onSubscribed(downstream: Downstream[I]): (SyncSource, Effect) = {
+    def onSubscribed(downstream: Downstream[I]): SyncSource = {
       become(
         if (completed) CompleteAfter(downstream, firstElement)
         else FirstElementUndelivered(downstream, firstElement))
-      (subSource, Continue)
+      subSource
     }
 
     def handleRequestMore(n: Int): Effect = { subStreamsRequested += n; Continue }

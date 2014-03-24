@@ -1,4 +1,4 @@
-package rx.async.tck
+package akka.streams
 
 import akka.actor.ActorSystem
 import org.testng.annotations.AfterClass

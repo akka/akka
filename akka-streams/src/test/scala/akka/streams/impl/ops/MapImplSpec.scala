@@ -23,12 +23,10 @@ class MapImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
     "propagate complete" in {
       val impl = newImpl()
       impl.handleComplete() should be(DownstreamComplete)
-      expectIllegalState(impl)
     }
     "propagate error" in {
       val impl = newImpl()
       impl.handleError(TestException) should be(DownstreamError(TestException))
-      expectIllegalState(impl)
     }
     "map using the user function onNext element" in {
       val impl = newImpl()
@@ -40,13 +38,7 @@ class MapImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
         val impl = new MapImpl(upstream, downstream, bias42)
         impl.handleNext(42) should be(DownstreamNext(42))
         impl.handleNext(38) should be(DownstreamError(TestException) ~ UpstreamCancel)
-        expectIllegalState(impl)
       }
     }
-  }
-
-  def expectIllegalState(impl: SyncOperation[Int]): Unit = {
-    intercept[IllegalStateException](impl.handleRequestMore(12))
-    intercept[IllegalStateException](impl.handleNext(12))
   }
 }

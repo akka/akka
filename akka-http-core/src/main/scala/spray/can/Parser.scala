@@ -45,5 +45,5 @@ class Parser(settings: ServerSettings) {
     }
   def normalize(req: HttpRequest) = req.withEffectiveUri(https, settings.defaultHostHeader)
 
-  def onComplete(parser: Parser): Seq[ParsedPartOrResponse] = Nil
+  def onComplete(parser: Parser): collection.immutable.Seq[ParsedPartOrResponse] = Nil
 }

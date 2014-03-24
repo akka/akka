@@ -17,9 +17,9 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
         flatten.handleRequestMore(3) should be(Continue)
-        val (subDownstream, res) = onSubscribe(SubUpstream)
+        val subDownstream = onSubscribe(SubUpstream)
         // should now request all previously requested elements
-        res should be(RequestMoreFromSubstream(13))
+        subDownstream.start() should be(RequestMoreFromSubstream(13))
       }
     }
     "while consuming substream" - {
@@ -27,25 +27,26 @@ class FlattenImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpe
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
-        val (subDownstream, res) = onSubscribe(SubUpstream)
-        res should be(RequestMoreFromSubstream(11))
+        val subDownstream = onSubscribe(SubUpstream)
+        subDownstream.start() should be(RequestMoreFromSubstream(11))
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
+        flatten.handleRequestMore(5) should be(RequestMoreFromSubstream(5))
         subDownstream.handleNext(8.7f) should be(DownstreamNext(8.7f))
       }
       "go on with super stream when substream is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
-        val (subDownstream, res) = onSubscribe(SubUpstream)
-        res should be(RequestMoreFromSubstream(11))
+        val subDownstream = onSubscribe(SubUpstream)
+        subDownstream.start() should be(RequestMoreFromSubstream(11))
         subDownstream.handleComplete() should be(UpstreamRequestMore(1))
       }
       "eventually close to downstream when super stream closes and last substream is depleted" in new UninitializedSetup {
         flatten.handleRequestMore(10) should be(UpstreamRequestMore(1))
         flatten.handleRequestMore(1) should be(Continue) // don't request more substreams while one is still pending
         val SubscribeToProducer(CustomProducer, onSubscribe) = flatten.handleNext(CustomSource)
-        val (subDownstream, res) = onSubscribe(SubUpstream)
-        res should be(RequestMoreFromSubstream(11))
+        val subDownstream = onSubscribe(SubUpstream)
+        subDownstream.start() should be(RequestMoreFromSubstream(11))
         subDownstream.handleNext(1.5f) should be(DownstreamNext(1.5f))
         flatten.handleComplete() should be(Continue)
         subDownstream.handleNext(8.3f) should be(DownstreamNext(8.3f))

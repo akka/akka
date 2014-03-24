@@ -1,8 +1,7 @@
 package akka.streams.impl
 
 import scala.language.existentials
-import rx.async.spi.{ Publisher, Subscription, Subscriber }
-import scala.util.control.NonFatal
+import asyncrx.spi.{ Publisher, Subscription, Subscriber }
 
 /** Predefined effects */
 object BasicEffects {
@@ -31,6 +30,7 @@ object BasicEffects {
 
   case class RequestMoreFromSubscription(subscription: Subscription, n: Int) extends ExternalEffect {
     require(n > 0)
+    require(subscription ne null)
     def run(): Unit = subscription.requestMore(n)
   }
   case class CancelSubscription(subscription: Subscription) extends ExternalEffect {
@@ -73,20 +73,12 @@ object BasicEffects {
     def runOne(): Effect = left.handleRequestMore(n)
   }
   case class CancelSource(left: SyncSource) extends SingleStep {
-    val stacktrace = Thread.currentThread().getStackTrace
-    def runOne(): Effect =
-      try left.handleCancel()
-      catch {
-        case e ⇒
-          val ex = new RuntimeException("RuntimeException during handleCancel", e)
-          ex.setStackTrace(stacktrace)
-          throw ex
-      }
+    def runOne(): Effect = left.handleCancel()
   }
 
   def forSource[B](source: SyncSource): Upstream =
     new Upstream {
       val requestMore: Int ⇒ Effect = RequestMoreFromSource(source, _)
-      def cancel: Effect = CancelSource(source)
+      val cancel: Effect = CancelSource(source)
     }
 }

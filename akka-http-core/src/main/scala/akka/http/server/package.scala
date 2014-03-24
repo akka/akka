@@ -1,7 +1,7 @@
 package akka.http
 
 import spray.http.{ HttpResponsePart, HttpResponse, HttpRequestPart, HttpRequest }
-import rx.async.api.{ Consumer, Producer }
+import asyncrx.api.{ Consumer, Producer }
 import akka.util.ByteString
 import scala.concurrent.Future
 

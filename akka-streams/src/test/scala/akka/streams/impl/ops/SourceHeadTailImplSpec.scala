@@ -3,7 +3,7 @@ package akka.streams.impl.ops
 import org.scalatest.{ FreeSpec, ShouldMatchers }
 import akka.streams.impl._
 import akka.streams.Operation.Source
-import rx.async.spi.Subscription
+import asyncrx.spi.Subscription
 
 class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOperationSpec {
   class MockDownstream[I] extends Downstream[I] {
@@ -25,6 +25,7 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
 
   val S1Downstream = new MockDownstream[Int]
   val S2Downstream = new MockDownstream[Int]
+  val UpstreamConsPlaceholder: Downstream[Int] ⇒ SyncSource = _ ⇒ ???
 
   "SourceHeadTailImpl should" - {
     "complete downstream immediately when upstream is already completed" in {
@@ -35,9 +36,13 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
       "work for one substream" in {
         val impl = implementation()
         impl.handleRequestMore(1) should be(UpstreamRequestMore(1))
-        val (1, internal) = impl.handleNext(Seq(1, 2, 3, 4)).runToResult().expectDownstreamNext[(Int, Source[Int])]()
+        val prelimResult = impl.handleNext(Seq(1, 2, 3, 4))
+
+        // complete during subscription
+        impl.handleComplete() should be(Continue)
+
+        val Effects(Vector(DownstreamNext((1, internal: Source[Int] @unchecked)), DownstreamComplete)) = prelimResult.runToResult()
         val handler = internal.expectInternalSourceHandler()
-        impl.handleComplete() should be(DownstreamComplete)
 
         val (s1, Continue) = handler(S1Downstream)
         s1.handleRequestMore(2).runToResult() should be(S1Downstream.next(2) ~ S1Downstream.next(3))
@@ -67,25 +72,24 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         val impl = implementation()
         impl.handleRequestMore(2) should be(UpstreamRequestMore(1))
 
-        val UpstreamConsPlaceholder: Downstream[Int] ⇒ (SyncSource, Effect) = _ ⇒ ???
-        val s1Source = InternalSource[Int](UpstreamConsPlaceholder)
+        val s1Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
         val S1Upstream = new MockUpstream
 
-        val ConnectInternalSourceSink(UpstreamConsPlaceholder, downstreamCons) = impl.handleNext(s1Source)
-        val (s1, request) = downstreamCons(S1Upstream)
-        request should be(S1Upstream.requestMore(1))
+        val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
+        val s1 = downstreamCons(S1Upstream)
+        s1.start() should be(S1Upstream.requestMore(1))
         val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)
         val (42, internal) = downstreamNext.expectDownstreamNext[(Int, Source[Int])]()
         val handler1 = internal.expectInternalSourceHandler()
 
-        val s2Source = InternalSource[Int](UpstreamConsPlaceholder)
+        val s2Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
         val S2Upstream = new MockUpstream
 
         val (d1, Continue) = handler1(S1Downstream)
 
-        val ConnectInternalSourceSink(UpstreamConsPlaceholder, downstreamCons2) = impl.handleNext(s2Source)
-        val (s2, request2) = downstreamCons(S2Upstream)
-        request2 should be(S2Upstream.requestMore(1))
+        val ConnectInternalSourceSink(_, downstreamCons2) = impl.handleNext(s2Source)
+        val s2 = downstreamCons(S2Upstream)
+        s2.start() should be(S2Upstream.requestMore(1))
 
         d1.handleRequestMore(3) should be(S1Upstream.requestMore(3))
         s1.handleNext(38) should be(S1Downstream.next(38))
@@ -98,6 +102,24 @@ class SourceHeadTailImplSpec extends FreeSpec with ShouldMatchers with SyncOpera
         s1.handleNext(999) should be(S1Downstream.next(999))
         s2.handleNext(555) should be(S2Downstream.next(555))
         s1.handleComplete() should be(S1Downstream.complete)
+      }
+      "work for one substream when substream is closed during internal wiring" in {
+        val impl = implementation()
+        impl.handleRequestMore(2) should be(UpstreamRequestMore(1))
+
+        val UpstreamConsPlaceholder: Downstream[Int] ⇒ SyncSource = _ ⇒ ???
+        val s1Source = TestContextEffects.internalProducer[Int](UpstreamConsPlaceholder)
+        val S1Upstream = new MockUpstream
+
+        val ConnectInternalSourceSink(_, downstreamCons) = impl.handleNext(s1Source)
+        val s1 = downstreamCons(S1Upstream)
+        s1.start() should be(S1Upstream.requestMore(1))
+        val Effects(Vector(downstreamNext, UpstreamRequestMore(1))) = s1.handleNext(42)
+        s1.handleComplete() should be(Continue)
+
+        val (42, internal) = downstreamNext.expectDownstreamNext[(Int, Source[Int])]()
+        val handler1 = internal.expectInternalSourceHandler()
+        val (d1, S1Downstream.complete) = handler1(S1Downstream)
       }
     }
     "when a substream has no elements" in pending

@@ -1,187 +1,182 @@
 package akka.streams.impl
 
-import rx.async.api.{ Consumer, Producer, Processor }
-import rx.async.spi.{ Publisher, Subscription, Subscriber }
-import akka.actor.{ ActorRef, Props, Actor }
-import akka.streams.{ Producer, AbstractProducer, Operation, ActorBasedImplementationSettings }
+import asyncrx.api.Processor
+import asyncrx.spi.{ Publisher, Subscription, Subscriber }
+import akka.actor.{ PoisonPill, ActorRef, Props, Actor }
+import akka.streams.{ Operation, ActorBasedStreamGeneratorSettings }
 import akka.streams.Operation._
-import rx.async.api.Producer
-import rx.async.spi
-import scala.concurrent.ExecutionContext
+import asyncrx.api.Producer
+import scala.concurrent.{ Promise, Await, ExecutionContext }
+import akka.util.Timeout
+import scala.util.{ Try, Success }
 
 object Implementation {
-  def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedImplementationSettings): Processor[I, O] =
+  def toProcessor[I, O](operation: Operation[I, O], settings: ActorBasedStreamGeneratorSettings): Processor[I, O] =
     new OperationProcessor(operation, settings)
 
-  def toProducer[O](source: Source[O], settings: ActorBasedImplementationSettings): Producer[O] =
-    new SourceProducer[O](source, settings)
+  def toProducer[O](source: Source[O], settings: ActorBasedStreamGeneratorSettings): Producer[O] =
+    source match {
+      // just unpack the internal producer
+      case FromProducerSource(i: InternalProducer[O]) ⇒ i
+      case _ ⇒ new SourceProducer[O](source, settings)
+    }
 
-  def runPipeline(pipeline: Pipeline[_], settings: ActorBasedImplementationSettings): Unit =
-    settings.refFactory.actorOf(Props(new PipelineActor(pipeline)))
+  def runPipeline(pipeline: Pipeline[_], settings: ActorBasedStreamGeneratorSettings): Unit =
+    settings.refFactory.actorOf(Props(new PipelineActor(pipeline, settings)))
 }
 
-private class SourceProducer[O](source: Source[O], val settings: ActorBasedImplementationSettings) extends ProducerImplementationBits[O] {
-  @volatile protected var running = true
-  val actor = settings.refFactory.actorOf(Props(new ProducerProcessorActor))
+private class SourceProducer[O](source: Source[O], val settings: ActorBasedStreamGeneratorSettings) extends ProducerImplementationBits[O] { outer ⇒
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef = settings.refFactory.actorOf(Props(new SourceProducerActor(promise)))
 
-  class ProducerProcessorActor extends ProducerActor {
-    val sourceImpl = OperationImpl(DownstreamSideEffects, ActorContextEffects, source)
-    Effect.run(sourceImpl.start())
-    protected def requestFromUpstream(elements: Int): Unit = Effect.run(sourceImpl.handleRequestMore(elements))
+  class SourceProducerActor(promise: Promise[Publisher[O]]) extends ProcessorActor {
+    protected def settings: ActorBasedStreamGeneratorSettings = outer.settings
+    promise.complete(Try { //FIXME This design choice means that if the SourceProducerActor is restarted, this complete will fail—sounds bad.
+      ActorContextEffects.internalProducer(OperationImpl(_: Downstream[O], ActorContextEffects, source), ShutdownActor).getPublisher
+    })
 
-    def receive = Running
-
-    def Running: Receive = RunProducer.orElse {
-      case RunDeferred(body) ⇒ body()
+    def receive = {
+      case RunEffects(e) ⇒ settings.effectExecutor.run(e)
     }
   }
 }
 
-private class OperationProcessor[I, O](val operation: Operation[I, O], val settings: ActorBasedImplementationSettings) extends Processor[I, O] with ProducerImplementationBits[O] {
-  def isRunning = running
+private class OperationProcessor[I, O](val operation: Operation[I, O],
+                                       val settings: ActorBasedStreamGeneratorSettings) extends Processor[I, O] with ProducerImplementationBits[O] { outer ⇒
+  @volatile var finished = false
 
+  // TODO: refactor into ConsumerImplementationBits to implement SinkConsumer
   val getSubscriber: Subscriber[I] =
     new Subscriber[I] {
-      def onSubscribe(subscription: Subscription): Unit = if (running) actor ! OnSubscribed(subscription)
-      def onNext(element: I): Unit = if (running) actor ! OnNext(element)
-      def onComplete(): Unit = if (running) actor ! OnComplete
-      def onError(cause: Throwable): Unit = if (running) actor ! OnError(cause)
+      def onSubscribe(subscription: Subscription): Unit =
+        if (finished) throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+        else actor ! OnSubscribed(subscription)
+      def onNext(element: I): Unit = sendIfNotFinished(OnNext(element))
+      def onComplete(): Unit = sendIfNotFinished(OnComplete)
+      def onError(cause: Throwable): Unit = sendIfNotFinished(OnError(cause))
+
+      def sendIfNotFinished(msg: AnyRef): Unit =
+        if (!finished) actor ! msg
+      // else ignore
     }
 
-  @volatile protected var running = true
-  val actor = settings.refFactory.actorOf(Props(new OperationProcessorActor))
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef =
+    settings.refFactory.actorOf(Props(new OperationProcessorActor(promise)))
 
   case class OnSubscribed(subscription: Subscription)
   case class OnNext(element: I)
   case object OnComplete
   case class OnError(cause: Throwable)
 
-  class OperationProcessorActor extends ProducerActor {
-    val impl = OperationImpl(UpstreamSideEffects, DownstreamSideEffects, ActorContextEffects, operation)
-    Effect.run(impl.start())
+  class OperationProcessorActor(promise: Promise[Publisher[O]]) extends ProcessorActor {
+    protected def settings: ActorBasedStreamGeneratorSettings = outer.settings
+
+    case object OperationSource extends SyncSource {
+      var downstream: Downstream[O] = _
+      def receiveDownstream(downstream: Downstream[O]): SyncSource = {
+        this.downstream = downstream
+        this
+      }
+
+      def handleRequestMore(elements: Int): Effect =
+        if (upstream eq null) {
+          needToRequest += elements
+          Continue
+        } else impl.handleRequestMore(elements)
+
+      def handleCancel(): Effect =
+        if (upstream eq null) {
+          cancelling = true
+          context.become(Cancelled)
+          Continue
+        } else impl.handleCancel()
+    }
+    promise.complete(Success(ActorContextEffects.internalProducer(OperationSource.receiveDownstream, ShutdownActor).getPublisher))
+    val impl = OperationImpl(UpstreamSideEffects, OperationSource.downstream, ActorContextEffects, operation)
+    settings.effectExecutor.run(impl.start())
     var upstream: Subscription = _
+    lazy val UpstreamSideEffects = BasicEffects.forSubscription(upstream)
     var needToRequest = 0
 
-    protected def requestFromUpstream(elements: Int): Unit =
-      if (upstream eq null) needToRequest += elements
-      else Effect.run(impl.handleRequestMore(elements))
-
-    def receive = WaitingForUpstream
+    override def receive = WaitingForUpstream
+    var cancelling = false
+    override def shutdown(): Unit =
+      // if cancelling shutdown needs to be deferred until after a possible subscription
+      if (!cancelling) stop()
 
     def WaitingForUpstream: Receive = {
       case OnSubscribed(subscription) ⇒
+        assert(subscription != null)
         upstream = subscription
         context.become(Running)
         if (needToRequest > 0) {
-          Effect.run(impl.handleRequestMore(needToRequest))
+          settings.effectExecutor.run(impl.handleRequestMore(needToRequest))
           needToRequest = 0
         }
-      case Subscribe(sub)    ⇒ fanOutBox.subscribe(sub)
-
-      case RunDeferred(body) ⇒ body()
+      case RunEffects(e) ⇒ settings.effectExecutor.run(e)
     }
-    def Running: Receive = RunProducer orElse {
-      case OnNext(element)   ⇒ Effect.run(impl.handleNext(element))
-      case OnComplete        ⇒ Effect.run(impl.handleComplete())
-      case OnError(cause)    ⇒ Effect.run(impl.handleError(cause))
-
-      case RunDeferred(body) ⇒ body()
+    def Cancelled: Receive = {
+      case OnSubscribed(subscription) ⇒
+        subscription.cancel()
+        stop()
+    }
+    def Running: Receive = {
+      case OnNext(element) ⇒ settings.effectExecutor.run(impl.handleNext(element))
+      case OnComplete      ⇒ settings.effectExecutor.run(impl.handleComplete())
+      case OnError(cause)  ⇒ settings.effectExecutor.run(impl.handleError(cause))
+      case RunEffects(e)   ⇒ settings.effectExecutor.run(e)
+    }
+    def Finishing: Receive = {
+      case OnSubscribed(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+      case _                          ⇒ // ignore everything else
     }
 
-    lazy val UpstreamSideEffects = BasicEffects.forSubscription(upstream)
+    def stop(): Unit = {
+      finished = true
+      context.become(Finishing)
+      self ! PoisonPill
+    }
   }
 }
 
-class PipelineActor(pipeline: Pipeline[_]) extends Actor with ProcessorActorImpl {
-  Effect.run(OperationImpl(ActorContextEffects, pipeline).start())
+class PipelineActor(pipeline: Pipeline[_], val settings: ActorBasedStreamGeneratorSettings) extends ProcessorActor {
+  settings.effectExecutor.run(OperationImpl(ActorContextEffects, pipeline).start())
 
   def receive: Receive = {
-    case RunDeferred(body) ⇒ body()
+    case RunEffects(e) ⇒ settings.effectExecutor.run(e)
   }
 }
 
-trait ProducerImplementationBits[O] extends Producer[O] with Publisher[O] {
-  protected def running: Boolean
-  protected def actor: ActorRef
-  protected def settings: ActorBasedImplementationSettings
+trait ProducerImplementationBits[O] extends Producer[O] {
+  protected def createActor(promise: Promise[Publisher[O]]): ActorRef
+  protected def settings: ActorBasedStreamGeneratorSettings
 
-  def getPublisher: Publisher[O] = this
-  def subscribe(subscriber: Subscriber[O]): Unit = if (running) actor ! Subscribe(subscriber)
+  var getPublisher: Publisher[O] = _
+  import scala.concurrent.duration._
+  implicit val timeout = Timeout(1.second)
+  val actor = {
+    val publisherPromise = Promise[Publisher[O]]()
+    val res = createActor(publisherPromise)
 
-  case class Subscribe(subscriber: Subscriber[O])
-  case class RequestMore(subscriber: Subscriber[O], elements: Int)
-  case class CancelSubscription(subscriber: Subscriber[O])
-
-  trait ProducerActor extends Actor with ProcessorActorImpl { outer ⇒
-    protected def requestFromUpstream(elements: Int): Unit
-
-    val fanOutBox = new AbstractProducer[O] with Subscriber[O] {
-      protected def requestFromUpstream(elements: Int): Unit = outer.requestFromUpstream(elements)
-      protected def handleOverflow(value: O): Unit = {} // drop, TODO: maybe log?
-
-      startWith(Producer.State.Active)
-
-      def onSubscribe(subscription: spi.Subscription): Unit = ???
-      def onNext(element: O): Unit = pushToDownstream(element)
-      def onComplete(): Unit = completeDownstream()
-      def onError(cause: Throwable): Unit = completeDownstreamWithError(cause)
-
-      override protected def requestFromUpstreamIfRequired(): Unit =
-        runInThisActor(super.requestFromUpstreamIfRequired())
-      override protected def unregisterSubscription(subscription: Subscription): Unit =
-        runInThisActor(super.unregisterSubscription(subscription))
-    }
-
-    def DownstreamSideEffects = BasicEffects.forSubscriber(fanOutBox)
-
-    def RunProducer: Receive = {
-      case Subscribe(sub) ⇒ fanOutBox.subscribe(sub)
-    }
+    getPublisher = Await.result(publisherPromise.future, 1.seconds) //FIXME We shouldn't have to pull the Publisher out like this
+    res
   }
 }
 
-trait ProcessorActorImpl { _: Actor ⇒
+abstract class ProcessorActor extends Actor {
+  protected def settings: ActorBasedStreamGeneratorSettings
+  def shutdown(): Unit = context.stop(self)
+
   object ActorContextEffects extends AbstractContextEffects {
-    override def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect =
-      Effect.step({
-        val FromConsumerSink(consumer: Consumer[O]) = sink
-        class SubSubscription(source: SyncSource) extends Subscription {
-          def requestMore(elements: Int): Unit = runEffectInThisActor(source.handleRequestMore(elements))
-          def cancel(): Unit = runEffectInThisActor(source.handleCancel())
-        }
-        val (handler, effect) = onSubscribe(BasicEffects.forSubscriber(consumer.getSubscriber))
-        consumer.getSubscriber.onSubscribe(new SubSubscription(handler))
-        effect
-      }, s"SubscribeFrom($sink)")
+    def defaultInitialBufferSize: Int = settings.initialFanOutBufferSize
+    def defaultMaxBufferSize: Int = settings.maxFanOutBufferSize
 
-    def expose[O](source: Source[O]): Producer[O] = {
-      source match {
-        case InternalSource(handler) ⇒
-          object InternalProducer extends Producer[O] with Publisher[O] {
-            var singleSubscriber: Subscriber[O] = _
-            def subscribe(subscriber: Subscriber[O]): Unit = runEffectInThisActor {
-              require(singleSubscriber eq null) // TODO: add FanOutBox
-              this.singleSubscriber = subscriber
-              val (upstream, effect) = handler(BasicEffects.forSubscriber(subscriber))
-              subscriber.onSubscribe(new Subscription {
-                def requestMore(elements: Int): Unit = runEffectInThisActor(upstream.handleRequestMore(elements))
-                def cancel(): Unit = runEffectInThisActor(upstream.handleCancel())
-              })
-              effect
-            }
-
-            def getPublisher: Publisher[O] = this
-          }
-
-          InternalProducer
-      }
-    }
-
-    def runInContext(body: ⇒ Effect): Unit = runEffectInThisActor(body)
-    override implicit def executionContext: ExecutionContext = context.dispatcher
+    def runStrictInContext(effect: Effect): Unit = if (effect ne Continue) self ! RunEffects(effect)
+    def executionContext: ExecutionContext = context.dispatcher
+    def runEffectHere(effect: Effect): Unit = settings.effectExecutor.run(effect)
   }
-
-  case class RunDeferred(body: () ⇒ Unit)
-  def runInThisActor(body: ⇒ Unit): Unit = self ! RunDeferred(body _)
-  def runEffectInThisActor(body: ⇒ Effect): Unit = runInThisActor(Effect.run(body))
+  case object ShutdownActor extends ExternalEffect {
+    def run(): Unit = shutdown()
+  }
 }
+
+case class RunEffects(body: Effect)

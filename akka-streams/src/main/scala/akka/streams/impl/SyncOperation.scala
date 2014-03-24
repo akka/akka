@@ -6,7 +6,7 @@ import Operation.{ Sink, Source }
 /** Constructors for upstream effects */
 trait Upstream {
   val requestMore: Int ⇒ Effect
-  def cancel: Effect
+  val cancel: Effect
 }
 
 /** Constructors for downstream effects */
@@ -77,7 +77,7 @@ abstract class DynamicSyncSink[I] extends SyncSink[I] {
  *  An abstract SyncOperation implementation to be used as a base for SyncOperation implementations
  *  that implement their behavior as a state machine.
  */
-abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
+abstract class DynamicSyncOperation[I] extends SyncOperation[I] { outer ⇒
   type State = SyncOperation[I]
   private[this] var state: State = initial
 
@@ -93,5 +93,15 @@ abstract class DynamicSyncOperation[I] extends SyncOperation[I] {
 
   trait RejectNext extends State {
     def handleNext(element: I): Effect = throw new IllegalStateException("No element requested")
+  }
+
+  def Stopped(reason: String) = new State {
+    // ignore any further events that may have been lying in the effects queue
+    def handleRequestMore(n: Int): Effect = Continue
+    def handleCancel(): Effect = Continue
+
+    def handleNext(element: I): Effect = Continue
+    def handleComplete(): Effect = Continue
+    def handleError(cause: Throwable): Effect = Continue
   }
 }

@@ -2,9 +2,10 @@ package akka.streams
 
 import akka.actor.ActorSystem
 
-class ActorBasedImplementationSpec extends ImplementationFactorySpec
+class ActorBasedStreamGeneratorSpec extends StreamGeneratorSpec
   with ImplementationFactoryOperationSpec
-  with ImplementationFactoryProducerSpec {
+  with ImplementationFactoryProducerSpec
+  with ImplementationFactoryConsumerSpec {
   implicit lazy val system = ActorSystem()
-  def factoryWithFanOutBuffer(capacity: Int): ImplementationFactory = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system, capacity))
+  def factoryWithFanOutBuffer(capacity: Int): StreamGenerator = new ActorBasedStreamGenerator(ActorBasedStreamGeneratorSettings(system, maxFanOutBufferSize = capacity))
 }

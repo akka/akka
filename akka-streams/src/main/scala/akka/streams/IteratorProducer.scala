@@ -1,271 +1,120 @@
 package akka.streams
 
-import rx.async.api.{ Producer ⇒ Prod }
-import rx.async.spi.{ Subscriber, Publisher }
-import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
-
-object Producer {
-  def apply[T](iterable: Iterable[T]): Prod[T] = apply(iterable.iterator)
-  def apply[T](iterator: Iterator[T]): Prod[T] = new IteratorProducer[T](iterator)
-
-  sealed trait State
-  object State {
-    case object Active extends State
-    case object Completed extends State
-    case class Error(cause: Throwable) extends State
-  }
-}
+import scala.concurrent.ExecutionContext
+import asyncrx.spi
 
 /**
  * An efficient producer for iterators.
+ *
+ * CAUTION: This is a convenience wrapper designed for iterators over static collections.
+ * Do *NOT* use it for iterators on lazy collections or other implementations that do more
+ * than merely retrieve an element in their `next()` method!
  */
-class IteratorProducer[T](iterator: Iterator[T]) extends AbstractProducer[T] {
-  private final val UNLOCKED = 0
-  private final val LOCKED = 1
+class IteratorProducer[T](iterator: Iterator[T],
+                          maxBufferSize: Int = 16,
+                          maxRecursionLevel: Int = 32,
+                          maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
+  extends AbstractStrictProducer[T](initialBufferSize = 1, maxBufferSize, maxRecursionLevel, maxSyncBatchSize) {
 
-  private[this] val lock = new AtomicInteger(UNLOCKED) // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+  if (!iterator.hasNext) completeDownstream()
 
-  startWith(if (iterator.hasNext) Producer.State.Active else Producer.State.Completed)
-
-  protected def requestFromUpstream(elements: Int): Unit =
-    if (elements > 0) {
-      if (iterator.hasNext) {
+  @tailrec final protected def pushNext(count: Int): Unit =
+    if (iterator.hasNext) {
+      if (count > 0) {
         pushToDownstream(iterator.next())
-        requestFromUpstream(elements - 1)
-      } else completeDownstream()
-    }
-
-  protected def handleOverflow(value: T): Unit =
-    // we shouldn't see this as all pushing-to-downstream is synchronous to the `requestMore` calls from the downstream
-    throw new IllegalStateException
-
-  // outside Publisher interface, can potentially called from another thread,
-  // so we need to wrap with synchronization
-  override def subscribe(subscriber: Subscriber[T]): Unit =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
-      try super.subscribe(subscriber)
-      finally lock.set(UNLOCKED)
-    } else subscribe(subscriber)
-
-  // called from a Subscription, i.e. probably from another thread,
-  // so we need to wrap with synchronization
-  override protected def requestFromUpstreamIfRequired(): Unit =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
-      try super.requestFromUpstreamIfRequired()
-      finally lock.set(UNLOCKED)
-    } else super.requestFromUpstreamIfRequired()
-
-  // called from a Subscription, i.e. probably from another thread,
-  // so we need to wrap with synchronization
-  override def unregisterSubscription(subscription: Subscription) =
-    if (lock.compareAndSet(UNLOCKED, LOCKED)) {
-      try super.unregisterSubscription(subscription)
-      finally lock.set(UNLOCKED)
-    } else unregisterSubscription(subscription)
+        pushNext(count - 1)
+      }
+    } else completeDownstream()
 }
 
 /**
- * Implements basic subscriber management as well as efficient "slowest-subscriber-rate" downstream fan-out support.
+ * Base class for producers that can provide their elements synchronously.
+ *
+ * For efficiency it tries to produce elements synchronously before returning from `requestMore`.
+ * If the requested element count is > the given `maxSyncBatchSize` or there are still scheduled
+ * "productions" pending then (part of) the requested elements are produced asynchronously via the
+ * given executionContext.
+ *
+ * Also, in order to protect against stack overflow, the given `maxRecursionLevel` limits the number
+ * of nested call iterations between the fanout logic and the synchronous production logic provided
+ * by `AbstractStrictProducer`. If the `maxRecursionLevel` is surpassed the synchronous production
+ * loop is stopped and production of the remaining elements scheduled to the given executor.
  */
-abstract class AbstractProducer[T] extends Prod[T] with Publisher[T] {
-  import Producer.State
+abstract class AbstractStrictProducer[T](initialBufferSize: Int,
+                                         maxBufferSize: Int,
+                                         maxRecursionLevel: Int = 32,
+                                         maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
+  extends AbstractProducer[T](initialBufferSize, maxBufferSize) {
 
-  // optimize for small numbers of subscribers by keeping subscribers in a plain list
-  // this var must be initialized by the implementing class via a call to `startWith`
-  @volatile private[this] var stateBehavior: StateBehavior = _
+  private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
+  private[this] var pending = 0L
+  private[this] var recursionLevel = 0
 
-  // must be called in the constructor of the implementing class
-  protected def startWith(state: State): Unit =
-    stateBehavior = state match {
-      case State.Active       ⇒ new ActiveStateBehavior
-      case State.Completed    ⇒ new CompletedStateBehavior
-      case State.Error(cause) ⇒ new ErrorStateBehavior(cause)
-    }
+  /**
+   * Implement with the actual production logic.
+   * It should synchronously call `pushToDownstream(...)` the given number of times.
+   * If less than (or equal to!) `count` elements are still available `completeDownstream()` must be called after
+   * all remaining elements have been pushed.
+   */
+  protected def pushNext(count: Int): Unit
 
-  def getPublisher: Publisher[T] = this
-
-  def state: State = stateBehavior.state
-
-  def subscribe(subscriber: Subscriber[T]): Unit =
-    stateBehavior.subscribe(subscriber)
-
-  // called when our subscribers are currently ready to receive the given number of additional elements
-  protected def requestFromUpstream(elements: Int): Unit
-
-  // somehow handle incoming elements when we are not allowed to push them downstream (yet)
-  protected def handleOverflow(value: T): Unit
-
-  protected def pushToDownstream(value: T): Unit =
-    stateBehavior.pushToDownstream(value)
-
-  protected def completeDownstream(): Unit =
-    stateBehavior.completeDownstream()
-
-  protected def completeDownstreamWithError(cause: Throwable): Unit =
-    stateBehavior.completeDownstreamWithError(cause)
-
-  protected def requestFromUpstreamIfRequired(): Unit =
-    stateBehavior.requestFromUpstreamIfRequired()
-
-  protected def unregisterSubscription(subscription: Subscription): Unit =
-    stateBehavior.unregisterSubscription(subscription)
-
-  trait StateBehavior {
-    def state: State
-    def subscribe(subscriber: Subscriber[T]): Unit
-    def pushToDownstream(value: T): Unit
-    def completeDownstream(): Unit
-    def completeDownstreamWithError(cause: Throwable): Unit
-    def unregisterSubscription(subscription: Subscription): Unit
-    def requestFromUpstreamIfRequired(): Unit
+  protected def requestFromUpstream(elements: Int): Unit = {
+    recursionLevel += 1
+    try {
+      if (pending == 0) {
+        if (recursionLevel <= maxRecursionLevel) produce(elements)
+        else schedule(elements)
+      } else pending += elements // if we still have something scheduled we must not produce synchronously
+    } finally recursionLevel -= 1
   }
 
-  class ActiveStateBehavior extends StateBehavior {
-    @volatile private[this] var subscriptions: List[Subscription] = Nil
-    @volatile private[this] var pendingFromUpstream: Int = 0 // number of elements already requested and not yet received from upstream
-
-    def state: State = State.Active
-
-    def subscribe(subscriber: Subscriber[T]): Unit = {
-      @tailrec def allDifferentFromNewSubscriber(remaining: List[Subscription]): Boolean =
-        remaining match {
-          case head :: tail ⇒ if (head.subscriber ne subscriber) allDifferentFromNewSubscriber(tail) else false
-          case _            ⇒ true
-        }
-      val subs = subscriptions
-      if (allDifferentFromNewSubscriber(subs)) {
-        val subscription = new Subscription(subscriber)
-        subscriptions = subscription :: subs
-        subscriber.onSubscribe(subscription)
-      } else subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+  private def produce(elements: Long): Unit =
+    if (elements > maxSyncBatchSize) {
+      pushNext(maxSyncBatchSize)
+      schedule(elements - maxSyncBatchSize)
+    } else {
+      pushNext(elements.toInt)
+      pending = 0
     }
 
-    def pushToDownstream(value: T): Unit = {
-      @tailrec def allCanReceive(remaining: List[Subscription]): Boolean =
-        remaining match {
-          case head :: tail ⇒ if (head.get() > 0) allCanReceive(tail) else false
-          case _            ⇒ true
-        }
-      @tailrec def dispatchTo(remaining: List[Subscription]): Unit =
-        remaining match {
-          case head :: tail ⇒
-            head.dispatch(value); dispatchTo(tail)
-          case _ ⇒
-        }
-
-      pendingFromUpstream -= 1
-      // if we have a subscriber which cannot take this element we must not dispatch it to ANY subscriber,
-      // also, if we have no subscriber (any more), we cannot dispatch and therefore forward to overflow handling
-      val subs = subscriptions
-      if (subs.nonEmpty && allCanReceive(subs))
-        dispatchTo(subs)
-      else
-        handleOverflow(value)
-    }
-
-    def completeDownstream(): Unit = {
-      @tailrec def complete(remaining: List[Subscription]): Unit =
-        remaining match {
-          case head :: tail ⇒
-            head.complete()
-            complete(tail)
-          case _ ⇒
-        }
-      complete(subscriptions)
-      stateBehavior = new CompletedStateBehavior
-    }
-
-    def completeDownstreamWithError(cause: Throwable): Unit = {
-      @tailrec def error(remaining: List[Subscription]): Unit =
-        remaining match {
-          case head :: tail ⇒
-            head.error(cause)
-            error(tail)
-          case _ ⇒
-        }
-      error(subscriptions)
-      stateBehavior = new ErrorStateBehavior(cause)
-    }
-
-    def requestFromUpstreamIfRequired(): Unit = {
-      val subs = subscriptions
-      if (subs.nonEmpty) {
-        @tailrec def findMinRequested(remaining: List[Subscription], result: Int = Int.MaxValue): Int =
-          remaining match {
-            case head :: tail ⇒ findMinRequested(tail, math.min(result, head.get()))
-            case _            ⇒ result
-          }
-        val minReq = findMinRequested(subs)
-        val pfu = pendingFromUpstream
-        if (minReq > pfu) {
-          pendingFromUpstream = minReq
-          requestFromUpstream(minReq - pfu)
-        }
-      }
-    }
-
-    def unregisterSubscription(subscription: Subscription): Unit = {
-      // is non-tail recursion acceptable here? (it's the fastest impl but might stack overflow for large numbers of subscribers)
-      def removeFrom(remaining: List[Subscription]): List[Subscription] =
-        remaining match {
-          case head :: tail ⇒ if (head eq subscription) tail else head :: removeFrom(tail)
-          case _            ⇒ throw new IllegalStateException("Cannot find Subscription to unregister")
-        }
-      subscriptions = removeFrom(subscriptions)
-    }
+  private def schedule(newPending: Long): Unit = {
+    pending = newPending
+    executor.execute(
+      new Runnable {
+        @tailrec def run(): Unit =
+          if (locked.compareAndSet(false, true)) {
+            try produce(pending)
+            finally locked.set(false)
+          } else run()
+      })
   }
 
-  abstract class FinalStateBehavior extends StateBehavior {
-    def pushToDownstream(value: T): Unit = handleOverflow(value)
-    def requestFromUpstreamIfRequired(): Unit = () // we must ignore, since the Subscriber might not have seen our state change yet
-    def unregisterSubscription(subscription: Subscription): Unit = () // we must ignore
-  }
+  protected def shutdown(): Unit = cancelUpstream()
+  protected def cancelUpstream(): Unit = pending = 0
 
-  class CompletedStateBehavior extends FinalStateBehavior {
-    def state: State = State.Completed
-    def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onComplete()
-    def completeDownstream(): Unit = throw new IllegalStateException("Cannot completeDownstream() twice")
-    def completeDownstreamWithError(cause: Throwable): Unit = throw new IllegalStateException("Cannot error out on a completed stream.")
-  }
+  // outside Publisher interface, can potentially called from another thread,
+  // so we need to wrap with synchronization
+  @tailrec final override def subscribe(subscriber: spi.Subscriber[T]): Unit =
+    if (locked.compareAndSet(false, true)) {
+      try super.subscribe(subscriber)
+      finally locked.set(false)
+    } else subscribe(subscriber)
 
-  class ErrorStateBehavior(cause: Throwable) extends FinalStateBehavior {
-    def state: State = State.Error(cause)
-    def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
-    def completeDownstream(): Unit = throw new IllegalStateException("Cannot completeDownstream() in the error state")
-    def completeDownstreamWithError(cause: Throwable): Unit = throw new IllegalStateException("Cannot err out twice")
-  }
+  // called from `Subscription::requestMore`, i.e. from another thread
+  // so we need to add synchronisation here
+  @tailrec final override protected def moreRequested(subscription: Subscription, elements: Int): Unit =
+    if (locked.compareAndSet(false, true)) {
+      try super.moreRequested(subscription, elements)
+      finally locked.set(false)
+    } else moreRequested(subscription, elements)
 
-  protected class Subscription(val subscriber: Subscriber[T]) extends AtomicInteger with rx.async.spi.Subscription {
-    @volatile var cancelled = false
-
-    def requestMore(elements: Int): Unit =
-      if (cancelled) throw new IllegalStateException("Cannot request from a cancelled subscription")
-      else if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")
-      else {
-        addAndGet(elements)
-        requestFromUpstreamIfRequired()
-      }
-
-    def cancel(): Unit =
-      if (cancelled) throw new IllegalStateException("Cannot cancel an already cancelled subscription")
-      else {
-        cancelled = true
-        unregisterSubscription(this)
-      }
-
-    def dispatch(value: T): Unit = {
-      decrementAndGet()
-      subscriber.onNext(value)
-    }
-
-    def complete(): Unit = {
-      cancelled = true
-      subscriber.onComplete()
-    }
-    def error(cause: Throwable): Unit = {
-      cancelled = true
-      subscriber.onError(cause)
-    }
-  }
+  // called from a Subscription, i.e. probably from another thread,
+  // so we need to wrap with synchronization
+  @tailrec final override def unregisterSubscription(subscription: Subscription) =
+    if (locked.compareAndSet(false, true)) {
+      try super.unregisterSubscription(subscription)
+      finally locked.set(false)
+    } else unregisterSubscription(subscription)
 }

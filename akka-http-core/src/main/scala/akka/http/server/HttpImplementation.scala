@@ -10,18 +10,18 @@ import spray.http.ChunkedResponseStart
 import spray.can
 import spray.can.Parser
 import spray.can.server.ServerSettings
-import rx.async.api.Producer
+import asyncrx.api.Producer
 
 object HttpImplementation {
   type Stage[I, O] = Operation[I, O]
 
-  def handleParts(io: TcpStream.IOStream, settings: ServerSettings)(handler: ParsedPartOrResponse ==> HttpResponsePart)(implicit factory: ImplementationFactory): Pipeline[_] = {
+  def handleParts(io: TcpStream.IOStream, settings: ServerSettings)(handler: ParsedPartOrResponse ==> HttpResponsePart)(implicit factory: StreamGenerator): Pipeline[_] = {
     val (in, out) = io
 
-    in.toSource /*.andThen(DeliverInByteChunks(23))*/ .andThen(parse(new Parser(settings))).andThen(handler).andThen(render).finish(out)
+    in.toSource /*.andThen(DeliverInByteChunks(23))*/ .andThen(parse(new Parser(settings))).andThen(handler).andThen(render).connectTo(out)
   }
 
-  def handleRequests(io: TcpStream.IOStream, settings: ServerSettings)(handler: HttpRequestStream ⇒ Future[MaybeStreamedHttpResponse])(implicit factory: ImplementationFactory): Pipeline[_] = {
+  def handleRequests(io: TcpStream.IOStream, settings: ServerSettings)(handler: HttpRequestStream ⇒ Future[MaybeStreamedHttpResponse])(implicit factory: StreamGenerator): Pipeline[_] = {
     val (in, out) = io
 
     in.toSource
@@ -32,7 +32,7 @@ object HttpImplementation {
         case ImmediateResponse(response) ⇒ Source(ImmediateHttpResponse(response))
       }
       .andThen(toParts)
-      .andThen(render).finish(out)
+      .andThen(render).connectTo(out)
   }
 
   sealed trait ParsedOrResponse[+T]
@@ -53,7 +53,7 @@ object HttpImplementation {
     case _: ImmediateResponse      ⇒ true
   }
 
-  def collect(implicit factory: ImplementationFactory): Stage[ParsedPartOrResponse, ParsedOrResponse[HttpRequestStream]] =
+  def collect(implicit factory: StreamGenerator): Stage[ParsedPartOrResponse, ParsedOrResponse[HttpRequestStream]] =
     Identity[ParsedPartOrResponse]().span(endOfRequest).headTail
       .map {
         case (Parsed(req: HttpRequest), rest) ⇒
@@ -85,5 +85,5 @@ object HttpImplementation {
     def isChunk: Boolean = part.isInstanceOf[MessageChunk]
   }
 
-  def emptyProducer[T](implicit factory: ImplementationFactory): Producer[T] = Source.empty[T].toProducer()
+  def emptyProducer[T](implicit factory: StreamGenerator): Producer[T] = Source.empty[T].toProducer()
 }

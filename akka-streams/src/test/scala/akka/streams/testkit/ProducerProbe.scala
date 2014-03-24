@@ -1,7 +1,7 @@
 package akka.streams.testkit
 
-import rx.async.spi.{ Subscriber, Subscription }
-import rx.async.api.Producer
+import asyncrx.spi.{ Subscriber, Subscription }
+import asyncrx.api.Producer
 import scala.concurrent.duration.FiniteDuration
 
 sealed trait ProducerEvent

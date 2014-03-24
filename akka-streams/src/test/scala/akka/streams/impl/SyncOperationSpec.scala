@@ -2,8 +2,8 @@ package akka.streams.impl
 
 import scala.annotation.tailrec
 import akka.streams.Operation.{ FromProducerSource, Sink, Source }
-import rx.async.api.Producer
-import rx.async.spi.{ Subscription, Subscriber, Publisher }
+import asyncrx.api.Producer
+import asyncrx.spi.{ Subscription, Subscriber, Publisher }
 import akka.streams.impl.BasicEffects.HandleNextInSink
 import akka.testkit.TestProbe
 import akka.actor.ActorSystem
@@ -71,28 +71,39 @@ trait SyncOperationSpec extends WithActorSystem {
     override def handleRequestMore(n: Int): Effect = ???
   }
 
-  case class SubscribeToProducer[O](source: Producer[O], onSubscribe: Upstream ⇒ (SyncSink[O], Effect)) extends DoNothing
-  case class SubscribeFrom[O](sink: Sink[O], onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)) extends DoNothing
+  case class SubscribeToProducer[O](source: Producer[O], sinkConstructor: Upstream ⇒ SyncSink[O]) extends DoNothing
+  case class SubscribeFrom[O](sink: Sink[O], sourceConstructor: Downstream[O] ⇒ SyncSource) extends DoNothing
   case class ExposedSource[O](source: Source[O]) extends Producer[O] {
     def getPublisher: Publisher[O] = throw new IllegalStateException("Should only be deconstructed")
   }
 
-  case class Thunk(body: () ⇒ Effect)
+  case class RunEffect(body: Effect)
   val runInContextProbe = TestProbe()
-  def expectThunk(): () ⇒ Effect = runInContextProbe.expectMsgType[Thunk].body
+  def expectThunk(): () ⇒ Effect = runInContextProbe.expectMsgType[RunEffect].body.asInstanceOf[SingleStep].runOne
   def expectAndRunContextEffect(): Effect = expectThunk()()
   object TestContextEffects extends AbstractContextEffects {
 
-    override def subscribeTo[O](source: Source[O])(onSubscribeCallback: (Upstream) ⇒ (SyncSink[O], Effect)): Effect = source match {
-      case FromProducerSource(p) ⇒ SubscribeToProducer(p, onSubscribeCallback)
-      case x                     ⇒ super.subscribeTo(x)(onSubscribeCallback)
+    override def subscribeTo[O](source: Source[O])(sinkConstructor: Upstream ⇒ SyncSink[O]): Effect = source match {
+      case f @ FromProducerSource(i: InternalProducer[O]) ⇒ super.subscribeTo(f)(sinkConstructor)
+      case FromProducerSource(p) ⇒ SubscribeToProducer(p, sinkConstructor)
+      case x ⇒ super.subscribeTo(x)(sinkConstructor)
     }
 
-    def subscribeFrom[O](sink: Sink[O])(onSubscribe: Downstream[O] ⇒ (SyncSource, Effect)): Effect = SubscribeFrom(sink, onSubscribe)
-    def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
+    override def subscribeFrom[O](sink: Sink[O])(sourceConstructor: Downstream[O] ⇒ SyncSource): Effect = SubscribeFrom(sink, sourceConstructor)
+    override def expose[O](source: Source[O]): Producer[O] = ExposedSource(source)
 
-    override implicit def executionContext: ExecutionContext = system.dispatcher
-    def runInContext(body: ⇒ Effect): Unit = runInContextProbe.ref ! Thunk(body _)
+    override def internalProducer[O](sourceConstructor: Downstream[O] ⇒ SyncSource, shutdownEffect: Effect, initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): Producer[O] =
+      new InternalProducer[O] {
+        override def createSource(downstream: Downstream[O]): SyncSource = sourceConstructor(downstream)
+        override def getPublisher: Publisher[O] = ???
+      }
+
+    implicit def executionContext: ExecutionContext = system.dispatcher
+    def runStrictInContext(effect: Effect): Unit = runInContextProbe.ref ! RunEffect(effect)
+    def runEffectHere(effect: Effect): Unit = PlainEffectExecutor.run(effect)
+
+    def defaultInitialBufferSize: Int = 1
+    def defaultMaxBufferSize: Int = 16
   }
 
   implicit class RichEffect(effect: Effect) {
@@ -107,8 +118,11 @@ trait SyncOperationSpec extends WithActorSystem {
   }
   implicit class RichSource[I](source: Source[I]) {
     def expectInternalSourceHandler(): Downstream[I] ⇒ (SyncSource, Effect) = source match {
-      case InternalSource(handler) ⇒ handler
-      case x                       ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
+      case FromProducerSource(i: InternalProducer[I]) ⇒ { d ⇒
+        val source = i.createSource(d)
+        (source, source.start())
+      }
+      case x ⇒ throw new AssertionError(s"Expected InternalSource but got $x")
     }
   }
 

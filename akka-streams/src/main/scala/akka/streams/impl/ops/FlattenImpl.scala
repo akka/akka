@@ -5,6 +5,8 @@ import akka.streams.impl._
 import Operation.Source
 
 class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: ContextEffects) extends DynamicSyncOperation[Source[O]] {
+  override def toString: String = "Flatten"
+
   def initial: State = Waiting
 
   var undeliveredToDownstream: Int = 0
@@ -43,8 +45,12 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
       def handleError(cause: Throwable): Effect = downstream.error(cause)
     }
 
-  val subDownstream =
+  def createSubSink(subUpstream: Upstream, initialRequest: Int) =
     new SyncSink[O] {
+      override def toString: String = "FlattenSubSink"
+
+      override def start(): Effect = subUpstream.requestMore(initialRequest)
+
       def handleNext(element: O): Effect = {
         undeliveredToDownstream -= 1
         downstream.next(element)
@@ -66,9 +72,9 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
   // invariant:
   // we've got a single subSource that we are currently subscribing to
   class Subscribing extends RejectNext {
-    def setSubUpstream(upstream: Upstream): (SyncSink[O], Effect) = {
-      become(DeliverSubstreamElements(upstream))
-      (subDownstream, upstream.requestMore(undeliveredToDownstream))
+    def setSubUpstream(subUpstream: Upstream): SyncSink[O] = {
+      become(DeliverSubstreamElements(subUpstream))
+      createSubSink(subUpstream, undeliveredToDownstream)
     }
 
     def handleRequestMore(n: Int): Effect = {
@@ -88,9 +94,8 @@ class FlattenImpl[O](upstream: Upstream, downstream: Downstream[O], ctx: Context
   // substream is not depleted, all elements have been requested from subUpstream
   def DeliverSubstreamElements(subUpstream: Upstream): State = new RejectNext {
     def handleRequestMore(n: Int): Effect = {
-      val noElementsRequested = undeliveredToDownstream == 0
       undeliveredToDownstream += n
-      if (noElementsRequested) subUpstream.requestMore(undeliveredToDownstream) else Continue
+      subUpstream.requestMore(n)
     }
     def handleCancel(): Effect = ???
 

@@ -1,5 +1,8 @@
 package akka.http.server
 
+import asyncrx.api.Producer
+import asyncrx.spi.Publisher
+
 import java.net.InetSocketAddress
 import akka.streams.io.TcpStream
 import akka.actor.{ Props, Actor, ActorSystem }
@@ -10,7 +13,6 @@ import spray.http._
 import scala.concurrent.Future
 import spray.can.server.ServerSettings
 import akka.util.{ Timeout, ByteString }
-import rx.async.api.Producer
 import akka.pattern.ask
 import scala.concurrent.duration._
 import spray.http.HttpRequest
@@ -18,16 +20,15 @@ import akka.http.server.HttpImplementation.Parsed
 import spray.http.HttpResponse
 import akka.streams.Operation.Map
 import akka.http.server.HttpImplementation.ImmediateResponse
-import akka.streams.ActorBasedImplementationSettings
-import rx.async.spi.Publisher
 import java.io.{ FileInputStream, InputStream, File }
+import akka.streams.impl.TracingEffectExecutor
 
 sealed trait MaybeStreamedHttpResponse
 case class StreamedHttpResponse(headers: HttpResponseHeaders, body: Producer[ByteString]) extends MaybeStreamedHttpResponse
 case class ImmediateHttpResponse(response: HttpResponse) extends MaybeStreamedHttpResponse
 
 object HttpServerStreams {
-  def httpPartsServer(address: InetSocketAddress)(handler: InetSocketAddress ⇒ Operation[ParsedPartOrResponse, HttpResponsePart])(implicit system: ActorSystem, factory: ImplementationFactory): Unit = {
+  def httpPartsServer(address: InetSocketAddress)(handler: InetSocketAddress ⇒ Operation[ParsedPartOrResponse, HttpResponsePart])(implicit system: ActorSystem, factory: StreamGenerator): Unit = {
     //import system.dispatcher
     TcpStream.listen(address).foreach {
       case (address, io) ⇒
@@ -35,7 +36,7 @@ object HttpServerStreams {
         HttpImplementation.handleParts(io, ServerSettings(system))(handler(address)).run()
     }.run()
   }
-  def httpServer(address: InetSocketAddress)(handler: InetSocketAddress ⇒ HttpRequestStream ⇒ Future[MaybeStreamedHttpResponse])(implicit system: ActorSystem, factory: ImplementationFactory): Unit = {
+  def httpServer(address: InetSocketAddress)(handler: InetSocketAddress ⇒ HttpRequestStream ⇒ Future[MaybeStreamedHttpResponse])(implicit system: ActorSystem, factory: StreamGenerator): Unit = {
     //import system.dispatcher
     TcpStream.listen(address).foreach {
       case (address, io) ⇒
@@ -47,7 +48,7 @@ object HttpServerStreams {
 
 object TestServer extends App {
   implicit val system = ActorSystem()
-  implicit val factory = new ActorBasedImplementationFactory(ActorBasedImplementationSettings(system))
+  implicit val factory = new ActorBasedStreamGenerator(ActorBasedStreamGeneratorSettings(system/*, effectExecutor = new TracingEffectExecutor(println)*/))
 
   def partsServer() =
     HttpServerStreams.httpPartsServer(new InetSocketAddress("localhost", 8080)) { remote ⇒
@@ -85,7 +86,7 @@ object TestServer extends App {
   System.gc()*/
 }
 
-class RequestHandler(remote: InetSocketAddress)(implicit factory: ImplementationFactory) extends Actor {
+class RequestHandler(remote: InetSocketAddress)(implicit factory: StreamGenerator) extends Actor {
   def receive = {
     case (HttpRequest(_, Uri.Path("/stream"), _, _, _), _) ⇒
       val file = new File("/home/johannes/Downloads/incoming/2013-09-25-wheezy-raspbian.zip")

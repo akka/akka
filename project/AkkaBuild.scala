@@ -1165,6 +1165,8 @@ object Dependencies {
 
     val testNG        = "org.testng"                  % "testng"                       % "5.14.10" // ApacheV2
 
+    val asyncrxSpi    = "asyncrx"                    %% "reactive-streams-spi"         % "0.1-SNAPSHOT" // CC0
+
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
@@ -1191,6 +1193,7 @@ object Dependencies {
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
       val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+      val asyncrxTck   = "asyncrx"                    %% "reactive-streams-tck"         % "0.1-SNAPSHOT"     % "test" // CC0
     }
   }
 
@@ -1218,7 +1221,7 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val akkaStreams = Seq(testNG, Test.scalatest)
+  val akkaStreams = Seq(testNG, Test.scalatest, Test.scalacheck, asyncrxSpi, Test.asyncrxTck)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

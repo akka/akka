@@ -28,7 +28,7 @@ sealed trait Effect {
     if (next == Continue) this
     else Effects(Vector(this, next))
 }
-object Continue extends Effect {
+case object Continue extends Effect {
   override def ~(next: Effect): Effect = next
 }
 case class Effects(effects: Vector[Effect]) extends Effect {
@@ -60,7 +60,14 @@ object Effect {
     override def toString: String = name
     def run(): Unit = body
   }
+}
 
+/** An interface for implementations that can run effects */
+trait EffectExecutor {
+  def run(effect: Effect): Unit
+}
+
+object PlainEffectExecutor extends EffectExecutor {
   /** Runs a possibly tail-recursive chain of effects */
   def run(effect: Effect): Unit = {
     @tailrec def iterate(elements: Vector[Effect]): Unit = {
@@ -70,7 +77,7 @@ object Effect {
           s.run(); iterate(elements.tail)
         case Continue         ⇒ iterate(elements.tail)
         case r: SingleStep    ⇒ iterate(elements.tail :+ r.runOne())
-        case Effects(results) ⇒ iterate(results ++ elements.tail)
+        case Effects(effects) ⇒ iterate(effects ++ elements.tail)
       }
     }
 
@@ -79,7 +86,42 @@ object Effect {
       case s: ExternalEffect ⇒ s.run()
       case Continue          ⇒
       case r: SingleStep     ⇒ iterate(Vector(r.runOne()))
-      case Effects(results)  ⇒ iterate(results)
+      case Effects(effects)  ⇒ iterate(effects)
     }
+  }
+}
+
+class TracingEffectExecutor(log: String ⇒ Unit) extends EffectExecutor {
+  def run(effect: Effect): Unit = if (effect ne Continue) {
+    import Console._
+    log(s"${WHITE}Executing these effects: $effect$RESET")
+    @tailrec def iterate(elements: Vector[Effect]): Unit = {
+      if (elements.isEmpty) ()
+      else {
+        val first = elements.head
+        val result = runOne(first)
+        first match {
+          case e: Effects ⇒ iterate(result ++ elements.tail)
+          case _          ⇒ iterate(elements.tail ++ result)
+        }
+      }
+    }
+
+    def runOne(effect: Effect): Vector[Effect] =
+      effect match {
+        // shortcut for simple results
+        case s: ExternalEffect ⇒
+          log(s"${YELLOW}EE$RESET $s")
+          s.run(); Vector.empty
+        case Continue ⇒ Vector.empty
+        case r: SingleStep ⇒
+          val result = r.runOne()
+          log(s"${BLUE}STEP$RESET $effect $WHITE⇒$RESET $result")
+          Vector(result)
+        case Effects(effects) ⇒ effects
+      }
+
+    val effects = runOne(effect)
+    if (effects.nonEmpty) iterate(effects)
   }
 }
