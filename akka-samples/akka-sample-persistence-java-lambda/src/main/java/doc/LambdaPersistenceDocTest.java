@@ -130,6 +130,46 @@ public class LambdaPersistenceDocTest {
         );
       }
     }
+
+    //#recovery-completed
+    class MyProcessor5 extends AbstractProcessor {
+      
+      public MyProcessor5() {
+        receive(ReceiveBuilder.
+          matchEquals("FIRST", s -> {
+            recoveryCompleted();
+            getContext().become(active);
+            unstashAll();
+          }).
+          matchAny(message -> {
+            if (recoveryFinished()) {
+              stash(); 
+            } else {
+              active.apply(message);  
+            }
+          }).
+          build()
+        );
+      }
+
+      @Override
+      public void preStart() throws Exception {
+        super.preStart();
+        self().tell("FIRST", self());
+      }
+  
+      private void recoveryCompleted() {
+          // perform init after recovery, before any other messages
+          // ...
+      }
+
+      PartialFunction<Object, BoxedUnit> active =
+        ReceiveBuilder.
+          match(Persistent.class, message -> {/* ... */}).
+          build();
+      
+    }
+    //#recovery-completed
   };
 
   static Object o3 = new Object() {
