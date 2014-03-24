@@ -129,11 +129,15 @@ object EventsourcedSpec {
         this.events = events
     }
 
+    private def handleCmd(cmd: Cmd): Unit = {
+      persist(Seq(Evt(s"${cmd.data}-41"), Evt(s"${cmd.data}-42")))(updateState)
+    }
+
     val receiveCommand: Receive = commonBehavior orElse {
-      case Cmd(data) ⇒
-        persist(Seq(Evt(s"${data}-41"), Evt(s"${data}-42")))(updateState)
-      case SaveSnapshotSuccess(_) ⇒ probe ! "saved"
-      case "snap"                 ⇒ saveSnapshot(events)
+      case c: Cmd                              ⇒ handleCmd(c)
+      case SaveSnapshotSuccess(_)              ⇒ probe ! "saved"
+      case "snap"                              ⇒ saveSnapshot(events)
+      case ConfirmablePersistent(c: Cmd, _, _) ⇒ handleCmd(c)
     }
   }
 
@@ -326,6 +330,20 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       val processor2 = system.actorOf(Props(classOf[SnapshottingBecomingEventsourcedProcessor], name, testActor))
       expectMsg("offered")
       expectMsg("I am becoming")
+      processor2 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+    }
+    "support confirmable persistent" in {
+      val processor1 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      processor1 ! Cmd("b")
+      processor1 ! "snap"
+      processor1 ! ConfirmablePersistentImpl(Cmd("c"), 4711, "some-id", false, 0, Seq.empty, null, null, null)
+      expectMsg("saved")
+      processor1 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+
+      val processor2 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      expectMsg("offered")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
     }
