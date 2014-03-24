@@ -84,6 +84,35 @@ trait PersistenceDocSpec {
       }
       //#deletion
     }
+    
+    class MyProcessor4 extends Processor {
+      //#recovery-completed
+      override def preStart(): Unit = {
+        super.preStart()
+        self ! "FIRST"
+      }
+      
+      def receive = initializing.orElse(active)
+      
+      def initializing: Receive = {
+        case "FIRST" =>
+          recoveryCompleted()
+          context.become(active)
+          unstashAll()
+        case other if recoveryFinished =>
+          stash()
+      }
+      
+      def recoveryCompleted(): Unit = {
+        // perform init after recovery, before any other messages
+        // ...
+      }
+
+      def active: Receive = {
+        case Persistent(msg, _) => //...
+      }
+      //#recovery-completed
+    }
   }
 
   new AnyRef {

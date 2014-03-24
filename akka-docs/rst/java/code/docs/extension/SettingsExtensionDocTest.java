@@ -30,8 +30,8 @@ public class SettingsExtensionDocTest {
     public SettingsImpl(Config config) {
       DB_URI = config.getString("myapp.db.uri");
       CIRCUIT_BREAKER_TIMEOUT =
-        Duration.create(config.getMilliseconds("myapp.circuit-breaker.timeout"),
-          TimeUnit.MILLISECONDS);
+        Duration.create(config.getDuration("myapp.circuit-breaker.timeout", 
+          TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS);
     }
 
   }
