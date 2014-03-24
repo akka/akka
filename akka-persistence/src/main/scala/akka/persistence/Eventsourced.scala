@@ -71,6 +71,8 @@ private[persistence] trait Eventsourced extends Processor {
     override def toString: String = "persisting events"
 
     def aroundReceive(receive: Receive, message: Any) = message match {
+      case c: ConfirmablePersistent ⇒
+        processorStash.stash()
       case PersistentBatch(b) ⇒
         b.foreach(p ⇒ deleteMessage(p.sequenceNr, true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
