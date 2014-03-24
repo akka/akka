@@ -482,6 +482,11 @@ contains 3 samples:
  * Quartz Scheduler Example - Showing how simple is to implement a cron-style scheduler by
    using the Camel Quartz component
 
+Configuration
+=============
+
+There are several configuration properties for the Camel module, please refer
+to the :ref:`reference configuration <config-akka-camel>`.
 
 Additional Resources
 ====================

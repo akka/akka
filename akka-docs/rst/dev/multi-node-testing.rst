@@ -220,3 +220,10 @@ surprising ways.
 
   * Don't use MultiNodeSpec methods like address lookup, barrier entry et.c. from other threads than the main test
     thread. This also means that you shouldn't use them from inside an actor, a future, or a scheduled task.
+
+Configuration
+=============
+
+There are several configuration properties for the Multi-Node Testing module, please refer
+to the :ref:`reference configuration <config-akka-multi-node-testkit>`.
+

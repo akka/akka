@@ -1,8 +1,8 @@
 .. _akka-testkit:
 
-##############################
+#####################
 Testing Actor Systems
-##############################
+#####################
 
 .. toctree::
 
@@ -771,4 +771,10 @@ Some `Specs2 <http://specs2.org>`_ users have contributed examples of how to wor
 
 * Specifications are by default executed concurrently, which requires some care
   when writing the tests or alternatively the ``sequential`` keyword.
+
+Configuration
+=============
+
+There are several configuration properties for the TestKit module, please refer
+to the :ref:`reference configuration <config-akka-testkit>`.
 
