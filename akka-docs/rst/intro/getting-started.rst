@@ -120,7 +120,7 @@ The simplest way to get started with Akka and Maven is to check out the
 `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 tutorial named `Akka Main in Java <http://www.typesafe.com/activator/template/akka-sample-main-java>`_.
 
-Since Akka is published to Maven Central (for versions since 2.1-M2), is it
+Since Akka is published to Maven Central (for versions since 2.1-M2), it is
 enough to add the Akka dependencies to the POM. For example, here is the
 dependency for akka-actor:
 
@@ -131,6 +131,20 @@ dependency for akka-actor:
     <artifactId>akka-actor_@binVersion@</artifactId>
     <version>@version@</version>
   </dependency>
+
+For snapshot versions, snapshot repository need to be added as well:
+
+.. code-block:: xml
+
+    <repositories>
+      <repository>
+        <id>akka-snapshots</id>
+          <snapshots>
+            <enabled>true</enabled>
+          </snapshots>
+        <url>http://repo.akka.io/snapshots/</url>
+      </repository>
+    </repositories>
 
 **Note**: for snapshot versions both ``SNAPSHOT`` and timestamped versions are published.
 
