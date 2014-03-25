@@ -119,6 +119,15 @@ A processor can query its own recovery status via the methods
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-status
 
+Sometimes there is a need for performing additional initialization when the
+recovery has completed, before processing any other message sent to the processor.
+The processor can send itself a message from ``preStart``. It will be stashed and received
+after recovery. The mailbox may contain other messages that are queued in front of
+that message and therefore you need to stash until you receive that message.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-completed
+
+
 .. _failure-handling:
 
 Failure handling

@@ -8,11 +8,9 @@ import java.util.concurrent.TimeUnit;
 
 import scala.Option;
 import scala.concurrent.duration.Duration;
-
 import akka.actor.*;
 import akka.japi.Procedure;
 import akka.persistence.*;
-
 import static java.util.Arrays.asList;
 
 public class PersistenceDocTest {
@@ -121,6 +119,42 @@ public class PersistenceDocTest {
             //#processor-id-override
             @Override
             public void onReceive(Object message) throws Exception {}
+        }
+        
+        class MyProcessor5 extends UntypedProcessor {
+            //#recovery-completed
+            @Override
+            public void preStart() throws Exception {
+                super.preStart();
+                self().tell("FIRST", self());
+            }
+            
+            public void onReceive(Object message) throws Exception {
+                if (message.equals("FIRST")) {
+                    recoveryCompleted();
+                    getContext().become(active);
+                    unstashAll();
+                } else if (recoveryFinished()) {
+                    stash(); 
+                } else {
+                    active.apply(message);  
+                }
+            }
+            
+            private void recoveryCompleted() {
+                // perform init after recovery, before any other messages
+                // ...
+            }
+            
+            Procedure<Object> active = new Procedure<Object>() {
+              @Override
+              public void apply(Object message) {
+                if (message instanceof Persistent) {
+                    // ...
+                }
+              }
+            };
+            //#recovery-completed
         }
     };
 

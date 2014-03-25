@@ -122,6 +122,14 @@ A processor can query its own recovery status via the methods
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-status
 
+Sometimes there is a need for performing additional initialization when the
+recovery has completed, before processing any other message sent to the processor.
+The processor can send itself a message from ``preStart``. It will be stashed and received
+after recovery. The mailbox may contain other messages that are queued in front of
+that message and therefore you need to stash until you receive that message.
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recovery-completed
+
 .. _failure-handling-java-lambda:
 
 Failure handling
