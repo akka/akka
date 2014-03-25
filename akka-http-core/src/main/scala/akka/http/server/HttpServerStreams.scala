@@ -64,12 +64,6 @@ object TestServer extends App {
     HttpServerStreams.httpServer(new InetSocketAddress("localhost", 8080)) { remote ⇒
       {
         case req ⇒
-          /*body.foreach { b ⇒
-            println(s"Got body bytes $b")
-          }.run()*/
-          //val res = HttpResponse(entity = s"Got request to ${headers.uri} from $remote")
-          //Future.successful((res.mapHeaders(HttpHeaders.`Content-Length`(res.entity.data.length) :: _), Source.empty[ByteString].toProducer()))
-          //Future.successful(ImmediateHttpResponse(res))
           val handler = system.actorOf(Props(new RequestHandler(remote)))
           implicit val timeout = Timeout(3.seconds)
           (handler ? req).mapTo[MaybeStreamedHttpResponse]
