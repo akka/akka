@@ -285,10 +285,8 @@ class ClusterSingletonManagerSpec extends MultiNodeSpec(ClusterSingletonManagerS
       val p = TestProbe()
       within(5.seconds) {
         awaitAssert {
-          println("#Ping")
           system.actorSelection("/user/consumerProxy").tell(Ping, p.ref)
           p.expectMsg(1.second, Pong)
-          println("#Pong")
         }
       }
       // then send the real message
