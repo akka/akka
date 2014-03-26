@@ -142,7 +142,7 @@ private[http] class UriParser(val input: ParserInput,
   def `path-absolute` = rule { clearSB() ~ '/' ~ append('/') ~ optional(`segment-nz` ~ slashSegments) ~ savePath() }
   def `path-noscheme` = rule { clearSB() ~ `segment-nz-nc` ~ slashSegments ~ savePath() }
   def `path-rootless` = rule { clearSB() ~ `segment-nz` ~ slashSegments ~ savePath() }
-  def `path-empty` = rule { EMPTY }
+  def `path-empty` = rule { MATCH }
 
   def slashSegments = rule { zeroOrMore('/' ~ append('/') ~ segment) }
 

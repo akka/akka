@@ -35,7 +35,7 @@ object HeaderParser {
 
   import shapeless._
 
-  private val ruleDispatch = Utils.createDynamicRuleDispatch[HeaderParser, HttpHeader :: HNil](
+  private val ruleDispatch = DynamicRuleDispatch[HeaderParser, HttpHeader :: HNil](
     "accept-charset")
 
   def parseHeader(header: HttpHeader): Either[ErrorInfo, HttpHeader] =
