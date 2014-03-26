@@ -1079,8 +1079,8 @@ object Dependencies {
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
     // http-core (temporary, will be removed by internalizing)
-    val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0-SNAPSHOT" changing()   // ApacheV2
-    val shapeless     = "com.chuusai"                 %  "shapeless_2.10.3"             % "2.0.0-M1"  // ApacheV2
+    val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0-SNAPSHOT" changing()          // ApacheV2
+    val shapeless     = "com.chuusai"                 %% "shapeless"                    % "2.0.0-M1" cross CrossVersion.full // ApacheV2
 
     // Test
 
