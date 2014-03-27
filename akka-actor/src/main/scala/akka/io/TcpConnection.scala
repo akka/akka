@@ -14,7 +14,7 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 import akka.actor._
-import akka.util.ByteString
+import akka.util.{ FileBytes, ByteString }
 import akka.io.Inet.SocketOption
 import akka.io.Tcp._
 import akka.io.SelectionHandler._
@@ -329,10 +329,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   def PendingWrite(commander: ActorRef, write: WriteCommand): PendingWrite = {
     @tailrec def create(head: WriteCommand, tail: WriteCommand = Write.empty): PendingWrite =
       head match {
-        case Write.empty                         ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
-        case Write(data, ack) if data.nonEmpty   ⇒ PendingBufferWrite(commander, data, ack, tail)
-        case WriteFile(path, offset, count, ack) ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
-        case CompoundWrite(h, t)                 ⇒ create(h, t)
+        case Write.empty                                   ⇒ if (tail eq Write.empty) EmptyPendingWrite else create(tail)
+        case Write(data: ByteString, ack) if data.nonEmpty ⇒ PendingBufferWrite(commander, data, ack, tail)
+        case Write(FileBytes(path, offset, count), ack)    ⇒ PendingWriteFile(commander, path, offset, count, ack, tail)
+        case CompoundWrite(h, t)                           ⇒ create(h, t)
         case x @ Write(_, ack) ⇒ // empty write with either an ACK or a non-standard NoACK
           if (x.wantsAck) commander ! ack
           create(tail)

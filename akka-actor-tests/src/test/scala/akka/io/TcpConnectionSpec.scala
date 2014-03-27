@@ -20,7 +20,7 @@ import akka.io.SelectionHandler._
 import akka.io.Inet.SocketOption
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, TestActorRef, TestProbe }
-import akka.util.{ Helpers, ByteString }
+import akka.util.{ Bytes, Helpers, ByteString }
 import akka.TestUtils._
 import java.util.Random
 
@@ -241,7 +241,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         val size = math.min(testFile.length(), 100000000).toInt
 
         val writer = TestProbe()
-        writer.send(connectionActor, WriteFile(testFile.getAbsolutePath, 0, size, Ack))
+        writer.send(connectionActor, Write(Bytes.fromFile(testFile.getAbsolutePath, 0, size), Ack))
         pullFromServerSide(size, 1000000)
         writer.expectMsg(Ack)
       }
