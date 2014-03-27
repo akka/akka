@@ -223,8 +223,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
   }
 
   /**
-   * Each [[WriteCommand]] can optionally request a positive acknowledgment to be sent
-   * to the commanding actor. If such notification is not desired the [[WriteCommand#ack]]
+   * Each [[Write]] can optionally request a positive acknowledgment to be sent
+   * to the commanding actor. If such notification is not desired the [[Write#ack]]
    * must be set to an instance of this class. The token contained within can be used
    * to recognize which write failed when receiving a [[CommandFailed]] message.
    */
@@ -236,82 +236,18 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    */
   object NoAck extends NoAck(null)
 
-  /**
-   * Common interface for all write commands, currently [[Write]], and [[CompoundWrite]].
-   */
-  sealed abstract class WriteCommand extends Command {
-    /**
-     * Prepends this command with another `Write` or `WriteFile` to form
-     * a `CompoundWrite`.
-     */
-    def +:(other: Write): CompoundWrite = CompoundWrite(other, this)
-
-    /**
-     * Prepends this command with a number of other writes.
-     * The first element of the given Iterable becomes the first sub write of a potentially
-     * created `CompoundWrite`.
-     */
-    def ++:(writes: Iterable[WriteCommand]): WriteCommand =
-      writes.foldRight(this) {
-        case (a: Write, b)         ⇒ a +: b
-        case (a: CompoundWrite, b) ⇒ a ++: b
-      }
-
-    /**
-     * Java API: prepends this command with another `Write` or `WriteFile` to form
-     * a `CompoundWrite`.
-     */
-    def prepend(that: Write): CompoundWrite = that +: this
-
-    /**
-     * Java API: prepends this command with a number of other writes.
-     * The first element of the given Iterable becomes the first sub write of a potentially
-     * created `CompoundWrite`.
-     */
-    def prepend(writes: JIterable[WriteCommand]): WriteCommand = writes.asScala ++: this
-  }
-
-  object WriteCommand {
-    /**
-     * Combines the given number of write commands into one atomic `WriteCommand`.
-     */
-    def apply(writes: Iterable[WriteCommand]): WriteCommand = writes ++: Write.empty
-
-    /**
-     * Java API: combines the given number of write commands into one atomic `WriteCommand`.
-     */
-    def create(writes: JIterable[WriteCommand]): WriteCommand = apply(writes.asScala)
-  }
-
-  /**
-   * Write data to the TCP connection. If no ack is needed use the special
-   * `NoAck` object. The connection actor will reply with a [[CommandFailed]]
-   * message if the write could not be enqueued. If [[WriteCommand#wantsAck]]
-   * returns true, the connection actor will reply with the supplied [[WriteCommand#ack]]
-   * token once the write has been successfully enqueued to the O/S kernel.
-   * <b>Note that this does not in any way guarantee that the data will be
-   * or have been sent!</b> Unfortunately there is no way to determine whether
-   * a particular write has been sent by the O/S.
-   */
-  final case class Write(data: Bytes, ack: Event) extends WriteCommand {
-    require(ack != null, "ack must be non-null. Use NoAck if you don't want acks.")
-
+  final case class Write(data: Bytes, ack: Event) extends Command {
     /**
      * An acknowledgment is only sent if this write command “wants an ack”, which is
      * equivalent to the [[#ack]] token not being a of type [[NoAck]].
      */
     def wantsAck: Boolean = !ack.isInstanceOf[NoAck]
-
-    /**
-     * Java API: appends this command with another `WriteCommand` to form a `CompoundWrite`.
-     */
-    def append(that: WriteCommand): CompoundWrite = this +: that
   }
   object Write {
     /**
      * The empty Write doesn't write anything and isn't acknowledged.
      * It will, however, be denied and sent back with `CommandFailed` if the
-     * connection isn't currently ready to send any data (because another WriteCommand
+     * connection isn't currently ready to send any data (because another Write
      * is still pending).
      */
     val empty: Write = Write(ByteString.empty, NoAck)
@@ -319,38 +255,14 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
     /**
      * Create a new unacknowledged Write command with the given data.
      */
-    def apply(data: ByteString): Write =
+    def apply(data: Bytes): Write =
       if (data.isEmpty) empty else Write(data, NoAck)
-  }
-
-  /**
-   * A write command which aggregates two other write commands. Using this construct
-   * you can chain a number of [[Write]] commands together in a way
-   * that allows them to be handled as a single write which gets written out to the
-   * network as quickly as possible.
-   * If the sub commands contain `ack` requests they will be honored as soon as the
-   * respective write has been written completely.
-   */
-  final case class CompoundWrite(override val head: Write, tailCommand: WriteCommand) extends WriteCommand
-    with immutable.Iterable[Write] {
-
-    def iterator: Iterator[Write] =
-      new Iterator[Write] {
-        private[this] var current: WriteCommand = CompoundWrite.this
-        def hasNext: Boolean = current ne null
-        def next(): Write =
-          current match {
-            case null                ⇒ Iterator.empty.next()
-            case CompoundWrite(h, t) ⇒ { current = t; h }
-            case x: Write            ⇒ { current = null; x }
-          }
-      }
   }
 
   /**
    * When `useResumeWriting` is in effect as was indicated in the [[Register]] message
    * then this command needs to be sent to the connection actor in order to re-enable
-   * writing after a [[CommandFailed]] event. All [[WriteCommand]] processed by the
+   * writing after a [[CommandFailed]] event. All Writes processed by the
    * connection actor between the first [[CommandFailed]] and subsequent reception of
    * this message will also be rejected with [[CommandFailed]].
    */
@@ -698,8 +610,8 @@ object TcpMessage {
   def abort: Command = Abort
 
   /**
-   * Each [[Tcp.WriteCommand]] can optionally request a positive acknowledgment to be sent
-   * to the commanding actor. If such notification is not desired the [[Tcp.WriteCommand#ack]]
+   * Each [[Tcp.Write]] can optionally request a positive acknowledgment to be sent
+   * to the commanding actor. If such notification is not desired the [[Tcp.Write#ack]]
    * must be set to an instance of this class. The token contained within can be used
    * to recognize which write failed when receiving a [[Tcp.CommandFailed]] message.
    */
@@ -713,37 +625,23 @@ object TcpMessage {
   /**
    * Write data to the TCP connection. If no ack is needed use the special
    * `NoAck` object. The connection actor will reply with a [[Tcp.CommandFailed]]
-   * message if the write could not be enqueued. If [[Tcp.WriteCommand#wantsAck]]
-   * returns true, the connection actor will reply with the supplied [[Tcp.WriteCommand#ack]]
+   * message if the write could not be enqueued. If [[Tcp.Write#wantsAck]]
+   * returns true, the connection actor will reply with the supplied [[Tcp.Write#ack]]
    * token once the write has been successfully enqueued to the O/S kernel.
    * <b>Note that this does not in any way guarantee that the data will be
    * or have been sent!</b> Unfortunately there is no way to determine whether
    * a particular write has been sent by the O/S.
    */
-  def write(data: ByteString, ack: Event): Command = Write(data, ack)
+  def write(data: Bytes, ack: Event): Command = Write(data, ack)
   /**
    * The same as `write(data, noAck())`.
    */
-  def write(data: ByteString): Command = Write(data)
-
-  /**
-   * Write `count` bytes starting at `position` from file at `filePath` to the connection.
-   * The count must be > 0. The connection actor will reply with a [[Tcp.CommandFailed]]
-   * message if the write could not be enqueued. If [[Tcp.WriteCommand#wantsAck]]
-   * returns true, the connection actor will reply with the supplied [[Tcp.WriteCommand#ack]]
-   * token once the write has been successfully enqueued to the O/S kernel.
-   * <b>Note that this does not in any way guarantee that the data will be
-   * or have been sent!</b> Unfortunately there is no way to determine whether
-   * a particular write has been sent by the O/S.
-   */
-  @deprecated("Use Bytes.fromFile instead", "2.4.0")
-  def writeFile(filePath: String, position: Long, count: Long, ack: Event): Command =
-    Write(Bytes.fromFile(filePath, position, count), ack)
+  def write(data: Bytes): Command = Write(data)
 
   /**
    * When `useResumeWriting` is in effect as was indicated in the [[Tcp.Register]] message
    * then this command needs to be sent to the connection actor in order to re-enable
-   * writing after a [[Tcp.CommandFailed]] event. All [[Tcp.WriteCommand]] processed by the
+   * writing after a [[Tcp.CommandFailed]] event. All [[Tcp.Write]] processed by the
    * connection actor between the first [[Tcp.CommandFailed]] and subsequent reception of
    * this message will also be rejected with [[Tcp.CommandFailed]].
    */

@@ -247,29 +247,6 @@ class TcpConnectionSpec extends AkkaSpec("""
       }
     }
 
-    "write a CompoundWrite to the network and produce correct ACKs" in new EstablishedConnectionTest() {
-      run {
-        val writer = TestProbe()
-        val compoundWrite =
-          Write(ByteString("test1"), Ack(1)) +:
-            Write(ByteString("test2")) +:
-            Write(ByteString.empty, Ack(3)) +:
-            Write(ByteString("test4"), Ack(4))
-
-        // reply to write commander with Ack
-        val buffer = ByteBuffer.allocate(100)
-        serverSideChannel.read(buffer) should be(0)
-        writer.send(connectionActor, compoundWrite)
-
-        pullFromServerSide(remaining = 15, into = buffer)
-        buffer.flip()
-        ByteString(buffer).utf8String should be("test1test2test4")
-        writer.expectMsg(Ack(1))
-        writer.expectMsg(Ack(3))
-        writer.expectMsg(Ack(4))
-      }
-    }
-
     /*
      * Disabled on Windows: http://support.microsoft.com/kb/214397
      *
