@@ -7,12 +7,13 @@ package akka.util
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
-import scala.collection.IndexedSeqOptimized
+import scala.collection.{ immutable, IndexedSeqOptimized }
 import scala.collection.mutable.{ Builder, WrappedArray }
-import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
 import scala.collection.generic.CanBuildFrom
 import scala.reflect.ClassTag
+import java.nio.charset.Charset
+import java.io.File
 
 object ByteString {
 
@@ -270,6 +271,97 @@ object ByteString {
 }
 
 /**
+ *  An abstraction of bytes either from a JVM heap buffer (ByteString), or a slice
+ *  of a file on the file-system.
+ *
+ *  It provides operations to slice bytes efficiently and usually without
+ *  having to load bytes from files into memory or by copying data around. Operations
+ *  that actually load bytes from files are marked as such (TODO: currently none, but we'll
+ *  need some later on, e.g. if a transformation like gzip encoding has to be applied).
+ *
+ *  Bytes instances are produced by using the given constructors in the companion object and
+ *  by slicing the results.
+ *
+ *  Bytes instances are usually consumed by pattern-matching over its structure. This way
+ *  bytes from files can be read in the most efficient way possible for the given purpose
+ *  (e.g. by using `FileChannel.transferTo` where applicable).
+ *
+ *  The complete sealed type hierarchy looks like this:
+ *
+ *  Bytes
+ *  |-- ByteString
+ *  |-- FileBytes
+ */
+sealed abstract class Bytes {
+  def isEmpty: Boolean
+  def nonEmpty: Boolean
+
+  /**
+   * Returns the number of bytes contained in this instance.
+   */
+  def longLength: Long
+
+  /** Returns a slice of this instance as a `Bytes`. */
+  def slice(offset: Long = 0, span: Long = longLength): Bytes
+
+  /**
+   * Returns the contents of this instance as a `Stream[Bytes]` with each
+   * chunk not being larger than the given `maxChunkSize`.
+   */
+  def chunk(maxChunkSize: Long): Iterable[Bytes] = {
+    require(maxChunkSize > 0, "chunkSize must be > 0")
+    (0L until longLength by maxChunkSize).view.map { startIdx ⇒
+      val endIdx = math.min(longLength, startIdx + maxChunkSize)
+      slice(startIdx, endIdx - startIdx)
+    }.toIterable
+  }
+}
+object Bytes {
+  val Empty: Bytes = ByteString.empty
+
+  private val utf8 = Charset.forName("utf8")
+  def apply(string: String): Bytes = apply(string, utf8)
+  def apply(string: String, charset: Charset): Bytes =
+    ByteString.ByteString1C(string getBytes charset)
+  def apply(bytes: Array[Byte]): Bytes = ByteString(bytes)
+
+  /**
+   * Creates a [[FileBytes]] instance if the given file exists, is readable,
+   * non-empty and the given `length` parameter is non-zero. Otherwise the method returns
+   * an empty [[ByteString]].
+   * A negative `length` value signifies that the respective number of bytes at the end of the
+   * file is to be omitted, i.e., a value of -10 will select all bytes starting at `offset`
+   * except for the last 10.
+   * If `length` is greater or equal to "file length - offset" all bytes in the file starting at
+   * `offset` are selected.
+   */
+  def apply(file: File, offset: Long = 0, length: Long = Long.MaxValue): Bytes = {
+    val fileLength = file.length
+    if (fileLength > 0) {
+      require(offset >= 0 && offset < fileLength, s"offset $offset out of range $fileLength")
+      if (file.canRead)
+        if (length > 0) new FileBytes(file.getAbsolutePath, offset, math.min(fileLength - offset, length))
+        else if (length < 0 && length > offset - fileLength) new FileBytes(file.getAbsolutePath, offset, fileLength - offset + length)
+        else Empty
+      else Empty
+    } else Empty
+  }
+
+  /**
+   * Creates a [[FileBytes]] instance if the given file exists, is readable,
+   * non-empty and the given `length` parameter is non-zero. Otherwise the method returns an
+   * empty [[ByteString]].
+   * A negative `length` value signifies that the respective number of bytes at the end of the
+   * file is to be omitted, i.e., a value of -10 will select all bytes starting at `offset`
+   * except for the last 10.
+   * If `length` is greater or equal to "file length - offset" all bytes in the file starting at
+   * `offset` are selected.
+   */
+  def fromFile(fileName: String, offset: Long = 0, length: Long = Long.MaxValue) =
+    apply(new File(fileName), offset, length)
+}
+
+/**
  * A rope-like immutable data structure containing bytes.
  * The goal of this structure is to reduce copying of arrays
  * when concatenating and slicing sequences of bytes,
@@ -277,7 +369,7 @@ object ByteString {
  *
  * TODO: Add performance characteristics
  */
-sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
+sealed abstract class ByteString extends Bytes with IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   def apply(idx: Int): Byte
 
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
@@ -400,6 +492,20 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * map method that will automatically cast Int back into Byte.
    */
   final def mapI(f: Byte ⇒ Int): ByteString = map(f andThen (_.toByte))
+
+  // Implementations of Bytes methods
+
+  def longLength: Long = length
+  def slice(offset: Long, span: Long): Bytes = {
+    require(offset >= 0, "offset must be >= 0")
+    require(span >= 0, "span must be >= 0")
+
+    if (offset < length && span > 0)
+      if (offset > 0 || span < length)
+        slice(offset.toInt, math.min(offset + span, Int.MaxValue).toInt)
+      else this
+    else ByteString.empty
+  }
 }
 
 object CompactByteString {
@@ -774,5 +880,22 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     def write(b: Int): Unit = builder += b.toByte
 
     override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
+  }
+}
+
+/** FileBytes are a reference to a span of bytes from a File */
+case class FileBytes private[util] (fileName: String, offset: Long = 0, longLength: Long) extends Bytes {
+  def isEmpty: Boolean = longLength == 0
+  def nonEmpty: Boolean = !isEmpty
+
+  def slice(offset: Long, span: Long): Bytes = {
+    require(offset >= 0, "offset must be >= 0")
+    require(span >= 0, "span must be >= 0")
+
+    if (offset < longLength && span > 0) {
+      val newOffset = this.offset + offset
+      val newLength = math.min(longLength - offset, span)
+      FileBytes(fileName, newOffset, newLength)
+    } else Bytes.Empty
   }
 }
