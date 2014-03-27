@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import org.parboiled2.{ CharPredicate, CharUtils }
 import akka.http.model.parser.CharacterClasses
-import akka.http.model.HttpData
+import akka.util.ByteString
 
 /** An entity that can render itself */
 trait Renderable {
@@ -65,8 +65,8 @@ object Renderer {
   implicit object StringRenderer extends Renderer[String] {
     def render[R <: Rendering](r: R, value: String): r.type = r ~~ value
   }
-  implicit object HttpDataRenderer extends Renderer[HttpData] {
-    def render[R <: Rendering](r: R, value: HttpData): r.type = r ~~ value
+  implicit object HttpDataRenderer extends Renderer[ByteString] {
+    def render[R <: Rendering](r: R, value: ByteString): r.type = r ~~ value
   }
   implicit object CharsRenderer extends Renderer[Array[Char]] {
     def render[R <: Rendering](r: R, value: Array[Char]): r.type = r ~~ value
@@ -117,7 +117,7 @@ object Renderer {
 trait Rendering {
   def ~~(ch: Char): this.type
   def ~~(bytes: Array[Byte]): this.type
-  def ~~(data: HttpData): this.type
+  def ~~(bytes: ByteString): this.type
 
   def ~~(f: Float): this.type = this ~~ f.toString
   def ~~(d: Double): this.type = this ~~ d.toString
@@ -210,9 +210,8 @@ class StringRendering extends Rendering {
       if (ix < bytes.length) { this ~~ bytes(ix).asInstanceOf[Char]; rec(ix + 1) } else this
     rec()
   }
-  def ~~(data: HttpData): this.type = this ~~ data.toByteArray
+  def ~~(bytes: ByteString): this.type = this ~~ bytes.toArray[Byte]
   def get: String = sb.toString
 }
 
 // FIXME: decide if we ByteStringRendering, ByteArrayRendering is still needed
-// FIXME: resurrect HttpDataRendering

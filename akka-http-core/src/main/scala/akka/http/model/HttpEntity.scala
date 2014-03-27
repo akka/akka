@@ -5,7 +5,7 @@
 package akka.http.model
 
 import language.implicitConversions
-import akka.util.ByteString
+import akka.util.{Bytes, ByteString}
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -13,7 +13,7 @@ import akka.util.ByteString
 sealed trait HttpEntity {
   def isEmpty: Boolean
   def nonEmpty: Boolean = !isEmpty
-  def data: HttpData
+  def data: Bytes
   def flatMap(f: HttpEntity.NonEmpty ⇒ HttpEntity): HttpEntity
   def orElse(other: HttpEntity): HttpEntity
   def asString: String
@@ -23,13 +23,13 @@ sealed trait HttpEntity {
 
 object HttpEntity {
   implicit def apply(string: String): HttpEntity = apply(ContentTypes.`text/plain(UTF-8)`, string)
-  implicit def apply(bytes: Array[Byte]): HttpEntity = apply(HttpData(bytes))
-  implicit def apply(data: HttpData): HttpEntity = apply(ContentTypes.`application/octet-stream`, data)
+  implicit def apply(bytes: Array[Byte]): HttpEntity = apply(ByteString(bytes))
+  implicit def apply(data: Bytes): HttpEntity = apply(ContentTypes.`application/octet-stream`, data)
   def apply(contentType: ContentType, string: String): HttpEntity =
-    if (string.isEmpty) Empty else apply(contentType, HttpData(string, contentType.charset.nioCharset))
-  def apply(contentType: ContentType, bytes: Array[Byte]): HttpEntity = apply(contentType, HttpData(bytes))
-  def apply(contentType: ContentType, bytes: ByteString): HttpEntity = apply(contentType, HttpData(bytes))
-  def apply(contentType: ContentType, data: HttpData): HttpEntity =
+    if (string.isEmpty) Empty else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
+  def apply(contentType: ContentType, bytes: Array[Byte]): HttpEntity = apply(contentType, bytes)
+  def apply(contentType: ContentType, bytes: ByteString): HttpEntity = apply(contentType, bytes)
+  def apply(contentType: ContentType, data: Bytes): HttpEntity =
     data match {
       case x if x.nonEmpty ⇒ new NonEmpty(contentType, x)
       case _               ⇒ Empty
@@ -46,7 +46,7 @@ object HttpEntity {
    */
   case object Empty extends HttpEntity {
     def isEmpty = true
-    def data = HttpData.Empty
+    def data = Bytes.Empty
     def flatMap(f: HttpEntity.NonEmpty ⇒ HttpEntity): HttpEntity = this
     def orElse(other: HttpEntity): HttpEntity = other
     def asString = ""
@@ -60,7 +60,7 @@ object HttpEntity {
    * assumed to be immutable! spray never modifies the buffer contents after an HttpEntity.NonEmpty instance has been created.
    * If you modify the buffer contents by writing to the array things WILL BREAK!
    */
-  case class NonEmpty private[HttpEntity] (contentType: ContentType, data: HttpData) extends HttpEntity {
+  case class NonEmpty private[HttpEntity] (contentType: ContentType, data: Bytes) extends HttpEntity {
     require(data.nonEmpty)
     def isEmpty = false
     def flatMap(f: HttpEntity.NonEmpty ⇒ HttpEntity): HttpEntity = f(this)

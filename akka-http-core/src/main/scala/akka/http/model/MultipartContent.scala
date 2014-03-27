@@ -6,6 +6,7 @@ package akka.http.model
 
 import java.io.File
 import akka.http.model.headers.`Content-Disposition`
+import akka.util.Bytes
 
 /**
  * Basic model for multipart content as defined in RFC 2046.
@@ -45,7 +46,7 @@ object BodyPart {
 
   def apply(file: File, fieldName: String): BodyPart = apply(file, fieldName, ContentTypes.`application/octet-stream`)
   def apply(file: File, fieldName: String, contentType: ContentType): BodyPart =
-    apply(HttpEntity(contentType, HttpData(file)), fieldName, Map.empty.updated("filename", file.getName))
+    apply(HttpEntity(contentType, Bytes(file)), fieldName, Map.empty.updated("filename", file.getName))
 
   def apply(formFile: FormFile, fieldName: String): BodyPart =
     formFile.name match {

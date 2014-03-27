@@ -10,6 +10,7 @@ import org.scalatest.{ Matchers, WordSpec }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import akka.http.util.DateTime
 import scala.util.Try
+import akka.util.Bytes
 
 class SerializabilitySpec extends WordSpec with Matchers {
 
@@ -20,7 +21,7 @@ class SerializabilitySpec extends WordSpec with Matchers {
         HttpRequest(uri = Uri("/test?blub=28&x=5+3")) should beSerializable
       }
       "with content type" in {
-        HttpRequest().withEntity(HttpEntity(ContentTypes.`application/json`, HttpData.Empty)) should beSerializable
+        HttpRequest().withEntity(HttpEntity(ContentTypes.`application/json`, Bytes.Empty)) should beSerializable
       }
       "with accepted media types" in {
         HttpRequest().withHeaders(Accept(MediaTypes.`application/json`)) should beSerializable

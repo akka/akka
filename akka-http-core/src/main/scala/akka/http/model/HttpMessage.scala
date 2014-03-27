@@ -6,6 +6,7 @@ package akka.http.model
 
 import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
+import akka.util.{ByteString, Bytes}
 
 /** Any part of an HTTP message */
 sealed trait HttpMessagePart
@@ -142,7 +143,7 @@ case class HttpResponse(status: StatusCode = StatusCodes.OK,
 /**
  * Individual chunks of a chunked HTTP message (request or response).
  */
-case class MessageChunk(data: HttpData, extension: String) extends HttpRequestPart with HttpResponsePart {
+case class MessageChunk(data: Bytes, extension: String) extends HttpRequestPart with HttpResponsePart {
   require(data.nonEmpty, "Cannot create MessageChunk with empty data")
 }
 
@@ -157,10 +158,10 @@ object MessageChunk {
   def apply(body: String, extension: String): MessageChunk =
     apply(body, `UTF-8`, extension)
   def apply(body: String, charset: HttpCharset, extension: String): MessageChunk =
-    apply(HttpData(body, charset.nioCharset), extension)
+    apply(ByteString(body.getBytes(charset.nioCharset)), extension)
   def apply(bytes: Array[Byte]): MessageChunk =
-    apply(HttpData(bytes))
-  def apply(data: HttpData): MessageChunk =
+    apply(ByteString(bytes))
+  def apply(data: Bytes): MessageChunk =
     apply(data, "")
 }
 
