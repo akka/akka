@@ -115,18 +115,18 @@ object Renderer {
  * The interface for a rendering sink. May be implemented with different backing stores.
  */
 trait Rendering {
-  def ~~(char: Char): this.type
+  def ~~(ch: Char): this.type
   def ~~(bytes: Array[Byte]): this.type
   def ~~(data: HttpData): this.type
 
   def ~~(f: Float): this.type = this ~~ f.toString
   def ~~(d: Double): this.type = this ~~ d.toString
 
-  def ~~(int: Int): this.type = this ~~ int.toLong
+  def ~~(i: Int): this.type = this ~~ i.toLong
 
-  def ~~(long: Long): this.type =
-    if (long != 0) {
-      val value = if (long < 0) { this ~~ '-'; -long } else long
+  def ~~(lng: Long): this.type =
+    if (lng != 0) {
+      val value = if (lng < 0) { this ~~ '-'; -lng } else lng
       @tailrec def magnitude(m: Long = 1): Long = if ((value / m) < 10) m else magnitude(m * 10)
       @tailrec def putNextChar(v: Long, m: Long): this.type =
         if (m > 0) {
@@ -139,19 +139,19 @@ trait Rendering {
   /**
    * Renders the given Int in (lower case) hex notation.
    */
-  def ~~%(int: Int): this.type = this ~~% int.toLong
+  def ~~%(i: Int): this.type = this ~~% i.toLong
 
   /**
    * Renders the given Long in (lower case) hex notation.
    */
-  def ~~%(long: Long): this.type =
-    if (long != 0) {
+  def ~~%(lng: Long): this.type =
+    if (lng != 0) {
       @tailrec def putChar(shift: Int = 60): this.type = {
-        this ~~ CharUtils.lowerHexDigit(long >>> shift)
+        this ~~ CharUtils.lowerHexDigit(lng >>> shift)
         if (shift > 0) putChar(shift - 4) else this
       }
       @tailrec def skipZeros(shift: Int = 60): this.type =
-        if ((long >>> shift) > 0) putChar(shift) else skipZeros(shift - 4)
+        if ((lng >>> shift) > 0) putChar(shift) else skipZeros(shift - 4)
       skipZeros()
     } else this ~~ '0'
 
@@ -204,7 +204,7 @@ object Rendering {
 /** A rendering sink that renders into a String by appending to a StringBuilder. */
 class StringRendering extends Rendering {
   private[this] val sb = new java.lang.StringBuilder
-  def ~~(char: Char): this.type = { sb.append(char); this }
+  def ~~(ch: Char): this.type = { sb.append(ch); this }
   def ~~(bytes: Array[Byte]): this.type = {
     @tailrec def rec(ix: Int = 0): this.type =
       if (ix < bytes.length) { this ~~ bytes(ix).asInstanceOf[Char]; rec(ix + 1) } else this
