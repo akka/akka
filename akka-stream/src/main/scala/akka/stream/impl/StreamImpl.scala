@@ -1,3 +1,6 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl
 
 import asyncrx.api.{ Producer, Consumer, Processor }
@@ -116,6 +119,9 @@ private[akka] object ActorProcessor {
       impl ! ExposedPublisher(a.asInstanceOf[ActorPublisher[Any]])
       a
     }
+
+    def produceTo(consumer: Consumer[T]): Unit =
+      getPublisher.subscribe(consumer.getSubscriber)
   }
 
   class ActorProcessor[I, O]( final val impl: ActorRef) extends Processor[I, O] with ActorConsumer[I] with ActorProducer[O]

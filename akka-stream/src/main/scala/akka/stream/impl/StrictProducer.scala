@@ -1,21 +1,28 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
 import asyncrx.spi
+import asyncrx.api.Consumer
 
 /**
+ * INTERNAL API
+ *
  * An efficient producer for iterators.
  *
  * CAUTION: This is a convenience wrapper designed for iterators over static collections.
  * Do *NOT* use it for iterators on lazy collections or other implementations that do more
  * than merely retrieve an element in their `next()` method!
  */
-class IteratorProducer[T](iterator: Iterator[T],
-                          maxBufferSize: Int = 16,
-                          maxRecursionLevel: Int = 32,
-                          maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
+private[akka] class IteratorProducer[T](
+  iterator: Iterator[T],
+  maxBufferSize: Int = 16,
+  maxRecursionLevel: Int = 32,
+  maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
   extends AbstractStrictProducer[T](initialBufferSize = 1, maxBufferSize, maxRecursionLevel, maxSyncBatchSize) {
 
   if (!iterator.hasNext) completeDownstream()
@@ -30,6 +37,8 @@ class IteratorProducer[T](iterator: Iterator[T],
 }
 
 /**
+ * INTERNAL API
+ *
  * Base class for producers that can provide their elements synchronously.
  *
  * For efficiency it tries to produce elements synchronously before returning from `requestMore`.
@@ -42,15 +51,19 @@ class IteratorProducer[T](iterator: Iterator[T],
  * by `AbstractStrictProducer`. If the `maxRecursionLevel` is surpassed the synchronous production
  * loop is stopped and production of the remaining elements scheduled to the given executor.
  */
-abstract class AbstractStrictProducer[T](initialBufferSize: Int,
-                                         maxBufferSize: Int,
-                                         maxRecursionLevel: Int = 32,
-                                         maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
+private[akka] abstract class AbstractStrictProducer[T](
+  initialBufferSize: Int,
+  maxBufferSize: Int,
+  maxRecursionLevel: Int = 32,
+  maxSyncBatchSize: Int = 128)(implicit executor: ExecutionContext) //FIXME Remove defaults in code
   extends AbstractProducer[T](initialBufferSize, maxBufferSize) {
 
   private[this] val locked = new AtomicBoolean // TODO: replace with AtomicFieldUpdater / sun.misc.Unsafe
   private[this] var pending = 0L
   private[this] var recursionLevel = 0
+
+  def produceTo(consumer: Consumer[T]): Unit =
+    getPublisher.subscribe(consumer.getSubscriber)
 
   /**
    * Implement with the actual production logic.
