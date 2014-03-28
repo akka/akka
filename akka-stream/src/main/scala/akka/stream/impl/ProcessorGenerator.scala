@@ -20,6 +20,25 @@ private[akka] object Ast {
 
   case class Transform(zero: Any, f: (Any, Any) ⇒ (Any, immutable.Seq[Any]), onComplete: Any ⇒ immutable.Seq[Any], isComplete: Any ⇒ Boolean) extends AstNode
   case class Recover(t: Transform) extends AstNode
+
+  trait ProducerNode[I] {
+    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I]
+  }
+
+  case class ExistingProducer[I](producer: Producer[I]) extends ProducerNode[I] {
+    def createProducer(settings: GeneratorSettings, context: ActorRefFactory) = producer
+  }
+
+  case class IteratorProducerNode[I](iterator: Iterator[I]) extends ProducerNode[I] {
+    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+      if (iterator.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
+      else new ActorProducer[I](context.actorOf(IteratorProducer.props(iterator, settings)))
+  }
+  case class IterableProducerNode[I](iterable: immutable.Iterable[I]) extends ProducerNode[I] {
+    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+      if (iterable.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
+      else new ActorProducer[I](context.actorOf(IterableProducer.props(iterable, settings)))
+  }
 }
 
 /**
@@ -39,19 +58,19 @@ private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, co
   }
 
   // Ops come in reverse order
-  override def toProducer[I, O](producerToExtend: Producer[I], ops: List[AstNode]): Producer[O] = {
-    if (ops.isEmpty) producerToExtend.asInstanceOf[Producer[O]]
+  override def toProducer[I, O](producerNode: ProducerNode[I], ops: List[AstNode]): Producer[O] = {
+    if (ops.isEmpty) producerNode.createProducer(settings, context).asInstanceOf[Producer[O]]
     else {
       val opProcessor = processorForNode(ops.head)
       val topConsumer = processorChain(opProcessor, ops.tail)
-      producerToExtend.getPublisher.subscribe(topConsumer.getSubscriber.asInstanceOf[Subscriber[I]])
+      producerNode.createProducer(settings, context).produceTo(topConsumer.asInstanceOf[Consumer[I]])
       opProcessor.asInstanceOf[Producer[O]]
     }
   }
 
   private val identityConsumer = Transform((), (_, _) ⇒ () -> Nil, _ ⇒ Nil, _ ⇒ false)
 
-  override def consume[I](producer: Producer[I], ops: List[AstNode]): Unit = {
+  override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
     val consumer = ops match {
       case Nil ⇒
         new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, identityConsumer)))
@@ -59,7 +78,7 @@ private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, co
         val c = new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, head)))
         processorChain(c, tail)
     }
-    producer.produceTo(consumer.asInstanceOf[Consumer[I]])
+    producerNode.createProducer(settings, context).produceTo(consumer.asInstanceOf[Consumer[I]])
   }
 
   override def produce[T](f: () ⇒ T): Producer[T] = new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
