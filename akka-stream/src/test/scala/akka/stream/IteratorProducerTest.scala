@@ -4,8 +4,8 @@
 package akka.stream
 
 import org.scalatest.testng.TestNGSuiteLike
-import asyncrx.spi.Publisher
-import asyncrx.tck.PublisherVerification
+import org.reactivestreams.spi.Publisher
+import org.reactivestreams.tck.PublisherVerification
 import akka.stream.testkit.TestProducer
 
 class IteratorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
