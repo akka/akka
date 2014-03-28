@@ -71,14 +71,15 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
     reg(CustomStatusCode(intValue)(reason, defaultMessage, isSuccess, allowsEntity))
 
   /** Create and register a custom status code with default behavior for its value region. */
-  def registerCustom(intValue: Int, reason: String, defaultMessage: String = ""): StatusCode = reg (
-    if (100 to 199 contains intValue) Informational(intValue)(reason, defaultMessage)
-    else if (200 to 299 contains intValue) Success(intValue)(reason, defaultMessage)
-    else if (300 to 399 contains intValue) Redirection(intValue)(reason, defaultMessage, defaultMessage)
-    else if (400 to 499 contains intValue) ClientError(intValue)(reason, defaultMessage)
-    else if (500 to 599 contains intValue) ServerError(intValue)(reason, defaultMessage)
-    else sys.error("Can't register status code in non-standard region without additional information")
-  )
+  def registerCustom(intValue: Int, reason: String, defaultMessage: String = ""): StatusCode =
+    reg (
+      if (100 to 199 contains intValue) Informational(intValue)(reason, defaultMessage)
+      else if (200 to 299 contains intValue) Success(intValue)(reason, defaultMessage)
+      else if (300 to 399 contains intValue) Redirection(intValue)(reason, defaultMessage, defaultMessage)
+      else if (400 to 499 contains intValue) ClientError(intValue)(reason, defaultMessage)
+      else if (500 to 599 contains intValue) ServerError(intValue)(reason, defaultMessage)
+      else sys.error("Can't register status code in non-standard region without additional information")
+    )
 
   import Informational.{apply => i}
   import Success      .{apply => s}
