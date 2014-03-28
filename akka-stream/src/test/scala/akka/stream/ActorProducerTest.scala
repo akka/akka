@@ -6,7 +6,6 @@ package akka.stream
 import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.PublisherVerification
-import akka.stream.testkit.TestProducer
 import akka.stream.impl.ActorBasedProcessorGenerator
 import org.reactivestreams.api.Producer
 

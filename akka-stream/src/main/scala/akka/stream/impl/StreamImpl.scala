@@ -15,7 +15,7 @@ import akka.stream.{ ProcessorGenerator, Stream }
 /**
  * INTERNAL API
  */
-private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.AstNode]) extends Stream[O] {
+private[akka] case class StreamImpl[I, O](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]) extends Stream[O] {
   import Ast._
   // Storing ops in reverse order
   private def andThen[U](op: AstNode): Stream[U] = this.copy(ops = op :: ops)
@@ -67,8 +67,8 @@ private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.A
     p.future
   }
 
-  def consume(generator: ProcessorGenerator): Unit = generator.consume(producer, ops)
+  def consume(generator: ProcessorGenerator): Unit = generator.consume(producerNode, ops)
 
-  def toProducer(generator: ProcessorGenerator): Producer[O] = generator.toProducer(producer, ops)
+  def toProducer(generator: ProcessorGenerator): Producer[O] = generator.toProducer(producerNode, ops)
 }
 

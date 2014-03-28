@@ -11,7 +11,6 @@ import akka.actor.Props
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
-import akka.stream.testkit.TestProducer
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
 import akka.stream.impl.ActorBasedProcessorGenerator
@@ -38,8 +37,9 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
-    import system.dispatcher
+    val gen = ProcessorGenerator(GeneratorSettings(
+      maximumInputBufferSize = 512))(system)
     val iter = Iterator from 1000
-    TestProducer(if (elements > 0) iter take elements else iter).getPublisher
+    Stream(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
   }
 }

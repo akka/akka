@@ -13,11 +13,14 @@ import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import akka.stream.impl.Ast.IteratorProducerNode
+import akka.stream.impl.Ast.IterableProducerNode
+import akka.stream.impl.Ast.ExistingProducer
 
 object Stream {
-  def apply[T](producer: Producer[T]): Stream[T] = StreamImpl(producer, Nil)
-  def apply[T](iterator: Iterator[T])(implicit ec: ExecutionContext): Stream[T] = StreamImpl(new IteratorProducer(iterator), Nil)
-  def apply[T](seq: immutable.Seq[T]) = ???
+  def apply[T](producer: Producer[T]): Stream[T] = StreamImpl(ExistingProducer(producer), Nil)
+  def apply[T](iterator: Iterator[T]): Stream[T] = StreamImpl(IteratorProducerNode(iterator), Nil)
+  def apply[T](iterable: immutable.Iterable[T]): Stream[T] = StreamImpl(IterableProducerNode(iterable), Nil)
 
   def apply[T](gen: ProcessorGenerator, f: () ⇒ T): Stream[T] = apply(gen.produce(f))
 
@@ -57,11 +60,11 @@ trait ProcessorGenerator {
    * INTERNAL API
    * ops are stored in reverse order
    */
-  private[akka] def toProducer[I, O](producerToExtend: Producer[I], ops: List[Ast.AstNode]): Producer[O]
+  private[akka] def toProducer[I, O](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Producer[O]
   /**
    * INTERNAL API
    */
-  private[akka] def consume[I](producer: Producer[I], ops: List[Ast.AstNode]): Unit
+  private[akka] def consume[I](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Unit
   /**
    * INTERNAL API
    */
