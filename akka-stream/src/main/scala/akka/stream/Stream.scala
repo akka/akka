@@ -4,7 +4,7 @@
 package akka.stream
 
 import scala.collection.immutable
-import asyncrx.api.{ Consumer, Producer }
+import org.reactivestreams.api.{ Consumer, Producer }
 import scala.util.control.NonFatal
 import akka.stream.impl._
 import akka.actor.ActorRefFactory

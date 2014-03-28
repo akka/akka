@@ -1147,7 +1147,7 @@ object Dependencies {
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
-    val reactiveStreams = "asyncrx" %% "reactive-streams-spi" % "0.1-SNAPSHOT" // FIXME
+    val reactiveStreams = "org.reactivestreams"      %% "reactive-streams-spi"         % "0.1-SNAPSHOT" // CC0
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1181,7 +1181,7 @@ object Dependencies {
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
-      val reactiveStreams = "asyncrx" %% "reactive-streams-tck" % "0.1-SNAPSHOT" % "test" // FIXME
+      val reactiveStreams = "org.reactivestreams"     %% "reactive-streams-tck"         % "0.1-SNAPSHOT"     % "test" // CC0
     }
   }
 
