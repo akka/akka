@@ -20,7 +20,7 @@ trait Stream[T] {
   def map[U](f: T ⇒ U): Stream[U]
   def filter(p: T ⇒ Boolean): Stream[T]
   def grouped(n: Int): Stream[immutable.Seq[T]]
-  def mapSeq[U](f: T ⇒ immutable.Seq[U]): Stream[U]
+  def mapConcat[U](f: T ⇒ immutable.Seq[U]): Stream[U]
   def transform[S, U](zero: S)(f: (S, T) ⇒ (S, immutable.Seq[U])): Stream[U]
   // FIXME onComplete is not implemented
   // FIXME order of the parameters?

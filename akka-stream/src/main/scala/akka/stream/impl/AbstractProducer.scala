@@ -266,6 +266,10 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   }
 }
 
+/*
+ * FIXME: THIS BELOW NEEDS TO BE REMOVED, IT IS NOT USED BY ActorProcessorImpl
+ */
+
 /**
  * INTERNAL API
  *
