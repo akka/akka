@@ -4,7 +4,7 @@
 package akka.stream
 
 import scala.concurrent.duration._
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.{ ChainSetup, StreamTestKit }
 import akka.testkit._
 import org.reactivestreams.api.Producer
 import org.scalatest.FreeSpecLike
@@ -24,8 +24,8 @@ class StreamSpec extends AkkaSpec {
   val identity2: Stream[Any] ⇒ Stream[Any] = in ⇒ identity(in)
 
   "A Stream" must {
-    "requests initial elements from upstream" in {
-      for (op ← List(identity, identity2); n ← List(1, 2, 4)) {
+    for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
+      s"requests initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, genSettings.copy(initialInputBufferSize = n)) {
           upstream.expectRequestMore(upstreamSubscription, settings.initialInputBufferSize)
         }
@@ -374,14 +374,4 @@ class StreamSpec extends AkkaSpec {
 
   object TestException extends RuntimeException
 
-  class ChainSetup[I, O](stream: Stream[I] ⇒ Stream[O], val settings: GeneratorSettings) {
-    val upstream = StreamTestKit.producerProbe[I]()
-    val downstream = StreamTestKit.consumerProbe[O]()
-
-    private val s = stream(Stream(upstream))
-    val producer = s.toProducer(ProcessorGenerator(settings))
-    val upstreamSubscription = upstream.expectSubscription()
-    producer.produceTo(downstream)
-    val downstreamSubscription = downstream.expectSubscription()
-  }
 }
