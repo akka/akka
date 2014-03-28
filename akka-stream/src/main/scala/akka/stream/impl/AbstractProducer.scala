@@ -9,7 +9,10 @@ import asyncrx.spi
 import SubscriberManagement.ShutDown
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
-object SubscriberManagement {
+/**
+ * INTERNAL API
+ */
+private[akka] object SubscriberManagement {
 
   sealed trait EndOfStream {
     def apply[T](subscriber: spi.Subscriber[T]): Unit
@@ -30,7 +33,10 @@ object SubscriberManagement {
   val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down spi.Publisher"))
 }
 
-trait SubscriptionWithCursor extends spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
+/**
+ * INTERNAL API
+ */
+private[akka] trait SubscriptionWithCursor extends spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
   def subscriber[T]: spi.Subscriber[T]
   def isActive: Boolean = cursor != Int.MinValue
   def deactivate(): Unit = cursor = Int.MinValue
@@ -45,7 +51,10 @@ trait SubscriptionWithCursor extends spi.Subscription with ResizableMultiReaderR
   var cursor: Int = 0 // buffer cursor, set to Int.MinValue if this subscription has been cancelled / terminated
 }
 
-trait SubscriberManagement[T] extends ResizableMultiReaderRingBuffer.Cursors {
+/**
+ * INTERNAL API
+ */
+private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuffer.Cursors {
   import SubscriberManagement._
   type S <: SubscriptionWithCursor
   type Subscriptions = List[S]
@@ -258,10 +267,12 @@ trait SubscriberManagement[T] extends ResizableMultiReaderRingBuffer.Cursors {
 }
 
 /**
+ * INTERNAL API
+ *
  * Implements basic subscriber management as well as efficient "slowest-subscriber-rate" downstream fan-out support
  * with configurable and adaptive output buffer size.
  */
-abstract class AbstractProducer[T](val initialBufferSize: Int, val maxBufferSize: Int)
+private[akka] abstract class AbstractProducer[T](val initialBufferSize: Int, val maxBufferSize: Int)
   extends api.Producer[T] with spi.Publisher[T] with SubscriberManagement[T] {
   type S = Subscription
 
