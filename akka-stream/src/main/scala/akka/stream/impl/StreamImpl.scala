@@ -40,7 +40,7 @@ private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.A
       else (group, Nil)
     }
 
-  def mapSeq[U](f: O ⇒ immutable.Seq[U]): Stream[U] = transform(())((_, in) ⇒ ((), f(in)))
+  def mapConcat[U](f: O ⇒ immutable.Seq[U]): Stream[U] = transform(())((_, in) ⇒ ((), f(in)))
 
   def transform[S, U](zero: S)(f: (S, O) ⇒ (S, immutable.Seq[U])): Stream[U] = transform(zero, (_: S) ⇒ Nil)(f)
 
