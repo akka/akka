@@ -6,7 +6,7 @@ package akka.http.model
 
 import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
-import akka.util.{ByteString, Bytes}
+import akka.util.{ ByteString, Bytes }
 
 /** Any part of an HTTP message */
 sealed trait HttpMessagePart

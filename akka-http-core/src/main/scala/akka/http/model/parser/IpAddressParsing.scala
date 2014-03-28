@@ -5,7 +5,6 @@
 package akka.http.model.parser
 
 import org.parboiled2._
-import shapeless._
 
 private[parser] trait IpAddressParsing { this: Parser ⇒
   import CharacterClasses._

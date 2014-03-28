@@ -5,7 +5,7 @@
 package akka.http.model
 
 import language.implicitConversions
-import akka.util.{Bytes, ByteString}
+import akka.util.{ Bytes, ByteString }
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -54,12 +54,7 @@ object HttpEntity {
     def toOption = None
   }
 
-  /**
-   * Models a non-empty entity. The buffer array is guaranteed to have a size greater than zero.
-   * CAUTION: Even though the byte array is directly exposed for performance reasons all instances of this class are
-   * assumed to be immutable! spray never modifies the buffer contents after an HttpEntity.NonEmpty instance has been created.
-   * If you modify the buffer contents by writing to the array things WILL BREAK!
-   */
+  /** Models a non-empty entity. The buffer array is guaranteed to have a size greater than zero. */
   case class NonEmpty private[HttpEntity] (contentType: ContentType, data: Bytes) extends HttpEntity {
     require(data.nonEmpty)
     def isEmpty = false

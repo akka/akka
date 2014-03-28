@@ -6,6 +6,9 @@ package akka.http.model
 
 import language.implicitConversions
 
+/**
+ * A composable predicate to match HttpMessages used for defining filters.
+ */
 trait MessagePredicate extends (HttpMessage ⇒ Boolean) { self ⇒
   def &&(that: MessagePredicate): MessagePredicate = new MessagePredicate {
     def apply(msg: HttpMessage) = self(msg) && that(msg)
