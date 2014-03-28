@@ -2,7 +2,6 @@
  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream
-// FIXME why plural in the package name?
 
 import scala.collection.immutable
 import asyncrx.api.{ Consumer, Producer }

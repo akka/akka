@@ -1,19 +1,21 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl
 
 import scala.annotation.tailrec
 import scala.util.control.NoStackTrace
 import ResizableMultiReaderRingBuffer._
 
-// FIXME move to impl
-
 /**
+ * INTERNAL API
  * A mutable RingBuffer that can grow in size and supports multiple readers.
  * Contrary to many other ring buffer implementations this one does not automatically overwrite the oldest
  * elements, rather, if full, the buffer tries to grow and rejects further writes if max capacity is reached.
  */
-class ResizableMultiReaderRingBuffer[T](initialSize: Int, // constructor param, not field
-                                        maxSize: Int, // constructor param, not field
-                                        val cursors: Cursors) {
+private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // constructor param, not field
+                                                      maxSize: Int, // constructor param, not field
+                                                      val cursors: Cursors) {
   require(Integer.lowestOneBit(maxSize) == maxSize && 0 < maxSize && maxSize <= Int.MaxValue / 2,
     "maxSize must be a power of 2 that is > 0 and < Int.MaxValue/2")
   require(Integer.lowestOneBit(initialSize) == initialSize && 0 < initialSize && initialSize <= maxSize,
@@ -159,7 +161,10 @@ class ResizableMultiReaderRingBuffer[T](initialSize: Int, // constructor param, 
     s"ResizableMultiReaderRingBuffer(size=$size, writeIx=$writeIx, readIx=$readIx, cursors=${cursors.cursors.size})"
 }
 
-object ResizableMultiReaderRingBuffer {
+/**
+ * INTERNAL API
+ */
+private[akka] object ResizableMultiReaderRingBuffer {
   object NothingToReadException extends RuntimeException with NoStackTrace
 
   trait Cursors {
