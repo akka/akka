@@ -6,8 +6,8 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import asyncrx.spi
-import asyncrx.api.Consumer
+import org.reactivestreams.spi
+import org.reactivestreams.api.Consumer
 
 /**
  * INTERNAL API

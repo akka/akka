@@ -3,10 +3,10 @@
  */
 package akka.stream.testkit
 
-import asyncrx.spi.{ Subscriber, Subscription }
-import asyncrx.api.Producer
+import org.reactivestreams.spi.{ Subscriber, Subscription }
+import org.reactivestreams.api.Producer
 import scala.concurrent.duration.FiniteDuration
-import asyncrx.api.Consumer
+import org.reactivestreams.api.Consumer
 
 sealed trait ProducerEvent
 case class Subscribe(subscription: Subscription) extends ProducerEvent

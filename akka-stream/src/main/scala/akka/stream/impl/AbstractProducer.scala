@@ -4,8 +4,8 @@
 package akka.stream.impl
 
 import scala.annotation.tailrec
-import asyncrx.api
-import asyncrx.spi
+import org.reactivestreams.api
+import org.reactivestreams.spi
 import SubscriberManagement.ShutDown
 import ResizableMultiReaderRingBuffer.NothingToReadException
 

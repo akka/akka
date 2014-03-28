@@ -6,7 +6,7 @@ package akka.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.testkit._
-import asyncrx.api.Producer
+import org.reactivestreams.api.Producer
 import org.scalatest.FreeSpecLike
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

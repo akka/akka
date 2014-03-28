@@ -3,9 +3,9 @@
  */
 package akka.stream.impl
 
-import asyncrx.api.{ Producer, Consumer, Processor }
+import org.reactivestreams.api.{ Producer, Consumer, Processor }
 import akka.actor.{ Actor, ActorRef, ActorRefFactory, Props, PoisonPill }
-import asyncrx.spi.{ Publisher, Subscription, Subscriber }
+import org.reactivestreams.spi.{ Publisher, Subscription, Subscriber }
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 import scala.util.control.NonFatal

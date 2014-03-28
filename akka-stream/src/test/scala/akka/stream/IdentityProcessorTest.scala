@@ -4,9 +4,9 @@
 package akka.stream
 
 import org.scalatest.testng.TestNGSuiteLike
-import asyncrx.spi.Publisher
-import asyncrx.api.Processor
-import asyncrx.tck.IdentityProcessorVerification
+import org.reactivestreams.spi.Publisher
+import org.reactivestreams.api.Processor
+import org.reactivestreams.tck.IdentityProcessorVerification
 import akka.actor.Props
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
