@@ -6,7 +6,6 @@ package akka.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
-import akka.stream.impl.IteratorProducer
 import akka.testkit.EventFilter
 import scala.util.Failure
 import scala.util.control.NoStackTrace
@@ -24,7 +23,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
 
   "A Stream with transformRecover operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = new IteratorProducer(List(1, 2, 3).iterator)
+      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, List(tot + elem.get))).
         toProducer(gen)
@@ -41,7 +40,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = new IteratorProducer(List(1, 2, 3).iterator)
+      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, Vector.fill(elem.get)(tot + elem.get))).
         toProducer(gen)
@@ -61,7 +60,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce dropping transformation as expected" in {
-      val p = new IteratorProducer(List(1, 2, 3, 4).iterator)
+      val p = Stream(List(1, 2, 3, 4).iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, if (elem.get % 2 == 0) Nil else List(tot + elem.get))).
         toProducer(gen)
@@ -78,7 +77,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce multi-step transformation as expected" in {
-      val p = new IteratorProducer(List("a", "bc", "def").iterator)
+      val p = Stream(List("a", "bc", "def").iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover("") { (str, elem) ⇒
           val concat = str + elem
@@ -108,7 +107,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "invoke onComplete when done" in {
-      val p = new IteratorProducer(List("a").iterator)
+      val p = Stream(List("a").iterator).toProducer(gen)
       val p2 = Stream(p).transformRecover("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
       val c = StreamTestKit.consumerProbe[String]
       p2.produceTo(c)
@@ -154,7 +153,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "report error when exception is thrown" in {
-      val p = new IteratorProducer(List(1, 2, 3).iterator)
+      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover(0) { (_, elem) ⇒
           if (elem.get == 2) throw new IllegalArgumentException("two not allowed") else (0, List(elem.get, elem.get))
@@ -206,7 +205,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "support cancel as expected" in {
-      val p = new IteratorProducer(List(1, 2, 3).iterator)
+      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
       val p2 = Stream(p).
         transformRecover(0) { (_, elem) ⇒ (0, List(elem.get, elem.get)) }.
         toProducer(gen)
