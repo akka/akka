@@ -104,6 +104,17 @@ class StreamTransformSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
+    "invoke onComplete when done" in {
+      val p = new IteratorProducer(List("a").iterator)
+      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
+      val c = StreamTestKit.consumerProbe[String]
+      p2.produceTo(c)
+      val s = c.expectSubscription()
+      s.requestMore(1)
+      c.expectNext("aB")
+      c.expectComplete()
+    }
+
     "report error when exception is thrown" in {
       val p = new IteratorProducer(List(1, 2, 3).iterator)
       val p2 = Stream(p).

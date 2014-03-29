@@ -22,9 +22,7 @@ trait Stream[T] {
   def drop(n: Int): Stream[T]
   def grouped(n: Int): Stream[immutable.Seq[T]]
   def mapConcat[U](f: T ⇒ immutable.Seq[U]): Stream[U]
-  def transform[S, U](zero: S)(f: (S, T) ⇒ (S, immutable.Seq[U])): Stream[U]
-  // FIXME order of the parameters?
-  def transform[S, U](zero: S, onComplete: S ⇒ immutable.Seq[U])(f: (S, T) ⇒ (S, immutable.Seq[U])): Stream[U]
+  def transform[S, U](zero: S)(f: (S, T) ⇒ (S, immutable.Seq[U]), onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil): Stream[U]
   def toProducer(generator: ProcessorGenerator): Producer[T]
 }
 
