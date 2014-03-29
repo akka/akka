@@ -34,6 +34,8 @@ private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.A
 
   def filter(p: O ⇒ Boolean): Stream[O] = transform(())((_, in) ⇒ if (p(in)) ((), List(in)) else ((), Nil))
 
+  def foreach(c: O ⇒ Unit): Stream[Unit] = transform(())((_, in) ⇒ c(in) -> Nil, _ ⇒ List(()))
+
   def fold[U](zero: U)(f: (U, O) ⇒ U): Stream[U] = transform(zero)((z, in) ⇒ f(z, in) -> Nil, z ⇒ List(z))
 
   def drop(n: Int): Stream[O] = transform(n)((x, in) ⇒ if (x == 0) 0 -> List(in) else (x - 1) -> Nil)
