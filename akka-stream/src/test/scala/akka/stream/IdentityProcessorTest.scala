@@ -25,7 +25,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
 
     // FIXME can we use API to create the IdentityProcessor instead?
     def identityProps(settings: GeneratorSettings): Props =
-      Props(new TransformProcessorImpl(settings, Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil)))
+      Props(new TransformProcessorImpl(settings, Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil, (_: Any) ⇒ false)))
 
     val actor = system.actorOf(identityProps(
       GeneratorSettings(

@@ -115,6 +115,41 @@ class StreamTransformSpec extends AkkaSpec {
       c.expectComplete()
     }
 
+    "allow cancellation using isComplete" in {
+      val p = StreamTestKit.producerProbe[Int]
+      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, List(in)), isComplete = _ == "1").toProducer(gen)
+      val proc = p.expectSubscription
+      val c = StreamTestKit.consumerProbe[Int]
+      p2.produceTo(c)
+      val s = c.expectSubscription()
+      s.requestMore(10)
+      proc.expectRequestMore(2)
+      proc.sendNext(1)
+      proc.sendNext(2)
+      proc.expectRequestMore(1)
+      c.expectNext(1)
+      c.expectComplete()
+      proc.expectCancellation()
+    }
+
+    "call onComplete after isComplete signaled completion" in {
+      val p = StreamTestKit.producerProbe[Int]
+      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, List(in)), onComplete = x ⇒ List(x.size + 10), isComplete = _ == "1").toProducer(gen)
+      val proc = p.expectSubscription
+      val c = StreamTestKit.consumerProbe[Int]
+      p2.produceTo(c)
+      val s = c.expectSubscription()
+      s.requestMore(10)
+      proc.expectRequestMore(2)
+      proc.sendNext(1)
+      proc.sendNext(2)
+      proc.expectRequestMore(1)
+      c.expectNext(1)
+      c.expectNext(11)
+      c.expectComplete()
+      proc.expectCancellation()
+    }
+
     "report error when exception is thrown" in {
       val p = new IteratorProducer(List(1, 2, 3).iterator)
       val p2 = Stream(p).
