@@ -5,9 +5,10 @@ package akka.stream
 
 import akka.actor.ActorSystem
 import org.testng.annotations.AfterClass
+import akka.testkit.AkkaSpec
 
 trait WithActorSystem {
-  val system: ActorSystem = ActorSystem(getClass.getSimpleName)
+  val system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf)
 
   @AfterClass
   def shutdownActorSystem(): Unit = system.shutdown()

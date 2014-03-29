@@ -11,6 +11,7 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.stream.{ Stream, GeneratorSettings, ProcessorGenerator }
 import scala.collection.immutable
+import akka.actor.ActorLogging
 
 /**
  * INTERNAL API
@@ -184,7 +185,7 @@ private[akka] object ActorProcessor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings) extends Actor with SubscriberManagement[Any] {
+private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings) extends Actor with SubscriberManagement[Any] with ActorLogging {
   import ActorProcessor._
   type S = ActorSubscription
 
@@ -221,9 +222,14 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // All methods called here are implemented by SubscriberManagement
   val downstreamManagement: Receive = {
-    case SubscribePending                    ⇒ subscribePending()
-    case RequestMore(subscription, elements) ⇒ moreRequested(subscription, elements)
-    case Cancel(subscription)                ⇒ unregisterSubscription(subscription)
+    case SubscribePending ⇒
+      subscribePending()
+    case RequestMore(subscription, elements) ⇒
+      moreRequested(subscription, elements)
+      pump()
+    case Cancel(subscription) ⇒
+      unregisterSubscription(subscription)
+      pump()
   }
 
   private def subscribePending(): Unit =
@@ -246,10 +252,10 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   // Called by SubscriberManagement whenever the output buffer is ready to accept additional elements
   override protected def requestFromUpstream(elements: Int): Unit = {
     downstreamBufferSpace += elements
-    pump()
   }
 
   def fail(e: Throwable): Unit = {
+    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
     abortDownstream(e)
     if (upstream ne null) upstream.cancel()
     context.stop(self)
@@ -292,12 +298,12 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // States of the operation that is executed by this processor
   trait TransferState {
-    def isReady: Boolean
+    protected def isReady: Boolean
     def isCompleted: Boolean
     def isExecutable = isReady && !isCompleted
-    def inputsAvailable = inputBufferElements > 0
-    def demandAvailable = downstreamBufferSpace > 0
-    def inputsDepleted = upstreamCompleted && inputBufferElements == 0
+    protected def inputsAvailable = inputBufferElements > 0
+    protected def demandAvailable = downstreamBufferSpace > 0
+    protected def inputsDepleted = upstreamCompleted && inputBufferElements == 0
   }
   object NeedsInput extends TransferState {
     def isReady = inputsAvailable
@@ -316,33 +322,26 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
-  var pumping = false
-  def pump(): Unit = {
-    if (!pumping) {
-      // Prevent reentry from SubscriberManagement
-      pumping = true
-      try while (transferState.isExecutable)
-        transferState = transfer()
-      catch { case NonFatal(e) ⇒ fail(e) }
-      pumping = false
+  protected def pump(): Unit = {
+    try while (transferState.isExecutable)
+      transferState = transfer()
+    catch { case NonFatal(e) ⇒ fail(e) }
 
-      if (transferState.isCompleted) {
-        isShuttingDown = true
-        completeDownstream()
-      }
-
+    if (transferState.isCompleted) {
+      isShuttingDown = true
+      completeDownstream()
     }
   }
 
   // Needs to be implemented by Processor implementations. Transfers elements from the input buffer to the output
   // buffer.
-  def transfer(): TransferState
+  protected def transfer(): TransferState
 
   //////////////////////  Completing and Flushing  //////////////////////
 
   var upstreamCompleted = false
 
-  def flushAndComplete(): Unit = {
+  protected def flushAndComplete(): Unit = {
     upstreamCompleted = true
     context.become(flushing)
     pump()
