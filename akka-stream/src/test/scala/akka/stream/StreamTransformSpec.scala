@@ -7,6 +7,7 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.stream.impl.IteratorProducer
+import akka.testkit.EventFilter
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamTransformSpec extends AkkaSpec {
@@ -113,11 +114,13 @@ class StreamTransformSpec extends AkkaSpec {
       val consumer = StreamTestKit.consumerProbe[Int]
       p2.produceTo(consumer)
       val subscription = consumer.expectSubscription()
-      subscription.requestMore(100)
-      consumer.expectNext(1)
-      consumer.expectNext(1)
-      consumer.expectError().getMessage should be("two not allowed")
-      consumer.expectNoMsg(200.millis)
+      EventFilter[IllegalArgumentException]("two not allowed") intercept {
+        subscription.requestMore(100)
+        consumer.expectNext(1)
+        consumer.expectNext(1)
+        consumer.expectError().getMessage should be("two not allowed")
+        consumer.expectNoMsg(200.millis)
+      }
     }
 
     "support cancel as expected" in {

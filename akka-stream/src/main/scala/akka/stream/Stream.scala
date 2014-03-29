@@ -23,7 +23,6 @@ trait Stream[T] {
   def grouped(n: Int): Stream[immutable.Seq[T]]
   def mapConcat[U](f: T ⇒ immutable.Seq[U]): Stream[U]
   def transform[S, U](zero: S)(f: (S, T) ⇒ (S, immutable.Seq[U])): Stream[U]
-  // FIXME onComplete is not implemented
   // FIXME order of the parameters?
   def transform[S, U](zero: S, onComplete: S ⇒ immutable.Seq[U])(f: (S, T) ⇒ (S, immutable.Seq[U])): Stream[U]
   def toProducer(generator: ProcessorGenerator): Producer[T]

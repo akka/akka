@@ -74,8 +74,10 @@ class StreamSpec extends AkkaSpec {
     "deliver error signal when publisher immediately fails" in {
       new ChainSetup(identity, genSettings) {
         object WeirdError extends RuntimeException("weird test exception")
-        upstreamSubscription.sendError(WeirdError)
-        downstream.expectError(WeirdError)
+        EventFilter[WeirdError.type](occurrences = 1) intercept {
+          upstreamSubscription.sendError(WeirdError)
+          downstream.expectError(WeirdError)
+        }
       }
     }
 
@@ -341,10 +343,12 @@ class StreamSpec extends AkkaSpec {
         downstreamSubscription.requestMore(1)
         upstreamSubscription.expectRequestMore(1)
 
-        upstreamSubscription.sendNext(5)
-        upstreamSubscription.expectRequestMore(1)
-        upstreamSubscription.expectCancellation()
-        downstream.expectError(TestException)
+        EventFilter[TestException.type](occurrences = 1) intercept {
+          upstreamSubscription.sendNext(5)
+          upstreamSubscription.expectRequestMore(1)
+          upstreamSubscription.expectCancellation()
+          downstream.expectError(TestException)
+        }
 
         val downstream2 = StreamTestKit.consumerProbe[String]()
         producer.produceTo(downstream2)
