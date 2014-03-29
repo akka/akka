@@ -22,9 +22,13 @@ trait Stream[T] {
   def foreach(c: T ⇒ Unit): Stream[Unit]
   def fold[U](zero: U)(f: (U, T) ⇒ U): Stream[U]
   def drop(n: Int): Stream[T]
+  def take(n: Int): Stream[T]
   def grouped(n: Int): Stream[immutable.Seq[T]]
   def mapConcat[U](f: T ⇒ immutable.Seq[U]): Stream[U]
-  def transform[S, U](zero: S)(f: (S, T) ⇒ (S, immutable.Seq[U]), onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil): Stream[U]
+  def transform[S, U](zero: S)(
+    f: (S, T) ⇒ (S, immutable.Seq[U]),
+    onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
+    isComplete: S ⇒ Boolean = (_: S) ⇒ false): Stream[U]
   def toProducer(generator: ProcessorGenerator): Producer[T]
 }
 
