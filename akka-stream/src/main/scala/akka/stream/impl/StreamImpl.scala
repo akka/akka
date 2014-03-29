@@ -33,6 +33,8 @@ private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.A
 
   def filter(p: O ⇒ Boolean): Stream[O] = transform(())((_, in) ⇒ if (p(in)) ((), List(in)) else ((), Nil))
 
+  def drop(n: Int): Stream[O] = transform(n)((x, in) ⇒ if (x == 0) 0 -> List(in) else (x - 1) -> Nil)
+
   def grouped(n: Int): Stream[immutable.Seq[O]] =
     transform[immutable.Seq[O], immutable.Seq[O]](Nil, (x: immutable.Seq[O]) ⇒ List(x)) { (buf: immutable.Seq[O], in: O) ⇒
       val group = buf :+ in
