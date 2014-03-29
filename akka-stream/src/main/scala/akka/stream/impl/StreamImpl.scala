@@ -37,17 +37,15 @@ private[akka] case class StreamImpl[I, O](producer: Producer[I], ops: List[Ast.A
   def drop(n: Int): Stream[O] = transform(n)((x, in) ⇒ if (x == 0) 0 -> List(in) else (x - 1) -> Nil)
 
   def grouped(n: Int): Stream[immutable.Seq[O]] =
-    transform[immutable.Seq[O], immutable.Seq[O]](Nil, (x: immutable.Seq[O]) ⇒ List(x)) { (buf: immutable.Seq[O], in: O) ⇒
+    transform(immutable.Seq.empty[O])((buf, in) ⇒ {
       val group = buf :+ in
       if (group.size == n) (Nil, List(group))
       else (group, Nil)
-    }
+    }, x ⇒ if (x.isEmpty) Nil else List(x))
 
   def mapConcat[U](f: O ⇒ immutable.Seq[U]): Stream[U] = transform(())((_, in) ⇒ ((), f(in)))
 
-  def transform[S, U](zero: S)(f: (S, O) ⇒ (S, immutable.Seq[U])): Stream[U] = transform(zero, (_: S) ⇒ Nil)(f)
-
-  def transform[S, U](zero: S, onComplete: S ⇒ immutable.Seq[U])(f: (S, O) ⇒ (S, immutable.Seq[U])): Stream[U] =
+  def transform[S, U](zero: S)(f: (S, O) ⇒ (S, immutable.Seq[U]), onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil): Stream[U] =
     andThen(Transform(
       zero,
       f.asInstanceOf[(Any, Any) ⇒ (Any, immutable.Seq[Any])],
@@ -241,7 +239,9 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     case OnNext(element) ⇒
       enqueueInputElement(element)
       pump()
-    case OnComplete     ⇒ flushAndComplete()
+    case OnComplete ⇒
+      flushAndComplete()
+      pump()
     case OnError(cause) ⇒ fail(cause)
   }
 
@@ -261,15 +261,15 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     context.stop(self)
   }
 
-  var downstreamBufferSpace = 0
-  var inputBuffer = Array.ofDim[Any](settings.initialInputBufferSize)
-  var inputBufferElements = 0
-  var nextInputElementCursor = 0
+  private var downstreamBufferSpace = 0
+  private var inputBuffer = Array.ofDim[Any](settings.initialInputBufferSize)
+  private var inputBufferElements = 0
+  private var nextInputElementCursor = 0
   val IndexMask = settings.initialInputBufferSize - 1
 
   // TODO: buffer and batch sizing heuristics
   def requestBatchSize = math.max(1, inputBuffer.length / 2)
-  var batchRemaining = requestBatchSize
+  private var batchRemaining = requestBatchSize
 
   def dequeueInputElement(): Any = {
     val elem = inputBuffer(nextInputElementCursor & IndexMask)
@@ -301,21 +301,25 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     protected def isReady: Boolean
     def isCompleted: Boolean
     def isExecutable = isReady && !isCompleted
-    protected def inputsAvailable = inputBufferElements > 0
-    protected def demandAvailable = downstreamBufferSpace > 0
-    protected def inputsDepleted = upstreamCompleted && inputBufferElements == 0
+    def inputsAvailable = inputBufferElements > 0
+    def demandAvailable = downstreamBufferSpace > 0
+    def inputsDepleted = upstreamCompleted && inputBufferElements == 0
   }
   object NeedsInput extends TransferState {
-    def isReady = inputsAvailable
-    def isCompleted = inputsDepleted
+    def isReady = inputsAvailable || inputsDepleted
+    def isCompleted = false
   }
   object NeedsDemand extends TransferState {
     def isReady = demandAvailable
     def isCompleted = false
   }
   object NeedsInputAndDemand extends TransferState {
-    def isReady = inputsAvailable && demandAvailable
-    def isCompleted = inputsDepleted
+    def isReady = inputsAvailable && demandAvailable || inputsDepleted
+    def isCompleted = false
+  }
+  object Completed extends TransferState {
+    def isReady = false
+    def isCompleted = true
   }
 
   var transferState: TransferState = NeedsInputAndDemand
@@ -323,9 +327,9 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
   protected def pump(): Unit = {
-    try while (transferState.isExecutable)
-      transferState = transfer()
-    catch { case NonFatal(e) ⇒ fail(e) }
+    try while (transferState.isExecutable) {
+      transferState = transfer(transferState)
+    } catch { case NonFatal(e) ⇒ fail(e) }
 
     if (transferState.isCompleted) {
       isShuttingDown = true
@@ -335,7 +339,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // Needs to be implemented by Processor implementations. Transfers elements from the input buffer to the output
   // buffer.
-  protected def transfer(): TransferState
+  protected def transfer(current: TransferState): TransferState
 
   //////////////////////  Completing and Flushing  //////////////////////
 
@@ -344,7 +348,6 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   protected def flushAndComplete(): Unit = {
     upstreamCompleted = true
     context.become(flushing)
-    pump()
   }
 
   def flushing: Receive = downstreamManagement orElse {
@@ -396,17 +399,24 @@ private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast
   // TODO performance improvement: mutable buffer?
   var emits = immutable.Seq.empty[Any]
 
-  override def transfer(): TransferState = {
+  override def transfer(current: TransferState): TransferState = {
+    val depleted = current.inputsDepleted
     if (emits.isEmpty) {
-      val (nextState, newEmits) = op.f(state, dequeueInputElement())
-      state = nextState
-      emits = newEmits
+      if (depleted) {
+        emits = op.onComplete(state)
+      } else {
+        val e = dequeueInputElement()
+        val (nextState, newEmits) = op.f(state, e)
+        state = nextState
+        emits = newEmits
+      }
     } else {
       enqueueOutputElement(emits.head)
       emits = emits.tail
     }
 
     if (emits.nonEmpty) NeedsDemand
+    else if (depleted) Completed
     else NeedsInputAndDemand
   }
 }
