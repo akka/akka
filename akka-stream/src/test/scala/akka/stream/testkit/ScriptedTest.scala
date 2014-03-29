@@ -62,6 +62,8 @@ trait ScriptedTest extends ShouldMatchers {
 
     def finished: Boolean = outputCursor == expectedOutputs.size
 
+    def error(e: Throwable): Script[In, Out] = throw e
+
     def pendingOuts: Int = outputEndCursor - outputCursor
     def noOutsPending: Boolean = pendingOuts == 0
     def someOutsPending: Boolean = !noOutsPending
@@ -131,6 +133,9 @@ trait ScriptedTest extends ShouldMatchers {
           true
         case OnComplete ⇒
           currentScript = currentScript.complete()
+          true
+        case OnError(e) ⇒
+          currentScript = currentScript.error(e)
           true
         case _ ⇒ false // Ignore
       }

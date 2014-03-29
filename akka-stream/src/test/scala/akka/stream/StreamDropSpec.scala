@@ -15,9 +15,9 @@ class StreamDropSpec extends AkkaSpec with ScriptedTest {
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16)
 
-  "A Map" must {
+  "A Drop" must {
 
-    "map" in {
+    "drop" in {
       def script(d: Int) = Script((1 to 50) map { n ⇒ Seq(n) -> (if (n <= d) Nil else Seq(n)) }: _*)
       (1 to 50) foreach { _ ⇒
         val d = Math.min(Math.max(random.nextInt(-10, 60), 0), 50)

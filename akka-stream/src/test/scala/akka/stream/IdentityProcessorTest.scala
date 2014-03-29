@@ -12,8 +12,12 @@ import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
 import akka.stream.testkit.TestProducer
+import akka.testkit.TestEvent
+import akka.testkit.EventFilter
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
+
+  system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
 
   def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     val fanoutSize = maxBufferSize / 2
@@ -23,12 +27,16 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     def identityProps(settings: GeneratorSettings): Props =
       Props(new TransformProcessorImpl(settings, Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil)))
 
-    ActorProcessor[Int, Int](system.actorOf(identityProps(
+    val actor = system.actorOf(identityProps(
       GeneratorSettings(
         initialInputBufferSize = inputSize,
         maximumInputBufferSize = inputSize,
         initialFanOutBufferSize = fanoutSize,
-        maxFanOutBufferSize = fanoutSize))))
+        maxFanOutBufferSize = fanoutSize)))
+
+    println(actor)
+
+    ActorProcessor[Int, Int](actor)
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
