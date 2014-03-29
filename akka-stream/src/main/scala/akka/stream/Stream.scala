@@ -19,6 +19,7 @@ object Stream {
 trait Stream[T] {
   def map[U](f: T ⇒ U): Stream[U]
   def filter(p: T ⇒ Boolean): Stream[T]
+  def fold[U](zero: U)(f: (U, T) ⇒ U): Stream[U]
   def drop(n: Int): Stream[T]
   def grouped(n: Int): Stream[immutable.Seq[T]]
   def mapConcat[U](f: T ⇒ immutable.Seq[U]): Stream[U]
