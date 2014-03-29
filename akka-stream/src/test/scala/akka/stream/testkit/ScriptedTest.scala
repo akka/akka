@@ -85,6 +85,7 @@ trait ScriptedTest extends ShouldMatchers {
     var _debugLog = Vector.empty[String]
     var currentScript = script
     var remainingDemand = script.expectedOutputs.size + ThreadLocalRandom.current().nextInt(maximumOverrun)
+    remainingDemand = Math.max(1, remainingDemand)
     debugLog(s"starting with remainingDemand=$remainingDemand")
     var pendingRequests = 0
     var outstandingDemand = 0
@@ -167,6 +168,7 @@ trait ScriptedTest extends ShouldMatchers {
       }
 
       try {
+        debugLog(s"running $script")
         requestMore(getNextDemand())
         doRun(0)
       } catch {
