@@ -65,6 +65,7 @@ private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // const
    * Applies availability bounds to the given element number.
    * Equivalent to `min(maxAvailable, max(immediatelyAvailable, elements))`.
    */
+  // FIXME this is nonsense (always returns maxAvailable)
   def potentiallyAvailable(elements: Int): Int =
     math.min(maxAvailable, math.max(immediatelyAvailable, elements))
 
