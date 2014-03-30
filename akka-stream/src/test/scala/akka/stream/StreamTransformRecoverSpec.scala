@@ -73,6 +73,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
       consumer.expectNoMsg(200.millis)
       subscription.requestMore(1)
       consumer.expectNext(6)
+      subscription.requestMore(1)
       consumer.expectComplete()
     }
 

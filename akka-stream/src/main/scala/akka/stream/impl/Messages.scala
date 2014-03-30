@@ -13,8 +13,8 @@ case class OnError(cause: Throwable)
 
 case object SubscribePending
 
-case class RequestMore(subscription: ActorSubscription, demand: Int)
-case class Cancel(subscriptions: ActorSubscription)
+case class RequestMore(subscription: ActorSubscription[_], demand: Int)
+case class Cancel(subscriptions: ActorSubscription[_])
 
 case class ExposedPublisher(publisher: ActorPublisher[Any])
 

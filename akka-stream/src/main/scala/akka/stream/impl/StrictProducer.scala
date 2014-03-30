@@ -104,7 +104,7 @@ private[akka] abstract class AbstractStrictProducer[T](
       })
   }
 
-  protected def shutdown(): Unit = cancelUpstream()
+  protected def shutdown(completed: Boolean): Unit = cancelUpstream()
   protected def cancelUpstream(): Unit = pending = 0
 
   // outside Publisher interface, can potentially called from another thread,

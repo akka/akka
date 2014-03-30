@@ -8,7 +8,7 @@ import org.testng.annotations.AfterClass
 import akka.testkit.AkkaSpec
 
 trait WithActorSystem {
-  val system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf)
 
   @AfterClass
   def shutdownActorSystem(): Unit = system.shutdown()

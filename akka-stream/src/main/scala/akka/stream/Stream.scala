@@ -12,11 +12,16 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 object Stream {
   def apply[T](producer: Producer[T]): Stream[T] = StreamImpl(producer, Nil)
   def apply[T](iterator: Iterator[T])(implicit ec: ExecutionContext): Stream[T] = StreamImpl(new IteratorProducer(iterator), Nil)
   def apply[T](seq: immutable.Seq[T]) = ???
+
+  def apply[T](gen: ProcessorGenerator, f: () ⇒ T): Stream[T] = apply(gen.produce(f))
+
+  object Stop extends RuntimeException with NoStackTrace
 }
 
 trait Stream[T] {
@@ -57,6 +62,10 @@ trait ProcessorGenerator {
    * INTERNAL API
    */
   private[akka] def consume[I](producer: Producer[I], ops: List[Ast.AstNode]): Unit
+  /**
+   * INTERNAL API
+   */
+  private[akka] def produce[T](f: () ⇒ T): Producer[T]
 }
 
 // FIXME default values? Should we have an extension that reads from config?

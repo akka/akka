@@ -8,9 +8,10 @@ import akka.stream.testkit.{ ChainSetup, StreamTestKit }
 import akka.testkit._
 import org.reactivestreams.api.Producer
 import org.scalatest.FreeSpecLike
+import com.typesafe.config.ConfigFactory
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamSpec extends AkkaSpec {
+class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   import system.dispatcher
 
@@ -24,6 +25,7 @@ class StreamSpec extends AkkaSpec {
   val identity2: Stream[Any] ⇒ Stream[Any] = in ⇒ identity(in)
 
   "A Stream" must {
+
     for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
       s"requests initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, genSettings.copy(initialInputBufferSize = n)) {
@@ -48,9 +50,6 @@ class StreamSpec extends AkkaSpec {
         upstreamSubscription.sendNext("d")
         downstream.expectNext("b")
         downstream.expectNext("c")
-        upstream.expectRequestMore(upstreamSubscription, 1)
-        upstream.expectRequestMore(upstreamSubscription, 1)
-        upstream.expectRequestMore(upstreamSubscription, 1)
       }
     }
 
@@ -214,10 +213,12 @@ class StreamSpec extends AkkaSpec {
         upstreamSubscription.sendNext("firstElement")
         downstream.expectNext("firstElement")
 
-        downstream2Subscription.requestMore(1)
-        downstream2.expectNext("firstElement")
         upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext("element2")
+
+        downstream.expectNoMsg(1.second)
+        downstream2Subscription.requestMore(1)
+        downstream2.expectNext("firstElement")
 
         downstream.expectNext("element2")
 
