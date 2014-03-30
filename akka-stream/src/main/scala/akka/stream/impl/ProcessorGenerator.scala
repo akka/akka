@@ -62,6 +62,8 @@ private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, co
     producer.produceTo(consumer.asInstanceOf[Consumer[I]])
   }
 
+  override def produce[T](f: () ⇒ T): Producer[T] = new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
+
   def processorForNode(op: AstNode): Processor[Any, Any] = new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op)))
 
 }

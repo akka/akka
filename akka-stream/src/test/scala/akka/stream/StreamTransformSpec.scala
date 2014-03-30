@@ -8,9 +8,10 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.stream.impl.IteratorProducer
 import akka.testkit.EventFilter
+import com.typesafe.config.ConfigFactory
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamTransformSpec extends AkkaSpec {
+class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   import system.dispatcher
 
@@ -71,6 +72,7 @@ class StreamTransformSpec extends AkkaSpec {
       consumer.expectNoMsg(200.millis)
       subscription.requestMore(1)
       consumer.expectNext(6)
+      subscription.requestMore(1)
       consumer.expectComplete()
     }
 

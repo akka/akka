@@ -11,6 +11,7 @@ import org.reactivestreams.api.Processor
 import org.reactivestreams.spi.{ Subscriber, Subscription }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
 import akka.stream.GeneratorSettings
+import akka.event.LoggingReceive
 
 /**
  * INTERNAL API
@@ -30,7 +31,7 @@ class ActorProcessor[I, O]( final val impl: ActorRef) extends Processor[I, O] wi
  */
 private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings) extends Actor with SubscriberManagement[Any] with ActorLogging {
   import ActorProcessor._
-  type S = ActorSubscription
+  type S = ActorSubscription[Any]
 
   override def maxBufferSize: Int = settings.maxFanOutBufferSize
   override def initialBufferSize: Int = settings.initialFanOutBufferSize
@@ -51,7 +52,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   }
 
   def waitingForUpstream: Receive = downstreamManagement orElse {
-    case OnComplete ⇒ shutdown() // There is nothing to flush here
+    case OnComplete ⇒ shutdown(completed = true) // There is nothing to flush here
     case OnSubscribe(subscription) ⇒
       assert(subscription != null)
       upstream = subscription
@@ -68,10 +69,10 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      moreRequested(subscription, elements)
+      moreRequested(subscription.asInstanceOf[S], elements)
       pump()
     case Cancel(subscription) ⇒
-      unregisterSubscription(subscription)
+      unregisterSubscription(subscription.asInstanceOf[S])
       pump()
   }
 
@@ -80,7 +81,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   //////////////////////  Active state //////////////////////
 
-  def running: Receive = downstreamManagement orElse {
+  def running: Receive = LoggingReceive(downstreamManagement orElse {
     case OnNext(element) ⇒
       enqueueInputElement(element)
       pump()
@@ -88,7 +89,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
       flushAndComplete()
       pump()
     case OnError(cause) ⇒ failureReceived(cause)
-  }
+  })
 
   // Called by SubscriberManagement when all subscribers are gone.
   // The method shutdown() is called automatically by SubscriberManagement after it called this method.
@@ -96,6 +97,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // Called by SubscriberManagement whenever the output buffer is ready to accept additional elements
   override protected def requestFromUpstream(elements: Int): Unit = {
+    log.debug(s"received downstream demand from buffer: $elements")
     downstreamBufferSpace += elements
   }
 
@@ -176,13 +178,17 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   // Generate upstream requestMore for every Nth consumed input element
   protected def pump(): Unit = {
     try while (transferState.isExecutable) {
+      log.debug(s"iterating the pump with state $transferState and buffer $bufferDebug")
       transferState = transfer(transferState)
     } catch { case NonFatal(e) ⇒ fail(e) }
 
+    log.debug(s"finished iterating the pump with state $transferState and buffer $bufferDebug")
+
     if (transferState.isCompleted) {
       if (!isShuttingDown) {
+        log.debug("shutting down the pump")
         if (!upstreamCompleted) upstream.cancel()
-        Arrays.fill(inputBuffer, nextInputElementCursor, nextInputElementCursor + inputBufferElements, null)
+        Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
         inputBufferElements = 0
         context.become(flushing)
         isShuttingDown = true
@@ -212,16 +218,18 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   //////////////////////  Shutdown and cleanup (graceful and abort) //////////////////////
 
   var isShuttingDown = false
+  var completed = false
 
   // Called by SubscriberManagement to signal that output buffer finished (flushed or aborted)
-  override def shutdown(): Unit = {
+  override def shutdown(completed: Boolean): Unit = {
     isShuttingDown = true
+    this.completed = completed
     context.stop(self)
   }
 
   override def postStop(): Unit = {
     if (exposedPublisher ne null)
-      exposedPublisher.shutdown()
+      exposedPublisher.shutdown(completed)
     // Non-gracefully stopped, do our best here
     if (!isShuttingDown)
       abortDownstream(new IllegalStateException("Processor actor terminated abruptly"))
