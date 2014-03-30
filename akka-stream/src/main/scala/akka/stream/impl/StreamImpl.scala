@@ -61,6 +61,16 @@ private[akka] case class StreamImpl[I, O](producerNode: Ast.ProducerNode[I], ops
       onComplete.asInstanceOf[Any ⇒ immutable.Seq[Any]],
       isComplete.asInstanceOf[Any ⇒ Boolean])))
 
+  override def zip[O2](other: Producer[O2]): Stream[(O, O2)] = andThen(Zip(other.asInstanceOf[Producer[Any]]))
+
+  override def concat(next: Producer[O]): Stream[O] = andThen(Concat(next.asInstanceOf[Producer[Any]]))
+
+  override def merge(other: Producer[O]): Stream[O] = andThen(Merge(other.asInstanceOf[Producer[Any]]))
+
+  override def splitWhen(p: (O) ⇒ Boolean): Stream[Producer[O]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
+
+  override def groupBy[K](f: (O) ⇒ K): Stream[(K, Producer[O])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+
   def toFuture(generator: ProcessorGenerator): Future[O] = {
     val p = Promise[O]()
     transformRecover(0)((x, in) ⇒ { p complete in; 1 -> Nil }, isComplete = _ == 1).consume(generator)

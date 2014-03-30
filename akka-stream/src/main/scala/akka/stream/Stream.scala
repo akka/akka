@@ -44,6 +44,14 @@ trait Stream[T] {
     f: (S, Try[T]) ⇒ (S, immutable.Seq[U]),
     onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
     isComplete: S ⇒ Boolean = (_: S) ⇒ false): Stream[U]
+
+  def groupBy[K](f: T ⇒ K): Stream[(K, Producer[T])]
+  def splitWhen(p: T ⇒ Boolean): Stream[Producer[T]]
+
+  def merge(other: Producer[T]): Stream[T]
+  def zip[U](other: Producer[U]): Stream[(T, U)]
+  def concat(next: Producer[T]): Stream[T]
+
   def toFuture(generator: ProcessorGenerator): Future[T]
   def consume(generator: ProcessorGenerator): Unit
   def toProducer(generator: ProcessorGenerator): Producer[T]
