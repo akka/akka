@@ -33,12 +33,12 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 2
       inspect shouldEqual "1 2 3 0 (size=3, writeIx=3, readIx=0, cursors=3)"
       read(2) shouldEqual 1
-      inspect shouldEqual "1 2 3 0 (size=2, writeIx=3, readIx=1, cursors=3)"
+      inspect shouldEqual "0 2 3 0 (size=2, writeIx=3, readIx=1, cursors=3)"
       read(1) shouldEqual 3
       read(1) shouldEqual null
       read(2) shouldEqual 2
       read(2) shouldEqual 3
-      inspect shouldEqual "1 2 3 0 (size=0, writeIx=3, readIx=3, cursors=3)"
+      inspect shouldEqual "0 0 0 0 (size=0, writeIx=3, readIx=3, cursors=3)"
     }
 
     "fail writes if there is no more space" in new Test(iSize = 4, mSize = 4, cursorCount = 2) {
@@ -65,11 +65,11 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 5
       read(1) shouldEqual 6
       read(1) shouldEqual null
-      inspect shouldEqual "5 6 3 4 (size=0, writeIx=2, readIx=2, cursors=2)"
+      inspect shouldEqual "0 0 0 0 (size=0, writeIx=6, readIx=6, cursors=2)"
       write(7) shouldEqual true
       write(8) shouldEqual true
       write(9) shouldEqual true
-      inspect shouldEqual "9 6 7 8 (size=3, writeIx=5, readIx=2, cursors=2)"
+      inspect shouldEqual "9 0 7 8 (size=3, writeIx=9, readIx=6, cursors=2)"
       read(0) shouldEqual 7
       read(0) shouldEqual 8
       read(0) shouldEqual 9
@@ -78,7 +78,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 8
       read(1) shouldEqual 9
       read(1) shouldEqual null
-      inspect shouldEqual "9 6 7 8 (size=0, writeIx=5, readIx=5, cursors=2)"
+      inspect shouldEqual "0 0 0 0 (size=0, writeIx=9, readIx=9, cursors=2)"
     }
 
     "automatically grow if possible" in new Test(iSize = 2, mSize = 8, cursorCount = 2) {
@@ -96,7 +96,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 1
       read(1) shouldEqual 2
       write(5) shouldEqual true
-      inspect shouldEqual "5 2 3 4 (size=3, writeIx=5, readIx=2, cursors=2)"
+      inspect shouldEqual "5 0 3 4 (size=3, writeIx=5, readIx=2, cursors=2)"
       write(6) shouldEqual true
       inspect shouldEqual "5 6 3 4 (size=4, writeIx=6, readIx=2, cursors=2)"
       write(7) shouldEqual true
@@ -112,7 +112,7 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
       read(1) shouldEqual 6
       read(1) shouldEqual 7
       read(1) shouldEqual null
-      inspect shouldEqual "3 4 5 6 7 0 0 0 (size=0, writeIx=5, readIx=5, cursors=2)"
+      inspect shouldEqual "0 0 0 0 0 0 0 0 (size=0, writeIx=5, readIx=5, cursors=2)"
     }
 
     "pass the stress test" in {
@@ -189,7 +189,6 @@ class ResizableMultiReaderRingBufferSpec extends WordSpec with ShouldMatchers {
   class Test(iSize: Int, mSize: Int, cursorCount: Int) extends TestBuffer(iSize, mSize, new SimpleCursors(cursorCount)) {
     def read(cursorIx: Int): Integer =
       try read(cursors.cursors(cursorIx)) catch { case NothingToReadException ⇒ null }
-    override def rebaseThreshold: Int = underlyingArray.length // use a low threshold in order to test the rebasing logic
   }
 
   class SimpleCursors(cursorCount: Int) extends Cursors {
