@@ -24,14 +24,10 @@ private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // const
   private[this] val maxSizeBit = Integer.numberOfTrailingZeros(maxSize)
   private[this] var array = new Array[Any](initialSize)
 
-  // Usual ring buffer implementations keep two pointers into the array which are wrapped around
-  // (mod array.length) upon increase. However, there is an ambiguity when writeIx == readIx since this state
-  // will be reached when the buffer is completely empty as well as when the buffer is completely full.
-  // An easy fix is to add another field (like 'count') that serves as additional data point resolving the
-  // ambiguity. However, adding another field adds more overhead than required and is especially inconvenient
-  // when supporting multiple readers.
-  // Therefore the approach we take here does not add another field, rather we don't wrap around the pointers
-  // at all but simply rebase them from time to time when we have to loop through the cursors anyway.
+  /*
+   * two counters counting the number of elements ever written and read; wrap-around is
+   * handled by always looking at differences or masked values
+   */
   private[this] var writeIx = 0
   private[this] var readIx = 0 // the "oldest" of all read cursor indices, i.e. the one that is most behind
 
@@ -62,14 +58,6 @@ private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // const
   def maxAvailable: Int = (1 << maxSizeBit) - size
 
   /**
-   * Applies availability bounds to the given element number.
-   * Equivalent to `min(maxAvailable, max(immediatelyAvailable, elements))`.
-   */
-  // FIXME this is nonsense (always returns maxAvailable)
-  def potentiallyAvailable(elements: Int): Int =
-    math.min(maxAvailable, math.max(immediatelyAvailable, elements))
-
-  /**
    * Returns the number of elements that the buffer currently contains for the given cursor.
    */
   def count(cursor: Cursor): Int = writeIx - cursor.cursor
@@ -86,7 +74,7 @@ private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // const
   def write(value: T): Boolean =
     if (size < array.length) { // if we have space left we can simply write and be done
       array(writeIx & mask) = value
-      writeIx = writeIx + 1
+      writeIx += 1
       true
     } else if (lenBit < maxSizeBit) { // if we are full but can grow we do so
       // the growing logic is quite simple: we assemble all current buffer entries in the new array
@@ -117,44 +105,30 @@ private[akka] class ResizableMultiReaderRingBuffer[T](initialSize: Int, // const
    */
   def read(cursor: Cursor): T = {
     val c = cursor.cursor
-    if (c < writeIx) {
+    if (c - writeIx < 0) {
       cursor.cursor += 1
-      if (c == readIx) updateReadIxAndPotentiallyRebaseCursors()
-      array(c & mask).asInstanceOf[T]
+      val ret = array(c & mask).asInstanceOf[T]
+      if (c == readIx) updateReadIx()
+      ret
     } else throw NothingToReadException
   }
 
   def onCursorRemoved(cursor: Cursor): Unit =
     if (cursor.cursor == readIx) // if this cursor is the last one it must be at readIx
-      updateReadIxAndPotentiallyRebaseCursors()
+      updateReadIx()
 
-  private def updateReadIxAndPotentiallyRebaseCursors(): Unit = {
-    val threshold = rebaseThreshold
-    if (readIx > threshold) {
-      @tailrec def rebaseCursorsAndReturnMin(remaining: List[Cursor], result: Int): Int =
-        remaining match {
-          case head :: tail ⇒
-            head.cursor -= threshold
-            rebaseCursorsAndReturnMin(tail, math.min(head.cursor, result))
-          case _ ⇒ result
-        }
-      writeIx -= threshold
-      readIx = rebaseCursorsAndReturnMin(cursors.cursors, writeIx)
-    } else {
-      @tailrec def minCursor(remaining: List[Cursor], result: Int): Int =
-        remaining match {
-          case head :: tail ⇒ minCursor(tail, math.min(head.cursor, result))
-          case _            ⇒ result
-        }
-      readIx = minCursor(cursors.cursors, writeIx)
-      // TODO: is not nulling-out the now unused buffer cells acceptable here?
+  private def updateReadIx(): Unit = {
+    @tailrec def minCursor(remaining: List[Cursor], result: Int): Int =
+      remaining match {
+        case head :: tail ⇒ minCursor(tail, math.min(head.cursor - writeIx, result))
+        case _            ⇒ result
+      }
+    val newReadIx = writeIx + minCursor(cursors.cursors, 0)
+    while (readIx != newReadIx) {
+      array(readIx & mask) = null
+      readIx += 1
     }
   }
-
-  // from time to time we need to rebase all pointers and cursors so they don't overflow,
-  // rebasing is performed when `readIx` is greater than this threshold which *must* be a multiple of array.length!
-  // default: the largest safe threshold which is the largest multiple of array.length that is < Int.MaxValue/2
-  protected def rebaseThreshold: Int = (Int.MaxValue / 2) & ~mask
 
   protected def underlyingArray: Array[Any] = array
 
