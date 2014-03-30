@@ -179,7 +179,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
         { case (s, Failure(ex)) ⇒ (s + ex.getMessage, List(ex)) },
         onComplete = x ⇒ List(TE(x.size + "10")))
         .toProducer(gen)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       val c = StreamTestKit.consumerProbe[Throwable]
       p2.produceTo(c)
       val s = c.expectSubscription()
@@ -193,7 +193,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     "forward errors when received and thrown" in {
       val p = StreamTestKit.producerProbe[Int]
       val p2 = Stream(p).transformRecover("")((_, in) ⇒ "" -> List(in.get)).toProducer(gen)
-      val proc = p.expectSubscription
+      val proc = p.expectSubscription()
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
       val s = c.expectSubscription()
