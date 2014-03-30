@@ -14,6 +14,7 @@ import akka.stream.impl.Ast
 import akka.stream.testkit.TestProducer
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
+import akka.stream.impl.ActorBasedProcessorGenerator
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
@@ -23,20 +24,17 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     val fanoutSize = maxBufferSize / 2
     val inputSize = maxBufferSize - fanoutSize
 
-    // FIXME can we use API to create the IdentityProcessor instead?
-    def identityProps(settings: GeneratorSettings): Props =
-      Props(new TransformProcessorImpl(settings, Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil, (_: Any) ⇒ false)))
-
-    val actor = system.actorOf(identityProps(
+    val factory = new ActorBasedProcessorGenerator(
       GeneratorSettings(
         initialInputBufferSize = inputSize,
         maximumInputBufferSize = inputSize,
         initialFanOutBufferSize = fanoutSize,
-        maxFanOutBufferSize = fanoutSize)))
+        maxFanOutBufferSize = fanoutSize),
+      system)
 
-    println(actor)
+    val processor = factory.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil, (_: Any) ⇒ false))
 
-    ActorProcessor[Int, Int](actor)
+    processor.asInstanceOf[Processor[Int, Int]]
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {

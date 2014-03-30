@@ -49,7 +49,13 @@ object StreamTestKit {
           def cancel(): Unit = probe.ref ! CancelSubscription(subscription)
 
           def expectRequestMore(n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
-          def expectCancellation(): Unit = probe.expectMsg(CancelSubscription(this))
+          def expectRequestMore(): Int = probe.expectMsgPF() {
+            case RequestMore(`subscription`, n) ⇒ n
+          }
+          def expectCancellation(): Unit = probe.fishForMessage() {
+            case CancelSubscription(`subscription`) ⇒ true
+            case RequestMore(`subscription`, _)     ⇒ false
+          }
 
           def sendNext(element: I): Unit = subscriber.onNext(element)
           def sendComplete(): Unit = subscriber.onComplete()
