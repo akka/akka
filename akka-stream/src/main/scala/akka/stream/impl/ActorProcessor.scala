@@ -104,6 +104,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   def failureReceived(e: Throwable): Unit = fail(e)
 
   def fail(e: Throwable): Unit = {
+    shutdownReason = Some(e)
     log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
     abortDownstream(e)
     if (upstream ne null) upstream.cancel()
@@ -218,18 +219,19 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   //////////////////////  Shutdown and cleanup (graceful and abort) //////////////////////
 
   var isShuttingDown = false
-  var completed = false
+  var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
   // Called by SubscriberManagement to signal that output buffer finished (flushed or aborted)
   override def shutdown(completed: Boolean): Unit = {
     isShuttingDown = true
-    this.completed = completed
+    if (completed)
+      shutdownReason = None
     context.stop(self)
   }
 
   override def postStop(): Unit = {
     if (exposedPublisher ne null)
-      exposedPublisher.shutdown(completed)
+      exposedPublisher.shutdown(shutdownReason)
     // Non-gracefully stopped, do our best here
     if (!isShuttingDown)
       abortDownstream(new IllegalStateException("Processor actor terminated abruptly"))

@@ -353,8 +353,7 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         val downstream2 = StreamTestKit.consumerProbe[String]()
         producer.produceTo(downstream2)
-        // IllegalStateException shut down
-        downstream2.expectError().getClass should be(classOf[IllegalStateException])
+        downstream2.expectError() should be(TestException)
       }
     }
 
@@ -367,7 +366,7 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         producer.produceTo(downstream2)
         // IllegalStateException shut down
-        downstream2.expectError().getClass should be(classOf[IllegalStateException])
+        downstream2.expectError().isInstanceOf[IllegalStateException] should be(true)
       }
     }
 
