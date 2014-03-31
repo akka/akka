@@ -66,7 +66,7 @@ abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Ac
     case OnSubscribe(sub) ⇒
       context.setReceiveTimeout(Duration.Undefined)
       subscription = Some(sub)
-      requestMore
+      requestMore()
       context.become(active)
     case OnError(cause) ⇒
       onError(cause)
