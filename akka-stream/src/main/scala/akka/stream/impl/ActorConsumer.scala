@@ -14,21 +14,33 @@ import Ast.{ AstNode, Recover, Transform }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, actorRef2Scala }
 import akka.stream.GeneratorSettings
 
-class ActorSubscriber[T]( final val impl: ActorRef) extends Subscriber[T] {
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorSubscriber[T]( final val impl: ActorRef) extends Subscriber[T] {
   override def onError(cause: Throwable): Unit = impl ! OnError(cause)
   override def onComplete(): Unit = impl ! OnComplete
   override def onNext(element: T): Unit = impl ! OnNext(element)
   override def onSubscribe(subscription: Subscription): Unit = impl ! OnSubscribe(subscription)
 }
 
-trait ActorConsumerLike[T] extends Consumer[T] {
+/**
+ * INTERNAL API
+ */
+private[akka] trait ActorConsumerLike[T] extends Consumer[T] {
   def impl: ActorRef
   override val getSubscriber: Subscriber[T] = new ActorSubscriber[T](impl)
 }
 
-class ActorConsumer[T]( final val impl: ActorRef) extends ActorConsumerLike[T]
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorConsumer[T]( final val impl: ActorRef) extends ActorConsumerLike[T]
 
-object ActorConsumer {
+/**
+ * INTERNAL API
+ */
+private[akka] object ActorConsumer {
   import Ast._
 
   def props(gen: GeneratorSettings, op: AstNode) = op match {
@@ -37,7 +49,10 @@ object ActorConsumer {
   }
 }
 
-abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Actor {
+/**
+ * INTERNAL API
+ */
+private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Actor {
   import ActorProcessor._
 
   /**
@@ -102,7 +117,10 @@ abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Ac
   }
 }
 
-class TransformActorConsumer(_settings: GeneratorSettings, op: Ast.Transform) extends AbstractActorConsumer(_settings) with ActorLogging {
+/**
+ * INTERNAL API
+ */
+private[akka] class TransformActorConsumer(_settings: GeneratorSettings, op: Ast.Transform) extends AbstractActorConsumer(_settings) with ActorLogging {
   private var state = op.zero
 
   private var onCompleteCalled = false
@@ -133,7 +151,10 @@ class TransformActorConsumer(_settings: GeneratorSettings, op: Ast.Transform) ex
   }
 }
 
-class RecoverActorConsumer(_settings: GeneratorSettings, op: Ast.Recover) extends TransformActorConsumer(_settings, op.t) {
+/**
+ * INTERNAL API
+ */
+private[akka] class RecoverActorConsumer(_settings: GeneratorSettings, op: Ast.Recover) extends TransformActorConsumer(_settings, op.t) {
   override def onNext(elem: Any): Unit = {
     super.onNext(Success(elem))
   }

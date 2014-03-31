@@ -5,6 +5,8 @@ package akka.stream.impl
 
 import org.reactivestreams.spi.Subscription
 
+// FIXME INTERNAL API
+
 case class OnSubscribe(subscription: Subscription)
 // TODO performance improvement: skip wrapping ordinary elements in OnNext
 case class OnNext(element: Any)
