@@ -55,7 +55,6 @@ private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings
   var exposedPublisher: ActorPublisher[Any] = _
   var subscribers = Set.empty[Subscriber[Any]]
   var workers = Map.empty[ActorRef, Subscriber[Any]]
-  var completed = false
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -102,7 +101,7 @@ private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings
 
   override def postStop(): Unit = {
     if (exposedPublisher ne null)
-      exposedPublisher.shutdown(completed)
+      exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
   }
 
 }
