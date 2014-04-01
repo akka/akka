@@ -38,15 +38,12 @@ private[akka] object SubscriberManagement {
  */
 private[akka] trait SubscriptionWithCursor[T] extends spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
   def subscriber: spi.Subscriber[T]
-  def isActive: Boolean = cursor != Int.MinValue
-  def deactivate(): Unit = cursor = Int.MinValue
 
   def dispatch(element: T): Unit = subscriber.onNext(element)
 
-  /////////////// internal interface, no unsynced access from subscriber's thread //////////////
-
+  var active = true
   var requested: Long = 0 // number of requested but not yet dispatched elements
-  var cursor: Int = 0 // buffer cursor, set to Int.MinValue if this subscription has been cancelled / terminated
+  var cursor: Int = 0 // buffer cursor, managed by buffer
 }
 
 /**
@@ -101,7 +98,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    * more demand was signaled from a given subscriber
    */
   protected def moreRequested(subscription: S, elements: Int): Unit =
-    if (subscription.isActive) {
+    if (subscription.active) {
 
       // returns Long.MinValue if the subscription is to be terminated
       @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long, eos: EndOfStream): Long =
@@ -178,7 +175,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         remaining match {
           case head :: tail ⇒
             if (buffer.count(head) == 0) {
-              head.deactivate()
+              head.active = false
               Completed(head.subscriber)
               completeDoneSubscriptions(tail, result)
             } else completeDoneSubscriptions(tail, head :: result)
@@ -233,10 +230,10 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         case head :: tail ⇒ if (head eq subscription) tail reverse_::: result else removeFrom(tail, head :: result)
         case _            ⇒ throw new IllegalStateException("Subscription to unregister not found")
       }
-    if (subscription.isActive) {
+    if (subscription.active) {
       subscriptions = removeFrom(subscriptions)
       buffer.onCursorRemoved(subscription)
-      subscription.deactivate()
+      subscription.active = false
       if (subscriptions.isEmpty) {
         if (endOfStream eq NotReached) {
           endOfStream = ShutDown
@@ -245,38 +242,6 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         shutdown(completed = false)
       } else requestFromUpstreamIfRequired() // we might have removed a "blocking" subscriber and can continue now
     } // else ignore, we need to be idempotent
-  }
-}
-
-/*
- * FIXME: THIS BELOW NEEDS TO BE REMOVED, IT IS NOT USED BY ActorProcessorImpl
- */
-
-/**
- * INTERNAL API
- *
- * Implements basic subscriber management as well as efficient "slowest-subscriber-rate" downstream fan-out support
- * with configurable and adaptive output buffer size.
- */
-private[akka] abstract class AbstractProducer[T](val initialBufferSize: Int, val maxBufferSize: Int)
-  extends api.Producer[T] with spi.Publisher[T] with SubscriberManagement[T] {
-  type S = Subscription
-
-  def getPublisher: spi.Publisher[T] = this
-
-  // called from anywhere, i.e. potentially from another thread,
-  // override to add synchronization with itself, `moreRequested` and `unregisterSubscription`
-  def subscribe(subscriber: spi.Subscriber[T]): Unit = registerSubscriber(subscriber)
-
-  override def createSubscription(subscriber: spi.Subscriber[T]): S = new Subscription(subscriber)
-
-  protected class Subscription(val subscriber: spi.Subscriber[T]) extends SubscriptionWithCursor[T] {
-    override def requestMore(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("Argument must be > 0")
-      else moreRequested(this, elements) // needs to be able to ignore calls after termination / cancellation
-
-    override def cancel(): Unit = unregisterSubscription(this) // must be idempotent
-
   }
 }
 
