@@ -6,6 +6,9 @@ package akka.stream
 import akka.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import akka.stream.impl.OnNext
+import akka.stream.impl.OnComplete
+import akka.stream.impl.RequestMore
 
 class StreamTakeSpec extends AkkaSpec with ScriptedTest {
 
@@ -14,6 +17,8 @@ class StreamTakeSpec extends AkkaSpec with ScriptedTest {
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16)
+
+  muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
 
   "A Take" must {
 
