@@ -11,7 +11,7 @@ import org.reactivestreams.api.Producer
 
 import Ast.{ AstNode, Recover, Transform }
 import akka.stream.ProcessorGenerator
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 /**
  * INTERNAL API

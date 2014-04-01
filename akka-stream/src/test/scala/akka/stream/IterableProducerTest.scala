@@ -7,7 +7,7 @@ import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.PublisherVerification
 import scala.collection.immutable
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class IterableProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 

@@ -8,7 +8,7 @@ import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.PublisherVerification
 import akka.stream.impl.ActorBasedProcessorGenerator
 import org.reactivestreams.api.Producer
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class ActorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
   import system.dispatcher
