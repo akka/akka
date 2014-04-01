@@ -8,7 +8,7 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamSplitWhenSpec extends AkkaSpec {

@@ -8,7 +8,7 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {

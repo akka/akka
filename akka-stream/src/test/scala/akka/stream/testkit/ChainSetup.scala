@@ -5,7 +5,7 @@ package akka.stream.testkit
 
 import akka.stream.{ GeneratorSettings, ProcessorGenerator }
 import akka.actor.ActorSystem
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class ChainSetup[I, O](stream: Flow[I] ⇒ Flow[O], val settings: GeneratorSettings)(implicit val system: ActorSystem) {
   val upstream = StreamTestKit.producerProbe[I]()

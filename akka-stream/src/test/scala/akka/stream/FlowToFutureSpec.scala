@@ -10,7 +10,7 @@ import akka.stream.testkit.StreamTestKit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 

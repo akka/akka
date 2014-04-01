@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.stream.testkit.OnNext
 import akka.stream.testkit.OnComplete
 import akka.stream.testkit.OnError
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIteratorSpec extends AkkaSpec {

@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import scala.util.Failure
 import scala.util.control.NoStackTrace
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformRecoverSpec extends AkkaSpec {

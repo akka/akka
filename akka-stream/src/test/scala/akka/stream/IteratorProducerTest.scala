@@ -6,7 +6,7 @@ package akka.stream
 import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.PublisherVerification
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class IteratorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
