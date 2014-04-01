@@ -58,9 +58,14 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   def waitingExposedPublisher: Receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
+      publisherExposed()
       context.become(waitingForUpstream)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
   }
+
+  // WARNING: DO NOT SEND messages from the constructor (that includes subscribing to other streams) since their reply
+  // might arrive earlier than ExposedPublisher. Override this method to schedule such events.
+  protected def publisherExposed(): Unit = ()
 
   def waitingForUpstream: Receive = downstreamManagement orElse {
     case OnComplete ⇒

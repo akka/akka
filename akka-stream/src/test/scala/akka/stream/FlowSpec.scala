@@ -16,7 +16,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   import system.dispatcher
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -29,14 +29,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
       s"requests initial elements from upstream ($name, $n)" in {
-        new ChainSetup(op, genSettings.copy(initialInputBufferSize = n)) {
+        new ChainSetup(op, settings.copy(initialInputBufferSize = n)) {
           upstream.expectRequestMore(upstreamSubscription, settings.initialInputBufferSize)
         }
       }
     }
 
     "requests more elements from upstream when downstream requests more elements" in {
-      new ChainSetup(identity, genSettings) {
+      new ChainSetup(identity, settings) {
         upstream.expectRequestMore(upstreamSubscription, settings.initialInputBufferSize)
         downstreamSubscription.requestMore(1)
         upstream.expectNoMsg(100.millis)
@@ -55,7 +55,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "deliver events when publisher sends elements and then completes" in {
-      new ChainSetup(identity, genSettings) {
+      new ChainSetup(identity, settings) {
         downstreamSubscription.requestMore(1)
         upstreamSubscription.sendNext("test")
         upstreamSubscription.sendComplete()
@@ -65,14 +65,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "deliver complete signal when publisher immediately completes" in {
-      new ChainSetup(identity, genSettings) {
+      new ChainSetup(identity, settings) {
         upstreamSubscription.sendComplete()
         downstream.expectComplete()
       }
     }
 
     "deliver error signal when publisher immediately fails" in {
-      new ChainSetup(identity, genSettings) {
+      new ChainSetup(identity, settings) {
         object WeirdError extends RuntimeException("weird test exception")
         EventFilter[WeirdError.type](occurrences = 1) intercept {
           upstreamSubscription.sendError(WeirdError)
@@ -82,7 +82,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "single subscriber cancels subscription while receiving data" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1)) {
         downstreamSubscription.requestMore(5)
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext("test")
@@ -102,7 +102,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   "A Flow with multiple subscribers (FanOutBox)" must {
     "adapt speed to the currently slowest consumer" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         producer.produceTo(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -128,7 +128,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "support slow consumer with fan-out 2" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, initialFanOutBufferSize = 2, maxFanOutBufferSize = 2)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, initialFanOutBufferSize = 2, maxFanOutBufferSize = 2)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         producer.produceTo(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -167,7 +167,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "incoming subscriber while elements were requested before" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         downstreamSubscription.requestMore(5)
         upstream.expectRequestMore(upstreamSubscription, 1)
         upstreamSubscription.sendNext("a1")
@@ -204,7 +204,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "blocking subscriber cancels subscription" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         producer.produceTo(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
@@ -239,7 +239,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "after initial upstream was completed future subscribers' onComplete should be called instead of onSubscribed" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         // don't link it just yet
 
@@ -278,7 +278,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "after initial upstream reported an error future subscribers' onError should be called instead of onSubscribed" in {
-      new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
+      new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         downstreamSubscription.requestMore(1)
         upstreamSubscription.expectRequestMore(1)
 
@@ -296,7 +296,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "when all subscriptions were cancelled future subscribers' onError should be called" in {
-      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1)) {
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1)) {
         upstreamSubscription.expectRequestMore(1)
         downstreamSubscription.cancel()
         upstreamSubscription.expectCancellation()

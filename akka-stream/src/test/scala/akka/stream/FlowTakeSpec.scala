@@ -12,7 +12,7 @@ import akka.stream.impl.RequestMore
 
 class StreamTakeSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -26,7 +26,7 @@ class StreamTakeSpec extends AkkaSpec with ScriptedTest {
       def script(d: Int) = Script((1 to 50) map { n ⇒ Seq(n) -> (if (n > d) Nil else Seq(n)) }: _*)
       (1 to 50) foreach { _ ⇒
         val d = Math.min(Math.max(random.nextInt(-10, 60), 0), 50)
-        runScript(script(d), genSettings)(_.take(d))
+        runScript(script(d), settings)(_.take(d))
       }
     }
 

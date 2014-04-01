@@ -78,12 +78,12 @@ trait ScriptedTest extends ShouldMatchers {
 
   class ScriptRunner[In, Out](
     op: Flow[In] ⇒ Flow[Out],
-    gen: MaterializerSettings,
+    settings: MaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
     maximumRequest: Int,
     maximumBuffer: Int)(implicit _system: ActorSystem)
-    extends ChainSetup(op, gen) {
+    extends ChainSetup(op, settings) {
 
     var _debugLog = Vector.empty[String]
     var currentScript = script
@@ -186,9 +186,9 @@ trait ScriptedTest extends ShouldMatchers {
 
   }
 
-  def runScript[In, Out](script: Script[In, Out], gen: MaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
+  def runScript[In, Out](script: Script[In, Out], settings: MaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
     op: Flow[In] ⇒ Flow[Out])(implicit system: ActorSystem): Unit = {
-    new ScriptRunner(op, gen, script, maximumOverrun, maximumRequest, maximumBuffer).run()
+    new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 
 }

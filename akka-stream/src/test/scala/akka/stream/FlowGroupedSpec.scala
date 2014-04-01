@@ -10,7 +10,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class StreamGroupedSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -20,13 +20,13 @@ class StreamGroupedSpec extends AkkaSpec with ScriptedTest {
 
     "group evenly" in {
       def script = Script((1 to 20) map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }: _*)
-      (1 to 30) foreach (_ ⇒ runScript(script, genSettings)(_.grouped(3)))
+      (1 to 30) foreach (_ ⇒ runScript(script, settings)(_.grouped(3)))
     }
 
     "group with rest" in {
       def script = Script(((1 to 20).map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }
         :+ { val x = random.nextInt(); Seq(x) -> Seq(immutable.Seq(x)) }): _*)
-      (1 to 30) foreach (_ ⇒ runScript(script, genSettings)(_.grouped(3)))
+      (1 to 30) foreach (_ ⇒ runScript(script, settings)(_.grouped(3)))
     }
 
   }

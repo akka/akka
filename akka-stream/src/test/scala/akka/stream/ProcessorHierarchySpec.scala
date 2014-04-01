@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
 
 class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\nakka.loglevel=INFO") {
 
-  val gen = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings())
 
   def self = ActorBasedFlowMaterializer.ctx.get().asInstanceOf[ActorContext].self
 
@@ -24,11 +24,11 @@ class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\na
     "generate the right level of descendants" in {
       val f = Flow(() ⇒ {
         testActor ! self
-        Flow(List(1)).map(x ⇒ { testActor ! self; x }).toProducer(gen)
+        Flow(List(1)).map(x ⇒ { testActor ! self; x }).toProducer(materializer)
       }).take(3).foreach(x ⇒ {
         testActor ! self
-        Flow(x).foreach(_ ⇒ testActor ! self).consume(gen)
-      }).toFuture(gen)
+        Flow(x).foreach(_ ⇒ testActor ! self).consume(materializer)
+      }).toFuture(materializer)
       Await.result(f, 3.seconds)
       val refs = receiveWhile(idle = 250.millis) {
         case r: ActorRef ⇒ r

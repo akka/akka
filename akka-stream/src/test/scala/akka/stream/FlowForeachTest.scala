@@ -9,7 +9,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowForeachSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -24,7 +24,7 @@ class FlowForeachSpec extends AkkaSpec with ScriptedTest {
         Script((1 to 50).toSeq -> Seq(()))
       }
       (1 to 50) foreach { _ ⇒
-        runScript(script, genSettings)(_.foreach(x ⇒ count += x))
+        runScript(script, settings)(_.foreach(x ⇒ count += x))
         count should be(25 * 51)
       }
     }

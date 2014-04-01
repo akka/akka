@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Flow
 
 class IterableProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
-  val gen = FlowMaterializer(MaterializerSettings(
+  val materializer = FlowMaterializer(MaterializerSettings(
     maximumInputBufferSize = 512))(system)
 
   def createPublisher(elements: Int): Publisher[Int] = {
@@ -20,10 +20,10 @@ class IterableProducerTest extends PublisherVerification[Int] with WithActorSyst
         new immutable.Iterable[Int] { override def iterator = Iterator from 0 }
       else
         0 until elements
-    Flow(iterable).toProducer(gen).getPublisher
+    Flow(iterable).toProducer(materializer).getPublisher
   }
 
   override def createCompletedStatePublisher(): Publisher[Int] =
-    Flow[Int](Nil).toProducer(gen).getPublisher
+    Flow[Int](Nil).toProducer(materializer).getPublisher
 
 }

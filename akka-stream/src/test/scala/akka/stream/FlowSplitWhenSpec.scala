@@ -11,9 +11,9 @@ import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamSplitWhenSpec extends AkkaSpec {
+class FlowSplitWhenSpec extends AkkaSpec {
 
-  val gen = new ActorBasedFlowMaterializer(MaterializerSettings(
+  val materializer = new ActorBasedFlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
@@ -32,8 +32,8 @@ class StreamSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
-    val source = Flow((1 to elementCount).iterator).toProducer(gen)
-    val groupStream = Flow(source).splitWhen(_ == splitWhen).toProducer(gen)
+    val source = Flow((1 to elementCount).iterator).toProducer(materializer)
+    val groupStream = Flow(source).splitWhen(_ == splitWhen).toProducer(materializer)
     val masterConsumer = StreamTestKit.consumerProbe[Producer[Int]]
 
     groupStream.produceTo(masterConsumer)

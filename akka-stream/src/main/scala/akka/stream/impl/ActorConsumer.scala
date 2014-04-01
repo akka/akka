@@ -43,9 +43,9 @@ private[akka] class ActorConsumer[T]( final val impl: ActorRef) extends ActorCon
 private[akka] object ActorConsumer {
   import Ast._
 
-  def props(gen: MaterializerSettings, op: AstNode) = op match {
-    case t: Transform ⇒ Props(new TransformActorConsumer(gen, t))
-    case r: Recover   ⇒ Props(new RecoverActorConsumer(gen, r))
+  def props(settings: MaterializerSettings, op: AstNode) = op match {
+    case t: Transform ⇒ Props(new TransformActorConsumer(settings, t))
+    case r: Recover   ⇒ Props(new RecoverActorConsumer(settings, r))
   }
 }
 
