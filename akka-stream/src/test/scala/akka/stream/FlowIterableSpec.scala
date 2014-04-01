@@ -11,7 +11,7 @@ import akka.dispatch.OnComplete
 import akka.stream.testkit.OnComplete
 import akka.stream.testkit.OnError
 import akka.stream.testkit.OnSubscribe
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIterableSpec extends AkkaSpec {

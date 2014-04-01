@@ -14,7 +14,7 @@ import akka.stream.impl.Ast
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
 import akka.stream.impl.ActorBasedProcessorGenerator
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
