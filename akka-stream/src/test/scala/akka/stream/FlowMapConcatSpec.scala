@@ -6,7 +6,7 @@ package akka.stream
 import akka.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 
-class StreamMapConcatSpec extends AkkaSpec with ScriptedTest {
+class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
 
   val genSettings = GeneratorSettings(
     initialInputBufferSize = 2,

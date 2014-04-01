@@ -8,9 +8,10 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
+import akka.stream.scala_api.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   import system.dispatcher
 
@@ -20,10 +21,10 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     initialFanOutBufferSize = 2,
     maxFanOutBufferSize = 2))
 
-  "A Stream with transform operations" must {
+  "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform(0)((tot, elem) ⇒ (tot + elem, List(tot + elem))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -39,8 +40,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform(0)((tot, elem) ⇒ (tot + elem, Vector.fill(elem)(tot + elem))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -59,8 +60,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "produce dropping transformation as expected" in {
-      val p = Stream(List(1, 2, 3, 4).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3, 4).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform(0)((tot, elem) ⇒ (tot + elem, if (elem % 2 == 0) Nil else List(tot + elem))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -76,8 +77,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Stream(List("a", "bc", "def").iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List("a", "bc", "def").iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform("") { (str, elem) ⇒
           val concat = str + elem
           (concat, List(concat.length))
@@ -106,8 +107,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "invoke onComplete when done" in {
-      val p = Stream(List("a").iterator).toProducer(gen)
-      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
+      val p = Flow(List("a").iterator).toProducer(gen)
+      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
       val c = StreamTestKit.consumerProbe[String]
       p2.produceTo(c)
       val s = c.expectSubscription()
@@ -118,7 +119,7 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
 
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, List(in)), isComplete = _ == "1").toProducer(gen)
+      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, List(in)), isComplete = _ == "1").toProducer(gen)
       val proc = p.expectSubscription
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
@@ -133,7 +134,7 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
 
     "call onComplete after isComplete signaled completion" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transform("")((s, in) ⇒ (s + in, List(in)), onComplete = x ⇒ List(x.size + 10), isComplete = _ == "1").toProducer(gen)
+      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, List(in)), onComplete = x ⇒ List(x.size + 10), isComplete = _ == "1").toProducer(gen)
       val proc = p.expectSubscription
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
@@ -148,8 +149,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "report error when exception is thrown" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform(0) { (_, elem) ⇒
           if (elem == 2) throw new IllegalArgumentException("two not allowed") else (0, List(elem, elem))
         }.
@@ -167,8 +168,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "support cancel as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transform(0) { (_, elem) ⇒ (0, List(elem, elem)) }.
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -184,8 +185,8 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
     }
 
     "support producing elements from empty inputs" in {
-      val p = Stream(List.empty[Int].iterator).toProducer(gen)
-      val p2 = Stream(p).transform(List(1, 2, 3))((s, _) ⇒ (s, Nil), onComplete = s ⇒ s).
+      val p = Flow(List.empty[Int].iterator).toProducer(gen)
+      val p2 = Flow(p).transform(List(1, 2, 3))((s, _) ⇒ (s, Nil), onComplete = s ⇒ s).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
       p2.produceTo(consumer)

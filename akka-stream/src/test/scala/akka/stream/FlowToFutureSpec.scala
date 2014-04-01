@@ -10,8 +10,9 @@ import akka.stream.testkit.StreamTestKit
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
+import akka.stream.scala_api.Flow
 
-class StreamToFutureSpec extends AkkaSpec with ScriptedTest {
+class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
   val gen = ProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
@@ -19,11 +20,11 @@ class StreamToFutureSpec extends AkkaSpec with ScriptedTest {
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16))
 
-  "A Stream with toFuture" must {
+  "A Flow with toFuture" must {
 
     "yield the first value" in {
       val p = StreamTestKit.producerProbe[Int]
-      val f = Stream(p).toFuture(gen)
+      val f = Flow(p).toFuture(gen)
       val proc = p.expectSubscription
       proc.expectRequestMore()
       proc.sendNext(42)
@@ -33,7 +34,7 @@ class StreamToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in {
       val p = StreamTestKit.producerProbe[Int]
-      val f = Stream(p).toFuture(gen)
+      val f = Flow(p).toFuture(gen)
       val proc = p.expectSubscription
       proc.expectRequestMore()
       val ex = new RuntimeException("ex")

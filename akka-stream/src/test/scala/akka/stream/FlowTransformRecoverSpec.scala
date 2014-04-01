@@ -9,9 +9,10 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import scala.util.Failure
 import scala.util.control.NoStackTrace
+import akka.stream.scala_api.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamTransformRecoverSpec extends AkkaSpec {
+class FlowTransformRecoverSpec extends AkkaSpec {
 
   val gen = ProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
@@ -19,10 +20,10 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     initialFanOutBufferSize = 2,
     maxFanOutBufferSize = 2))
 
-  "A Stream with transformRecover operations" must {
+  "A Flow with transformRecover operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, List(tot + elem.get))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -38,8 +39,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, Vector.fill(elem.get)(tot + elem.get))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -58,8 +59,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce dropping transformation as expected" in {
-      val p = Stream(List(1, 2, 3, 4).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3, 4).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover(0)((tot, elem) ⇒ (tot + elem.get, if (elem.get % 2 == 0) Nil else List(tot + elem.get))).
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -75,8 +76,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Stream(List("a", "bc", "def").iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List("a", "bc", "def").iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover("") { (str, elem) ⇒
           val concat = str + elem
           (concat, List(concat.length))
@@ -105,8 +106,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "invoke onComplete when done" in {
-      val p = Stream(List("a").iterator).toProducer(gen)
-      val p2 = Stream(p).transformRecover("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
+      val p = Flow(List("a").iterator).toProducer(gen)
+      val p2 = Flow(p).transformRecover("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B")).toProducer(gen)
       val c = StreamTestKit.consumerProbe[String]
       p2.produceTo(c)
       val s = c.expectSubscription()
@@ -117,7 +118,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
 
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transformRecover("")((s, in) ⇒ (s + in, List(in.get)), isComplete = _ == "Success(1)").toProducer(gen)
+      val p2 = Flow(p).transformRecover("")((s, in) ⇒ (s + in, List(in.get)), isComplete = _ == "Success(1)").toProducer(gen)
       val proc = p.expectSubscription
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
@@ -132,7 +133,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
 
     "call onComplete after isComplete signaled completion" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transformRecover("")(
+      val p2 = Flow(p).transformRecover("")(
         (s, in) ⇒ (s + in, List(in.get)),
         onComplete = x ⇒ List(x.size + 10),
         isComplete = _ == "Success(1)")
@@ -151,8 +152,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "report error when exception is thrown" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover(0) { (_, elem) ⇒
           if (elem.get == 2) throw new IllegalArgumentException("two not allowed") else (0, List(elem.get, elem.get))
         }.
@@ -173,7 +174,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
 
     "transform errors when received" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transformRecover("")(
+      val p2 = Flow(p).transformRecover("")(
         { case (s, Failure(ex)) ⇒ (s + ex.getMessage, List(ex)) },
         onComplete = x ⇒ List(TE(x.size + "10")))
         .toProducer(gen)
@@ -190,7 +191,7 @@ class StreamTransformRecoverSpec extends AkkaSpec {
 
     "forward errors when received and thrown" in {
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Stream(p).transformRecover("")((_, in) ⇒ "" -> List(in.get)).toProducer(gen)
+      val p2 = Flow(p).transformRecover("")((_, in) ⇒ "" -> List(in.get)).toProducer(gen)
       val proc = p.expectSubscription()
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
@@ -203,8 +204,8 @@ class StreamTransformRecoverSpec extends AkkaSpec {
     }
 
     "support cancel as expected" in {
-      val p = Stream(List(1, 2, 3).iterator).toProducer(gen)
-      val p2 = Stream(p).
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
+      val p2 = Flow(p).
         transformRecover(0) { (_, elem) ⇒ (0, List(elem.get, elem.get)) }.
         toProducer(gen)
       val consumer = StreamTestKit.consumerProbe[Int]

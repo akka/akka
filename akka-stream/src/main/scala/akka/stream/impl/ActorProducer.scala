@@ -16,7 +16,7 @@ import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 import akka.actor.Props
 import scala.util.control.NoStackTrace
-import akka.stream.Stream
+import akka.stream.Stop
 
 /**
  * INTERNAL API
@@ -123,7 +123,6 @@ private[akka] object ActorProducerImpl {
  * INTERNAL API
  */
 private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSettings) extends Actor with ActorLogging with SubscriberManagement[T] {
-  import Stream._
   import ActorProducerImpl._
 
   type S = ActorSubscription[T]

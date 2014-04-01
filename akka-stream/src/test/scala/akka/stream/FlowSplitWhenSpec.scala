@@ -8,6 +8,7 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
+import akka.stream.scala_api.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamSplitWhenSpec extends AkkaSpec {
@@ -31,8 +32,8 @@ class StreamSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
-    val source = Stream((1 to elementCount).iterator).toProducer(gen)
-    val groupStream = Stream(source).splitWhen(_ == splitWhen).toProducer(gen)
+    val source = Flow((1 to elementCount).iterator).toProducer(gen)
+    val groupStream = Flow(source).splitWhen(_ == splitWhen).toProducer(gen)
     val masterConsumer = StreamTestKit.consumerProbe[Producer[Int]]
 
     groupStream.produceTo(masterConsumer)

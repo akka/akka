@@ -6,8 +6,9 @@ package akka.stream
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
+import akka.stream.scala_api.Flow
 
-class StreamConcatSpec extends AkkaSpec {
+class FlowConcatSpec extends AkkaSpec {
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
@@ -18,10 +19,10 @@ class StreamConcatSpec extends AkkaSpec {
   "Concat" must {
 
     "work in the happy case" in {
-      val source0 = Stream(List.empty[Int].iterator).toProducer(gen)
-      val source1 = Stream((1 to 4).iterator).toProducer(gen)
-      val source2 = Stream((5 to 10).iterator).toProducer(gen)
-      val p = Stream(source0).concat(source1).concat(source2).toProducer(gen)
+      val source0 = Flow(List.empty[Int].iterator).toProducer(gen)
+      val source1 = Flow((1 to 4).iterator).toProducer(gen)
+      val source2 = Flow((5 to 10).iterator).toProducer(gen)
+      val p = Flow(source0).concat(source1).concat(source2).toProducer(gen)
 
       val probe = StreamTestKit.consumerProbe[Int]
       p.produceTo(probe)

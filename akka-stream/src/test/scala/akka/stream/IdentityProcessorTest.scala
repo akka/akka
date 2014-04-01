@@ -14,6 +14,7 @@ import akka.stream.impl.Ast
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
 import akka.stream.impl.ActorBasedProcessorGenerator
+import akka.stream.scala_api.Flow
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
@@ -40,7 +41,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     val gen = ProcessorGenerator(GeneratorSettings(
       maximumInputBufferSize = 512))(system)
     val iter = Iterator from 1000
-    Stream(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
+    Flow(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
   }
 
 }

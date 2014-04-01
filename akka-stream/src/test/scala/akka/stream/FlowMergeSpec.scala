@@ -8,8 +8,9 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
+import akka.stream.scala_api.Flow
 
-class StreamMergeSpec extends AkkaSpec {
+class FlowMergeSpec extends AkkaSpec {
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
@@ -21,10 +22,10 @@ class StreamMergeSpec extends AkkaSpec {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val source1 = Stream((1 to 4).iterator).toProducer(gen)
-      val source2 = Stream((5 to 10).iterator).toProducer(gen)
-      val source3 = Stream(List.empty[Int].iterator).toProducer(gen)
-      val p = Stream(source1).merge(source2).merge(source3).toProducer(gen)
+      val source1 = Flow((1 to 4).iterator).toProducer(gen)
+      val source2 = Flow((5 to 10).iterator).toProducer(gen)
+      val source3 = Flow(List.empty[Int].iterator).toProducer(gen)
+      val p = Flow(source1).merge(source2).merge(source3).toProducer(gen)
 
       val probe = StreamTestKit.consumerProbe[Int]
       p.produceTo(probe)
