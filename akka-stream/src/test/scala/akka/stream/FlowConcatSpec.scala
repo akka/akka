@@ -6,7 +6,7 @@ package akka.stream
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 
 class FlowConcatSpec extends AkkaSpec {
 

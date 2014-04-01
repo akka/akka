@@ -10,7 +10,7 @@ import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.stream.scala_api.Flow
+import akka.stream.scaladsl.Flow
 import akka.stream.GeneratorSettings
 
 trait ScriptedTest extends ShouldMatchers {

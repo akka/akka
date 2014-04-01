@@ -1,7 +1,7 @@
 /**
  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.scala_api
+package akka.stream.scaladsl
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
