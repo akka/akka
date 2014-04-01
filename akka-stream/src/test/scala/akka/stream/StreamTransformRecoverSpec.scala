@@ -13,8 +13,6 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamTransformRecoverSpec extends AkkaSpec {
 
-  import system.dispatcher
-
   val gen = ProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
