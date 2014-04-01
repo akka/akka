@@ -7,6 +7,7 @@ import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.PublisherVerification
 import scala.collection.immutable
+import akka.stream.scala_api.Flow
 
 class IterableProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
@@ -19,10 +20,10 @@ class IterableProducerTest extends PublisherVerification[Int] with WithActorSyst
         new immutable.Iterable[Int] { override def iterator = Iterator from 0 }
       else
         0 until elements
-    Stream(iterable).toProducer(gen).getPublisher
+    Flow(iterable).toProducer(gen).getPublisher
   }
 
   override def createCompletedStatePublisher(): Publisher[Int] =
-    Stream[Int](Nil).toProducer(gen).getPublisher
+    Flow[Int](Nil).toProducer(gen).getPublisher
 
 }
