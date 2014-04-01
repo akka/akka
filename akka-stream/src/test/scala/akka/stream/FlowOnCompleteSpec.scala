@@ -18,7 +18,7 @@ import scala.util.Success
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
-  val gen = FlowMaterializer(MaterializerSettings(
+  val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -29,7 +29,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback on normal completion" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.producerProbe[Int]
-      Flow(p).onComplete(gen) { onCompleteProbe.ref ! _ }
+      Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequestMore()
       proc.sendNext(42)
@@ -41,7 +41,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "yield the first error" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.producerProbe[Int]
-      Flow(p).onComplete(gen) { onCompleteProbe.ref ! _ }
+      Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequestMore()
       val ex = new RuntimeException("ex")
@@ -53,7 +53,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback for an empty stream" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.producerProbe[Int]
-      Flow(p).onComplete(gen) { onCompleteProbe.ref ! _ }
+      Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequestMore()
       proc.sendComplete()
@@ -69,7 +69,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
         x
       }.foreach {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
-      }.onComplete(gen) { onCompleteProbe.ref ! _ }
+      }.onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequestMore()
       proc.sendNext(42)
