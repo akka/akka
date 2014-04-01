@@ -97,107 +97,6 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
       }
     }
 
-    //    FIXME the below commented out tests were implemented in ImplementationFactoryOperationSpec and might
-    //    be intersting to port.
-    //
-    //    "operation publishes Producer" in new InitializedChainSetup[String, api.Producer[String]](Span[String](_ == "end").expose) {
-    //        downstreamSubscription.requestMore(5)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //
-    //        upstreamSubscription.sendNext("a")
-    //        val subStream = downstream.expectNext()
-    //        val subStreamConsumer = TestKit.consumerProbe[String]()
-    //        subStream.getPublisher.subscribe(subStreamConsumer.getSubscriber)
-    //        val subStreamSubscription = subStreamConsumer.expectSubscription()
-    //
-    //        subStreamSubscription.requestMore(1)
-    //        subStreamConsumer.expectNext("a")
-    //
-    //        subStreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext("end")
-    //        subStreamConsumer.expectNext("end")
-    //        subStreamConsumer.expectComplete()
-    //
-    //        upstreamSubscription.sendNext("test")
-    //        val subStream2 = downstream.expectNext()
-    //        val subStreamConsumer2 = TestKit.consumerProbe[String]()
-    //        subStream2.getPublisher.subscribe(subStreamConsumer2.getSubscriber)
-    //        val subStreamSubscription2 = subStreamConsumer2.expectSubscription()
-    //
-    //        subStreamSubscription2.requestMore(1)
-    //        subStreamConsumer2.expectNext("test")
-    //
-    //        subStreamSubscription2.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext("abc")
-    //        subStreamConsumer2.expectNext("abc")
-    //
-    //        subStreamSubscription2.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext("end")
-    //        upstreamSubscription.sendComplete()
-    //        downstream.expectComplete()
-    //        subStreamConsumer2.expectNext("end")
-    //        subStreamConsumer2.expectComplete()
-    //      }
-    //      "operation consumes Producer" in new InitializedChainSetup[Source[String], String](Flatten())(factoryWithFanOutBuffer(16)) {
-    //        downstreamSubscription.requestMore(4)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //
-    //        val subStream = TestKit.producerProbe[String]()
-    //        upstreamSubscription.sendNext(subStream)
-    //        val subStreamSubscription = subStream.expectSubscription()
-    //        subStream.expectRequestMore(subStreamSubscription, 4)
-    //        subStreamSubscription.sendNext("test")
-    //        downstream.expectNext("test")
-    //        subStreamSubscription.sendNext("abc")
-    //        downstream.expectNext("abc")
-    //        subStreamSubscription.sendComplete()
-    //
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //
-    //        val subStream2 = TestKit.producerProbe[String]()
-    //        upstreamSubscription.sendNext(subStream2)
-    //        upstreamSubscription.sendComplete()
-    //        val subStreamSubscription2 = subStream2.expectSubscription()
-    //        subStream2.expectRequestMore(subStreamSubscription2, 2)
-    //        subStreamSubscription2.sendNext("123")
-    //        downstream.expectNext("123")
-    //
-    //        subStreamSubscription2.sendComplete()
-    //        downstream.expectComplete()
-    //      }
-    //      "combined operation spanning internal subscription" in new InitializedChainSetup[Int, Int](Span[Int](_ % 3 == 0).flatten) {
-    //        downstreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //
-    //        upstreamSubscription.sendNext(1)
-    //        downstream.expectNext(1)
-    //
-    //        downstreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext(2)
-    //        downstream.expectNext(2)
-    //
-    //        downstreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext(3)
-    //        downstream.expectNext(3)
-    //
-    //        downstreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext(4)
-    //        downstream.expectNext(4)
-    //
-    //        downstreamSubscription.requestMore(1)
-    //        upstream.expectRequestMore(upstreamSubscription, 1)
-    //        upstreamSubscription.sendNext(5)
-    //        upstreamSubscription.sendComplete()
-    //        downstream.expectNext(5)
-    //        downstream.expectComplete()
-    //      }
-
   }
 
   "A Stream with multiple subscribers (FanOutBox)" must {
@@ -224,6 +123,45 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         downstream2Subscription.requestMore(1)
         downstream2.expectNext("element2")
+      }
+    }
+
+    "support slow consumer with fan-out 2" in {
+      new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, initialFanOutBufferSize = 2, maxFanOutBufferSize = 2)) {
+        val downstream2 = StreamTestKit.consumerProbe[Any]()
+        producer.produceTo(downstream2)
+        val downstream2Subscription = downstream2.expectSubscription()
+
+        downstreamSubscription.requestMore(5)
+
+        upstream.expectRequestMore(upstreamSubscription, 1) // because initialInputBufferSize=1
+        upstreamSubscription.sendNext("element1")
+        downstream.expectNext("element1")
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("element2")
+        downstream.expectNext("element2")
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("element3")
+        // downstream2 has not requested anything, fan-out buffer 2
+        downstream.expectNoMsg(100.millis.dilated)
+
+        downstream2Subscription.requestMore(2)
+        downstream.expectNext("element3")
+        downstream2.expectNext("element1")
+        downstream2.expectNext("element2")
+        downstream2.expectNoMsg(100.millis.dilated)
+
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("element4")
+        downstream.expectNext("element4")
+
+        downstream2Subscription.requestMore(2)
+        downstream2.expectNext("element3")
+        downstream2.expectNext("element4")
+
+        upstreamSubscription.sendComplete()
+        downstream.expectComplete()
+        downstream2.expectComplete()
       }
     }
 
@@ -264,8 +202,7 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
       }
     }
 
-    // FIXME failing test
-    "blocking subscriber cancels subscription" ignore {
+    "blocking subscriber cancels subscription" in {
       new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()
         producer.produceTo(downstream2)
@@ -273,7 +210,6 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
 
         downstreamSubscription.requestMore(5)
         upstreamSubscription.expectRequestMore(1)
-
         upstreamSubscription.sendNext("firstElement")
         downstream.expectNext("firstElement")
 
@@ -281,22 +217,23 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
         downstream2.expectNext("firstElement")
         upstreamSubscription.expectRequestMore(1)
         upstreamSubscription.sendNext("element2")
-        upstreamSubscription.sendNext("element3")
-        upstreamSubscription.sendNext("element4")
-
-        upstreamSubscription.expectRequestMore(1)
-        downstream2.expectNoMsg(100.millis.dilated)
 
         downstream.expectNext("element2")
+        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.sendNext("element3")
+        downstream2.expectNoMsg(100.millis.dilated)
+
         downstream.expectNoMsg(200.millis.dilated)
         upstream.expectNoMsg(100.millis.dilated)
         // should unblock fanoutbox
         downstream2Subscription.cancel()
         upstreamSubscription.expectRequestMore(1)
-        downstream2.expectNoMsg(200.millis.dilated)
-        // FIXME fails, "element3" disappears, "element4" is delivered here
         downstream.expectNext("element3")
+        upstreamSubscription.sendNext("element4")
         downstream.expectNext("element4")
+
+        upstreamSubscription.sendComplete()
+        downstream.expectComplete()
       }
     }
 
