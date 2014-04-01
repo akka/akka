@@ -43,6 +43,19 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
       f.value.get should be(Failure(ex))
     }
 
+    "yield NoSuchElementExcption for empty stream" in {
+      val p = StreamTestKit.producerProbe[Int]
+      val f = Flow(p).toFuture(gen)
+      val proc = p.expectSubscription
+      proc.expectRequestMore()
+      proc.sendComplete()
+      Await.ready(f, 100.millis)
+      f.value.get match {
+        case Failure(e: NoSuchElementException) ⇒ e.getMessage() should be("empty stream")
+        case x                                  ⇒ fail("expected NoSuchElementException, got " + x)
+      }
+    }
+
   }
 
 }
