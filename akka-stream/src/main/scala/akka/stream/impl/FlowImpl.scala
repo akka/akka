@@ -74,7 +74,9 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   def toFuture(generator: ProcessorGenerator): Future[O] = {
     val p = Promise[O]()
-    transformRecover(0)((x, in) ⇒ { p complete in; 1 -> Nil }, isComplete = _ == 1).consume(generator)
+    transformRecover(0)((x, in) ⇒ { p complete in; 1 -> Nil },
+      onComplete = _ ⇒ { p.tryFailure(new NoSuchElementException("empty stream")); Nil },
+      isComplete = _ == 1).consume(generator)
     p.future
   }
 
