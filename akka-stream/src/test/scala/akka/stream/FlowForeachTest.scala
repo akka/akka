@@ -7,7 +7,7 @@ import akka.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-class StreamForeachSpec extends AkkaSpec with ScriptedTest {
+class FlowForeachSpec extends AkkaSpec with ScriptedTest {
 
   val genSettings = GeneratorSettings(
     initialInputBufferSize = 2,

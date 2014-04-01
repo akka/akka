@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import org.reactivestreams.spi.Subscription
 import akka.actor.{ Terminated, Props, ActorRef }
-import akka.stream.{ Stream, GeneratorSettings }
+import akka.stream.GeneratorSettings
 import akka.stream.impl._
 
 /**

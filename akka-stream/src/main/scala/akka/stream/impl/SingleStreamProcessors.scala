@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import scala.collection.immutable
-import scala.util.{Failure, Success}
+import scala.util.{ Failure, Success }
 
 import akka.actor.Props
 import akka.stream.GeneratorSettings

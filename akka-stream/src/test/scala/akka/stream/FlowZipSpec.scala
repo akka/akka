@@ -6,8 +6,9 @@ package akka.stream
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
+import akka.stream.scala_api.Flow
 
-class StreamZipSpec extends AkkaSpec {
+class FlowZipSpec extends AkkaSpec {
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
@@ -19,9 +20,9 @@ class StreamZipSpec extends AkkaSpec {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val source1 = Stream((1 to 4).iterator).toProducer(gen)
-      val source2 = Stream(List("A", "B", "C", "D", "E", "F").iterator).toProducer(gen)
-      val p = Stream(source1).zip(source2).toProducer(gen)
+      val source1 = Flow((1 to 4).iterator).toProducer(gen)
+      val source2 = Flow(List("A", "B", "C", "D", "E", "F").iterator).toProducer(gen)
+      val p = Flow(source1).zip(source2).toProducer(gen)
 
       val probe = StreamTestKit.consumerProbe[(Int, String)]
       p.produceTo(probe)

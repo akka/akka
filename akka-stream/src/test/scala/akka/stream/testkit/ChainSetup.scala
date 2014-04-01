@@ -3,14 +3,15 @@
  */
 package akka.stream.testkit
 
-import akka.stream.{ GeneratorSettings, Stream, ProcessorGenerator }
+import akka.stream.{ GeneratorSettings, ProcessorGenerator }
 import akka.actor.ActorSystem
+import akka.stream.scala_api.Flow
 
-class ChainSetup[I, O](stream: Stream[I] ⇒ Stream[O], val settings: GeneratorSettings)(implicit val system: ActorSystem) {
+class ChainSetup[I, O](stream: Flow[I] ⇒ Flow[O], val settings: GeneratorSettings)(implicit val system: ActorSystem) {
   val upstream = StreamTestKit.producerProbe[I]()
   val downstream = StreamTestKit.consumerProbe[O]()
 
-  private val s = stream(Stream(upstream))
+  private val s = stream(Flow(upstream))
   val producer = s.toProducer(ProcessorGenerator(settings))
   val upstreamSubscription = upstream.expectSubscription()
   producer.produceTo(downstream)
