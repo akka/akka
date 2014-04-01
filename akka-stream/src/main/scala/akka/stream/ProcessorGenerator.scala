@@ -10,12 +10,25 @@ import akka.stream.impl.Ast
 import org.reactivestreams.api.Producer
 import scala.concurrent.duration._
 
-// FIXME is Processor the right naming here?
 object ProcessorGenerator {
+  /**
+   * Creates a ProcessorGenerator which will execute every step of a transformation
+   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]]) 
+   * will be used to create these actors, therefore it is *forbidden* to pass this object
+   * to another actor if the factory is an ActorContext.
+   */
   def apply(settings: GeneratorSettings)(implicit context: ActorRefFactory): ProcessorGenerator =
     new ActorBasedProcessorGenerator(settings, context)
 }
 
+/**
+ * A ProcessorGenerator takes the list of transformations comprising a
+ * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
+ * [[org.reactivestreams.api.Processor]] instances. How transformation
+ * steps are split up into asynchronous regions is implementation
+ * dependent.
+ */
 trait ProcessorGenerator {
   /**
    * INTERNAL API
@@ -32,7 +45,12 @@ trait ProcessorGenerator {
   private[akka] def produce[T](f: () ⇒ T): Producer[T]
 }
 
-// FIXME default values? Should we have an extension that reads from config?
+/**
+ * The buffers employed by the generated Processors can be configured by
+ * creating an appropriate instance of this class.
+ * 
+ * This will likely be replaced in the future by auto-tuning these values at runtime.
+ */
 case class GeneratorSettings(
   initialFanOutBufferSize: Int = 4,
   maxFanOutBufferSize: Int = 16,
