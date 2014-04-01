@@ -116,6 +116,7 @@ class BatchingInputBuffer(val upstream: Subscription, val size: Int) extends Inp
 
   override def enqueueInputElement(elem: Any): Unit =
     if (isOpen) {
+      if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")
       inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
       inputBufferElements += 1
     }

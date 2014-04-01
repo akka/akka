@@ -164,16 +164,18 @@ private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSetting
 
   private var demand = 0
   private def generate(): Unit = {
-    val continue =
-      try {
-        pushToDownstream(f())
-        true
-      } catch {
-        case Stop        ⇒ { completeDownstream(); shutdownReason = None; false }
-        case NonFatal(e) ⇒ { abortDownstream(e); shutdownReason = Some(e); false }
-      }
-    demand -= 1
-    if (continue && demand > 0) self ! Generate
+    if (demand > 0) {
+      val continue =
+        try {
+          pushToDownstream(f())
+          true
+        } catch {
+          case Stop        ⇒ { completeDownstream(); shutdownReason = None; false }
+          case NonFatal(e) ⇒ { abortDownstream(e); shutdownReason = Some(e); false }
+        }
+      demand -= 1
+      if (continue) self ! Generate
+    }
   }
 
   override def initialBufferSize = settings.initialFanOutBufferSize
