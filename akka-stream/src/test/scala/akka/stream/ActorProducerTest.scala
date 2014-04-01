@@ -28,4 +28,6 @@ class ActorProducerTest extends PublisherVerification[Int] with WithActorSystem 
     Thread.sleep(100)
     pub.getPublisher
   }
+
+  override def publisherShutdownTimeoutMillis: Int = 1000
 }
