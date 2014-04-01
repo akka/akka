@@ -55,6 +55,8 @@ object Flow {
  * input. The starting point can be a collection, an iterator, a block of code
  * which is evaluated repeatedly or a [[org.reactivestreams.api.Producer]].
  * 
+ * See <a href="https://github.com/reactive-streams/reactive-streams/">Reactive Streams</a> for details.
+ * 
  * Each DSL element produces a new Flow that can be further transformed, building
  * up a description of the complete transformation pipeline. In order to execute
  * this pipeline the Flow must be materialized by calling the [[#toFuture]], [[#consume]]
