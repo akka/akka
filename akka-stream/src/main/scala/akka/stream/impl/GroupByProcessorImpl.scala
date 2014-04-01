@@ -13,7 +13,7 @@ import akka.stream.impl._
  */
 private[akka] object GroupByProcessorImpl {
 
-  trait SubstreamElementState
+  sealed trait SubstreamElementState
   case object NoPending extends SubstreamElementState
   case class PendingElement(elem: Any, key: Any) extends SubstreamElementState
   case class PendingElementForNewStream(elem: Any, key: Any) extends SubstreamElementState
@@ -32,44 +32,44 @@ private[akka] class GroupByProcessorImpl(settings: GeneratorSettings, val keyFor
 
   override def initialTransferState = needsPrimaryInputAndDemand
 
-  override def transfer(): TransferState = substreamPendingState match {
-    case PendingElementForNewStream(elem, key) ⇒
-      if (PrimaryOutputs.isComplete) {
+  override def transfer(): TransferState = {
+    substreamPendingState match {
+      case PendingElementForNewStream(elem, key) ⇒
+        if (PrimaryOutputs.isClosed) {
+          substreamPendingState = NoPending
+          // Just drop, we do not open any more substreams
+        } else {
+          val substreamOutput = newSubstream()
+          pushToDownstream((key, substreamOutput.processor))
+          keyToSubstreamOutputs(key) = substreamOutput
+          substreamPendingState = PendingElement(elem, key)
+        }
+
+      case PendingElement(elem, key) ⇒
+        if (keyToSubstreamOutputs(key).isOpen) keyToSubstreamOutputs(key).enqueueOutputElement(elem)
         substreamPendingState = NoPending
-        // Just drop, we do not open any more substreams
-        primaryInputs.NeedsInput
-      } else {
-        val substreamOutput = newSubstream()
-        pushToDownstream((key, substreamOutput.processor))
-        keyToSubstreamOutputs(key) = substreamOutput
-        substreamPendingState = PendingElement(elem, key)
-        substreamOutput.NeedsDemand
-      }
 
-    case PendingElement(elem, key) ⇒
-      if (!keyToSubstreamOutputs(key).isComplete) keyToSubstreamOutputs(key).enqueueOutputElement(elem)
-      substreamPendingState = NoPending
-      primaryInputs.NeedsInput
+      case NoPending ⇒
+        val elem = primaryInputs.dequeueInputElement()
+        val key = keyFor(elem)
+        if (keyToSubstreamOutputs.contains(key)) {
+          substreamPendingState = PendingElement(elem, key)
+        } else if (PrimaryOutputs.isOpen) {
+          substreamPendingState = PendingElementForNewStream(elem, key)
+        }
 
-    case NoPending ⇒
-      val elem = primaryInputs.dequeueInputElement()
-      val key = keyFor(elem)
-      if (keyToSubstreamOutputs.contains(key)) {
-        substreamPendingState = PendingElement(elem, key)
-        keyToSubstreamOutputs(key).NeedsDemand
-      } else if (!PrimaryOutputs.isComplete) {
-        substreamPendingState = PendingElementForNewStream(elem, key)
-        PrimaryOutputs.NeedsDemand
-      } else primaryInputs.NeedsInput
+    }
 
+    substreamPendingState match {
+      case NoPending                        ⇒ primaryInputs.NeedsInput
+      case PendingElement(_, key)           ⇒ keyToSubstreamOutputs(key).NeedsDemand
+      case PendingElementForNewStream(_, _) ⇒ PrimaryOutputs.NeedsDemand
+    }
   }
 
   override def invalidateSubstream(substream: ActorRef): Unit = {
     substreamPendingState match {
       case PendingElement(_, key) if keyToSubstreamOutputs(key).substream == substream ⇒
-        transferState = primaryInputs.NeedsInput
-        substreamPendingState = NoPending
-      case PendingElementForNewStream(_, key) if keyToSubstreamOutputs(key).substream == substream ⇒
         transferState = primaryInputs.NeedsInput
         substreamPendingState = NoPending
       case _ ⇒

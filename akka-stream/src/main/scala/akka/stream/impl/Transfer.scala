@@ -15,7 +15,8 @@ trait Inputs {
 
   def cancel(): Unit
   def complete(): Unit
-  def isCompleted: Boolean
+  def isClosed: Boolean
+  def isOpen: Boolean = !isClosed
 
   def prefetch(): Unit
   def clear(): Unit
@@ -33,7 +34,8 @@ trait Outputs {
 
   def complete(): Unit
   def cancel(): Unit
-  def isComplete: Boolean
+  def isClosed: Boolean
+  def isOpen: Boolean = !isClosed
 }
 
 // States of the operation that is executed by this processor
@@ -61,7 +63,7 @@ object Completed extends TransferState {
 object EmptyInputs extends Inputs {
   override def inputsAvailable: Boolean = false
   override def inputsDepleted: Boolean = true
-  override def isCompleted: Boolean = true
+  override def isClosed: Boolean = true
 
   override def complete(): Unit = ()
   override def cancel(): Unit = ()
@@ -84,14 +86,14 @@ class BatchingInputBuffer(val upstream: Subscription, val size: Int) extends Inp
   private var inputBufferElements = 0
   private var nextInputElementCursor = 0
   private var upstreamCompleted = false
-  val IndexMask = size - 1
+  private val IndexMask = size - 1
 
   private def requestBatchSize = math.max(1, inputBuffer.length / 2)
   private var batchRemaining = requestBatchSize
 
-  def prefetch(): Unit = upstream.requestMore(inputBuffer.length)
+  override def prefetch(): Unit = upstream.requestMore(inputBuffer.length)
 
-  def dequeueInputElement(): Any = {
+  override def dequeueInputElement(): Any = {
     val elem = inputBuffer(nextInputElementCursor)
     inputBuffer(nextInputElementCursor) = null
 
@@ -107,25 +109,26 @@ class BatchingInputBuffer(val upstream: Subscription, val size: Int) extends Inp
     elem
   }
 
-  def enqueueInputElement(elem: Any): Unit = {
-    inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
-    inputBufferElements += 1
-  }
+  override def enqueueInputElement(elem: Any): Unit =
+    if (isOpen) {
+      inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
+      inputBufferElements += 1
+    }
 
-  def complete(): Unit = upstreamCompleted = true
-  def cancel(): Unit = {
+  override def complete(): Unit = upstreamCompleted = true
+  override def cancel(): Unit = {
     if (!upstreamCompleted) upstream.cancel()
     upstreamCompleted = true
   }
-  def isCompleted: Boolean = upstreamCompleted
+  override def isClosed: Boolean = upstreamCompleted
 
-  def clear(): Unit = {
+  override def clear(): Unit = {
     Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
     inputBufferElements = 0
   }
 
-  def inputsDepleted = upstreamCompleted && inputBufferElements == 0
-  def inputsAvailable = inputBufferElements > 0
+  override def inputsDepleted = upstreamCompleted && inputBufferElements == 0
+  override def inputsAvailable = inputBufferElements > 0
 
   override val NeedsInput: TransferState = new TransferState {
     def isReady = inputsAvailable
