@@ -24,7 +24,7 @@ private[akka] object ActorProcessor {
     case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
     case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
     case z: Zip       ⇒ Props(new ZipImpl(settings, z.other))
-    case c: Concat    ⇒ Props(new ConcatImpl(settings, c.other))
+    case c: Concat    ⇒ Props(new ConcatImpl(settings, c.next))
   }
 }
 
@@ -67,11 +67,12 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     case OnError(cause) ⇒ failureReceived(cause)
   }
 
-  def transitionToRunningWhenReady(): Unit = if (primaryInputs ne null) {
-    primaryInputs.prefetch()
-    transferState = initialTransferState
-    context.become(running)
-  }
+  def transitionToRunningWhenReady(): Unit =
+    if (primaryInputs ne null) {
+      primaryInputs.prefetch()
+      transferState = initialTransferState
+      context.become(running)
+    }
 
   //////////////////////  Management of subscribers //////////////////////
 
@@ -112,6 +113,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // Called by SubscriberManagement whenever the output buffer is ready to accept additional elements
   override protected def requestFromUpstream(elements: Int): Unit = {
+    // FIXME: Remove debug logging
     log.debug(s"received downstream demand from buffer: $elements")
     PrimaryOutputs.enqueueOutputDemand(elements)
   }
@@ -139,7 +141,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
     def complete(): Unit = downstreamCompleted = true
     def cancel(): Unit = downstreamCompleted = true
-    def isComplete: Boolean = downstreamCompleted
+    def isClosed: Boolean = downstreamCompleted
     override val NeedsDemand: TransferState = new TransferState {
       def isReady = demandAvailable
       def isCompleted = downstreamCompleted
@@ -150,7 +152,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     }
   }
 
-  def needsPrimaryInputAndDemand = primaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsPrimaryInputAndDemand = primaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
 
   var transferState: TransferState = _
   protected def initialTransferState: TransferState
@@ -159,16 +161,19 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
   // Generate upstream requestMore for every Nth consumed input element
   protected def pump(): Unit = {
     try while (transferState.isExecutable) {
-      transferState = transfer()
+      // FIXME: Remove debug logging
       log.debug(s"iterating the pump with state $transferState and buffer $bufferDebug")
+      transferState = transfer()
     } catch { case NonFatal(e) ⇒ fail(e) }
 
+    // FIXME: Remove debug logging
     log.debug(s"finished iterating the pump with state $transferState and buffer $bufferDebug")
 
     if (transferState.isCompleted) {
       if (!isShuttingDown) {
+        // FIXME: Remove debug logging
         log.debug("shutting down the pump")
-        if (!primaryInputs.isCompleted) primaryInputs.cancel()
+        if (primaryInputs.isOpen) primaryInputs.cancel()
         primaryInputs.clear()
         context.become(flushing)
         isShuttingDown = true
@@ -234,7 +239,7 @@ private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast
   var emits = immutable.Seq.empty[Any]
 
   object NeedsInputAndDemandOrCompletion extends TransferState {
-    def isReady = primaryInputs.inputsAvailable && PrimaryOutputs.demandAvailable || primaryInputs.inputsDepleted
+    def isReady = (primaryInputs.inputsAvailable && PrimaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
     def isCompleted = false
   }
 
@@ -271,13 +276,13 @@ private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast
  */
 private[akka] class RecoverProcessorImpl(_settings: GeneratorSettings, _op: Ast.Recover) extends TransformProcessorImpl(_settings, _op.t) {
 
-  val WrapInSuccess: Receive = {
+  val wrapInSuccess: Receive = {
     case OnNext(elem) ⇒
       primaryInputs.enqueueInputElement(Success(elem))
       pump()
   }
 
-  override def running: Receive = WrapInSuccess orElse super.running
+  override def running: Receive = wrapInSuccess orElse super.running
 
   override def failureReceived(e: Throwable): Unit = {
     primaryInputs.enqueueInputElement(Failure(e))

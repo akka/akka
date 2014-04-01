@@ -15,7 +15,7 @@ private[akka] object MultiStreamOutputProcessor {
   case class SubstreamRequestMore(substream: ActorRef, demand: Int)
   case class SubstreamCancel(substream: ActorRef)
 
-  class SubstreamSubscription( final val parent: ActorRef, final val substream: ActorRef) extends Subscription {
+  class SubstreamSubscription(val parent: ActorRef, val substream: ActorRef) extends Subscription {
     override def requestMore(elements: Int): Unit =
       if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
       else parent ! SubstreamRequestMore(substream, elements)
@@ -40,7 +40,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
     val substream = context.watch(context.actorOf(IdentityProcessorImpl.props(settings)))
     val processor = new ActorProcessor[AnyRef, AnyRef](substream)
 
-    override def isComplete: Boolean = completed
+    override def isClosed: Boolean = completed
     override def complete(): Unit = {
       if (!completed) substream ! OnComplete
       completed = true
@@ -52,6 +52,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
       demands -= 1
       substream ! OnNext(elem)
     }
+
     def enqueueOutputDemand(demand: Int): Unit = demands += demand
     override def demandAvailable: Boolean = demands > 0
     override val NeedsDemand: TransferState = new TransferState {
@@ -59,7 +60,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
       override def isCompleted: Boolean = completed
     }
     override val NeedsDemandOrCancel: TransferState = new TransferState {
-      override def isReady: Boolean = demandAvailable || isComplete
+      override def isReady: Boolean = demandAvailable || isClosed
       override def isCompleted: Boolean = false
     }
   }
@@ -74,7 +75,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
   protected def invalidateSubstream(substream: ActorRef): Unit = {
     substreamOutputs(substream).complete()
     substreamOutputs -= substream
-    if ((isShuttingDown || PrimaryOutputs.isComplete) && context.children.isEmpty) context.stop(self)
+    if ((isShuttingDown || PrimaryOutputs.isClosed) && context.children.isEmpty) context.stop(self)
     pump()
   }
 
@@ -84,12 +85,10 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
   }
 
   override def shutdown(completed: Boolean): Unit = {
-    // If the master stream is cancelled (no one consumes substreams) then this callback does not mean we are shutting down
-    // We can only shut down after all substreams are closed
-    //if (!PrimaryOutputs.isComplete) {
+    // If the master stream is cancelled (no one consumes substreams as elements from the master stream)
+    // then this callback does not mean we are shutting down
+    // We can only shut down after all substreams (our children) are closed
     if (context.children.isEmpty) super.shutdown(completed)
-    //}
-
   }
 
   override def completeDownstream(): Unit = {
@@ -111,7 +110,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSett
  * INTERNAL API
  */
 private[akka] object TwoStreamInputProcessor {
-  class OtherActorSubscriber[T]( final val impl: ActorRef) extends Subscriber[T] {
+  class OtherActorSubscriber[T](val impl: ActorRef) extends Subscriber[T] {
     override def onError(cause: Throwable): Unit = impl ! OnError(cause)
     override def onComplete(): Unit = impl ! OtherStreamOnComplete
     override def onNext(element: T): Unit = impl ! OtherStreamOnNext(element)
@@ -155,7 +154,7 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: GeneratorSetting
   }
 
   override def flushAndComplete(): Unit = {
-    if (secondaryInputs.isCompleted && primaryInputs.isCompleted)
+    if (secondaryInputs.isClosed && primaryInputs.isClosed)
       super.flushAndComplete()
   }
 
