@@ -8,12 +8,9 @@ import akka.stream.testkit._
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
-import akka.stream.Stream
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamGroupBySpec extends AkkaSpec {
-
-  import system.dispatcher
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,

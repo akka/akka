@@ -8,11 +8,8 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
-import akka.stream.{ Stream, GeneratorSettings }
 
 class StreamMergeSpec extends AkkaSpec {
-
-  import system.dispatcher
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
