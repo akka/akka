@@ -14,7 +14,7 @@ import akka.actor.Terminated
  */
 private[akka] object SplitWhenProcessorImpl {
 
-  trait SubstreamElementState
+  sealed trait SubstreamElementState
   case object NoPending extends SubstreamElementState
   case class PendingElement(elem: Any) extends SubstreamElementState
   case class PendingElementForNewStream(elem: Any) extends SubstreamElementState
@@ -33,31 +33,34 @@ private[akka] class SplitWhenProcessorImpl(_settings: GeneratorSettings, val spl
 
   override def initialTransferState = needsPrimaryInputAndDemand
 
-  override def transfer(): TransferState = pendingElement match {
-    case NoPending ⇒
-      val elem = primaryInputs.dequeueInputElement()
-      if (!started) {
-        pendingElement = PendingElementForNewStream(elem)
-        started = true
-        PrimaryOutputs.NeedsDemand
-      } else if (splitPredicate(elem)) {
-        pendingElement = PendingElementForNewStream(elem)
-        currentSubstream.complete()
-        PrimaryOutputs.NeedsDemand
-      } else if (!currentSubstream.isComplete) {
+  override def transfer(): TransferState = {
+    pendingElement match {
+      case NoPending ⇒
+        val elem = primaryInputs.dequeueInputElement()
+        if (!started) {
+          pendingElement = PendingElementForNewStream(elem)
+          started = true
+        } else if (splitPredicate(elem)) {
+          pendingElement = PendingElementForNewStream(elem)
+          currentSubstream.complete()
+        } else if (currentSubstream.isOpen) {
+          pendingElement = PendingElement(elem)
+        } else primaryInputs.NeedsInput
+      case PendingElement(elem) ⇒
+        currentSubstream.enqueueOutputElement(elem)
+        pendingElement = NoPending
+      case PendingElementForNewStream(elem) ⇒
+        val substreamOutput = newSubstream()
+        pushToDownstream(substreamOutput.processor)
+        currentSubstream = substreamOutput
         pendingElement = PendingElement(elem)
-        currentSubstream.NeedsDemand
-      } else primaryInputs.NeedsInput
-    case PendingElement(elem) ⇒
-      currentSubstream.enqueueOutputElement(elem)
-      pendingElement = NoPending
-      primaryInputs.NeedsInput
-    case PendingElementForNewStream(elem) ⇒
-      val substreamOutput = newSubstream()
-      pushToDownstream(substreamOutput.processor)
-      currentSubstream = substreamOutput
-      pendingElement = PendingElement(elem)
-      currentSubstream.NeedsDemand
+    }
+
+    pendingElement match {
+      case NoPending                     ⇒ primaryInputs.NeedsInput
+      case PendingElement(_)             ⇒ currentSubstream.NeedsDemand
+      case PendingElementForNewStream(_) ⇒ PrimaryOutputs.NeedsDemand
+    }
   }
 
   override def invalidateSubstream(substream: ActorRef): Unit = {
