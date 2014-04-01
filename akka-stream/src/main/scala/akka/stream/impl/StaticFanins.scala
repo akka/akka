@@ -13,7 +13,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 private[akka] class MergeImpl(_settings: GeneratorSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  def needsAnyInputAndDemand = (primaryInputs.NeedsInput || secondaryInputs.NeedsInput) && PrimaryOutputs.NeedsDemand
+  lazy val needsAnyInputAndDemand = (primaryInputs.NeedsInput || secondaryInputs.NeedsInput) && PrimaryOutputs.NeedsDemand
 
   override def initialTransferState = needsAnyInputAndDemand
   override def transfer(): TransferState = {
@@ -36,7 +36,7 @@ private[akka] class MergeImpl(_settings: GeneratorSettings, _other: Producer[Any
 private[akka] class ZipImpl(_settings: GeneratorSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  def needsBothInputAndDemand = primaryInputs.NeedsInput && secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsBothInputAndDemand = primaryInputs.NeedsInput && secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
 
   override def initialTransferState = needsBothInputAndDemand
   override protected def transfer(): TransferState = {
@@ -51,8 +51,8 @@ private[akka] class ZipImpl(_settings: GeneratorSettings, _other: Producer[Any])
 private[akka] class ConcatImpl(_settings: GeneratorSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  def needsPrimaryInputAndDemandWithComplete = primaryInputs.NeedsInputOrComplete && PrimaryOutputs.NeedsDemand
-  def needsSecondaryInputAndDemand = secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsPrimaryInputAndDemandWithComplete = primaryInputs.NeedsInputOrComplete && PrimaryOutputs.NeedsDemand
+  lazy val needsSecondaryInputAndDemand = secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
   var processingPrimary = true
 
   override protected def initialTransferState: TransferState = needsPrimaryInputAndDemandWithComplete
