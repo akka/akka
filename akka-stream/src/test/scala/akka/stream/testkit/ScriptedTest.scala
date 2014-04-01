@@ -10,7 +10,8 @@ import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-import akka.stream._
+import akka.stream.scala_api.Flow
+import akka.stream.GeneratorSettings
 
 trait ScriptedTest extends ShouldMatchers {
 
@@ -76,7 +77,7 @@ trait ScriptedTest extends ShouldMatchers {
   }
 
   class ScriptRunner[In, Out](
-    op: Stream[In] ⇒ Stream[Out],
+    op: Flow[In] ⇒ Flow[Out],
     gen: GeneratorSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
@@ -186,7 +187,7 @@ trait ScriptedTest extends ShouldMatchers {
   }
 
   def runScript[In, Out](script: Script[In, Out], gen: GeneratorSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Stream[In] ⇒ Stream[Out])(implicit system: ActorSystem): Unit = {
+    op: Flow[In] ⇒ Flow[Out])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, gen, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

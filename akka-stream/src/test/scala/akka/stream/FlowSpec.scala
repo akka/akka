@@ -9,9 +9,10 @@ import akka.testkit._
 import org.reactivestreams.api.Producer
 import org.scalatest.FreeSpecLike
 import com.typesafe.config.ConfigFactory
+import akka.stream.scala_api.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   import system.dispatcher
 
@@ -21,10 +22,10 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16)
 
-  val identity: Stream[Any] ⇒ Stream[Any] = in ⇒ in.map(e ⇒ e)
-  val identity2: Stream[Any] ⇒ Stream[Any] = in ⇒ identity(in)
+  val identity: Flow[Any] ⇒ Flow[Any] = in ⇒ in.map(e ⇒ e)
+  val identity2: Flow[Any] ⇒ Flow[Any] = in ⇒ identity(in)
 
-  "A Stream" must {
+  "A Flow" must {
 
     for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
       s"requests initial elements from upstream ($name, $n)" in {
@@ -99,7 +100,7 @@ class StreamSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.re
 
   }
 
-  "A Stream with multiple subscribers (FanOutBox)" must {
+  "A Flow with multiple subscribers (FanOutBox)" must {
     "adapt speed to the currently slowest consumer" in {
       new ChainSetup(identity, genSettings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
         val downstream2 = StreamTestKit.consumerProbe[Any]()

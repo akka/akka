@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.actor.Props
 import akka.stream.GeneratorSettings
-import akka.stream.Stream
+import akka.stream.Stop
 
 /**
  * INTERNAL API
@@ -13,7 +13,7 @@ import akka.stream.Stream
 private[akka] object IteratorProducer {
   def props(iterator: Iterator[Any], settings: GeneratorSettings): Props = {
     def f(): Any = {
-      if (!iterator.hasNext) throw Stream.Stop
+      if (!iterator.hasNext) throw Stop
       iterator.next()
     }
     ActorProducer.props(settings, f)

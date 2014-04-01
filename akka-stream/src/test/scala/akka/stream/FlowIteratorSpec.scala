@@ -7,34 +7,36 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.stream.testkit.OnNext
-import akka.dispatch.OnComplete
 import akka.stream.testkit.OnComplete
 import akka.stream.testkit.OnError
-import akka.stream.testkit.OnSubscribe
+import akka.stream.scala_api.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class StreamIterableSpec extends AkkaSpec {
+class FlowIteratorSpec extends AkkaSpec {
 
   val gen = ProcessorGenerator(GeneratorSettings(
-    maximumInputBufferSize = 512))
+    initialInputBufferSize = 2,
+    maximumInputBufferSize = 2,
+    initialFanOutBufferSize = 4,
+    maxFanOutBufferSize = 4))
 
-  "A Stream based on an iterable" must {
+  "A Flow based on an iterator" must {
     "produce elements" in {
-      val p = Stream(List(1, 2, 3)).toProducer(gen)
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
       val c = StreamTestKit.consumerProbe[Int]
       p.produceTo(c)
       val sub = c.expectSubscription()
       sub.requestMore(1)
       c.expectNext(1)
       c.expectNoMsg(100.millis)
-      sub.requestMore(2)
+      sub.requestMore(3)
       c.expectNext(2)
       c.expectNext(3)
       c.expectComplete()
     }
 
     "complete empty" in {
-      val p = Stream(List.empty[Int]).toProducer(gen)
+      val p = Flow(List.empty[Int].iterator).toProducer(gen)
       val c = StreamTestKit.consumerProbe[Int]
       p.produceTo(c)
       c.expectComplete()
@@ -46,7 +48,7 @@ class StreamIterableSpec extends AkkaSpec {
     }
 
     "produce elements with multiple subscribers" in {
-      val p = Stream(List(1, 2, 3)).toProducer(gen)
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
       val c1 = StreamTestKit.consumerProbe[Int]
       val c2 = StreamTestKit.consumerProbe[Int]
       p.produceTo(c1)
@@ -70,7 +72,7 @@ class StreamIterableSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = Stream(List(1, 2, 3)).toProducer(gen)
+      val p = Flow(List(1, 2, 3).iterator).toProducer(gen)
       val c1 = StreamTestKit.consumerProbe[Int]
       val c2 = StreamTestKit.consumerProbe[Int]
       p.produceTo(c1)
@@ -81,22 +83,19 @@ class StreamIterableSpec extends AkkaSpec {
       c1.expectNoMsg(100.millis)
       p.produceTo(c2)
       val sub2 = c2.expectSubscription()
-      sub2.requestMore(2)
-      // starting from first element, new iterator per subscriber
-      c2.expectNext(1)
+      sub2.requestMore(3)
+      // element 1 is already gone
       c2.expectNext(2)
-      c2.expectNoMsg(100.millis)
-      sub2.requestMore(1)
       c2.expectNext(3)
       c2.expectComplete()
-      sub1.requestMore(2)
+      sub1.requestMore(3)
       c1.expectNext(2)
       c1.expectNext(3)
       c1.expectComplete()
     }
 
     "produce elements with one transformation step" in {
-      val p = Stream(List(1, 2, 3)).map(_ * 2).toProducer(gen)
+      val p = Flow(List(1, 2, 3).iterator).map(_ * 2).toProducer(gen)
       val c = StreamTestKit.consumerProbe[Int]
       p.produceTo(c)
       val sub = c.expectSubscription()
@@ -108,7 +107,7 @@ class StreamIterableSpec extends AkkaSpec {
     }
 
     "produce elements with two transformation steps" in {
-      val p = Stream(List(1, 2, 3, 4)).filter(_ % 2 == 0).map(_ * 2).toProducer(gen)
+      val p = Flow(List(1, 2, 3, 4).iterator).filter(_ % 2 == 0).map(_ * 2).toProducer(gen)
       val c = StreamTestKit.consumerProbe[Int]
       p.produceTo(c)
       val sub = c.expectSubscription()
@@ -120,7 +119,7 @@ class StreamIterableSpec extends AkkaSpec {
 
     "allow cancel before receiving all elements" in {
       val count = 100000
-      val p = Stream(1 to count).toProducer(gen)
+      val p = Flow((1 to count).iterator).toProducer(gen)
       val c = StreamTestKit.consumerProbe[Int]
       p.produceTo(c)
       val sub = c.expectSubscription()
@@ -134,5 +133,6 @@ class StreamIterableSpec extends AkkaSpec {
       }
       got.size should be < (count - 1)
     }
+
   }
 }
