@@ -66,7 +66,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: GeneratorSettings, val spl
   override def invalidateSubstream(substream: ActorRef): Unit = {
     pendingElement match {
       case PendingElement(_) ⇒
-        transferState = primaryInputs.NeedsInput
+        setTransferState(primaryInputs.NeedsInput)
         pendingElement = NoPending
       case _ ⇒
     }

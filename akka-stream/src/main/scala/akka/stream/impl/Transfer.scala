@@ -60,6 +60,11 @@ object Completed extends TransferState {
   def isCompleted = true
 }
 
+object NotInitialized extends TransferState {
+  def isReady = false
+  def isCompleted = false
+}
+
 object EmptyInputs extends Inputs {
   override def inputsAvailable: Boolean = false
   override def inputsDepleted: Boolean = true
