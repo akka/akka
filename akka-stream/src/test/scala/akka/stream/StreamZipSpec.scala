@@ -4,12 +4,10 @@
 package akka.stream
 
 import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
-import akka.stream.Stream
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 
 class StreamZipSpec extends AkkaSpec {
-  import system.dispatcher
 
   val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
     initialInputBufferSize = 2,
