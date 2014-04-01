@@ -38,10 +38,10 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
-    val gen = FlowMaterializer(MaterializerSettings(
+    val materializer = FlowMaterializer(MaterializerSettings(
       maximumInputBufferSize = 512))(system)
     val iter = Iterator from 1000
-    Flow(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
+    Flow(if (elements > 0) iter take elements else iter).toProducer(materializer).getPublisher
   }
 
 }

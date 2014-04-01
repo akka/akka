@@ -9,7 +9,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class StreamFilterSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -19,7 +19,7 @@ class StreamFilterSpec extends AkkaSpec with ScriptedTest {
 
     "filter" in {
       def script = Script((1 to 50) map { _ ⇒ val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq()) }: _*)
-      (1 to 50) foreach (_ ⇒ runScript(script, genSettings)(_.filter(_ % 2 == 0)))
+      (1 to 50) foreach (_ ⇒ runScript(script, settings)(_.filter(_ % 2 == 0)))
     }
 
   }
