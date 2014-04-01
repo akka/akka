@@ -70,7 +70,7 @@ private[akka] class GroupByProcessorImpl(settings: GeneratorSettings, val keyFor
   override def invalidateSubstream(substream: ActorRef): Unit = {
     substreamPendingState match {
       case PendingElement(_, key) if keyToSubstreamOutputs(key).substream == substream ⇒
-        transferState = primaryInputs.NeedsInput
+        setTransferState(primaryInputs.NeedsInput)
         substreamPendingState = NoPending
       case _ ⇒
     }

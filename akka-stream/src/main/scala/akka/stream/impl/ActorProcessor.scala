@@ -154,7 +154,8 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   lazy val needsPrimaryInputAndDemand = primaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
 
-  var transferState: TransferState = _
+  private var transferState: TransferState = NotInitialized
+  protected def setTransferState(t: TransferState): Unit = transferState = t
   protected def initialTransferState: TransferState
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
