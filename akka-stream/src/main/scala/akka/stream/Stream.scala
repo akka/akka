@@ -16,6 +16,7 @@ import scala.util.control.NoStackTrace
 import akka.stream.impl.Ast.IteratorProducerNode
 import akka.stream.impl.Ast.IterableProducerNode
 import akka.stream.impl.Ast.ExistingProducer
+import scala.annotation.unchecked.uncheckedVariance
 
 object Stream {
   def apply[T](producer: Producer[T]): Stream[T] = StreamImpl(ExistingProducer(producer), Nil)
@@ -27,7 +28,7 @@ object Stream {
   object Stop extends RuntimeException with NoStackTrace
 }
 
-trait Stream[T] {
+trait Stream[+T] {
   def map[U](f: T ⇒ U): Stream[U]
   def filter(p: T ⇒ Boolean): Stream[T]
   def foreach(c: T ⇒ Unit): Stream[Unit]
@@ -45,16 +46,16 @@ trait Stream[T] {
     onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
     isComplete: S ⇒ Boolean = (_: S) ⇒ false): Stream[U]
 
-  def groupBy[K](f: T ⇒ K): Stream[(K, Producer[T])]
-  def splitWhen(p: T ⇒ Boolean): Stream[Producer[T]]
+  def groupBy[K](f: T ⇒ K): Stream[(K, Producer[T @uncheckedVariance])]
+  def splitWhen(p: T ⇒ Boolean): Stream[Producer[T @uncheckedVariance]]
 
-  def merge(other: Producer[T]): Stream[T]
+  def merge[U >: T](other: Producer[U]): Stream[U]
   def zip[U](other: Producer[U]): Stream[(T, U)]
-  def concat(next: Producer[T]): Stream[T]
+  def concat[U >: T](next: Producer[U]): Stream[U]
 
   def toFuture(generator: ProcessorGenerator): Future[T]
   def consume(generator: ProcessorGenerator): Unit
-  def toProducer(generator: ProcessorGenerator): Producer[T]
+  def toProducer(generator: ProcessorGenerator): Producer[T @uncheckedVariance]
 }
 
 // FIXME is Processor the right naming here?
