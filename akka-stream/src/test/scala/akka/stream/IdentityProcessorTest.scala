@@ -42,4 +42,6 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     val iter = Iterator from 1000
     Stream(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
   }
+
+  override def publisherShutdownTimeoutMillis: Int = 1000
 }
