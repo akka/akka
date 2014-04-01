@@ -182,6 +182,21 @@ class StreamTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor
       subscription.requestMore(2)
       consumer.expectNoMsg(200.millis)
     }
+
+    "support producing elements from empty inputs" in {
+      val p = Stream(List.empty[Int].iterator).toProducer(gen)
+      val p2 = Stream(p).transform(List(1, 2, 3))((s, _) ⇒ (s, Nil), onComplete = s ⇒ s).
+        toProducer(gen)
+      val consumer = StreamTestKit.consumerProbe[Int]
+      p2.produceTo(consumer)
+      val subscription = consumer.expectSubscription()
+      subscription.requestMore(4)
+      consumer.expectNext(1)
+      consumer.expectNext(2)
+      consumer.expectNext(3)
+      consumer.expectComplete()
+
+    }
   }
 
 }

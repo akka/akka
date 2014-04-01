@@ -20,6 +20,11 @@ private[akka] object Ast {
 
   case class Transform(zero: Any, f: (Any, Any) ⇒ (Any, immutable.Seq[Any]), onComplete: Any ⇒ immutable.Seq[Any], isComplete: Any ⇒ Boolean) extends AstNode
   case class Recover(t: Transform) extends AstNode
+  case class GroupBy(f: Any ⇒ Any) extends AstNode
+  case class SplitWhen(p: Any ⇒ Boolean) extends AstNode
+  case class Merge(other: Producer[Any]) extends AstNode
+  case class Zip(other: Producer[Any]) extends AstNode
+  case class Concat(next: Producer[Any]) extends AstNode
 
   trait ProducerNode[I] {
     def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I]
