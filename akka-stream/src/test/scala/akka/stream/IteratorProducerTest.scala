@@ -24,5 +24,4 @@ class IteratorProducerTest extends PublisherVerification[Int] with WithActorSyst
   override def createCompletedStatePublisher(): Publisher[Int] =
     Stream(List.empty[Int].iterator).toProducer(gen).getPublisher
 
-  override def publisherShutdownTimeoutMillis: Int = 1000
 }
