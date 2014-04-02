@@ -49,8 +49,30 @@ private[akka] object Ast {
 /**
  * INTERNAL API
  */
-private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, context: ActorRefFactory) extends ProcessorGenerator {
+private[akka] object ActorBasedProcessorGenerator {
+
+  val ctx = new ThreadLocal[ActorRefFactory]
+
+  def withCtx[T](arf: ActorRefFactory)(block: ⇒ T): T = {
+    val old = ctx.get()
+    ctx.set(arf)
+    try block
+    finally ctx.set(old)
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, _context: ActorRefFactory) extends ProcessorGenerator {
   import Ast._
+  import ActorBasedProcessorGenerator._
+
+  private def context = ctx.get() match {
+    case null ⇒ _context
+    case x    ⇒ x
+  }
 
   @tailrec private def processorChain(topConsumer: Consumer[_], ops: immutable.Seq[AstNode]): Consumer[_] = {
     ops match {

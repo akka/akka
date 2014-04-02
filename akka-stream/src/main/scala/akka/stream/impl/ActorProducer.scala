@@ -17,6 +17,7 @@ import scala.util.control.NonFatal
 import akka.actor.Props
 import scala.util.control.NoStackTrace
 import akka.stream.Stop
+import akka.actor.Terminated
 
 /**
  * INTERNAL API
@@ -88,9 +89,10 @@ private[akka] final class ActorPublisher[T](val impl: ActorRef) extends Publishe
 
   def shutdown(reason: Option[Throwable]): Unit = {
     shutdownReason = reason
-    val pending = pendingSubscribers.getAndSet(null)
-    assert(pending ne null, "shutdown must only be called once, from postStop")
-    pending foreach reportSubscribeError
+    pendingSubscribers.getAndSet(null) match {
+      case null    ⇒ // already called earlier
+      case pending ⇒ pending foreach reportSubscribeError
+    }
   }
 
   @volatile private var shutdownReason: Option[Throwable] = None
@@ -115,6 +117,24 @@ private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val su
 /**
  * INTERNAL API
  */
+private[akka] trait SoftShutdown { this: Actor ⇒
+  def softShutdown(): Unit = {
+    val children = context.children
+    if (children.isEmpty) {
+      context.stop(self)
+    } else {
+      context.children foreach context.watch
+      context.become {
+        case Terminated(_) ⇒ if (context.children.isEmpty) context.stop(self)
+        case _             ⇒ // ignore all the rest, we’re practically dead
+      }
+    }
+  }
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] object ActorProducerImpl {
   case object Generate
 }
@@ -122,8 +142,14 @@ private[akka] object ActorProducerImpl {
 /**
  * INTERNAL API
  */
-private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSettings) extends Actor with ActorLogging with SubscriberManagement[T] {
+private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSettings)
+  extends Actor
+  with ActorLogging
+  with SubscriberManagement[T]
+  with SoftShutdown {
+
   import ActorProducerImpl._
+  import ActorBasedProcessorGenerator._
 
   type S = ActorSubscription[T]
   var pub: ActorPublisher[T] = _
@@ -131,20 +157,20 @@ private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSetting
 
   context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
 
-  def receive = {
+  final def receive = {
     case ExposedPublisher(pub) ⇒
       this.pub = pub.asInstanceOf[ActorPublisher[T]]
       context.become(waitingForSubscribers)
   }
 
-  def waitingForSubscribers: Receive = {
+  final def waitingForSubscribers: Receive = {
     case SubscribePending ⇒
       pub.takePendingSubscribers() foreach registerSubscriber
       context.setReceiveTimeout(Duration.Undefined)
       context.become(active)
   }
 
-  def active: Receive = {
+  final def active: Receive = {
     case SubscribePending ⇒
       pub.takePendingSubscribers() foreach registerSubscriber
     case RequestMore(sub, elements) ⇒
@@ -166,7 +192,7 @@ private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSetting
     if (demand > 0) {
       try {
         demand -= 1
-        pushToDownstream(f())
+        pushToDownstream(withCtx(context)(f()))
         if (demand > 0) self ! Generate
       } catch {
         case Stop        ⇒ { completeDownstream(); shutdownReason = None }
@@ -183,7 +209,13 @@ private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSetting
 
   override def requestFromUpstream(elements: Int): Unit = demand += elements
 
-  override def cancelUpstream(): Unit = context.stop(self)
-  override def shutdown(completed: Boolean): Unit = context.stop(self)
+  override def cancelUpstream(): Unit = {
+    pub.shutdown(shutdownReason)
+    softShutdown()
+  }
+  override def shutdown(completed: Boolean): Unit = {
+    pub.shutdown(shutdownReason)
+    softShutdown()
+  }
 
 }
