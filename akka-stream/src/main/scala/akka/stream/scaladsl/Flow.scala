@@ -143,11 +143,15 @@ trait Flow[+T] {
    * canceled. Before signaling normal completion to the downstream consumers,
    * the <code>onComplete</code> function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
+   *
+   * After normal completion or error the cleanup function is called with
+   * the current state as parameter.
    */
   def transform[S, U](zero: S)(
     f: (S, T) ⇒ (S, immutable.Seq[U]),
     onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false): Flow[U]
+    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
+    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U]
 
   /**
    * This transformation stage works exactly like [[#transform]] with the
@@ -155,11 +159,15 @@ trait Flow[+T] {
    * and failure signaled from upstream (i.e. <code>onError()</code> calls)
    * is also handled as normal input element wrapped in [[scala.util.Failure]].
    * In the latter case the stream ends after processing the failure.
+   *
+   * After normal completion or error the cleanup function is called with
+   * the current state as parameter.
    */
   def transformRecover[S, U](zero: S)(
     f: (S, Try[T]) ⇒ (S, immutable.Seq[U]),
     onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false): Flow[U]
+    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
+    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
