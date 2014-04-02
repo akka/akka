@@ -22,7 +22,7 @@ class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\na
   "An ActorBasedProcessorGenerator" must {
 
     "generate the right level of descendants" in {
-      val f = Flow(gen, () ⇒ {
+      val f = Flow(() ⇒ {
         testActor ! self
         Flow(List(1)).map(x ⇒ { testActor ! self; x }).toProducer(gen)
       }).take(3).foreach(x ⇒ {

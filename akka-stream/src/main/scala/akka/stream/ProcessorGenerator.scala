@@ -39,10 +39,7 @@ trait ProcessorGenerator {
    * INTERNAL API
    */
   private[akka] def consume[I](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Unit
-  /**
-   * INTERNAL API
-   */
-  private[akka] def produce[T](f: () ⇒ T): Producer[T]
+
 }
 
 /**

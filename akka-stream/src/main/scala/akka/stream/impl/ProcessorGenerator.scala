@@ -44,6 +44,10 @@ private[akka] object Ast {
       if (iterable.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
       else new ActorProducer[I](context.actorOf(IterableProducer.props(iterable, settings)))
   }
+  case class ThunkProducerNode[I](f: () ⇒ I) extends ProducerNode[I] {
+    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+      new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
+  }
 }
 
 /**
@@ -107,8 +111,6 @@ private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, _c
     }
     producerNode.createProducer(settings, context).produceTo(consumer.asInstanceOf[Consumer[I]])
   }
-
-  override def produce[T](f: () ⇒ T): Producer[T] = new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
 
   def processorForNode(op: AstNode): Processor[Any, Any] = new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op)))
 

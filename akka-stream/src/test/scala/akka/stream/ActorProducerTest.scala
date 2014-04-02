@@ -18,7 +18,7 @@ class ActorProducerTest extends PublisherVerification[Int] with WithActorSystem 
   private def createProducer(elements: Int): Producer[Int] = {
     val iter = Iterator from 1000
     val iter2 = if (elements > 0) iter take elements else iter
-    Flow(factory, () ⇒ if (iter2.hasNext) iter2.next() else throw Stop).toProducer(factory)
+    Flow(() ⇒ if (iter2.hasNext) iter2.next() else throw Stop).toProducer(factory)
   }
 
   def createPublisher(elements: Int): Publisher[Int] = createProducer(elements).getPublisher
