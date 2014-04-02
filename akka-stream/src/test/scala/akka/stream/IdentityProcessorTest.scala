@@ -32,7 +32,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
         maxFanOutBufferSize = fanoutSize),
       system)
 
-    val processor = factory.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil, (_: Any) ⇒ false))
+    val processor = factory.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), _ ⇒ Nil, _ ⇒ false, _ ⇒ ()))
 
     processor.asInstanceOf[Processor[Int, Int]]
   }
