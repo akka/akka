@@ -14,7 +14,7 @@ object ProcessorGenerator {
   /**
    * Creates a ProcessorGenerator which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
-   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]]) 
+   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
    */
@@ -48,7 +48,7 @@ trait ProcessorGenerator {
 /**
  * The buffers employed by the generated Processors can be configured by
  * creating an appropriate instance of this class.
- * 
+ *
  * This will likely be replaced in the future by auto-tuning these values at runtime.
  */
 case class GeneratorSettings(

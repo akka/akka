@@ -33,7 +33,14 @@ class ActorProcessor[I, O]( final val impl: ActorRef) extends Processor[I, O] wi
 /**
  * INTERNAL API
  */
-private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings) extends Actor with SubscriberManagement[Any] with ActorLogging {
+private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
+  extends Actor
+  with SubscriberManagement[Any]
+  with ActorLogging
+  with SoftShutdown {
+
+  import ActorBasedProcessorGenerator._
+
   type S = ActorSubscription[Any]
 
   override def maxBufferSize: Int = settings.maxFanOutBufferSize
@@ -125,7 +132,8 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
     abortDownstream(e)
     if (primaryInputs ne null) primaryInputs.cancel()
-    context.stop(self)
+    exposedPublisher.shutdown(shutdownReason)
+    softShutdown()
   }
 
   object PrimaryOutputs extends Outputs {
@@ -160,11 +168,11 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
-  protected def pump(): Unit = {
+  final protected def pump(): Unit = {
     try while (transferState.isExecutable) {
       // FIXME: Remove debug logging
       log.debug(s"iterating the pump with state $transferState and buffer $bufferDebug")
-      transferState = transfer()
+      transferState = withCtx(context)(transfer())
     } catch { case NonFatal(e) ⇒ fail(e) }
 
     // FIXME: Remove debug logging
@@ -208,7 +216,8 @@ private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
     if (completed)
       shutdownReason = None
     PrimaryOutputs.complete()
-    context.stop(self)
+    exposedPublisher.shutdown(shutdownReason)
+    softShutdown()
   }
 
   override def postStop(): Unit = {
