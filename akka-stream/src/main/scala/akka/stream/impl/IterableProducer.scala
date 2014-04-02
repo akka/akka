@@ -46,9 +46,10 @@ private[akka] object IterableProducer {
  * makes use of its own iterable, i.e. each consumer will receive the elements from the
  * beginning of the iterable and it can consume the elements in its own pace.
  */
-private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings: GeneratorSettings) extends Actor {
+private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings: GeneratorSettings) extends Actor with SoftShutdown {
   import IterableProducer.BasicActorSubscription
   import IterableProducer.BasicActorSubscription.Cancel
+  import ActorBasedProcessorGenerator._
 
   require(iterable.nonEmpty, "Use EmptyProducer for empty iterable")
 
@@ -78,18 +79,28 @@ private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
 
     case Terminated(worker) ⇒
-      val subscriber = workers(worker)
-      workers -= worker
-      subscribers -= subscriber
-      if (subscribers.isEmpty)
-        context.stop(self)
+      workerFinished(worker)
+
+    case IterableProducerWorker.Finished ⇒
+      context.unwatch(sender)
+      workerFinished(sender)
+  }
+
+  private def workerFinished(worker: ActorRef): Unit = {
+    val subscriber = workers(worker)
+    workers -= worker
+    subscribers -= subscriber
+    if (subscribers.isEmpty) {
+      exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+      softShutdown()
+    }
   }
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
     if (subscribers(subscriber))
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     else {
-      val iterator = iterable.iterator
+      val iterator = withCtx(context)(iterable.iterator)
       val worker = context.watch(context.actorOf(IterableProducerWorker.props(iterator, subscriber,
         settings.maximumInputBufferSize)))
       val subscription = new BasicActorSubscription(worker)
@@ -114,6 +125,7 @@ private[akka] object IterableProducerWorker {
     Props(new IterableProducerWorker(iterator, subscriber, maxPush))
 
   private object PushMore
+  case object Finished
 }
 
 /**
@@ -124,9 +136,10 @@ private[akka] object IterableProducerWorker {
  * pushing everything it sends a PushMore to itself after a batch of elements.
  */
 private[akka] class IterableProducerWorker(iterator: Iterator[Any], subscriber: Subscriber[Any], maxPush: Int)
-  extends Actor {
+  extends Actor with SoftShutdown {
   import IterableProducerWorker._
   import IterableProducer.BasicActorSubscription._
+  import ActorBasedProcessorGenerator._
 
   require(iterator.hasNext, "Iterator must not be empty")
 
@@ -139,17 +152,22 @@ private[akka] class IterableProducerWorker(iterator: Iterator[Any], subscriber: 
     case PushMore ⇒
       push()
     case Cancel ⇒
-      context.stop(self)
+      context.parent ! Finished
+      softShutdown()
   }
 
   private def push(): Unit = {
     @tailrec def doPush(n: Int): Unit =
       if (demand > 0) {
         demand -= 1
-        subscriber.onNext(iterator.next())
-        if (!iterator.hasNext) {
+        val hasNext = withCtx(context) {
+          subscriber.onNext(iterator.next())
+          iterator.hasNext
+        }
+        if (!hasNext) {
           subscriber.onComplete()
-          context.stop(self)
+          context.parent ! Finished
+          softShutdown()
         } else if (n == 0 && demand > 0)
           self ! PushMore
         else
@@ -159,7 +177,8 @@ private[akka] class IterableProducerWorker(iterator: Iterator[Any], subscriber: 
     try doPush(maxPush) catch {
       case NonFatal(e) ⇒
         subscriber.onError(e)
-        context.stop(self)
+        context.parent ! Finished
+        softShutdown()
     }
   }
 }

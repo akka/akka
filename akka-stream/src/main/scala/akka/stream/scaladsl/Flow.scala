@@ -54,9 +54,9 @@ object Flow {
  * The Flow DSL allows the formulation of stream transformations based on some
  * input. The starting point can be a collection, an iterator, a block of code
  * which is evaluated repeatedly or a [[org.reactivestreams.api.Producer]].
- * 
+ *
  * See <a href="https://github.com/reactive-streams/reactive-streams/">Reactive Streams</a> for details.
- * 
+ *
  * Each DSL element produces a new Flow that can be further transformed, building
  * up a description of the complete transformation pipeline. In order to execute
  * this pipeline the Flow must be materialized by calling the [[#toFuture]], [[#consume]]
@@ -209,28 +209,28 @@ trait Flow[+T] {
    * the Future into the corresponding failed state) or the end-of-stream
    * (failing the Future with a NoSuchElementException). *This operation
    * materializes the flow and initiates its execution.*
-   * 
+   *
    * The given ProcessorGenerator decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def toFuture(generator: ProcessorGenerator): Future[T]
-  
+
   /**
    * Attaches a consumer to this stream which will just discard all received
    * elements. *This will materialize the flow and initiate its execution.*
-   * 
+   *
    * The given ProcessorGenerator decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def consume(generator: ProcessorGenerator): Unit
-  
+
   /**
-   * Materialize this flow and return the downstream-most 
+   * Materialize this flow and return the downstream-most
    * [[org.reactivestreams.api.Producer]] interface. The stream will not have
    * any consumers attached at this point, which means that after prefetching
    * elements to fill the internal buffers it will assert back-pressure until
    * a consumer connects and creates demand for elements to be emitted.
-   * 
+   *
    * The given ProcessorGenerator decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */

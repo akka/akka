@@ -52,8 +52,9 @@ private[akka] object ActorConsumer {
 /**
  * INTERNAL API
  */
-private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Actor {
+private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Actor with SoftShutdown {
   import ActorProcessor._
+  import ActorBasedProcessorGenerator._
 
   /**
    * Consume one element synchronously: the Actor mailbox is the queue.
@@ -73,11 +74,11 @@ private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettin
   /**
    * Terminate processing after the current message; will cancel the subscription if necessary.
    */
-  def shutdown(): Unit = context.stop(self)
+  def shutdown(): Unit = softShutdown()
 
   context.setReceiveTimeout(settings.upstreamSubscriptionTimeout)
 
-  def receive = {
+  final def receive = {
     case OnSubscribe(sub) ⇒
       context.setReceiveTimeout(Duration.Undefined)
       subscription = Some(sub)
@@ -105,11 +106,11 @@ private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettin
     requestMore()
   }
 
-  def active: Receive = {
+  final def active: Receive = {
     case OnSubscribe(sub) ⇒ sub.cancel()
-    case OnNext(elem)     ⇒ { gotOne(); onNext(elem) }
-    case OnError(cause)   ⇒ { subscription = None; onError(cause) }
-    case OnComplete       ⇒ { subscription = None; onComplete() }
+    case OnNext(elem)     ⇒ { gotOne(); withCtx(context)(onNext(elem)) }
+    case OnError(cause)   ⇒ { subscription = None; withCtx(context)(onError(cause)) }
+    case OnComplete       ⇒ { subscription = None; withCtx(context)(onComplete()) }
   }
 
   override def postStop(): Unit = {
