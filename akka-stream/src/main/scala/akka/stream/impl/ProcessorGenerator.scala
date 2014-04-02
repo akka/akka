@@ -18,7 +18,13 @@ import akka.stream.{ GeneratorSettings, ProcessorGenerator }
 private[akka] object Ast {
   trait AstNode
 
-  case class Transform(zero: Any, f: (Any, Any) ⇒ (Any, immutable.Seq[Any]), onComplete: Any ⇒ immutable.Seq[Any], isComplete: Any ⇒ Boolean) extends AstNode
+  case class Transform(
+    zero: Any,
+    f: (Any, Any) ⇒ (Any, immutable.Seq[Any]),
+    onComplete: Any ⇒ immutable.Seq[Any],
+    isComplete: Any ⇒ Boolean,
+    cleanup: Any ⇒ Unit) extends AstNode
+
   case class Recover(t: Transform) extends AstNode
   case class GroupBy(f: Any ⇒ Any) extends AstNode
   case class SplitWhen(p: Any ⇒ Boolean) extends AstNode
@@ -99,7 +105,7 @@ private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, _c
     }
   }
 
-  private val identityConsumer = Transform((), (_, _) ⇒ () -> Nil, _ ⇒ Nil, _ ⇒ false)
+  private val identityConsumer = Transform((), (_, _) ⇒ () -> Nil, _ ⇒ Nil, _ ⇒ false, _ ⇒ ())
 
   override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
     val consumer = ops match {
