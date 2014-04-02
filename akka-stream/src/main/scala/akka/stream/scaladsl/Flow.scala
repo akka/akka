@@ -12,7 +12,7 @@ import scala.util.control.NoStackTrace
 import org.reactivestreams.api.Producer
 
 import akka.stream.ProcessorGenerator
-import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode }
+import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.FlowImpl
 
 object Flow {
@@ -47,7 +47,8 @@ object Flow {
    * a [[akka.stream.Stop]] exception being thrown; it ends exceptionally
    * when any other exception is thrown.
    */
-  def apply[T](gen: ProcessorGenerator, f: () ⇒ T): Flow[T] = apply(gen.produce(f))
+  def apply[T](f: () ⇒ T): Flow[T] = FlowImpl(ThunkProducerNode(f), Nil)
+
 }
 
 /**
