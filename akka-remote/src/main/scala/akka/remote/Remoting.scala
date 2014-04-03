@@ -49,6 +49,14 @@ private[remote] object RARP extends ExtensionId[RARP] with ExtensionIdProvider {
 
 /**
  * INTERNAL API
+ * Messages marked with this trait will be sent before other messages when buffering is active.
+ * This means that these messages don't obey normal message ordering.
+ * It is used for failure detector heartbeat messages.
+ */
+private[akka] trait PriorityMessage
+
+/**
+ * INTERNAL API
  */
 private[remote] object Remoting {
 
@@ -621,7 +629,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       case Some(endpoint) ⇒
         pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
         pendingReadHandoffs += endpoint -> handle
-        endpoint ! EndpointWriter.TakeOver(handle)
+        endpoint ! EndpointWriter.TakeOver(handle, self)
       case None ⇒
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
           handle.disassociate(AssociationHandle.Quarantined)
@@ -632,7 +640,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             if (handle.handshakeInfo.uid == uid) {
               pendingReadHandoffs.get(ep) foreach (_.disassociate())
               pendingReadHandoffs += ep -> handle
-              ep ! EndpointWriter.StopReading(ep)
+              ep ! EndpointWriter.StopReading(ep, self)
             } else {
               context.stop(ep)
               endpoints.unregisterEndpoint(ep)
