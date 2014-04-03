@@ -240,7 +240,7 @@ private[transport] object ProtocolStateActor {
   final case class ListenerReady(listener: HandleEventListener, wrappedHandle: AssociationHandle)
     extends ProtocolStateData
 
-  case object TimeoutReason
+  case class TimeoutReason(errorMessage: String)
   case object ForbiddenUidReason
 
   private[remote] def outboundProps(
@@ -414,18 +414,22 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
           stop(FSM.Failure(info))
 
         case Heartbeat ⇒
-          failureDetector.heartbeat(); stay()
+          failureDetector.heartbeat()
+          stay()
 
-        case Payload(payload) ⇒ stateData match {
-          case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
-            // Queue message until handler is registered
-            stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
-          case ListenerReady(listener, _) ⇒
-            listener notify InboundPayload(payload)
-            stay()
-          case msg ⇒
-            throw new AkkaProtocolException(s"unhandled message in state Open(InboundPayload) with type [${safeClassName(msg)}]")
-        }
+        case Payload(payload) ⇒
+          // use incoming ordinary message as alive sign
+          failureDetector.heartbeat()
+          stateData match {
+            case AssociatedWaitHandler(handlerFuture, wrappedHandle, queue) ⇒
+              // Queue message until handler is registered
+              stay() using AssociatedWaitHandler(handlerFuture, wrappedHandle, queue :+ payload)
+            case ListenerReady(listener, _) ⇒
+              listener notify InboundPayload(payload)
+              stay()
+            case msg ⇒
+              throw new AkkaProtocolException(s"unhandled message in state Open(InboundPayload) with type [${safeClassName(msg)}]")
+          }
 
         case _ ⇒ stay()
       }
@@ -459,7 +463,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
     } else {
       // send disassociate just to be sure
       sendDisassociate(wrappedHandle, Unknown)
-      stop(FSM.Failure(TimeoutReason))
+      stop(FSM.Failure(TimeoutReason("No response from remote. Handshake timed out or transport failure detector triggered.")))
     }
   }
 
@@ -482,8 +486,8 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
 
     case StopEvent(reason, _, OutboundUnderlyingAssociated(statusPromise, wrappedHandle)) ⇒
       statusPromise.tryFailure(reason match {
-        case FSM.Failure(TimeoutReason) ⇒
-          new AkkaProtocolException("No response from remote. Handshake timed out")
+        case FSM.Failure(TimeoutReason(errorMessage)) ⇒
+          new AkkaProtocolException(errorMessage)
         case FSM.Failure(info: DisassociateInfo) ⇒
           disassociateException(info)
         case FSM.Failure(ForbiddenUidReason) ⇒
@@ -526,10 +530,11 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   }
 
   override protected def logTermination(reason: FSM.Reason): Unit = reason match {
-    case FSM.Failure(TimeoutReason)       ⇒ // no logging
     case FSM.Failure(_: DisassociateInfo) ⇒ // no logging
     case FSM.Failure(ForbiddenUidReason)  ⇒ // no logging
-    case other                            ⇒ super.logTermination(reason)
+    case FSM.Failure(TimeoutReason(errorMessage)) ⇒
+      log.info(errorMessage)
+    case other ⇒ super.logTermination(reason)
   }
 
   private def listenForListenerRegistration(readHandlerPromise: Promise[HandleEventListener]): Unit =
@@ -578,7 +583,7 @@ private[transport] class ProtocolStateActor(initialData: InitialProtocolStateDat
   // Neither heartbeats neither disassociate cares about backing off if write fails:
   //  - Missing heartbeats are not critical
   //  - Disassociate messages are not guaranteed anyway
-  private def sendHeartbeat(wrappedHandle: AssociationHandle): Unit = try wrappedHandle.write(codec.constructHeartbeat) catch {
+  private def sendHeartbeat(wrappedHandle: AssociationHandle): Boolean = try wrappedHandle.write(codec.constructHeartbeat) catch {
     case NonFatal(e) ⇒ throw new AkkaProtocolException("Error writing HEARTBEAT to transport", e)
   }
 
