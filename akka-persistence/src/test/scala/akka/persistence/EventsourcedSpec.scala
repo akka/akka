@@ -6,11 +6,11 @@ package akka.persistence
 
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
-
 import com.typesafe.config.Config
-
 import akka.actor._
 import akka.testkit.{ ImplicitSender, AkkaSpec }
+import akka.testkit.EventFilter
+import akka.testkit.TestProbe
 
 object EventsourcedSpec {
   case class Cmd(data: Any)
@@ -160,7 +160,8 @@ object EventsourcedSpec {
 
   class ReplyInEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = {
-      case Cmd("a") ⇒ persist(Evt("a"))(evt ⇒ sender ! evt.data)
+      case Cmd("a")      ⇒ persist(Evt("a"))(evt ⇒ sender ! evt.data)
+      case p: Persistent ⇒ sender ! p // not expected
     }
   }
 
@@ -346,6 +347,21 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       expectMsg("offered")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+    }
+    "reject Persistent messages" in {
+      val probe = TestProbe()
+      val processor = namedProcessor[ReplyInEventHandlerProcessor]
+
+      EventFilter[UnsupportedOperationException](occurrences = 1) intercept {
+        processor.tell(Persistent("not allowed"), probe.ref)
+      }
+
+      processor.tell(Cmd("a"), probe.ref)
+      processor.tell(Cmd("a"), probe.ref)
+      processor.tell(Cmd("a"), probe.ref)
+      EventFilter[UnsupportedOperationException](occurrences = 1) intercept {
+        processor.tell(Persistent("not allowed when persisting"), probe.ref)
+      }
     }
     "be able to reply within an event handler" in {
       val processor = namedProcessor[ReplyInEventHandlerProcessor]
