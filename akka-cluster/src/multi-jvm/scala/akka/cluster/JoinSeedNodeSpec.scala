@@ -47,6 +47,10 @@ abstract class JoinSeedNodeSpec
 
       runOn(seed1, seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
+        runOn(seed3) {
+          // it is allowed to call this several times (verifies ticket #3973)
+          cluster.joinSeedNodes(seedNodes)
+        }
         awaitMembersUp(3)
       }
       enterBarrier("after-1")
