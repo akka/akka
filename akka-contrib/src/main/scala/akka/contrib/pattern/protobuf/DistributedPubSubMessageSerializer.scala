@@ -26,6 +26,7 @@ import akka.contrib.pattern.DistributedPubSubMediator.Internal._
 import akka.serialization.Serialization
 import akka.actor.ActorRef
 import akka.serialization.SerializationExtension
+import scala.collection.immutable.TreeMap
 
 /**
  * Protobuf serializer of DistributedPubSubMediator messages.
@@ -137,7 +138,7 @@ class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extend
 
   private def deltaFromProto(delta: dm.Delta): Delta =
     Delta(delta.getBucketsList.asScala.toVector.map { b ⇒
-      val content: Map[String, ValueHolder] = b.getContentList.asScala.map { entry ⇒
+      val content: TreeMap[String, ValueHolder] = b.getContentList.asScala.map { entry ⇒
         entry.getKey -> ValueHolder(entry.getVersion, if (entry.hasRef) Some(resolveActorRef(entry.getRef)) else None)
       }(breakOut)
       Bucket(addressFromProto(b.getOwner), b.getVersion, content)
