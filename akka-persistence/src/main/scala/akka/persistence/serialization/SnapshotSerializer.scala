@@ -6,9 +6,9 @@
 package akka.persistence.serialization
 
 import java.io._
-
 import akka.actor._
 import akka.serialization.{ Serializer, SerializationExtension }
+import akka.serialization.Serialization
 
 /**
  * Wrapper for snapshot `data`. Snapshot `data` are the actual snapshot objects captured by
@@ -32,6 +32,12 @@ class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
   def identifier: Int = 8
   def includeManifest: Boolean = false
 
+  private lazy val transportInformation: Option[Serialization.Information] = {
+    val address = system.provider.getDefaultAddress
+    if (address.hasLocalScope) None
+    else Some(Serialization.Information(address, system))
+  }
+
   /**
    * Serializes a [[Snapshot]]. Delegates serialization of snapshot `data` to a matching
    * `akka.serialization.Serializer`.
@@ -49,22 +55,30 @@ class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
     Snapshot(snapshotFromBinary(bytes))
 
   private def snapshotToBinary(snapshot: AnyRef): Array[Byte] = {
-    val extension = SerializationExtension(system)
+    def serialize() = {
+      val extension = SerializationExtension(system)
 
-    val snapshotSerializer = extension.findSerializerFor(snapshot)
-    val snapshotManifest = if (snapshotSerializer.includeManifest) Some(snapshot.getClass.getName) else None
+      val snapshotSerializer = extension.findSerializerFor(snapshot)
+      val snapshotManifest = if (snapshotSerializer.includeManifest) Some(snapshot.getClass.getName) else None
 
-    val header = SnapshotHeader(snapshotSerializer.identifier, snapshotManifest)
-    val headerSerializer = extension.findSerializerFor(header)
-    val headerBytes = headerSerializer.toBinary(header)
+      val header = SnapshotHeader(snapshotSerializer.identifier, snapshotManifest)
+      val headerSerializer = extension.findSerializerFor(header)
+      val headerBytes = headerSerializer.toBinary(header)
 
-    val out = new ByteArrayOutputStream
+      val out = new ByteArrayOutputStream
 
-    writeInt(out, headerBytes.length)
+      writeInt(out, headerBytes.length)
 
-    out.write(headerBytes)
-    out.write(snapshotSerializer.toBinary(snapshot))
-    out.toByteArray
+      out.write(headerBytes)
+      out.write(snapshotSerializer.toBinary(snapshot))
+      out.toByteArray
+    }
+
+    // serialize actor references with full address information (defaultAddress) 
+    transportInformation match {
+      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { serialize() }
+      case None     ⇒ serialize()
+    }
   }
 
   private def snapshotFromBinary(bytes: Array[Byte]): AnyRef = {
