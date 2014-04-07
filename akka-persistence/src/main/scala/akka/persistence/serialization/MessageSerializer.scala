@@ -36,6 +36,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   def identifier: Int = 7
   def includeManifest: Boolean = true
 
+  private lazy val transportInformation: Option[Serialization.Information] = {
+    val address = system.provider.getDefaultAddress
+    if (address.hasLocalScope) None
+    else Some(Serialization.Information(address, system))
+  }
+
   /**
    * Serializes [[PersistentBatch]], [[PersistentRepr]] and [[Deliver]] messages. Delegates
    * serialization of a persistent message's payload to a matching `akka.serialization.Serializer`.
@@ -103,14 +109,22 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   }
 
   private def persistentPayloadBuilder(payload: AnyRef) = {
-    val serializer = SerializationExtension(system).findSerializerFor(payload)
-    val builder = PersistentPayload.newBuilder()
+    def payloadBuilder() = {
+      val serializer = SerializationExtension(system).findSerializerFor(payload)
+      val builder = PersistentPayload.newBuilder()
 
-    if (serializer.includeManifest) builder.setPayloadManifest((ByteString.copyFromUtf8(payload.getClass.getName)))
+      if (serializer.includeManifest) builder.setPayloadManifest((ByteString.copyFromUtf8(payload.getClass.getName)))
 
-    builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
-    builder.setSerializerId(serializer.identifier)
-    builder
+      builder.setPayload(ByteString.copyFrom(serializer.toBinary(payload)))
+      builder.setSerializerId(serializer.identifier)
+      builder
+    }
+
+    // serialize actor references with full address information (defaultAddress) 
+    transportInformation match {
+      case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { payloadBuilder() }
+      case None     ⇒ payloadBuilder()
+    }
   }
 
   private def deliveredMessageBuilder(delivered: Delivered) = {
