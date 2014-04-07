@@ -6,17 +6,27 @@ package akka.stream.impl
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.util.Try
-
 import org.reactivestreams.api.Producer
-
 import Ast.{ AstNode, Recover, Transform }
 import akka.stream.ProcessorGenerator
 import akka.stream.scaladsl.Flow
+import scala.util.Success
+import scala.util.Failure
+
+/**
+ * INTERNAL API
+ */
+private[akka] object FlowImpl {
+  private val SuccessUnit = Success[Unit](())
+  private val OnCompleteSuccessToken = (true, Nil)
+  private val OnCompleteFailureToken = (false, Nil)
+}
 
 /**
  * INTERNAL API
  */
 private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]) extends Flow[O] {
+  import FlowImpl._
   import Ast._
   // Storing ops in reverse order
   private def andThen[U](op: AstNode): Flow[U] = this.copy(ops = op :: ops)
@@ -85,6 +95,16 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
   }
 
   override def consume(generator: ProcessorGenerator): Unit = generator.consume(producerNode, ops)
+
+  def onComplete(generator: ProcessorGenerator)(callback: Try[Unit] ⇒ Unit): Unit =
+    transformRecover(true)(
+      f = {
+        case (_, fail @ Failure(ex)) ⇒
+          callback(fail.asInstanceOf[Try[Unit]])
+          OnCompleteFailureToken
+        case _ ⇒ OnCompleteSuccessToken
+      },
+      onComplete = ok ⇒ { if (ok) callback(SuccessUnit); Nil }).consume(generator)
 
   override def toProducer(generator: ProcessorGenerator): Producer[O] = generator.toProducer(producerNode, ops)
 }
