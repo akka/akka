@@ -34,7 +34,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = false
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0-RC4")
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -1070,8 +1070,8 @@ object Dependencies {
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.5")
-    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.0")
-    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.10.1")
+    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
+    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.0-RC3")
   }
 
