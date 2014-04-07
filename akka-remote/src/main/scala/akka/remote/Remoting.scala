@@ -411,6 +411,12 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
 
+  def handleStashedInbound(endpoint: ActorRef) {
+    val stashed = stashedInbound.getOrElse(endpoint, Vector.empty)
+    stashedInbound -= endpoint
+    stashed foreach (handleInboundAssociation _)
+  }
+
   def keepQuarantinedOr(remoteAddress: Address)(body: ⇒ Unit): Unit = endpoints.refuseUid(remoteAddress) match {
     case Some(uid) ⇒
       log.info("Quarantined address [{}] is still unreachable or has not been restarted. Keeping it quarantined.", remoteAddress)
@@ -567,44 +573,19 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
 
       }
 
-    case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
-      case Some(endpoint) ⇒
-        pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
-        pendingReadHandoffs += endpoint -> handle
-        endpoint ! EndpointWriter.TakeOver(handle)
-      case None ⇒
-        if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
-          handle.disassociate(AssociationHandle.Quarantined)
-        else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
-          case Some(Pass(ep, None)) ⇒
-            stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
-          case Some(Pass(ep, Some(uid))) ⇒
-            if (handle.handshakeInfo.uid == uid) {
-              pendingReadHandoffs.get(ep) foreach (_.disassociate())
-              pendingReadHandoffs += ep -> handle
-              ep ! EndpointWriter.StopReading(ep)
-            } else {
-              context.stop(ep)
-              endpoints.unregisterEndpoint(ep)
-              pendingReadHandoffs -= ep
-              createAndRegisterEndpoint(handle, Some(uid))
-            }
-          case state ⇒
-            createAndRegisterEndpoint(handle, None)
-        }
-    }
+    case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒
+      handleInboundAssociation(ia)
     case EndpointWriter.StoppedReading(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
     case Terminated(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
       endpoints.unregisterEndpoint(endpoint)
-      stashedInbound -= endpoint
+      handleStashedInbound(endpoint)
     case EndpointWriter.TookOver(endpoint, handle) ⇒
       removePendingReader(takingOverFrom = endpoint, withHandle = handle)
     case ReliableDeliverySupervisor.GotUid(uid) ⇒
       endpoints.registerWritableEndpointUid(sender, uid)
-      stashedInbound.getOrElse(sender, Vector.empty) foreach (self ! _)
-      stashedInbound -= sender
+      handleStashedInbound(sender)
     case Prune ⇒
       endpoints.prune()
     case ShutdownAndFlush ⇒
@@ -633,6 +614,35 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case s: Send                                   ⇒ extendedSystem.deadLetters ! s
     case InboundAssociation(h: AkkaProtocolHandle) ⇒ h.disassociate(AssociationHandle.Shutdown)
     case Terminated(_)                             ⇒ // why should we care now?
+  }
+
+  def handleInboundAssociation(ia: InboundAssociation): Unit = ia match {
+    case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
+      case Some(endpoint) ⇒
+        pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
+        pendingReadHandoffs += endpoint -> handle
+        endpoint ! EndpointWriter.TakeOver(handle)
+      case None ⇒
+        if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
+          handle.disassociate(AssociationHandle.Quarantined)
+        else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
+          case Some(Pass(ep, None)) ⇒
+            stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
+          case Some(Pass(ep, Some(uid))) ⇒
+            if (handle.handshakeInfo.uid == uid) {
+              pendingReadHandoffs.get(ep) foreach (_.disassociate())
+              pendingReadHandoffs += ep -> handle
+              ep ! EndpointWriter.StopReading(ep)
+            } else {
+              context.stop(ep)
+              endpoints.unregisterEndpoint(ep)
+              pendingReadHandoffs -= ep
+              createAndRegisterEndpoint(handle, Some(uid))
+            }
+          case state ⇒
+            createAndRegisterEndpoint(handle, None)
+        }
+    }
   }
 
   private def createAndRegisterEndpoint(handle: AkkaProtocolHandle, refuseUid: Option[Int]): Unit = {
