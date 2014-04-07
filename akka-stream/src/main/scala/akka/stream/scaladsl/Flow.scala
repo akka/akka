@@ -234,6 +234,15 @@ trait Flow[+T] {
   def consume(generator: ProcessorGenerator): Unit
 
   /**
+   * When this flow is completed, either through an error or normal
+   * completion, apply the provided function with [[scala.util.Success]]
+   * or [[scala.util.Failure]].
+   *
+   * *This operation materializes the flow and initiates its execution.*
+   */
+  def onComplete(generator: ProcessorGenerator)(callback: Try[Unit] ⇒ Unit): Unit
+
+  /**
    * Materialize this flow and return the downstream-most
    * [[org.reactivestreams.api.Producer]] interface. The stream will not have
    * any consumers attached at this point, which means that after prefetching
@@ -244,5 +253,6 @@ trait Flow[+T] {
    * broken down into individual processing steps.
    */
   def toProducer(generator: ProcessorGenerator): Producer[T @uncheckedVariance]
+
 }
 
