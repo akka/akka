@@ -296,7 +296,7 @@ object AkkaBuild extends Build {
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
       libraryDependencies ++= Dependencies.stream,
       previousArtifact := akkaPreviousArtifact("akka-stream")
@@ -1207,7 +1207,9 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val stream = Seq(Test.scalatest, Test.scalacheck, reactiveStreams, Test.reactiveStreams)
+  val stream = Seq(
+    "com.typesafe.akka" %% "akka-actor" % "2.3.1",
+    Test.scalatest, Test.scalacheck, reactiveStreams, Test.reactiveStreams)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
