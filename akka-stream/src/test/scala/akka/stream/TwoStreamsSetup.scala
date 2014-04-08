@@ -10,6 +10,8 @@ import akka.testkit.AkkaSpec
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.testkit.StreamTestKit
 import akka.stream.scaladsl.Flow
+import akka.stream.testkit.OnSubscribe
+import akka.stream.testkit.OnError
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
@@ -100,23 +102,19 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
     "work with two delayed failed producers" in {
       val consumer = setup(soonToFailPublisher, soonToFailPublisher)
-      val subscription = consumer.expectSubscription()
-      subscription.requestMore(1)
-      consumer.expectError(TestException)
+      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     // Warning: The two test cases below are somewhat implementation specific and might fail if the implementation
     // is changed. They are here to be an early warning though.
     "work with one immediately failed and one delayed failed producer (case 1)" in {
       val consumer = setup(soonToFailPublisher, failedPublisher)
-      val subscription = consumer.expectSubscription()
-      subscription.requestMore(1)
-      consumer.expectError(TestException)
+      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one immediately failed and one delayed failed producer (case 2)" in {
       val consumer = setup(failedPublisher, soonToFailPublisher)
-      consumer.expectError(TestException)
+      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
     }
   }
 

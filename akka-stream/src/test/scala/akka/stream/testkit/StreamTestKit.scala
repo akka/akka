@@ -25,8 +25,22 @@ object StreamTestKit {
 
       def expectNext(): I = probe.expectMsgType[OnNext[I]].element
       def expectComplete(): Unit = probe.expectMsg(OnComplete)
+
       def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
       def expectError(): Throwable = probe.expectMsgType[OnError].cause
+
+      def expectErrorOrSubscriptionFollowedByError(cause: Throwable): Unit = {
+        val t = expectErrorOrSubscriptionFollowedByError()
+        assert(t == cause, s"expected $cause, found $cause")
+      }
+
+      def expectErrorOrSubscriptionFollowedByError(): Throwable =
+        probe.expectMsgPF() {
+          case s: OnSubscribe ⇒
+            s.subscription.requestMore(1)
+            expectError()
+          case OnError(cause) ⇒ cause
+        }
 
       def expectNoMsg(): Unit = probe.expectNoMsg()
       def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)

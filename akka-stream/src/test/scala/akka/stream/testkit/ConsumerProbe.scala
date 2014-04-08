@@ -21,6 +21,8 @@ trait ConsumerProbe[I] extends Consumer[I] {
   def expectNext(): I
   def expectError(cause: Throwable): Unit
   def expectError(): Throwable
+  def expectErrorOrSubscriptionFollowedByError(cause: Throwable): Unit
+  def expectErrorOrSubscriptionFollowedByError(): Throwable
   def expectComplete(): Unit
 
   def expectNoMsg(): Unit
