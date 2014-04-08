@@ -8,7 +8,7 @@ import scala.concurrent.{ Future, Promise }
 import scala.util.Try
 import org.reactivestreams.api.Producer
 import Ast.{ AstNode, Recover, Transform }
-import akka.stream.ProcessorGenerator
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 import scala.util.Success
 import scala.util.Failure
@@ -86,17 +86,17 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   override def groupBy[K](f: (O) ⇒ K): Flow[(K, Producer[O])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
-  override def toFuture(generator: ProcessorGenerator): Future[O] = {
+  override def toFuture(materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
     transformRecover(0)((x, in) ⇒ { p complete in; 1 -> Nil },
       onComplete = _ ⇒ { p.tryFailure(new NoSuchElementException("empty stream")); Nil },
-      isComplete = _ == 1).consume(generator)
+      isComplete = _ == 1).consume(materializer)
     p.future
   }
 
-  override def consume(generator: ProcessorGenerator): Unit = generator.consume(producerNode, ops)
+  override def consume(materializer: FlowMaterializer): Unit = materializer.consume(producerNode, ops)
 
-  def onComplete(generator: ProcessorGenerator)(callback: Try[Unit] ⇒ Unit): Unit =
+  def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit =
     transformRecover(true)(
       f = {
         case (_, fail @ Failure(ex)) ⇒
@@ -104,8 +104,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
           OnCompleteFailureToken
         case _ ⇒ OnCompleteSuccessToken
       },
-      onComplete = ok ⇒ { if (ok) callback(SuccessUnit); Nil }).consume(generator)
+      onComplete = ok ⇒ { if (ok) callback(SuccessUnit); Nil }).consume(materializer)
 
-  override def toProducer(generator: ProcessorGenerator): Producer[O] = generator.toProducer(producerNode, ops)
+  override def toProducer(materializer: FlowMaterializer): Producer[O] = materializer.toProducer(producerNode, ops)
 }
 

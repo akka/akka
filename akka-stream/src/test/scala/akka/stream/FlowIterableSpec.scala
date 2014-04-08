@@ -16,7 +16,7 @@ import akka.stream.scaladsl.Flow
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIterableSpec extends AkkaSpec {
 
-  val gen = ProcessorGenerator(GeneratorSettings(
+  val gen = FlowMaterializer(MaterializerSettings(
     maximumInputBufferSize = 512))
 
   "A Flow based on an iterable" must {

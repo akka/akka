@@ -10,7 +10,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class StreamGroupedSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = GeneratorSettings(
+  val genSettings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
