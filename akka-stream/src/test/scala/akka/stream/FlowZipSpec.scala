@@ -68,12 +68,12 @@ class FlowZipSpec extends TwoStreamsSetup {
 
     "work with one immediately failed and one nonempty producer" in {
       val consumer1 = setup(failedPublisher, nonemptyPublisher((1 to 4).iterator))
-      consumer1.expectError(TestException)
+      consumer1.expectErrorOrSubscriptionFollowedByError(TestException)
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), failedPublisher)
       val subscription2 = consumer2.expectSubscription()
       subscription2.requestMore(4)
-      consumer2.expectError(TestException)
+      consumer2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one delayed failed and one nonempty producer" in {

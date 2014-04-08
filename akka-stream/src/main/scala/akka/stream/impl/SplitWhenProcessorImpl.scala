@@ -51,7 +51,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
         pendingElement = NoPending
       case PendingElementForNewStream(elem) ⇒
         val substreamOutput = newSubstream()
-        pushToDownstream(substreamOutput.processor)
+        PrimaryOutputs.enqueueOutputElement(substreamOutput.processor)
         currentSubstream = substreamOutput
         pendingElement = PendingElement(elem)
     }
@@ -65,7 +65,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
 
   override def invalidateSubstream(substream: ActorRef): Unit = {
     pendingElement match {
-      case PendingElement(_) ⇒
+      case PendingElement(_) if substream == currentSubstream.substream ⇒
         setTransferState(primaryInputs.NeedsInput)
         pendingElement = NoPending
       case _ ⇒

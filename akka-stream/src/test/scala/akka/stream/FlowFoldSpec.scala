@@ -7,7 +7,7 @@ import akka.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-class StreamFoldSpec extends AkkaSpec with ScriptedTest {
+class FlowFoldSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(
     initialInputBufferSize = 2,

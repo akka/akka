@@ -97,7 +97,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
     "work with two immediately failed producers" in {
       val consumer = setup(failedPublisher, failedPublisher)
-      consumer.expectError(TestException)
+      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with two delayed failed producers" in {
