@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.actor.{ Terminated, ActorRef }
 import org.reactivestreams.spi.{ Subscriber, Subscription }
 import org.reactivestreams.api.Producer
@@ -28,7 +28,7 @@ private[akka] object MultiStreamOutputProcessor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class MultiStreamOutputProcessor(_settings: GeneratorSettings) extends ActorProcessorImpl(_settings) {
+private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerSettings) extends ActorProcessorImpl(_settings) {
   import MultiStreamOutputProcessor._
 
   private val substreamOutputs = collection.mutable.Map.empty[ActorRef, SubstreamOutputs]
@@ -125,7 +125,7 @@ private[akka] object TwoStreamInputProcessor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TwoStreamInputProcessor(_settings: GeneratorSettings, val other: Producer[Any])
+private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSettings, val other: Producer[Any])
   extends ActorProcessorImpl(_settings) {
   import TwoStreamInputProcessor._
 

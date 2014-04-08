@@ -3,14 +3,14 @@
  */
 package akka.stream
 
-import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
+import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow
 
 class FlowZipSpec extends AkkaSpec {
 
-  val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
+  val gen = new ActorBasedFlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,

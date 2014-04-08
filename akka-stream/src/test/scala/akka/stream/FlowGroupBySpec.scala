@@ -7,13 +7,13 @@ import scala.concurrent.duration._
 import akka.stream.testkit._
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
-import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
+import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class StreamGroupBySpec extends AkkaSpec {
 
-  val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
+  val gen = new ActorBasedFlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,

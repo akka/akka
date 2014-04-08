@@ -9,7 +9,7 @@ import scala.util.control.NonFatal
 import org.reactivestreams.api.Processor
 import org.reactivestreams.spi.Subscriber
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.event.LoggingReceive
 
 /**
@@ -17,7 +17,7 @@ import akka.event.LoggingReceive
  */
 private[akka] object ActorProcessor {
   import Ast._
-  def props(settings: GeneratorSettings, op: AstNode): Props = op match {
+  def props(settings: MaterializerSettings, op: AstNode): Props = op match {
     case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t))
     case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r))
     case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
@@ -33,13 +33,13 @@ class ActorProcessor[I, O]( final val impl: ActorRef) extends Processor[I, O] wi
 /**
  * INTERNAL API
  */
-private[akka] abstract class ActorProcessorImpl(val settings: GeneratorSettings)
+private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettings)
   extends Actor
   with SubscriberManagement[Any]
   with ActorLogging
   with SoftShutdown {
 
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   type S = ActorSubscription[Any]
 

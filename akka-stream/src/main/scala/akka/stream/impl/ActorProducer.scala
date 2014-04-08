@@ -9,7 +9,7 @@ import scala.collection.immutable
 import org.reactivestreams.api.{ Consumer, Producer }
 import org.reactivestreams.spi.{ Publisher, Subscriber }
 import akka.actor.ActorRef
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.actor.ActorLogging
 import akka.actor.Actor
 import scala.concurrent.duration.Duration
@@ -41,7 +41,7 @@ class ActorProducer[T]( final val impl: ActorRef) extends ActorProducerLike[T]
  * INTERNAL API
  */
 private[akka] object ActorProducer {
-  def props[T](settings: GeneratorSettings, f: () ⇒ T): Props =
+  def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
     Props(new ActorProducerImpl(f, settings))
 }
 
@@ -142,14 +142,14 @@ private[akka] object ActorProducerImpl {
 /**
  * INTERNAL API
  */
-private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: GeneratorSettings)
+private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[T]
   with SoftShutdown {
 
   import ActorProducerImpl._
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   type S = ActorSubscription[T]
   var pub: ActorPublisher[T] = _

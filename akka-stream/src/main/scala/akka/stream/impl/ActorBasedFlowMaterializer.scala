@@ -10,7 +10,7 @@ import org.reactivestreams.api.{ Consumer, Processor, Producer }
 import org.reactivestreams.spi.Subscriber
 
 import akka.actor.ActorRefFactory
-import akka.stream.{ GeneratorSettings, ProcessorGenerator }
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
 /**
  * INTERNAL API
@@ -33,25 +33,25 @@ private[akka] object Ast {
   case class Concat(next: Producer[Any]) extends AstNode
 
   trait ProducerNode[I] {
-    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I]
+    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I]
   }
 
   case class ExistingProducer[I](producer: Producer[I]) extends ProducerNode[I] {
-    def createProducer(settings: GeneratorSettings, context: ActorRefFactory) = producer
+    def createProducer(settings: MaterializerSettings, context: ActorRefFactory) = producer
   }
 
   case class IteratorProducerNode[I](iterator: Iterator[I]) extends ProducerNode[I] {
-    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
       if (iterator.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
       else new ActorProducer[I](context.actorOf(IteratorProducer.props(iterator, settings)))
   }
   case class IterableProducerNode[I](iterable: immutable.Iterable[I]) extends ProducerNode[I] {
-    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
       if (iterable.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
       else new ActorProducer[I](context.actorOf(IterableProducer.props(iterable, settings)))
   }
   case class ThunkProducerNode[I](f: () ⇒ I) extends ProducerNode[I] {
-    def createProducer(settings: GeneratorSettings, context: ActorRefFactory): Producer[I] =
+    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
       new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
   }
 }
@@ -59,7 +59,7 @@ private[akka] object Ast {
 /**
  * INTERNAL API
  */
-private[akka] object ActorBasedProcessorGenerator {
+private[akka] object ActorBasedFlowMaterializer {
 
   val ctx = new ThreadLocal[ActorRefFactory]
 
@@ -75,9 +75,9 @@ private[akka] object ActorBasedProcessorGenerator {
 /**
  * INTERNAL API
  */
-private[akka] class ActorBasedProcessorGenerator(settings: GeneratorSettings, _context: ActorRefFactory) extends ProcessorGenerator {
+private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _context: ActorRefFactory) extends FlowMaterializer {
   import Ast._
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   private def context = ctx.get() match {
     case null ⇒ _context
