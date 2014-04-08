@@ -11,7 +11,7 @@ import scala.util.control.NoStackTrace
 
 import org.reactivestreams.api.Producer
 
-import akka.stream.ProcessorGenerator
+import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.FlowImpl
 
@@ -75,7 +75,7 @@ object Flow {
  *
  * By default every operation is executed within its own [[akka.actor.Actor]]
  * to enable full pipelining of the chained set of computations. This behavior
- * is determined by the [[akka.stream.ProcessorGenerator]] which is required
+ * is determined by the [[akka.stream.FlowMaterializer]] which is required
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.api.Processor]] instances. The returned reactive stream
  * is fully started and active.
@@ -219,19 +219,19 @@ trait Flow[+T] {
    * (failing the Future with a NoSuchElementException). *This operation
    * materializes the flow and initiates its execution.*
    *
-   * The given ProcessorGenerator decides how the flow’s logical structure is
+   * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toFuture(generator: ProcessorGenerator): Future[T]
+  def toFuture(materializer: FlowMaterializer): Future[T]
 
   /**
    * Attaches a consumer to this stream which will just discard all received
    * elements. *This will materialize the flow and initiate its execution.*
    *
-   * The given ProcessorGenerator decides how the flow’s logical structure is
+   * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def consume(generator: ProcessorGenerator): Unit
+  def consume(materializer: FlowMaterializer): Unit
 
   /**
    * When this flow is completed, either through an error or normal
@@ -240,7 +240,7 @@ trait Flow[+T] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(generator: ProcessorGenerator)(callback: Try[Unit] ⇒ Unit): Unit
+  def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit
 
   /**
    * Materialize this flow and return the downstream-most
@@ -249,10 +249,10 @@ trait Flow[+T] {
    * elements to fill the internal buffers it will assert back-pressure until
    * a consumer connects and creates demand for elements to be emitted.
    *
-   * The given ProcessorGenerator decides how the flow’s logical structure is
+   * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toProducer(generator: ProcessorGenerator): Producer[T @uncheckedVariance]
+  def toProducer(materializer: FlowMaterializer): Producer[T @uncheckedVariance]
 
 }
 
