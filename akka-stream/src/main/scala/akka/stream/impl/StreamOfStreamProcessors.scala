@@ -46,7 +46,10 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
       completed = true
     }
 
-    override def cancel(): Unit = completed = true
+    override def cancel(e: Throwable): Unit = {
+      if (!completed) substream ! OnError(e)
+      completed = true
+    }
 
     override def enqueueOutputElement(elem: Any): Unit = {
       demands -= 1
@@ -72,28 +75,30 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
     outputs
   }
 
+  def fullyCompleted: Boolean = isShuttingDown && isPumpFinished && context.children.isEmpty
+
   protected def invalidateSubstream(substream: ActorRef): Unit = {
     substreamOutputs(substream).complete()
     substreamOutputs -= substream
-    if ((isShuttingDown || PrimaryOutputs.isClosed) && context.children.isEmpty) context.stop(self)
+    if (fullyCompleted) shutdown()
     pump()
   }
 
   override def fail(e: Throwable): Unit = {
-    context.children foreach (_ ! OnError(e))
+    substreamOutputs.values foreach (_.cancel(e))
     super.fail(e)
   }
 
-  override def shutdown(completed: Boolean): Unit = {
+  override def primaryOutputsFinished(completed: Boolean): Unit = {
     // If the master stream is cancelled (no one consumes substreams as elements from the master stream)
     // then this callback does not mean we are shutting down
     // We can only shut down after all substreams (our children) are closed
-    if (context.children.isEmpty) super.shutdown(completed)
+    if (fullyCompleted) shutdown()
   }
 
-  override def completeDownstream(): Unit = {
+  override def pumpFinished(): Unit = {
     context.children foreach (_ ! OnComplete)
-    super.completeDownstream()
+    super.pumpFinished()
   }
 
   override val downstreamManagement: Receive = super.downstreamManagement orElse {
@@ -131,8 +136,10 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
 
   var secondaryInputs: Inputs = _
 
-  override def publisherExposed(): Unit =
+  override def primaryOutputsReady(): Unit = {
     other.getPublisher.subscribe(new OtherActorSubscriber(self))
+    super.primaryOutputsReady()
+  }
 
   override def waitingForUpstream: Receive = super.waitingForUpstream orElse {
     case OtherStreamOnComplete ⇒
@@ -150,13 +157,13 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
       pump()
     case OtherStreamOnComplete ⇒
       secondaryInputs.complete()
-      flushAndComplete()
+      primaryInputOnComplete()
       pump()
   }
 
-  override def flushAndComplete(): Unit = {
+  override def primaryInputOnComplete(): Unit = {
     if (secondaryInputs.isClosed && primaryInputs.isClosed)
-      super.flushAndComplete()
+      super.primaryInputOnComplete()
   }
 
   override def transitionToRunningWhenReady(): Unit = if ((primaryInputs ne null) && (secondaryInputs ne null)) {
@@ -169,9 +176,9 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
     super.fail(cause)
   }
 
-  override def cancelUpstream(): Unit = {
+  override def primaryOutputsFinished(completed: Boolean) {
     if (secondaryInputs ne null) secondaryInputs.cancel()
-    super.cancelUpstream()
+    super.primaryOutputsFinished(completed)
   }
 
 }

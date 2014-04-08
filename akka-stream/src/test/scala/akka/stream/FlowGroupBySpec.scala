@@ -67,7 +67,6 @@ class FlowGroupBySpec extends AkkaSpec {
       s1.expectNoMsg(100.millis)
 
       val s2 = StreamPuppet(getSubproducer(0))
-      masterConsumer.expectNoMsg(100.millis)
 
       s2.expectNoMsg(100.millis)
       s2.requestMore(2)
@@ -95,7 +94,6 @@ class FlowGroupBySpec extends AkkaSpec {
       StreamPuppet(getSubproducer(1)).cancel()
 
       val substream = StreamPuppet(getSubproducer(0))
-      masterConsumer.expectNoMsg(100.millis)
       substream.requestMore(2)
       substream.expectNext(2)
       substream.expectNext(4)
