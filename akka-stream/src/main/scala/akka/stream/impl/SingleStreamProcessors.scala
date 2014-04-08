@@ -75,10 +75,10 @@ private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, _op: A
 
   override def running: Receive = wrapInSuccess orElse super.running
 
-  override def failureReceived(e: Throwable): Unit = {
+  override def primaryInputOnError(e: Throwable): Unit = {
     primaryInputs.enqueueInputElement(Failure(e))
     primaryInputs.complete()
-    flushAndComplete()
+    context.become(flushing)
     pump()
   }
 }

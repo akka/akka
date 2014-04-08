@@ -26,9 +26,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
   import GroupByProcessorImpl._
 
   var keyToSubstreamOutputs = collection.mutable.Map.empty[Any, SubstreamOutputs]
-
   var substreamPendingState: SubstreamElementState = NoPending
-  def substreamsFinished: Boolean = keyToSubstreamOutputs.isEmpty
 
   override def initialTransferState = needsPrimaryInputAndDemand
 
@@ -40,7 +38,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
           // Just drop, we do not open any more substreams
         } else {
           val substreamOutput = newSubstream()
-          pushToDownstream((key, substreamOutput.processor))
+          PrimaryOutputs.enqueueOutputElement((key, substreamOutput.processor))
           keyToSubstreamOutputs(key) = substreamOutput
           substreamPendingState = PendingElement(elem, key)
         }
@@ -53,7 +51,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
         val elem = primaryInputs.dequeueInputElement()
         val key = keyFor(elem)
         if (keyToSubstreamOutputs.contains(key)) {
-          substreamPendingState = PendingElement(elem, key)
+          substreamPendingState = if (keyToSubstreamOutputs(key).isOpen) PendingElement(elem, key) else NoPending
         } else if (PrimaryOutputs.isOpen) {
           substreamPendingState = PendingElementForNewStream(elem, key)
         }
