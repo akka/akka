@@ -50,6 +50,16 @@ private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast
   }
 
   override def toString: String = s"Transformer(state=$state, isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits)"
+
+  override def softShutdown(): Unit = {
+    op.cleanup(state)
+    state = this // marker for postStop that cleanup has been done
+    super.softShutdown()
+  }
+
+  override def postStop(): Unit = {
+    try super.postStop() finally if (state != this) op.cleanup(state)
+  }
 }
 
 /**

@@ -9,6 +9,7 @@ import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import akka.stream.scaladsl.Flow
+import akka.testkit.TestProbe
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
@@ -117,6 +118,36 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       c.expectComplete()
     }
 
+    "invoke cleanup when done" in {
+      val cleanupProbe = TestProbe()
+      val p = Flow(List("a").iterator).toProducer(gen)
+      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, Nil), x ⇒ List(x + "B"),
+        cleanup = s ⇒ cleanupProbe.ref ! s).toProducer(gen)
+      val c = StreamTestKit.consumerProbe[String]
+      p2.produceTo(c)
+      val s = c.expectSubscription()
+      s.requestMore(1)
+      c.expectNext("aB")
+      c.expectComplete()
+      cleanupProbe.expectMsg("a")
+    }
+
+    "invoke cleanup when done after error" in {
+      val cleanupProbe = TestProbe()
+      val p = Flow(List("a", "b", "c").iterator).toProducer(gen)
+      val p2 = Flow(p).transform("")(
+        f = (s, in) ⇒ if (in == "b") throw new IllegalArgumentException("Not b") else (s + in.toUpperCase, List(s + in)),
+        cleanup = s ⇒ cleanupProbe.ref ! s).toProducer(gen)
+      val c = StreamTestKit.consumerProbe[String]
+      p2.produceTo(c)
+      val s = c.expectSubscription()
+      s.requestMore(1)
+      c.expectNext("a")
+      s.requestMore(1)
+      c.expectError()
+      cleanupProbe.expectMsg("A")
+    }
+
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.producerProbe[Int]
       val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, List(in)), isComplete = _ == "1").toProducer(gen)
@@ -133,8 +164,10 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "call onComplete after isComplete signaled completion" in {
+      val cleanupProbe = TestProbe()
       val p = StreamTestKit.producerProbe[Int]
-      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, List(in)), onComplete = x ⇒ List(x.size + 10), isComplete = _ == "1").toProducer(gen)
+      val p2 = Flow(p).transform("")((s, in) ⇒ (s + in, List(in)), onComplete = x ⇒ List(x.size + 10),
+        isComplete = _ == "1", cleanup = s ⇒ cleanupProbe.ref ! s).toProducer(gen)
       val proc = p.expectSubscription
       val c = StreamTestKit.consumerProbe[Int]
       p2.produceTo(c)
@@ -146,6 +179,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       c.expectNext(11)
       c.expectComplete()
       proc.expectCancellation()
+      cleanupProbe.expectMsg("1")
     }
 
     "report error when exception is thrown" in {
