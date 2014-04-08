@@ -5,7 +5,7 @@ package akka.stream
 
 import akka.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow
-import akka.stream.impl.ActorBasedProcessorGenerator
+import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.actor.ActorContext
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -15,11 +15,11 @@ import scala.util.control.NonFatal
 
 class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\nakka.loglevel=INFO") {
 
-  val gen = ProcessorGenerator(GeneratorSettings())
+  val gen = FlowMaterializer(MaterializerSettings())
 
-  def self = ActorBasedProcessorGenerator.ctx.get().asInstanceOf[ActorContext].self
+  def self = ActorBasedFlowMaterializer.ctx.get().asInstanceOf[ActorContext].self
 
-  "An ActorBasedProcessorGenerator" must {
+  "An ActorBasedFlowMaterializer" must {
 
     "generate the right level of descendants" in {
       val f = Flow(() ⇒ {

@@ -7,12 +7,12 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
-import akka.stream.impl.{ IteratorProducer, ActorBasedProcessorGenerator }
+import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 
 class FlowMergeSpec extends AkkaSpec {
 
-  val gen = new ActorBasedProcessorGenerator(GeneratorSettings(
+  val gen = new ActorBasedFlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,

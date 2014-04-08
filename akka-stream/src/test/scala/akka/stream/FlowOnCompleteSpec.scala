@@ -18,7 +18,7 @@ import scala.util.Success
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
-  val gen = ProcessorGenerator(GeneratorSettings(
+  val gen = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,

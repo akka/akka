@@ -7,12 +7,12 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success }
 
 import akka.actor.Props
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 
 /**
  * INTERNAL API
  */
-private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast.Transform) extends ActorProcessorImpl(_settings) {
+private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: Ast.Transform) extends ActorProcessorImpl(_settings) {
   var state = op.zero
   var isComplete = false
   var hasOnCompleteRun = false
@@ -65,7 +65,7 @@ private[akka] class TransformProcessorImpl(_settings: GeneratorSettings, op: Ast
 /**
  * INTERNAL API
  */
-private[akka] class RecoverProcessorImpl(_settings: GeneratorSettings, _op: Ast.Recover) extends TransformProcessorImpl(_settings, _op.t) {
+private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, _op: Ast.Recover) extends TransformProcessorImpl(_settings, _op.t) {
 
   val wrapInSuccess: Receive = {
     case OnNext(elem) ⇒
@@ -87,13 +87,13 @@ private[akka] class RecoverProcessorImpl(_settings: GeneratorSettings, _op: Ast.
  * INTERNAL API
  */
 private[akka] object IdentityProcessorImpl {
-  def props(settings: GeneratorSettings): Props = Props(new IdentityProcessorImpl(settings))
+  def props(settings: MaterializerSettings): Props = Props(new IdentityProcessorImpl(settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class IdentityProcessorImpl(_settings: GeneratorSettings) extends ActorProcessorImpl(_settings) {
+private[akka] class IdentityProcessorImpl(_settings: MaterializerSettings) extends ActorProcessorImpl(_settings) {
 
   override def initialTransferState = needsPrimaryInputAndDemand
   override protected def transfer(): TransferState = {

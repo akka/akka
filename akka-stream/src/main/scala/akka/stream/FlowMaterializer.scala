@@ -5,31 +5,31 @@ package akka.stream
 
 import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRefFactory
-import akka.stream.impl.ActorBasedProcessorGenerator
+import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast
 import org.reactivestreams.api.Producer
 import scala.concurrent.duration._
 
-object ProcessorGenerator {
+object FlowMaterializer {
   /**
-   * Creates a ProcessorGenerator which will execute every step of a transformation
+   * Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
    */
-  def apply(settings: GeneratorSettings)(implicit context: ActorRefFactory): ProcessorGenerator =
-    new ActorBasedProcessorGenerator(settings, context)
+  def apply(settings: MaterializerSettings)(implicit context: ActorRefFactory): FlowMaterializer =
+    new ActorBasedFlowMaterializer(settings, context)
 }
 
 /**
- * A ProcessorGenerator takes the list of transformations comprising a
+ * A FlowMaterializer takes the list of transformations comprising a
  * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
  * [[org.reactivestreams.api.Processor]] instances. How transformation
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-trait ProcessorGenerator {
+trait FlowMaterializer {
   /**
    * INTERNAL API
    * ops are stored in reverse order
@@ -48,7 +48,7 @@ trait ProcessorGenerator {
  *
  * This will likely be replaced in the future by auto-tuning these values at runtime.
  */
-case class GeneratorSettings(
+case class MaterializerSettings(
   initialFanOutBufferSize: Int = 4,
   maxFanOutBufferSize: Int = 16,
   initialInputBufferSize: Int = 4,

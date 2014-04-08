@@ -3,14 +3,14 @@
  */
 package akka.stream.impl
 
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import org.reactivestreams.api.Producer
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * INTERNAL API
  */
-private[akka] class MergeImpl(_settings: GeneratorSettings, _other: Producer[Any])
+private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   lazy val needsAnyInputAndDemand = (primaryInputs.NeedsInput || secondaryInputs.NeedsInput) && PrimaryOutputs.NeedsDemand
@@ -33,7 +33,7 @@ private[akka] class MergeImpl(_settings: GeneratorSettings, _other: Producer[Any
 /**
  * INTERNAL API
  */
-private[akka] class ZipImpl(_settings: GeneratorSettings, _other: Producer[Any])
+private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   lazy val needsBothInputAndDemand = primaryInputs.NeedsInput && secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
@@ -48,7 +48,7 @@ private[akka] class ZipImpl(_settings: GeneratorSettings, _other: Producer[Any])
 /**
  * INTERNAL API
  */
-private[akka] class ConcatImpl(_settings: GeneratorSettings, _other: Producer[Any])
+private[akka] class ConcatImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   lazy val needsPrimaryInputAndDemandWithComplete = primaryInputs.NeedsInputOrComplete && PrimaryOutputs.NeedsDemand

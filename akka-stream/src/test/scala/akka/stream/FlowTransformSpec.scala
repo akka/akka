@@ -16,7 +16,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
   import system.dispatcher
 
-  val gen = ProcessorGenerator(GeneratorSettings(
+  val gen = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,

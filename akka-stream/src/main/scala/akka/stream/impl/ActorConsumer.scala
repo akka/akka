@@ -12,7 +12,7 @@ import org.reactivestreams.spi.{ Subscriber, Subscription }
 
 import Ast.{ AstNode, Recover, Transform }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, actorRef2Scala }
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 
 /**
  * INTERNAL API
@@ -43,7 +43,7 @@ private[akka] class ActorConsumer[T]( final val impl: ActorRef) extends ActorCon
 private[akka] object ActorConsumer {
   import Ast._
 
-  def props(gen: GeneratorSettings, op: AstNode) = op match {
+  def props(gen: MaterializerSettings, op: AstNode) = op match {
     case t: Transform ⇒ Props(new TransformActorConsumer(gen, t))
     case r: Recover   ⇒ Props(new RecoverActorConsumer(gen, r))
   }
@@ -52,9 +52,9 @@ private[akka] object ActorConsumer {
 /**
  * INTERNAL API
  */
-private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettings) extends Actor with SoftShutdown {
+private[akka] abstract class AbstractActorConsumer(val settings: MaterializerSettings) extends Actor with SoftShutdown {
   import ActorProcessor._
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   /**
    * Consume one element synchronously: the Actor mailbox is the queue.
@@ -121,7 +121,7 @@ private[akka] abstract class AbstractActorConsumer(val settings: GeneratorSettin
 /**
  * INTERNAL API
  */
-private[akka] class TransformActorConsumer(_settings: GeneratorSettings, op: Ast.Transform) extends AbstractActorConsumer(_settings) with ActorLogging {
+private[akka] class TransformActorConsumer(_settings: MaterializerSettings, op: Ast.Transform) extends AbstractActorConsumer(_settings) with ActorLogging {
   private var state = op.zero
 
   private var onCompleteCalled = false
@@ -155,7 +155,7 @@ private[akka] class TransformActorConsumer(_settings: GeneratorSettings, op: Ast
 /**
  * INTERNAL API
  */
-private[akka] class RecoverActorConsumer(_settings: GeneratorSettings, op: Ast.Recover) extends TransformActorConsumer(_settings, op.t) {
+private[akka] class RecoverActorConsumer(_settings: MaterializerSettings, op: Ast.Recover) extends TransformActorConsumer(_settings, op.t) {
   override def onNext(elem: Any): Unit = {
     super.onNext(Success(elem))
   }

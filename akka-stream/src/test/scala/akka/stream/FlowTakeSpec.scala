@@ -12,7 +12,7 @@ import akka.stream.impl.RequestMore
 
 class StreamTakeSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = GeneratorSettings(
+  val genSettings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,

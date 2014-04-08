@@ -4,14 +4,14 @@
 package akka.stream.impl
 
 import akka.actor.Props
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.stream.Stop
 
 /**
  * INTERNAL API
  */
 private[akka] object IteratorProducer {
-  def props(iterator: Iterator[Any], settings: GeneratorSettings): Props = {
+  def props(iterator: Iterator[Any], settings: MaterializerSettings): Props = {
     def f(): Any = {
       if (!iterator.hasNext) throw Stop
       iterator.next()

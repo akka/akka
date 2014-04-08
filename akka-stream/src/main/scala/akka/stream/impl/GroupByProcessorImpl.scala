@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import org.reactivestreams.spi.Subscription
 import akka.actor.{ Terminated, Props, ActorRef }
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.stream.impl._
 
 /**
@@ -22,7 +22,7 @@ private[akka] object GroupByProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: GeneratorSettings, val keyFor: Any ⇒ Any) extends MultiStreamOutputProcessor(settings) {
+private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any) extends MultiStreamOutputProcessor(settings) {
   import GroupByProcessorImpl._
 
   var keyToSubstreamOutputs = collection.mutable.Map.empty[Any, SubstreamOutputs]

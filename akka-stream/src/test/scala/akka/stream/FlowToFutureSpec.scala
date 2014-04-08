@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Flow
 
 class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
-  val gen = ProcessorGenerator(GeneratorSettings(
+  val gen = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,

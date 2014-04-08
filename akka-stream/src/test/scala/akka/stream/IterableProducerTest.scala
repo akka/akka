@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Flow
 
 class IterableProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
 
-  val gen = ProcessorGenerator(GeneratorSettings(
+  val gen = FlowMaterializer(MaterializerSettings(
     maximumInputBufferSize = 512))(system)
 
   def createPublisher(elements: Int): Publisher[Int] = {
