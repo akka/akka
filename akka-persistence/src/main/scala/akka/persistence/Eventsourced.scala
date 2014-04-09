@@ -49,7 +49,18 @@ private[persistence] trait Eventsourced extends Processor {
   private val processingCommands: State = new State {
     override def toString: String = "processing commands"
 
-    def aroundReceive(receive: Receive, message: Any) {
+    def aroundReceive(receive: Receive, message: Any) = message match {
+      case _: ConfirmablePersistent ⇒
+        doAroundReceive(receive, message)
+      case PersistentBatch(b) ⇒
+        throw new UnsupportedOperationException("Persistent command batches not supported")
+      case _: PersistentRepr ⇒
+        throw new UnsupportedOperationException("Persistent commands not supported")
+      case _ ⇒
+        doAroundReceive(receive, message)
+    }
+
+    private def doAroundReceive(receive: Receive, message: Any): Unit = {
       Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
       if (!persistInvocations.isEmpty) {
         currentState = persistingEvents
@@ -60,6 +71,7 @@ private[persistence] trait Eventsourced extends Processor {
         processorStash.unstash()
       }
     }
+
   }
 
   /**
@@ -71,6 +83,8 @@ private[persistence] trait Eventsourced extends Processor {
     override def toString: String = "persisting events"
 
     def aroundReceive(receive: Receive, message: Any) = message match {
+      case _: ConfirmablePersistent ⇒
+        processorStash.stash()
       case PersistentBatch(b) ⇒
         b.foreach(p ⇒ deleteMessage(p.sequenceNr, true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
