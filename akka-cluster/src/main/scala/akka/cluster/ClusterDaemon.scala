@@ -236,6 +236,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   var gossipStats = GossipStats()
 
   var seedNodeProcess: Option[ActorRef] = None
+  var seedNodeProcessCounter = 0 // for unique names 
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
@@ -372,12 +373,16 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         if (seedNodes == immutable.IndexedSeq(selfAddress)) {
           self ! ClusterUserAction.JoinTo(selfAddress)
           None
-        } else if (seedNodes.head == selfAddress) {
-          Some(context.actorOf(Props(classOf[FirstSeedNodeProcess], seedNodes).
-            withDispatcher(UseDispatcher), name = "firstSeedNodeProcess"))
         } else {
-          Some(context.actorOf(Props(classOf[JoinSeedNodeProcess], seedNodes).
-            withDispatcher(UseDispatcher), name = "joinSeedNodeProcess"))
+          // use unique name of this actor, stopSeedNodeProcess doesn't wait for termination
+          seedNodeProcessCounter += 1
+          if (seedNodes.head == selfAddress) {
+            Some(context.actorOf(Props(classOf[FirstSeedNodeProcess], seedNodes).
+              withDispatcher(UseDispatcher), name = "firstSeedNodeProcess-" + seedNodeProcessCounter))
+          } else {
+            Some(context.actorOf(Props(classOf[JoinSeedNodeProcess], seedNodes).
+              withDispatcher(UseDispatcher), name = "joinSeedNodeProcess-" + seedNodeProcessCounter))
+          }
         }
     }
   }
