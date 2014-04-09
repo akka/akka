@@ -1205,7 +1205,13 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
       case ShardRegionProxyRegistered(proxy) ⇒
         persistentState = persistentState.updated(evt)
       case ShardRegionTerminated(region) ⇒
-        persistentState = persistentState.updated(evt)
+        if (persistentState.regions.contains(region))
+          persistentState = persistentState.updated(evt)
+        else {
+          log.debug("ShardRegionTerminated, but region {} was not registered. This inconsistency is due to that " +
+            " some stored ActorRef in Akka v2.3.0 and v2.3.1 did not contain full address information. It will be " +
+            "removed by later watch.", region)
+        }
       case ShardRegionProxyTerminated(proxy) ⇒
         persistentState = persistentState.updated(evt)
       case _: ShardHomeAllocated ⇒
