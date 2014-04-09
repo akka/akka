@@ -441,7 +441,7 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
           readyChannel.getPipeline.get(classOf[ClientHandler]).statusFuture
       } yield handle) recover {
         case c: CancellationException ⇒ throw new NettyTransportException("Connection was cancelled") with NoStackTrace
-        case u @ (_: UnknownHostException | _: SecurityException) ⇒ throw new InvalidAssociationException(u.getMessage, u.getCause)
+        case u @ (_: UnknownHostException | _: SecurityException | _: ConnectException) ⇒ throw new InvalidAssociationException(u.getMessage, u.getCause)
         case NonFatal(t) ⇒ throw new NettyTransportException(t.getMessage, t.getCause) with NoStackTrace
       }
     }
