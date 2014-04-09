@@ -141,6 +141,10 @@ it can be subscribed like this:
 
 .. includecode:: code/docs/event/LoggingDocTest.java#deadletters
 
+.. note::
+   The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).
+   If you need to broadcast events in an Akka cluster, *without* knowing your recipients explicitly (i.e. obtaining their ActorRefs), you may want to look into: :ref:`distributed-pub-sub`.
+
 Default Handlers
 ----------------
 
