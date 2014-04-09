@@ -65,8 +65,12 @@ object DistributedPubSubMediator {
 
   @SerialVersionUID(1L) final case class Put(ref: ActorRef)
   @SerialVersionUID(1L) final case class Remove(path: String)
-  @SerialVersionUID(1L) final case class Subscribe(topic: String, ref: ActorRef)
-  @SerialVersionUID(1L) final case class Unsubscribe(topic: String, ref: ActorRef)
+  @SerialVersionUID(1L) final case class Subscribe(topic: String, ref: ActorRef) {
+    require(topic != null && topic != "", "topic must be defined")
+  }
+  @SerialVersionUID(1L) final case class Unsubscribe(topic: String, ref: ActorRef) {
+    require(topic != null && topic != "", "topic must be defined")
+  }
   @SerialVersionUID(1L) final case class SubscribeAck(subscribe: Subscribe)
   @SerialVersionUID(1L) final case class UnsubscribeAck(unsubscribe: Unsubscribe)
   @SerialVersionUID(1L) final case class Publish(topic: String, msg: Any) extends DistributedPubSubMessage
