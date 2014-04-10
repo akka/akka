@@ -131,7 +131,8 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
 
   var secondaryInputs: Inputs = _
 
-  other.getPublisher.subscribe(new OtherActorSubscriber(self))
+  override def publisherExposed(): Unit =
+    other.getPublisher.subscribe(new OtherActorSubscriber(self))
 
   override def waitingForUpstream: Receive = super.waitingForUpstream orElse {
     case OtherStreamOnComplete ⇒

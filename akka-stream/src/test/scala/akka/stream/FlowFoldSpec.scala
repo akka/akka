@@ -9,7 +9,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class StreamFoldSpec extends AkkaSpec with ScriptedTest {
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -19,7 +19,7 @@ class StreamFoldSpec extends AkkaSpec with ScriptedTest {
 
     "fold" in {
       def script = Script((1 to 50).toSeq -> Seq(25 * 51))
-      (1 to 50) foreach (_ ⇒ runScript(script, genSettings)(_.fold(0)(_ + _)))
+      (1 to 50) foreach (_ ⇒ runScript(script, settings)(_.fold(0)(_ + _)))
     }
 
   }
