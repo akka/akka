@@ -6,7 +6,7 @@ package akka.stream.impl
 import akka.actor.{ Props, ActorRef }
 import org.reactivestreams.spi.Subscription
 import akka.stream.impl._
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import akka.actor.Terminated
 
 /**
@@ -23,7 +23,7 @@ private[akka] object SplitWhenProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class SplitWhenProcessorImpl(_settings: GeneratorSettings, val splitPredicate: Any ⇒ Boolean)
+private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val splitPredicate: Any ⇒ Boolean)
   extends MultiStreamOutputProcessor(_settings) {
   import SplitWhenProcessorImpl._
 

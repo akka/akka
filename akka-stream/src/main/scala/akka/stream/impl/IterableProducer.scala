@@ -13,14 +13,14 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
-import akka.stream.GeneratorSettings
+import akka.stream.MaterializerSettings
 import scala.concurrent.duration.Duration
 
 /**
  * INTERNAL API
  */
 private[akka] object IterableProducer {
-  def props(iterable: immutable.Iterable[Any], settings: GeneratorSettings): Props =
+  def props(iterable: immutable.Iterable[Any], settings: MaterializerSettings): Props =
     Props(new IterableProducer(iterable, settings))
 
   object BasicActorSubscription {
@@ -46,10 +46,10 @@ private[akka] object IterableProducer {
  * makes use of its own iterable, i.e. each consumer will receive the elements from the
  * beginning of the iterable and it can consume the elements in its own pace.
  */
-private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings: GeneratorSettings) extends Actor with SoftShutdown {
+private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
   import IterableProducer.BasicActorSubscription
   import IterableProducer.BasicActorSubscription.Cancel
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   require(iterable.nonEmpty, "Use EmptyProducer for empty iterable")
 
@@ -139,7 +139,7 @@ private[akka] class IterableProducerWorker(iterator: Iterator[Any], subscriber: 
   extends Actor with SoftShutdown {
   import IterableProducerWorker._
   import IterableProducer.BasicActorSubscription._
-  import ActorBasedProcessorGenerator._
+  import ActorBasedFlowMaterializer._
 
   require(iterator.hasNext, "Iterator must not be empty")
 

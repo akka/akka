@@ -13,7 +13,7 @@ import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
 import akka.testkit.TestEvent
 import akka.testkit.EventFilter
-import akka.stream.impl.ActorBasedProcessorGenerator
+import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.scaladsl.Flow
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
@@ -24,21 +24,21 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     val fanoutSize = maxBufferSize / 2
     val inputSize = maxBufferSize - fanoutSize
 
-    val factory = new ActorBasedProcessorGenerator(
-      GeneratorSettings(
+    val materializer = new ActorBasedFlowMaterializer(
+      MaterializerSettings(
         initialInputBufferSize = inputSize,
         maximumInputBufferSize = inputSize,
         initialFanOutBufferSize = fanoutSize,
         maxFanOutBufferSize = fanoutSize),
       system)
 
-    val processor = factory.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), _ ⇒ Nil, _ ⇒ false, _ ⇒ ()))
+    val processor = materializer.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), _ ⇒ Nil, _ ⇒ false, _ ⇒ ()))
 
     processor.asInstanceOf[Processor[Int, Int]]
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
-    val gen = ProcessorGenerator(GeneratorSettings(
+    val gen = FlowMaterializer(MaterializerSettings(
       maximumInputBufferSize = 512))(system)
     val iter = Iterator from 1000
     Flow(if (elements > 0) iter take elements else iter).toProducer(gen).getPublisher
