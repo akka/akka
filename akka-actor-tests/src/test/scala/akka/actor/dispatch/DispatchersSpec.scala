@@ -5,14 +5,15 @@ package akka.actor.dispatch
 
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 import scala.reflect.ClassTag
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import akka.ConfigurationException
-import akka.actor.{ Actor, ActorRef, Props }
-import akka.dispatch.{ BalancingDispatcher, Dispatcher, Dispatchers, MessageDispatcher, PinnedDispatcher }
+import akka.actor._
+import akka.dispatch._
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.routing.FromConfig
-import akka.actor.Identify
-import akka.actor.ActorIdentity
+import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
 
 object DispatchersSpec {
   val config = """
@@ -30,6 +31,9 @@ object DispatchersSpec {
       balancing-dispatcher {
         type = "akka.dispatch.BalancingDispatcherConfigurator"
       }
+      mymailbox {
+         mailbox-type = "akka.actor.dispatch.DispatchersSpec$OneShotMailboxType"
+      }
     }
     akka.actor.deployment {
       /echo1 {
@@ -46,12 +50,39 @@ object DispatchersSpec {
           fork-join-executor.parallelism-max = 3
         }
       }
+      /balanced {
+        router = balancing-pool
+        nr-of-instances = 3
+        pool-dispatcher {
+          mailbox = myapp.mymailbox
+          fork-join-executor.parallelism-min = 3
+          fork-join-executor.parallelism-max = 3
+        }
+      }
     }
     """
 
   class ThreadNameEcho extends Actor {
     def receive = {
       case _ ⇒ sender() ! Thread.currentThread.getName
+    }
+  }
+
+  class OneShotMailboxType(settings: ActorSystem.Settings, config: Config)
+    extends MailboxType with ProducesMessageQueue[DoublingMailbox] {
+    val created = new AtomicBoolean(false)
+    override def create(owner: Option[ActorRef], system: Option[ActorSystem]) =
+      if (created.compareAndSet(false, true)) {
+        new DoublingMailbox(owner)
+      } else
+        throw new IllegalStateException("I've already created the mailbox.")
+  }
+
+  class DoublingMailbox(owner: Option[ActorRef]) extends UnboundedQueueBasedMessageQueue {
+    final val queue = new ConcurrentLinkedQueue[Envelope]()
+    override def enqueue(receiver: ActorRef, handle: Envelope): Unit = {
+      queue add handle
+      queue add handle
     }
   }
 }
@@ -192,6 +223,15 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
       }
     }
 
+    "use balancing-pool router with special routees mailbox of deployment config" in {
+      system.actorOf(FromConfig.props(Props[ThreadNameEcho]), name = "balanced") ! "what's the name?"
+      val Expected = """(DispatchersSpec-BalancingPool-/balanced-[1-9][0-9]*)""".r
+      expectMsgPF() {
+        case Expected(x) ⇒
+      }
+      expectMsgPF() {
+        case Expected(x) ⇒
+      }
+    }
   }
-
 }

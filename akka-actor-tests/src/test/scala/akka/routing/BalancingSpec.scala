@@ -79,7 +79,7 @@ class BalancingSpec extends AkkaSpec(
 
     "deliver messages in a balancing fashion when defined in config" in {
       val latch = TestLatch(1)
-      val pool = system.actorOf(BalancingPool(1).props(routeeProps =
+      val pool = system.actorOf(FromConfig().props(routeeProps =
         Props(classOf[Worker], latch)), name = "balancingPool-2")
       test(pool, latch)
     }
