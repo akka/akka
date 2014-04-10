@@ -105,6 +105,8 @@ cluster or to join the same cluster again. It can use the same host name and por
 after the restart, but it must have been removed from the cluster before the join
 request is accepted.
 
+.. _automatic-vs-manual-downing-scala:
+
 Automatic vs. Manual Downing
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
