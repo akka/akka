@@ -1,4 +1,3 @@
-
 .. highlightlang:: rest
 
 .. _documentation:
@@ -76,13 +75,13 @@ Building
 
 For the html version of the docs::
 
-    sbt sphinx:generate-html
+    sbt sphinx:generateHtml
 
     open <project-dir>/akka-docs/target/sphinx/html/index.html
 
 For the pdf version of the docs::
 
-    sbt sphinx:generate-pdf
+    sbt sphinx:generatePdf
 
     open <project-dir>/akka-docs/target/sphinx/latex/AkkaJava.pdf
     or
