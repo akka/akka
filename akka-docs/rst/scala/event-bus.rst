@@ -111,6 +111,11 @@ This classification was originally developed specifically for implementing
 :ref:`DeathWatch <deathwatch-scala>`: subscribers as well as classifiers are of
 type :class:`ActorRef`.
 
+This classification requires an :class:`ActorSystem` in order to perform book-keeping
+operations related to the subscribers being Actors, which can terminate without first
+unsubscribing from the EventBus. ActorClassification maitains a system Actor which
+takes care of unsubscribing terminated actors automatically.
+
 The necessary methods to be implemented are illustrated with the following example:
 
 .. includecode:: code/docs/event/EventBusDocSpec.scala#actor-bus
@@ -135,6 +140,8 @@ used for :class:`RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works:
 
 .. includecode:: code/docs/event/LoggingDocSpec.scala#deadletters
+
+Similarily to `Actor Classification`_, :class:`EventStream` will automatically remove subscibers when they terminate.
 
 Default Handlers
 ----------------
