@@ -3,7 +3,7 @@
 Issue Tracking
 ==============
 
-Akka is using ``Assembla`` as its issue tracking system.
+Akka is using GitHub Issues as its issue tracking system.
 
 Browsing
 --------
@@ -11,25 +11,28 @@ Browsing
 Tickets
 ^^^^^^^
 
-`You can find the Akka tickets here <http://www.assembla.com/spaces/akka/tickets>`_
+Before filing a ticket, please check the existing `Akka tickets
+<https://github.com/akka/akka/issues>`_ for earlier reports of the same
+problem. You are very welcome to comment on existing tickets, especially if you
+have reproducible test cases that you can share.
 
 Roadmaps
 ^^^^^^^^
 
-`The roadmap for each Akka milestone is here <https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/pub>`_
+Please refer to the `Akka roadmap
+<https://docs.google.com/document/d/18W9-fKs55wiFNjXL9q50PYOnR7-nnsImzJqHOPPbM4E/pub>`_
+in order to find out the general theme of work to be done for upcoming versions
+of Akka.
 
 
 Creating tickets
 ----------------
 
-In order to create tickets you need to do the following:
+*Please include the versions of Scala and Akka and relevant configuration files.*
 
-`Register here <https://www.assembla.com/user/signup>`_ then log in
+You can create a `new ticket <https://github.com/akka/akka/issues/new>`_ if you
+have registered a GitHub user account.
 
-Then you also need to become a "Watcher" of the Akka space.
-
-`Link to create a new ticket <https://www.assembla.com/spaces/akka/tickets/new>`__
-
-Thanks a lot for reporting bugs and suggesting features. *Please include the versions of Scala and Akka and relevant configuration files.*
+Thanks a lot for reporting bugs and suggesting features!
 
 
