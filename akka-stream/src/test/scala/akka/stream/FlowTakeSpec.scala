@@ -10,7 +10,7 @@ import akka.stream.impl.OnNext
 import akka.stream.impl.OnComplete
 import akka.stream.impl.RequestMore
 
-class StreamTakeSpec extends AkkaSpec with ScriptedTest {
+class FlowTakeSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(
     initialInputBufferSize = 2,

@@ -13,7 +13,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom
 private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  lazy val needsAnyInputAndDemand = (primaryInputs.NeedsInput || secondaryInputs.NeedsInput) && PrimaryOutputs.NeedsDemand
+  lazy val needsAnyInputAndDemand = (primaryInputs.NeedsInput || secondaryInputs.NeedsInput) && primaryOutputs.NeedsDemand
 
   override def initialTransferState = needsAnyInputAndDemand
   override def transfer(): TransferState = {
@@ -21,9 +21,9 @@ private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[
     // from both upstreams.
     val tieBreak = ThreadLocalRandom.current().nextBoolean()
     if (primaryInputs.inputsAvailable && (!secondaryInputs.inputsAvailable || tieBreak)) {
-      PrimaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
+      primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
     } else {
-      PrimaryOutputs.enqueueOutputElement(secondaryInputs.dequeueInputElement())
+      primaryOutputs.enqueueOutputElement(secondaryInputs.dequeueInputElement())
     }
     needsAnyInputAndDemand
   }
@@ -36,11 +36,11 @@ private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[
 private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  lazy val needsBothInputAndDemand = primaryInputs.NeedsInput && secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsBothInputAndDemand = primaryInputs.NeedsInput && secondaryInputs.NeedsInput && primaryOutputs.NeedsDemand
 
   override def initialTransferState = needsBothInputAndDemand
   override protected def transfer(): TransferState = {
-    PrimaryOutputs.enqueueOutputElement((primaryInputs.dequeueInputElement(), secondaryInputs.dequeueInputElement()))
+    primaryOutputs.enqueueOutputElement((primaryInputs.dequeueInputElement(), secondaryInputs.dequeueInputElement()))
     needsBothInputAndDemand
   }
 }
@@ -51,8 +51,8 @@ private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Producer[An
 private[akka] class ConcatImpl(_settings: MaterializerSettings, _other: Producer[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
-  lazy val needsPrimaryInputAndDemandWithComplete = primaryInputs.NeedsInputOrComplete && PrimaryOutputs.NeedsDemand
-  lazy val needsSecondaryInputAndDemand = secondaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsPrimaryInputAndDemandWithComplete = primaryInputs.NeedsInputOrComplete && primaryOutputs.NeedsDemand
+  lazy val needsSecondaryInputAndDemand = secondaryInputs.NeedsInput && primaryOutputs.NeedsDemand
   var processingPrimary = true
 
   override protected def initialTransferState: TransferState = needsPrimaryInputAndDemandWithComplete
@@ -62,11 +62,11 @@ private[akka] class ConcatImpl(_settings: MaterializerSettings, _other: Producer
         processingPrimary = false
         needsSecondaryInputAndDemand
       } else {
-        PrimaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
+        primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
         needsPrimaryInputAndDemandWithComplete
       }
     } else {
-      PrimaryOutputs.enqueueOutputElement(secondaryInputs.dequeueInputElement())
+      primaryOutputs.enqueueOutputElement(secondaryInputs.dequeueInputElement())
       needsSecondaryInputAndDemand
     }
   }

@@ -8,7 +8,7 @@ import akka.stream.testkit.ScriptedTest
 import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-class StreamGroupedSpec extends AkkaSpec with ScriptedTest {
+class FlowGroupedSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(
     initialInputBufferSize = 2,

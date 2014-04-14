@@ -20,7 +20,7 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: 
   var emits = immutable.Seq.empty[Any]
 
   object NeedsInputAndDemandOrCompletion extends TransferState {
-    def isReady = (primaryInputs.inputsAvailable && PrimaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
+    def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
     def isCompleted = false
   }
 
@@ -40,11 +40,11 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: 
         emits = newEmits
       }
     } else {
-      PrimaryOutputs.enqueueOutputElement(emits.head)
+      primaryOutputs.enqueueOutputElement(emits.head)
       emits = emits.tail
     }
 
-    if (emits.nonEmpty) PrimaryOutputs.NeedsDemand
+    if (emits.nonEmpty) primaryOutputs.NeedsDemand
     else if (hasOnCompleteRun) Completed
     else NeedsInputAndDemandOrCompletion
   }
@@ -75,10 +75,10 @@ private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, _op: A
 
   override def running: Receive = wrapInSuccess orElse super.running
 
-  override def failureReceived(e: Throwable): Unit = {
+  override def primaryInputOnError(e: Throwable): Unit = {
     primaryInputs.enqueueInputElement(Failure(e))
     primaryInputs.complete()
-    flushAndComplete()
+    context.become(flushing)
     pump()
   }
 }
@@ -97,7 +97,7 @@ private[akka] class IdentityProcessorImpl(_settings: MaterializerSettings) exten
 
   override def initialTransferState = needsPrimaryInputAndDemand
   override protected def transfer(): TransferState = {
-    PrimaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
+    primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
     needsPrimaryInputAndDemand
   }
 
