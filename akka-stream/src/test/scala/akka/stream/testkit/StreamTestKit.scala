@@ -25,8 +25,22 @@ object StreamTestKit {
 
       def expectNext(): I = probe.expectMsgType[OnNext[I]].element
       def expectComplete(): Unit = probe.expectMsg(OnComplete)
+
       def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
       def expectError(): Throwable = probe.expectMsgType[OnError].cause
+
+      def expectErrorOrSubscriptionFollowedByError(cause: Throwable): Unit = {
+        val t = expectErrorOrSubscriptionFollowedByError()
+        assert(t == cause, s"expected $cause, found $cause")
+      }
+
+      def expectErrorOrSubscriptionFollowedByError(): Throwable =
+        probe.expectMsgPF() {
+          case s: OnSubscribe ⇒
+            s.subscription.requestMore(1)
+            expectError()
+          case OnError(cause) ⇒ cause
+        }
 
       def expectNoMsg(): Unit = probe.expectNoMsg()
       def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
@@ -49,7 +63,13 @@ object StreamTestKit {
           def cancel(): Unit = probe.ref ! CancelSubscription(subscription)
 
           def expectRequestMore(n: Int): Unit = probe.expectMsg(RequestMore(subscription, n))
-          def expectCancellation(): Unit = probe.expectMsg(CancelSubscription(this))
+          def expectRequestMore(): Int = probe.expectMsgPF() {
+            case RequestMore(`subscription`, n) ⇒ n
+          }
+          def expectCancellation(): Unit = probe.fishForMessage() {
+            case CancelSubscription(`subscription`) ⇒ true
+            case RequestMore(`subscription`, _)     ⇒ false
+          }
 
           def sendNext(element: I): Unit = subscriber.onNext(element)
           def sendComplete(): Unit = subscriber.onComplete()

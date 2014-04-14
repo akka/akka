@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import akka.event.LoggingReceive
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]
@@ -65,7 +66,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   var autopilot: AutoPilot = NoAutoPilot
 
-  def receive = {
+  def receive = LoggingReceive {
     case SetIgnore(ign)      ⇒ ignore = ign
     case Watch(ref)          ⇒ context.watch(ref)
     case UnWatch(ref)        ⇒ context.unwatch(ref)

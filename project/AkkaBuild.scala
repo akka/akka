@@ -296,10 +296,15 @@ object AkkaBuild extends Build {
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
-    dependencies = Seq(actor, testkit % "test->test"),
+    dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
+      version := "0.2-SNAPSHOT",
+      // FIXME remove this publishArtifact when akka-stream-experimental-2.3.x is released
+      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-stream-experimental"),
       libraryDependencies ++= Dependencies.stream,
-      previousArtifact := akkaPreviousArtifact("akka-stream")
+      // FIXME include mima when akka-stream-experimental-2.3.x has been released
+      //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
+      previousArtifact := None
     )
   )
 
@@ -1207,7 +1212,10 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
-  val stream = Seq(Test.scalatest, Test.scalacheck, reactiveStreams, Test.reactiveStreams)
+  val stream = Seq(
+    // FIXME use project dependency when akka-stream-experimental-2.3.x is released
+    "com.typesafe.akka" %% "akka-actor" % "2.3.2",
+    Test.scalatest, Test.scalacheck, reactiveStreams, Test.reactiveStreams)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

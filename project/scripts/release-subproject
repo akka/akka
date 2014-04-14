@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 #
-# Release script for Akka.
+# Release script for (experimental) subproject of Akka.
+# For example akka-stream-experimental.
+# It will only publish the specified subproject, which can have another version
+# the root akka project.
 #
 # ATTENTION: This script involves calling `git clean -fxd` which will remove all untracked
 #            files from your working directory (including IDE settings).
@@ -59,25 +62,15 @@
 #      From the command line:
 #        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@repo.akka.io "cat >> ~/.ssh/authorized_keys"
 #
-# 4) You must have upload access to S3 bucket "downloads.typesafe.com"
-#
-# 4.1) Ask Akka team member for the AWS access key for 'akka.team' user.
-#
-# 4.2) Add your credentials to sbt by adding this to your global.sbt file
-#        credentials += Credentials("Amazon S3",
-#          "downloads.typesafe.com.s3.amazonaws.com",
-#          "<Access Key Id>",
-#          "<Secret Access Key>")
-#
-# 5) Have access to github.com/akka/akka. This should be a given.
+# 4) Have access to github.com/akka/akka. This should be a given.
 #
 # Now you should be all set to run the script
 #
 # Run the script in two stages.
 #  First a dry run:
-#    shell> project/scripts/release --dry-run <version>
+#    shell> project/scripts/release-subproject --dry-run <subproject> <version>
 #  And if all goes well a real run:
-#    shell> project/scripts/release <version>
+#    shell> project/scripts/release-subproject <subproject> <version>
 #
 # The artifacts published to oss.sonatype.org needs to be released by following the
 # instructions under release here
@@ -113,7 +106,7 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 # print usage info
 function usage {
   cat <<EOM
-Usage: ${script_name} [options] VERSION
+Usage: ${script_name} [options] SUBPROJECT VERSION
   -h | --help            Print this usage message
   -t | --run-tests       Run all tests before releasing
   -s | --server SERVER   Set the release server (default ${default_server})
@@ -159,12 +152,13 @@ while true; do
   esac
 done
 
-if [ $# != "1" ]; then
+if [ $# != "2" ]; then
   usage
-  fail "A release version must be specified"
+  fail "A subproject and release version must be specified"
 fi
 
-declare -r version=$1
+declare -r subproject=$1
+declare -r version=$2
 declare -r publish_path="${release_server}:${release_path}"
 
 [[ `java -version 2>&1 | grep "java version" | cut -d ' ' -f3 | cut -d '.' -f2` -eq 6 ]] || fail "Java version is not 1.6"
@@ -178,9 +172,6 @@ type -P sbt &> /dev/null || fail "sbt command not found"
 # check for an rsync command
 type -P rsync &> /dev/null || fail "rsync command not found"
 
-# check for a tar command
-type -P tar &> /dev/null || fail "tar command not found"
-
 # get the current git branch
 function get_current_branch {
   local ref=$(git symbolic-ref HEAD 2> /dev/null)
@@ -188,13 +179,10 @@ function get_current_branch {
   echo "${branch}"
 }
 
-# get the current project version from sbt
-# a little messy as the ansi escape codes are included
+# get the current subproject version from sbt
 function get_current_version {
-  local result=$(sbt version | tail -1 | cut -f2)
-  # remove ansi escape code from end
-  local code0=$(echo -e "\033[0m")
-  echo ${result%$code0}
+  local result=$(sbt -Dsbt.log.noformat=true "project ${subproject}" version | tail -1 | cut -d ' ' -f2)
+  echo ${result}
 }
 
 # store the current git branch for cleaning up
@@ -213,7 +201,7 @@ declare -r initial_branch=$(get_current_branch)
 git clean -fxd || fail "cannot git clean -fxd"
 
 # the branch we'll release on
-declare -r release_branch="releasing-${version}"
+declare -r release_branch="releasing-${subproject}-${version}"
 
 # try to run a cleanup command - these shouldn't actually fail
 function safely {
@@ -230,7 +218,7 @@ function git_cleanup {
     safely git checkout ${initial_branch}
     safely git branch -D ${release_branch}
     local tags=$(git tag -l)
-    [[ "${tags}" == *v${version}* ]] && safely git tag -d v${version}
+    [[ "${tags}" == *${subproject}-${version}* ]] && safely git tag -d ${subproject}-${version}
   fi
 }
 
@@ -256,7 +244,7 @@ function try {
   "$@" || bail_out "Failed to create release"
 }
 
-echolog "Creating release ${version} ..."
+echolog "Creating release ${subproject}-${version} ..."
 
 if [ $dry_run ]; then
   echodry "Building everything but not pushing release"
@@ -264,15 +252,15 @@ else
   echolog "Publishing to ${publish_path}"
 fi
 
-[[ $run_tests ]] && echolog "All tests will be run"
+[[ $run_tests ]] && echolog "All tests in ${subproject} will be run"
 
 # try ssh'ing to the release server
 echolog "Checking ssh connection to ${release_server}"
 try ssh -t ${release_server} echo "Successfully contacted release server."
 
-echolog "Getting current project version from sbt..."
+echolog "Getting current ${subproject} version from sbt..."
 declare -r current_version=$(get_current_version)
-echolog "Current version is ${current_version}"
+echolog "Current ${subproject} version is ${current_version}"
 
 # check out a release branch
 try git checkout -b ${release_branch}
@@ -286,20 +274,18 @@ try sbt clean
 # run the tests if specified
 if [ $run_tests ]; then
   echolog "Running all tests..."
-  try sbt test
+  try sbt "project ${subproject}" test
   echolog "All tests are green"
 fi
 
 # build the release
 echolog "Building the release..."
 if [ ! $dry_run ]; then
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
+  RELEASE_OPT="-Dakka.publish.${subproject}=true -Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
-  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
+  RELEASE_OPT="-Dakka.publish.${subproject}=true -Dakka.genjavadoc.enabled=true"
 fi
-try sbt $RELEASE_OPT build-release
-echolog "Creating gzipped tar download..."
-try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
+try sbt $RELEASE_OPT "build-subproject-release ${subproject}"
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
@@ -312,8 +298,8 @@ fi
 # commit and tag this release
 echolog "Committing and tagging..."
 try git add .
-try git commit -am "Update version for release ${version}"
-try git tag -am "Version ${version}" v${version}
+try git commit -am "Update version for release ${subproject}-${version}"
+try git tag -am "Version ${subproject}-${version}" ${subproject}-${version}
 
 # the point of no return... we're now pushing out to servers
 
@@ -359,22 +345,20 @@ echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Command:"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
-  echodry "  sbt upload-release"
 else
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
-  important sbt upload-release
 fi
 
 if [ $dry_run ]; then
   if [ $no_revert ]; then
-    echodry "No revert: git branch ${release_branch} and git tag v${version} remain"
+    echodry "No revert: git branch ${release_branch} and git tag ${subproject}-${version} remain"
   else
     git_cleanup
   fi
-  echodry "Successfully created release ${version}"
+  echodry "Successfully created release ${subproject} ${version}"
   echodry "See ${release_dir}"
 else
   echolog "Switching back to initial branch"
   git checkout ${initial_branch}
-  echolog "Successfully created release ${version}"
+  echolog "Successfully created release ${subproject} ${version}"
 fi

@@ -11,29 +11,37 @@ import akka.actor.Props
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
-import akka.stream.testkit.TestProducer
+import akka.testkit.TestEvent
+import akka.testkit.EventFilter
+import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.scaladsl.Flow
 
 class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
+
+  system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
 
   def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     val fanoutSize = maxBufferSize / 2
     val inputSize = maxBufferSize - fanoutSize
 
-    // FIXME can we use API to create the IdentityProcessor instead?
-    def identityProps(settings: GeneratorSettings): Props =
-      Props(new TransformProcessorImpl(settings, Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), (_: Any) ⇒ Nil)))
-
-    ActorProcessor[Int, Int](system.actorOf(identityProps(
-      GeneratorSettings(
+    val materializer = new ActorBasedFlowMaterializer(
+      MaterializerSettings(
         initialInputBufferSize = inputSize,
         maximumInputBufferSize = inputSize,
         initialFanOutBufferSize = fanoutSize,
-        maxFanOutBufferSize = fanoutSize))))
+        maxFanOutBufferSize = fanoutSize),
+      system)
+
+    val processor = materializer.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), _ ⇒ Nil, _ ⇒ false, _ ⇒ ()))
+
+    processor.asInstanceOf[Processor[Int, Int]]
   }
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
-    import system.dispatcher
+    val materializer = FlowMaterializer(MaterializerSettings(
+      maximumInputBufferSize = 512))(system)
     val iter = Iterator from 1000
-    TestProducer(if (elements > 0) iter take elements else iter).getPublisher
+    Flow(if (elements > 0) iter take elements else iter).toProducer(materializer).getPublisher
   }
+
 }
