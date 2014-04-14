@@ -4,10 +4,6 @@
  Multi Node Testing
 ###################
 
-.. note:: This module is :ref:`experimental <experimental>`. This document describes how to use the features
- implemented so far. More features are coming in Akka Coltrane. Track progress of the Coltrane milestone in
- `Assembla <http://www.assembla.com/spaces/akka/milestones/418132-coltrane>`_.
-
 Multi Node Testing Concepts
 ===========================
 
