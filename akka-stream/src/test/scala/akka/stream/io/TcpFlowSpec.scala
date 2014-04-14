@@ -114,6 +114,7 @@ class TcpFlowSpec extends AkkaSpec {
 
   val gen = new ActorBasedFlowMaterializer(genSettings, system)
 
+  // FIXME: get it from TestUtil
   def temporaryServerAddress: InetSocketAddress = {
     val serverSocket = ServerSocketChannel.open().socket()
     serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))

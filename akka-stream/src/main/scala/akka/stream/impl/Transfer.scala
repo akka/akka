@@ -200,9 +200,11 @@ private[akka] class BatchingInputBuffer(val upstream: Subscription, val size: In
 
   override def complete(): Unit = upstreamCompleted = true
   override def cancel(): Unit = {
-    if (!upstreamCompleted) upstream.cancel()
-    upstreamCompleted = true
-    clear()
+    if (!upstreamCompleted) {
+      upstreamCompleted = true
+      upstream.cancel()
+      clear()
+    }
   }
   override def isClosed: Boolean = upstreamCompleted
 
@@ -230,15 +232,18 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
     pushToDownstream(elem)
   }
 
-  def complete(): Unit = {
-    if (!downstreamCompleted) completeDownstream()
-    downstreamCompleted = true
-  }
+  def complete(): Unit =
+    if (!downstreamCompleted) {
+      downstreamCompleted = true
+      completeDownstream()
+    }
 
-  def cancel(e: Throwable): Unit = {
-    downstreamCompleted = true
-    abortDownstream(e)
-  }
+  def cancel(e: Throwable): Unit =
+    if (!downstreamCompleted) {
+      downstreamCompleted = true
+      abortDownstream(e)
+    }
+
   def isClosed: Boolean = downstreamCompleted
 
   def handleRequest(subscription: S, elements: Int): Unit = super.moreRequested(subscription, elements)

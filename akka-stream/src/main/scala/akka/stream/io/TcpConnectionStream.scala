@@ -5,13 +5,12 @@ package akka.stream.io
 
 import akka.io.{ IO, Tcp }
 import scala.util.control.NoStackTrace
-import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef }
+import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef, Status }
 import akka.stream.impl._
 import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
 import org.reactivestreams.api.Processor
-import java.net.InetSocketAddress
 
 /**
  * INTERNAL API
@@ -29,19 +28,14 @@ private[akka] object TcpStreamActor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) extends Actor
+private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor
   with PrimaryInputs
   with PrimaryOutputs {
 
   import TcpStreamActor._
   def connection: ActorRef
 
-  val initialInputBufferSize: Int = settings.initialInputBufferSize
-  val maximumInputBufferSize: Int = settings.maximumInputBufferSize
-  val initialFanOutBufferSize: Int = settings.initialFanOutBufferSize
-  val maxFanOutBufferSize: Int = settings.maxFanOutBufferSize
-
-  object TcpInputs extends DefaultInputTransferStates {
+  val tcpInputs = new DefaultInputTransferStates {
     private var closed: Boolean = false
     private var pendingElement: ByteString = null
 
@@ -64,7 +58,7 @@ private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) exte
 
   }
 
-  object TcpOutputs extends DefaultOutputTransferStates {
+  val tcpOutputs = new DefaultOutputTransferStates {
     private var closed: Boolean = false
     private var pendingDemand = true
     override def isClosed: Boolean = closed
@@ -85,32 +79,32 @@ private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) exte
     override def demandAvailable: Boolean = pendingDemand
   }
 
-  object WritePump extends Pump {
-    lazy val NeedsInputAndDemand = primaryInputs.NeedsInput && TcpOutputs.NeedsDemand
+  val writePump = new Pump {
+    lazy val NeedsInputAndDemand = primaryInputs.NeedsInput && tcpOutputs.NeedsDemand
     override protected def transfer(): TransferState = {
       var batch = ByteString.empty
       while (primaryInputs.inputsAvailable) batch ++= primaryInputs.dequeueInputElement().asInstanceOf[ByteString]
-      TcpOutputs.enqueueOutputElement(batch)
+      tcpOutputs.enqueueOutputElement(batch)
       NeedsInputAndDemand
     }
-    override protected def pumpFinished(): Unit = TcpOutputs.complete()
+    override protected def pumpFinished(): Unit = tcpOutputs.complete()
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
     override protected def pumpContext: ActorRefFactory = context
   }
 
-  object ReadPump extends Pump {
-    lazy val NeedsInputAndDemand = TcpInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  val readPump = new Pump {
+    lazy val NeedsInputAndDemand = tcpInputs.NeedsInput && primaryOutputs.NeedsDemand
     override protected def transfer(): TransferState = {
-      PrimaryOutputs.enqueueOutputElement(TcpInputs.dequeueInputElement())
+      primaryOutputs.enqueueOutputElement(tcpInputs.dequeueInputElement())
       NeedsInputAndDemand
     }
-    override protected def pumpFinished(): Unit = PrimaryOutputs.complete()
+    override protected def pumpFinished(): Unit = primaryOutputs.complete()
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
     override protected def pumpContext: ActorRefFactory = context
   }
 
-  override def pumpInputs(): Unit = WritePump.pump()
-  override def pumpOutputs(): Unit = ReadPump.pump()
+  override def pumpInputs(): Unit = writePump.pump()
+  override def pumpOutputs(): Unit = readPump.pump()
 
   override def receive = waitingExposedPublisher
 
@@ -118,9 +112,9 @@ private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) exte
   override def primaryInputOnComplete(): Unit = shutdown()
   override def primaryInputsReady(): Unit = {
     connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
-    ReadPump.setTransferState(ReadPump.NeedsInputAndDemand)
-    WritePump.setTransferState(WritePump.NeedsInputAndDemand)
-    TcpInputs.prefetch()
+    readPump.setTransferState(readPump.NeedsInputAndDemand)
+    writePump.setTransferState(writePump.NeedsInputAndDemand)
+    tcpInputs.prefetch()
     context.become(running)
   }
 
@@ -129,22 +123,21 @@ private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) exte
 
   val running: Receive = upstreamManagement orElse downstreamManagement orElse {
     case WriteAck ⇒
-      TcpOutputs.enqueueDemand()
+      tcpOutputs.enqueueDemand()
       pumpInputs()
     case Received(data) ⇒
-      TcpInputs.enqueueInputElement(data)
+      tcpInputs.enqueueInputElement(data)
       pumpOutputs()
     case Closed ⇒
-      TcpInputs.complete()
-      TcpOutputs.complete()
-      WritePump.pump()
-      ReadPump.pump()
+      tcpInputs.complete()
+      tcpOutputs.complete()
+      writePump.pump()
+      readPump.pump()
     case ConfirmedClosed ⇒
-      TcpInputs.complete()
+      tcpInputs.complete()
       pumpOutputs()
     case PeerClosed ⇒
-      println("closed")
-      TcpInputs.complete()
+      tcpInputs.complete()
       pumpOutputs()
     case ErrorClosed(cause) ⇒ fail(new TcpStreamException(s"The connection closed with error $cause"))
     case CommandFailed(cmd) ⇒ fail(new TcpStreamException(s"Tcp command [$cmd] failed"))
@@ -152,15 +145,15 @@ private[akka] abstract class TcpStreamActor(settings: MaterializerSettings) exte
   }
 
   def fail(e: Throwable): Unit = {
-    TcpInputs.cancel()
-    TcpOutputs.cancel(e)
+    tcpInputs.cancel()
+    tcpOutputs.cancel(e)
     if (primaryInputs ne null) primaryInputs.cancel()
-    PrimaryOutputs.cancel(e)
+    primaryOutputs.cancel(e)
     exposedPublisher.shutdown(Some(e))
   }
 
   def shutdown(): Unit = {
-    if (TcpOutputs.isClosed && PrimaryOutputs.isClosed) {
+    if (tcpOutputs.isClosed && primaryOutputs.isClosed) {
       context.stop(self)
       exposedPublisher.shutdown(None)
     }
@@ -201,7 +194,8 @@ private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requeste
       requester ! StreamTcp.OutgoingTcpConnection(remoteAddress, localAddress, exposedProcessor)
       context.become(downstreamManagement orElse waitingForUpstream)
     case f: CommandFailed ⇒
-      requester ! f
-      fail(new TcpStreamException("Connection failed."))
+      val ex = new TcpStreamException("Connection failed.")
+      requester ! Status.Failure(ex)
+      fail(ex)
   }
 }

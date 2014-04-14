@@ -10,11 +10,9 @@ import akka.actor._
 import scala.collection._
 import scala.concurrent.duration.FiniteDuration
 import akka.io.Inet.SocketOption
-import akka.io.{ IO, Tcp }
+import akka.io.Tcp
 import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
 import akka.stream.MaterializerSettings
-import akka.io.Tcp.CommandFailed
-import akka.stream.io.StreamTcp.OutgoingTcpConnection
 
 object StreamIO {
   trait Extension extends akka.actor.Extension {

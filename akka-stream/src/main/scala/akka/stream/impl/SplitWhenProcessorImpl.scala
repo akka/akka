@@ -51,7 +51,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
         pendingElement = NoPending
       case PendingElementForNewStream(elem) ⇒
         val substreamOutput = newSubstream()
-        PrimaryOutputs.enqueueOutputElement(substreamOutput.processor)
+        primaryOutputs.enqueueOutputElement(substreamOutput.processor)
         currentSubstream = substreamOutput
         pendingElement = PendingElement(elem)
     }
@@ -59,7 +59,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
     pendingElement match {
       case NoPending                     ⇒ primaryInputs.NeedsInput
       case PendingElement(_)             ⇒ currentSubstream.NeedsDemand
-      case PendingElementForNewStream(_) ⇒ PrimaryOutputs.NeedsDemand
+      case PendingElementForNewStream(_) ⇒ primaryOutputs.NeedsDemand
     }
   }
 
