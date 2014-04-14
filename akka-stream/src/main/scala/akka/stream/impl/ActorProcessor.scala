@@ -8,7 +8,6 @@ import org.reactivestreams.spi.Subscriber
 import akka.actor._
 import akka.stream.MaterializerSettings
 import akka.event.LoggingReceive
-import akka.stream.impl._
 
 /**
  * INTERNAL API
@@ -37,10 +36,10 @@ private[akka] class ActorProcessor[I, O]( final val impl: ActorRef) extends Proc
 private[akka] trait PrimaryInputs {
   this: Actor ⇒
   // FIXME: have a NoInputs here to avoid nulls
+  // FIXME: make it a val and remove all lazy vals caching TransferStates
   protected var primaryInputs: Inputs = _
 
-  def initialInputBufferSize: Int
-  def maximumInputBufferSize: Int
+  def settings: MaterializerSettings
 
   def waitingForUpstream: Receive = {
     case OnComplete ⇒
@@ -49,7 +48,7 @@ private[akka] trait PrimaryInputs {
       transitionToRunningWhenReady()
     case OnSubscribe(subscription) ⇒
       assert(subscription != null)
-      primaryInputs = new BatchingInputBuffer(subscription, initialInputBufferSize)
+      primaryInputs = new BatchingInputBuffer(subscription, settings.initialInputBufferSize)
       transitionToRunningWhenReady()
     case OnError(cause) ⇒ primaryInputOnError(cause)
   }
@@ -82,14 +81,14 @@ private[akka] trait PrimaryInputs {
  */
 private[akka] trait PrimaryOutputs {
   this: Actor ⇒
+  // FIXME: avoid nulls and add a failing guard instance instead
   protected var exposedPublisher: ActorPublisher[Any] = _
 
-  def initialFanOutBufferSize: Int
-  def maxFanOutBufferSize: Int
+  def settings: MaterializerSettings
 
-  object PrimaryOutputs extends FanoutOutputs(maxFanOutBufferSize, initialFanOutBufferSize) {
+  val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize) {
     override type S = ActorSubscription[Any]
-    override def createSubscription(subscriber: Subscriber[Any]): ActorSubscription[Any] =
+    override def createSubscription(subscriber: Subscriber[Any]): S =
       new ActorSubscription(self, subscriber)
     override def afterShutdown(completed: Boolean): Unit = primaryOutputsFinished(completed)
   }
@@ -105,15 +104,15 @@ private[akka] trait PrimaryOutputs {
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      PrimaryOutputs.handleRequest(subscription.asInstanceOf[ActorSubscription[Any]], elements)
+      primaryOutputs.handleRequest(subscription.asInstanceOf[ActorSubscription[Any]], elements)
       pumpOutputs()
     case Cancel(subscription) ⇒
-      PrimaryOutputs.removeSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
+      primaryOutputs.removeSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
       pumpOutputs()
   }
 
   private def subscribePending(): Unit =
-    exposedPublisher.takePendingSubscribers() foreach PrimaryOutputs.addSubscriber
+    exposedPublisher.takePendingSubscribers() foreach primaryOutputs.addSubscriber
 
   def primaryOutputsFinished(completed: Boolean): Unit
   def primaryOutputsReady(): Unit
@@ -132,11 +131,6 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   with PrimaryInputs
   with PrimaryOutputs
   with Pump {
-
-  val initialInputBufferSize: Int = settings.initialInputBufferSize
-  val maximumInputBufferSize: Int = settings.maximumInputBufferSize
-  val initialFanOutBufferSize: Int = settings.initialFanOutBufferSize
-  val maxFanOutBufferSize: Int = settings.maxFanOutBufferSize
 
   override def receive = waitingExposedPublisher
 
@@ -158,18 +152,18 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   def running: Receive = LoggingReceive(downstreamManagement orElse upstreamManagement)
 
   def flushing: Receive = downstreamManagement orElse {
-    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+    case OnSubscribe(subscription) ⇒ fail(new IllegalStateException("Cannot subscribe shutdown subscriber"))
     case _                         ⇒ // ignore everything else
   }
 
   protected def fail(e: Throwable): Unit = {
     shutdownReason = Some(e)
     log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
-    PrimaryOutputs.cancel(e)
+    primaryOutputs.cancel(e)
     shutdown()
   }
 
-  lazy val needsPrimaryInputAndDemand = primaryInputs.NeedsInput && PrimaryOutputs.NeedsDemand
+  lazy val needsPrimaryInputAndDemand = primaryInputs.NeedsInput && primaryOutputs.NeedsDemand
 
   protected def initialTransferState: TransferState
 
@@ -180,7 +174,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   override def pumpFinished(): Unit = {
     if (primaryInputs.isOpen) primaryInputs.cancel()
     context.become(flushing)
-    PrimaryOutputs.complete()
+    primaryOutputs.complete()
   }
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
@@ -200,7 +194,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
       exposedPublisher.shutdown(shutdownReason)
     // Non-gracefully stopped, do our best here
     if (!isShuttingDown)
-      PrimaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
+      primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

@@ -33,12 +33,12 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
   override def transfer(): TransferState = {
     substreamPendingState match {
       case PendingElementForNewStream(elem, key) ⇒
-        if (PrimaryOutputs.isClosed) {
+        if (primaryOutputs.isClosed) {
           substreamPendingState = NoPending
           // Just drop, we do not open any more substreams
         } else {
           val substreamOutput = newSubstream()
-          PrimaryOutputs.enqueueOutputElement((key, substreamOutput.processor))
+          primaryOutputs.enqueueOutputElement((key, substreamOutput.processor))
           keyToSubstreamOutputs(key) = substreamOutput
           substreamPendingState = PendingElement(elem, key)
         }
@@ -50,18 +50,18 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       case NoPending ⇒
         val elem = primaryInputs.dequeueInputElement()
         val key = keyFor(elem)
-        if (keyToSubstreamOutputs.contains(key)) {
-          substreamPendingState = if (keyToSubstreamOutputs(key).isOpen) PendingElement(elem, key) else NoPending
-        } else if (PrimaryOutputs.isOpen) {
-          substreamPendingState = PendingElementForNewStream(elem, key)
-        }
 
+        substreamPendingState = keyToSubstreamOutputs.get(key) match {
+          case Some(substream) if substream.isOpen ⇒ PendingElement(elem, key)
+          case None if primaryOutputs.isOpen       ⇒ PendingElementForNewStream(elem, key)
+          case _                                   ⇒ NoPending
+        }
     }
 
     substreamPendingState match {
       case NoPending                        ⇒ primaryInputs.NeedsInput
       case PendingElement(_, key)           ⇒ keyToSubstreamOutputs(key).NeedsDemand
-      case PendingElementForNewStream(_, _) ⇒ PrimaryOutputs.NeedsDemand
+      case PendingElementForNewStream(_, _) ⇒ primaryOutputs.NeedsDemand
     }
   }
 
