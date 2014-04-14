@@ -15,7 +15,7 @@ object Release {
   )
 
   lazy val commandSettings = Seq(
-    commands ++= Seq(buildReleaseCommand, uploadReleaseCommand)
+    commands ++= Seq(buildReleaseCommand, buildSubprojectReleaseCommand, uploadReleaseCommand)
   )
 
   def buildReleaseCommand = Command.command("build-release") { state =>
@@ -40,6 +40,24 @@ object Release {
     for (f <- (activatorDist * "*.zip").get)
       IO.copyFile(f, release / "downloads" / f.name)
     state5
+  }
+
+  def buildSubprojectReleaseCommand = Command.single("build-subproject-release") { 
+    case (state, subprojectId) =>
+      val extracted = Project.extract(state)
+      val release = extracted.get(releaseDirectory)
+      val subprojectVersion = extracted.get(version in LocalProject(subprojectId))
+
+      val repo = extracted.get(Publish.defaultPublishTo)
+      val state1 = extracted.runAggregated(publishSigned in LocalProject(subprojectId), state)
+      val (state2, (api, japi)) = extracted.runTask(Unidoc.unidoc, state1)   
+    
+      IO.delete(release)
+      IO.createDirectory(release)
+      IO.copyDirectory(repo, release / "releases")
+      IO.copyDirectory(api, release / "api" / subprojectId / subprojectVersion)
+      IO.copyDirectory(japi, release / "japi" / subprojectId / subprojectVersion)
+      state2
   }
 
   def uploadReleaseCommand = Command.command("upload-release") { state =>
