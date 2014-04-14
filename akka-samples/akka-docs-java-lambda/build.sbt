@@ -2,7 +2,7 @@ name := "akka-docs-java-lambda"
 
 version := "2.4-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.10.4"
 
 compileOrder := CompileOrder.ScalaThenJava
 
