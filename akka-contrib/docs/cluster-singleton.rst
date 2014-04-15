@@ -54,19 +54,19 @@ Potential problems to be aware of
 This pattern may seem to be very tempting to use at first, but it has several drawbacks, some of them are listed below:
 
 * the cluster singleton may quickly become a *performance bottleneck*,
-* you can not rely on the cluster singleton to be *non-stop* available - e.g. when node on which the singleton was running dies,
-  it will take a few seconds for this to be noticed and the singleton be migrated to another node,
-* in the case of a network partition appearing in a Cluster that is using Automatic Downing  (:ref:`automatic-vs-manual-downing-scala`),
+* you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
+  been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
+* in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see Auto Downing docs for :ref:`Scala <automatic-vs-manual-downing-scala>` or :ref:`Java <automatic-vs-manual-downing-java>`),
   it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
-  singletons running in the system, yet the Clusters have no way of finding out about them (because of the network partition).
+  singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
 
-Especially the last point is something you should be aware of - in general when using the Cluster Singleton pattern
+Especially the last point is something you should be aware of — in general when using the Cluster Singleton pattern
 you should take care of downing nodes yourself and not rely on the timing based auto-down feature.
 
 .. warning::
    **Be very careful when using Cluster Singleton together with Automatic Downing**,
    since it allows the cluster to split up into two separate clusters, which in turn will result
-   in *multiple Singletons* being started - one in each separate cluster!
+   in *multiple Singletons* being started, one in each separate cluster!
 
 An Example
 ----------
