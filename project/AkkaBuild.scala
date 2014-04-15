@@ -122,28 +122,6 @@ object AkkaBuild extends Build {
     )
   ) configs (MultiJvm)
 
-  lazy val atmos = Project(
-    id = "atmos",
-    base = file("atmos"),
-    dependencies = Seq(allTests % "test->test;multi-jvm->multi-jvm"),
-    settings = defaultSettings ++ multiJvmSettings ++ Seq(
-      fork in Test := true,
-      definedTests in Test <<= definedTests in allTests in Test,
-      libraryDependencies += "org.aspectj" % "aspectjweaver" % "1.7.2",
-      libraryDependencies += "com.typesafe.atmos" % "trace-akka-2.2.0-RC1_2.10" % "1.2.0-M5" excludeAll(ExclusionRule(organization = "com.typesafe.akka")),
-      resolvers += "Typesafe Repo" at "http://repo.typesafe.com/typesafe/releases/",
-      javaOptions in Test <++= (update) map { (u) =>
-        val f = u.matching(configurationFilter("compile") && moduleFilter(name = "aspectjweaver")).head
-        Seq("-javaagent:" + f.getAbsolutePath, "-Dorg.aspectj.tracing.factory=default")
-      },
-      definedTests in MultiJvm <++= definedTests in (allTests, MultiJvm),
-      scalatestOptions in MultiJvm <<= scalatestOptions in (allTests, MultiJvm),
-      multiTestOptions in MultiJvm <<= (multiTestOptions in MultiJvm, javaOptions in Test) map { (multiOptions, testOptions) =>
-        multiOptions.copy(jvm = multiOptions.jvm ++ testOptions)
-      }
-    )
-  ) configs (MultiJvm)
-
   lazy val actor = Project(
     id = "akka-actor",
     base = file("akka-actor"),
