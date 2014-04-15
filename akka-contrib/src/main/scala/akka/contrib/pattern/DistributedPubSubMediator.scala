@@ -326,7 +326,7 @@ class DistributedPubSubMediator(
 
     case msg @ Unsubscribe(topic, _) ⇒
       context.child(URLEncoder.encode(topic, "utf-8")) match {
-        case Some(g) ⇒ g ! msg
+        case Some(g) ⇒ g forward msg
         case None    ⇒ // no such topic here
       }
 
