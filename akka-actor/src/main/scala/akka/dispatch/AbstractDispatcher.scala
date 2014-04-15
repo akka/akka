@@ -137,7 +137,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    * Detaches the specified actor instance from this dispatcher
    */
   final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
-
+  final protected def resubmitOnBlock: Boolean = true // We want to avoid starvation
   final override protected def unbatchedExecute(r: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, r, taskCleanup)
     addInhabitants(+1)

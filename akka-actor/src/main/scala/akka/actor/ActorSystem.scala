@@ -601,6 +601,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     dynamicAccess.getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$").getOrElse(
       new ExecutionContext with BatchingExecutor {
         override protected def unbatchedExecute(r: Runnable): Unit = r.run()
+        override protected def resubmitOnBlock: Boolean = false // Since we execute inline, no gain in resubmitting
         override def reportFailure(t: Throwable): Unit = dispatcher reportFailure t
       })
 
