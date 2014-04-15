@@ -103,12 +103,6 @@ to use from an sbt project) use the ``publish-local`` command::
 
    sbt publish-local
 
-.. note::
-
-   Akka generates class diagrams for the API documentation using ScalaDoc. This needs the ``dot`` command from
-   the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by
-   adding the flag ``-Dakka.scaladoc.diagrams=false``
-
 
 sbt Interactive Mode
 --------------------
@@ -154,9 +148,8 @@ dependencies.
 Scaladoc Dependencies
 =====================
 
-The Scaladoc may generate Content (Type) Hierarchy diagrams. For this, you may
-be required to download and install Graphviz (http://www.graphviz.org/).
-The installed toolset has to be added to the PATH.
-
-Without Graphviz, the project will be completely built but with error messages
-regarding the absence of the diagram tool cumulated at the end.
+Akka generates class diagrams for the API documentation using ScalaDoc. This 
+needs the ``dot`` command from the Graphviz software package to be installed to
+avoid errors. You can disable the diagram generation by adding the flag
+``-Dakka.scaladoc.diagrams=false``. After installing Graphviz, make sure you add
+the toolset to the PATH (definitely on Windows).
