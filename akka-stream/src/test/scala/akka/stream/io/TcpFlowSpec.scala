@@ -106,13 +106,13 @@ object TcpFlowSpec {
 class TcpFlowSpec extends AkkaSpec {
   import TcpFlowSpec._
 
-  val genSettings = MaterializerSettings(
+  val settings = MaterializerSettings(
     initialInputBufferSize = 4,
     maximumInputBufferSize = 4,
     initialFanOutBufferSize = 2,
     maxFanOutBufferSize = 2)
 
-  val gen = new ActorBasedFlowMaterializer(genSettings, system)
+  val materializer = new ActorBasedFlowMaterializer(settings, system)
 
   // FIXME: get it from TestUtil
   def temporaryServerAddress: InetSocketAddress = {
@@ -178,7 +178,7 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(server: Server): (Processor[ByteString, ByteString], ServerConnection) = {
     val tcpProbe = TestProbe()
-    tcpProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(server.address, settings = genSettings))
+    tcpProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(server.address, settings = settings))
     val client = server.waitAccept()
     val outgoingConnection = tcpProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
 
@@ -187,20 +187,20 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(serverAddress: InetSocketAddress): StreamTcp.OutgoingTcpConnection = {
     val connectProbe = TestProbe()
-    connectProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(serverAddress, settings = genSettings))
+    connectProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(serverAddress, settings = settings))
     connectProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
   }
 
   def bind(serverAddress: InetSocketAddress = temporaryServerAddress): StreamTcp.TcpServerBinding = {
     val bindProbe = TestProbe()
-    bindProbe.send(StreamIO(StreamTcp), StreamTcp.Bind(serverAddress, settings = genSettings))
+    bindProbe.send(StreamIO(StreamTcp), StreamTcp.Bind(serverAddress, settings = settings))
     bindProbe.expectMsgType[StreamTcp.TcpServerBinding]
   }
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): Future[Unit] =
     Flow(bind(serverAddress).connectionStream).foreach { conn ⇒
       conn.inputStream.produceTo(conn.outputStream)
-    }.toFuture(gen)
+    }.toFuture(materializer)
 
   "Outgoing TCP stream" must {
 
@@ -235,9 +235,9 @@ class TcpFlowSpec extends AkkaSpec {
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       serverConnection.read(256)
-      Flow(tcpProcessor).consume(gen)
+      Flow(tcpProcessor).consume(materializer)
 
-      Flow(testInput).toProducer(gen).produceTo(tcpProcessor)
+      Flow(testInput).toProducer(materializer).produceTo(tcpProcessor)
       serverConnection.waitRead() should be(expectedOutput)
 
     }
@@ -252,7 +252,7 @@ class TcpFlowSpec extends AkkaSpec {
       for (in ← testInput) serverConnection.write(in)
       new TcpWriteProbe(tcpProcessor) // Just register an idle upstream
 
-      val resultFuture = Flow(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(gen)
+      val resultFuture = Flow(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
       serverConnection.confirmedClose()
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
@@ -345,8 +345,8 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toProducer(gen).produceTo(conn.outputStream)
-      val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(gen)
+      Flow(testInput).toProducer(materializer).produceTo(conn.outputStream)
+      val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
@@ -364,10 +364,10 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toProducer(gen).produceTo(conn1.outputStream)
+      Flow(testInput).toProducer(materializer).produceTo(conn1.outputStream)
       conn1.inputStream.produceTo(conn2.outputStream)
       conn2.inputStream.produceTo(conn3.outputStream)
-      val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(gen)
+      val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 

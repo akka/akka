@@ -96,11 +96,11 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     override def prefetch(): Unit = listener ! ResumeAccepting(1)
     override def isClosed: Boolean = closed
     override def complete(): Unit = {
-      if (!closed) listener ! Unbind
+      if (!closed && listener != null) listener ! Unbind
       closed = true
     }
     override def cancel(): Unit = {
-      if (!closed) listener ! Unbind
+      if (!closed && listener != null) listener ! Unbind
       closed = true
       pendingConnection = null
     }
