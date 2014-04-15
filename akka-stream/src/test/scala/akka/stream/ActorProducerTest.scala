@@ -5,13 +5,27 @@ package akka.stream
 
 import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
-import org.reactivestreams.tck.PublisherVerification
+import org.reactivestreams.tck.{ TestEnvironment, PublisherVerification }
 import akka.stream.impl.ActorBasedFlowMaterializer
 import org.reactivestreams.api.Producer
 import akka.stream.scaladsl.Flow
+import akka.actor.ActorSystem
+import akka.testkit.AkkaSpec
 
-class ActorProducerTest extends PublisherVerification[Int] with WithActorSystem with TestNGSuiteLike {
+class ActorProducerTest(_system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
+  extends PublisherVerification[Int](env, publisherShutdownTimeout)
+  with WithActorSystem with TestNGSuiteLike {
+
+  implicit val system = _system
   import system.dispatcher
+
+  def this(system: ActorSystem) {
+    this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system)), Timeouts.publisherShutdownTimeoutMillis)
+  }
+
+  def this() {
+    this(ActorSystem(classOf[ActorProducerTest].getSimpleName, AkkaSpec.testConf))
+  }
 
   private val materializer = FlowMaterializer(MaterializerSettings())
 
@@ -30,4 +44,5 @@ class ActorProducerTest extends PublisherVerification[Int] with WithActorSystem 
     pub.getPublisher
   }
 
+  override def createErrorStatePublisher(): Publisher[Int] = null // ignore error-state tests
 }

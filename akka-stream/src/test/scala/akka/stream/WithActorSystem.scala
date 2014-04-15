@@ -7,8 +7,8 @@ import akka.actor.ActorSystem
 import org.testng.annotations.AfterClass
 import akka.testkit.AkkaSpec
 
-trait WithActorSystem extends Timeouts {
-  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName, AkkaSpec.testConf)
+trait WithActorSystem {
+  def system: ActorSystem
 
   @AfterClass
   def shutdownActorSystem(): Unit = system.shutdown()
