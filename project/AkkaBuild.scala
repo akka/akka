@@ -298,7 +298,7 @@ object AkkaBuild extends Build {
     base = file("akka-stream"),
     dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
-      version := "0.2-SNAPSHOT",
+      version := "0.2",
       // FIXME remove this publishArtifact when akka-stream-experimental-2.3.x is released
       publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-stream-experimental"),
       libraryDependencies ++= Dependencies.stream,
