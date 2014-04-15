@@ -293,6 +293,20 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val httpCore = Project(
+    id = "akka-http-core",
+    base = file("akka-http-core"),
+    dependencies = Seq(actor, stream, stream2),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
+      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
+      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http-core"),
+      libraryDependencies ++= Dependencies.httpCore,
+      // FIXME include mima when akka-http-core-2.3.x is released
+      //previousArtifact := akkaPreviousArtifact("akka-http-core")
+      previousArtifact := None
+    )
+  )
+
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
@@ -1069,6 +1083,8 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
+    val httpCore = exports(Seq("akka.http.*"))
+
     val stream = exports(Seq("akka.stream.*"))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
@@ -1173,6 +1189,10 @@ object Dependencies {
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
+    // http-core (temporary, will be removed by internalizing)
+    val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0-SNAPSHOT" changing()          // ApacheV2
+    val shapeless     = "com.chuusai"                 %% "shapeless"                    % "2.0.0" cross CrossVersion.full // ApacheV2
+
     // Test
 
     object Test {
@@ -1225,6 +1245,8 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
+
+  val httpCore = Seq(parboiled2, shapeless, Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
