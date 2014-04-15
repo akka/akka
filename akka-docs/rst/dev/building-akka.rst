@@ -150,3 +150,13 @@ You can look at the Ivy dependency resolution information that is created on
 the resolution information for the akka-remote module compile dependencies. If
 you open this file in a web browser you will get an easy to navigate view of
 dependencies.
+
+Scaladoc Dependencies
+=====================
+
+The Scaladoc may generate Content (Type) Hierarchy diagrams. For this, you may
+be required to download and install Graphviz (http://www.graphviz.org/).
+The installed toolset has to be added to the PATH.
+
+Without Graphviz, the project will be completely built but with error messages
+regarding the absence of the diagram tool cumulated at the end.
