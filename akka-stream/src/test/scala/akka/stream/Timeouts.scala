@@ -10,13 +10,11 @@ import akka.testkit._
 /**
  * Specifies timeouts for the TCK
  */
-trait Timeouts {
+object Timeouts {
 
   def publisherShutdownTimeoutMillis: Int = 1000
 
-  def defaultTimeoutMillis: Int =
+  def defaultTimeoutMillis(implicit system: ActorSystem): Int =
     500.millis.dilated(system).toMillis.toInt
-
-  def system: ActorSystem
 
 }
