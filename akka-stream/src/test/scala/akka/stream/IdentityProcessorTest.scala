@@ -6,17 +6,29 @@ package akka.stream
 import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.api.Processor
-import org.reactivestreams.tck.IdentityProcessorVerification
-import akka.actor.Props
+import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment, IdentityProcessorVerification }
+import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
-import akka.testkit.TestEvent
-import akka.testkit.EventFilter
+import akka.testkit.{ AkkaSpec, TestEvent, EventFilter }
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.scaladsl.Flow
 
-class IdentityProcessorTest extends IdentityProcessorVerification[Int] with WithActorSystem with TestNGSuiteLike {
+class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
+  extends IdentityProcessorVerification[Int](env, publisherShutdownTimeout)
+  with WithActorSystem with TestNGSuiteLike {
+
+  implicit val system = _system
+  import system.dispatcher
+
+  def this(system: ActorSystem) {
+    this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system)), Timeouts.publisherShutdownTimeoutMillis)
+  }
+
+  def this() {
+    this(ActorSystem(classOf[IdentityProcessorTest].getSimpleName, AkkaSpec.testConf))
+  }
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
 
@@ -44,4 +56,7 @@ class IdentityProcessorTest extends IdentityProcessorVerification[Int] with With
     Flow(if (elements > 0) iter take elements else iter).toProducer(materializer).getPublisher
   }
 
+  override def createErrorStatePublisher(): Publisher[Int] = null // ignore error-state tests
+
+  override def createCompletedStatePublisher(): Publisher[Int] = null // ignore completed-state tests
 }
