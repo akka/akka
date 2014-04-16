@@ -5,7 +5,6 @@ package akka.stream
 
 import akka.actor.ActorSystem
 import org.testng.annotations.AfterClass
-import akka.testkit.AkkaSpec
 
 trait WithActorSystem {
   def system: ActorSystem

@@ -5,7 +5,7 @@ package akka.stream
 
 import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import scala.util.Failure
 import scala.util.control.NoStackTrace

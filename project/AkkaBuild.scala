@@ -76,7 +76,7 @@ object AkkaBuild extends Build {
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, stream, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -296,11 +296,8 @@ object AkkaBuild extends Build {
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
-    dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
       version := "0.2-SNAPSHOT",
-      // FIXME remove this publishArtifact when akka-stream-experimental-2.3.x is released
-      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-stream-experimental"),
       libraryDependencies ++= Dependencies.stream,
       // FIXME include mima when akka-stream-experimental-2.3.x has been released
       //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
@@ -1215,7 +1212,8 @@ object Dependencies {
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % "2.3.2",
-    Test.scalatest, Test.scalacheck, reactiveStreams, Test.reactiveStreams)
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test",
+    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
