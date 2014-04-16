@@ -35,7 +35,7 @@ object AkkaBuild extends Build {
 
   val enableMiMa = true
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.3")
+  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.11.0")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
 
   lazy val buildSettings = Seq(
