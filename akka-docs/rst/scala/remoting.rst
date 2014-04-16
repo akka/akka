@@ -78,7 +78,7 @@ As you can see from the example above the following pattern is used to find an a
 
   akka.<protocol>://<actor system>@<hostname>:<port>/<actor path>
 
-Once you obtained a selection to the actor you can interact with it they same way you would with a local actor, e.g.::
+Once you obtained a selection to the actor you can interact with it in the same way you would with a local actor, e.g.::
 
   selection ! "Pretty awesome feature"
 
