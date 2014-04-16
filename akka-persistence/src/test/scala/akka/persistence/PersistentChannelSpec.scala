@@ -124,6 +124,21 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
 
       system.stop(channel)
     }
+    "resend remaining messages" in {
+      val probe = TestProbe()
+      val settings = PersistentChannelSettings(
+        redeliverMax = 0,
+        redeliverInterval = 1.minute,
+        pendingConfirmationsMax = 5)
+
+      val channel = system.actorOf(PersistentChannel.props(s"${name}-watermark", settings))
+      val destination = system.actorOf(Props(classOf[SlowDestination], probe.ref, settings.pendingConfirmationsMax))
+
+      1 to 10 foreach { i ⇒ channel ! Deliver(Persistent(i), destination.path) }
+      1 to 10 foreach { i ⇒ probe.expectMsg(i) }
+
+      system.stop(channel)
+    }
     "redeliver on reset" in {
       val probe = TestProbe()
       val settings = PersistentChannelSettings(
