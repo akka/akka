@@ -5,7 +5,6 @@ package akka.stream
 
 import scala.concurrent.duration._
 import akka.stream.testkit._
-import akka.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
 import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow

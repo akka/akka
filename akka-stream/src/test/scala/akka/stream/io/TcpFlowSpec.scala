@@ -3,7 +3,7 @@
  */
 package akka.stream.io
 
-import akka.testkit.{ TestProbe, AkkaSpec }
+import akka.testkit.TestProbe
 import akka.io.{ Tcp, IO }
 import java.nio.channels.ServerSocketChannel
 import java.net.InetSocketAddress
@@ -11,7 +11,7 @@ import akka.stream.MaterializerSettings
 import akka.stream.impl.{ ActorProcessor, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import org.reactivestreams.api.Processor
 import akka.actor.{ Props, ActorRef, Actor }
 import scala.collection.immutable.Queue

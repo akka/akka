@@ -11,9 +11,10 @@ import akka.actor.{ ActorSystem, Props }
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
-import akka.testkit.{ AkkaSpec, TestEvent, EventFilter }
+import akka.testkit.{ TestEvent, EventFilter }
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.scaladsl.Flow
+import akka.stream.testkit.AkkaSpec
 
 class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
   extends IdentityProcessorVerification[Int](env, publisherShutdownTimeout)
