@@ -178,7 +178,7 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(server: Server): (Processor[ByteString, ByteString], ServerConnection) = {
     val tcpProbe = TestProbe()
-    tcpProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(server.address, settings = settings))
+    tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(server.address, settings = settings))
     val client = server.waitAccept()
     val outgoingConnection = tcpProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
 
@@ -187,13 +187,13 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(serverAddress: InetSocketAddress): StreamTcp.OutgoingTcpConnection = {
     val connectProbe = TestProbe()
-    connectProbe.send(StreamIO(StreamTcp), StreamTcp.Connect(serverAddress, settings = settings))
+    connectProbe.send(IO(StreamTcp), StreamTcp.Connect(serverAddress, settings = settings))
     connectProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
   }
 
   def bind(serverAddress: InetSocketAddress = temporaryServerAddress): StreamTcp.TcpServerBinding = {
     val bindProbe = TestProbe()
-    bindProbe.send(StreamIO(StreamTcp), StreamTcp.Bind(serverAddress, settings = settings))
+    bindProbe.send(IO(StreamTcp), StreamTcp.Bind(serverAddress, settings = settings))
     bindProbe.expectMsgType[StreamTcp.TcpServerBinding]
   }
 
