@@ -1,0 +1,119 @@
+<!-- <html> -->
+<head>
+    <title>The Obligatory Hello World</title>
+</head>
+
+<body>
+
+<div>
+<h2>The Obligatory Hello World</h2>
+
+<p>
+Since every programming paradigm needs to solve the tough problem of printing a
+well-known greeting to the console we’ll introduce you to the actor-based
+version.
+</p>
+
+<p>
+Open <a href="#code/src/main/java/sample/hello/HelloWorld.java" class="shortcut">HelloWorld.java</a>
+</p>
+
+<p>
+The <code>HelloWorld</code> actor is the application’s “main” class; when it terminates
+the application will shut down—more on that later. The main business logic
+happens in the <code>preStart</code> method, where a <code>Greeter</code> actor is created
+and instructed to issue that greeting we crave for. When the greeter is done it
+will tell us so by sending back a message, and when that message has been
+received it will be passed into the behavior described by the <code>receive</code>
+method where we can conclude the demonstration by stopping the <code>HelloWorld</code>
+actor.
+</p>
+
+</div>
+<div>
+
+<h2>The Greeter</h2>
+
+<p>
+You will be very curious to see how the <code>Greeter</code> actor performs the
+actual task. Open <a href="#code/src/main/java/sample/hello/Greeter.java" class="shortcut">Greeter.java</a>.
+</p>
+
+<p>
+
+This is extremely simple now: after its creation this actor will not do
+anything until someone sends it a message, and if that happens to be an
+invitation to greet the world then the <code>Greeter</code> complies and informs the
+requester that the deed has been done.
+</p>
+
+</div>
+<div>
+
+<h2>Main class</h2>
+
+<p>
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application main class
+<code>sample.hello.Main</code>. In the log output you can see the "Hello World!" greeting.
+</p>
+
+<p>
+<a href="#code/src/main/java/sample/hello/Main.java" class="shortcut">Main.java</a>
+is actually just a small wrapper around the generic launcher class <code>akka.Main</code>,
+which expects only one argument: the class name of the application’s main actor. This main
+method will then create the infrastructure needed for running the actors, start the
+given main actor and arrange for the whole application to shut down once the
+main actor terminates. Thus you will be able to run the application with a
+command similar to the following:
+</p>
+
+<pre><code>
+java -classpath <all those JARs> akka.Main sample.hello.HelloWorld
+</code></pre>
+
+<p>
+This conveniently assumes placement of the above class definitions in package
+<code>sample.hello</code> and it further assumes that you have the required JAR files for
+<code>scala-library</code>, <code>typesafe-config</code> and <code>akka-actor</code> available.
+The easiest would be to manage these dependencies with a
+<a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/intro/getting-started.html#Using_a_build_tool" target="_blank">build tool</a>.
+</p>
+
+<p>
+If you need more control of the startup code than what is provided by <code>akka.Main</code>
+you can easily write your own main class such as
+<a href="#code/src/main/java/sample/hello/Main2.java" class="shortcut">Main2.java</a>
+</p>
+
+<p>
+Try to run the <code>sample.hello.Main2</code> class
+by selecting it in the 'Main class' menu in the <a href="#run" class="shortcut">Run</a> tab.
+</p>
+
+</div>
+
+<div>
+
+<h2>Run with Maven</h2>
+
+<p>
+This sample also includes a Maven <a href="#code/pom.xml" class="shortcut">pom.xml</a>.
+</p>
+
+<p>
+You can run the main classes with <code>mvn</code> from a terminal window using the
+<a href="http://mojo.codehaus.org/exec-maven-plugin/" target="_blank">Exec Maven Plugin</a>.
+</p>
+
+<pre><code>
+mvn compile exec:java -Dexec.mainClass="akka.Main" -Dexec.args="sample.hello.HelloWorld"
+</code></pre>
+
+<pre><code>
+mvn compile exec:java -Dexec.mainClass="sample.hello.Main2"
+</code></pre>
+
+</div>
+
+</body>
+</html>
