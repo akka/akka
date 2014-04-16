@@ -13,15 +13,7 @@ import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
 import akka.stream.MaterializerSettings
-
-object StreamIO {
-  trait Extension extends akka.actor.Extension {
-    def manager: ActorRef
-  }
-
-  def apply[T <: Extension](key: ExtensionId[T])(implicit system: ActorSystem): ActorRef = key(system).manager
-
-}
+import akka.io.IO
 
 object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
 
@@ -64,7 +56,7 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
 /**
  * INTERNAL API
  */
-private[akka] class StreamTcpExt(system: ExtendedActorSystem) extends StreamIO.Extension {
+private[akka] class StreamTcpExt(system: ExtendedActorSystem) extends IO.Extension {
   val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
 }
 
