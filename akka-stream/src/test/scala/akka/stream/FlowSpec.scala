@@ -4,7 +4,7 @@
 package akka.stream
 
 import scala.concurrent.duration._
-import akka.stream.testkit.{ ChainSetup, StreamTestKit }
+import akka.stream.testkit.{ AkkaSpec, ChainSetup, StreamTestKit }
 import akka.testkit._
 import org.reactivestreams.api.Producer
 import org.scalatest.FreeSpecLike

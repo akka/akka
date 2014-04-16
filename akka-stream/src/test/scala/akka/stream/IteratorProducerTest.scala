@@ -8,7 +8,7 @@ import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.{ TestEnvironment, PublisherVerification }
 import akka.stream.scaladsl.Flow
 import akka.actor.ActorSystem
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.AkkaSpec
 
 class IteratorProducerTest(_system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
   extends PublisherVerification[Int](env, publisherShutdownTimeout)

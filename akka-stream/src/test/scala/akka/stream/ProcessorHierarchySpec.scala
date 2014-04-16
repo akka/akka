@@ -3,7 +3,7 @@
  */
 package akka.stream
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.actor.ActorContext

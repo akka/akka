@@ -3,7 +3,7 @@
  */
 package akka.stream
 
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.collection.immutable
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }

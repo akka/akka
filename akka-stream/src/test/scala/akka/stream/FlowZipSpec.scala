@@ -5,7 +5,7 @@ package akka.stream
 
 import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.testkit.StreamTestKit
-import akka.testkit.AkkaSpec
+import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.api.Producer
 import akka.stream.testkit.OnSubscribe
