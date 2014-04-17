@@ -85,7 +85,7 @@ object AkkaBuild extends Build {
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     // samples and dataflow don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
-      persistence, mailboxes, kernel, osgi, contrib, multiNodeTestkit)
+      persistence, stream, mailboxes, kernel, osgi, contrib, multiNodeTestkit)
   )
 
   // this detached pseudo-project is used for running the tests against a different Scala version than the one used for compilation
@@ -290,6 +290,18 @@ object AkkaBuild extends Build {
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
+    )
+  )
+
+  lazy val stream = Project(
+    id = "akka-stream-experimental",
+    base = file("akka-stream"),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
+      version := "0.2-SNAPSHOT",
+      libraryDependencies ++= Dependencies.stream,
+      // FIXME include mima when akka-stream-experimental-2.3.x has been released
+      //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
+      previousArtifact := None
     )
   )
 
@@ -1044,6 +1056,8 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
+    val stream = exports(Seq("akka.stream.*"))
+
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
     val mailboxesCommon = exports(Seq("akka.actor.mailbox.*"), imports = Seq(protobufImport()))
@@ -1135,6 +1149,8 @@ object Dependencies {
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams-spi"         % "0.3"         // CC0
+
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
@@ -1150,7 +1166,7 @@ object Dependencies {
       val commonsMath  = "org.apache.commons"          % "commons-math"                 % "2.1"              % "test" // ApacheV2
       val commonsIo    = "commons-io"                  % "commons-io"                   % "2.4"              % "test" // ApacheV2
       val commonsCodec = "commons-codec"               % "commons-codec"                % "1.7"              % "test" // ApacheV2
-      val junit        = "junit"                       % "junit"                        % "4.10"             % "test" // Common Public License 1.0
+      val junit        = "junit"                       % "junit"                        % "4.11"             % "test" // Common Public License 1.0
       val logback      = "ch.qos.logback"              % "logback-classic"              % "1.0.13"           % "test" // EPL 1.0 / LGPL 2.1
       val mockito      = "org.mockito"                 % "mockito-all"                  % "1.8.1"            % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
@@ -1160,12 +1176,14 @@ object Dependencies {
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
-      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.8"              % "test" // MIT
+      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.10"             % "test" // MIT
       // dining hakkers integration test using pax-exam
       // mirrored in OSGi sample
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
+
+      val reactiveStreams = "org.reactivestreams"      % "reactive-streams-tck"         % "0.3"              % "test" // CC0
     }
   }
 
@@ -1190,6 +1208,12 @@ object Dependencies {
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+
+  val stream = Seq(
+    // FIXME use project dependency when akka-stream-experimental-2.3.x is released
+    "com.typesafe.akka" %% "akka-actor" % "2.3.2",
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test",
+    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
