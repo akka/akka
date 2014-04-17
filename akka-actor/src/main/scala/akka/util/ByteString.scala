@@ -566,9 +566,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
         _builder ++= bs.bytestrings
         _length += bs.length
       case xs: WrappedArray.ofByte ⇒
-        clearTemp()
-        _builder += ByteString1(xs.array.clone)
-        _length += xs.length
+        putByteArrayUnsafe(xs.array.clone)
       case seq: collection.IndexedSeq[_] ⇒
         ensureTempSize(_tempLength + xs.size)
         xs.copyToArray(_temp, _tempLength)
@@ -577,6 +575,13 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
       case _ ⇒
         super.++=(xs)
     }
+    this
+  }
+
+  private[akka] def putByteArrayUnsafe(xs: Array[Byte]): this.type = {
+    clearTemp()
+    _builder += ByteString1(xs)
+    _length += xs.length
     this
   }
 
