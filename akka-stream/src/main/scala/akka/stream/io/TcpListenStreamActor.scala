@@ -56,9 +56,8 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         ConnectionProducer(exposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]]))
       context.become(running)
     case f: CommandFailed ⇒
-      val ex = new TcpListenStreamException("Bind failed")
-      requester ! Status.Failure(ex)
-      fail(ex)
+      requester ! Status.Failure(StreamTcp.BindFailedException)
+      fail(StreamTcp.BindFailedException)
   }
 
   val running: Receive = downstreamManagement orElse {
