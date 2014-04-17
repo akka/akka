@@ -23,7 +23,7 @@ immediately visible at other nodes, but typically they will be fully replicated
 to all other nodes after a few seconds.
 
 You can send messages via the mediator on any node to registered actors on
-any other node. There is three modes of message delivery.
+any other node. There is four modes of message delivery.
 
 **1. DistributedPubSubMediator.Send**
 
@@ -55,6 +55,17 @@ efficiency the message is sent over the wire only once per node (that has a matc
 and then delivered to all subscribers of the local topic representation. This is the
 true pub/sub mode. A typical usage of this mode is a chat room in an instant messaging
 application.
+
+**4. DistributedPubSubMediator.Publish with sendOneMessageToEachGroup**
+
+Actors may be subscribed to a named topic with an optional property (``group``).
+If subscribing with a group name, each message published to a topic with the
+(``sendOneMessageToEachGroup``) flag is delivered via the supplied ``RoutingLogic``
+(default random) to one actor within each subscribing group.
+If all the subscribed actors have the same group name, then this works just like
+``Send`` and all messages are delivered to one subscriber.
+If all the subscribed actors have different group names, then this works like
+normal ``Publish`` and all messages are broadcast to all subscribers.
 
 You register actors to the local mediator with ``DistributedPubSubMediator.Put`` or
 ``DistributedPubSubMediator.Subscribe``. ``Put`` is used together with ``Send`` and

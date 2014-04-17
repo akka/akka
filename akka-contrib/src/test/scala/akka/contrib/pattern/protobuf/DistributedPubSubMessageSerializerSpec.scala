@@ -8,6 +8,7 @@ import akka.testkit.AkkaSpec
 import akka.contrib.pattern.DistributedPubSubMediator._
 import akka.contrib.pattern.DistributedPubSubMediator.Internal._
 import akka.actor.Props
+import scala.collection.immutable.TreeMap
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
@@ -32,9 +33,9 @@ class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
       val u4 = system.actorOf(Props.empty, "u4")
       checkSerialization(Status(Map(address1 -> 3, address2 -> 17, address3 -> 5)))
       checkSerialization(Delta(List(
-        Bucket(address1, 3, Map("/user/u1" -> ValueHolder(2, Some(u1)), "/user/u2" -> ValueHolder(3, Some(u2)))),
-        Bucket(address2, 17, Map("/user/u3" -> ValueHolder(17, Some(u3)))),
-        Bucket(address3, 5, Map("/user/u4" -> ValueHolder(4, Some(u4)), "/user/u5" -> ValueHolder(5, None))))))
+        Bucket(address1, 3, TreeMap("/user/u1" -> ValueHolder(2, Some(u1)), "/user/u2" -> ValueHolder(3, Some(u2)))),
+        Bucket(address2, 17, TreeMap("/user/u3" -> ValueHolder(17, Some(u3)))),
+        Bucket(address3, 5, TreeMap("/user/u4" -> ValueHolder(4, Some(u4)), "/user/u5" -> ValueHolder(5, None))))))
       checkSerialization(Send("/user/u3", "hello", localAffinity = true))
       checkSerialization(SendToAll("/user/u3", "hello", allButSelf = true))
       checkSerialization(Publish("mytopic", "hello"))
