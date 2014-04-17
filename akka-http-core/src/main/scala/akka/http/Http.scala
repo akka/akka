@@ -6,12 +6,14 @@ package akka.http
 
 import java.net.InetSocketAddress
 import com.typesafe.config.Config
+import org.reactivestreams.api.{ Producer, Consumer }
 import scala.concurrent.duration.Duration
 import scala.collection.immutable
 import akka.io.{ Inet, Tcp }
+import akka.stream.MaterializerSettings
 import akka.http.client.{ HostConnectorSettings, ClientConnectionSettings }
 import akka.http.server.ServerSettings
-import akka.http.model.{ HttpRequest, HttpHeader }
+import akka.http.model.{ HttpResponse, HttpRequest, HttpHeader }
 import akka.http.util._
 import akka.actor._
 
@@ -20,8 +22,6 @@ object Http extends ExtensionKey[HttpExt] {
   /////////////////////////////////////////////////////////////////
   ///////////////////////// COMMANDS //////////////////////////////
   /////////////////////////////////////////////////////////////////
-
-  type Command = Tcp.Command
 
   //////////////////// client-side commands ///////////////////////
 
@@ -32,7 +32,7 @@ object Http extends ExtensionKey[HttpExt] {
    * The sender `ActorRef`of this response can then be sent `HttpRequest` instances to which
    * it will respond with `HttpResponse` instances (or `Status.Failure`).
    */
-  sealed trait OutgoingHttpChannelSetup extends Command
+  sealed trait OutgoingHttpChannelSetup
 
   case class Connect(remoteAddress: InetSocketAddress,
                      sslEncryption: Boolean,
@@ -62,7 +62,7 @@ object Http extends ExtensionKey[HttpExt] {
 
   case object HttpRequestChannelSetup extends OutgoingHttpChannelSetup
 
-  case class OpenOutgoingHttpChannel(channelSetup: OutgoingHttpChannelSetup) extends Command
+  case class OpenOutgoingHttpChannel(channelSetup: OutgoingHttpChannelSetup)
 
   /**
    * Command triggering the shutdown of the respective HTTP channel.
@@ -89,21 +89,22 @@ object Http extends ExtensionKey[HttpExt] {
   case class Bind(endpoint: InetSocketAddress,
                   backlog: Int,
                   options: immutable.Traversable[Inet.SocketOption],
-                  settings: Option[ServerSettings]) extends Command
+                  serverSettings: Option[ServerSettings],
+                  materializerSettings: MaterializerSettings)
   object Bind {
     def apply(interface: String, port: Int = 80, backlog: Int = 100,
-              options: immutable.Traversable[Inet.SocketOption] = Nil, settings: Option[ServerSettings] = None): Bind =
-      apply(new InetSocketAddress(interface, port), backlog, options, settings)
+              options: immutable.Traversable[Inet.SocketOption] = Nil,
+              serverSettings: Option[ServerSettings] = None,
+              materializerSettings: MaterializerSettings = MaterializerSettings()): Bind =
+      apply(new InetSocketAddress(interface, port), backlog, options, serverSettings, materializerSettings)
   }
 
-  case class Unbind(timeout: Duration) extends Command
+  case class Unbind(timeout: Duration)
   object Unbind extends Unbind(Duration.Zero)
 
   /////////////////////////////////////////////////////////////////
   /////////////////////////// EVENTS //////////////////////////////
   /////////////////////////////////////////////////////////////////
-
-  type Event = Tcp.Event
 
   type ConnectionClosed = Tcp.ConnectionClosed
   val Closed = Tcp.Closed
@@ -121,7 +122,7 @@ object Http extends ExtensionKey[HttpExt] {
    * been received.
    * The sender of the `OutgoingHttpChannelInfo` response is always identical to the transport.
    */
-  sealed trait OutgoingHttpChannelInfo extends Event {
+  sealed trait OutgoingHttpChannelInfo {
     def transport: ActorRef
   }
 
@@ -136,11 +137,17 @@ object Http extends ExtensionKey[HttpExt] {
 
   ///////////////////// server-side events ////////////////////////
 
-  type Bound = Tcp.Bound; val Bound = Tcp.Bound
+  case class ServerBinding(localAddress: InetSocketAddress,
+                           connectionStream: Producer[IncomingConnection])
+
+  case class IncomingConnection(remoteAddress: InetSocketAddress,
+                                requestStream: Producer[HttpRequest],
+                                responseStream: Consumer[HttpResponse])
+
   val Unbound = Tcp.Unbound
 
   /////////////////////////////////////////////////////////////////
-  ///////////////////////// EXCEPTIONS ////////////////////////////
+  /////////////////////////// OTHER ///////////////////////////////
   /////////////////////////////////////////////////////////////////
 
   class ConnectionException(message: String) extends RuntimeException(message)

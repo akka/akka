@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.LinearSeq
 import org.parboiled2.{ CharPredicate, CharUtils }
 import akka.http.model.parser.CharacterClasses
-import akka.util.ByteString
+import akka.util.{ ByteStringBuilder, ByteString }
 
 /** An entity that can render itself */
 trait Renderable {
@@ -219,4 +219,69 @@ class StringRendering extends Rendering {
   def get: String = sb.toString
 }
 
-// FIXME: decide if ByteStringRendering, ByteArrayRendering is still needed
+class ByteArrayRendering(sizeHint: Int) extends Rendering {
+  private[this] var array = new Array[Byte](sizeHint)
+  private[this] var size = 0
+
+  def get: Array[Byte] =
+    if (size == array.length) array
+    else java.util.Arrays.copyOfRange(array, 0, size)
+
+  def ~~(char: Char): this.type = {
+    val oldSize = growBy(1)
+    array(oldSize) = char.toByte
+    this
+  }
+
+  def ~~(bytes: Array[Byte]): this.type = {
+    if (bytes.length > 0) {
+      val oldSize = growBy(bytes.length)
+      System.arraycopy(bytes, 0, array, oldSize, bytes.length)
+    }
+    this
+  }
+
+  def ~~(bytes: ByteString): this.type = {
+    if (bytes.length > 0) {
+      val oldSize = growBy(bytes.length)
+      bytes.copyToArray(array, oldSize, bytes.length)
+    }
+    this
+  }
+
+  private def growBy(delta: Int): Int = {
+    val oldSize = size
+    val neededSize = oldSize.toLong + delta
+    if (array.length < neededSize)
+      if (neededSize < Int.MaxValue) {
+        val newLen = math.min(math.max(array.length.toLong << 1, neededSize), Int.MaxValue).toInt
+        val newArray = new Array[Byte](newLen)
+        System.arraycopy(array, 0, newArray, 0, array.length)
+        array = newArray
+      } else sys.error("Cannot create byte array greater than 2GB in size")
+    size = neededSize.toInt
+    oldSize
+  }
+}
+
+class ByteStringRendering(sizeHint: Int) extends Rendering {
+  private[this] val builder = new ByteStringBuilder
+  builder.sizeHint(sizeHint)
+
+  def get: ByteString = builder.result
+
+  def ~~(char: Char): this.type = {
+    builder += char.toByte
+    this
+  }
+
+  def ~~(bytes: Array[Byte]): this.type = {
+    if (bytes.length > 0) builder.putByteArrayUnsafe(bytes)
+    this
+  }
+
+  def ~~(bytes: ByteString): this.type = {
+    if (bytes.length > 0) builder ++= bytes
+    this
+  }
+}

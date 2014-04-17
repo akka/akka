@@ -7,6 +7,7 @@ package akka.http.model
 import language.implicitConversions
 import java.io.File
 import org.reactivestreams.api.Producer
+import scala.collection.immutable
 import akka.util.ByteString
 import akka.stream2.StreamProducer
 
@@ -97,7 +98,7 @@ object HttpEntity {
   /**
    * An intermediate entity chunk guaranteed to carry non-empty data.
    */
-  case class LastChunk(extension: String = "", trailer: List[HttpHeader] = Nil) extends ChunkStreamPart {
+  case class LastChunk(extension: String = "", trailer: immutable.Seq[HttpHeader] = Nil) extends ChunkStreamPart {
     def data = ByteString.empty
   }
   object LastChunk extends LastChunk("", Nil)
