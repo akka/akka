@@ -320,7 +320,7 @@ private class RequestReader(channelId: String, channelSettings: PersistentChanne
     case d: Delivered ⇒
       delivery forward d
       numPending = math.max(numPending - 1L, 0L)
-      if (numPending == pendingConfirmationsMin) onReadRequest()
+      if (numPending <= pendingConfirmationsMin) onReadRequest()
     case d @ RedeliverFailure(ms) ⇒
       val numPendingPrev = numPending
       numPending = math.max(numPending - ms.length, 0L)
