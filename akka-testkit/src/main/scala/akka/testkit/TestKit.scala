@@ -66,7 +66,7 @@ class TestActor(queue: BlockingDeque[TestActor.Message]) extends Actor {
 
   var autopilot: AutoPilot = NoAutoPilot
 
-  def receive = LoggingReceive {
+  def receive = {
     case SetIgnore(ign)      ⇒ ignore = ign
     case Watch(ref)          ⇒ context.watch(ref)
     case UnWatch(ref)        ⇒ context.unwatch(ref)
