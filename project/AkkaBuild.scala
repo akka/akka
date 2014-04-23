@@ -159,7 +159,7 @@ object AkkaBuild extends Build {
     libraryDependencies <++= scalaVersion { v =>
       if (v.startsWith("2.10.")) Seq(compilerPlugin("org.scala-lang.plugins" % "continuations" % v))
       else Seq(
-        compilerPlugin("org.scala-lang.plugins" %% "scala-continuations-plugin" % Dependencies.Versions.scalaContinuationsVersion),
+        compilerPlugin("org.scala-lang.plugins" %% "scala-continuations-plugin" % Dependencies.Versions.scalaContinuationsVersion cross CrossVersion.full),
         "org.scala-lang.plugins" %% "scala-continuations-library" % Dependencies.Versions.scalaContinuationsVersion)
     },
     scalacOptions += "-P:continuations:enable"
@@ -1187,10 +1187,13 @@ object Dependencies {
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
       val reactiveStreams = "org.reactivestreams"      % "reactive-streams-tck"         % "0.3"              % "test" // CC0
+      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
     }
   }
 
   import Compile._
+  
+  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
 
   val actor = Seq(config)
 
@@ -1200,7 +1203,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest)
+  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1210,7 +1213,8 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
+    scalaXmlDepencency
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
