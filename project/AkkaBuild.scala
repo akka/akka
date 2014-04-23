@@ -297,7 +297,7 @@ object AkkaBuild extends Build {
     id = "akka-stream-experimental",
     base = file("akka-stream"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
-      version := "0.2-SNAPSHOT",
+      version := "0.3-SNAPSHOT",
       libraryDependencies ++= Dependencies.stream,
       // FIXME include mima when akka-stream-experimental-2.3.x has been released
       //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
