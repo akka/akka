@@ -9,8 +9,8 @@ import org.reactivestreams.api.{ Consumer, Processor, Producer }
 import org.reactivestreams.spi.Subscriber
 import akka.actor.ActorRefFactory
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
-import akka.stream.scaladsl.Transformer
-import akka.stream.scaladsl.RecoveryTransformer
+import akka.stream.Transformer
+import akka.stream.RecoveryTransformer
 import scala.util.Try
 import scala.concurrent.Future
 import scala.util.Success

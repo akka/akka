@@ -1,32 +1,37 @@
 /**
  * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.scaladsl
+package akka.stream.javadsl
 
-import scala.annotation.unchecked.uncheckedVariance
+import java.util.concurrent.Callable
+import scala.collection.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.util.Try
-import org.reactivestreams.api.Consumer
+import scala.util.Failure
+import scala.util.Success
 import org.reactivestreams.api.Producer
+import akka.japi.Function
+import akka.japi.Function2
+import akka.japi.Procedure
+import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
-import akka.stream.RecoveryTransformer
+import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import akka.stream.Transformer
-import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
-import akka.stream.impl.Ast.FutureProducerNode
-import akka.stream.impl.FlowImpl
+import akka.stream.RecoveryTransformer
+import org.reactivestreams.api.Consumer
 
 /**
- * Scala API
+ * Java API
  */
 object Flow {
+
   /**
    * Construct a transformation of the given producer. The transformation steps
    * are executed by a series of [[org.reactivestreams.api.Processor]] instances
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def apply[T](producer: Producer[T]): Flow[T] = FlowImpl(ExistingProducer(producer), Nil)
+  def create[T](producer: Producer[T]): Flow[T] = new FlowAdapter(SFlow.apply(producer))
 
   /**
    * Start a new flow from the given Iterator. The produced stream of elements
@@ -35,7 +40,8 @@ object Flow {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def apply[T](iterator: Iterator[T]): Flow[T] = FlowImpl(IteratorProducerNode(iterator), Nil)
+  def create[T](iterator: java.util.Iterator[T]): Flow[T] =
+    new FlowAdapter(SFlow.apply(iterator.asScala))
 
   /**
    * Start a new flow from the given Iterable. This is like starting from an
@@ -43,28 +49,25 @@ object Flow {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Flow[T] = FlowImpl(IterableProducerNode(iterable), Nil)
+  def create[T](iterable: java.lang.Iterable[T]): Flow[T] = {
+    val iterAdapter: immutable.Iterable[T] = new immutable.Iterable[T] {
+      override def iterator: Iterator[T] = iterable.iterator().asScala
+    }
+    new FlowAdapter(SFlow.apply(iterAdapter))
+  }
 
   /**
-   * Define the sequence of elements to be produced by the given closure.
-   * The stream ends normally when evaluation of the closure results in
+   * Define the sequence of elements to be produced by the given Callable.
+   * The stream ends normally when evaluation of the Callable results in
    * a [[akka.stream.Stop]] exception being thrown; it ends exceptionally
    * when any other exception is thrown.
    */
-  def apply[T](f: () ⇒ T): Flow[T] = FlowImpl(ThunkProducerNode(f), Nil)
-
-  /**
-   * Start a new flow from the given `Future`. The stream will consist of
-   * one element when the `Future` is completed with a successful value, which
-   * may happen before or after materializing the `Flow`.
-   * The stream terminates with an error if the `Future` is completed with a failure.
-   */
-  def apply[T](future: Future[T]): Flow[T] = FlowImpl(FutureProducerNode(future), Nil)
+  def create[T](block: Callable[T]): Flow[T] = new FlowAdapter(SFlow.apply(() ⇒ block.call()))
 
 }
 
 /**
- * Scala API: The Flow DSL allows the formulation of stream transformations based on some
+ * Java API: The Flow DSL allows the formulation of stream transformations based on some
  * input. The starting point can be a collection, an iterator, a block of code
  * which is evaluated repeatedly or a [[org.reactivestreams.api.Producer]].
  *
@@ -81,7 +84,7 @@ object Flow {
  * elements a given transformation step might buffer before handing elements
  * downstream, which means that transformation functions may be invoked more
  * often than for corresponding transformations on strict collections like
- * [[List]]. *An important consequence* is that elements that were produced
+ * `List`. *An important consequence* is that elements that were produced
  * into a stream may be discarded by later processors, e.g. when using the
  * [[#take]] combinator.
  *
@@ -92,33 +95,35 @@ object Flow {
  * [[org.reactivestreams.api.Processor]] instances. The returned reactive stream
  * is fully started and active.
  */
-trait Flow[+T] {
+abstract class Flow[T] {
 
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[U](f: T ⇒ U): Flow[U]
+  def map[U](f: Function[T, U]): Flow[U]
 
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: T ⇒ Boolean): Flow[T]
+  def filter(p: Predicate[T]): Flow[T]
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
+   *
+   * Use [[akka.japi.pf.PFBuilder]] to construct the `PartialFunction`.
    */
   def collect[U](pf: PartialFunction[T, U]): Flow[U]
 
   /**
    * Invoke the given procedure for each received element and produce a Unit value
    * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Flow` needs to be materialized (e.g. using [[#consume]]) to initiate its
+   * the flow needs to be materialized (e.g. using [[#consume]]) to initiate its
    * execution.
    */
-  def foreach(c: T ⇒ Unit): Flow[Unit]
+  def foreach(c: Procedure[T]): Flow[Unit]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -126,7 +131,7 @@ trait Flow[+T] {
    * will receive the return value of the final function evaluation when the input
    * stream ends.
    */
-  def fold[U](zero: U)(f: (U, T) ⇒ U): Flow[U]
+  def fold[U](zero: U, f: Function2[U, T, U]): Flow[U]
 
   /**
    * Discard the given number of elements at the beginning of the stream.
@@ -145,17 +150,17 @@ trait Flow[+T] {
    * Chunk up this stream into groups of the given size, with the last group
    * possibly smaller than requested due to end-of-stream.
    */
-  def grouped(n: Int): Flow[immutable.Seq[T]]
+  def grouped(n: Int): Flow[java.util.List[T]]
 
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    */
-  def mapConcat[U](f: T ⇒ immutable.Seq[U]): Flow[U]
+  def mapConcat[U](f: Function[T, java.util.List[U]]): Flow[U]
 
   /**
    * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
-   * function is invoked, expecting a (possibly empty) sequence of output elements
+   * function is invoked and expecting a (possibly empty) sequence of output elements
    * to be produced.
    * After handing off the elements produced from one input element to the downstream
    * consumers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
@@ -163,8 +168,6 @@ trait Flow[+T] {
    * canceled. Before signaling normal completion to the downstream consumers,
    * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
-   *
-   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
    *
    * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
    *
@@ -178,12 +181,12 @@ trait Flow[+T] {
   /**
    * This transformation stage works exactly like [[#transform]] with the
    * change that failure signaled from upstream will invoke
-   * [[akka.stream.RecoveryTransformer#onErrorRecover]], which can emit an additional sequence of
+   * [[akka.stream.RecoveryTransformer#onError]], which can emit an additional sequence of
    * elements before the stream ends.
    *
-   * [[akka.stream.Transformer#onError]] is not called when failure is signaled from upstream.
+   * After normal completion or error the [[akka.stream.RecoveryTransformer#cleanup]] function is called.
    */
-  def transformRecover[U](recoveryTransformer: RecoveryTransformer[T, U]): Flow[U]
+  def transformRecover[U](transformer: RecoveryTransformer[T, U]): Flow[U]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -196,7 +199,7 @@ trait Flow[+T] {
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K](f: T ⇒ K): Flow[(K, Producer[T @uncheckedVariance])]
+  def groupBy[K](f: Function[T, K]): Flow[Pair[K, Producer[T]]]
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -211,7 +214,7 @@ trait Flow[+T] {
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen(p: T ⇒ Boolean): Flow[Producer[T @uncheckedVariance]]
+  def splitWhen(p: Predicate[T]): Flow[Producer[T]]
 
   /**
    * Merge this stream with the one emitted by the given producer, taking
@@ -225,7 +228,7 @@ trait Flow[+T] {
    * This transformation finishes when either input stream reaches its end,
    * cancelling the subscription to the other one.
    */
-  def zip[U](other: Producer[U]): Flow[(T, U)]
+  def zip[U](other: Producer[U]): Flow[Pair[T, U]]
 
   /**
    * Concatenate the given other stream to this stream so that the first element
@@ -266,12 +269,11 @@ trait Flow[+T] {
 
   /**
    * When this flow is completed, either through an error or normal
-   * completion, apply the provided function with [[scala.util.Success]]
-   * or [[scala.util.Failure]].
+   * completion, call the [[OnCompleteCallback#onComplete]] method.
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit
+  def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Unit
 
   /**
    * Materialize this flow and return the downstream-most
@@ -283,17 +285,110 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toProducer(materializer: FlowMaterializer): Producer[T @uncheckedVariance]
-
-  /**
-   * Attaches a consumer to this stream.
-   *
-   * *This will materialize the flow and initiate its execution.*
-   *
-   * The given FlowMaterializer decides how the flow’s logical structure is
-   * broken down into individual processing steps.
-   */
-  def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: T]): Unit
+  def toProducer(materializer: FlowMaterializer): Producer[T]
 
 }
 
+/**
+ * @see [[Flow#onComplete]]
+ */
+trait OnCompleteCallback {
+  /**
+   * The parameter `e` will be `null` when the stream terminated
+   * normally, otherwise it will be the exception that caused
+   * the abnormal termination.
+   */
+  def onComplete(e: Throwable)
+}
+
+/**
+ * Java API: Represents a tuple of two elements.
+ */
+case class Pair[A, B](a: A, b: B) // FIXME move this to akka.japi.Pair in akka-actor
+
+/**
+ * Java API: Defines a criteria and determines whether the parameter meets this criteria.
+ */
+trait Predicate[T] {
+  // FIXME move this to akka.japi.Predicate in akka-actor 
+  def test(param: T): Boolean
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
+  override def map[U](f: Function[T, U]): Flow[U] = new FlowAdapter(delegate.map(f.apply))
+
+  override def filter(p: Predicate[T]): Flow[T] = new FlowAdapter(delegate.filter(p.test))
+
+  override def collect[U](pf: PartialFunction[T, U]): Flow[U] = new FlowAdapter(delegate.collect(pf))
+
+  override def foreach(c: Procedure[T]): Flow[Unit] = new FlowAdapter(delegate.foreach(c.apply))
+
+  override def fold[U](zero: U, f: Function2[U, T, U]): Flow[U] =
+    new FlowAdapter(delegate.fold(zero) { case (a, b) ⇒ f.apply(a, b) })
+
+  override def drop(n: Int): Flow[T] = new FlowAdapter(delegate.drop(n))
+
+  override def take(n: Int): Flow[T] = new FlowAdapter(delegate.take(n))
+
+  override def grouped(n: Int): Flow[java.util.List[T]] =
+    new FlowAdapter(delegate.grouped(n).map(_.asJava)) // FIXME optimize to one step
+
+  override def mapConcat[U](f: Function[T, java.util.List[U]]): Flow[U] =
+    new FlowAdapter(delegate.mapConcat(elem ⇒ immutableSeq(f.apply(elem))))
+
+  override def transform[U](transformer: Transformer[T, U]): Flow[U] =
+    new FlowAdapter(delegate.transform(new Transformer[T, U] {
+      override def onNext(in: T) = transformer.onNext(in)
+      override def isComplete = transformer.isComplete
+      override def onComplete() = transformer.onComplete()
+      override def onError(cause: Throwable) = transformer.onError(cause)
+      override def cleanup() = transformer.cleanup()
+    }))
+
+  override def transformRecover[U](transformer: RecoveryTransformer[T, U]): Flow[U] =
+    new FlowAdapter(delegate.transform(new RecoveryTransformer[T, U] {
+      override def onNext(in: T) = transformer.onNext(in)
+      override def isComplete = transformer.isComplete
+      override def onComplete() = transformer.onComplete()
+      override def onError(cause: Throwable) = transformer.onError(cause)
+      override def onErrorRecover(cause: Throwable) = transformer.onErrorRecover(cause)
+      override def cleanup() = transformer.cleanup()
+    }))
+
+  override def groupBy[K](f: Function[T, K]): Flow[Pair[K, Producer[T]]] =
+    new FlowAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
+
+  override def splitWhen(p: Predicate[T]): Flow[Producer[T]] =
+    new FlowAdapter(delegate.splitWhen(p.test))
+
+  override def merge[U >: T](other: Producer[U]): Flow[U] =
+    new FlowAdapter(delegate.merge(other))
+
+  override def zip[U](other: Producer[U]): Flow[Pair[T, U]] =
+    new FlowAdapter(delegate.zip(other).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
+
+  override def concat[U >: T](next: Producer[U]): Flow[U] =
+    new FlowAdapter(delegate.concat(next))
+
+  override def tee(other: Consumer[_ >: T]): Flow[T] =
+    new FlowAdapter(delegate.tee(other))
+
+  override def toFuture(materializer: FlowMaterializer): Future[T] =
+    delegate.toFuture(materializer)
+
+  override def consume(materializer: FlowMaterializer): Unit =
+    delegate.consume(materializer)
+
+  override def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Unit =
+    delegate.onComplete(materializer) {
+      case Success(_) ⇒ callback.onComplete(null)
+      case Failure(e) ⇒ callback.onComplete(e)
+    }
+
+  override def toProducer(materializer: FlowMaterializer): Producer[T] =
+    delegate.toProducer(materializer)
+
+}

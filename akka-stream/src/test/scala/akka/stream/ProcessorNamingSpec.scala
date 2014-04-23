@@ -12,7 +12,6 @@ import akka.actor.ActorRef
 import scala.collection.immutable.TreeSet
 import scala.util.control.NonFatal
 import akka.stream.impl.ActorBasedFlowMaterializer
-import akka.stream.scaladsl.Transformer
 import akka.stream.impl.FlowNameCounter
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

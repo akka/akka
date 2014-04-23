@@ -4,14 +4,14 @@
 package akka.stream.extra
 
 import scala.collection.immutable
-import akka.stream.scaladsl.Transformer
+import akka.stream.Transformer
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.actor.ActorContext
 import akka.event.LoggingAdapter
 import akka.event.Logging
 
 /**
- * Scala API: Mix in TransformerLogging into your [[akka.stream.scaladsl.Transformer]]
+ * Scala API: Mix in TransformerLogging into your [[akka.stream.Transformer]]
  * to obtain a reference to a logger, which is available under the name [[#log]].
  */
 trait TransformerLogging { this: Transformer[_, _] ⇒

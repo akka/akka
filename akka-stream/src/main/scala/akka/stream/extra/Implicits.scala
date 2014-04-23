@@ -7,7 +7,8 @@ import akka.stream.scaladsl.Duct
 import akka.stream.scaladsl.Flow
 
 /**
- * Additional [[Flow]] and [[Duct]] operators.
+ * Additional [[akka.stream.scaladsl.Flow]] and [[akka.stream.scaladsl.Duct]]
+ * operators.
  */
 object Implicits {
 

@@ -14,7 +14,7 @@ import org.reactivestreams.api.Consumer
 object FlowMaterializer {
 
   /**
-   * Creates a FlowMaterializer which will execute every step of a transformation
+   * Scala API: Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
@@ -27,6 +27,15 @@ object FlowMaterializer {
   def apply(settings: MaterializerSettings, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): FlowMaterializer =
     new ActorBasedFlowMaterializer(settings, context, namePrefix.getOrElse("flow"))
 
+  /**
+   * Java API: Creates a FlowMaterializer which will execute every step of a transformation
+   * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
+   * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
+   * will be used to create these actors, therefore it is *forbidden* to pass this object
+   * to another actor if the factory is an ActorContext.
+   */
+  def create(settings: MaterializerSettings, context: ActorRefFactory): FlowMaterializer =
+    apply(settings)(context)
 }
 
 /**
@@ -36,7 +45,7 @@ object FlowMaterializer {
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-trait FlowMaterializer {
+abstract class FlowMaterializer {
 
   /**
    * The `namePrefix` is used as the first part of the names of the actors running
@@ -71,6 +80,16 @@ trait FlowMaterializer {
 
 }
 
+object MaterializerSettings {
+  private val defaultSettings = new MaterializerSettings
+  /**
+   * Java API: Default settings.
+   * Refine the settings using [[MaterializerSettings#withBuffer]],
+   * [[MaterializerSettings#withFanOut]], [[MaterializerSettings#withSubscriptionTimeout]]
+   */
+  def create(): MaterializerSettings = defaultSettings
+}
+
 /**
  * The buffers employed by the generated Processors can be configured by
  * creating an appropriate instance of this class.
@@ -97,5 +116,20 @@ case class MaterializerSettings(
   require(isPowerOfTwo(maximumInputBufferSize), "initialInputBufferSize must be a power of two")
   require(initialInputBufferSize <= maximumInputBufferSize,
     s"initialInputBufferSize($initialInputBufferSize) must be <= maximumInputBufferSize($maximumInputBufferSize)")
+
+  def withBuffer(initialInputBufferSize: Int, maximumInputBufferSize: Int): MaterializerSettings =
+    copy(initialInputBufferSize = initialInputBufferSize, maximumInputBufferSize = maximumInputBufferSize)
+
+  def withFanOut(initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): MaterializerSettings =
+    copy(initialFanOutBufferSize = initialFanOutBufferSize, maxFanOutBufferSize = maxFanOutBufferSize)
+
+  def withSubscriptionTimeout(timeout: FiniteDuration): MaterializerSettings =
+    copy(upstreamSubscriptionTimeout = timeout, downstreamSubscriptionTimeout = timeout)
+
+  def withSubscriptionTimeout(upstreamSubscriptionTimeout: FiniteDuration,
+                              downstreamSubscriptionTimeout: FiniteDuration): MaterializerSettings =
+    copy(upstreamSubscriptionTimeout = upstreamSubscriptionTimeout,
+      downstreamSubscriptionTimeout = downstreamSubscriptionTimeout)
+
 }
 

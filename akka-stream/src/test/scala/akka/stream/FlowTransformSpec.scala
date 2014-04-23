@@ -10,7 +10,6 @@ import akka.testkit.EventFilter
 import com.typesafe.config.ConfigFactory
 import akka.stream.scaladsl.Flow
 import akka.testkit.TestProbe
-import akka.stream.scaladsl.Transformer
 import scala.util.control.NoStackTrace
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

@@ -10,4 +10,9 @@ import scala.util.control.NoStackTrace
  * signal the end of stream (if the produced stream is not infinite). This is used for example in
  * [[akka.stream.scaladsl.Flow#apply]] (the variant which takes a closure).
  */
-case object Stop extends RuntimeException("Stop this flow") with NoStackTrace
+case object Stop extends RuntimeException("Stop this flow") with NoStackTrace {
+  /**
+   * Java API: get the singleton instance
+   */
+  def getInstance = this
+}

@@ -3,13 +3,15 @@
  */
 package akka.stream.scaladsl
 
-import scala.collection.immutable
-import akka.stream.impl.DuctImpl
-import org.reactivestreams.api.Consumer
-import akka.stream.FlowMaterializer
 import scala.annotation.unchecked.uncheckedVariance
-import org.reactivestreams.api.Producer
+import scala.collection.immutable
 import scala.util.Try
+import org.reactivestreams.api.Consumer
+import org.reactivestreams.api.Producer
+import akka.stream.FlowMaterializer
+import akka.stream.RecoveryTransformer
+import akka.stream.Transformer
+import akka.stream.impl.DuctImpl
 
 object Duct {
 
