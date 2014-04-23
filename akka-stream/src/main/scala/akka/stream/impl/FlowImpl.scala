@@ -13,8 +13,8 @@ import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 import scala.util.Success
 import scala.util.Failure
-import akka.stream.scaladsl.Transformer
-import akka.stream.scaladsl.RecoveryTransformer
+import akka.stream.Transformer
+import akka.stream.RecoveryTransformer
 import org.reactivestreams.api.Consumer
 import akka.stream.scaladsl.Duct
 

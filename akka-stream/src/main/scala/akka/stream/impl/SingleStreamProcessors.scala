@@ -7,8 +7,8 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success }
 import akka.actor.Props
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl.RecoveryTransformer
-import akka.stream.scaladsl.Transformer
+import akka.stream.RecoveryTransformer
+import akka.stream.Transformer
 import scala.util.control.NonFatal
 
 /**

@@ -11,8 +11,8 @@ import org.reactivestreams.spi.{ Subscriber, Subscription }
 import Ast.{ AstNode, Recover, Transform }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, actorRef2Scala }
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl.Transformer
-import akka.stream.scaladsl.RecoveryTransformer
+import akka.stream.Transformer
+import akka.stream.RecoveryTransformer
 
 /**
  * INTERNAL API

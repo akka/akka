@@ -14,7 +14,6 @@ import akka.stream.impl.Ast
 import akka.testkit.{ TestEvent, EventFilter }
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Transformer
 import akka.stream.testkit.AkkaSpec
 import java.util.concurrent.atomic.AtomicInteger
 
