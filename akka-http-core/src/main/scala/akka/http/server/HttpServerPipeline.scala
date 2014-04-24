@@ -77,15 +77,67 @@ object ErrorResponseBypassFanIn extends FanIn.Provider[HttpResponse, Option[Http
 
 class ErrorResponseBypassFanIn(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream)
   extends FanIn[HttpResponse, Option[HttpResponse], HttpResponse] {
+  var requested = 0
+  var primaryResponse: HttpResponse = _
+  var primaryWriteThrough = false // if true the next primary element is to be directly dispatched to downstream
+  var completed = false
 
-  def requestMore(elements: Int): Unit = ???
-  def cancel(): Unit = ???
+  def requestMore(elements: Int): Unit =
+    if (!completed) {
+      requested += elements
+      if (requested == elements) requestNext()
+    }
+  def cancel(): Unit =
+    if (!completed) {
+      completed = true
+      primaryUpstream.cancel()
+      secondaryUpstream.cancel()
+    }
+  def primaryOnNext(element: HttpResponse): Unit =
+    if (!completed) {
+      if (primaryWriteThrough) {
+        primaryWriteThrough = false
+        dispatch(element)
+      } else primaryResponse = element
+    }
+  def primaryOnComplete(): Unit =
+    if (!completed) {
+      completed = true
+      downstream.onComplete()
+    }
+  def primaryOnError(cause: Throwable): Unit =
+    if (!completed) {
+      completed = true
+      downstream.onError(cause)
+    }
 
-  def primaryOnNext(element: HttpResponse): Unit = ???
-  def primaryOnComplete(): Unit = ???
-  def primaryOnError(cause: Throwable): Unit = ???
-
-  def secondaryOnNext(element: Option[HttpResponse]): Unit = ???
-  def secondaryOnComplete(): Unit = ???
-  def secondaryOnError(cause: Throwable): Unit = ???
+  def secondaryOnNext(element: Option[HttpResponse]): Unit =
+    if (!completed)
+      element match {
+        case None =>
+          if (primaryResponse ne null) {
+            primaryResponse = null
+            dispatch(primaryResponse)
+          } else primaryWriteThrough = true
+        case Some(errorResponse) => downstream.onNext(errorResponse)
+      }
+  def secondaryOnComplete(): Unit =
+    if (!completed) {
+      completed = true
+      downstream.onComplete()
+    }
+  def secondaryOnError(cause: Throwable): Unit =
+    if (!completed) {
+      completed = true
+      downstream.onError(cause)
+    }
+  private def dispatch(response: HttpResponse): Unit = {
+    downstream.onNext(response)
+    requested -= 1
+    if (requested > 0) requestNext()
+  }
+  private def requestNext(): Unit = {
+    primaryUpstream.requestMore(1)
+    secondaryUpstream.requestMore(1)
+  }
 }
