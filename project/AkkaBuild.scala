@@ -1001,9 +1001,9 @@ object Dependencies {
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.7")
-    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.0")
-    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.10.1")
-    val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.0-RC3")
+    val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
+    val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
+    val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
   }
 
   object Compile {
