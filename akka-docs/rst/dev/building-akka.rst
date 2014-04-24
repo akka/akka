@@ -103,12 +103,6 @@ to use from an sbt project) use the ``publish-local`` command::
 
    sbt publish-local
 
-.. note::
-
-   Akka generates class diagrams for the API documentation using ScalaDoc. This needs the ``dot`` command from
-   the Graphviz software package to be installed to avoid errors. You can disable the diagram generation by
-   adding the flag ``-Dakka.scaladoc.diagrams=false``
-
 
 sbt Interactive Mode
 --------------------
@@ -150,3 +144,12 @@ You can look at the Ivy dependency resolution information that is created on
 the resolution information for the akka-remote module compile dependencies. If
 you open this file in a web browser you will get an easy to navigate view of
 dependencies.
+
+Scaladoc Dependencies
+=====================
+
+Akka generates class diagrams for the API documentation using ScalaDoc. This 
+needs the ``dot`` command from the Graphviz software package to be installed to
+avoid errors. You can disable the diagram generation by adding the flag
+``-Dakka.scaladoc.diagrams=false``. After installing Graphviz, make sure you add
+the toolset to the PATH (definitely on Windows).

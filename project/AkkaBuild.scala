@@ -874,7 +874,7 @@ object AkkaBuild extends Build {
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
             !(name.compare("index.html") == 0) && !(name.compare("package.html") == 0)) {
-            val source = scala.io.Source.fromFile(f)
+            val source = scala.io.Source.fromFile(f)("utf-8")
             val hd = source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
             source.close()
             hd
