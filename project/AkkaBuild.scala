@@ -1065,10 +1065,13 @@ object Dependencies {
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
+      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
     }
   }
 
   import Compile._
+  
+  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
 
   val actor = Seq(config)
 
@@ -1078,7 +1081,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest)
+  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1086,7 +1089,8 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
+    scalaXmlDepencency
 
   val kernel = Seq(Test.scalatest, Test.junit)
 
