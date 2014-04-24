@@ -4,15 +4,18 @@
 
 package akka.http.server
 
-import scala.collection.immutable
+import org.reactivestreams.api.Producer
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
 import akka.actor.ActorRefFactory
-import akka.http.model.{ HttpRequest, HttpResponse, ErrorInfo }
 import akka.http.parsing.HttpRequestParser
 import akka.http.rendering.HttpResponseRendererFactory
+import akka.http.model.{ ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.Http
-import akka.stream2.{ Operation, Flow }
+import akka.stream2.{ FanIn, Operation, Flow }
+import akka.stream2.impl._
+import HttpRequestParser._
+import Operation.Split
 
 private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit refFactory: ActorRefFactory)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
@@ -25,21 +28,32 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
   val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.chunklessStreaming)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
+    def splitParserOutput: ParserOutput ⇒ Split.Command = {
+      case _: RequestStart ⇒ Split.First
+      case _: EntityPart   ⇒ Split.Append
+      case _: EntityChunk  ⇒ Split.Append
+      case _: ParseError   ⇒ Split.First
+    }
+
+    def constructRequest(requestStart: RequestStart, entity: Producer[ParserOutput]): HttpRequest = ???
+
     val errorResponseBypass =
-      Operation[Either[HttpResponse, HttpRequest]]
-        .map(_.left.toOption)
+      Operation[(ParserOutput, Producer[HttpRequestParser.ParserOutput])]
+        .map { case (ParseError(errorResponse), _) ⇒ Some(errorResponse); case _ ⇒ None }
         .toProcessor
 
     val requestStream =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
+        .split(splitParserOutput)
+        .headAndTail
         .tee(errorResponseBypass)
-        .collect { case Right(request) ⇒ request }
+        .collect { case (x: RequestStart, entity) ⇒ constructRequest(x, entity) }
         .toProducer
 
     val responseStream =
       Operation[HttpResponse]
-        .fanIn(errorResponseBypass, new ErrorResponseBypassFanIn)
+        .fanIn(errorResponseBypass, ErrorResponseBypassFanIn)
         .mapConcat(responseRendererFactory.newRenderer)
         .produceTo(tcpConn.outputStream)
 
@@ -56,12 +70,22 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
  * - when a `Some` is received from the secondary input it is immediately dispatched to downstream, a potentially
  *   buffered regular response from the primary input is left untouched
  */
-private[server] class ErrorResponseBypassFanIn extends Operation.FanIn[HttpResponse, Option[HttpResponse], HttpResponse] {
-  def next(): immutable.Seq[HttpResponse] = ???
-  def primaryDemand: Int = ???
-  def secondaryDemand: Int = ???
-  def primaryOnNext(elem: HttpResponse): Unit = ???
-  def secondaryOnNext(elem: Option[HttpResponse]): Unit = ???
+object ErrorResponseBypassFanIn extends FanIn.Provider[HttpResponse, Option[HttpResponse], HttpResponse] {
+  def apply(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream): ErrorResponseBypassFanIn =
+    new ErrorResponseBypassFanIn(primaryUpstream, secondaryUpstream, downstream)
+}
+
+class ErrorResponseBypassFanIn(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream)
+  extends FanIn[HttpResponse, Option[HttpResponse], HttpResponse] {
+
+  def requestMore(elements: Int): Unit = ???
+  def cancel(): Unit = ???
+
+  def primaryOnNext(element: HttpResponse): Unit = ???
   def primaryOnComplete(): Unit = ???
+  def primaryOnError(cause: Throwable): Unit = ???
+
+  def secondaryOnNext(element: Option[HttpResponse]): Unit = ???
   def secondaryOnComplete(): Unit = ???
+  def secondaryOnError(cause: Throwable): Unit = ???
 }
