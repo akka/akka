@@ -4,7 +4,7 @@
 package akka.event.japi
 
 import akka.util.Subclassification
-import akka.actor.ActorRef
+import akka.actor.{ ActorSystem, ActorRef }
 
 /**
  * Java API: See documentation for [[akka.event.EventBus]]
@@ -89,12 +89,11 @@ abstract class LookupEventBus[E, S, C] extends EventBus[E, S, C] {
 }
 
 /**
- * See documentation for [[akka.event.SubchannelClassification]]
+ * Java API: See documentation for [[akka.event.SubchannelClassification]]
  * E is the Event type
  * S is the Subscriber type
  * C is the Classifier type
  */
-
 abstract class SubchannelEventBus[E, S, C] extends EventBus[E, S, C] {
   private val bus = new akka.event.EventBus with akka.event.SubchannelClassification {
     type Event = E
@@ -134,7 +133,7 @@ abstract class SubchannelEventBus[E, S, C] extends EventBus[E, S, C] {
 }
 
 /**
- * See documentation for [[akka.event.ScanningClassification]]
+ * Java API: See documentation for [[akka.event.ScanningClassification]]
  * E is the Event type
  * S is the Subscriber type
  * C is the Classifier type
@@ -185,14 +184,16 @@ abstract class ScanningEventBus[E, S, C] extends EventBus[E, S, C] {
 }
 
 /**
- * See documentation for [[akka.event.ActorClassification]]
+ * Java API: See documentation for [[akka.event.ActorClassification]]
  * An EventBus where the Subscribers are ActorRefs and the Classifier is ActorRef
  * Means that ActorRefs "listen" to other ActorRefs
  * E is the Event type
  */
-abstract class ActorEventBus[E] extends EventBus[E, ActorRef, ActorRef] {
+abstract class ActorEventBus[E](system: ActorSystem) extends EventBus[E, ActorRef, ActorRef] {
   private val bus = new akka.event.ActorEventBus with akka.event.ActorClassification with akka.event.ActorClassifier {
     type Event = E
+
+    override val system = ActorEventBus.this.system
 
     override protected def mapSize: Int = ActorEventBus.this.mapSize
 

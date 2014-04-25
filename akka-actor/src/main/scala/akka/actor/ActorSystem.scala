@@ -567,7 +567,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   import settings._
 
   // this provides basic logging (to stdout) until .start() is called below
-  val eventStream: EventStream = new EventStream(DebugEventStream)
+  val eventStream = new EventStream(this, DebugEventStream)
   eventStream.startStdoutLogger(settings)
 
   val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
@@ -618,6 +618,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     provider.init(this)
     if (settings.LogDeadLetters > 0)
       logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
+    eventStream.startUnsubscriber()
     registerOnTermination(stopScheduler())
     loadExtensions()
     if (LogConfigOnStart) logConfiguration()

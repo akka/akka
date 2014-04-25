@@ -19,6 +19,25 @@ In earlier versions of Akka `TestKit.remaining` returned the default timeout con
 AssertionError if called outside of within. The old behavior however can still be achieved by
 calling `TestKit.remainingOrDefault` instead.
 
+EventStream and ActorClassification EventBus now require an ActorSystem
+=======================================================================
+
+Both the ``EventStream`` (:ref:`Scala <event-stream-scala>`, :ref:`Java <event-stream-java>`) and the
+``ActorClassification`` Event Bus (:ref:`Scala <actor-classification-scala>`, :ref:`Java <actor-classification-java>`) now
+require an ``ActorSystem`` to properly operate. The reason for that is moving away from stateful internal lifecycle checks
+to a fully reactive model for unsubscribing actors that have ``Terminated``.
+
+If you have implemented a custom event bus, you will need to pass in the actor system through the constructor now:
+
+.. includecode:: ../scala/code/docs/event/EventBusDocSpec.scala#actor-bus
+
+If you have been creating EventStreams manually, you now have to provide an actor system and *start the unsubscriber*:
+
+.. includecode:: ../../../akka-actor-tests/src/test/scala/akka/event/EventStreamSpec.scala#event-bus-start-unsubscriber-scala
+
+Please note that this change affects you only if you have implemented your own busses, Akka's own ``context.eventStream``
+is still there and does not require any attention from you concerning this change.
+
 Removed Deprecated Features
 ===========================
 

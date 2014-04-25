@@ -104,12 +104,19 @@ A test for this implementation may look like this:
 This classifier takes always a time which is proportional to the number of
 subscriptions, independent of how many actually match.
 
+.. _actor-classification-java:
+
 Actor Classification
 --------------------
 
 This classification was originally developed specifically for implementing
 :ref:`DeathWatch <deathwatch-java>`: subscribers as well as classifiers are of
 type :class:`ActorRef`.
+
+This classification requires an :class:`ActorSystem` in order to perform book-keeping
+operations related to the subscribers being Actors, which can terminate without first
+unsubscribing from the EventBus. ActorClassification maitains a system Actor which
+takes care of unsubscribing terminated actors automatically.
 
 The necessary methods to be implemented are illustrated with the following example:
 
@@ -140,6 +147,8 @@ how a simple subscription works. Given a simple actor:
 it can be subscribed like this:
 
 .. includecode:: code/docs/event/LoggingDocTest.java#deadletters
+
+Similarily to `Actor Classification`_, :class:`EventStream` will automatically remove subscibers when they terminate.
 
 .. note::
    The event stream is a *local facility*, meaning that it will *not* distribute events to other nodes in a clustered environment (unless you subscribe a Remote Actor to the stream explicitly).

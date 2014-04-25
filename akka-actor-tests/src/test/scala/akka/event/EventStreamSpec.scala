@@ -6,7 +6,7 @@ package akka.event
 import language.postfixOps
 
 import scala.concurrent.duration._
-import akka.actor.{ Actor, ActorRef, ActorSystemImpl, ActorSystem, Props, UnhandledMessage }
+import akka.actor._
 import com.typesafe.config.ConfigFactory
 import scala.collection.JavaConverters._
 import akka.event.Logging.InitializeLogger
@@ -28,10 +28,14 @@ object EventStreamSpec {
       akka {
         actor.serialize-messages = off
         stdout-loglevel = WARNING
-        loglevel = DEBUG
+        loglevel = WARNING
         actor.debug.unhandled = on
       }
       """)
+
+  val configUnhandledWithDebug =
+    ConfigFactory.parseString("akka.actor.debug.event-stream = on")
+      .withFallback(configUnhandled)
 
   final case class M(i: Int)
 
@@ -75,7 +79,11 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
   "An EventStream" must {
 
     "manage subscriptions" in {
-      val bus = new EventStream(true)
+      //#event-bus-start-unsubscriber-scala
+      val bus = new EventStream(system, true)
+      bus.startUnsubscriber()
+      //#event-bus-start-unsubscriber-scala
+
       bus.subscribe(testActor, classOf[M])
       bus.publish(M(42))
       within(1 second) {
@@ -87,12 +95,12 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "not allow null as subscriber" in {
-      val bus = new EventStream(true)
+      val bus = new EventStream(system, true)
       intercept[IllegalArgumentException] { bus.subscribe(null, classOf[M]) }.getMessage should be("subscriber is null")
     }
 
     "not allow null as unsubscriber" in {
-      val bus = new EventStream(true)
+      val bus = new EventStream(system, true)
       intercept[IllegalArgumentException] { bus.unsubscribe(null, classOf[M]) }.getMessage should be("subscriber is null")
       intercept[IllegalArgumentException] { bus.unsubscribe(null) }.getMessage should be("subscriber is null")
     }
@@ -111,7 +119,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage log levels" in {
-      val bus = new EventStream(false)
+      val bus = new EventStream(system, false)
       bus.startDefaultLoggers(impl)
       bus.publish(SetTarget(testActor))
       expectMsg("OK")
@@ -132,7 +140,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       val b1 = new B1
       val b2 = new B2
       val c = new C
-      val bus = new EventStream(false)
+      val bus = new EventStream(system, false)
       within(2 seconds) {
         bus.subscribe(testActor, classOf[B2]) should be(true)
         bus.publish(c)
@@ -154,7 +162,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on subscribe)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -177,7 +185,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on unsubscribe)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -199,7 +207,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on unsubscribe all)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3, a4 = TestProbe()
@@ -221,7 +229,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (update on publish)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2 = TestProbe()
@@ -237,7 +245,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (unsubscribe classes used with trait)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CC
       val tm2 = new CCATBT
       val a1, a2, a3 = TestProbe()
@@ -259,7 +267,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     }
 
     "manage sub-channels using classes and traits (subscribe after publish)" in {
-      val es = new EventStream(false)
+      val es = new EventStream(system, false)
       val tm1 = new CCATBT
       val a1, a2 = TestProbe()
 
@@ -274,6 +282,130 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
       es.unsubscribe(a1.ref, classOf[AT]) should be(true)
       es.unsubscribe(a2.ref, classOf[BTT]) should be(true)
     }
+
+    "unsubscribe an actor on its termination" in {
+      val sys = ActorSystem("EventStreamSpecUnsubscribeOnTerminated", configUnhandledWithDebug)
+
+      try {
+        val es = sys.eventStream
+        val a1, a2 = TestProbe()
+        val tm = new A
+
+        val target = sys.actorOf(Props(new Actor {
+          def receive = { case in ⇒ a1.ref forward in }
+        }), "to-be-killed")
+
+        es.subscribe(a2.ref, classOf[Any])
+        es.subscribe(target, classOf[A]) should be(true)
+        es.subscribe(target, classOf[A]) should be(false)
+
+        target ! PoisonPill
+        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
+        fishForDebugMessage(a2, s"unwatching $target")
+
+        es.publish(tm)
+
+        a1.expectNoMsg(1 second)
+        a2.expectMsg(tm)
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "unsubscribe the actor, when it subscribes already in terminated state" in {
+      val sys = ActorSystem("EventStreamSpecUnsubscribeTerminated", configUnhandledWithDebug)
+
+      try {
+        val es = sys.eventStream
+        val a1, a2 = TestProbe()
+
+        val target = system.actorOf(Props(new Actor {
+          def receive = { case in ⇒ a1.ref forward in }
+        }), "to-be-killed")
+
+        watch(target)
+        target ! PoisonPill
+        expectTerminated(target)
+
+        es.subscribe(a2.ref, classOf[Any])
+
+        // target1 is Terminated; When subscribing, it will be unsubscribed by the Unsubscriber right away
+        es.subscribe(target, classOf[A]) should be(true)
+        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
+
+        es.subscribe(target, classOf[A]) should be(true)
+        fishForDebugMessage(a2, s"unsubscribing $target from all channels")
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "not allow initializing a TerminatedUnsubscriber twice" in {
+      val sys = ActorSystem("MustNotAllowDoubleInitOfTerminatedUnsubscriber", config)
+      // initializes an TerminatedUnsubscriber during start
+
+      try {
+        val es = sys.eventStream
+        val p = TestProbe()
+
+        val refWillBeUsedAsUnsubscriber = es.initUnsubscriber(p.ref)
+
+        refWillBeUsedAsUnsubscriber should equal(false)
+
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "unwatch an actor from unsubscriber when that actor unsubscribes from the stream" in {
+      val sys = ActorSystem("MustUnregisterDuringUnsubscribe", configUnhandledWithDebug)
+
+      try {
+        val es = sys.eventStream
+        val a1, a2 = TestProbe()
+
+        es.subscribe(a1.ref, classOf[Logging.Debug])
+
+        es.subscribe(a2.ref, classOf[A])
+        fishForDebugMessage(a1, s"watching ${a2.ref}")
+
+        es.unsubscribe(a2.ref)
+        fishForDebugMessage(a1, s"unwatching ${a2.ref}")
+
+      } finally {
+        shutdown(sys)
+      }
+    }
+
+    "unwatch an actor from unsubscriber when that actor unsubscribes from channels it subscribed" in {
+      val sys = ActorSystem("MustUnregisterWhenNoMoreChannelSubscriptions", configUnhandledWithDebug)
+
+      try {
+        val es = sys.eventStream
+        val a1, a2 = TestProbe()
+
+        es.subscribe(a1.ref, classOf[Logging.Debug])
+
+        es.subscribe(a2.ref, classOf[A])
+        es.subscribe(a2.ref, classOf[T])
+        fishForDebugMessage(a1, s"watching ${a2.ref}")
+
+        es.unsubscribe(a2.ref, classOf[A]) should equal(true)
+        fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel class akka.event.EventStreamSpec$$A")
+        a1.expectNoMsg(1 second)
+
+        es.unsubscribe(a2.ref, classOf[T]) should equal(true)
+        fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel interface akka.event.EventStreamSpec$$T")
+        fishForDebugMessage(a1, s"unwatching ${a2.ref}, since has no subscriptions")
+        a1.expectNoMsg(1 second)
+
+        es.unsubscribe(a2.ref, classOf[T]) should equal(false)
+
+      } finally {
+        shutdown(sys)
+      }
+    }
+
   }
 
   private def verifyLevel(bus: LoggingBus, level: Logging.LogLevel) {
@@ -282,6 +414,13 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     val msg = allmsg filter (_.level <= level)
     allmsg foreach bus.publish
     msg foreach (expectMsg(_))
+  }
+
+  private def fishForDebugMessage(a: TestProbe, messagePrefix: String) {
+    a.fishForMessage(3 seconds, hint = "expected debug message prefix: " + messagePrefix) {
+      case Logging.Debug(_, _, msg: String) if msg startsWith messagePrefix ⇒ true
+      case other ⇒ false
+    }
   }
 
 }
