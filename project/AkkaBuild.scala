@@ -25,6 +25,7 @@ import java.nio.charset.Charset
 import java.util.Properties
 import annotation.tailrec
 import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
+import TestExtras. { JUnitFileReporting, StatsDMetrics }
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
 object AkkaBuild extends Build {
@@ -50,6 +51,7 @@ object AkkaBuild extends Build {
     base = file("."),
     settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
       SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
+      StatsDMetrics.settings ++ 
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
@@ -148,11 +150,9 @@ object AkkaBuild extends Build {
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings  ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ Seq(
       publishArtifact in Compile := false,
-      libraryDependencies ++= Dependencies.actorTests,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-      reportBinaryIssues := () // disable bin comp check
+      libraryDependencies ++= Dependencies.actorTests
     )
   )
 
@@ -723,7 +723,8 @@ object AkkaBuild extends Build {
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
     validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
     
-  ) ++ mavenLocalResolverSettings
+  ) ++ mavenLocalResolverSettings ++ JUnitFileReporting.settings ++ StatsDMetrics.settings
+
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
   // the tasks that to run for validation is defined in defaultSettings
