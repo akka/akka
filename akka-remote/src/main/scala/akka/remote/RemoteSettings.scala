@@ -63,6 +63,14 @@ final class RemoteSettings(val config: Config) {
     config.getMillisDuration("akka.remote.backoff-interval")
   } requiring (_ > Duration.Zero, "backoff-interval must be > 0")
 
+  val LogBufferSizeExceeding: Int = {
+    val key = "akka.remote.log-buffer-size-exceeding"
+    config.getString(key).toLowerCase match {
+      case "off" | "false" ⇒ Int.MaxValue
+      case _               ⇒ config.getInt(key)
+    }
+  }
+
   val SysMsgAckTimeout: FiniteDuration = {
     config.getMillisDuration("akka.remote.system-message-ack-piggyback-timeout")
   } requiring (_ > Duration.Zero, "system-message-ack-piggyback-timeout must be > 0")

@@ -10,6 +10,7 @@ import akka.actor.{ ActorLogging, ActorRef, ActorSelection, Address, Actor, Root
 import akka.cluster.ClusterEvent._
 import akka.routing.MurmurHash
 import akka.remote.FailureDetectorRegistry
+import akka.remote.PriorityMessage
 
 /**
  * INTERNAL API.
@@ -34,12 +35,12 @@ private[cluster] object ClusterHeartbeatSender {
   /**
    * Sent at regular intervals for failure detection.
    */
-  final case class Heartbeat(from: Address) extends ClusterMessage
+  final case class Heartbeat(from: Address) extends ClusterMessage with PriorityMessage
 
   /**
    * Sent as reply to [[Heartbeat]] messages.
    */
-  final case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage
+  final case class HeartbeatRsp(from: UniqueAddress) extends ClusterMessage with PriorityMessage
 
   // sent to self only
   case object HeartbeatTick
