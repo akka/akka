@@ -82,7 +82,7 @@ object HttpMessage {
 }
 
 /**
- * The immutable model of an HTTP request.
+ * The immutable model HTTP request model.
  */
 case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                        uri: Uri = Uri./,
@@ -256,7 +256,7 @@ case class HttpRequest(method: HttpMethod = HttpMethods.GET,
 }
 
 /**
- * The immutable model of an HTTP response.
+ * The immutable HTTP response model.
  */
 case class HttpResponse(status: StatusCode = StatusCodes.OK,
                         headers: immutable.Seq[HttpHeader] = Nil,
@@ -274,4 +274,8 @@ case class HttpResponse(status: StatusCode = StatusCodes.OK,
 
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity) =
     if ((headers eq this.headers) && (entity eq this.entity)) this else copy(headers = headers, entity = entity)
+}
+
+object HttpResponse {
+  def apply(status: StatusCode, entity: HttpEntity): HttpResponse = HttpResponse(status, Nil, entity)
 }

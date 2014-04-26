@@ -25,6 +25,7 @@ private[http] object CharacterClasses {
   def SP = ' '
   def VCHAR = CharPredicate.Visible
   val WSP = CharPredicate(SP, HTAB)
+  val WSPCRLF = WSP ++ CR ++ LF
 
   // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-25#section-3.2.6
   val special = CharPredicate("""()<>@,;:\"/[]?={}""")

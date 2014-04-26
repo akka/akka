@@ -34,7 +34,7 @@ object HttpEntity {
     if (string.isEmpty) Empty else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
   def apply(contentType: ContentType, bytes: Array[Byte]): Regular = apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): Regular =
-    Default(contentType, data.length, StreamProducer.empty)
+    Default(contentType, data.length, StreamProducer.of(data))
 
   def apply(contentType: ContentType, file: File): Regular = {
     val fileLength = file.length
@@ -55,6 +55,7 @@ object HttpEntity {
   sealed trait Regular extends HttpEntity
 
   // TODO: re-establish serializability
+  // TODO: equal/hashcode ?
 
   /**
    * The model for the entity of a "regular" unchunked HTTP message with a known length.

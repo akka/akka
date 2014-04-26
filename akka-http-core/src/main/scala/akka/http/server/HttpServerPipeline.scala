@@ -9,12 +9,12 @@ import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
 import akka.actor.ActorRefFactory
 import akka.http.parsing.HttpRequestParser
-import akka.http.rendering.HttpResponseRendererFactory
-import akka.http.model.{ ErrorInfo, HttpRequest, HttpResponse }
+import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
+import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
+import akka.http.parsing.ParserOutput._
 import akka.http.Http
 import akka.stream2.{ FanIn, Operation, Flow }
 import akka.stream2.impl._
-import HttpRequestParser._
 import Operation.Split
 
 private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit refFactory: ActorRefFactory)
@@ -28,116 +28,136 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
   val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.chunklessStreaming)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    def splitParserOutput: ParserOutput ⇒ Split.Command = {
-      case _: RequestStart ⇒ Split.First
-      case _: EntityPart   ⇒ Split.Append
-      case _: EntityChunk  ⇒ Split.Append
-      case _: ParseError   ⇒ Split.First
-    }
+    import refFactory.dispatcher
 
-    def constructRequest(requestStart: RequestStart, entity: Producer[ParserOutput]): HttpRequest = ???
-
-    val errorResponseBypass =
-      Operation[(ParserOutput, Producer[HttpRequestParser.ParserOutput])]
-        .map { case (ParseError(errorResponse), _) ⇒ Some(errorResponse); case _ ⇒ None }
+    val applicationBypass =
+      Operation[(RequestOutput, Producer[RequestOutput])]
+        .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
         .toProcessor
 
     val requestStream =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
-        .split(splitParserOutput)
+        .split(HttpServerPipeline.splitParserOutput)
         .headAndTail
-        .tee(errorResponseBypass)
-        .collect { case (x: RequestStart, entity) ⇒ constructRequest(x, entity) }
+        .tee(applicationBypass)
+        .collect { case (x: RequestStart, entityParts) ⇒ HttpServerPipeline.constructRequest(x, entityParts) }
         .toProducer
 
     val responseStream =
       Operation[HttpResponse]
-        .fanIn(errorResponseBypass, ErrorResponseBypassFanIn)
+        .fanIn(applicationBypass, ApplicationBypassFanIn)
         .mapConcat(responseRendererFactory.newRenderer)
         .produceTo(tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestStream, responseStream)
   }
-}
 
-/**
- * a specialized fan-in which implements the following logic:
- * - when a response comes in on the primary channel it is buffered until a `None` is received from the secondary
- *   input (the error bypass), only then it is dispatched to downstream
- * - when a `None` is received from the secondary input it clears the buffered (or next) primary response
- *   for dispatch to downstream
- * - when a `Some` is received from the secondary input it is immediately dispatched to downstream, a potentially
- *   buffered regular response from the primary input is left untouched
- */
-object ErrorResponseBypassFanIn extends FanIn.Provider[HttpResponse, Option[HttpResponse], HttpResponse] {
-  def apply(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream): ErrorResponseBypassFanIn =
-    new ErrorResponseBypassFanIn(primaryUpstream, secondaryUpstream, downstream)
-}
-
-class ErrorResponseBypassFanIn(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream)
-  extends FanIn[HttpResponse, Option[HttpResponse], HttpResponse] {
-  var requested = 0
-  var primaryResponse: HttpResponse = _
-  var primaryWriteThrough = false // if true the next primary element is to be directly dispatched to downstream
-  var completed = false
-
-  def requestMore(elements: Int): Unit =
-    if (!completed) {
-      requested += elements
-      if (requested == elements) requestNext()
-    }
-  def cancel(): Unit =
-    if (!completed) {
-      completed = true
-      primaryUpstream.cancel()
-      secondaryUpstream.cancel()
-    }
-  def primaryOnNext(element: HttpResponse): Unit =
-    if (!completed) {
-      if (primaryWriteThrough) {
-        primaryWriteThrough = false
-        dispatch(element)
-      } else primaryResponse = element
-    }
-  def primaryOnComplete(): Unit =
-    if (!completed) {
-      completed = true
-      downstream.onComplete()
-    }
-  def primaryOnError(cause: Throwable): Unit =
-    if (!completed) {
-      completed = true
-      downstream.onError(cause)
-    }
-
-  def secondaryOnNext(element: Option[HttpResponse]): Unit =
-    if (!completed)
-      element match {
-        case None =>
-          if (primaryResponse ne null) {
-            primaryResponse = null
-            dispatch(primaryResponse)
-          } else primaryWriteThrough = true
-        case Some(errorResponse) => downstream.onNext(errorResponse)
-      }
-  def secondaryOnComplete(): Unit =
-    if (!completed) {
-      completed = true
-      downstream.onComplete()
-    }
-  def secondaryOnError(cause: Throwable): Unit =
-    if (!completed) {
-      completed = true
-      downstream.onError(cause)
-    }
-  private def dispatch(response: HttpResponse): Unit = {
-    downstream.onNext(response)
-    requested -= 1
-    if (requested > 0) requestNext()
+  /**
+   * A FanIn which combines the HttpResponse coming in from the application with the ParserOutput.RequestStart
+   * produced by the request parser into a ResponseRenderingContext.
+   * If the parser produced a ParserOutput.ParseError the error response is immediately dispatched to downstream.
+   */
+  object ApplicationBypassFanIn extends FanIn.Provider[HttpResponse, MessageStart with RequestOutput, ResponseRenderingContext] {
+    def apply(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream): ApplicationBypassFanIn =
+      new ApplicationBypassFanIn(primaryUpstream, secondaryUpstream, downstream)
   }
-  private def requestNext(): Unit = {
-    primaryUpstream.requestMore(1)
-    secondaryUpstream.requestMore(1)
+
+  class ApplicationBypassFanIn(primaryUpstream: Upstream, secondaryUpstream: Upstream, downstream: Downstream)
+    extends FanIn[HttpResponse, MessageStart with RequestOutput, ResponseRenderingContext] {
+    var requested = 0
+    var applicationResponse: HttpResponse = _
+    var requestStart: RequestStart = _
+    var completed = false
+
+    def requestMore(elements: Int): Unit =
+      if (!completed) {
+        requested += elements
+        if (requested == elements) requestNext()
+      }
+
+    def cancel(): Unit =
+      if (!completed) {
+        completed = true
+        primaryUpstream.cancel()
+        secondaryUpstream.cancel()
+      }
+
+    def primaryOnNext(response: HttpResponse): Unit =
+      if (!completed) {
+        requestStart match {
+          case null ⇒ applicationResponse = response
+          case x: RequestStart ⇒
+            requestStart = null
+            dispatch(x, response)
+        }
+      }
+
+    def primaryOnComplete(): Unit =
+      if (!completed) {
+        completed = true
+        downstream.onComplete()
+      }
+
+    def primaryOnError(cause: Throwable): Unit =
+      if (!completed) {
+        completed = true
+        downstream.onError(cause)
+      }
+
+    def secondaryOnNext(element: MessageStart with RequestOutput): Unit =
+      if (!completed)
+        element match {
+          case x: RequestStart ⇒
+            if (applicationResponse ne null) {
+              applicationResponse = null
+              dispatch(x, applicationResponse)
+            } else requestStart = x
+          case ParseError(status, info) ⇒
+            downstream.onNext(errorResponse(status, info))
+            cancel()
+        }
+
+    def secondaryOnComplete(): Unit =
+      if (!completed) {
+        completed = true
+        downstream.onComplete()
+      }
+
+    def secondaryOnError(cause: Throwable): Unit =
+      if (!completed) {
+        completed = true
+        downstream.onError(cause)
+      }
+
+    private def dispatch(requestStart: RequestStart, response: HttpResponse): Unit = {
+      import requestStart._
+      downstream.onNext(ResponseRenderingContext(response, method, protocol, closeAfterResponseCompletion))
+      requested -= 1
+      if (requested > 0) requestNext()
+    }
+
+    private def requestNext(): Unit = {
+      primaryUpstream.requestMore(1)
+      secondaryUpstream.requestMore(1)
+    }
+
+    private def errorResponse(status: StatusCode, info: ErrorInfo): ResponseRenderingContext = {
+      log.warning("Illegal request, responding with status '{}': {}", status, info.formatPretty)
+      val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
+      ResponseRenderingContext(HttpResponse(status, msg), closeAfterResponseCompletion = true)
+    }
+  }
+}
+
+private[http] object HttpServerPipeline {
+  val splitParserOutput: RequestOutput ⇒ Split.Command = {
+    case _: MessageStart ⇒ Split.First
+    case _               ⇒ Split.Append
+  }
+
+  def constructRequest(requestStart: RequestStart, entityParts: Producer[RequestOutput]): HttpRequest = {
+    import requestStart._
+    HttpRequest(method, uri, headers, createEntity(entityParts), protocol)
   }
 }
