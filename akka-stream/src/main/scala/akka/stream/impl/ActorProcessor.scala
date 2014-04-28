@@ -15,8 +15,8 @@ import akka.event.LoggingReceive
 private[akka] object ActorProcessor {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props = op match {
-    case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t))
-    case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r))
+    case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
+    case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r.recoveryTransformer))
     case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
     case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
     case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
