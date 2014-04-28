@@ -52,7 +52,7 @@ trait ScriptedTest extends ShouldMatchers {
     def consumeOutput(out: Out): Script[In, Out] = {
       if (noOutsPending)
         throw new ScriptException(s"Tried to produce element ${out} but no elements should be produced right now.")
-      expectedOutputs(outputCursor) should be(out)
+      out should be(expectedOutputs(outputCursor))
       this.copy(outputCursor = outputCursor + 1)
     }
 

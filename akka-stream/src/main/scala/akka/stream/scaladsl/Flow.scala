@@ -135,40 +135,35 @@ trait Flow[+T] {
   def mapConcat[U](f: T ⇒ immutable.Seq[U]): Flow[U]
 
   /**
-   * Generic transformation of a stream: for each element the given function is
-   * invoked, passing also the current state (or the given “zero” in the beginning)
-   * and expecting a (possibly empty) sequence of output elements to be produced.
+   * Generic transformation of a stream: for each element the [[Transformer#onNext]]
+   * function is invoked, expecting a (possibly empty) sequence of output elements
+   * to be produced.
    * After handing off the elements produced from one input element to the downstream
-   * consumers, the <code>isComplete</code> predicate determines whether to end
+   * consumers, the [[Transformer#isComplete]] predicate determines whether to end
    * stream processing at this point; in that case the upstream subscription is
    * canceled. Before signaling normal completion to the downstream consumers,
-   * the <code>onComplete</code> function is invoked to produce a (possibly empty)
+   * the [[Transformer#onComplete]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
-   * After normal completion or error the cleanup function is called with
-   * the current state as parameter.
+   * After normal completion or error the [[Transformer#cleanup]] function is called.
+   *
+   * It is possible to keep state in the concrete [[Transformer]] instance with
+   * ordinary instance variables. The [[Transformer]] is executed by an actor and
+   * therefore you don not have to add any additional thread safety or memory
+   * visibility constructs to access the state from the callback methods.
    */
-  def transform[S, U](zero: S)(
-    f: (S, T) ⇒ (S, immutable.Seq[U]),
-    onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
-    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U]
+  def transform[U](transformer: Transformer[T, U]): Flow[U]
 
   /**
    * This transformation stage works exactly like [[#transform]] with the
-   * change that normal input elements are wrapped in [[scala.util.Success]]
-   * and failure signaled from upstream (i.e. <code>onError()</code> calls)
-   * is also handled as normal input element wrapped in [[scala.util.Failure]].
-   * In the latter case the stream ends after processing the failure.
+   * change that failure signaled from upstream will invoke
+   * [[RecoveryTransformer#onError]], which can emit an additional sequence of
+   * elements before the stream ends.
    *
-   * After normal completion or error the cleanup function is called with
-   * the current state as parameter.
+   * After normal completion or error the [[RecoveryTransformer#cleanup]] function
+   * is called.
    */
-  def transformRecover[S, U](zero: S)(
-    f: (S, Try[T]) ⇒ (S, immutable.Seq[U]),
-    onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
-    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U]
+  def transformRecover[U](recoveryTransformer: RecoveryTransformer[T, U]): Flow[U]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -189,7 +184,7 @@ trait Flow[+T] {
    * the current element if the given predicate returns true for it. This means
    * that for the following series of predicate values, three substreams will
    * be produced with lengths 1, 2, and 3:
-   * 
+   *
    * {{{
    * false,             // element goes into first substream
    * true, false,       // elements go into second substream
@@ -262,5 +257,55 @@ trait Flow[+T] {
    */
   def toProducer(materializer: FlowMaterializer): Producer[T @uncheckedVariance]
 
+}
+
+/**
+ * General interface for stream transformation.
+ *
+ * It is possible to keep state in the concrete [[Transformer]] instance with
+ * ordinary instance variables. The [[Transformer]] is executed by an actor and
+ * therefore you don not have to add any additional thread safety or memory
+ * visibility constructs to access the state from the callback methods.
+ *
+ * @see [[Flow#transform]]
+ */
+trait Transformer[-T, +U] {
+  /**
+   * Invoked for each element to produce a (possibly empty) sequence of
+   * output elements.
+   */
+  def onNext(element: T): immutable.Seq[U]
+
+  /**
+   * Invoked after handing off the elements produced from one input element to the
+   * downstream consumers to determine whether to end stream processing at this point;
+   * in that case the upstream subscription is canceled.
+   */
+  def isComplete: Boolean = false
+
+  /**
+   * Invoked before signaling normal completion to the downstream consumers
+   * to produce a (possibly empty) sequence of elements in response to the
+   * end-of-stream event.
+   */
+  def onComplete(): immutable.Seq[U] = Nil
+
+  /**
+   * Invoked after normal completion or error.
+   */
+  def cleanup(): Unit = ()
+}
+
+/**
+ * General interface for stream transformation.
+ * @see [[Flow#transformRecover]]
+ * @see [[Transformer]]
+ */
+trait RecoveryTransformer[-T, +U] extends Transformer[T, U] {
+  /**
+   * Invoked when failure is signaled from upstream to emit an additional
+   * sequence of elements before the stream ends.
+   */
+  def onError(cause: Throwable): immutable.Seq[U]
 }
 
