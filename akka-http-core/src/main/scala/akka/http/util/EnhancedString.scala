@@ -6,7 +6,7 @@ package akka.http.util
 
 import scala.annotation.tailrec
 
-class PimpedString(val underlying: String) extends AnyVal {
+class EnhancedString(val underlying: String) extends AnyVal {
 
   /**
    * Splits the underlying string into the segments that are delimited by the given character.

@@ -19,12 +19,6 @@ import akka.actor._
 
 object Http extends ExtensionKey[HttpExt] {
 
-  /////////////////////////////////////////////////////////////////
-  ///////////////////////// COMMANDS //////////////////////////////
-  /////////////////////////////////////////////////////////////////
-
-  //////////////////// client-side commands ///////////////////////
-
   /**
    * Command that can be sent to `IO(Http)` to trigger the setup of an HTTP client facility at
    * a certain API level (connection, host or request).
@@ -84,8 +78,6 @@ object Http extends ExtensionKey[HttpExt] {
     case class Proxied(proxyHost: String, proxyPort: Int) extends ClientConnectionType
   }
 
-  //////////////////// server-side commands ///////////////////////
-
   case class Bind(endpoint: InetSocketAddress,
                   backlog: Int,
                   options: immutable.Traversable[Inet.SocketOption],
@@ -102,18 +94,12 @@ object Http extends ExtensionKey[HttpExt] {
   case class Unbind(timeout: Duration)
   object Unbind extends Unbind(Duration.Zero)
 
-  /////////////////////////////////////////////////////////////////
-  /////////////////////////// EVENTS //////////////////////////////
-  /////////////////////////////////////////////////////////////////
-
   type ConnectionClosed = Tcp.ConnectionClosed
   val Closed = Tcp.Closed
   val Aborted = Tcp.Aborted
   val ConfirmedClosed = Tcp.ConfirmedClosed
   val PeerClosed = Tcp.PeerClosed
   type ErrorClosed = Tcp.ErrorClosed; val ErrorClosed = Tcp.ErrorClosed
-
-  //////////////////// client-side events ///////////////////////
 
   /**
    * Response to an `OutgoingHttpChannelSetup` command (in the success case).
@@ -145,10 +131,6 @@ object Http extends ExtensionKey[HttpExt] {
                                 responseStream: Consumer[HttpResponse])
 
   val Unbound = Tcp.Unbound
-
-  /////////////////////////////////////////////////////////////////
-  /////////////////////////// OTHER ///////////////////////////////
-  /////////////////////////////////////////////////////////////////
 
   class ConnectionException(message: String) extends RuntimeException(message)
 

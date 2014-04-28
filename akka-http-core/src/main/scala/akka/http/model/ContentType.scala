@@ -50,9 +50,6 @@ object ContentType {
 }
 
 object ContentTypes {
-  @deprecated("Use ContentTypeRange.`*` instead", "1.x-RC3")
-  val `*` = ContentTypeRange.`*`
-
   // RFC4627 defines JSON to always be UTF encoded, we always render JSON to UTF-8
   val `application/json` = ContentType(MediaTypes.`application/json`, HttpCharsets.`UTF-8`)
   val `text/plain` = ContentType(MediaTypes.`text/plain`)

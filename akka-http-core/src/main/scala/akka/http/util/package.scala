@@ -18,8 +18,8 @@ package object util {
     }
 
   // implicits
-  implicit def pimpByteArray(array: Array[Byte]): PimpedByteArray = new PimpedByteArray(array)
-  implicit def pimpConfig(config: Config): PimpedConfig = new PimpedConfig(config)
-  implicit def pimpString_(s: String): PimpedString = new PimpedString(s)
+  implicit def pimpByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)
+  implicit def pimpConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
+  implicit def pimpString_(s: String): EnhancedString = new EnhancedString(s)
 }
 

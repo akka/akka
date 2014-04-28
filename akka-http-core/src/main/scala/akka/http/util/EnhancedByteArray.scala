@@ -6,7 +6,7 @@ package akka.http.util
 
 import scala.annotation.tailrec
 
-class PimpedByteArray(val underlying: Array[Byte]) extends AnyVal {
+class EnhancedByteArray(val underlying: Array[Byte]) extends AnyVal {
 
   /**
    * Tests two byte arrays for value equality avoiding timing attacks.

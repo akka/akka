@@ -7,7 +7,7 @@ package akka.http.util
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 
-class PimpedConfig(val underlying: Config) extends AnyVal {
+class EnhancedConfig(val underlying: Config) extends AnyVal {
 
   def getDuration(path: String): Duration = underlying.getString(path) match {
     case "infinite" ⇒ Duration.Inf
