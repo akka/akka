@@ -6,6 +6,7 @@ import sbt.classpath.ClasspathUtilities
 import sbt.Project.Initialize
 import java.io.File
 import com.typesafe.sbt.site.SphinxSupport.{ generate, Sphinx }
+import sbtunidoc.Plugin._
 
 object Dist {
   case class DistSources(depJars: Seq[File], libJars: Seq[File], srcJars: Seq[File], docJars: Seq[File], api: File, docs: File)
@@ -29,7 +30,7 @@ object Dist {
     distLibJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageBin.task in Compile),
     distSrcJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageSrc.task in Compile),
     distDocJars <<= (thisProjectRef, buildStructure, distExclude) flatMap aggregated(packageDoc.task in Compile),
-    distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, Unidoc.sunidoc, generate in Sphinx in docsProject) map DistSources,
+    distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, doc in ScalaUnidoc, generate in Sphinx in docsProject) map DistSources,
     distDirectory <<= crossTarget / "dist",
     distUnzipped <<= distDirectory / "unzipped",
     distFile <<= (distDirectory, version) { (dir, v) => dir / ("akka-" + v + ".zip") },
