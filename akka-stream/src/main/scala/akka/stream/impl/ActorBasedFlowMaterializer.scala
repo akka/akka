@@ -5,12 +5,13 @@ package akka.stream.impl
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import org.reactivestreams.api.{ Consumer, Processor, Producer }
 import org.reactivestreams.spi.Subscriber
-
 import akka.actor.ActorRefFactory
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.scaladsl.Transformer
+import akka.stream.scaladsl.RecoveryTransformer
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -18,14 +19,8 @@ import akka.stream.{ MaterializerSettings, FlowMaterializer }
 private[akka] object Ast {
   trait AstNode
 
-  case class Transform(
-    zero: Any,
-    f: (Any, Any) ⇒ (Any, immutable.Seq[Any]),
-    onComplete: Any ⇒ immutable.Seq[Any],
-    isComplete: Any ⇒ Boolean,
-    cleanup: Any ⇒ Unit) extends AstNode
-
-  case class Recover(t: Transform) extends AstNode
+  case class Transform(transformer: Transformer[Any, Any]) extends AstNode
+  case class Recover(recoveryTransformer: RecoveryTransformer[Any, Any]) extends AstNode
   case class GroupBy(f: Any ⇒ Any) extends AstNode
   case class SplitWhen(p: Any ⇒ Boolean) extends AstNode
   case class Merge(other: Producer[Any]) extends AstNode
@@ -105,7 +100,10 @@ private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _
     }
   }
 
-  private val identityConsumer = Transform((), (_, _) ⇒ () -> Nil, _ ⇒ Nil, _ ⇒ false, _ ⇒ ())
+  private val identityConsumer = Transform(
+    new Transformer[Any, Any] {
+      override def onNext(element: Any) = Nil
+    })
 
   override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
     val consumer = ops match {

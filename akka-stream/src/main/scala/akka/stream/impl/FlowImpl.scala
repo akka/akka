@@ -12,14 +12,24 @@ import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 import scala.util.Success
 import scala.util.Failure
+import akka.stream.scaladsl.Transformer
+import akka.stream.scaladsl.RecoveryTransformer
 
 /**
  * INTERNAL API
  */
 private[akka] object FlowImpl {
   private val SuccessUnit = Success[Unit](())
-  private val OnCompleteSuccessToken = (true, Nil)
-  private val OnCompleteFailureToken = (false, Nil)
+  private val ListOfUnit = List(())
+
+  val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = Nil
+    override def isComplete = true
+  }
+
+  val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = List(elem)
+  }
 }
 
 /**
@@ -31,50 +41,94 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
   // Storing ops in reverse order
   private def andThen[U](op: AstNode): Flow[U] = this.copy(ops = op :: ops)
 
-  override def map[U](f: O ⇒ U): Flow[U] = transform(())((_, in) ⇒ ((), List(f(in))))
+  override def map[U](f: O ⇒ U): Flow[U] =
+    transform(new Transformer[O, U] {
+      override def onNext(in: O) = List(f(in))
+    })
 
-  override def filter(p: O ⇒ Boolean): Flow[O] = transform(())((_, in) ⇒ if (p(in)) ((), List(in)) else ((), Nil))
+  override def filter(p: O ⇒ Boolean): Flow[O] =
+    transform(new Transformer[O, O] {
+      override def onNext(in: O) = if (p(in)) List(in) else Nil
+    })
 
-  override def foreach(c: O ⇒ Unit): Flow[Unit] = transform(())((_, in) ⇒ c(in) -> Nil, _ ⇒ List(()))
+  override def foreach(c: O ⇒ Unit): Flow[Unit] =
+    transform(new Transformer[O, Unit] {
+      override def onNext(in: O) = { c(in); Nil }
+      override def onComplete() = ListOfUnit
+    })
 
-  override def fold[U](zero: U)(f: (U, O) ⇒ U): Flow[U] = transform(zero)((z, in) ⇒ f(z, in) -> Nil, z ⇒ List(z))
+  override def fold[U](zero: U)(f: (U, O) ⇒ U): Flow[U] =
+    transform(new FoldTransformer[U](zero, f))
 
-  override def drop(n: Int): Flow[O] = transform(n)((x, in) ⇒ if (x == 0) 0 -> List(in) else (x - 1) -> Nil)
+  // Without this class compiler complains about 
+  // "Parameter type in structural refinement may not refer to an abstract type defined outside that refinement"
+  class FoldTransformer[S](var state: S, f: (S, O) ⇒ S) extends Transformer[O, S] {
+    override def onNext(in: O): immutable.Seq[S] = { state = f(state, in); Nil }
+    override def onComplete(): immutable.Seq[S] = List(state)
+  }
 
-  override def take(n: Int): Flow[O] = transform(n)((x, in) ⇒ if (x == 0) 0 -> Nil else (x - 1) -> List(in), isComplete = _ == 0)
+  override def drop(n: Int): Flow[O] =
+    transform(new Transformer[O, O] {
+      var delegate: Transformer[O, O] =
+        if (n == 0) identityTransformer.asInstanceOf[Transformer[O, O]]
+        else new Transformer[O, O] {
+          var c = n
+          override def onNext(in: O) = {
+            c -= 1
+            if (c == 0)
+              delegate = identityTransformer.asInstanceOf[Transformer[O, O]]
+            Nil
+          }
+        }
+
+      override def onNext(in: O) = delegate.onNext(in)
+    })
+
+  override def take(n: Int): Flow[O] =
+    transform(new Transformer[O, O] {
+      var delegate: Transformer[O, O] =
+        if (n == 0) takeCompletedTransformer.asInstanceOf[Transformer[O, O]]
+        else new Transformer[O, O] {
+          var c = n
+          override def onNext(in: O) = {
+            c -= 1
+            if (c == 0)
+              delegate = takeCompletedTransformer.asInstanceOf[Transformer[O, O]]
+            List(in)
+          }
+
+          override def isComplete = c == 0
+        }
+
+      override def onNext(in: O) = delegate.onNext(in)
+      override def isComplete = delegate.isComplete
+    })
 
   override def grouped(n: Int): Flow[immutable.Seq[O]] =
-    transform(immutable.Seq.empty[O])((buf, in) ⇒ {
-      val group = buf :+ in
-      if (group.size == n) (Nil, List(group))
-      else (group, Nil)
-    }, x ⇒ if (x.isEmpty) Nil else List(x))
+    transform(new Transformer[O, immutable.Seq[O]] {
+      var buf: Vector[O] = Vector.empty
+      override def onNext(in: O) = {
+        buf :+= in
+        if (buf.size == n) {
+          val group = buf
+          buf = Vector.empty
+          List(group)
+        } else
+          Nil
+      }
+      override def onComplete() = if (buf.isEmpty) Nil else List(buf)
+    })
 
-  override def mapConcat[U](f: O ⇒ immutable.Seq[U]): Flow[U] = transform(())((_, in) ⇒ ((), f(in)))
+  override def mapConcat[U](f: O ⇒ immutable.Seq[U]): Flow[U] =
+    transform(new Transformer[O, U] {
+      override def onNext(in: O) = f(in)
+    })
 
-  override def transform[S, U](zero: S)(
-    f: (S, O) ⇒ (S, immutable.Seq[U]),
-    onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
-    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U] =
-    andThen(Transform(
-      zero,
-      f.asInstanceOf[(Any, Any) ⇒ (Any, immutable.Seq[Any])],
-      onComplete.asInstanceOf[Any ⇒ immutable.Seq[Any]],
-      isComplete.asInstanceOf[Any ⇒ Boolean],
-      cleanup.asInstanceOf[Any ⇒ Unit]))
+  override def transform[U](transformer: Transformer[O, U]): Flow[U] =
+    andThen(Transform(transformer.asInstanceOf[Transformer[Any, Any]]))
 
-  override def transformRecover[S, U](zero: S)(
-    f: (S, Try[O]) ⇒ (S, immutable.Seq[U]),
-    onComplete: S ⇒ immutable.Seq[U] = (_: S) ⇒ Nil,
-    isComplete: S ⇒ Boolean = (_: S) ⇒ false,
-    cleanup: S ⇒ Unit = (_: S) ⇒ ()): Flow[U] =
-    andThen(Recover(Transform(
-      zero,
-      f.asInstanceOf[(Any, Any) ⇒ (Any, immutable.Seq[Any])],
-      onComplete.asInstanceOf[Any ⇒ immutable.Seq[Any]],
-      isComplete.asInstanceOf[Any ⇒ Boolean],
-      cleanup.asInstanceOf[Any ⇒ Unit])))
+  override def transformRecover[U](recoveryTransformer: RecoveryTransformer[O, U]): Flow[U] =
+    andThen(Recover(recoveryTransformer.asInstanceOf[RecoveryTransformer[Any, Any]]))
 
   override def zip[O2](other: Producer[O2]): Flow[(O, O2)] = andThen(Zip(other.asInstanceOf[Producer[Any]]))
 
@@ -88,23 +142,29 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   override def toFuture(materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
-    transformRecover(0)((x, in) ⇒ { p complete in; 1 -> Nil },
-      onComplete = _ ⇒ { p.tryFailure(new NoSuchElementException("empty stream")); Nil },
-      isComplete = _ == 1).consume(materializer)
+    transformRecover(new RecoveryTransformer[O, Unit] {
+      var done = false
+      override def onNext(in: O) = { p success in; done = true; Nil }
+      override def onError(e: Throwable) = { p failure e; Nil }
+      override def isComplete = done
+      override def onComplete() = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
+    }).consume(materializer)
     p.future
   }
 
   override def consume(materializer: FlowMaterializer): Unit = materializer.consume(producerNode, ops)
 
   def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit =
-    transformRecover(true)(
-      f = {
-        case (_, fail @ Failure(ex)) ⇒
-          callback(fail.asInstanceOf[Try[Unit]])
-          OnCompleteFailureToken
-        case _ ⇒ OnCompleteSuccessToken
-      },
-      onComplete = ok ⇒ { if (ok) callback(SuccessUnit); Nil }).consume(materializer)
+    transformRecover(new RecoveryTransformer[O, Unit] {
+      var ok = true
+      override def onNext(in: O) = Nil
+      override def onError(e: Throwable) = {
+        callback(Failure(e))
+        ok = false
+        Nil
+      }
+      override def onComplete() = { if (ok) callback(SuccessUnit); Nil }
+    }).consume(materializer)
 
   override def toProducer(materializer: FlowMaterializer): Producer[O] = materializer.toProducer(producerNode, ops)
 }

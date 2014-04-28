@@ -14,6 +14,7 @@ import akka.stream.impl.Ast
 import akka.testkit.{ TestEvent, EventFilter }
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Transformer
 import akka.stream.testkit.AkkaSpec
 
 class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
@@ -45,7 +46,10 @@ class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publishe
         maxFanOutBufferSize = fanoutSize),
       system)
 
-    val processor = materializer.processorForNode(Ast.Transform(Unit, (_, in: Any) ⇒ (Unit, List(in)), _ ⇒ Nil, _ ⇒ false, _ ⇒ ()))
+    val processor = materializer.processorForNode(Ast.Transform(
+      new Transformer[Any, Any] {
+        override def onNext(in: Any) = List(in)
+      }))
 
     processor.asInstanceOf[Processor[Int, Int]]
   }
