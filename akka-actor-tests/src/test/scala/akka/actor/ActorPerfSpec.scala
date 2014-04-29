@@ -6,10 +6,10 @@ package akka.actor
 import scala.language.postfixOps
 
 import akka.testkit.{ PerformanceTest, ImplicitSender, AkkaSpec }
-import java.lang.management.ManagementFactory
 import scala.concurrent.duration._
 import akka.TestUtils
-import scala.util.Try
+import akka.testkit.metrics.MetricsKit
+import org.scalatest.BeforeAndAfterAll
 
 object ActorPerfSpec {
 
@@ -32,14 +32,18 @@ object ActorPerfSpec {
     }
   }
 
-  class Driver extends Actor {
+  class Driver(metrics: MetricsKit, scenarioName: String) extends Actor {
+
+    val timer = metrics.timer("actor-creation." + scenarioName)
 
     def receive = {
       case IsAlive ⇒
         sender() ! Alive
       case Create(number, propsCreator) ⇒
         for (i ← 1 to number) {
+          val t = timer.time()
           context.actorOf(propsCreator.apply())
+          t.stop()
         }
         sender() ! Created
       case WaitForChildren(number) ⇒
@@ -62,50 +66,48 @@ object ActorPerfSpec {
   }
 }
 
+// todo replace with repeated runner
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender {
+class ActorPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender
+  with MetricsKit with BeforeAndAfterAll {
 
   import ActorPerfSpec._
+
+  def metricsConfig = system.settings.config
 
   val warmUp: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.warmUp", 50000)
   val numberOfActors: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.numberOfActors", 100000)
   val numberOfRepeats: Int = Integer.getInteger("akka.test.actor.ActorPerfSpec.numberOfRepeats", 2)
 
   def testActorCreation(name: String, propsCreator: () ⇒ Props): Unit = {
-    val actorName = name.replaceAll("[ #\\?/!\\*%\\(\\)\\[\\]]", "_")
+    val scenarioName = name.replaceAll("""[^\w]""", "")
     if (warmUp > 0)
-      measure(s"${actorName}_warmup", warmUp, propsCreator)
-    val results = for (i ← 1 to numberOfRepeats) yield measure(s"${actorName}_driver_$i", numberOfActors, propsCreator)
-    results.foreach {
-      case (duration, memory) ⇒
-        val micros = duration.toMicros
-        val avgMicros = micros.toDouble / numberOfActors
-        val avgMemory = memory.toDouble / numberOfActors
-        println(s"$name Created $numberOfActors");
-        println(s"In $micros us, avg: ${avgMicros}")
-        println(s"Footprint ${memory / 1024} KB, avg: ${avgMemory} B")
-    }
+      measure(s"${scenarioName}_warmup", warmUp, propsCreator)
+
+    measureMemoryUse(s"actor-creation.$scenarioName.mem")
+    for (i ← 1 to numberOfRepeats)
+      measure(s"${scenarioName}_driver_$i", numberOfActors, propsCreator)
+
+    reportAllMetrics()
+    removeMetrics()
   }
 
-  def measure(name: String, number: Int, propsCreator: () ⇒ Props): (Duration, Long) = {
-    val memMx = ManagementFactory.getMemoryMXBean()
-    val driver = system.actorOf(Props[Driver], name)
+  def measure(scenarioName: String, number: Int, propsCreator: () ⇒ Props): (Duration, Long) = {
+    val driver = system.actorOf(Props(classOf[Driver], this, scenarioName), scenarioName)
     driver ! IsAlive
     expectMsg(Alive)
-    System.gc()
-    val memBefore = memMx.getHeapMemoryUsage
-    val start = System.nanoTime()
+    gc()
+
     driver ! Create(number, propsCreator)
-    expectMsgPF(15 seconds, s"$name waiting for Created") { case Created ⇒ }
-    val stop = System.nanoTime()
-    val duration = Duration.fromNanos(stop - start)
+    expectMsgPF(15 seconds, s"$scenarioName waiting for Created") { case Created ⇒ }
+
     driver ! WaitForChildren(number)
-    expectMsgPF(15 seconds, s"$name waiting for Waited") { case Waited ⇒ }
-    System.gc()
-    val memAfter = memMx.getHeapMemoryUsage
+    expectMsgPF(15 seconds, s"$scenarioName waiting for Waited") { case Waited ⇒ }
+    gc()
     driver ! PoisonPill
     TestUtils.verifyActorTermination(driver, 15 seconds)
-    (duration, memAfter.getUsed - memBefore.getUsed)
+
+    (0.seconds, 0)
   }
 
   "Actor creation with actorFor" must {
@@ -146,5 +148,8 @@ class ActorPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with
       testActorCreation("Props(new EmptyArgsActor(...)) same", () ⇒ { props })
     }
   }
+
+  override def afterTermination() = shutdownMetrics()
+
   override def expectedTestDuration = 2 minutes
 }
