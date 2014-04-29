@@ -28,13 +28,14 @@ sealed trait HttpEntity {
 
 object HttpEntity {
   implicit def apply(string: String): Regular = apply(ContentTypes.`text/plain(UTF-8)`, string)
-  implicit def apply(bytes: Array[Byte]): Regular = apply(ByteString(bytes))
+  implicit def apply(bytes: Array[Byte]): Regular = apply(ContentTypes.`application/octet-stream`, bytes)
   implicit def apply(data: ByteString): Regular = apply(ContentTypes.`application/octet-stream`, data)
   def apply(contentType: ContentType, string: String): Regular =
-    if (string.isEmpty) Empty else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
-  def apply(contentType: ContentType, bytes: Array[Byte]): Regular = apply(contentType, ByteString(bytes))
+    if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
+  def apply(contentType: ContentType, bytes: Array[Byte]): Regular =
+    if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): Regular =
-    Default(contentType, data.length, StreamProducer.of(data))
+    if (data.isEmpty) empty(contentType) else Default(contentType, data.length, StreamProducer.of(data))
 
   def apply(contentType: ContentType, file: File): Regular = {
     val fileLength = file.length
@@ -42,10 +43,11 @@ object HttpEntity {
     else empty(contentType)
   }
 
-  val Empty = empty(ContentTypes.`application/octet-stream`)
+  val Empty = Default(ContentTypes.`application/octet-stream`, contentLength = 0, data = StreamProducer.empty)
 
   def empty(contentType: ContentType): Default =
-    Default(contentType = contentType, contentLength = 0, data = StreamProducer.empty)
+    if (contentType == Empty.contentType) Empty
+    else Default(contentType, contentLength = 0, data = StreamProducer.empty)
 
   /**
    * An HttpEntity that is "well-behaved" according to the HTTP/1.1 spec as that

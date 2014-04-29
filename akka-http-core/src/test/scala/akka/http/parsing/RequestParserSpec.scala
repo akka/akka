@@ -111,52 +111,40 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
-      //      "byte-by-byte" in new Test {
-      //        """PUT /resource/yes HTTP/1.1
-      //          |Content-length:    4
-      //          |Host: x
-      //          |
-      //          |ABCDPATCH""".toCharArray.map(_.toString).toSeq should multiParseTo(
-      //          HttpRequest(PUT, "/resource/yes", List(Host("x"), `Content-Length`(4)),
-      //            HttpEntity(ContentTypes.`application/octet-stream`, "ABCD")))
-      //        closeAfterResponseCompletion shouldEqual Seq(true)
-      //      }
+      "byte-by-byte" in new Test {
+        prep {
+          """PUT /resource/yes HTTP/1.1
+            |Content-length:    4
+            |Host: x
+            |
+            |ABCDPATCH"""
+        }.toCharArray.map(_.toString).toSeq should rawMultiParseTo(
+          HttpRequest(PUT, "/resource/yes", List(Host("x"), `Content-Length`(4)),
+            HttpEntity(ContentTypes.`application/octet-stream`, "ABCD")))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
 
-      //      "with a custom HTTP method" in {
-      //        parse {
-      //          """BOLT / HTTP/1.0
-      //            |
-      //            |"""
-      //        } === Seq(BOLT, Uri("/"), `HTTP/1.0`, Nil, "", 'close)
-      //      }
-      //
-      //      "with Content-Length > Int.MaxSize if autochunking is enabled" in {
-      //        parse {
-      //          """PUT /resource/yes HTTP/1.1
-      //            |Content-length:    2147483649
-      //            |Host: x
-      //            |
-      //            |"""
-      //        } === Seq(PUT, Uri("/resource/yes"), `HTTP/1.1`, List(Host("x"), `Content-Length`(2147483649L)), 'dontClose)
-      //      }
-      //      "with several identical `Content-Type` headers" in {
-      //        parse {
-      //          """GET /data HTTP/1.1
-      //            |Host: x
-      //            |Content-Type: application/pdf
-      //            |Content-Type: application/pdf
-      //            |Content-Length: 0
-      //            |
-      //            |"""
-      //        } === Seq(
-      //          GET,
-      //          Uri("/data"),
-      //          `HTTP/1.1`,
-      //          List(`Content-Length`(0), `Content-Type`(`application/pdf`), Host("x")),
-      //          "", 'dontClose)
-      //      }
-      //    }
-      //
+      "with a custom HTTP method" in new Test {
+        """BOLT / HTTP/1.0
+          |
+          |""" should parseTo(HttpRequest(BOLT, "/", protocol = `HTTP/1.0`))
+        closeAfterResponseCompletion shouldEqual Seq(true)
+      }
+
+      "with several identical `Content-Type` headers" in new Test {
+        """GET /data HTTP/1.1
+          |Host: x
+          |Content-Type: application/pdf
+          |Content-Type: application/pdf
+          |Content-Length: 0
+          |
+          |""" should parseTo {
+          HttpRequest(GET, "/data", List(`Content-Length`(0), `Content-Type`(`application/pdf`), Host("x")),
+            HttpEntity(`application/pdf`, ""))
+        }
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       //    "properly parse a chunked request" in {
       //      val start =
       //        """PATCH /data HTTP/1.1
@@ -396,7 +384,10 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParseTo(parser: HttpRequestParser, expected: HttpRequest*): Matcher[Seq[String]] =
       rawMultiParseTo(parser, expected: _*).compose((_: Seq[String]) map prep)
 
-    def rawMultiParseTo(parser: HttpRequestParser, expected: HttpRequest*) =
+    def rawMultiParseTo(expected: HttpRequest*): Matcher[Seq[String]] =
+      rawMultiParseTo(newParser, expected: _*)
+
+    def rawMultiParseTo(parser: HttpRequestParser, expected: HttpRequest*): Matcher[Seq[String]] =
       equal(expected).matcher[Seq[HttpRequest]] compose { input: Seq[String] ⇒
         val future =
           Flow(input)
@@ -435,6 +426,6 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     private def compactEntityChunks(data: Producer[ChunkStreamPart]): Future[Producer[ChunkStreamPart]] =
       Flow(data).drainToSeq.map(StreamProducer.apply(_))
 
-    private def prep(response: String) = response.stripMarginWithNewline("\r\n")
+    def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }
 }

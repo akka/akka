@@ -27,6 +27,8 @@ case class HttpMethod private[http] (override val value: String,
       case m: HttpMethod ⇒ fingerprint == m.fingerprint
       case _             ⇒ false
     }
+
+  override def toString: String = s"HttpMethod($value)"
 }
 
 object HttpMethod {

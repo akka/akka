@@ -32,7 +32,10 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
     cursor = parseProtocol(input, cursor)
     if (byteChar(input, cursor) == '\r' && byteChar(input, cursor + 1) == '\n')
       parseHeaderLines(input, cursor + 2)
-    else badProtocol
+    else {
+      println("MARK: " + input.utf8String.flatMap(escape))
+      badProtocol
+    }
   }
 
   def parseMethod(input: ByteString, cursor: Int): Int = {
