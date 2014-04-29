@@ -18,4 +18,5 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-s3" % "0.5")
 
+// stats reporting
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"

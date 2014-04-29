@@ -73,7 +73,7 @@ abstract class ProcessorChannelSpec(config: Config) extends AkkaSpec(config) wit
 
   private var processor: ActorRef = _
 
-  override protected def beforeEach: Unit = {
+  override protected def beforeEach(): Unit = {
     super.beforeEach()
     setupTestProcessorData()
     processor = createTestProcessor()
