@@ -8,9 +8,8 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NoStackTrace
-
+import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
-
 import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.FlowImpl
@@ -189,7 +188,7 @@ trait Flow[+T] {
    * the current element if the given predicate returns true for it. This means
    * that for the following series of predicate values, three substreams will
    * be produced with lengths 1, 2, and 3:
-   * 
+   *
    * {{{
    * false,             // element goes into first substream
    * true, false,       // elements go into second substream
@@ -261,6 +260,16 @@ trait Flow[+T] {
    * broken down into individual processing steps.
    */
   def toProducer(materializer: FlowMaterializer): Producer[T @uncheckedVariance]
+
+  /**
+   * Attaches a consumer to this stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def produceTo(materializer: FlowMaterializer, consumer: Consumer[T @uncheckedVariance]): Unit
 
 }
 
