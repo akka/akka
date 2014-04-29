@@ -13,6 +13,7 @@ import org.reactivestreams.api.Producer
 import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.FlowImpl
+import akka.stream.impl.Ast.FutureProducerNode
 
 object Flow {
   /**
@@ -47,6 +48,14 @@ object Flow {
    * when any other exception is thrown.
    */
   def apply[T](f: () ⇒ T): Flow[T] = FlowImpl(ThunkProducerNode(f), Nil)
+
+  /**
+   * Start a new flow from the given `Future`. The stream will consist of
+   * one element when the `Future` is completed with a successful value, which
+   * may happen before or after materializing the `Flow`.
+   * The stream terminates with an error if the `Future` is completed with a failure.
+   */
+  def apply[T](future: Future[T]): Flow[T] = FlowImpl(FutureProducerNode(future), Nil)
 
 }
 
