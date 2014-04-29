@@ -15,7 +15,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   import CharacterClasses._
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-25#section-1.2 referencing
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-1.2 referencing
   // http://tools.ietf.org/html/rfc5234#appendix-B.1
   // ******************************************************************************************
   def CRLF = rule { CR ~ LF }
@@ -23,7 +23,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def OCTET = rule { ANY }
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-25#section-3.2.3
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-3.2.3
   // ******************************************************************************************
 
   def OWS = rule { zeroOrMore(optional(CRLF) ~ oneOrMore(WSP)) } // extended with `obs-fold`
@@ -31,7 +31,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def RWS = rule { oneOrMore(optional(CRLF) ~ oneOrMore(WSP)) } // extended with `obs-fold`
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-25#section-3.2.6
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-3.2.6
   // ******************************************************************************************
   def word = rule { token | `quoted-string` }
 
@@ -62,7 +62,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def `quoted-cpair` = `quoted-pair`
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-25#section-7.1.1.1
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#section-7.1.1.1
   // but more lenient where we have already seen differing implementations in the field
   // ******************************************************************************************
 
@@ -111,7 +111,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def date3 = rule { month ~ ' ' ~ (digit2 | ' ' ~ digit) }
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-25#section-5.3.1
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#section-5.3.1
   // ******************************************************************************************
 
   def weight = rule { ws(';') ~ ws('q') ~ ws('=') ~ qvalue } // a bit more lenient than the spec
@@ -123,7 +123,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   // ******************************************************************************************
-  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-25#section-3.1.1.1
+  // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#section-3.1.1.1
   // ******************************************************************************************
 
   def `media-type`: RuleN[String :: String :: Seq[(String, String)] :: HNil] = rule {

@@ -21,55 +21,50 @@ import akka.http.model.parser.CharacterClasses._
  * model instances.
  * For the life-time of one HTTP connection an instance of this class is owned by the connection, i.e. not shared
  * with other connections. After the connection is closed it may be used by subsequent connections.
+ *
+ * The core of this parser/cache is a mutable space-efficient ternary trie (prefix tree) structure, whose data are
+ * split across three arrays. The tree supports node addition and update, but no deletion (i.e. we never remove
+ * entries).
+ *
+ * The `nodes` array keeps the main data of the trie nodes. One node is formed of a char (2 bytes) of which the
+ * LSB (least significant byte) is an ASCII octet and the MSB either 0 or an index into the `branchData` array.
+ * There are three types of nodes:
+ *
+ * 1. Simple nodes: non-branching, non-leaf nodes (the most frequent kind of node) have an MSB of zero and exactly
+ *    one logical sub-node which is the next node in the `nodes` array (i.e. the one at index n + 1).
+ * 2. Branching nodes: have 2 or three children and a non-zero MSB. (MSB value - 1)*3 is the row index into the
+ *    `branchData` array, which contains the branching data.
+ * 3. Leaf nodes: have no sub-nodes and no character value. They merely "stop" the node chain and point to a value.
+ *    The LSB of leaf nodes is zero and the (MSB value - 1) is an index into the values array.
+ *
+ * This design has the following consequences:
+ * - Since only leaf nodes can have values the trie cannot store keys that are prefixes of other stored keys.
+ * - If the trie stores n values it has less than n branching nodes (adding the first value does not create a
+ *   branching node, the addition of every subsequent value creates at most one additional branching node).
+ * - If the trie has n branching nodes it stores at least n * 2 and at most n * 3 values.
+ *
+ * The `branchData` array keeps the branching data for branching nodes in the trie.
+ * It's a flattened two-dimensional array with a row consisting of the following 3 signed 16-bit integers:
+ * row-index + 0: if non-zero: index into the `nodes` array for the "lesser" child of the node
+ * row-index + 1: if non-zero: index into the `nodes` array for the "equal" child of the node
+ * row-index + 2: if non-zero: index into the `nodes` array for the "greater" child of the node
+ * The array has a fixed size of 254 rows (since we can address at most 256 - 1 values with the node MSB and
+ * we always have fewer branching nodes than values).
+ *
+ * The `values` array contains the payload data addressed by trie leaf nodes.
+ * Since we address them via the nodes MSB and zero is reserved the trie
+ * cannot hold more then 255 items, so this array has a fixed size of 255.
  */
-private[parsing] final class HttpHeaderParser private (val settings: ParserSettings,
-                                                       warnOnIllegalHeader: ErrorInfo ⇒ Unit,
-    // format: OFF
-
-    // The core of this parser/cache is a mutable space-efficient ternary trie (prefix tree) structure, whose data are
-    // split across three arrays. The tree supports node addition and update, but no deletion (i.e. we never remove
-    // entries).
-
-    // This structure keeps the main data of the trie nodes. One node is formed of a char (2 bytes) of which the
-    // LSB (least significant byte) is an ASCII octet and the MSB either 0 or an index into the `nodeData` array.
-    // There are three types of nodes:
-    //
-    // 1. Simple nodes: non-branching, non-leaf nodes (the most frequent kind of node) have an MSB of zero and exactly
-    //    one logical sub-node which is the next node in the `nodes` array (i.e. the one at index n + 1).
-    // 2. Branching nodes: have 2 or three children and a non-zero MSB. (MSB value - 1)*3 is the row index into the
-    //    nodeData` array, which contains the branching data.
-    // 3. Leaf nodes: have no sub-nodes and no character value. They merely "stop" the node chain and point to a value.
-    //    The LSB of leaf nodes is zero and the (MSB value - 1) is an index into the values array.
-    //
-    // This design has the following consequences:
-    // - Since only leaf nodes can have values the trie cannot store keys that are prefixes of other stored keys.
-    // - If the trie stores n values it has less than n branching nodes (adding the first value does not create a
-    //   branching node, the addition of every subsequent value creates at most one additional branching node).
-    // - If the trie has n branching nodes it stores at least n * 2 and at most n * 3 values.
-    //
-    // The nodes array has an initial size of 512 but can grow as needed.
-    private[this] var nodes: Array[Char] = new Array(512),
-    private[this] var nodeCount: Int = 0,
-
-    // This structure keeps the branching data for branching nodes in the trie.
-    // It's a flattened two-dimensional array with a row consisting of the following 3 signed 16-bit integers:
-    // row-index + 0: if non-zero: index into the `nodes` array for the "lesser" child of the node
-    // row-index + 1: if non-zero: index into the `nodes` array for the "equal" child of the node
-    // row-index + 2: if non-zero: index into the `nodes` array for the "greater" child of the node
-    // The array has a fixed size of 254 rows (since we can address at most 256 - 1 values with the node MSB and
-    // we always have fewer branching nodes than values).
-    private[this] var branchData: Array[Short] = new Array(254 * 3),
-    private[this] var branchDataCount: Int = 0,
-
-    // The values addressed by trie leaf nodes. Since we address them via the nodes MSB and zero is reserved the trie
-    // cannot hold more then 255 items, so this array has a fixed size of 255.
-    private[this] var values: Array[AnyRef] = new Array(255),
-    private[this] var valueCount: Int = 0,
-
-    // signals whether we can mutate the trie data without having to copy them first
-    private[this] var trieIsPrivate: Boolean = false) {
-
-  // format: ON
+private[parsing] final class HttpHeaderParser private (
+  val settings: ParserSettings,
+  warnOnIllegalHeader: ErrorInfo ⇒ Unit,
+  private[this] var nodes: Array[Char] = new Array(512), // initial size, can grow as needed
+  private[this] var nodeCount: Int = 0,
+  private[this] var branchData: Array[Short] = new Array(254 * 3),
+  private[this] var branchDataCount: Int = 0,
+  private[this] var values: Array[AnyRef] = new Array(255), // fixed size of 255
+  private[this] var valueCount: Int = 0,
+  private[this] var trieIsPrivate: Boolean = false) { // signals the trie data can be mutated w/o having to copy first
 
   import HttpHeaderParser._
   import settings._
@@ -96,7 +91,8 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
    * line ending from a line fold.
    * If the header is invalid a respective `ParsingException` is thrown.
    */
-  @tailrec def parseHeaderLine(input: ByteString, lineStart: Int = 0)(cursor: Int = lineStart, nodeIx: Int = 0): Int = {
+  @tailrec
+  def parseHeaderLine(input: ByteString, lineStart: Int = 0)(cursor: Int = lineStart, nodeIx: Int = 0): Int = {
     def startValueBranch(rootValueIx: Int, valueParser: HeaderValueParser) = {
       val (header, endIx) = valueParser(input, cursor, warnOnIllegalHeader)
       if (valueParser.maxValueCount > 0)
@@ -152,7 +148,8 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
     }
   }
 
-  @tailrec private def parseHeaderValue(input: ByteString, valueStart: Int, branch: ValueBranch)(cursor: Int = valueStart, nodeIx: Int = branch.branchRootNodeIx): Int = {
+  @tailrec
+  private def parseHeaderValue(input: ByteString, valueStart: Int, branch: ValueBranch)(cursor: Int = valueStart, nodeIx: Int = branch.branchRootNodeIx): Int = {
     def parseAndInsertHeader() = {
       val (header, endIx) = branch.parser(input, valueStart, warnOnIllegalHeader)
       if (branch.spaceLeft)
@@ -191,7 +188,8 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
    * - the input does not contain illegal characters
    * - the input is not a prefix of an already stored value, i.e. the input must be properly terminated (CRLF or colon)
    */
-  @tailrec def insert(input: ByteString, value: AnyRef)(cursor: Int = 0, endIx: Int = input.length, nodeIx: Int = 0, colonIx: Int = 0): Unit = {
+  @tailrec
+  private def insert(input: ByteString, value: AnyRef)(cursor: Int = 0, endIx: Int = input.length, nodeIx: Int = 0, colonIx: Int = 0): Unit = {
     val char =
       if (cursor < colonIx) CharUtils.toLowerCase(input(cursor).toChar)
       else if (cursor < endIx) input(cursor).toChar
@@ -234,7 +232,8 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
    * Inserts a value into the cache trie as new nodes.
    * CAUTION: this method must only be called if the trie data have already been "unshared"!
    */
-  @tailrec def insertRemainingCharsAsNewNodes(input: ByteString, value: AnyRef)(cursor: Int = 0, endIx: Int = input.length, valueIx: Int = newValueIndex, colonIx: Int = 0): Unit = {
+  @tailrec
+  private def insertRemainingCharsAsNewNodes(input: ByteString, value: AnyRef)(cursor: Int = 0, endIx: Int = input.length, valueIx: Int = newValueIndex, colonIx: Int = 0): Unit = {
     val newNodeIx = newNodeIndex
     if (cursor < endIx) {
       val c = input(cursor).toChar
@@ -247,7 +246,7 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
     }
   }
 
-  def unshareIfRequired(): Unit =
+  private def unshareIfRequired(): Unit =
     if (!trieIsPrivate) {
       nodes = copyOf(nodes, nodes.length)
       branchData = copyOf(branchData, branchData.length)
@@ -357,14 +356,14 @@ private[parsing] final class HttpHeaderParser private (val settings: ParserSetti
   def formatRawTrie: String = {
     def char(c: Char) = (c >> 8).toString + (if ((c & 0xFF) > 0) "/" + (c & 0xFF).toChar else "/Ω")
     s"nodes: ${nodes take nodeCount map char mkString ", "}\n" +
-      s"nodeData: ${branchData take branchDataCount grouped 3 map { case Array(a, b, c) ⇒ s"$a/$b/$c" } mkString ", "}\n" +
+      s"branchData: ${branchData take branchDataCount grouped 3 map { case Array(a, b, c) ⇒ s"$a/$b/$c" } mkString ", "}\n" +
       s"values: ${values take valueCount mkString ", "}"
   }
 
   /**
    * Returns a string representation of the trie structure size.
    */
-  def formatSizes: String = s"$nodeCount nodes, ${branchDataCount / 3} nodeData rows, $valueCount values"
+  def formatSizes: String = s"$nodeCount nodes, ${branchDataCount / 3} branchData rows, $valueCount values"
 }
 
 private object HttpHeaderParser {
@@ -391,35 +390,43 @@ private object HttpHeaderParser {
 
   private val defaultIllegalHeaderWarning: ErrorInfo ⇒ Unit = info ⇒ sys.error(info.formatPretty)
 
-  def apply(settings: ParserSettings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning,
-            unprimed: Boolean = false): HttpHeaderParser = {
-    val parser = new HttpHeaderParser(settings, warnOnIllegalHeader)
-    if (!unprimed) {
-      val valueParsers: Seq[HeaderValueParser] =
-        HeaderParser.ruleNames.map { name ⇒
-          new ModelledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name))
-        }(collection.breakOut)
-      def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
-        if (endIx - startIx > 0) {
-          val pivot = (startIx + endIx) / 2
-          items(pivot) match {
-            case valueParser: HeaderValueParser ⇒
-              val insertName = valueParser.headerName.toLowerCase + ':'
-              if (parser.isEmpty) parser.insertRemainingCharsAsNewNodes(ByteString(insertName), valueParser)()
-              else parser.insert(ByteString(insertName), valueParser)()
-            case header: String ⇒
-              parser.parseHeaderLine(ByteString(header + "\r\nx"))()
-          }
-          insertInGoodOrder(items)(startIx, pivot)
-          insertInGoodOrder(items)(pivot + 1, endIx)
+  def apply(settings: ParserSettings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+    prime(unprimed(settings, warnOnIllegalHeader))
+
+  def unprimed(settings: ParserSettings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+    new HttpHeaderParser(settings, warnOnIllegalHeader)
+
+  def prime(parser: HttpHeaderParser): HttpHeaderParser = {
+    val valueParsers: Seq[HeaderValueParser] =
+      HeaderParser.ruleNames.map { name ⇒
+        new ModelledHeaderValueParser(name, parser.settings.maxHeaderValueLength, parser.settings.headerValueCacheLimit(name))
+      }(collection.breakOut)
+    def insertInGoodOrder(items: Seq[Any])(startIx: Int = 0, endIx: Int = items.size): Unit =
+      if (endIx - startIx > 0) {
+        val pivot = (startIx + endIx) / 2
+        items(pivot) match {
+          case valueParser: HeaderValueParser ⇒
+            val insertName = valueParser.headerName.toLowerCase + ':'
+            if (parser.isEmpty) parser.insertRemainingCharsAsNewNodes(ByteString(insertName), valueParser)()
+            else parser.insert(ByteString(insertName), valueParser)()
+          case header: String ⇒
+            parser.parseHeaderLine(ByteString(header + "\r\nx"))()
         }
-      insertInGoodOrder(valueParsers.sortBy(_.headerName))()
-      insertInGoodOrder(specializedHeaderValueParsers)()
-      insertInGoodOrder(predefinedHeaders.sorted)()
-      parser.insert(ByteString("\r\n"), EmptyHeader)()
-    }
+        insertInGoodOrder(items)(startIx, pivot)
+        insertInGoodOrder(items)(pivot + 1, endIx)
+      }
+    insertInGoodOrder(valueParsers.sortBy(_.headerName))()
+    insertInGoodOrder(specializedHeaderValueParsers)()
+    insertInGoodOrder(predefinedHeaders.sorted)()
+    parser.insert(ByteString("\r\n"), EmptyHeader)()
     parser
   }
+
+  // helper forwarders for testing
+  def insert(parser: HttpHeaderParser, input: ByteString, value: AnyRef): Unit =
+    parser.insert(input, value)()
+  def insertRemainingCharsAsNewNodes(parser: HttpHeaderParser, input: ByteString, value: AnyRef): Unit =
+    parser.insertRemainingCharsAsNewNodes(input, value)()
 
   abstract class HeaderValueParser(val headerName: String, val maxValueCount: Int) {
     def apply(input: ByteString, valueStart: Int, warnOnIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int)

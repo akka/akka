@@ -31,7 +31,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       insert("Hello", 'Hello)
       check {
         """nodes: 0/H, 0/e, 0/l, 0/l, 0/o, 1/Ω
-          |nodeData:\u0020
+          |branchData:\u0020
           |values: 'Hello""" -> parser.formatRawTrie
       }
       check {
@@ -45,7 +45,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       insert("Hallo", 'Hallo)
       check {
         """nodes: 0/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω
-          |nodeData: 6/2/0
+          |branchData: 6/2/0
           |values: 'Hello, 'Hallo""" -> parser.formatRawTrie
       }
       check {
@@ -61,7 +61,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       insert("Yeah", 'Yeah)
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω
-          |nodeData: 6/2/0, 0/1/11
+          |branchData: 6/2/0, 0/1/11
           |values: 'Hello, 'Hallo, 'Yeah""" -> parser.formatRawTrie
       }
       check {
@@ -79,7 +79,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       insert("Hoo", 'Hoo)
       check {
         """nodes: 2/H, 1/e, 0/l, 0/l, 0/o, 1/Ω, 0/a, 0/l, 0/l, 0/o, 2/Ω, 0/Y, 0/e, 0/a, 0/h, 3/Ω, 0/o, 0/o, 4/Ω
-          |nodeData: 6/2/16, 0/1/11
+          |branchData: 6/2/16, 0/1/11
           |values: 'Hello, 'Hallo, 'Yeah, 'Hoo""" -> parser.formatRawTrie
       }
       check {
@@ -161,7 +161,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |       └─x---f-o-r-w-a-r-d-e-d---f-o-r-:- (X-Forwarded-For)
           |""" -> parser.formatTrie
       }
-      parser.formatSizes === "607 nodes, 41 nodeData rows, 56 values"
+      parser.formatSizes === "607 nodes, 41 branchData rows, 56 values"
       parser.contentHistogram ===
         Map("Connection" -> 3, "Content-Length" -> 1, "Accept" -> 2, "Cache-Control" -> 2, "Expect" -> 1)
     }
@@ -234,7 +234,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       randomHeaders.take(300).foldLeft(0) {
         case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + "\r\nx", rawHeader)
       } === 99 // number of cached headers
-      parser.formatSizes === "3040 nodes, 114 nodeData rows, 255 values"
+      parser.formatSizes === "3040 nodes, 114 branchData rows, 255 values"
     }
 
     "continue parsing modelled headers even if the overall cache capacity is reached" in new TestSetup() {
@@ -246,7 +246,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       randomHostHeaders.take(300).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
       } === 199 // number of cached headers
-      parser.formatSizes === "3173 nodes, 186 nodeData rows, 255 values"
+      parser.formatSizes === "3173 nodes, 186 branchData rows, 255 values"
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
@@ -277,13 +277,15 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
   }
 
   abstract class TestSetup(primed: Boolean = true) {
-    val parser = HttpHeaderParser(
-      settings = ParserSettings(system),
-      warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty),
-      unprimed = !primed)
+    val parser = {
+      val p = HttpHeaderParser.unprimed(
+        settings = ParserSettings(system),
+        warnOnIllegalHeader = info ⇒ system.log.warning(info.formatPretty))
+      if (primed) HttpHeaderParser.prime(p) else p
+    }
     def insert(line: String, value: AnyRef): Unit =
-      if (parser.isEmpty) parser.insertRemainingCharsAsNewNodes(ByteString(line), value)()
-      else parser.insert(ByteString(line), value)()
+      if (parser.isEmpty) HttpHeaderParser.insertRemainingCharsAsNewNodes(parser, ByteString(line), value)
+      else HttpHeaderParser.insert(parser, ByteString(line), value)
 
     def parseLine(line: String) = parser.parseHeaderLine(ByteString(line))() -> parser.resultHeader
 
