@@ -21,3 +21,17 @@ private[akka] object EmptyProducer extends Producer[Nothing] with Publisher[Noth
     getPublisher.subscribe(consumer.getSubscriber)
 
 }
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ErrorProducer(t: Throwable) extends Producer[Nothing] with Publisher[Nothing] {
+  def getPublisher: Publisher[Nothing] = this
+
+  def subscribe(subscriber: Subscriber[Nothing]): Unit =
+    subscriber.onError(t)
+
+  def produceTo(consumer: Consumer[Nothing]): Unit =
+    getPublisher.subscribe(consumer.getSubscriber)
+
+}
