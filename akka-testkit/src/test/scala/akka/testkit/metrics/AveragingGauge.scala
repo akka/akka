@@ -1,0 +1,30 @@
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.testkit.metrics
+
+import com.codahale.metrics.Gauge
+
+/**
+ * Gauge which exposes the Arithmetic Mean of values given to it.
+ *
+ * Can be used to expose average of a series of values to [[com.codahale.metrics.ScheduledReporter]]s.
+ */
+class AveragingGauge extends Gauge[Double] {
+
+  private val sum = new LongAdder
+  private val count = new LongAdder
+
+  def add(n: Long) {
+    count.increment()
+    sum add n
+  }
+
+  def add(ns: Seq[Long]) {
+    // takes a mutable Seq on order to allow use with Array's
+    count add ns.length
+    sum add ns.sum
+  }
+
+  override def getValue: Double = sum.sum().toDouble / count.sum()
+}

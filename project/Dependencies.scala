@@ -70,6 +70,14 @@ object Dependencies {
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
       val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
+
+      // metrics, measurements, perf testing
+      val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
+      val metricsJvm      = "com.codahale.metrics"        % "metrics-jvm"                  % "3.0.1"            % "test" // ApacheV2
+      val metricsGraphite = "com.codahale.metrics"        % "metrics-graphite"             % "3.0.1"            % "test" // ApacheV2
+      val latencyUtils    = "org.latencyutils"            % "LatencyUtils"                 % "1.0.3"            % "test" // Free BSD
+      val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "1.1.4"            % "test" // CC0
+      val metricsAll      = Seq(metrics, metricsJvm, metricsGraphite, latencyUtils, hdrHistogram)
     }
   }
 
@@ -79,7 +87,7 @@ object Dependencies {
 
   val actor = Seq(config)
 
-  val testkit = Seq(Test.junit, Test.scalatest)
+  val testkit = Seq(Test.junit, Test.scalatest) ++ Test.metricsAll
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf, Test.junitIntf)
 

@@ -117,7 +117,7 @@ object TestExtras {
 
   object StatsDMetrics {
 
-    val statsd = config("statsd") extend Test
+    val statsd = config("statsd")
 
     val enabled = settingKey[Boolean]("Set to true when you want to send stats to statsd; Enable with `-Dakka.sbt.statsd=true`")
 
@@ -126,7 +126,6 @@ object TestExtras {
     val host = settingKey[String]("Host where statsd is located (ip, or hostname)")
 
     val port = settingKey[Int]("Port on which statsd is listening, defaults to 8125")
-
 
 
     val settings = Seq(
@@ -202,15 +201,17 @@ object TestExtras {
 
       private def testTimerKey(det: Event): String = s"${det.fullyQualifiedName}.${testSelectorToId(det.selector)}"
 
-      private def testSelectorToId(sel: testing.Selector): String = sel.asInstanceOf[TestSelector].testName().replaceAll("""[^\w]""", "_")
+      private def testSelectorToId(sel: testing.Selector): String = sanitize(sel.asInstanceOf[TestSelector].testName())
 
-      private def testCounterKey(det: Event, status: Status): String = s"${det.fullyQualifiedName}.${status.toString.toLowerCase}"
+      private def testCounterKey(det: Event, status: Status): String = s"${sanitize(det.fullyQualifiedName)}.${status.toString.toLowerCase}"
 
       private def keySuccess(fullyQualifiedName: String): String = fullyQualifiedName + ".success"
 
       private def keyFail(fullyQualifiedName: String): String = fullyQualifiedName + ".fail"
 
       private def keyError(fullyQualifiedName: String): String = fullyQualifiedName + ".error"
+
+      private def sanitize(s: String): String = s.replaceAll("""[^\w]""", "_")
 
     }
 
