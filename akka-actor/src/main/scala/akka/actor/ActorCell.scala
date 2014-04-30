@@ -74,7 +74,7 @@ trait ActorContext extends ActorRefFactory {
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
    * Replaces the current behavior on the top of the behavior stack.
    */
-  def become(behavior: Actor.Receive): Unit = become(behavior, true)
+  def become(behavior: Actor.Receive): Unit = become(behavior, discardOld = true)
 
   /**
    * Changes the Actor's behavior to become the new 'Receive' (PartialFunction[Any, Unit]) handler.
@@ -528,7 +528,7 @@ private[akka] class ActorCell(
   def become(behavior: Actor.Receive, discardOld: Boolean = true): Unit =
     behaviorStack = behavior :: (if (discardOld && behaviorStack.nonEmpty) behaviorStack.tail else behaviorStack)
 
-  def become(behavior: Procedure[Any]): Unit = become(behavior, false)
+  def become(behavior: Procedure[Any]): Unit = become(behavior, discardOld = true)
 
   def become(behavior: Procedure[Any], discardOld: Boolean): Unit =
     become({ case msg ⇒ behavior.apply(msg) }: Actor.Receive, discardOld)
