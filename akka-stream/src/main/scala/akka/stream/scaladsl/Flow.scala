@@ -189,7 +189,7 @@ trait Flow[+T] {
    * the current element if the given predicate returns true for it. This means
    * that for the following series of predicate values, three substreams will
    * be produced with lengths 1, 2, and 3:
-   * 
+   *
    * {{{
    * false,             // element goes into first substream
    * true, false,       // elements go into second substream
