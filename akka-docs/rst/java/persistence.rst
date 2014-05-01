@@ -61,6 +61,10 @@ Architecture
   processor. A view itself does not journal new messages, instead, it updates internal state only from a processor's
   replicated message stream.
 
+* *Streams*: Messages written by a processor can be published in compliance with the `Reactive Streams`_ specification.
+  Only those messages that are explicitly requested from downstream processors are actually pulled from a processor's
+  journal.
+
 * *Channel*: Channels are used by processors and views to communicate with other actors. They prevent that replayed
   messages are redundantly delivered to these actors and provide at-least-once message delivery semantics, also in
   case of sender and receiver JVM crashes.
@@ -78,6 +82,7 @@ Architecture
   development of event sourced applications (see section :ref:`event-sourcing-java`)
 
 .. _Community plugins: http://akka.io/community/
+.. _Reactive Streams: http://www.reactive-streams.org/
 
 .. _processors-java:
 
@@ -250,6 +255,13 @@ name in its actor hierarchy and hence influences only part of the view id. To fu
 
 The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java` of a view and its
 processor shall be shared (which is what applications usually do not want).
+
+.. _streams-java:
+
+Streams
+=======
+
+Java API coming soon. See also Scala :ref:`streams` documentation.
 
 .. _channels-java:
 

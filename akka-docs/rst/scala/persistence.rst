@@ -49,6 +49,10 @@ Architecture
   processor. A view itself does not journal new messages, instead, it updates internal state only from a processor's
   replicated message stream.
 
+* *Streams*: Messages written by a processor can be published in compliance with the `Reactive Streams`_ specification.
+  Only those messages that are explicitly requested from downstream processors are actually pulled from a processor's
+  journal.
+
 * *Channel*: Channels are used by processors and views to communicate with other actors. They prevent that replayed
   messages are redundantly delivered to these actors and provide at-least-once message delivery semantics, also in
   case of sender and receiver JVM crashes.
@@ -66,6 +70,7 @@ Architecture
   development of event sourced applications (see section :ref:`event-sourcing`)
 
 .. _Community plugins: http://akka.io/community/
+.. _Reactive Streams: http://www.reactive-streams.org/
 
 .. _processors:
 
@@ -240,6 +245,44 @@ name in its actor hierarchy and hence influences only part of the view id. To fu
 
 The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots` of a view and its
 processor shall be shared (which is what applications usually do not want).
+
+.. _streams:
+
+Streams
+=======
+
+**TODO: rename *producer* to *publisher*.**
+
+A `Reactive Streams`_ ``Producer`` can be created from a processor's message stream via the ``PersistentFlow``
+extension of the Akka Streams Scala DSL:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#producer-creation
+
+The created ``flow`` object is of type ``Flow[Persistent]`` and can be composed with other flows using ``Flow``
+combinators (= methods defined on ``Flow``). Calling the ``toProducer`` method on ``flow`` creates a producer
+of type ``Producer[Persistent]``.
+
+A persistent message producer only reads from a processor's journal when explicitly requested by downstream
+consumers. In order to avoid frequent, fine grained read access to a processor's journal, the producer tries
+to buffer persistent messages in memory from which it serves downstream requests. The maximum buffer size per
+producer is configurable with a ``PersistentPublisherSettings`` configuration object.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#producer-buffer-size
+
+Other ``ProducerSettings`` parameters are:
+
+* ``fromSequenceNr``: specifies from which sequence number the persistent message stream shall start (defaults
+  to ``1L``). Please note that specifying ``fromSequenceNr`` is much more efficient than using the ``drop(Int)``
+  combinator, especially for larger sequence numbers.
+
+* ``idle``: an optional parameter that specifies how long a producer shall wait after a journal read attempt didn't return
+  any new persistent messages. If not defined, the producer uses the ``akka.persistence.view.auto-update-interval``
+  configuration parameter, otherwise, it uses the defined ``idle`` parameter.
+
+Here are two examples how persistent message producers can be connected to downstream consumers using the Akka
+Streams Scala DSL and its ``PersistentFlow`` extension.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#producer-examples
 
 .. _channels:
 
