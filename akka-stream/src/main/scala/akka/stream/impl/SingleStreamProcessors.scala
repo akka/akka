@@ -9,6 +9,7 @@ import akka.actor.Props
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.RecoveryTransformer
 import akka.stream.scaladsl.Transformer
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -65,22 +66,15 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
  * INTERNAL API
  */
 private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, recoveryTransformer: RecoveryTransformer[Any, Any])
-  extends TransformProcessorImpl(_settings, recoveryTransformer.asInstanceOf[Transformer[Any, Any]]) {
+  extends TransformProcessorImpl(_settings, recoveryTransformer) {
 
-  val wrapInSuccess: Receive = {
-    case OnNext(elem) ⇒
-      primaryInputs.enqueueInputElement(Success(elem))
+  override def primaryInputOnError(e: Throwable): Unit =
+    try {
+      emits = recoveryTransformer.onError(e)
+      primaryInputs.complete()
+      context.become(flushing)
       pump()
-  }
-
-  override def running: Receive = wrapInSuccess orElse super.running
-
-  override def primaryInputOnError(e: Throwable): Unit = {
-    primaryInputs.enqueueInputElement(Failure(e))
-    primaryInputs.complete()
-    context.become(flushing)
-    pump()
-  }
+    } catch { case NonFatal(e) ⇒ fail(e) }
 }
 
 /**

@@ -153,13 +153,10 @@ private[akka] class TransformActorConsumer(_settings: MaterializerSettings, tran
  * INTERNAL API
  */
 private[akka] class RecoverActorConsumer(_settings: MaterializerSettings, recoveryTransformer: RecoveryTransformer[Any, Any])
-  extends TransformActorConsumer(_settings, recoveryTransformer.asInstanceOf[Transformer[Any, Any]]) {
-  override def onNext(elem: Any): Unit = {
-    super.onNext(Success(elem))
-  }
+  extends TransformActorConsumer(_settings, recoveryTransformer) {
 
   override def onError(cause: Throwable): Unit = {
-    super.onNext(Failure(cause))
+    recoveryTransformer.onError(cause)
     onComplete()
   }
 }

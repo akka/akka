@@ -156,10 +156,9 @@ trait Flow[+T] {
 
   /**
    * This transformation stage works exactly like [[#transform]] with the
-   * change that normal input elements are wrapped in [[scala.util.Success]]
-   * and failure signaled from upstream (i.e. <code>onError()</code> calls)
-   * is also handled as normal input element wrapped in [[scala.util.Failure]].
-   * In the latter case the stream ends after processing the failure.
+   * change that failure signaled from upstream will invoke
+   * [[RecoveryTransformer#onError]], which can emit an additional sequence of
+   * elements before the stream ends.
    *
    * After normal completion or error the [[RecoveryTransformer#cleanup]] function
    * is called.
@@ -275,5 +274,7 @@ trait Transformer[-T, +U] {
  * General interface for stream transformation.
  * @see [[Flow#transformRecover]]
  */
-trait RecoveryTransformer[-T, +U] extends Transformer[Try[T], U]
+trait RecoveryTransformer[-T, +U] extends Transformer[T, U] {
+  def onError(cause: Throwable): immutable.Seq[U]
+}
 

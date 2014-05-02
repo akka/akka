@@ -3,6 +3,7 @@
  */
 package akka.stream
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.AkkaSpec
@@ -14,8 +15,18 @@ import akka.stream.scaladsl.RecoveryTransformer
 import scala.util.Try
 import scala.util.Success
 
+object FlowTransformRecoverSpec {
+  abstract class TryRecoveryTransformer[T, U] extends RecoveryTransformer[T, U] {
+    def onNext(element: Try[T]): immutable.Seq[U]
+
+    def onNext(element: T): immutable.Seq[U] = onNext(Success(element))
+    def onError(cause: Throwable): immutable.Seq[U] = onNext(Failure(cause))
+  }
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformRecoverSpec extends AkkaSpec {
+  import FlowTransformRecoverSpec._
 
   val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
@@ -29,12 +40,11 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
           var tot = 0
-          override def onNext(element: Try[Int]) = element match {
-            case Success(elem) ⇒
-              tot += elem
-              List(tot)
-            case _ ⇒ List(-1)
+          override def onNext(elem: Int) = {
+            tot += elem
+            List(tot)
           }
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -54,12 +64,11 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
           var tot = 0
-          override def onNext(element: Try[Int]) = element match {
-            case Success(elem) ⇒
-              tot += elem
-              Vector.fill(elem)(tot)
-            case _ ⇒ List(-1)
+          override def onNext(elem: Int) = {
+            tot += elem
+            Vector.fill(elem)(tot)
           }
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -82,12 +91,11 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
           var tot = 0
-          override def onNext(element: Try[Int]) = element match {
-            case Success(elem) ⇒
-              tot += elem
-              if (elem % 2 == 0) Nil else List(tot)
-            case _ ⇒ List(-1)
+          override def onNext(elem: Int) = {
+            tot += elem
+            if (elem % 2 == 0) Nil else List(tot)
           }
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -105,7 +113,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     "produce multi-step transformation as expected" in {
       val p = Flow(List("a", "bc", "def").iterator).toProducer(materializer)
       val p2 = Flow(p).
-        transformRecover(new RecoveryTransformer[String, Int] {
+        transformRecover(new TryRecoveryTransformer[String, Int] {
           var concat = ""
           override def onNext(element: Try[String]) = {
             concat += element
@@ -114,12 +122,11 @@ class FlowTransformRecoverSpec extends AkkaSpec {
         }).
         transformRecover(new RecoveryTransformer[Int, Int] {
           var tot = 0
-          override def onNext(element: Try[Int]) = element match {
-            case Success(length) ⇒
-              tot += length
-              List(tot)
-            case _ ⇒ List(-1)
+          override def onNext(length: Int) = {
+            tot += length
+            List(tot)
           }
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val c1 = StreamTestKit.consumerProbe[Int]
@@ -146,7 +153,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     "invoke onComplete when done" in {
       val p = Flow(List("a").iterator).toProducer(materializer)
       val p2 = Flow(p).
-        transformRecover(new RecoveryTransformer[String, String] {
+        transformRecover(new TryRecoveryTransformer[String, String] {
           var s = ""
           override def onNext(element: Try[String]) = {
             s += element
@@ -166,7 +173,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.producerProbe[Int]
       val p2 = Flow(p).
-        transformRecover(new RecoveryTransformer[Int, Int] {
+        transformRecover(new TryRecoveryTransformer[Int, Int] {
           var s = ""
           override def onNext(element: Try[Int]) = {
             s += element
@@ -190,7 +197,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     "call onComplete after isComplete signaled completion" in {
       val p = StreamTestKit.producerProbe[Int]
       val p2 = Flow(p).
-        transformRecover(new RecoveryTransformer[Int, Int] {
+        transformRecover(new TryRecoveryTransformer[Int, Int] {
           var s = ""
           override def onNext(element: Try[Int]) = {
             s += element
@@ -217,12 +224,11 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p = Flow(List(1, 2, 3).iterator).toProducer(materializer)
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
-          override def onNext(element: Try[Int]) = element match {
-            case Success(elem) ⇒
-              if (elem == 2) throw new IllegalArgumentException("two not allowed")
-              else List(elem, elem)
-            case _ ⇒ List(-1)
+          override def onNext(elem: Int) = {
+            if (elem == 2) throw new IllegalArgumentException("two not allowed")
+            else List(elem, elem)
           }
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -244,11 +250,10 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Throwable] {
           var s = ""
-          override def onNext(element: Try[Int]) = element match {
-            case Failure(ex) ⇒
-              s += ex.getMessage
-              List(ex)
-            case _ ⇒ List(new IllegalStateException)
+          override def onNext(element: Int) = List(new IllegalStateException)
+          override def onError(ex: Throwable) = {
+            s += ex.getMessage
+            List(ex)
           }
           override def onComplete() = List(TE(s.size + "10"))
         }).
@@ -268,7 +273,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p = StreamTestKit.producerProbe[Int]
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
-          override def onNext(in: Try[Int]) = List(in.get)
+          override def onNext(in: Int) = List(in)
+          override def onError(e: Throwable) = throw e
         }).
         toProducer(materializer)
       val proc = p.expectSubscription()
@@ -286,10 +292,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p = Flow(List(1, 2, 3).iterator).toProducer(materializer)
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
-          override def onNext(element: Try[Int]) = element match {
-            case Success(elem) ⇒ List(elem, elem)
-            case _             ⇒ List(-1)
-          }
+          override def onNext(elem: Int) = List(elem, elem)
+          override def onError(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
