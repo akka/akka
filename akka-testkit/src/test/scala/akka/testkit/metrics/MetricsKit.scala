@@ -34,7 +34,7 @@ private[akka] trait MetricsKit {
    */
   def metricsConfig: Config
 
-  private val metrics = new MetricRegistry()
+  private val registry = new MetricRegistry() with AkkaMetricRegistry
 
   initMetricReporters()
 
@@ -43,10 +43,12 @@ private[akka] trait MetricsKit {
 
     def configureConsoleReporter() {
       if (settings.Reporters.contains("console")) {
-        val consoleReporter = ConsoleReporter.forRegistry(metrics)
-          .outputTo(System.out)
-          .convertDurationsTo(TimeUnit.MICROSECONDS)
-          .build()
+        //        val consoleReporter = ConsoleReporter.forRegistry(registry)
+        //          .outputTo(System.out)
+        //          .convertDurationsTo(TimeUnit.MICROSECONDS)
+        //          .build()
+
+        val consoleReporter = new AkkaConsoleReporter(registry, durationUnit = TimeUnit.SECONDS, rateUnit = TimeUnit.NANOSECONDS)
 
         if (settings.ConsoleReporter.ScheduledReportInterval > 0.millis)
           consoleReporter.start(settings.ConsoleReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
@@ -57,9 +59,9 @@ private[akka] trait MetricsKit {
 
     def configureGraphiteReporter() {
       if (settings.Reporters.contains("graphite")) {
-        println(s"Will send metrics to Graphite @ ${settings.GraphiteReporter.Host}:${settings.GraphiteReporter.Port}")
+        println(s"Will send registry to Graphite @ ${settings.GraphiteReporter.Host}:${settings.GraphiteReporter.Port}")
 
-        val graphiteReporter = GraphiteReporter.forRegistry(metrics)
+        val graphiteReporter = GraphiteReporter.forRegistry(registry)
           .convertDurationsTo(TimeUnit.MICROSECONDS)
           .prefixedWith(settings.GraphiteReporter.Prefix)
           .build(new Graphite(new InetSocketAddress(settings.GraphiteReporter.Host, settings.GraphiteReporter.Port)))
@@ -83,16 +85,28 @@ private[akka] trait MetricsKit {
     reporters foreach { _.start(every.toMillis, TimeUnit.MILLISECONDS) }
   }
 
-  def timer(name: String) = metrics.timer(name)
+  def timer(name: String) = registry.timer(name)
+
+  def timed(name: String, ops: Long)(run: ⇒ Unit) {
+    val key = name + ".ops"
+
+    import collection.JavaConverters._
+    val c = (registry.getMetrics.asScala.find(_._1 == key).map(_._2) getOrElse {
+      val counter = new KnownOpsInTimespanCounter(expectedOps = ops)
+      registry.register(key, counter)
+      counter
+    }).asInstanceOf[KnownOpsInTimespanCounter]
+
+    try run finally c.stop()
+  }
 
   /**
    * Convinience method for measuring long running piece of code.
    * HINT: don't use this form in loops, prefer using timer explicitly in tight loops.
    */
-  def measureTime(name: String)(run: ⇒ Any) = {
-    val t = timer(name)
-    run
-    t.time()
+  def timed(name: String)(run: ⇒ Unit) {
+    val t = timer(name).time()
+    try run finally t.stop()
   }
 
   /**
@@ -142,14 +156,46 @@ private[akka] trait MetricsKit {
     reporters foreach { _.stop() }
   }
 
+  private class RegexMetricFilter(pattern: Regex)
   private trait MetricsPrefix extends MetricSet {
     def prefix: String
     abstract override def getMetrics: util.Map[String, Metric] = {
-      // does not have to be fast, is only called once during registering metrics
+      // does not have to be fast, is only called once during registering registry
       import collection.JavaConverters._
       (super.getMetrics.asScala.map { case (k, v) ⇒ (prefix + "." + k, v) }).asJava
     }
   }
+}
+
+private[akka] object MetricsKit {
+  val MemMetricsFilter = new MetricFilter {
+    val keyPattern = """.*\.mem\..*""".r.pattern
+
+    override def matches(name: String, metric: Metric) = keyPattern.matcher(name).matches()
+  }
+
+  val KnownOpsInTimespanCounterFilter = new MetricFilter {
+    override def matches(name: String, metric: Metric) = classOf[KnownOpsInTimespanCounter].isInstance(metric)
+  }
+
+  val GcMetricsFilter = new MetricFilter {
+    val keyPattern = """.*\.gc\..*""".r.pattern
+
+    override def matches(name: String, metric: Metric) = keyPattern.matcher(name).matches()
+  }
+}
+
+trait AkkaMetricRegistry {
+  this: MetricRegistry ⇒
+
+  def getKnownOpsInTimespanCounters = filterFor(classOf[KnownOpsInTimespanCounter])
+
+  import collection.JavaConverters._
+  private def filterFor[T](clazz: Class[T]): mutable.Iterable[T] =
+    for {
+      (_, metric) ← getMetrics.asScala
+      if clazz.isInstance(metric)
+    } yield metric.asInstanceOf[T]
 }
 
 private[akka] class MetricsKitSettings(config: Config) {
