@@ -58,6 +58,9 @@ abstract class PiercingShouldKeepQuarantineSpec extends MultiNodeSpec(PiercingSh
         // Manually Quarantine the other system
         RARP(system).provider.transport.quarantine(node(second).address, Some(uid))
 
+        // Quarantining is not immediate
+        Thread.sleep(1000)
+
         // Quarantine is up -- Should not be able to communicate with remote system any more
         for (_ ← 1 to 4) {
           system.actorSelection(node(second) / "user" / "subject") ! "getuid"

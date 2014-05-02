@@ -277,7 +277,7 @@ private[remote] object EndpointManager {
      */
     def isTombstone: Boolean
   }
-  case class Pass(endpoint: ActorRef, uid: Option[Int]) extends EndpointPolicy {
+  case class Pass(endpoint: ActorRef, uid: Option[Int], refuseUid: Option[Int]) extends EndpointPolicy {
     override def isTombstone: Boolean = false
   }
   case class Gated(timeOfRelease: Deadline) extends EndpointPolicy {
@@ -294,20 +294,20 @@ private[remote] object EndpointManager {
     private var addressToReadonly = HashMap[Address, ActorRef]()
     private var readonlyToAddress = HashMap[ActorRef, Address]()
 
-    def registerWritableEndpoint(address: Address, uid: Option[Int], endpoint: ActorRef): ActorRef = addressToWritable.get(address) match {
-      case Some(Pass(e, _)) ⇒
-        throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint [$e] with [$endpoint]")
-      case _ ⇒
-        addressToWritable += address -> Pass(endpoint, uid)
-        writableToAddress += endpoint -> address
-        endpoint
-    }
-
-    def registerWritableEndpointUid(writer: ActorRef, uid: Int): Unit = {
-      val address = writableToAddress(writer)
+    def registerWritableEndpoint(address: Address, uid: Option[Int], refuseUid: Option[Int], endpoint: ActorRef): ActorRef =
       addressToWritable.get(address) match {
-        case Some(Pass(ep, _)) ⇒ addressToWritable += address -> Pass(ep, Some(uid))
-        case other             ⇒ // the GotUid might have lost the race with some failure
+        case Some(Pass(e, _, _)) ⇒
+          throw new IllegalArgumentException(s"Attempting to overwrite existing endpoint [$e] with [$endpoint]")
+        case _ ⇒
+          addressToWritable += address -> Pass(endpoint, uid, refuseUid)
+          writableToAddress += endpoint -> address
+          endpoint
+      }
+
+    def registerWritableEndpointUid(remoteAddress: Address, uid: Int): Unit = {
+      addressToWritable.get(remoteAddress) match {
+        case Some(Pass(ep, _, refuseUid)) ⇒ addressToWritable += remoteAddress -> Pass(ep, Some(uid), refuseUid)
+        case other                        ⇒ // the GotUid might have lost the race with some failure
       }
     }
 
@@ -333,8 +333,8 @@ private[remote] object EndpointManager {
     def writableEndpointWithPolicyFor(address: Address): Option[EndpointPolicy] = addressToWritable.get(address)
 
     def hasWritableEndpointFor(address: Address): Boolean = writableEndpointWithPolicyFor(address) match {
-      case Some(Pass(_, _)) ⇒ true
-      case _                ⇒ false
+      case Some(Pass(_, _, _)) ⇒ true
+      case _                   ⇒ false
     }
 
     def readOnlyEndpointFor(address: Address): Option[ActorRef] = addressToReadonly.get(address)
@@ -353,9 +353,9 @@ private[remote] object EndpointManager {
     def refuseUid(address: Address): Option[Int] = writableEndpointWithPolicyFor(address) match {
       // timeOfRelease is only used for garbage collection. If an address is still probed, we should report the
       // known fact that it is quarantined.
-      case Some(Quarantined(uid, _)) ⇒ Some(uid)
-      case Some(Pass(_, uidOption))  ⇒ uidOption
-      case _                         ⇒ None
+      case Some(Quarantined(uid, _))   ⇒ Some(uid)
+      case Some(Pass(_, _, refuseUid)) ⇒ refuseUid
+      case _                           ⇒ None
     }
 
     /**
@@ -530,7 +530,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Quarantine(address, uidOption) ⇒
       // Stop writers
       endpoints.writableEndpointWithPolicyFor(address) match {
-        case Some(Pass(endpoint, _)) ⇒
+        case Some(Pass(endpoint, _, _)) ⇒
           context.stop(endpoint)
           if (uidOption.isEmpty) {
             log.warning("Association to [{}] with unknown UID is reported as quarantined, but " +
@@ -556,6 +556,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       def createAndRegisterWritingEndpoint(refuseUid: Option[Int]): ActorRef =
         endpoints.registerWritableEndpoint(
           recipientAddress,
+          uid = None,
           refuseUid,
           createEndpoint(
             recipientAddress,
@@ -567,7 +568,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             refuseUid))
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
-        case Some(Pass(endpoint, _)) ⇒
+        case Some(Pass(endpoint, _, _)) ⇒
           endpoint ! s
         case Some(Gated(timeOfRelease)) ⇒
           if (timeOfRelease.isOverdue()) createAndRegisterWritingEndpoint(refuseUid = None) ! s
@@ -591,8 +592,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       handleStashedInbound(endpoint)
     case EndpointWriter.TookOver(endpoint, handle) ⇒
       removePendingReader(takingOverFrom = endpoint, withHandle = handle)
-    case ReliableDeliverySupervisor.GotUid(uid) ⇒
-      endpoints.registerWritableEndpointUid(sender, uid)
+    case ReliableDeliverySupervisor.GotUid(uid, remoteAddress) ⇒
+      endpoints.registerWritableEndpointUid(remoteAddress, uid)
       handleStashedInbound(sender)
     case Prune ⇒
       endpoints.prune()
@@ -634,9 +635,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         if (endpoints.isQuarantined(handle.remoteAddress, handle.handshakeInfo.uid))
           handle.disassociate(AssociationHandle.Quarantined)
         else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
-          case Some(Pass(ep, None)) ⇒
+          case Some(Pass(ep, None, _)) ⇒
             stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
-          case Some(Pass(ep, Some(uid))) ⇒
+          case Some(Pass(ep, Some(uid), _)) ⇒
             if (handle.handshakeInfo.uid == uid) {
               pendingReadHandoffs.get(ep) foreach (_.disassociate())
               pendingReadHandoffs += ep -> handle
@@ -645,10 +646,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
               context.stop(ep)
               endpoints.unregisterEndpoint(ep)
               pendingReadHandoffs -= ep
-              createAndRegisterEndpoint(handle, Some(uid))
+              createAndRegisterEndpoint(handle, refuseUid = Some(uid))
             }
           case state ⇒
-            createAndRegisterEndpoint(handle, None)
+            createAndRegisterEndpoint(handle, refuseUid = endpoints.refuseUid(handle.remoteAddress))
         }
     }
   }
@@ -665,7 +666,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       writing,
       refuseUid = refuseUid)
     if (writing)
-      endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), endpoint)
+      endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), refuseUid, endpoint)
     else {
       endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
       endpoints.removePolicy(handle.remoteAddress)
