@@ -76,7 +76,7 @@ class ShoppingCart(userId: String) extends Actor with Stash {
   }
 
   def addItemInProgress(item: LineItem): Receive = {
-    case GetResult(_, data: LWWMap, seqNo, _) ⇒
+    case GetSuccess(_, data: LWWMap, seqNo, _) ⇒
       val newData = update(data, item)
       replicator ! Update(DataKey, newData, seqNo, WriteQuorum, timeout)
 
@@ -93,8 +93,8 @@ class ShoppingCart(userId: String) extends Actor with Stash {
       val newData = update(data, item)
       replicator ! Update(DataKey, newData, currentSeqNo, WriteQuorum, timeout)
 
-    case _: UpdateSuccess | _: ReplicationFailure ⇒
-      // ReplicationFailure, will eventually be replicated
+    case _: UpdateSuccess | _: ReplicationUpdateFailure ⇒
+      // ReplicationUpdateFailure, will eventually be replicated
       becomeReady()
 
     case _ ⇒ stash()
@@ -102,7 +102,7 @@ class ShoppingCart(userId: String) extends Actor with Stash {
 
   def getCartInProgress(replyTo: ActorRef): Receive = {
 
-    case GetResult(_, data: LWWMap, _, _) ⇒
+    case GetSuccess(_, data: LWWMap, _, _) ⇒
       val cart = Cart(data.entries.values.map { case line: LineItem ⇒ line }.toSet)
       replyTo ! cart
       becomeReady()
@@ -118,7 +118,7 @@ class ShoppingCart(userId: String) extends Actor with Stash {
 
   def removeItemInProgress(productId: String): Receive = {
 
-    case GetResult(_, data: LWWMap, seqNo, _) ⇒
+    case GetSuccess(_, data: LWWMap, seqNo, _) ⇒
       val newData = data :- productId
       replicator ! Update(DataKey, newData, seqNo, WriteQuorum, timeout)
 
@@ -134,8 +134,8 @@ class ShoppingCart(userId: String) extends Actor with Stash {
       val newData = data :- productId
       replicator ! Update(DataKey, newData, currentSeqNo, WriteQuorum, timeout)
 
-    case _: UpdateSuccess | _: ReplicationFailure ⇒
-      // ReplicationFailure, will eventually be replicated
+    case _: UpdateSuccess | _: ReplicationUpdateFailure ⇒
+      // ReplicationUpdateFailure, will eventually be replicated
       becomeReady()
 
     case _ ⇒ stash()

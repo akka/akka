@@ -61,10 +61,10 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
       awaitAssert {
         replicator ! Get(key)
         val value = expectMsgPF() {
-          case GetResult(`key`, c: GCounter, _, _)  ⇒ c.value
-          case GetResult(`key`, c: PNCounter, _, _) ⇒ c.value
-          case GetResult(`key`, c: GSet, _, _)      ⇒ c.value
-          case GetResult(`key`, c: ORSet, _, _)     ⇒ c.value
+          case GetSuccess(`key`, c: GCounter, _, _)  ⇒ c.value
+          case GetSuccess(`key`, c: PNCounter, _, _) ⇒ c.value
+          case GetSuccess(`key`, c: GSet, _, _)      ⇒ c.value
+          case GetSuccess(`key`, c: ORSet, _, _)     ⇒ c.value
         }
         value should be(expected)
       }
@@ -166,30 +166,30 @@ class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMult
 
       runOn(first) {
         replicator ! Get("A")
-        val GetResult("A", c: GCounter, seqNo, _) = expectMsgType[GetResult]
+        val GetSuccess("A", c: GCounter, seqNo, _) = expectMsgType[GetSuccess]
         replicator ! Update("A", c :+ 1, seqNo, WriteTwo, timeout)
         expectMsg(UpdateSuccess("A", seqNo, None))
       }
 
       runOn(third) {
         replicator ! Get("A")
-        val GetResult("A", c: GCounter, seqNo, _) = expectMsgType[GetResult]
+        val GetSuccess("A", c: GCounter, seqNo, _) = expectMsgType[GetSuccess]
         replicator ! Update("A", c :+ 2, seqNo, WriteTwo, timeout)
         expectMsg(UpdateSuccess("A", seqNo, None))
 
         replicator ! Get("E")
-        val GetResult("E", sE: GSet, seqNo2, _) = expectMsgType[GetResult]
+        val GetSuccess("E", sE: GSet, seqNo2, _) = expectMsgType[GetSuccess]
         replicator ! Update("E", sE :+ "e4", seqNo2, WriteTwo, timeout)
         expectMsg(UpdateSuccess("E", seqNo, None))
 
         replicator ! Get("F")
-        val GetResult("F", sF: ORSet, seqNo3, _) = expectMsgType[GetResult]
+        val GetSuccess("F", sF: ORSet, seqNo3, _) = expectMsgType[GetSuccess]
         replicator ! Update("F", sF :- "e2", seqNo3, WriteTwo, timeout)
         expectMsg(UpdateSuccess("F", seqNo, None))
       }
       runOn(fourth) {
         replicator ! Get("D")
-        val GetResult("D", c: GCounter, seqNo, _) = expectMsgType[GetResult]
+        val GetSuccess("D", c: GCounter, seqNo, _) = expectMsgType[GetSuccess]
         replicator ! Update("D", c :+ 1, seqNo, WriteTwo, timeout)
         expectMsg(UpdateSuccess("D", seqNo, None))
       }

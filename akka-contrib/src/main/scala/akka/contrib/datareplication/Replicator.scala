@@ -127,7 +127,7 @@ import akka.actor.Terminated
  *     (or all nodes in the cluster role group)</li>
  * </ul>
  *
- * As reply of the `Get` a [[Replicator.GetResult]] is sent to the sender of the
+ * As reply of the `Get` a [[Replicator.GetSuccess]] is sent to the sender of the
  * `Get` if the value was successfully retrieved according to the supplied consistency
  * level within the supplied timeout. Otherwise a [[Replicator.GetFailure]] is sent.
  * If the key does not exist the reply will be [[Replicator.GetFailure]].
@@ -135,7 +135,7 @@ import akka.actor.Terminated
  *
  * In the `Get` message you can pass an optional request context in the same way as for the
  * `Update` message, described above. For example the original sender can be passed and replied
- * to after receiving and transforming `GetResult`.
+ * to after receiving and transforming `GetSuccess`.
  *
  * You can retrieve all keys of a local replica by sending [[Replicator.GetKeys]] message to the
  * `Replicator`. The reply of `GetKeys` is a [[Replicator.GetKeysResult]] message.
@@ -149,11 +149,11 @@ import akka.actor.Terminated
  * A data entry can be deleted by sending a [[Replicator.Delete]] message to the local
  * local `Replicator`. As reply of the `Delete` a [[Replicator.DeleteSuccess]] is sent to
  * the sender of the `Delete` if the value was successfully replicated according to the supplied
- * consistency level within the supplied timeout. Otherwise a [[Replicator.UpdateFailure]] is sent.
- * Note that `UpdateFailure` does not mean that the delete completely failed or was rolled back.
- * It may still have been replicated to some nodes, and may eventually be replicated to all
- * nodes. A deleted key can not be reused again, but it is still recommended to delete unused
- * data entries because that reduce the replication overhead when new nodes join the cluster.
+ * consistency level within the supplied timeout. Otherwise a [[Replicator.ReplicationDeleteFailure]]
+ * is sent. Note that `ReplicationDeleteFailure` does not mean that the delete completely failed or
+ * was rolled back. It may still have been replicated to some nodes, and may eventually be replicated
+ * to all nodes. A deleted key can not be reused again, but it is still recommended to delete unused
+ * data entries because that reduces the replication overhead when new nodes join the cluster.
  * Subsequent `Delete`, `Update` and `Get` requests will be replied with [[Replicator.DataDeleted]].
  * Subscribers will receive [[Replicator.DataDeleted]].
  *
@@ -237,7 +237,7 @@ object Replicator {
     def apply(key: String): Get = Get(key, ReadOne, Duration.Zero, None)
   }
   case class Get(key: String, consistency: ReadConsistency, timeout: FiniteDuration, request: Option[Any] = None)
-  case class GetResult(key: String, data: ReplicatedData, seqNo: Long, request: Option[Any])
+  case class GetSuccess(key: String, data: ReplicatedData, seqNo: Long, request: Option[Any])
   case class NotFound(key: String, request: Option[Any])
   case class GetFailure(key: String, request: Option[Any])
 
@@ -268,7 +268,7 @@ object Replicator {
     def seqNo: Long
     def request: Option[Any]
   }
-  case class ReplicationFailure(key: String, seqNo: Long, request: Option[Any]) extends UpdateFailure
+  case class ReplicationUpdateFailure(key: String, seqNo: Long, request: Option[Any]) extends UpdateFailure
   case class ConflictingType(key: String, seqNo: Long, errorMessage: String, request: Option[Any])
     extends RuntimeException with NoStackTrace with UpdateFailure
   case class WrongSeqNo(key: String, currentData: ReplicatedData, seqNo: Long, currentSeqNo: Long,
@@ -285,6 +285,7 @@ object Replicator {
   }
   case class Delete(key: String, consistency: WriteConsistency, timeout: FiniteDuration)
   case class DeleteSuccess(key: String)
+  case class ReplicationDeleteFailure(key: String)
   case class DataDeleted(key: String)
     extends RuntimeException with NoStackTrace
 
@@ -485,7 +486,7 @@ class Replicator(
     if (consistency == ReadOne) {
       val reply = localValue match {
         case Some(DataEnvelope(DeletedData, _)) ⇒ DataDeleted(key)
-        case Some(DataEnvelope(data, _))        ⇒ GetResult(key, data, seqNumbers(key), req)
+        case Some(DataEnvelope(data, _))        ⇒ GetSuccess(key, data, seqNumbers(key), req)
         case None                               ⇒ NotFound(key, req)
       }
       sender() ! reply
@@ -928,8 +929,10 @@ private[akka] class WriteAggregator(
       replyTo.tell(DeleteSuccess(key), context.parent)
     else if (ok)
       replyTo.tell(UpdateSuccess(key, seqNo, req), context.parent)
+    else if (envelope.data == DeletedData)
+      replyTo.tell(ReplicationDeleteFailure(key), context.parent)
     else
-      replyTo.tell(ReplicationFailure(key, seqNo, req), context.parent)
+      replyTo.tell(ReplicationUpdateFailure(key, seqNo, req), context.parent)
     becomeDone()
   }
 }
@@ -993,7 +996,7 @@ private[akka] class ReadAggregator(
       case (true, Some(envelope)) ⇒
         context.parent ! ReadRepair(key, envelope)
         if (envelope.data == DeletedData) DataDeleted(key)
-        else GetResult(key, envelope.data, localSeqNo.getOrElse(0L), req)
+        else GetSuccess(key, envelope.data, localSeqNo.getOrElse(0L), req)
       case (true, None) ⇒ NotFound(key, req)
       case (false, _)   ⇒ GetFailure(key, req)
     }

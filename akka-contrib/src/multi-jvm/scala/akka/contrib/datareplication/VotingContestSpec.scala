@@ -96,13 +96,15 @@ class VotingService extends Actor {
     case GetVotes ⇒
       replicator ! Get(CountersKey, ReadAll, 3.seconds, Some(GetVotesReq(sender())))
 
-    case GetResult(CountersKey, d: PNCounterMap, _, Some(GetVotesReq(replyTo))) ⇒
+    case GetSuccess(CountersKey, d: PNCounterMap, _, Some(GetVotesReq(replyTo))) ⇒
       replyTo ! Votes(d.entries, open)
 
     case NotFound(CountersKey, Some(GetVotesReq(replyTo))) ⇒
       replyTo ! Votes(Map.empty, open)
 
-    case _: GetFailure ⇒
+    case _: GetFailure    ⇒
+
+    case _: UpdateSuccess ⇒
   }
 
 }
