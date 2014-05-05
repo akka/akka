@@ -782,6 +782,19 @@ object Logging {
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
       if (message == null) throw new InvalidMessageException("Message is null")
       else print(message)
+
+    @throws(classOf[java.io.ObjectStreamException])
+    override protected def writeReplace(): AnyRef = serializedStandardOutLogger
+  }
+
+  private val serializedStandardOutLogger = new SerializedStandardOutLogger
+
+  /**
+   * INTERNAL API
+   */
+  @SerialVersionUID(1L) private[akka] class SerializedStandardOutLogger extends Serializable {
+    @throws(classOf[java.io.ObjectStreamException])
+    private def readResolve(): AnyRef = Logging.StandardOutLogger
   }
 
   val StandardOutLogger = new StandardOutLogger
