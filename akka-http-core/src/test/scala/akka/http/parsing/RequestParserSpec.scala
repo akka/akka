@@ -22,7 +22,7 @@ import HttpMethods._
 import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
-import akka.stream2.impl.OperationProcessor
+import ParserOutput.ParseError
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -145,229 +145,185 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
-      //    "properly parse a chunked request" in {
-      //      val start =
-      //        """PATCH /data HTTP/1.1
-      //          |Transfer-Encoding: chunked
-      //          |Connection: lalelu
-      //          |Content-Type: application/pdf
-      //          |Host: ping
-      //          |
-      //          |"""
-      //      val startMatch = Seq(PATCH, Uri("/data"), `HTTP/1.1`, List(Host("ping"),
-      //        `Content-Type`(`application/pdf`), Connection("lalelu"), `Transfer-Encoding`("chunked")), 'dontClose)
-      //
-      //      "request start" in {
-      //        parse(start + "rest") === startMatch ++ Seq(400: StatusCode, "Illegal character 'r' in chunk start")
-      //      }
-      //
-      //      "message chunk with and without extension" in {
-      //        parse(start,
-      //          """3
-      //            |abc
-      //            |10;some=stuff;bla
-      //            |0123456789ABCDEF
-      //            |""",
-      //          "10;foo=",
-      //          """bar
-      //            |0123456789ABCDEF
-      //            |10
-      //            |0123456789""",
-      //          """ABCDEF
-      //            |dead""") === startMatch ++
-      //          Seq("abc", "", 'dontClose,
-      //            "0123456789ABCDEF", "some=stuff;bla", 'dontClose,
-      //            "0123456789ABCDEF", "foo=bar", 'dontClose,
-      //            "0123456789ABCDEF", "", 'dontClose)
-      //      }
-      //
-      //      "message end" in {
-      //        parse(start,
-      //          """0
-      //            |
-      //            |""") === startMatch ++ Seq("", Nil, 'dontClose)
-      //      }
-      //
-      //      "message end with extension, trailer and remaining content" in {
-      //        parse(start,
-      //          """000;nice=true
-      //            |Foo: pip
-      //            | apo
-      //            |Bar: xyz
-      //            |
-      //            |GE""") === startMatch ++
-      //          Seq("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo")), 'dontClose)
-      //      }
-      //    }
-      //
-      //    "properly auto-chunk" in {
-      //      def start(contentSize: Int) =
-      //        f"""GET /data HTTP/1.1
-      //           |Content-Type: application/pdf
-      //           |Host: ping
-      //           |Content-Length: $contentSize%d
-      //           |
-      //           |"""
-      //      def startMatch(contentSize: Int) =
-      //        Seq(GET, Uri("/data"), `HTTP/1.1`, List(`Content-Length`(contentSize), Host("ping"), `Content-Type`(`application/pdf`)))
-      //
-      //      "full request if size < incoming-auto-chunking-threshold-size" in {
-      //        parse(start(1) + "r") === startMatch(1) ++ Seq("r", 'dontClose)
-      //      }
-      //
-      //      "request start" in {
-      //        parse(start(25) + "rest") === startMatch(25) ++ Seq('dontClose,
-      //          "rest", "", 'dontClose) // chunk
-      //      }
-      //
-      //      "request start if complete message is already available" in {
-      //        parse(start(25) + "rest1rest2rest3rest4rest5") ===
-      //          startMatch(25) ++ Seq('dontClose, // chunkstart
-      //            "rest1rest2rest3rest4rest5", "", 'dontClose, // chunk
-      //            "", Nil, 'dontClose) // chunk end
-      //      }
-      //
-      //      "request chunk" in {
-      //        parse(start(25) + "rest1", "rest2") === startMatch(25) ++ Seq('dontClose, // chunkstart
-      //          "rest1", "", 'dontClose, // chunk
-      //          "rest2", "", 'dontClose) // chunk
-      //      }
-      //
-      //      "request end" in {
-      //        parse(start(25) + "rest1", "rest2", "rest3", "rest4", "rest5GET /data HTTP") ===
-      //          startMatch(25) ++ Seq('dontClose, // chunkstart
-      //            "rest1", "", 'dontClose, // chunk
-      //            "rest2", "", 'dontClose, // chunk
-      //            "rest3", "", 'dontClose, // chunk
-      //            "rest4", "", 'dontClose, // chunk
-      //            "rest5", "", 'dontClose, // chunk
-      //            "", Nil, 'dontClose) // chunk end
-      //      }
-      //    }
-      //
-      //    "reject a message chunk with" in {
-      //      val start =
-      //        """PATCH /data HTTP/1.1
-      //          |Transfer-Encoding: chunked
-      //          |Connection: lalelu
-      //          |Host: ping
-      //          |
-      //          |"""
-      //
-      //      "an illegal char after chunk size" in {
-      //        parse(start,
-      //          """15 ;
-      //            |""").takeRight(2) === Seq(BadRequest, "Illegal character ' ' in chunk start")
-      //      }
-      //
-      //      "an illegal char in chunk size" in {
-      //        parse(start, "bla").takeRight(2) === Seq(BadRequest, "Illegal character 'l' in chunk start")
-      //      }
-      //
-      //      "too-long chunk extension" in {
-      //        parse(start, "3;" + ("x" * 257)).takeRight(2) ===
-      //          Seq(BadRequest, "HTTP chunk extension length exceeds configured limit of 256 characters")
-      //      }
-      //
-      //      "too-large chunk size" in {
-      //        parse(start,
-      //          """1a2b3c4d5e
-      //            |""").takeRight(2) === Seq(BadRequest, "HTTP chunk size exceeds the configured limit of 1048576 bytes")
-      //      }
-      //
-      //      "an illegal chunk termination" in {
-      //        parse(start,
-      //          """3
-      //            |abcde""").takeRight(2) === Seq(BadRequest, "Illegal chunk termination")
-      //      }
-      //
-      //      "an illegal header in the trailer" in {
-      //        parse(start,
-      //          """0
-      //            |F@oo: pip""").takeRight(2) === Seq(BadRequest, "Illegal character '@' in header name")
-      //      }
-      //    }
-      //
-      //    "reject a request with" in {
-      //      "an illegal HTTP method" in {
-      //        parse("get ") === Seq(NotImplemented, "Unsupported HTTP method: get")
-      //        parse("GETX ") === Seq(NotImplemented, "Unsupported HTTP method: GETX")
-      //      }
-      //
-      //      "two Content-Length headers" in {
-      //        parse {
-      //          """GET / HTTP/1.1
-      //            |Content-Length: 3
-      //            |Content-Length: 3
-      //            |
-      //            |foo"""
-      //        } === Seq(BadRequest, "HTTP message must not contain more than one Content-Length header")
-      //      }
-      //
-      //      "a too-long URI" in {
-      //        parse("GET /23456789012345678901 HTTP/1.1") ===
-      //          Seq(RequestUriTooLong, "URI length exceeds the configured limit of 20 characters")
-      //      }
-      //
-      //      "HTTP version 1.2" in {
-      //        parse {
-      //          """GET / HTTP/1.2
-      //            |"""
-      //        } ===
-      //          Seq(HTTPVersionNotSupported, "The server does not support the HTTP protocol version used in the request.")
-      //      }
-      //
-      //      "with an illegal char in a header name" in {
-      //        parse {
-      //          """|GET / HTTP/1.1
-      //            |User@Agent: curl/7.19.7"""
-      //        } === Seq(BadRequest, "Illegal character '@' in header name")
-      //      }
-      //
-      //      "with a too-long header name" in {
-      //        parse {
-      //          """|GET / HTTP/1.1
-      //            |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7"""
-      //        } === Seq(BadRequest, "HTTP header name exceeds the configured limit of 64 characters")
-      //      }
-      //
-      //      "with a too-long header-value" in {
-      //        parse {
-      //          """|GET / HTTP/1.1
-      //            |Fancy: 123456789012345678901234567890123"""
-      //        } === Seq(BadRequest, "HTTP header value exceeds the configured limit of 32 characters")
-      //      }
-      //
-      //      "with an invalid Content-Length header value" in {
-      //        parse {
-      //          """|GET / HTTP/1.0
-      //            |Content-Length: 1.5
-      //            |
-      //            |abc"""
-      //        } === Seq(BadRequest, "Illegal `Content-Length` header value")
-      //      }
-      //
-      //      "with Content-Length > Int.MaxSize if autochunking is disabled" in {
-      //        val request =
-      //          """PUT /resource/yes HTTP/1.1
-      //            |Content-length:    2147483649
-      //            |Host: x
-      //            |
-      //            |"""
-      //        val parser = new HttpRequestParser(ParserSettings(system).copy(autoChunkingThreshold = Long.MaxValue))()
-      //        parse(parser)(request) === Seq(400: StatusCode, "Content-Length > Int.MaxSize not supported for non-(auto)-chunked requests")
-      //      }
-      //
-      //      "with Content-Length > Long.MaxSize" in {
-      //        // content-length = (Long.MaxValue + 1) * 10, which is 0 when calculated overflow
-      //        parse {
-      //          """PUT /resource/yes HTTP/1.1
-      //            |Content-length: 92233720368547758080
-      //            |Host: x
-      //            |
-      //            |"""
-      //        } === Seq(400: StatusCode, "Illegal `Content-Length` header value")
-      //      }
+      "properly parse a chunked request" - {
+        val start =
+          """PATCH /data HTTP/1.1
+            |Transfer-Encoding: chunked
+            |Connection: lalelu
+            |Content-Type: application/pdf
+            |Host: ping
+            |
+            |"""
+        val baseRequest = HttpRequest(PATCH, "/data", List(Host("ping"), `Content-Type`(`application/pdf`),
+          Connection("lalelu"), `Transfer-Encoding`(TransferEncoding.chunked)))
+
+        "request start" in new Test {
+          Seq(start, "rest") should generalMultiParseTo(
+            Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, StreamProducer.empty))),
+            Left(ParseError(400: StatusCode, ErrorInfo("Illegal character 'r' in chunk start"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "message chunk with and without extension" in new Test {
+          Seq(start +
+            """3
+              |abc
+              |10;some=stuff;bla
+              |0123456789ABCDEF
+              |""",
+            "10;foo=",
+            """bar
+              |0123456789ABCDEF
+              |10
+              |0123456789""",
+            """ABCDEF
+              |dead""") should generalMultiParseTo(
+              Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, StreamProducer.of(
+                HttpEntity.Chunk(ByteString("abc")),
+                HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
+                HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
+                HttpEntity.Chunk(ByteString("0123456789ABCDEF"), ""))))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "message end" in new Test {
+          Seq(start,
+            """0
+              |
+              |""") should generalMultiParseTo(
+              Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, StreamProducer.of(HttpEntity.LastChunk)))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "message end with extension, trailer and remaining content" in new Test {
+          Seq(start,
+            """000;nice=true
+              |Foo: pip
+              | apo
+              |Bar: xyz
+              |
+              |GE""") should generalMultiParseTo(
+              Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`,
+                StreamProducer.of(HttpEntity.LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+      }
+
+      "reject a message chunk with" - {
+        val start =
+          """PATCH /data HTTP/1.1
+            |Transfer-Encoding: chunked
+            |Connection: lalelu
+            |Host: ping
+            |
+            |"""
+        val baseRequest = HttpRequest(PATCH, "/data", List(Host("ping"), Connection("lalelu"),
+          `Transfer-Encoding`(TransferEncoding.chunked)), HttpEntity.Chunked(`application/octet-stream`, StreamProducer.empty))
+
+        "an illegal char after chunk size" in new Test {
+          Seq(start,
+            """15 ;
+              |""") should generalMultiParseTo(Right(baseRequest),
+              Left(ParseError(400: StatusCode, ErrorInfo("Illegal character ' ' in chunk start"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "an illegal char in chunk size" in new Test {
+          Seq(start, "bla") should generalMultiParseTo(Right(baseRequest),
+            Left(ParseError(400: StatusCode, ErrorInfo("Illegal character 'l' in chunk start"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "too-long chunk extension" in new Test {
+          Seq(start, "3;" + ("x" * 257)) should generalMultiParseTo(Right(baseRequest),
+            Left(ParseError(400: StatusCode, ErrorInfo("HTTP chunk extension length exceeds configured limit of 256 characters"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "too-large chunk size" in new Test {
+          Seq(start,
+            """1a2b3c4d5e
+               |""") should generalMultiParseTo(Right(baseRequest),
+              Left(ParseError(400: StatusCode, ErrorInfo("HTTP chunk size exceeds the configured limit of 1048576 bytes"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "an illegal chunk termination" in new Test {
+          Seq(start,
+            """3
+              |abcde""") should generalMultiParseTo(Right(baseRequest),
+              Left(ParseError(400: StatusCode, ErrorInfo("Illegal chunk termination"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+
+        "an illegal header in the trailer" in new Test {
+          Seq(start,
+            """0
+              |F@oo: pip""") should generalMultiParseTo(Right(baseRequest),
+              Left(ParseError(400: StatusCode, ErrorInfo("Illegal character '@' in header name"))))
+          closeAfterResponseCompletion shouldEqual Seq(false)
+        }
+      }
+
+      "reject a request with" - {
+        "an illegal HTTP method" in new Test {
+          "get " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "get"))
+          "GETX " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "GETX"))
+        }
+
+        "two Content-Length headers" in new Test {
+          """GET / HTTP/1.1
+            |Content-Length: 3
+            |Content-Length: 3
+            |
+            |foo""" should parseToError(BadRequest,
+            ErrorInfo("HTTP message must not contain more than one Content-Length header"))
+        }
+
+        "a too-long URI" in new Test {
+          "GET /23456789012345678901 HTTP/1.1" should parseToError(RequestUriTooLong,
+            ErrorInfo("URI length exceeds the configured limit of 20 characters"))
+        }
+
+        "HTTP version 1.2" in new Test {
+          """GET / HTTP/1.2
+              |""" should parseToError(HTTPVersionNotSupported,
+            ErrorInfo("The server does not support the HTTP protocol version used in the request."))
+        }
+
+        "with an illegal char in a header name" in new Test {
+          """GET / HTTP/1.1
+            |User@Agent: curl/7.19.7""" should parseToError(BadRequest, ErrorInfo("Illegal character '@' in header name"))
+        }
+
+        "with a too-long header name" in new Test {
+          """|GET / HTTP/1.1
+            |UserxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxAgent: curl/7.19.7""" should parseToError(
+            BadRequest, ErrorInfo("HTTP header name exceeds the configured limit of 64 characters"))
+        }
+
+        "with a too-long header-value" in new Test {
+          """|GET / HTTP/1.1
+            |Fancy: 123456789012345678901234567890123""" should parseToError(BadRequest,
+            ErrorInfo("HTTP header value exceeds the configured limit of 32 characters"))
+        }
+
+        "with an invalid Content-Length header value" in new Test {
+          """GET / HTTP/1.0
+            |Content-Length: 1.5
+            |
+            |abc""" should parseToError(BadRequest, ErrorInfo("Illegal `Content-Length` header value"))
+        }
+
+        "with Content-Length > Long.MaxSize" in new Test {
+          // content-length = (Long.MaxValue + 1) * 10, which is 0 when calculated overflow
+          """PUT /resource/yes HTTP/1.1
+            |Content-length: 92233720368547758080
+            |Host: x
+            |
+            |""" should parseToError(400: StatusCode, ErrorInfo("Illegal `Content-Length` header value"))
+        }
+      }
     }
   }
 
@@ -388,7 +344,20 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       rawMultiParseTo(newParser, expected: _*)
 
     def rawMultiParseTo(parser: HttpRequestParser, expected: HttpRequest*): Matcher[Seq[String]] =
-      equal(expected).matcher[Seq[HttpRequest]] compose { input: Seq[String] ⇒
+      generalRawMultiParseTo(parser, expected.map(Right(_)): _*)
+
+    def parseToError(status: StatusCode, info: ErrorInfo): Matcher[String] =
+      generalMultiParseTo(Left(ParseError(status, info))).compose(_ :: Nil)
+
+    def generalMultiParseTo(expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
+      generalRawMultiParseTo(expected: _*).compose((_: Seq[String]) map prep)
+
+    def generalRawMultiParseTo(expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
+      generalRawMultiParseTo(newParser, expected: _*)
+
+    def generalRawMultiParseTo(parser: HttpRequestParser,
+                               expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
+      equal(expected).matcher[Seq[Either[ParseError, HttpRequest]]] compose { input: Seq[String] ⇒
         val future =
           Flow(input)
             .map(ByteString.apply)
@@ -398,11 +367,15 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             .collect {
               case (x: ParserOutput.RequestStart, entityParts) ⇒
                 closeAfterResponseCompletion :+= x.closeAfterResponseCompletion
-                HttpServerPipeline.constructRequest(x, entityParts)
+                Right(HttpServerPipeline.constructRequest(x, entityParts))
+              case (x: ParseError, _) ⇒ Left(x)
             }
-            .mapConcat { response ⇒ compactEntity(response.entity).map(response.withEntity) }
+            .mapConcat {
+              case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x)))
+              case Left(error)    ⇒ Future.successful(Left(error))
+            }
             .drainToSeq
-        Await.result(future, 100.millis)
+        Await.result(future, 250.millis)
       }
 
     private def newParser = new HttpRequestParser(ParserSettings(system))()

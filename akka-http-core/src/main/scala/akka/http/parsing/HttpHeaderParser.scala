@@ -66,6 +66,8 @@ private[parsing] final class HttpHeaderParser private (
   private[this] var valueCount: Int = 0,
   private[this] var trieIsPrivate: Boolean = false) { // signals the trie data can be mutated w/o having to copy first
 
+  // TODO: evaluate whether switching to a value-class-based approach allows us to improve code readability without sacrificing performance
+
   import HttpHeaderParser._
   import settings._
 
@@ -95,7 +97,7 @@ private[parsing] final class HttpHeaderParser private (
   def parseHeaderLine(input: ByteString, lineStart: Int = 0)(cursor: Int = lineStart, nodeIx: Int = 0): Int = {
     def startValueBranch(rootValueIx: Int, valueParser: HeaderValueParser) = {
       val (header, endIx) = valueParser(input, cursor, warnOnIllegalHeader)
-      if (valueParser.maxValueCount > 0)
+      if (valueParser.cachingEnabled)
         try {
           val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
           unshareIfRequired()
@@ -107,7 +109,7 @@ private[parsing] final class HttpHeaderParser private (
     }
     val node = nodes(nodeIx)
     node & 0xFF match {
-      case 0 ⇒ // leaf node
+      case 0 ⇒ // leaf node (or intermediate ValueBranch pointer)
         val valueIx = (node >>> 8) - 1
         values(valueIx) match {
           case branch: ValueBranch            ⇒ parseHeaderValue(input, cursor, branch)()
@@ -431,6 +433,7 @@ private object HttpHeaderParser {
   abstract class HeaderValueParser(val headerName: String, val maxValueCount: Int) {
     def apply(input: ByteString, valueStart: Int, warnOnIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int)
     override def toString: String = s"HeaderValueParser[$headerName]"
+    def cachingEnabled = maxValueCount > 0
   }
 
   class ModelledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int)
@@ -485,6 +488,17 @@ private object HttpHeaderParser {
 
   private object OutOfTrieSpaceException extends SingletonException
 
+  /**
+   * Instances of this class are added as "intermediate" values into the trie at the point where the header name has
+   * been parsed (so we know the header type).
+   * These instances behave like regular values (i.e. they live in the `values` array) but encapsulate meta information
+   * about the trie header-type-specific branch below them.
+   *
+   * @param valueIx The index into the `values` array that contains this instance (kind of a "self" pointer)
+   * @param parser The parser instance used to create the actual header model class for headers of this type
+   * @param branchRootNodeIx the nodeIx for the root node of the trie branch holding all cached header values of this type
+   * @param valueCount the number of values already stored in this header-type-specific branch
+   */
   private case class ValueBranch(valueIx: Int, parser: HeaderValueParser, branchRootNodeIx: Int, valueCount: Int) {
     def withValueCountIncreased = copy(valueCount = valueCount + 1)
     def spaceLeft = valueCount < parser.maxValueCount

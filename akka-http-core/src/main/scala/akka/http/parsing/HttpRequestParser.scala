@@ -112,6 +112,9 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
         case Some(x) ⇒ x.contentType
         case None    ⇒ ContentTypes.`application/octet-stream`
       }
+      def emitRequestStart(createEntity: Producer[ParserOutput.RequestOutput] ⇒ HttpEntity.Regular) =
+        emit(ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, closeAfterResponseCompletion))
+
       teh match {
         case None ⇒
           val contentLength = clh match {
@@ -122,20 +125,24 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             fail(RequestEntityTooLarge,
               s"Request Content-Length $contentLength exceeds the configured limit of $settings.maxContentLength")
           else {
-            def createEntity(entityParts: Producer[ParserOutput.RequestOutput]): HttpEntity.Regular = {
+            emitRequestStart { entityParts ⇒
               val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toProducer
               HttpEntity.Default(contentType, contentLength, data)
             }
-            emit(ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, closeAfterResponseCompletion))
             if (contentLength == 0) startNewMessage(input, bodyStart)
             else parseFixedLengthBody(contentLength)(input, bodyStart)
           }
 
         case Some(te) ⇒
-          if (te.encodings.size == 1 && te.hasChunked)
-            if (clh.isEmpty) parseChunk(input, bodyStart)
-            else fail("A chunked request must not contain a Content-Length header.")
-          else fail(NotImplemented, s"`$te` is not supported by this server")
+          if (te.encodings.size == 1 && te.hasChunked) {
+            if (clh.isEmpty) {
+              emitRequestStart { entityChunks ⇒
+                val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toProducer
+                HttpEntity.Chunked(contentType, chunks)
+              }
+              parseChunk(input, bodyStart)
+            } else fail("A chunked request must not contain a Content-Length header.")
+          } else fail(NotImplemented, s"`$te` is not supported by this server")
       }
     } else fail("Request is missing required `Host` header")
 }
