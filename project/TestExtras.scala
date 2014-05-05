@@ -3,16 +3,13 @@ package akka
 import sbt._
 import Keys._
 
-import com.timgroup.statsd.{StatsDClientErrorHandler, NonBlockingStatsDClient, StatsDClient}
-import java.util.concurrent.{ConcurrentHashMap, ConcurrentLinkedQueue}
+import com.timgroup.statsd.{StatsDClientErrorHandler, NonBlockingStatsDClient}
 import sbt.testing.{TestSelector, Status, Event}
-import java.io.File
-import com.typesafe.tools.mima.plugin.MimaKeys._
-import scala.Some
-import scala.Some
-import java.io.File
-import sbt.File
 import scala.util.Try
+import java.io.{InputStreamReader, BufferedReader, DataOutputStream, OutputStreamWriter}
+import java.net.{InetAddress, URLEncoder, HttpURLConnection, Socket}
+import com.typesafe.sbt.SbtGit
+import com.typesafe.sbt.SbtGit.GitKeys._
 
 object TestExtras {
 
@@ -22,6 +19,100 @@ object TestExtras {
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-u", (target.value / "test-reports").getAbsolutePath),
       testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath)
     )
+  }
+
+  object GraphiteBuildEvents {
+    val graphite = config("graphite")
+
+    val enabled = settingKey[Boolean]("Set to true when you want to send build events to graphite; Enable with `-Dakka.sbt.graphite=true`")
+
+    val host = settingKey[String]("Host where graphite is located (ip, or hostname)")
+
+    val port = settingKey[Int]("Port on which graphite is listening, defaults to 80")
+
+    private val notifier = settingKey[Option[GraphiteBuildNotifier]]("Notifies graphite about this build")
+
+    val settings = SbtGit.settings ++ SbtGit.projectSettings ++ Seq(
+      enabled in graphite := sys.props("akka.sbt.graphite") == "true",
+      host in graphite := sys.props.get("akka.sbt.graphite.host").getOrElse("54.72.154.120"),
+      port in graphite := sys.props.get("akka.sbt.graphite.port").flatMap(p => Try(p.toInt).toOption).getOrElse(80),
+
+      notifier := (enabled.in(graphite).value match {
+        case true => Some(new GraphiteBuildNotifier(gitCurrentBranch.value, gitHeadCommit.value, host.in(graphite).value, port.in(graphite).value))
+        case _ => None
+      }),
+
+      // this wraps the test task in order to send events before and after it
+      test in Test := Def.settingDyn {
+        val g = notifier.value
+        g.foreach(_.start())
+
+        // todo support complete(failed / successful)
+        val task = (test in Test).taskValue andFinally { g.foreach(_.complete()) }
+
+        Def.setting(task)
+      }.value
+    )
+
+    /**
+     * Notifies graphite by sending an *event*, when a build starts.
+     * It will be tagged as "akka-build" and "branch:...", for filtering in UIs.
+     *
+     * Event includes branch and commit id of the build that is running.
+     */
+    class GraphiteBuildNotifier(branch: String, commitId: Option[String], host: String, port: Int)  {
+
+      private val url = new URL(s"http://$host:$port/events/")
+
+      private val hostname = InetAddress.getLocalHost.getHostName
+
+      private val marker = branch + commitId.fold("")(id => s" @ $id")
+
+      private def json(what: String, tag: String, data: String = "") =
+        s"""{ "what": "$what", "tags": "akka-build,branch:${sanitize(branch)},$tag", "data": "$data"}""".stripMargin
+
+      def start(): Unit = send(s"Build started: $marker", data = "host = " + hostname, tag = "started")
+
+      def complete(): Unit = send(s"Build completed: $marker", data = "host = " + hostname, tag = "completed")
+
+      def send(msg: String, data: String, tag: String) = try {
+        // specifically not using Akka-IO (even though I'd love to), in order to not make the akka build depend on akka itself
+        val con = url.openConnection().asInstanceOf[HttpURLConnection]
+        try {
+          val bytes = json(msg, data, tag).getBytes("UTF-8")
+          con.setDoOutput(true) // triggers POST
+          con.connect()
+
+          val out = new DataOutputStream(con.getOutputStream)
+          try {
+            out.write(bytes)
+            out.flush()
+
+            // sigh, if left un-consumed graphite wouldn't take the write (*really*)!
+            consume(con)
+
+          } finally {
+            out.close()
+          }
+        } finally {
+          con.disconnect()
+        }
+      }
+
+      private def sanitize(s: String): String = s.replaceAll("""[^\w]+""", "-")
+
+      private def consume(con: HttpURLConnection) {
+        val in = new BufferedReader(new InputStreamReader(con.getInputStream))
+        var inputLine = ""
+        try {
+          while (inputLine != null) {
+            inputLine = in.readLine()
+          }
+        } finally {
+          in.close()
+        }
+      }
+    }
   }
 
   object StatsDMetrics {
@@ -46,14 +137,14 @@ object TestExtras {
       port in statsd := Option(sys.props("akka.sbt.statsd.port")).flatMap(p => Try(p.toInt).toOption).getOrElse(8125),
 
       testListeners in(Test, test) ++= {
-        // for test
+        // for `test`
         enabled.in(statsd).value match {
           case true => Seq(StatsDTestListener(streams.value.log, prefix.in(statsd).value, host.in(statsd).value, port.in(statsd).value))
           case _ => Nil
         }
       },
       testListeners ++= {
-        // for testOnly
+        // for `testOnly`
         enabled.in(statsd).value match {
           case true => Seq(StatsDTestListener(streams.value.log, prefix.in(statsd).value, host.in(statsd).value, port.in(statsd).value))
           case _ => Nil
@@ -73,16 +164,15 @@ object TestExtras {
       }
 
       override def testEvent(event: TestEvent) {
-        event.detail foreach {
-          det =>
-            det.status match {
-              case Status.Success =>
-                client.incrementCounter(testCounterKey(det, det.status))
-                client.recordExecutionTime(testTimerKey(det), det.duration.toInt + 1000 + (Math.random() * 1000).toInt)
+        event.detail foreach { det =>
+          det.status match {
+            case Status.Success =>
+              client.incrementCounter(testCounterKey(det, det.status))
+              client.recordExecutionTime(testTimerKey(det), det.duration.toInt)
 
-              case status =>
-                client.incrementCounter(testCounterKey(det, status))
-            }
+            case status =>
+              client.incrementCounter(testCounterKey(det, status))
+          }
         }
       }
 

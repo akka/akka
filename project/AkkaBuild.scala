@@ -26,8 +26,8 @@ import java.util.Properties
 import annotation.tailrec
 import sbtunidoc.Plugin.{ ScalaUnidoc, JavaUnidoc, scalaJavaUnidocSettings, genjavadocSettings, scalaUnidocSettings }
 import sbtunidoc.Plugin.UnidocKeys.{ unidoc, unidocProjectFilter }
-import TestExtras.{ JUnitFileReporting, StatsDMetrics }
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
+import akka.TestExtras.{ JUnitFileReporting, StatsDMetrics, GraphiteBuildEvents }
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -50,9 +50,11 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ unidocSettings ++ Publish.versionSettings ++
+    settings = parentSettings ++
+      Release.settings ++ unidocSettings ++ Publish.versionSettings ++
+      GraphiteBuildEvents.settings ++
       SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ scaladocSettings ++
-      StatsDMetrics.settings ++ Protobuf.settings ++ inTask(unidoc)(Seq(
+      Protobuf.settings ++ inTask(unidoc)(Seq(
         unidocProjectFilter in ScalaUnidoc := docProjectFilter,
         unidocProjectFilter in JavaUnidoc := docProjectFilter,
         apiMappings in ScalaUnidoc := (apiMappings in (Compile, doc)).value
@@ -722,7 +724,9 @@ object AkkaBuild extends Build {
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
     validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
 
-  ) ++ mavenLocalResolverSettings ++ JUnitFileReporting.settings ++ StatsDMetrics.settings
+  ) ++
+    mavenLocalResolverSettings ++
+    JUnitFileReporting.settings ++ StatsDMetrics.settings
 
   val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
   // the tasks that to run for validation is defined in defaultSettings
@@ -733,7 +737,7 @@ object AkkaBuild extends Build {
     "http://github.com/akka/akka/tree/" + branch
   }
 
-  // preprocessing settings for sphinx
+  // pre-processing settings for sphinx
   lazy val sphinxPreprocessing = inConfig(Sphinx)(Seq(
     target in preprocess <<= baseDirectory / "rst_preprocessed",
     preprocessExts := Set("rst", "py"),
