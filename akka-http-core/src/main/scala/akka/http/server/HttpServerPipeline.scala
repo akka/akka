@@ -25,7 +25,8 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     if (settings.parserSettings.illegalHeaderWarnings)
       log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
 
-  val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.chunklessStreaming)
+  val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.chunklessStreaming,
+    settings.responseHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
     import refFactory.dispatcher
@@ -47,7 +48,8 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     val responseStream =
       Operation[HttpResponse]
         .fanIn(applicationBypass, ApplicationBypassFanIn)
-        .mapConcat(responseRendererFactory.newRenderer)
+        .transform(responseRendererFactory.newRenderer)
+        .concatAll
         .produceTo(tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestStream, responseStream)

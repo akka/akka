@@ -30,8 +30,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     akka.loglevel = WARNING
     akka.http.parsing.max-header-value-length = 32
     akka.http.parsing.max-uri-length = 20
-    akka.http.parsing.max-content-length = 4000000000
-    akka.http.parsing.incoming-auto-chunking-threshold-size = 20""")
+    akka.http.parsing.max-content-length = 4000000000""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
@@ -338,7 +337,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParseTo(expected: HttpRequest*): Matcher[Seq[String]] = multiParseTo(newParser, expected: _*)
 
     def multiParseTo(parser: HttpRequestParser, expected: HttpRequest*): Matcher[Seq[String]] =
-      rawMultiParseTo(parser, expected: _*).compose((_: Seq[String]) map prep)
+      rawMultiParseTo(parser, expected: _*).compose(_ map prep)
 
     def rawMultiParseTo(expected: HttpRequest*): Matcher[Seq[String]] =
       rawMultiParseTo(newParser, expected: _*)
@@ -350,7 +349,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       generalMultiParseTo(Left(ParseError(status, info))).compose(_ :: Nil)
 
     def generalMultiParseTo(expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
-      generalRawMultiParseTo(expected: _*).compose((_: Seq[String]) map prep)
+      generalRawMultiParseTo(expected: _*).compose(_ map prep)
 
     def generalRawMultiParseTo(expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
       generalRawMultiParseTo(newParser, expected: _*)

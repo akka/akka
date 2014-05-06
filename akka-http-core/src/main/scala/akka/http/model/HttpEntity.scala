@@ -18,7 +18,7 @@ sealed trait HttpEntity {
   /**
    * Determines whether this entity is known to be empty.
    */
-  def isEmpty: Boolean
+  def isKnownEmpty: Boolean
 
   /**
    * The `ContentType` associated with this entity.
@@ -66,7 +66,7 @@ object HttpEntity {
                      contentLength: Long,
                      data: Producer[ByteString]) extends Regular {
     require(contentLength >= 0, "contentLength must be non-negative")
-    def isEmpty = contentLength == 0
+    def isKnownEmpty = contentLength == 0
   }
 
   /**
@@ -75,14 +75,14 @@ object HttpEntity {
    * Note that this type of HttpEntity cannot be used for HttpRequests!
    */
   case class CloseDelimited(contentType: ContentType, data: Producer[ByteString]) extends HttpEntity {
-    def isEmpty = false
+    def isKnownEmpty = data eq StreamProducer.EmptyProducer
   }
 
   /**
    * The model for the entity of a chunked HTTP message (with `Transfer-Encoding: chunked`).
    */
   case class Chunked(contentType: ContentType, chunks: Producer[ChunkStreamPart]) extends Regular {
-    def isEmpty = false
+    def isKnownEmpty = chunks eq StreamProducer.EmptyProducer
   }
 
   /**
@@ -91,18 +91,23 @@ object HttpEntity {
    */
   sealed trait ChunkStreamPart {
     def data: ByteString
+    def extension: String
+    def isLastChunk: Boolean
   }
 
   /**
    * An intermediate entity chunk guaranteed to carry non-empty data.
    */
-  case class Chunk(data: ByteString, extension: String = "") extends ChunkStreamPart
+  case class Chunk(data: ByteString, extension: String = "") extends ChunkStreamPart {
+    def isLastChunk = false
+  }
 
   /**
    * An intermediate entity chunk guaranteed to carry non-empty data.
    */
   case class LastChunk(extension: String = "", trailer: immutable.Seq[HttpHeader] = Nil) extends ChunkStreamPart {
     def data = ByteString.empty
+    def isLastChunk = true
   }
   object LastChunk extends LastChunk("", Nil)
 }
