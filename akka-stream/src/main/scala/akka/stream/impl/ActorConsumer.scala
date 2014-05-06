@@ -123,6 +123,7 @@ private[akka] abstract class AbstractActorConsumer(val settings: MaterializerSet
  */
 private[akka] class TransformActorConsumer(_settings: MaterializerSettings, transformer: Transformer[Any, Any]) extends AbstractActorConsumer(_settings) with ActorLogging {
 
+  var hasCleanupRun = false
   private var onCompleteCalled = false
   private def callOnComplete(): Unit = {
     if (!onCompleteCalled) {
@@ -146,6 +147,16 @@ private[akka] class TransformActorConsumer(_settings: MaterializerSettings, tran
 
   override def onComplete(): Unit = {
     callOnComplete()
+  }
+
+  override def softShutdown(): Unit = {
+    transformer.cleanup()
+    hasCleanupRun = true // for postStop
+    super.softShutdown()
+  }
+
+  override def postStop(): Unit = {
+    try super.postStop() finally if (!hasCleanupRun) transformer.cleanup()
   }
 }
 

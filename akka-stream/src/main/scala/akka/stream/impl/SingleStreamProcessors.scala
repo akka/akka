@@ -49,7 +49,8 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
     else NeedsInputAndDemandOrCompletion
   }
 
-  override def toString: String = s"Transformer(isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits)"
+  override def toString: String = s"Transformer(isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits, " +
+    s"transformer=$transformer)"
 
   override def softShutdown(): Unit = {
     transformer.cleanup()
@@ -68,13 +69,43 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
 private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, recoveryTransformer: RecoveryTransformer[Any, Any])
   extends TransformProcessorImpl(_settings, recoveryTransformer) {
 
-  override def primaryInputOnError(e: Throwable): Unit =
-    try {
-      emits = recoveryTransformer.onError(e)
-      primaryInputs.complete()
-      context.become(flushing)
-      pump()
-    } catch { case NonFatal(e) ⇒ fail(e) }
+  var error: Option[Throwable] = None
+
+  override def transfer(): TransferState = {
+    val inputDrained = !primaryInputs.inputsAvailable
+    val depleted = primaryInputs.inputsDepleted
+    if (emits.isEmpty && error.isDefined && inputDrained) {
+      try {
+        val onErrorElements = recoveryTransformer.onError(error.get)
+        emits ++= onErrorElements
+      } catch { case NonFatal(e) ⇒ fail(e) } finally { error = None }
+    } else if (emits.isEmpty) {
+      isComplete = recoveryTransformer.isComplete
+      if (depleted || isComplete) {
+        emits = recoveryTransformer.onComplete()
+        hasOnCompleteRun = true
+      } else {
+        val e = primaryInputs.dequeueInputElement()
+        emits = recoveryTransformer.onNext(e)
+      }
+
+    } else {
+      primaryOutputs.enqueueOutputElement(emits.head)
+      emits = emits.tail
+    }
+
+    if (emits.nonEmpty) primaryOutputs.NeedsDemand
+    else if (hasOnCompleteRun) Completed
+    else NeedsInputAndDemandOrCompletion
+  }
+
+  override def primaryInputOnError(e: Throwable): Unit = {
+    error = Some(e)
+    primaryInputs.complete()
+    context.become(flushing)
+    pump()
+  }
+
 }
 
 /**

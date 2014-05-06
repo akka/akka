@@ -178,8 +178,6 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   }
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
-  //////////////////////  Shutdown and cleanup (graceful and abort) //////////////////////
-
   var isShuttingDown = false
   var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
@@ -198,7 +196,6 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    reason.printStackTrace()
     super.preRestart(reason, message)
     throw new IllegalStateException("This actor cannot be restarted")
   }

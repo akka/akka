@@ -21,6 +21,15 @@ import akka.stream.scaladsl.RecoveryTransformer
 private[akka] object FlowImpl {
   private val SuccessUnit = Success[Unit](())
   private val ListOfUnit = List(())
+
+  val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = Nil
+    override def isComplete = true
+  }
+
+  val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = List(elem)
+  }
 }
 
 /**
@@ -60,25 +69,39 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   override def drop(n: Int): Flow[O] =
     transform(new Transformer[O, O] {
-      var c = n
-      override def onNext(in: O) =
-        if (c == 0) List(in)
-        else {
-          c -= 1
-          Nil
+      var delegate: Transformer[O, O] =
+        if (n == 0) identityTransformer.asInstanceOf[Transformer[O, O]]
+        else new Transformer[O, O] {
+          var c = n
+          override def onNext(in: O) = {
+            c -= 1
+            if (c == 0)
+              delegate = identityTransformer.asInstanceOf[Transformer[O, O]]
+            Nil
+          }
         }
+
+      override def onNext(in: O) = delegate.onNext(in)
     })
 
   override def take(n: Int): Flow[O] =
     transform(new Transformer[O, O] {
-      var c = n
-      override def onNext(in: O) =
-        if (c == 0) Nil
-        else {
-          c -= 1
-          List(in)
+      var delegate: Transformer[O, O] =
+        if (n == 0) takeCompletedTransformer.asInstanceOf[Transformer[O, O]]
+        else new Transformer[O, O] {
+          var c = n
+          override def onNext(in: O) = {
+            c -= 1
+            if (c == 0)
+              delegate = takeCompletedTransformer.asInstanceOf[Transformer[O, O]]
+            List(in)
+          }
+
+          override def isComplete = c == 0
         }
-      override def isComplete = c == 0
+
+      override def onNext(in: O) = delegate.onNext(in)
+      override def isComplete = delegate.isComplete
     })
 
   override def grouped(n: Int): Flow[immutable.Seq[O]] =

@@ -179,6 +179,22 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       cleanupProbe.expectMsg("a")
     }
 
+    "invoke cleanup when done consume" in {
+      val cleanupProbe = TestProbe()
+      val p = Flow(List("a").iterator).toProducer(materializer)
+      val p2 = Flow(p).
+        transform(new Transformer[String, String] {
+          var s = "x"
+          override def onNext(element: String) = {
+            s = element
+            List(element)
+          }
+          override def cleanup() = cleanupProbe.ref ! s
+        }).
+        consume(materializer)
+      cleanupProbe.expectMsg("a")
+    }
+
     "invoke cleanup when done after error" in {
       val cleanupProbe = TestProbe()
       val p = Flow(List("a", "b", "c").iterator).toProducer(materializer)

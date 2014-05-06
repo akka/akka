@@ -235,10 +235,55 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       p2.produceTo(consumer)
       val subscription = consumer.expectSubscription()
       EventFilter[IllegalArgumentException]("two not allowed") intercept {
+        subscription.requestMore(1)
+        consumer.expectNext(1)
+        consumer.expectNoMsg(200.millis)
         subscription.requestMore(100)
         consumer.expectNext(1)
-        consumer.expectNext(1)
         consumer.expectError().getMessage should be("two not allowed")
+        consumer.expectNoMsg(200.millis)
+      }
+    }
+
+    "report error after emitted elements" in {
+      EventFilter[IllegalArgumentException]("two not allowed") intercept {
+        val p2 = Flow(List(1, 2, 3).iterator).
+          mapConcat { elem ⇒
+            if (elem == 2) throw new IllegalArgumentException("two not allowed")
+            else (1 to 5).map(elem * 100 + _)
+          }.
+          transformRecover(new RecoveryTransformer[Int, Int] {
+            override def onNext(elem: Int) = List(elem)
+            override def onError(e: Throwable) = List(-1, -2, -3)
+          }).
+          toProducer(materializer)
+        val consumer = StreamTestKit.consumerProbe[Int]
+        p2.produceTo(consumer)
+        val subscription = consumer.expectSubscription()
+
+        subscription.requestMore(1)
+        consumer.expectNext(101)
+        consumer.expectNoMsg(100.millis)
+        subscription.requestMore(1)
+        consumer.expectNext(102)
+        consumer.expectNoMsg(100.millis)
+        subscription.requestMore(1)
+        consumer.expectNext(103)
+        consumer.expectNoMsg(100.millis)
+        subscription.requestMore(1)
+        consumer.expectNext(104)
+        consumer.expectNoMsg(100.millis)
+        subscription.requestMore(1)
+        consumer.expectNext(105)
+        consumer.expectNoMsg(100.millis)
+
+        subscription.requestMore(1)
+        consumer.expectNext(-1)
+        consumer.expectNoMsg(100.millis)
+        subscription.requestMore(10)
+        consumer.expectNext(-2)
+        consumer.expectNext(-3)
+        consumer.expectComplete()
         consumer.expectNoMsg(200.millis)
       }
     }

@@ -136,7 +136,7 @@ trait Flow[+T] {
 
   /**
    * Generic transformation of a stream: for each element the [[Transformer#onNext]]
-   * function is invoked and expecting a (possibly empty) sequence of output elements
+   * function is invoked, expecting a (possibly empty) sequence of output elements
    * to be produced.
    * After handing off the elements produced from one input element to the downstream
    * consumers, the [[Transformer#isComplete]] predicate determines whether to end
@@ -261,20 +261,51 @@ trait Flow[+T] {
 
 /**
  * General interface for stream transformation.
+ *
+ * It is possible to keep state in the concrete [[Transformer]] instance with
+ * ordinary instance variables. The [[Transformer]] is executed by an actor and
+ * therefore you don not have to add any additional thread safety or memory
+ * visibility constructs to access the state from the callback methods.
+ *
  * @see [[Flow#transform]]
  */
 trait Transformer[-T, +U] {
+  /**
+   * Invoked for each element to produce a (possibly empty) sequence of
+   * output elements.
+   */
   def onNext(element: T): immutable.Seq[U]
+
+  /**
+   * Invoked after handing off the elements produced from one input element to the
+   * downstream consumers to determine whether to end stream processing at this point;
+   * in that case the upstream subscription is canceled.
+   */
   def isComplete: Boolean = false
+
+  /**
+   * Invoked before signaling normal completion to the downstream consumers
+   * to produce a (possibly empty) sequence of elements in response to the
+   * end-of-stream event.
+   */
   def onComplete(): immutable.Seq[U] = Nil
+
+  /**
+   * Invoked after normal completion or error.
+   */
   def cleanup(): Unit = ()
 }
 
 /**
  * General interface for stream transformation.
  * @see [[Flow#transformRecover]]
+ * @see [[Transformer]]
  */
 trait RecoveryTransformer[-T, +U] extends Transformer[T, U] {
+  /**
+   * Invoked when failure is signaled from upstream to emit an additional
+   * sequence of elements before the stream ends.
+   */
   def onError(cause: Throwable): immutable.Seq[U]
 }
 
