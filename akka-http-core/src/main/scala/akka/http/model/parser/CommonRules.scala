@@ -75,15 +75,15 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   }
 
   def `day-name` = rule(
-    ("Mon" -> 1) | ("Tue" -> 2) | ("Wed" -> 3) | ("Thu" -> 4) | ("Fri" -> 5) | ("Sat" -> 6) | ("Sun" -> 0))
+    "Mon" ~ push(1) | "Tue" ~ push(2) | "Wed" ~ push(3) | "Thu" ~ push(4) | "Fri" ~ push(5) | "Sat" ~ push(6) | "Sun" ~ push(7))
 
   def date1 = rule { day ~ ' ' ~ month ~ ' ' ~ year }
 
   def day = rule { digit2 }
 
   def month = rule(
-    ("Jan" -> 1) | ("Feb" -> 2) | ("Mar" -> 3) | ("Apr" -> 4) | ("May" -> 5) | ("Jun" -> 6) | ("Jul" -> 7) |
-      ("Aug" -> 8) | ("Sep" -> 9) | ("Oct" -> 10) | ("Nov" -> 11) | ("Dec" -> 12))
+    "Jan" ~ push(1) | "Feb" ~ push(2) | "Mar" ~ push(3) | "Apr" ~ push(4) | "May" ~ push(5) | "Jun" ~ push(6) | "Jul" ~ push(7) |
+      "Aug" ~ push(8) | "Sep" ~ push(9) | "Oct" ~ push(10) | "Nov" ~ push(11) | "Dec" ~ push(12))
 
   def year = rule { digit4 }
 
@@ -99,8 +99,8 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   def date2 = rule { day ~ '-' ~ month ~ '-' ~ digit2 }
 
   def `day-name-l` = rule(
-    ("Monday" -> 1) | ("Tuesday" -> 2) | ("Wednesday" -> 3) | ("Thursday" -> 4) | ("Friday" -> 5) |
-      ("Saturday" -> 6) | ("Sunday" -> 0))
+    "Monday" ~ push(1) | "Tuesday" ~ push(2) | "Wednesday" ~ push(3) | "Thursday" ~ push(4) | "Friday" ~ push(5) |
+      "Saturday" ~ push(6) | "Sunday" ~ push(7))
 
   def `asctime-date` = rule {
     `day-name` ~ ' ' ~ date3 ~ ' ' ~ `time-of-day` ~ ' ' ~ year ~> {

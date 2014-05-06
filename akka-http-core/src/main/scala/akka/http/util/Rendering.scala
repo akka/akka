@@ -124,17 +124,7 @@ trait Rendering {
 
   def ~~(i: Int): this.type = this ~~ i.toLong
 
-  def ~~(lng: Long): this.type =
-    if (lng != 0) {
-      val value = if (lng < 0) { this ~~ '-'; -lng } else lng
-      @tailrec def magnitude(m: Long = 1): Long = if ((value / m) < 10) m else magnitude(m * 10)
-      @tailrec def putNextChar(v: Long, m: Long): this.type =
-        if (m > 0) {
-          this ~~ ('0' + (v / m)).toChar
-          putNextChar(v % m, m / 10)
-        } else this
-      putNextChar(value, magnitude())
-    } else this ~~ '0'
+  def ~~(l: Long): this.type = if (l != 0) this ~~ CharUtils.signedDecimalChars(l) else this ~~ '0'
 
   /**
    * Renders the given Int in (lower case) hex notation.
@@ -150,9 +140,7 @@ trait Rendering {
         this ~~ CharUtils.lowerHexDigit(lng >>> shift)
         if (shift > 0) putChar(shift - 4) else this
       }
-      @tailrec def skipZeros(shift: Int = 60): this.type =
-        if ((lng >>> shift) > 0) putChar(shift) else skipZeros(shift - 4)
-      skipZeros()
+      putChar((63 - java.lang.Long.numberOfLeadingZeros(lng)) & 0xFC)
     } else this ~~ '0'
 
   def ~~(string: String): this.type = {
