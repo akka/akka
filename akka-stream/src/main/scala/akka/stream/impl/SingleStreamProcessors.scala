@@ -5,17 +5,19 @@ package akka.stream.impl
 
 import scala.collection.immutable
 import scala.util.{ Failure, Success }
-
 import akka.actor.Props
 import akka.stream.MaterializerSettings
+import akka.stream.scaladsl.RecoveryTransformer
+import akka.stream.scaladsl.Transformer
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: Ast.Transform) extends ActorProcessorImpl(_settings) {
-  var state = op.zero
+private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: Transformer[Any, Any]) extends ActorProcessorImpl(_settings) {
   var isComplete = false
   var hasOnCompleteRun = false
+  var hasCleanupRun = false
   // TODO performance improvement: mutable buffer?
   var emits = immutable.Seq.empty[Any]
 
@@ -29,15 +31,13 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: 
   override def transfer(): TransferState = {
     val depleted = primaryInputs.inputsDepleted
     if (emits.isEmpty) {
-      isComplete = op.isComplete(state)
+      isComplete = transformer.isComplete
       if (depleted || isComplete) {
-        emits = op.onComplete(state)
+        emits = transformer.onComplete()
         hasOnCompleteRun = true
       } else {
         val e = primaryInputs.dequeueInputElement()
-        val (nextState, newEmits) = op.f(state, e)
-        state = nextState
-        emits = newEmits
+        emits = transformer.onNext(e)
       }
     } else {
       primaryOutputs.enqueueOutputElement(emits.head)
@@ -49,38 +49,62 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, op: 
     else NeedsInputAndDemandOrCompletion
   }
 
-  override def toString: String = s"Transformer(state=$state, isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits)"
+  override def toString: String = s"Transformer(isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits, " +
+    s"transformer=$transformer)"
 
   override def softShutdown(): Unit = {
-    op.cleanup(state)
-    state = this // marker for postStop that cleanup has been done
+    transformer.cleanup()
+    hasCleanupRun = true // for postStop
     super.softShutdown()
   }
 
   override def postStop(): Unit = {
-    try super.postStop() finally if (state != this) op.cleanup(state)
+    try super.postStop() finally if (!hasCleanupRun) transformer.cleanup()
   }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, _op: Ast.Recover) extends TransformProcessorImpl(_settings, _op.t) {
+private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, recoveryTransformer: RecoveryTransformer[Any, Any])
+  extends TransformProcessorImpl(_settings, recoveryTransformer) {
 
-  val wrapInSuccess: Receive = {
-    case OnNext(elem) ⇒
-      primaryInputs.enqueueInputElement(Success(elem))
-      pump()
+  var error: Option[Throwable] = None
+
+  override def transfer(): TransferState = {
+    val inputDrained = !primaryInputs.inputsAvailable
+    val depleted = primaryInputs.inputsDepleted
+    if (emits.isEmpty && error.isDefined && inputDrained) {
+      val e = error.get
+      error = None
+      emits = recoveryTransformer.onError(e)
+    } else if (emits.isEmpty) {
+      isComplete = recoveryTransformer.isComplete
+      if (depleted || isComplete) {
+        emits = recoveryTransformer.onComplete()
+        hasOnCompleteRun = true
+      } else {
+        val e = primaryInputs.dequeueInputElement()
+        emits = recoveryTransformer.onNext(e)
+      }
+
+    } else {
+      primaryOutputs.enqueueOutputElement(emits.head)
+      emits = emits.tail
+    }
+
+    if (emits.nonEmpty) primaryOutputs.NeedsDemand
+    else if (hasOnCompleteRun) Completed
+    else NeedsInputAndDemandOrCompletion
   }
 
-  override def running: Receive = wrapInSuccess orElse super.running
-
   override def primaryInputOnError(e: Throwable): Unit = {
-    primaryInputs.enqueueInputElement(Failure(e))
+    error = Some(e)
     primaryInputs.complete()
     context.become(flushing)
     pump()
   }
+
 }
 
 /**
