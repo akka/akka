@@ -104,7 +104,7 @@ trait Flow[+T] {
   /**
    * Invoke the given procedure for each received element and produce a Unit value
    * upon reaching the normal end of the stream. Please note that also in this case
-   * the flow needs to be materialized (e.g. using [[#consume]]) to initiate its
+   * the `Flow` needs to be materialized (e.g. using [[#consume]]) to initiate its
    * execution.
    */
   def foreach(c: T ⇒ Unit): Flow[Unit]

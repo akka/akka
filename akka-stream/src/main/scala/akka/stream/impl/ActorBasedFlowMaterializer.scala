@@ -114,15 +114,20 @@ private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _
     }
   }
 
-  private val identityConsumer = Transform(
+  private val blackholeTransform = Transform(
     new Transformer[Any, Any] {
       override def onNext(element: Any) = Nil
+    })
+
+  private val identityTransform = Transform(
+    new Transformer[Any, Any] {
+      override def onNext(element: Any) = List(element)
     })
 
   override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
     val consumer = ops match {
       case Nil ⇒
-        new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, identityConsumer)))
+        new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform)))
       case head :: tail ⇒
         val c = new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, head)))
         processorChain(c, tail)
@@ -131,5 +136,22 @@ private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _
   }
 
   def processorForNode(op: AstNode): Processor[Any, Any] = new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op)))
+
+  override def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In] =
+    processorChain(consumer, ops).asInstanceOf[Consumer[In]]
+
+  override def ductConsume[In, Out](ops: List[Ast.AstNode]): Consumer[In] =
+    ductProduceTo(new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform))), ops)
+
+  override def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out]) = {
+    if (ops.isEmpty) {
+      val identityProcessor: Processor[In, Out] = processorForNode(identityTransform).asInstanceOf[Processor[In, Out]]
+      (identityProcessor, identityProcessor)
+    } else {
+      val outProcessor = processorForNode(ops.head).asInstanceOf[Processor[In, Out]]
+      val topConsumer = processorChain(outProcessor, ops.tail).asInstanceOf[Processor[In, Out]]
+      (topConsumer, outProcessor)
+    }
+  }
 
 }
