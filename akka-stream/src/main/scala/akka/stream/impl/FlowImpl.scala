@@ -6,6 +6,7 @@ package akka.stream.impl
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.util.Try
+import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
 import Ast.{ AstNode, Recover, Transform }
 import akka.stream.FlowMaterializer
@@ -167,5 +168,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
     }).consume(materializer)
 
   override def toProducer(materializer: FlowMaterializer): Producer[O] = materializer.toProducer(producerNode, ops)
+
+  override def produceTo(materializer: FlowMaterializer, consumer: Consumer[O]) =
+    toProducer(materializer).produceTo(consumer)
 }
 
