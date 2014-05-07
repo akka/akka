@@ -58,7 +58,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
 
   }
 
-  val tcpOutputs = new DefaultOutputTransferStates {
+  object tcpOutputs extends DefaultOutputTransferStates {
     private var closed: Boolean = false
     private var pendingDemand = true
     override def isClosed: Boolean = closed
@@ -79,7 +79,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     override def demandAvailable: Boolean = pendingDemand
   }
 
-  val writePump = new Pump {
+  object writePump extends Pump {
     lazy val NeedsInputAndDemand = primaryInputs.NeedsInput && tcpOutputs.NeedsDemand
     override protected def transfer(): TransferState = {
       var batch = ByteString.empty
@@ -92,7 +92,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     override protected def pumpContext: ActorRefFactory = context
   }
 
-  val readPump = new Pump {
+  object readPump extends Pump {
     lazy val NeedsInputAndDemand = tcpInputs.NeedsInput && primaryOutputs.NeedsDemand
     override protected def transfer(): TransferState = {
       primaryOutputs.enqueueOutputElement(tcpInputs.dequeueInputElement())
