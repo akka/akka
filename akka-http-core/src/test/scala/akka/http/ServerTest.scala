@@ -4,6 +4,7 @@
 
 package akka.http
 
+import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
 import waves.Flow
 import akka.io.IO
@@ -14,9 +15,12 @@ import akka.http.model._
 import HttpMethods._
 
 object ServerTest extends App {
-  implicit val system = ActorSystem()
+  val testConf: Config = ConfigFactory.parseString("""
+    akka.loglevel = INFO
+    akka.log-dead-letters = off
+    """)
+  implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
-  import system.log
 
   val requestHandler: HttpRequest ⇒ HttpResponse = {
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
@@ -29,10 +33,9 @@ object ServerTest extends App {
   val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
   bindingFuture foreach {
     case Http.ServerBinding(localAddress, connectionStream) ⇒
-      log.info("Successfully bound to {}", localAddress)
       Flow(connectionStream).drain {
         case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
-          log.info("Accepted new connection from {}", remoteAddress)
+          println("Accepted new connection from " + remoteAddress)
           Flow(requestProducer).map(requestHandler).produceTo(responseConsumer)
       }
   }

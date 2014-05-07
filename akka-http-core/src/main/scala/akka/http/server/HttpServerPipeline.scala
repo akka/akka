@@ -50,6 +50,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
         .fanIn(applicationBypass, ApplicationBypassFanIn)
         .transform(responseRendererFactory.newRenderer)
         .concatAll
+        .onError(e ⇒ log.error(e, "Response stream error"))
         .produceTo(tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestProducer, responseConsumer)
@@ -110,11 +111,12 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     def secondaryOnNext(element: MessageStart with RequestOutput): Unit =
       if (!completed)
         element match {
-          case x: RequestStart ⇒
-            if (applicationResponse ne null) {
+          case x: RequestStart ⇒ applicationResponse match {
+            case null ⇒ requestStart = x
+            case response ⇒
               applicationResponse = null
-              dispatch(x, applicationResponse)
-            } else requestStart = x
+              dispatch(x, response)
+          }
           case ParseError(status, info) ⇒
             downstream.onNext(errorResponse(status, info))
             cancel()
