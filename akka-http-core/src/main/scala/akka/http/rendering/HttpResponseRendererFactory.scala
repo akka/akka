@@ -63,7 +63,7 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
       @tailrec def renderHeaders(remaining: List[HttpHeader], contentLengthAllowed: Boolean, alwaysClose: Boolean = false,
                                  userContentType: Boolean = false, connHeader: Connection = null): Unit = {
         def render(h: HttpHeader) = r ~~ h ~~ CrLf
-        def suppressionWarning(h: HttpHeader, msg: String = "the spray-can HTTP layer sets this header automatically!"): Unit =
+        def suppressionWarning(h: HttpHeader, msg: String = "the akka-http-core layer sets this header automatically!"): Unit =
           log.warning("Explicitly set response header '{}' is ignored, {}", h, msg)
 
         remaining match {

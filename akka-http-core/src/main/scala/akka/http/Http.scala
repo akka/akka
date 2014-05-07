@@ -127,8 +127,8 @@ object Http extends ExtensionKey[HttpExt] {
                            connectionStream: Producer[IncomingConnection])
 
   case class IncomingConnection(remoteAddress: InetSocketAddress,
-                                requestStream: Producer[HttpRequest],
-                                responseStream: Consumer[HttpResponse])
+                                requestProducer: Producer[HttpRequest],
+                                responseConsumer: Consumer[HttpResponse])
 
   val Unbound = Tcp.Unbound
 
@@ -140,7 +140,7 @@ object Http extends ExtensionKey[HttpExt] {
 }
 
 class HttpExt(system: ExtendedActorSystem) extends akka.io.IO.Extension {
-  val Settings = new Settings(system.settings.config getConfig "spray.can")
+  val Settings = new Settings(system.settings.config getConfig "akka.http")
   class Settings private[HttpExt] (config: Config) {
     val ManagerDispatcher = config getString "manager-dispatcher"
     val SettingsGroupDispatcher = config getString "settings-group-dispatcher"

@@ -32,7 +32,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with status 200, no headers and no body" in new TestSetup() {
         HttpResponse(200) should renderTo {
           """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Length: 0
             |
@@ -43,7 +43,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with status 304, a few headers and no body" in new TestSetup() {
         HttpResponse(304, List(RawHeader("X-Fancy", "of course"), RawHeader("Age", "0"))) should renderTo {
           """HTTP/1.1 304 Not Modified
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |X-Fancy: of course
             |Age: 0
@@ -56,7 +56,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with status 400, a few headers and a body" in new TestSetup() {
         HttpResponse(400, List(RawHeader("Age", "30"), Connection("Keep-Alive")), "Small f*ck up overhere!") should renderTo {
           """HTTP/1.1 400 Bad Request
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Age: 30
             |Content-Type: text/plain; charset=UTF-8
@@ -70,7 +70,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         HttpResponse(400, List(RawHeader("Age", "30"), Connection("Keep-Alive")),
           HttpEntity(contentType = ContentTypes.NoContentType, "Small f*ck up overhere!")) should renderTo {
             """HTTP/1.1 400 Bad Request
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Age: 30
             |Content-Length: 23
@@ -82,7 +82,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       "with a custom status code, no headers and no body" in new TestSetup() {
         HttpResponse(ServerOnTheMove) should renderTo {
           """HTTP/1.1 330 Server on the move
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Length: 0
             |
@@ -97,7 +97,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             headers = List(RawHeader("Age", "30"), Connection("Keep-Alive")),
             entity = "Small f*ck up overhere!")) should renderTo(
             """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Age: 30
             |Content-Type: text/plain; charset=UTF-8
@@ -112,7 +112,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         HttpResponse(200, List(RawHeader("Age", "30")),
           Chunked(ContentTypes.`application/json`, StreamProducer.empty)) should renderTo {
             """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Age: 30
             |
@@ -124,7 +124,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         HttpResponse(entity = Chunked(ContentTypes.`text/plain(UTF-8)`,
           StreamProducer.of(Chunk(ByteString("Yahoooo"))))) should renderTo {
           """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Type: text/plain; charset=UTF-8
             |Transfer-Encoding: chunked
@@ -142,7 +142,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           StreamProducer.of(Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
             LastChunk("foo=bar", List(RawHeader("Age", "30"), RawHeader("Cache-Control", "public")))))) should renderTo {
           """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Type: text/plain; charset=UTF-8
             |Transfer-Encoding: chunked
@@ -164,7 +164,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           HttpResponse(200, List(RawHeader("Age", "30"), `Content-Length`(0)),
             Chunked(ContentTypes.`application/json`, StreamProducer.empty)) should renderTo {
               """HTTP/1.1 200 OK
-              |Server: spray-can/1.0.0
+              |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
               |Age: 30
               |Content-Length: 0
@@ -177,7 +177,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         HttpResponse(200, List(RawHeader("Age", "30"), `Content-Length`(7)),
           Chunked(ContentTypes.`application/json`, StreamProducer.of(Chunk(ByteString("body123"))))) should renderTo {
             """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Age: 30
             |Content-Length: 7
@@ -191,7 +191,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         ResponseRenderingContext(HttpResponse(entity = Chunked(ContentTypes.`application/json`,
           StreamProducer.of(Chunk(ByteString("body1234567890123456")))))) should renderTo(
           """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Connection: close
             |Content-Type: application/json; charset=UTF-8
@@ -221,7 +221,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           response = HttpResponse(entity = Chunked(ContentTypes.`application/json`,
             StreamProducer.of(Chunk(ByteString("abc")), Chunk(ByteString("defg")))))) should renderTo(
             """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Type: application/json; charset=UTF-8
             |
@@ -234,7 +234,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           response = HttpResponse(200, List(`Content-Length`(7)), Chunked(ContentTypes.`application/json`,
             StreamProducer.of(Chunk(ByteString("abc")), Chunk(ByteString("defg")))))) should renderTo(
             """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Length: 7
             |Connection: Keep-Alive
@@ -248,7 +248,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           StreamProducer.of(Chunk(ByteString("body123"), """key=value;another="tl;dr""""),
             LastChunk("foo=bar", List(RawHeader("Age", "30"), RawHeader("Cache-Control", "public"))))))) should renderTo(
           """HTTP/1.1 200 OK
-            |Server: spray-can/1.0.0
+            |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Connection: close
             |Content-Type: text/plain; charset=UTF-8
@@ -282,7 +282,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             expected = renCH match {
               case Some(connection) ⇒
                 s"""HTTP/1.1 200 OK
-                         |Server: spray-can/1.0.0
+                         |Server: akka-http/1.0.0
                          |Date: Thu, 25 Aug 2011 09:10:29 GMT
                          |Connection: $connection
                          |Content-Length: 0
@@ -290,7 +290,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
                          |"""
               case None ⇒
                 """HTTP/1.1 200 OK
-                  |Server: spray-can/1.0.0
+                  |Server: akka-http/1.0.0
                   |Date: Thu, 25 Aug 2011 09:10:29 GMT
                   |Content-Length: 0
                   |
@@ -302,7 +302,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
   override def afterAll() = system.shutdown()
 
-  class TestSetup(val serverHeaderValue: String = "spray-can/1.0.0",
+  class TestSetup(val serverHeaderValue: String = "akka-http/1.0.0",
                   val chunklessStreaming: Boolean = false,
                   val transparentHeadRequests: Boolean = true)
     extends HttpResponseRendererFactory(serverHeaderValue.toOption.map(Server(_)), chunklessStreaming,

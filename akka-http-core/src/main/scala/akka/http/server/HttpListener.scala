@@ -24,7 +24,7 @@ private[http] class HttpListener(bindCommander: ActorRef,
 
   {
     import context.system
-    IO(Tcp) ! StreamTcp.Bind(endpoint, backlog, options, materializerSettings)
+    IO(StreamTcp) ! StreamTcp.Bind(endpoint, backlog, options, materializerSettings)
   }
 
   context.setReceiveTimeout(settings.bindTimeout)

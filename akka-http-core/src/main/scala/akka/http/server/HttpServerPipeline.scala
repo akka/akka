@@ -36,7 +36,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
         .toProcessor
 
-    val requestStream =
+    val requestProducer =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
         .split(HttpServerPipeline.splitParserOutput)
@@ -45,14 +45,14 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
         .collect { case (x: RequestStart, entityParts) ⇒ HttpServerPipeline.constructRequest(x, entityParts) }
         .toProducer
 
-    val responseStream =
+    val responseConsumer =
       Operation[HttpResponse]
         .fanIn(applicationBypass, ApplicationBypassFanIn)
         .transform(responseRendererFactory.newRenderer)
         .concatAll
         .produceTo(tcpConn.outputStream)
 
-    Http.IncomingConnection(tcpConn.remoteAddress, requestStream, responseStream)
+    Http.IncomingConnection(tcpConn.remoteAddress, requestProducer, responseConsumer)
   }
 
   /**
