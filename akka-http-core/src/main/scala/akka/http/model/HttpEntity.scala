@@ -9,7 +9,7 @@ import java.io.File
 import org.reactivestreams.api.Producer
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream2.StreamProducer
+import waves.StreamProducer
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.

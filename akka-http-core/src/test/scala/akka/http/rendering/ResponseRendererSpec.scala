@@ -11,7 +11,7 @@ import org.scalatest.{ FreeSpec, Matchers, BeforeAndAfterAll }
 import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
 import akka.event.NoLogging
-import akka.stream2.{ StreamProducer, Flow }
+import waves.{ StreamProducer, Flow }
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._

@@ -296,7 +296,7 @@ object AkkaBuild extends Build {
   lazy val httpCore = Project(
     id = "akka-http-core",
     base = file("akka-http-core"),
-    dependencies = Seq(actor, stream, stream2),
+    dependencies = Seq(actor, stream),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
       // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
       publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http-core"),
@@ -1191,6 +1191,7 @@ object Dependencies {
 
     // http-core (temporary, will be removed by internalizing)
     val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0.0-SNAPSHOT" changing() // ApacheV2
+    val waves         = "io.waves"                    %% "waves"                        % "0.1-SNAPSHOT" changing() // ApacheV2
     val shapeless     = "com.chuusai"                 % "shapeless_2.10.4"              % "2.0.0"           // ApacheV2
 
     // Test
@@ -1246,7 +1247,7 @@ object Dependencies {
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
 
-  val httpCore = Seq(parboiled2, shapeless, Test.junit, Test.scalatest)
+  val httpCore = Seq(parboiled2, shapeless, waves, Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released

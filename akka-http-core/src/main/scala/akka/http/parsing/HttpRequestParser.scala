@@ -8,7 +8,7 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
 import akka.actor.ActorRefFactory
-import akka.stream2.Flow
+import waves.Flow
 import akka.http.model.parser.CharacterClasses
 import akka.util.ByteString
 import akka.http.model._

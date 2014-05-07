@@ -7,7 +7,7 @@ package akka.http.model
 import java.io.File
 import org.reactivestreams.api.Producer
 import scala.collection.immutable
-import akka.stream2.StreamProducer
+import waves.StreamProducer
 import headers._
 
 trait MultipartParts {

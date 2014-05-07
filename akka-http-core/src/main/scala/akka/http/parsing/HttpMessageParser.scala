@@ -7,7 +7,7 @@ package akka.http.parsing
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import org.parboiled2.CharUtils
-import akka.stream2.Operation
+import waves.Operation
 import akka.util.ByteString
 import akka.http.model.parser.CharacterClasses
 import akka.http.model._

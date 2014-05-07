@@ -7,7 +7,7 @@ package akka.http.server
 import scala.concurrent.duration._
 import akka.io.{ Tcp, IO }
 import akka.stream.io.StreamTcp
-import akka.stream2.Flow
+import waves.Flow
 import akka.http.util.Timestamp
 import akka.http.{ Http, HttpExt }
 import akka.actor._

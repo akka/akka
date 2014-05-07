@@ -13,8 +13,8 @@ import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFacto
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.parsing.ParserOutput._
 import akka.http.Http
-import akka.stream2.{ FanIn, Operation, Flow }
-import akka.stream2.impl._
+import waves.{ FanIn, Operation, Flow }
+import waves.impl._
 import Operation.Split
 
 private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit refFactory: ActorRefFactory)

@@ -6,8 +6,8 @@ package akka.http.rendering
 
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
-import akka.stream2.{ Flow, StreamProducer, Operation }
-import akka.stream2.Operation.Transformer
+import waves.{ Flow, StreamProducer, Operation }
+import waves.Operation.Transformer
 import akka.event.LoggingAdapter
 import akka.actor.ActorRefFactory
 import akka.util.ByteString

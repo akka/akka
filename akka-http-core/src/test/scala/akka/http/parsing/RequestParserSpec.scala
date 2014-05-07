@@ -12,7 +12,7 @@ import org.scalatest.matchers.Matcher
 import org.reactivestreams.api.Producer
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.stream2.{ StreamProducer, Flow }
+import waves.{ StreamProducer, Flow }
 import akka.http.server.HttpServerPipeline
 import akka.http.util._
 import akka.http.model._
