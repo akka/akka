@@ -20,51 +20,48 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any
   override def initialTransferState = needsBothInputAndDemand
 
   override def primaryOutputsReady(): Unit = {
-    exposedPublisher.subscribe(other.getSubscriber)
+    primaryOutputs.addSubscriber(other.getSubscriber)
     super.primaryOutputsReady()
   }
 
   override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize) {
 
-    var otherSubscription: Option[S] = None
-    var otherRequestedOrCanceled = false
+    var hasOtherSubscription = false
+    var hasDownstreamSubscription = false
     var pendingRemoveSubscription: List[S] = Nil
 
-    def isOtherSubscription(subscription: Subscription): Boolean = otherSubscription.exists(_ == subscription)
-
     override type S = ActorSubscription[Any]
-    override def createSubscription(subscriber: Subscriber[Any]): S = {
-      val s = new ActorSubscription(self, subscriber)
-      if (subscriber == other.getSubscriber) {
-        otherSubscription = Some(s)
-        pendingRemoveSubscription foreach removeSubscription
-        pendingRemoveSubscription = Nil
-      }
-      s
-    }
+    override def createSubscription(subscriber: Subscriber[Any]): S =
+      new ActorSubscription(self, subscriber)
     override def afterShutdown(completed: Boolean): Unit = {
       primaryOutputsFinished(completed)
     }
 
     override val NeedsDemand: TransferState = new TransferState {
-      def isReady = demandAvailable && otherRequestedOrCanceled
+      def isReady = demandAvailable
       def isCompleted = isClosed
     }
 
-    override def handleRequest(subscription: S, elements: Int): Unit = {
-      if (otherRequestedOrCanceled || isOtherSubscription(subscription))
-        otherRequestedOrCanceled = true
-      super.handleRequest(subscription, elements)
+    override def addSubscriber(subscriber: Subscriber[Any]): Unit = {
+      super.addSubscriber(subscriber)
+      if (subscriber == other.getSubscriber)
+        hasOtherSubscription = true
+      else
+        hasDownstreamSubscription = true
+      if (pendingRemoveSubscription.nonEmpty && hasOtherSubscription && hasDownstreamSubscription) {
+        pendingRemoveSubscription foreach removeSubscription
+        pendingRemoveSubscription = Nil
+      }
     }
 
     override def removeSubscription(subscription: S): Unit = {
-      // make sure that we don't shutdown because of early cancel from downstream
-      if (otherSubscription.isEmpty && !isOtherSubscription(subscription))
-        pendingRemoveSubscription :+= subscription // defer these until other subscription comes in
-      otherRequestedOrCanceled = true
-      super.removeSubscription(subscription)
+      // make sure that we don't shutdown because of premature cancel
+      println("# removeSubscription: " + subscription + " " + hasOtherSubscription + " " + hasDownstreamSubscription)
+      if (hasOtherSubscription && hasDownstreamSubscription)
+        super.removeSubscription(subscription)
+      else
+        pendingRemoveSubscription :+= subscription // defer these until both subscriptions have been registered
     }
-
   }
 
   override def transfer(): TransferState = {

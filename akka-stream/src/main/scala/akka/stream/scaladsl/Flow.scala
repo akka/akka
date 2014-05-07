@@ -221,7 +221,7 @@ trait Flow[+T] {
    * consumer have requested elements, i.e. both will see the beginning
    * of the stream.
    */
-  def tee(other: Consumer[T] @uncheckedVariance): Flow[T]
+  def tee(other: Consumer[_ >: T]): Flow[T]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
