@@ -5,9 +5,9 @@
 package akka.http.server
 
 import org.reactivestreams.api.Producer
+import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
-import akka.actor.ActorRefFactory
 import akka.http.parsing.HttpRequestParser
 import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
@@ -17,7 +17,7 @@ import waves.{ FanIn, Operation, Flow }
 import waves.impl._
 import Operation.Split
 
-private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit refFactory: ActorRefFactory)
+private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit ec: ExecutionContext)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
 
   val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader)()
@@ -29,8 +29,6 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     settings.responseHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    import refFactory.dispatcher
-
     val applicationBypass =
       Operation[(RequestOutput, Producer[RequestOutput])]
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }

@@ -15,6 +15,7 @@ import akka.actor._
 private[http] class HttpListener(bindCommander: ActorRef,
                                  bind: Http.Bind,
                                  httpSettings: HttpExt#Settings) extends Actor with ActorLogging {
+  import context.dispatcher
   import HttpListener._
   import bind._
 
@@ -42,7 +43,7 @@ private[http] class HttpListener(bindCommander: ActorRef,
       val httpConnectionStream = Flow(connectionStream)
         .map(httpServerPipeline)
         .onTerminate(_ ⇒ shutdown(gracePeriod = Duration.Zero))
-        .toProducer(context)
+        .toProducer
       bindCommander ! Http.ServerBinding(localAddress, httpConnectionStream)
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(sender()))

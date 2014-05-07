@@ -6,10 +6,10 @@ package akka.http.rendering
 
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
 import waves.{ Flow, StreamProducer, Operation }
 import waves.Operation.Transformer
 import akka.event.LoggingAdapter
-import akka.actor.ActorRefFactory
 import akka.util.ByteString
 import akka.http.model._
 import akka.http.util._
@@ -20,7 +20,7 @@ import headers._
 class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
                                   chunklessStreaming: Boolean,
                                   responseHeaderSizeHint: Int,
-                                  log: LoggingAdapter)(implicit refFactory: ActorRefFactory) {
+                                  log: LoggingAdapter)(implicit ec: ExecutionContext) {
 
   private val serverHeaderPlusDateColonSP: Array[Byte] =
     serverHeader match {

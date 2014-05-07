@@ -7,7 +7,7 @@ package akka.http.parsing
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
-import akka.actor.ActorRefFactory
+import scala.concurrent.ExecutionContext
 import waves.Flow
 import akka.http.model.parser.CharacterClasses
 import akka.util.ByteString
@@ -16,7 +16,7 @@ import headers._
 import StatusCodes._
 
 private[http] class HttpRequestParser(_settings: ParserSettings,
-                                      rawRequestUriHeader: Boolean = false)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit refFactory: ActorRefFactory)
+                                      rawRequestUriHeader: Boolean = false)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit ec: ExecutionContext)
   extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
 
   private[this] var method: HttpMethod = _

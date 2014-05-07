@@ -1191,7 +1191,7 @@ object Dependencies {
 
     // http-core (temporary, will be removed by internalizing)
     val parboiled2    = "org.parboiled"               %% "parboiled"                    % "2.0.0-SNAPSHOT" changing() // ApacheV2
-    val waves         = "io.waves"                    %% "waves"                        % "0.1-SNAPSHOT" changing() // ApacheV2
+    val waves         = "io.waves"                    %% "waves"                        % "0.2-SNAPSHOT" changing() // ApacheV2
     val shapeless     = "com.chuusai"                 % "shapeless_2.10.4"              % "2.0.0"           // ApacheV2
 
     // Test
