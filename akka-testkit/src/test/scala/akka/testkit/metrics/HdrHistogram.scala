@@ -3,11 +3,8 @@
  */
 package akka.testkit.metrics
 
-import com.codahale.metrics.{ Snapshot, Sampling, Metric }
+import com.codahale.metrics.Metric
 import org.{ HdrHistogram ⇒ hdr }
-import java.util.{ Arrays, Collections }
-import java.lang.Math._
-import java.io.{ OutputStream, OutputStreamWriter, PrintWriter }
 
 /**
  * Adapts Gil Tene's HdrHistogram to Metric's Metric interface.

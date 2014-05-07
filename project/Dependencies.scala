@@ -10,6 +10,8 @@ object Dependencies {
     val scalaZeroMQVersion = sys.props.get("akka.build.scalaZeroMQVersion").getOrElse("0.0.7")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.1.3")
     val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.3")
+    val genJavaDocVersion = sys.props.get("akka.build.genJavaDocVersion").getOrElse("0.7")
+    val scalaContinuationsVersion = sys.props.get("akka.build.scalaContinuationsVersion").getOrElse("1.0.1")
   }
 
   object Compile {
@@ -19,7 +21,6 @@ object Dependencies {
     // They need to be changed in this file as well:
     //   akka-samples/akka-sample-osgi-dining-hakkers/pom.xml
 
-    // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
     val config        = "com.typesafe"                % "config"                       % "1.2.0"       // ApacheV2
@@ -41,11 +42,17 @@ object Dependencies {
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams-spi"         % "0.3"         // CC0
+
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
     val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
+
+    // Compiler plugins
+    val genjavadoc  = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
+
 
     // Test
 
@@ -69,7 +76,9 @@ object Dependencies {
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
+
+      val reactiveStreams = "org.reactivestreams"      % "reactive-streams-tck"         % "0.3"              % "test" // CC0
+      val scalaXml        = "org.scala-lang.modules"  %% "scala-xml"                    % "1.0.1"            % "test"
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -101,8 +110,22 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
+  val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
+
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
+
+  val stream = Seq(
+    // FIXME use project dependency when akka-stream-experimental-2.3.x is released
+    "com.typesafe.akka" %% "akka-actor" % "2.3.2",
+    "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.2",
+//  NOTE: Using testkit directly because we need metrics kit
+//    "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test",
+    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams, Test.commonsIo)
+
+  val mailboxes = Seq(Test.scalatest, Test.junit)
+
+  val fileMailbox = Seq(Test.commonsIo, Test.scalatest, Test.junit)
 
   val kernel = Seq(Test.scalatest, Test.junit)
 
