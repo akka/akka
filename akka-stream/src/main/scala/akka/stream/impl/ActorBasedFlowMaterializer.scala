@@ -26,6 +26,7 @@ private[akka] object Ast {
   case class Merge(other: Producer[Any]) extends AstNode
   case class Zip(other: Producer[Any]) extends AstNode
   case class Concat(next: Producer[Any]) extends AstNode
+  case class Tee(other: Consumer[Any]) extends AstNode
 
   trait ProducerNode[I] {
     def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I]
