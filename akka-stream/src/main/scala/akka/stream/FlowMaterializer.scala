@@ -9,6 +9,7 @@ import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast
 import org.reactivestreams.api.Producer
 import scala.concurrent.duration._
+import org.reactivestreams.api.Consumer
 
 object FlowMaterializer {
   /**
@@ -39,6 +40,21 @@ trait FlowMaterializer {
    * INTERNAL API
    */
   private[akka] def consume[I](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Unit
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def ductConsume[In](ops: List[Ast.AstNode]): Consumer[In]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out])
 
 }
 
