@@ -216,4 +216,43 @@ object TestExtras {
 
   }
 
+  object Filter {
+    object Keys {
+      val excludeTestNames = settingKey[Set[String]]("Names of tests to be excluded. Not supported by MultiJVM tests. Example usage: -Dakka.test.names.exclude=TimingSpec")
+      val excludeTestTags = settingKey[Set[String]]("Tags of tests to be excluded. It will not be used if you specify -Dakka.test.tags.only. Example usage: -Dakka.test.tags.exclude=long-running")
+      val onlyTestTags = settingKey[Set[String]]("Tags of tests to be ran. Example usage: -Dakka.test.tags.only=long-running")
+    }
+
+    import Keys._
+
+    def settings = {
+      Seq(
+        excludeTestNames := systemPropertyAsSeq("akka.test.names.exclude").toSet,
+        excludeTestTags := {
+          if (onlyTestTags.value.isEmpty) systemPropertyAsSeq("akka.test.tags.exclude").toSet
+          else Set.empty
+        },
+        onlyTestTags := systemPropertyAsSeq("akka.test.tags.only").toSet,
+
+        // add filters for tests excluded by name
+        testOptions in Test <++= excludeTestNames map { _.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+
+        // add arguments for tests excluded by tag
+        testOptions in Test <++= excludeTestTags map { tags =>
+          if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+        },
+
+        // add arguments for running only tests by tag
+        testOptions in Test <++= onlyTestTags map { tags =>
+          if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+        }
+      )
+    }
+
+    def systemPropertyAsSeq(name: String): Seq[String] = {
+      val prop = sys.props.get(name).getOrElse("")
+      if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
+    }
+  }
+
 }
