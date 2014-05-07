@@ -8,12 +8,11 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NoStackTrace
-
 import org.reactivestreams.api.Producer
-
 import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.FlowImpl
+import org.reactivestreams.api.Consumer
 
 object Flow {
   /**
@@ -213,6 +212,16 @@ trait Flow[+T] {
    * stream.
    */
   def concat[U >: T](next: Producer[U]): Flow[U]
+
+  /**
+   * Fan-out the stream to another consumer. Each element is produced to
+   * the `other` consumer as well as to downstream consumers. It will not
+   * start producing any elements to the `other` consumer or downstream
+   * consumers until the `other` consumer and at least one downstream
+   * consumer have requested elements, i.e. both will see the beginning
+   * of the stream.
+   */
+  def tee(other: Consumer[_ >: T]): Flow[T]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
