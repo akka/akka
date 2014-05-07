@@ -35,7 +35,10 @@ private[akka] trait ActorProducerLike[T] extends Producer[T] {
     getPublisher.subscribe(consumer.getSubscriber)
 }
 
-class ActorProducer[T]( final val impl: ActorRef) extends ActorProducerLike[T]
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorProducer[T]( final val impl: ActorRef) extends ActorProducerLike[T]
 
 /**
  * INTERNAL API

@@ -22,6 +22,7 @@ private[akka] object ActorProcessor {
     case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
     case z: Zip       ⇒ Props(new ZipImpl(settings, z.other))
     case c: Concat    ⇒ Props(new ConcatImpl(settings, c.next))
+    case t: Tee       ⇒ Props(new TeeImpl(settings, t.other))
   }
 }
 

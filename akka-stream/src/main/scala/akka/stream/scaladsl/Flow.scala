@@ -214,6 +214,14 @@ trait Flow[+T] {
   def concat[U >: T](next: Producer[U]): Flow[U]
 
   /**
+   * Fan-out the stream to another consumer. Each element is produced to
+   * the `other` consumer as well as to downstream consumers. It will
+   * not shutdown until the subscriptions for `other` and at least
+   * one downstream consumer have been established.
+   */
+  def tee(other: Consumer[_ >: T]): Flow[T]
+
+  /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
    * thing that is signaled to this stream, which can be either an element (after
    * which the upstream subscription is canceled), an error condition (putting
