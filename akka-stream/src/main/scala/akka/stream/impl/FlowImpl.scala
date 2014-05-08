@@ -128,11 +128,13 @@ private[akka] trait Builder[Out] {
   def map[U](f: Out ⇒ U): Thing[U] =
     transform(new Transformer[Out, U] {
       override def onNext(in: Out) = List(f(in))
+      override def name = "map"
     })
 
   def filter(p: Out ⇒ Boolean): Thing[Out] =
     transform(new Transformer[Out, Out] {
       override def onNext(in: Out) = if (p(in)) List(in) else Nil
+      override def name = "filter"
     })
 
   def collect[U](pf: PartialFunction[Out, U]): Thing[U] =
@@ -144,6 +146,7 @@ private[akka] trait Builder[Out] {
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = { c(in); Nil }
       override def onComplete() = ListOfUnit
+      override def name = "foreach"
     })
 
   def fold[U](zero: U)(f: (U, Out) ⇒ U): Thing[U] =
@@ -154,6 +157,7 @@ private[akka] trait Builder[Out] {
   class FoldTransformer[S](var state: S, f: (S, Out) ⇒ S) extends Transformer[Out, S] {
     override def onNext(in: Out): immutable.Seq[S] = { state = f(state, in); Nil }
     override def onComplete(): immutable.Seq[S] = List(state)
+    override def name = "fold"
   }
 
   def drop(n: Int): Thing[Out] =
@@ -171,6 +175,7 @@ private[akka] trait Builder[Out] {
         }
 
       override def onNext(in: Out) = delegate.onNext(in)
+      override def name = "drop"
     })
 
   def take(n: Int): Thing[Out] =
@@ -189,6 +194,7 @@ private[akka] trait Builder[Out] {
 
       override def onNext(in: Out) = delegate.onNext(in)
       override def isComplete = delegate.isComplete
+      override def name = "take"
     })
 
   def grouped(n: Int): Thing[immutable.Seq[Out]] =
@@ -204,11 +210,13 @@ private[akka] trait Builder[Out] {
           Nil
       }
       override def onComplete() = if (buf.isEmpty) Nil else List(buf)
+      override def name = "grouped"
     })
 
   def mapConcat[U](f: Out ⇒ immutable.Seq[U]): Thing[U] =
     transform(new Transformer[Out, U] {
       override def onNext(in: Out) = f(in)
+      override def name = "mapConcat"
     })
 
   def transform[U](transformer: Transformer[Out, U]): Thing[U] =
