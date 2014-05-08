@@ -37,8 +37,19 @@ private[akka] trait ActorProducerLike[T] extends Producer[T] {
 
 /**
  * INTERNAL API
+ * If equalityValue is defined it is used for equals and hashCode, otherwise default reference equality.
  */
-private[akka] class ActorProducer[T]( final val impl: ActorRef) extends ActorProducerLike[T]
+private[akka] class ActorProducer[T]( final val impl: ActorRef, val equalityValue: Option[AnyRef] = None) extends ActorProducerLike[T] {
+  override def equals(o: Any): Boolean = (equalityValue, o) match {
+    case (Some(v), ActorProducer(_, Some(otherValue))) ⇒ v.equals(otherValue)
+    case _ ⇒ super.equals(o)
+  }
+
+  override def hashCode: Int = equalityValue match {
+    case Some(v) ⇒ v.hashCode
+    case None    ⇒ super.hashCode
+  }
+}
 
 /**
  * INTERNAL API
@@ -46,6 +57,11 @@ private[akka] class ActorProducer[T]( final val impl: ActorRef) extends ActorPro
 private[akka] object ActorProducer {
   def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
     Props(new ActorProducerImpl(f, settings))
+
+  def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
+    case other: ActorProducer[_] ⇒ Some((other.impl, other.equalityValue))
+    case _                       ⇒ None
+  }
 }
 
 /**

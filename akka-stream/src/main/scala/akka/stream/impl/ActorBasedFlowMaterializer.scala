@@ -74,7 +74,7 @@ private[akka] object Ast {
     def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
       if (iterable.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
       else new ActorProducer[I](materializer.context.actorOf(IterableProducer.props(iterable, materializer.settings),
-        name = s"$flowName-0-iterable"))
+        name = s"$flowName-0-iterable"), Some(iterable))
   }
   final case class ThunkProducerNode[I](f: () ⇒ I) extends ProducerNode[I] {
     def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
@@ -86,12 +86,12 @@ private[akka] object Ast {
       future.value match {
         case Some(Success(element)) ⇒
           new ActorProducer[I](materializer.context.actorOf(IterableProducer.props(List(element), materializer.settings),
-            name = s"$flowName-0-future"))
+            name = s"$flowName-0-future"), Some(future))
         case Some(Failure(t)) ⇒
-          new ErrorProducer(t).asInstanceOf[Producer[I]]
+          ErrorProducer(t).asInstanceOf[Producer[I]]
         case None ⇒
           new ActorProducer[I](materializer.context.actorOf(FutureProducer.props(future, materializer.settings),
-            name = s"$flowName-0-future"))
+            name = s"$flowName-0-future"), Some(future))
       }
   }
 }

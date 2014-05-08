@@ -135,5 +135,23 @@ class FlowIterableSpec extends AkkaSpec {
       }
       got.size should be < (count - 1)
     }
+
+    "have value equality of producer" in {
+      val p1 = Flow(List(1, 2, 3)).toProducer(materializer)
+      val p2 = Flow(List(1, 2, 3)).toProducer(materializer)
+      p1 should be(p2)
+      p2 should be(p1)
+      val p3 = Flow(List(1, 2, 3, 4)).toProducer(materializer)
+      p1 should not be (p3)
+      p3 should not be (p1)
+      val p4 = Flow(Vector.empty[String]).toProducer(materializer)
+      val p5 = Flow(Set.empty[String]).toProducer(materializer)
+      p1 should not be (p4)
+      p4 should be(p5)
+      p5 should be(p4)
+      val p6 = Flow(List(1, 2, 3).iterator).toProducer(materializer)
+      p1 should not be (p6)
+      p6 should not be (p1)
+    }
   }
 }
