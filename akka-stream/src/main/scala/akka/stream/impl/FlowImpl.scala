@@ -52,6 +52,11 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
       override def onNext(in: O) = if (p(in)) List(in) else Nil
     })
 
+  override def collect[U](pf: PartialFunction[O, U]): Flow[U] =
+    transform(new Transformer[O, U] {
+      override def onNext(in: O) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
+    })
+
   override def foreach(c: O ⇒ Unit): Flow[Unit] =
     transform(new Transformer[O, Unit] {
       override def onNext(in: O) = { c(in); Nil }
