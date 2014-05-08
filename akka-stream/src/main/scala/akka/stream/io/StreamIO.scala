@@ -14,6 +14,7 @@ import akka.io.Tcp
 import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
 import akka.stream.MaterializerSettings
 import akka.io.IO
+import java.net.URLEncoder
 
 object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
 
@@ -73,19 +74,25 @@ private[akka] object StreamTcpManager {
 private[akka] class StreamTcpManager extends Actor {
   import StreamTcpManager._
 
+  var nameCounter = 0
+  def encName(prefix: String, address: InetSocketAddress) = {
+    nameCounter += 1
+    s"$prefix-$nameCounter-${URLEncoder.encode(address.toString, "utf-8")}"
+  }
+
   def receive: Receive = {
     case StreamTcp.Connect(remoteAddress, localAddress, options, timeout, settings) ⇒
       val processorActor = context.actorOf(TcpStreamActor.outboundProps(
         Tcp.Connect(remoteAddress, localAddress, options, timeout, pullMode = true),
         requester = sender(),
-        settings))
+        settings), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(new ActorProcessor[ByteString, ByteString](processorActor))
 
     case StreamTcp.Bind(localAddress, backlog, options, settings) ⇒
       val publisherActor = context.actorOf(TcpListenStreamActor.props(
         Tcp.Bind(context.system.deadLetters, localAddress, backlog, options, pullMode = true),
         requester = sender(),
-        settings))
+        settings), name = encName("server", localAddress))
       publisherActor ! ExposedPublisher(new ActorPublisher(publisherActor))
   }
 

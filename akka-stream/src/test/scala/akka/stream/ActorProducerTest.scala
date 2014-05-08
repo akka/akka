@@ -6,7 +6,6 @@ package akka.stream
 import org.scalatest.testng.TestNGSuiteLike
 import org.reactivestreams.spi.Publisher
 import org.reactivestreams.tck.{ TestEnvironment, PublisherVerification }
-import akka.stream.impl.ActorBasedFlowMaterializer
 import org.reactivestreams.api.Producer
 import akka.stream.scaladsl.Flow
 import akka.actor.ActorSystem

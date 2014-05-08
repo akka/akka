@@ -7,7 +7,6 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
-import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 
 class FlowMergeSpec extends TwoStreamsSetup {

@@ -3,7 +3,6 @@
  */
 package akka.stream
 
-import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow

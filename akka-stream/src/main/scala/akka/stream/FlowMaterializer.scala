@@ -12,15 +12,21 @@ import scala.concurrent.duration._
 import org.reactivestreams.api.Consumer
 
 object FlowMaterializer {
+
   /**
    * Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
    * will be used to create these actors, therefore it is *forbidden* to pass this object
    * to another actor if the factory is an ActorContext.
+   *
+   * The `namePrefix` is used as the first part of the names of the actors running
+   * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
+   * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(settings: MaterializerSettings)(implicit context: ActorRefFactory): FlowMaterializer =
-    new ActorBasedFlowMaterializer(settings, context)
+  def apply(settings: MaterializerSettings, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): FlowMaterializer =
+    new ActorBasedFlowMaterializer(settings, context, namePrefix.getOrElse("flow"))
+
 }
 
 /**
@@ -31,6 +37,13 @@ object FlowMaterializer {
  * dependent.
  */
 trait FlowMaterializer {
+
+  /**
+   * The `namePrefix` is used as the first part of the names of the actors running
+   * the processing steps.
+   */
+  def withNamePrefix(name: String): FlowMaterializer
+
   /**
    * INTERNAL API
    * ops are stored in reverse order
