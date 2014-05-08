@@ -312,6 +312,12 @@ trait Transformer[-T, +U] {
    * Invoked after normal completion or error.
    */
   def cleanup(): Unit = ()
+
+  /**
+   * Name of this transformation step. Used as part of the actor name.
+   * Facilitates debugging and logging.
+   */
+  def name: String = "transform"
 }
 
 /**
@@ -325,5 +331,11 @@ trait RecoveryTransformer[-T, +U] extends Transformer[T, U] {
    * sequence of elements before the stream ends.
    */
   def onError(cause: Throwable): immutable.Seq[U]
+
+  /**
+   * Name of this transformation step. Used as part of the actor name.
+   * Facilitates debugging and logging.
+   */
+  override def name: String = "transformRecover"
 }
 

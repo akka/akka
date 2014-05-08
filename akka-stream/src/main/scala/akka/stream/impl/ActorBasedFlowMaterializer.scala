@@ -15,52 +15,74 @@ import scala.util.Try
 import scala.concurrent.Future
 import scala.util.Success
 import scala.util.Failure
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * INTERNAL API
  */
 private[akka] object Ast {
-  trait AstNode
+  trait AstNode {
+    def name: String
+  }
 
-  case class Transform(transformer: Transformer[Any, Any]) extends AstNode
-  case class Recover(recoveryTransformer: RecoveryTransformer[Any, Any]) extends AstNode
-  case class GroupBy(f: Any ⇒ Any) extends AstNode
-  case class SplitWhen(p: Any ⇒ Boolean) extends AstNode
-  case class Merge(other: Producer[Any]) extends AstNode
-  case class Zip(other: Producer[Any]) extends AstNode
-  case class Concat(next: Producer[Any]) extends AstNode
+  case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
+    override def name = transformer.name
+  }
+  case class Recover(recoveryTransformer: RecoveryTransformer[Any, Any]) extends AstNode {
+    override def name = recoveryTransformer.name
+  }
+  case class GroupBy(f: Any ⇒ Any) extends AstNode {
+    override def name = "groupBy"
+  }
+  case class SplitWhen(p: Any ⇒ Boolean) extends AstNode {
+    override def name = "splitWhen"
+  }
+  case class Merge(other: Producer[Any]) extends AstNode {
+    override def name = "merge"
+  }
+  case class Zip(other: Producer[Any]) extends AstNode {
+    override def name = "zip"
+  }
+  case class Concat(next: Producer[Any]) extends AstNode {
+    override def name = "concat"
+  }
 
   trait ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I]
+    private[akka] def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I]
   }
 
-  case class ExistingProducer[I](producer: Producer[I]) extends ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory) = producer
+  final case class ExistingProducer[I](producer: Producer[I]) extends ProducerNode[I] {
+    def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String) = producer
   }
 
-  case class IteratorProducerNode[I](iterator: Iterator[I]) extends ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
+  final case class IteratorProducerNode[I](iterator: Iterator[I]) extends ProducerNode[I] {
+    final def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
       if (iterator.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
-      else new ActorProducer[I](context.actorOf(IteratorProducer.props(iterator, settings)))
+      else new ActorProducer[I](materializer.context.actorOf(IteratorProducer.props(iterator, materializer.settings),
+        name = s"$flowName-0-iterator"))
   }
-  case class IterableProducerNode[I](iterable: immutable.Iterable[I]) extends ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
+  final case class IterableProducerNode[I](iterable: immutable.Iterable[I]) extends ProducerNode[I] {
+    def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
       if (iterable.isEmpty) EmptyProducer.asInstanceOf[Producer[I]]
-      else new ActorProducer[I](context.actorOf(IterableProducer.props(iterable, settings)))
+      else new ActorProducer[I](materializer.context.actorOf(IterableProducer.props(iterable, materializer.settings),
+        name = s"$flowName-0-iterable"))
   }
-  case class ThunkProducerNode[I](f: () ⇒ I) extends ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
-      new ActorProducer(context.actorOf(ActorProducer.props(settings, f)))
+  final case class ThunkProducerNode[I](f: () ⇒ I) extends ProducerNode[I] {
+    def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
+      new ActorProducer(materializer.context.actorOf(ActorProducer.props(materializer.settings, f),
+        name = s"$flowName-0-thunk"))
   }
   case class FutureProducerNode[I](future: Future[I]) extends ProducerNode[I] {
-    def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[I] =
+    def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
       future.value match {
         case Some(Success(element)) ⇒
-          new ActorProducer[I](context.actorOf(IterableProducer.props(List(element), settings)))
+          new ActorProducer[I](materializer.context.actorOf(IterableProducer.props(List(element), materializer.settings),
+            name = s"$flowName-0-future"))
         case Some(Failure(t)) ⇒
           new ErrorProducer(t).asInstanceOf[Producer[I]]
         case None ⇒
-          new ActorProducer[I](context.actorOf(FutureProducer.props(future, settings)))
+          new ActorProducer[I](materializer.context.actorOf(FutureProducer.props(future, materializer.settings),
+            name = s"$flowName-0-future"))
       }
   }
 }
@@ -79,37 +101,46 @@ private[akka] object ActorBasedFlowMaterializer {
     finally ctx.set(old)
   }
 
+  val globalFlowNameCounter = new AtomicInteger(0)
+
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _context: ActorRefFactory) extends FlowMaterializer {
+private[akka] class ActorBasedFlowMaterializer(val settings: MaterializerSettings, _context: ActorRefFactory,
+                                               namePrefix: String)
+  extends FlowMaterializer {
   import Ast._
   import ActorBasedFlowMaterializer._
 
-  private def context = ctx.get() match {
+  def context = ctx.get() match {
     case null ⇒ _context
     case x    ⇒ x
   }
 
-  @tailrec private def processorChain(topConsumer: Consumer[_], ops: immutable.Seq[AstNode]): Consumer[_] = {
+  private def createFlowName(): String = s"$namePrefix-${globalFlowNameCounter.incrementAndGet}"
+
+  @tailrec private def processorChain(topConsumer: Consumer[_], ops: immutable.Seq[AstNode],
+                                      flowName: String, n: Int): Consumer[_] = {
     ops match {
       case op :: tail ⇒
-        val opProcessor: Processor[Any, Any] = processorForNode(op)
+        val opProcessor: Processor[Any, Any] = processorForNode(op, flowName, n)
         opProcessor.produceTo(topConsumer.asInstanceOf[Consumer[Any]])
-        processorChain(opProcessor, tail)
+        processorChain(opProcessor, tail, flowName, n - 1)
       case _ ⇒ topConsumer
     }
   }
 
   // Ops come in reverse order
   override def toProducer[I, O](producerNode: ProducerNode[I], ops: List[AstNode]): Producer[O] = {
-    if (ops.isEmpty) producerNode.createProducer(settings, context).asInstanceOf[Producer[O]]
+    val flowName = createFlowName()
+    if (ops.isEmpty) producerNode.createProducer(this, flowName).asInstanceOf[Producer[O]]
     else {
-      val opProcessor = processorForNode(ops.head)
-      val topConsumer = processorChain(opProcessor, ops.tail)
-      producerNode.createProducer(settings, context).produceTo(topConsumer.asInstanceOf[Consumer[I]])
+      val opsSize = ops.size
+      val opProcessor = processorForNode(ops.head, flowName, opsSize)
+      val topConsumer = processorChain(opProcessor, ops.tail, flowName, opsSize - 1)
+      producerNode.createProducer(this, flowName).produceTo(topConsumer.asInstanceOf[Consumer[I]])
       opProcessor.asInstanceOf[Producer[O]]
     }
   }
@@ -125,31 +156,44 @@ private[akka] class ActorBasedFlowMaterializer(settings: MaterializerSettings, _
     })
 
   override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
-    val consumer = ops match {
-      case Nil ⇒
-        new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform)))
-      case head :: tail ⇒
-        val c = new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, head)))
-        processorChain(c, tail)
-    }
-    producerNode.createProducer(settings, context).produceTo(consumer.asInstanceOf[Consumer[I]])
+    val flowName = createFlowName()
+    val consumer = consume(ops, flowName)
+    producerNode.createProducer(this, flowName).produceTo(consumer.asInstanceOf[Consumer[I]])
   }
 
-  def processorForNode(op: AstNode): Processor[Any, Any] = new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op)))
+  private def consume[In, Out](ops: List[Ast.AstNode], flowName: String): Consumer[In] = {
+    val c = ops match {
+      case Nil ⇒
+        new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform),
+          name = s"$flowName-1-consume"))
+      case head :: tail ⇒
+        val opsSize = ops.size
+        val c = new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, head),
+          name = s"$flowName-$opsSize-${head.name}"))
+        processorChain(c, tail, flowName, ops.size - 1)
+    }
+    c.asInstanceOf[Consumer[In]]
+  }
+
+  def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] =
+    new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op),
+      name = s"$flowName-$n-${op.name}"))
 
   override def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In] =
-    processorChain(consumer, ops).asInstanceOf[Consumer[In]]
+    processorChain(consumer, ops, createFlowName(), ops.size).asInstanceOf[Consumer[In]]
 
   override def ductConsume[In, Out](ops: List[Ast.AstNode]): Consumer[In] =
-    ductProduceTo(new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform))), ops)
+    consume(ops, createFlowName)
 
   override def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out]) = {
+    val flowName = createFlowName()
     if (ops.isEmpty) {
-      val identityProcessor: Processor[In, Out] = processorForNode(identityTransform).asInstanceOf[Processor[In, Out]]
+      val identityProcessor: Processor[In, Out] = processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[In, Out]]
       (identityProcessor, identityProcessor)
     } else {
-      val outProcessor = processorForNode(ops.head).asInstanceOf[Processor[In, Out]]
-      val topConsumer = processorChain(outProcessor, ops.tail).asInstanceOf[Processor[In, Out]]
+      val opsSize = ops.size
+      val outProcessor = processorForNode(ops.head, flowName, opsSize).asInstanceOf[Processor[In, Out]]
+      val topConsumer = processorChain(outProcessor, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Out]]
       (topConsumer, outProcessor)
     }
   }
