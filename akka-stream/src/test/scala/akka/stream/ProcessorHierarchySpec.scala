@@ -5,13 +5,13 @@ package akka.stream
 
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Flow
-import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.actor.ActorContext
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.ActorRef
 import scala.collection.immutable.TreeSet
 import scala.util.control.NonFatal
+import akka.stream.impl.ActorBasedFlowMaterializer
 
 class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\nakka.loglevel=INFO") {
 

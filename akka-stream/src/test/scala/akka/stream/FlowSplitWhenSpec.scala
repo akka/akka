@@ -7,17 +7,16 @@ import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.AkkaSpec
 import org.reactivestreams.api.Producer
-import akka.stream.impl.{ IteratorProducer, ActorBasedFlowMaterializer }
 import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowSplitWhenSpec extends AkkaSpec {
 
-  val materializer = new ActorBasedFlowMaterializer(MaterializerSettings(
+  val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2), system)
+    maxFanOutBufferSize = 2))
 
   case class StreamPuppet(p: Producer[Int]) {
     val probe = StreamTestKit.consumerProbe[Int]

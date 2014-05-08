@@ -74,8 +74,9 @@ private object PersistentPublisher {
 }
 
 private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends ProducerNode[Persistent] {
-  def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[Persistent] =
-    new ActorProducer(context.actorOf(PersistentPublisher.props(processorId, publisherSettings, settings)))
+  def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[Persistent] =
+    new ActorProducer(materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+      name = s"$flowName-0-persistentPublisher"))
 }
 
 private class PersistentPublisherImpl(processorId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
