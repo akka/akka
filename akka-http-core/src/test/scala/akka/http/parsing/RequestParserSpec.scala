@@ -370,8 +370,8 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               case (x: ParseError, _) ⇒ Left(x)
             }
             .mapConcat {
-              case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x)))
-              case Left(error)    ⇒ Future.successful(Left(error))
+              case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x)) :: Nil)
+              case Left(error)    ⇒ Future.successful(Left(error) :: Nil)
             }
             .drainToSeq
         Await.result(future, 250.millis)
