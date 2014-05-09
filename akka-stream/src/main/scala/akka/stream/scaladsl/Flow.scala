@@ -160,6 +160,8 @@ trait Flow[+T] {
    * the [[Transformer#onComplete]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
+   * [[Transformer#onError]] is called when failure is signaled from upstream.
+   *
    * After normal completion or error the [[Transformer#cleanup]] function is called.
    *
    * It is possible to keep state in the concrete [[Transformer]] instance with
@@ -172,11 +174,10 @@ trait Flow[+T] {
   /**
    * This transformation stage works exactly like [[#transform]] with the
    * change that failure signaled from upstream will invoke
-   * [[RecoveryTransformer#onError]], which can emit an additional sequence of
+   * [[RecoveryTransformer#onErrorRecover]], which can emit an additional sequence of
    * elements before the stream ends.
    *
-   * After normal completion or error the [[RecoveryTransformer#cleanup]] function
-   * is called.
+   * [[Transformer#onError]] is not called when failure is signaled from upstream.
    */
   def transformRecover[U](recoveryTransformer: RecoveryTransformer[T, U]): Flow[U]
 
@@ -324,6 +325,11 @@ trait Transformer[-T, +U] {
   def onComplete(): immutable.Seq[U] = Nil
 
   /**
+   * Invoked when failure is signaled from upstream.
+   */
+  def onError(cause: Throwable): Unit = ()
+
+  /**
    * Invoked after normal completion or error.
    */
   def cleanup(): Unit = ()
@@ -345,7 +351,7 @@ trait RecoveryTransformer[-T, +U] extends Transformer[T, U] {
    * Invoked when failure is signaled from upstream to emit an additional
    * sequence of elements before the stream ends.
    */
-  def onError(cause: Throwable): immutable.Seq[U]
+  def onErrorRecover(cause: Throwable): immutable.Seq[U]
 
   /**
    * Name of this transformation step. Used as part of the actor name.

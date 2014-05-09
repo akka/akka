@@ -142,6 +142,9 @@ private[akka] class ActorBasedFlowMaterializer(
     case x    ⇒ x
   }
 
+  def withNamePrefix(name: String): FlowMaterializer =
+    new ActorBasedFlowMaterializer(settings, _context, name)
+
   private def system: ActorSystem = _context match {
     case s: ExtendedActorSystem ⇒ s
     case c: ActorContext        ⇒ c.system
@@ -150,9 +153,6 @@ private[akka] class ActorBasedFlowMaterializer(
   }
 
   private def nextFlowNameCount(): Long = FlowNameCounter(system).counter.incrementAndGet()
-
-  def withNamePrefix(name: String): FlowMaterializer =
-    new ActorBasedFlowMaterializer(settings, _context, name)
 
   private def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
