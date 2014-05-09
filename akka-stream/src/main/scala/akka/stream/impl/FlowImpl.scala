@@ -41,7 +41,7 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
     transformRecover(new RecoveryTransformer[O, Unit] {
       var done = false
       override def onNext(in: O) = { p success in; done = true; Nil }
-      override def onError(e: Throwable) = { p failure e; Nil }
+      override def onErrorRecover(e: Throwable) = { p failure e; Nil }
       override def isComplete = done
       override def onComplete() = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
     }).consume(materializer)
@@ -54,7 +54,7 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
     transformRecover(new RecoveryTransformer[O, Unit] {
       var ok = true
       override def onNext(in: O) = Nil
-      override def onError(e: Throwable) = {
+      override def onErrorRecover(e: Throwable) = {
         callback(Failure(e))
         ok = false
         Nil
