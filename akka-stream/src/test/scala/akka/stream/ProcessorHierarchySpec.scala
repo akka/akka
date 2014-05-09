@@ -17,7 +17,7 @@ class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\na
 
   val materializer = FlowMaterializer(MaterializerSettings())
 
-  def self = ActorBasedFlowMaterializer.ctx.get().asInstanceOf[ActorContext].self
+  def self = ActorBasedFlowMaterializer.currentActorContext().self
 
   "An ActorBasedFlowMaterializer" must {
 

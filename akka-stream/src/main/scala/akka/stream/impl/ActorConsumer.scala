@@ -85,9 +85,9 @@ private[akka] abstract class AbstractActorConsumer(val settings: MaterializerSet
       requestMore()
       context.become(active)
     case OnError(cause) ⇒
-      onError(cause)
+      withCtx(context)(onError(cause))
     case OnComplete ⇒
-      onComplete()
+      withCtx(context)(onComplete())
   }
 
   private var subscription: Option[Subscription] = None
@@ -142,6 +142,7 @@ private[akka] class TransformActorConsumer(_settings: MaterializerSettings, tran
 
   override def onError(cause: Throwable): Unit = {
     log.error(cause, "terminating due to onError")
+    transformer.onError(cause)
     shutdown()
   }
 
@@ -167,7 +168,7 @@ private[akka] class RecoverActorConsumer(_settings: MaterializerSettings, recove
   extends TransformActorConsumer(_settings, recoveryTransformer) {
 
   override def onError(cause: Throwable): Unit = {
-    recoveryTransformer.onError(cause)
+    recoveryTransformer.onErrorRecover(cause)
     onComplete()
   }
 }
