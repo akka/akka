@@ -274,6 +274,19 @@ private[akka] abstract class ActorRefWithCell extends InternalActorRef { this: A
 private[akka] case object Nobody extends MinimalActorRef {
   override val path: RootActorPath = new RootActorPath(Address("akka", "all-systems"), "/Nobody")
   override def provider = throw new UnsupportedOperationException("Nobody does not provide")
+
+  private val serialized = new SerializedNobody
+
+  @throws(classOf[java.io.ObjectStreamException])
+  override protected def writeReplace(): AnyRef = serialized
+}
+
+/**
+ * INTERNAL API
+ */
+@SerialVersionUID(1L) private[akka] class SerializedNobody extends Serializable {
+  @throws(classOf[java.io.ObjectStreamException])
+  private def readResolve(): AnyRef = Nobody
 }
 
 /**
