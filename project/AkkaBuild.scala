@@ -301,7 +301,8 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.stream,
       // FIXME include mima when akka-stream-experimental-2.3.x has been released
       //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
-      previousArtifact := None
+      previousArtifact := None,
+      fork in Test := true
     )
   )
 
@@ -453,7 +454,7 @@ object AkkaBuild extends Build {
   lazy val persistenceSampleScala = Project(
     id = "akka-sample-persistence-scala",
     base = file("akka-samples/akka-sample-persistence-scala"),
-    dependencies = Seq(actor, persistence),
+    dependencies = Seq(actor, persistence, stream),
     settings = sampleSettings
   )
 
@@ -577,8 +578,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
-      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
-      persistence % "compile;test->test"),
+      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi, persistence),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
@@ -1223,8 +1223,9 @@ object Dependencies {
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % "2.3.2",
+    "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.2",
     "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test",
-    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams)
+    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
