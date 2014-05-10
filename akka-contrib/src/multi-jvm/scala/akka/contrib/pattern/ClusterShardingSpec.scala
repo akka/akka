@@ -11,7 +11,6 @@ import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
 import akka.persistence.EventsourcedProcessor
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
@@ -460,7 +459,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
   "easy to use with extensions" in within(50.seconds) {
     runOn(third, fourth, fifth, sixth) {
       //#counter-start
-      ClusterSharding(system).start(
+      val counterRegion: ActorRef = ClusterSharding(system).start(
         typeName = "Counter",
         entryProps = Some(Props[Counter]),
         idExtractor = idExtractor,
@@ -502,6 +501,22 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     }
 
     enterBarrier("after-9")
+
+  }
+  "easy API for starting" in within(50.seconds) {
+    runOn(first) {
+      val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
+        typeName = "ApiTest",
+        entryProps = Some(Props[Counter]),
+        idExtractor = idExtractor,
+        shardResolver = shardResolver)
+
+      val counterRegionViaGet: ActorRef = ClusterSharding(system).shardRegion("ApiTest")
+
+      counterRegionViaStart should equal(counterRegionViaGet)
+    }
+    enterBarrier("after-10")
+
   }
 }
 
