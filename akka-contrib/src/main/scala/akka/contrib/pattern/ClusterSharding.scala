@@ -215,18 +215,20 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   that passed the `idExtractor` will be used
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
     entryProps: Option[Props],
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
-    allocationStrategy: ShardAllocationStrategy): Unit = {
+    allocationStrategy: ShardAllocationStrategy): ActorRef = {
 
     implicit val timeout = system.settings.CreationTimeout
     val startMsg = Start(typeName, entryProps, idExtractor, shardResolver, allocationStrategy)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
+    shardRegion
   }
 
   /**
@@ -250,12 +252,13 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
    * @param shardResolver function to determine the shard id for an incoming message, only messages
    *   that passed the `idExtractor` will be used
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
     entryProps: Option[Props],
     idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): Unit = {
+    shardResolver: ShardRegion.ShardResolver): ActorRef = {
 
     start(typeName, entryProps, idExtractor, shardResolver,
       new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance))
@@ -278,12 +281,13 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   entry from the incoming message
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
     entryProps: Props,
     messageExtractor: ShardRegion.MessageExtractor,
-    allocationStrategy: ShardAllocationStrategy): Unit = {
+    allocationStrategy: ShardAllocationStrategy): ActorRef = {
 
     start(typeName, entryProps = Option(entryProps),
       idExtractor = {
@@ -312,11 +316,12 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   entry actors itself
    * @param messageExtractor functions to extract the entry id, shard id, and the message to send to the
    *   entry from the incoming message
+   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
     typeName: String,
     entryProps: Props,
-    messageExtractor: ShardRegion.MessageExtractor): Unit = {
+    messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
     start(typeName, entryProps, messageExtractor,
       new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance))

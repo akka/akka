@@ -35,7 +35,7 @@ its state if it is valuable.
 
 When using the sharding extension you are first, typically at system startup on each node
 in the cluster, supposed to register the supported entry types with the ``ClusterSharding.start``
-method.
+method. ``ClusterSharding.start`` gives you the reference which you can pass along.
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-start
 
@@ -79,7 +79,7 @@ its state if it is valuable.
 
 When using the sharding extension you are first, typically at system startup on each node
 in the cluster, supposed to register the supported entry types with the ``ClusterSharding.start``
-method.
+method. ``ClusterSharding.start`` gives you the reference which you can pass along.
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-start
 

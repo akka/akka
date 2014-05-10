@@ -4,7 +4,6 @@
 
 package akka.contrib.pattern;
 
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import scala.concurrent.duration.Duration;
@@ -64,8 +63,8 @@ public class ClusterShardingTest {
     //#counter-extractor
 
     //#counter-start
-    ClusterSharding.get(system).start("Counter", Props.create(Counter.class),
-        messageExtractor);
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", Props.create(Counter.class),
+              messageExtractor);
     //#counter-start
 
     //#counter-usage
