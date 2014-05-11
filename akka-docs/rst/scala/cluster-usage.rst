@@ -398,23 +398,23 @@ Cluster Aware Routers
 All :ref:`routers <routing-scala>` can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
 When a node becomes unreachable or leaves the cluster the routees of that node are
-automatically unregistered from the router. When new nodes join the cluster additional
+automatically unregistered from the router. When new nodes join the cluster, additional
 routees are added to the router, according to the configuration. Routees are also added 
 when a node becomes reachable again, after having been unreachable.
 
 There are two distinct types of routers. 
 
 * **Group - router that sends messages to the specified path using actor selection** 
-  The routees can be shared between routers running on different nodes in the cluster. 
+  The routees can be shared among routers running on different nodes in the cluster. 
   One example of a use case for this type of router is a service running on some backend 
   nodes in the cluster and used by routers running on front-end nodes in the cluster.
 
 * **Pool - router that creates routees as child actors and deploys them on remote nodes.** 
   Each router will have its own routee instances. For example, if you start a router
-  on 3 nodes in a 10 nodes cluster you will have 30 routee actors in total if the router is
-  configured to use one inctance per node. The routees created by the different routers
-  will not be shared between the routers. One example of a use case for this type of router
-  is a single master that coordinate jobs and delegates the actual work to routees running 
+  on 3 nodes in a 10-node cluster, you will have 30 routees in total if the router is
+  configured to use one instance per node. The routees created by the different routers
+  will not be shared among the routers. One example of a use case for this type of router
+  is a single master that coordinates jobs and delegates the actual work to routees running 
   on other nodes in the cluster.
 
 Router with Group of Routees
