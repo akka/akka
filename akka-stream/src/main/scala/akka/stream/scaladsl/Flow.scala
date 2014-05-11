@@ -274,7 +274,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(materializer: FlowMaterializer, consumer: Consumer[T @uncheckedVariance]): Unit
+  def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: T]): Unit
 
 }
 

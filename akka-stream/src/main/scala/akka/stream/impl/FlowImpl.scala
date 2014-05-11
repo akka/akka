@@ -64,8 +64,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   override def toProducer(materializer: FlowMaterializer): Producer[O] = materializer.toProducer(producerNode, ops)
 
-  override def produceTo(materializer: FlowMaterializer, consumer: Consumer[O]) =
-    toProducer(materializer).produceTo(consumer)
+  override def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: O]) =
+    toProducer(materializer).produceTo(consumer.asInstanceOf[Consumer[O]])
 }
 
 /**
