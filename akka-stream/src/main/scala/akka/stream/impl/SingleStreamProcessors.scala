@@ -53,6 +53,7 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
     s"transformer=$transformer)"
 
   override def softShutdown(): Unit = {
+    shutdownReason foreach transformer.onError
     transformer.cleanup()
     hasCleanupRun = true // for postStop
     super.softShutdown()
@@ -77,7 +78,7 @@ private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, recove
     if (emits.isEmpty && error.isDefined && inputDrained) {
       val e = error.get
       error = None
-      emits = recoveryTransformer.onError(e)
+      emits = recoveryTransformer.onErrorRecover(e)
     } else if (emits.isEmpty) {
       isComplete = recoveryTransformer.isComplete
       if (depleted || isComplete) {

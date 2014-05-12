@@ -6,7 +6,6 @@ package akka.stream
 import scala.util.control.NoStackTrace
 import org.reactivestreams.api.{ Consumer, Producer }
 import org.reactivestreams.spi.{ Subscriber, Publisher, Subscription }
-import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.OnSubscribe
@@ -14,11 +13,11 @@ import akka.stream.testkit.OnError
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
-  val materializer = new ActorBasedFlowMaterializer(MaterializerSettings(
+  val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2), system)
+    maxFanOutBufferSize = 2))
 
   case class TE(message: String) extends RuntimeException(message) with NoStackTrace
 

@@ -17,7 +17,7 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16)
 
-  val gen = new ActorBasedFlowMaterializer(settings, system)
+  val gen = FlowMaterializer(settings)
 
   "A Map" must {
 
