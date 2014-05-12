@@ -18,9 +18,6 @@ object LWWMap {
 
 /**
  * Specialized [[ORMap]] with [[LWWRegister]] values.
- * Note that a `ORMap` uses logical clocks (vector clocks) to determine
- * which value to pick when merging and only in case of concurrent updates
- * of an entry the timestamp of the `LWWRegister` is used.
  *
  * `LWWRegister` relies on synchronized clocks and should only be used when the choice of
  * value is not important for concurrent updates occurring within the clock skew.
