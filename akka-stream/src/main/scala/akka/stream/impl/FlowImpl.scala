@@ -15,6 +15,7 @@ import scala.util.Success
 import scala.util.Failure
 import akka.stream.scaladsl.Transformer
 import akka.stream.scaladsl.RecoveryTransformer
+import org.reactivestreams.api.Consumer
 
 /**
  * INTERNAL API
@@ -140,6 +141,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
   override def splitWhen(p: (O) ⇒ Boolean): Flow[Producer[O]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 
   override def groupBy[K](f: (O) ⇒ K): Flow[(K, Producer[O])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+
+  override def tee(other: Consumer[_ >: O]): Flow[O] = andThen(Tee(other.asInstanceOf[Consumer[Any]]))
 
   override def toFuture(materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
