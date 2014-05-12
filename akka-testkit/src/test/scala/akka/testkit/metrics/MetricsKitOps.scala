@@ -43,11 +43,21 @@ private[akka] trait MetricsKitOps extends MetricKeyDSL {
    *
    * @param unitString just for human readable output, during console printing
    */
-  def histogram(key: MetricKey, highestTrackableValue: Long, numberOfSignificantValueDigits: Int, unitString: String = ""): HdrHistogram =
+  def hdrHistogram(key: MetricKey, highestTrackableValue: Long, numberOfSignificantValueDigits: Int, unitString: String = ""): HdrHistogram =
     getOrRegister((key / "hdr-histogram").toString, new HdrHistogram(highestTrackableValue, numberOfSignificantValueDigits, unitString))
+
+  /**
+   * Use when measuring for 9x'th percentiles as well as min / max / mean values.
+   *
+   * Backed by [[ExponentiallyDecayingReservoir]].
+   */
+  def histogram(key: MetricKey): Histogram = {
+    registry.histogram((key / "histogram").toString)
+  }
 
   /** Yet another delegate to `System.gc()` */
   def gc() {
+    // todo add some form of logging, to differentiate manual gc calls from "normal" ones
     System.gc()
   }
 

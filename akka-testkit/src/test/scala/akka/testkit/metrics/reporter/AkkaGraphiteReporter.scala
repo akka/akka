@@ -19,7 +19,7 @@ class AkkaGraphiteReporter(
   registry: AkkaMetricRegistry,
   prefix: String,
   graphite: Graphite)
-  extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-graphite-reporter", MetricsKit.KnownOpsInTimespanCounterFilter, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
+  extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-graphite-reporter", MetricFilter.ALL, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
 
   // todo get rid of ScheduledReporter (would mean removing codahale metrics)?
 
