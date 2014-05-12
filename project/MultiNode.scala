@@ -1,5 +1,6 @@
 package akka
 
+import akka.TestExtras.Filter
 import akka.TestExtras.Filter.Keys._
 import com.typesafe.sbt.{SbtScalariform, SbtMultiJvm}
 import sbt._
@@ -8,9 +9,7 @@ import sbt.Keys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object MultiNode {
-  def executeMultiJvmTests = Def.setting {
-    onlyTestTags.value.contains("long-running") || !excludeTestTags.value.contains("long-running")
-  }
+  def executeMultiJvmTests = Filter.containsOrNotExcludesTag("long-running")
 
   val multiNodeEnabled = sys.props.get("akka.test.multi-node").getOrElse("false").toBoolean
 
@@ -46,27 +45,33 @@ object MultiNode {
     ScalariformKeys.preferences in MultiJvm := Formatting.formattingPreferences) ++
     Option(System.getProperty("akka.test.multi-node.hostsFileName")).map(x => Seq(multiNodeHostsFileName in MultiJvm := x)).getOrElse(Seq.empty) ++
     Option(System.getProperty("akka.test.multi-node.java")).map(x => Seq(multiNodeJavaName in MultiJvm := x)).getOrElse(Seq.empty) ++
-    Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++ {
-    Seq(
-      executeTests in Test := {
-        if (executeMultiJvmTests.value) {
-          val testResults = (executeTests in Test).value
-          val multiNodeResults = multiNodeEnabled match {
-            case true => (multiNodeExecuteTests in MultiJvm).value
-            case false => (executeTests in MultiJvm).value
-          }
-
-          val overall =
-            if (testResults.overall.id < multiNodeResults.overall.id)
-              multiNodeResults.overall
-            else
-              testResults.overall
-          Tests.Output(overall,
-            testResults.events ++ multiNodeResults.events,
-            testResults.summaries ++ multiNodeResults.summaries)
+    Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++
+    ((executeMultiJvmTests, multiNodeEnabled) match {
+      case (true, true) =>
+        executeTests in Test <<= (executeTests in Test, multiNodeExecuteTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
         }
-        else (executeTests in Test).value
-      }
-    )
-  }
+      case (true, false) =>
+        executeTests in Test <<= (executeTests in Test, executeTests in MultiJvm) map {
+          case (testResults, multiNodeResults)  =>
+            val overall =
+              if (testResults.overall.id < multiNodeResults.overall.id)
+                multiNodeResults.overall
+              else
+                testResults.overall
+            Tests.Output(overall,
+              testResults.events ++ multiNodeResults.events,
+              testResults.summaries ++ multiNodeResults.summaries)
+        }
+      case (false, _) => Seq.empty
+    })
+
 }
