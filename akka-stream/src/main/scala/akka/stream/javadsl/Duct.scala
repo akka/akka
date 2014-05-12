@@ -13,7 +13,6 @@ import akka.japi.Function2
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
-import akka.stream.RecoveryTransformer
 import akka.stream.Transformer
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 
@@ -123,16 +122,6 @@ abstract class Duct[In, Out] {
    * visibility constructs to access the state from the callback methods.
    */
   def transform[U](transformer: Transformer[Out, U]): Duct[In, U]
-
-  /**
-   * This transformation stage works exactly like [[#transform]] with the
-   * change that failure signaled from upstream will invoke
-   * [[akka.stream.RecoveryTransformer#onError]], which can emit an additional sequence of
-   * elements before the stream ends.
-   *
-   * After normal completion or error the [[akka.stream.RecoveryTransformer#cleanup]] function is called.
-   */
-  def transformRecover[U](recoveryTransformer: RecoveryTransformer[Out, U]): Duct[In, U]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -269,9 +258,6 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
 
   override def transform[U](transformer: Transformer[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.transform(transformer))
-
-  override def transformRecover[U](transformer: RecoveryTransformer[T, U]): Duct[In, U] =
-    new DuctAdapter(delegate.transformRecover(transformer))
 
   override def groupBy[K](f: Function[T, K]): Duct[In, Pair[K, Producer[T]]] =
     new DuctAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
