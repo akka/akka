@@ -11,7 +11,6 @@ import akka.testkit.EventFilter
 import scala.util.Failure
 import scala.util.control.NoStackTrace
 import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.RecoveryTransformer
 import scala.util.Try
 import scala.util.Success
 
