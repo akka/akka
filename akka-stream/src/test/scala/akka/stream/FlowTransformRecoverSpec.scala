@@ -19,8 +19,8 @@ object FlowTransformRecoverSpec {
   abstract class TryRecoveryTransformer[T, U] extends RecoveryTransformer[T, U] {
     def onNext(element: Try[T]): immutable.Seq[U]
 
-    def onNext(element: T): immutable.Seq[U] = onNext(Success(element))
-    def onError(cause: Throwable): immutable.Seq[U] = onNext(Failure(cause))
+    override def onNext(element: T): immutable.Seq[U] = onNext(Success(element))
+    override def onErrorRecover(cause: Throwable): immutable.Seq[U] = onNext(Failure(cause))
   }
 }
 
@@ -44,7 +44,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             tot += elem
             List(tot)
           }
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -68,7 +68,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             tot += elem
             Vector.fill(elem)(tot)
           }
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -95,7 +95,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             tot += elem
             if (elem % 2 == 0) Nil else List(tot)
           }
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -126,7 +126,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             tot += length
             List(tot)
           }
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val c1 = StreamTestKit.consumerProbe[Int]
@@ -228,7 +228,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             if (elem == 2) throw new IllegalArgumentException("two not allowed")
             else List(elem, elem)
           }
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -254,7 +254,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           }.
           transformRecover(new RecoveryTransformer[Int, Int] {
             override def onNext(elem: Int) = List(elem)
-            override def onError(e: Throwable) = List(-1, -2, -3)
+            override def onErrorRecover(e: Throwable) = List(-1, -2, -3)
           }).
           toProducer(materializer)
         val consumer = StreamTestKit.consumerProbe[Int]
@@ -296,7 +296,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
         transformRecover(new RecoveryTransformer[Int, Throwable] {
           var s = ""
           override def onNext(element: Int) = List(new IllegalStateException)
-          override def onError(ex: Throwable) = {
+          override def onErrorRecover(ex: Throwable) = {
             s += ex.getMessage
             List(ex)
           }
@@ -319,7 +319,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
           override def onNext(in: Int) = List(in)
-          override def onError(e: Throwable) = throw e
+          override def onErrorRecover(e: Throwable) = throw e
         }).
         toProducer(materializer)
       val proc = p.expectSubscription()
@@ -338,7 +338,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
       val p2 = Flow(p).
         transformRecover(new RecoveryTransformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
-          override def onError(e: Throwable) = List(-1)
+          override def onErrorRecover(e: Throwable) = List(-1)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]

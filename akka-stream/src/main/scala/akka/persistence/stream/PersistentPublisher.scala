@@ -24,9 +24,9 @@ import akka.stream.scaladsl.Flow
 
 object PersistentFlow {
   /**
-   * Starts a new [[Persistent]] message flow from the given processor,
+   * Starts a new [[akka.persistence.Persistent]] message flow from the given processor,
    * identified by `processorId`. Elements are pulled from the processor's
-   * journal (using a [[View]]) in accordance with the demand coming from
+   * journal (using a [[akka.persistence.View]]) in accordance with the demand coming from
    * the downstream transformation steps.
    *
    * Elements pulled from the processor's journal are buffered in memory so that
@@ -36,9 +36,9 @@ object PersistentFlow {
     fromProcessor(processorId, PersistentPublisherSettings())
 
   /**
-   * Starts a new [[Persistent]] message flow from the given processor,
+   * Starts a new [[akka.persistence.Persistent]] message flow from the given processor,
    * identified by `processorId`. Elements are pulled from the processor's
-   * journal (using a [[View]]) in accordance with the demand coming from
+   * journal (using a [[akka.persistence.View]]) in accordance with the demand coming from
    * the downstream transformation steps.
    *
    * Elements pulled from the processor's journal are buffered in memory so that
@@ -46,14 +46,14 @@ object PersistentFlow {
    * Reads from the journal are done in (coarse-grained) batches of configurable
    * size (which correspond to the configurable maximum buffer size).
    *
-   * @see [[PersistentPublisherSettings]]
+   * @see [[akka.persistence.PersistentPublisherSettings]]
    */
   def fromProcessor(processorId: String, publisherSettings: PersistentPublisherSettings): Flow[Persistent] =
     FlowImpl(PersistentPublisherNode(processorId, publisherSettings), Nil)
 }
 
 /**
- * Configuration object for a [[Persistent]] stream publisher.
+ * Configuration object for a [[akka.persistence.Persistent]] stream publisher.
  *
  * @param fromSequenceNr Sequence number where the published stream shall start (inclusive).
  *                       Default is `1L`.
@@ -74,8 +74,9 @@ private object PersistentPublisher {
 }
 
 private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends ProducerNode[Persistent] {
-  def createProducer(settings: MaterializerSettings, context: ActorRefFactory): Producer[Persistent] =
-    new ActorProducer(context.actorOf(PersistentPublisher.props(processorId, publisherSettings, settings)))
+  def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[Persistent] =
+    new ActorProducer(materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+      name = s"$flowName-0-persistentPublisher"))
 }
 
 private class PersistentPublisherImpl(processorId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
