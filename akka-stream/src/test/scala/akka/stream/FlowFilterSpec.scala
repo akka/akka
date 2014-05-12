@@ -25,11 +25,11 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      val gen = new ActorBasedFlowMaterializer(MaterializerSettings(
+      val gen = FlowMaterializer(MaterializerSettings(
         initialInputBufferSize = 1,
         maximumInputBufferSize = 1,
         initialFanOutBufferSize = 1,
-        maxFanOutBufferSize = 1), system)
+        maxFanOutBufferSize = 1))
 
       val probe = StreamTestKit.consumerProbe[Int]
       Flow(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).
