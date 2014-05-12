@@ -75,23 +75,17 @@ abstract class TwoStreamsSetup extends AkkaSpec {
   def commonTests() = {
     "work with two immediately completed producers" in {
       val consumer = setup(completedPublisher, completedPublisher)
-      val subscription = consumer.expectSubscription()
-      subscription.requestMore(1)
-      consumer.expectComplete()
+      consumer.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with two delayed completed producers" in {
       val consumer = setup(soonToCompletePublisher, soonToCompletePublisher)
-      val subscription = consumer.expectSubscription()
-      subscription.requestMore(1)
-      consumer.expectComplete()
+      consumer.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with one immediately completed and one delayed completed producer" in {
       val consumer = setup(completedPublisher, soonToCompletePublisher)
-      val subscription = consumer.expectSubscription()
-      subscription.requestMore(1)
-      consumer.expectComplete()
+      consumer.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with two immediately failed producers" in {

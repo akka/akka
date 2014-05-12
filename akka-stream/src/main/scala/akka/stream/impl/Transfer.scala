@@ -6,7 +6,21 @@ package akka.stream.impl
 import org.reactivestreams.spi.{ Subscriber, Subscription }
 import java.util.Arrays
 import scala.util.control.NonFatal
-import akka.actor.ActorRefFactory
+import akka.actor.{ Actor, ActorRefFactory }
+
+/**
+ * INTERNAL API
+ */
+private[akka] class SubReceive(initial: Actor.Receive) extends Actor.Receive {
+  private var currentReceive = initial
+
+  override def isDefinedAt(msg: Any): Boolean = currentReceive.isDefinedAt(msg)
+  override def apply(msg: Any): Unit = currentReceive.apply(msg)
+
+  def become(newBehavior: Actor.Receive): Unit = {
+    currentReceive = newBehavior
+  }
+}
 
 /**
  * INTERNAL API
@@ -15,15 +29,13 @@ private[akka] trait Inputs {
   def NeedsInput: TransferState
   def NeedsInputOrComplete: TransferState
 
-  def enqueueInputElement(elem: Any): Unit
   def dequeueInputElement(): Any
 
+  def subreceive: SubReceive
+
   def cancel(): Unit
-  def complete(): Unit
   def isClosed: Boolean
   def isOpen: Boolean = !isClosed
-
-  def prefetch(): Unit
 
   def inputsDepleted: Boolean
   def inputsAvailable: Boolean
@@ -52,6 +64,8 @@ private[akka] trait Outputs {
 
   def demandAvailable: Boolean
   def enqueueOutputElement(elem: Any): Unit
+
+  def receive: SubReceive
 
   def complete(): Unit
   def cancel(e: Throwable): Unit
@@ -112,24 +126,7 @@ private[akka] object NotInitialized extends TransferState {
 /**
  * INTERNAL API
  */
-private[akka] object EmptyInputs extends Inputs {
-  override def inputsAvailable: Boolean = false
-  override def inputsDepleted: Boolean = true
-  override def isClosed: Boolean = true
-
-  override def complete(): Unit = ()
-  override def cancel(): Unit = ()
-  override def prefetch(): Unit = ()
-
-  override def dequeueInputElement(): Any = throw new UnsupportedOperationException("Cannot dequeue from EmptyInputs")
-  override def enqueueInputElement(elem: Any): Unit = throw new UnsupportedOperationException("Cannot enqueue to EmptyInputs")
-
-  override val NeedsInputOrComplete: TransferState = new TransferState {
-    override def isReady: Boolean = true
-    override def isCompleted: Boolean = false
-  }
-  override val NeedsInput: TransferState = Completed
-}
+private[akka] case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
 
 /**
  * INTERNAL API
@@ -137,15 +134,25 @@ private[akka] object EmptyInputs extends Inputs {
 private[akka] trait Pump {
   protected def pumpContext: ActorRefFactory
   private var transferState: TransferState = NotInitialized
-  def setTransferState(t: TransferState): Unit = transferState = t
+  private var currentAction: () ⇒ Unit =
+    () ⇒ throw new IllegalStateException("Pump has been not initialized with a phase")
 
-  def isPumpFinished: Boolean = transferState.isCompleted
+  final def nextPhase(phase: TransferPhase): Unit = {
+    transferState = phase.precondition
+    currentAction = phase.action
+  }
+
+  final def isPumpFinished: Boolean = transferState.isCompleted
+
+  protected final val completedPhase = TransferPhase(Completed) {
+    () ⇒ throw new IllegalStateException("The action of completed phase must be never executed")
+  }
 
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
   final def pump(): Unit = {
     try while (transferState.isExecutable) {
-      transferState = ActorBasedFlowMaterializer.withCtx(pumpContext)(transfer())
+      ActorBasedFlowMaterializer.withCtx(pumpContext)(currentAction())
     } catch { case NonFatal(e) ⇒ pumpFailed(e) }
 
     if (isPumpFinished) pumpFinished()
@@ -154,107 +161,5 @@ private[akka] trait Pump {
   protected def pumpFailed(e: Throwable): Unit
   protected def pumpFinished(): Unit
 
-  // Needs to be implemented by Processor implementations. Transfers elements from the input buffer to the output
-  // buffer.
-  protected def transfer(): TransferState
 }
 
-/**
- * INTERNAL API
- */
-private[akka] class BatchingInputBuffer(val upstream: Subscription, val size: Int) extends DefaultInputTransferStates {
-  // TODO: buffer and batch sizing heuristics
-  private var inputBuffer = Array.ofDim[AnyRef](size)
-  private var inputBufferElements = 0
-  private var nextInputElementCursor = 0
-  private var upstreamCompleted = false
-  private val IndexMask = size - 1
-
-  private def requestBatchSize = math.max(1, inputBuffer.length / 2)
-  private var batchRemaining = requestBatchSize
-
-  override def prefetch(): Unit = upstream.requestMore(inputBuffer.length)
-
-  override def dequeueInputElement(): Any = {
-    val elem = inputBuffer(nextInputElementCursor)
-    inputBuffer(nextInputElementCursor) = null
-
-    batchRemaining -= 1
-    if (batchRemaining == 0 && !upstreamCompleted) {
-      upstream.requestMore(requestBatchSize)
-      batchRemaining = requestBatchSize
-    }
-
-    inputBufferElements -= 1
-    nextInputElementCursor += 1
-    nextInputElementCursor &= IndexMask
-    elem
-  }
-
-  override def enqueueInputElement(elem: Any): Unit =
-    if (isOpen) {
-      if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")
-      inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
-      inputBufferElements += 1
-    }
-
-  override def complete(): Unit = upstreamCompleted = true
-  override def cancel(): Unit = {
-    if (!upstreamCompleted) {
-      upstreamCompleted = true
-      upstream.cancel()
-      clear()
-    }
-  }
-  override def isClosed: Boolean = upstreamCompleted
-
-  private def clear(): Unit = {
-    Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
-    inputBufferElements = 0
-  }
-
-  override def inputsDepleted = upstreamCompleted && inputBufferElements == 0
-  override def inputsAvailable = inputBufferElements > 0
-
-}
-
-/**
- * INTERNAL API
- */
-private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBufferSize: Int) extends DefaultOutputTransferStates with SubscriberManagement[Any] {
-  private var downstreamBufferSpace = 0
-  private var downstreamCompleted = false
-  def demandAvailable = downstreamBufferSpace > 0
-
-  def enqueueOutputDemand(demand: Int): Unit = downstreamBufferSpace += demand
-  def enqueueOutputElement(elem: Any): Unit = {
-    downstreamBufferSpace -= 1
-    pushToDownstream(elem)
-  }
-
-  def complete(): Unit =
-    if (!downstreamCompleted) {
-      downstreamCompleted = true
-      completeDownstream()
-    }
-
-  def cancel(e: Throwable): Unit =
-    if (!downstreamCompleted) {
-      downstreamCompleted = true
-      abortDownstream(e)
-    }
-
-  def isClosed: Boolean = downstreamCompleted
-
-  def handleRequest(subscription: S, elements: Int): Unit = super.moreRequested(subscription, elements)
-  def addSubscriber(subscriber: Subscriber[Any]): Unit = super.registerSubscriber(subscriber)
-  def removeSubscription(subscription: S): Unit = super.unregisterSubscription(subscription)
-
-  def afterShutdown(completed: Boolean): Unit
-
-  override protected def requestFromUpstream(elements: Int): Unit = enqueueOutputDemand(elements)
-  override protected def shutdown(completed: Boolean): Unit = afterShutdown(completed)
-  override protected def cancelUpstream(): Unit = {
-    downstreamCompleted = true
-  }
-}

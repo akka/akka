@@ -31,16 +31,24 @@ abstract class Transformer[-T, +U] {
   def isComplete: Boolean = false
 
   /**
-   * Invoked before signaling normal completion to the downstream consumers
+   * Invoked before the Transformer terminates (either normal completion or after an onError)
    * to produce a (possibly empty) sequence of elements in response to the
    * end-of-stream event.
+   *
+   * This method is only called if [[Transformer#onError]] does not throw an exception. The default implementation
+   * of [[Transformer#onError]] throws the received cause forcing the error to propagate downstream immediately.
+   *
+   * @param e Contains a non-empty option with the error causing the termination or an empty option
+   *          if the Transformer was completed normally
    */
-  def onComplete(): immutable.Seq[U] = Nil
+  def onTermination(e: Option[Throwable]): immutable.Seq[U] = Nil
 
   /**
-   * Invoked when failure is signaled from upstream.
+   * Invoked when failure is signaled from upstream. If this method throws an exception, then onError is immediately
+   * propagated downstream. If this method completes normally then [[Transformer#onTermination]] is invoked as a final
+   * step, passing the original cause.
    */
-  def onError(cause: Throwable): Unit = ()
+  def onError(cause: Throwable): Unit = throw cause
 
   /**
    * Invoked after normal completion or error.
@@ -52,24 +60,4 @@ abstract class Transformer[-T, +U] {
    * Facilitates debugging and logging.
    */
   def name: String = "transform"
-}
-
-/**
- * General interface for stream transformation.
- * @see [[akka.stream.scaladsl.Flow#transformRecover]]
- * @see [[akka.stream.javadsl.Flow#transformRecover]]
- * @see [[Transformer]]
- */
-abstract class RecoveryTransformer[-T, +U] extends Transformer[T, U] {
-  /**
-   * Invoked when failure is signaled from upstream to emit an additional
-   * sequence of elements before the stream ends.
-   */
-  def onErrorRecover(cause: Throwable): immutable.Seq[U]
-
-  /**
-   * Name of this transformation step. Used as part of the actor name.
-   * Facilitates debugging and logging.
-   */
-  override def name: String = "transformRecover"
 }

@@ -43,26 +43,18 @@ class FlowZipSpec extends TwoStreamsSetup {
 
     "work with one immediately completed and one nonempty producer" in {
       val consumer1 = setup(completedPublisher, nonemptyPublisher((1 to 4).iterator))
-      val subscription1 = consumer1.expectSubscription()
-      subscription1.requestMore(4)
-      consumer1.expectComplete()
+      consumer1.expectCompletedOrSubscriptionFollowedByComplete()
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), completedPublisher)
-      val subscription2 = consumer2.expectSubscription()
-      subscription2.requestMore(4)
-      consumer2.expectComplete()
+      consumer2.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with one delayed completed and one nonempty producer" in {
       val consumer1 = setup(soonToCompletePublisher, nonemptyPublisher((1 to 4).iterator))
-      val subscription1 = consumer1.expectSubscription()
-      subscription1.requestMore(4)
-      consumer1.expectComplete()
+      consumer1.expectCompletedOrSubscriptionFollowedByComplete()
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), soonToCompletePublisher)
-      val subscription2 = consumer2.expectSubscription()
-      subscription2.requestMore(4)
-      consumer2.expectComplete()
+      consumer2.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with one immediately failed and one nonempty producer" in {
@@ -70,14 +62,11 @@ class FlowZipSpec extends TwoStreamsSetup {
       consumer1.expectErrorOrSubscriptionFollowedByError(TestException)
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), failedPublisher)
-      val subscription2 = consumer2.expectSubscription()
-      subscription2.requestMore(4)
       consumer2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one delayed failed and one nonempty producer" in {
       val consumer1 = setup(soonToFailPublisher, nonemptyPublisher((1 to 4).iterator))
-      val subscription1 = consumer1.expectSubscription()
       consumer1.expectErrorOrSubscriptionFollowedByError(TestException)
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), soonToFailPublisher)
