@@ -164,7 +164,7 @@ private[remote] class OversizedPayloadException(msg: String) extends EndpointExc
 private[remote] object ReliableDeliverySupervisor {
   case object Ungate
   case object AttemptSysMsgRedelivery
-  case class GotUid(uid: Int)
+  case class GotUid(uid: Int, remoteAddres: Address)
 
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
@@ -309,7 +309,7 @@ private[remote] class ReliableDeliverySupervisor(
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty)
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
       context.become(idle)
-    case g @ GotUid(receivedUid) ⇒
+    case g @ GotUid(receivedUid, _) ⇒
       context.parent ! g
       // New system that has the same address as the old - need to start from fresh state
       uidConfirmed = true
@@ -574,7 +574,7 @@ private[remote] class EndpointWriter(
       publishAndThrow(new EndpointAssociationException(s"Association failed with [$remoteAddress]", e), Logging.DebugLevel)
     case Handle(inboundHandle) ⇒
       // Assert handle == None?
-      context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid)
+      context.parent ! ReliableDeliverySupervisor.GotUid(inboundHandle.handshakeInfo.uid, remoteAddress)
       handle = Some(inboundHandle)
       reader = startReadEndpoint(inboundHandle)
       eventPublisher.notifyListeners(AssociatedEvent(localAddress, remoteAddress, inbound))

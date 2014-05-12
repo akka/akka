@@ -1006,7 +1006,13 @@ object AkkaBuild extends Build {
       FilterAnyProblem("akka.remote.EndpointWriter"),
       FilterAnyProblem("akka.remote.EndpointWriter$StopReading"),
       FilterAnyProblem("akka.remote.EndpointWriter$State"),
-      FilterAnyProblem("akka.remote.EndpointWriter$TakeOver")
+      FilterAnyProblem("akka.remote.EndpointWriter$TakeOver"),
+
+      // Change of internal message by #15109
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.copy"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.this"),
+      ProblemFilters.exclude[MissingTypesProblem]("akka.remote.ReliableDeliverySupervisor$GotUid$"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply")
     )
   }
 

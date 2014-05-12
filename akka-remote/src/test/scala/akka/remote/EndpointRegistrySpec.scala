@@ -20,9 +20,9 @@ class EndpointRegistrySpec extends AkkaSpec {
 
       reg.writableEndpointWithPolicyFor(address1) should be(None)
 
-      reg.registerWritableEndpoint(address1, None, actorA) should be(actorA)
+      reg.registerWritableEndpoint(address1, None, None, actorA) should be(actorA)
 
-      reg.writableEndpointWithPolicyFor(address1) should be(Some(Pass(actorA, None)))
+      reg.writableEndpointWithPolicyFor(address1) should be(Some(Pass(actorA, None, None)))
       reg.readOnlyEndpointFor(address1) should be(None)
       reg.isWritable(actorA) should be(true)
       reg.isReadOnly(actorA) should be(false)
@@ -49,10 +49,10 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.writableEndpointWithPolicyFor(address1) should be(None)
 
       reg.registerReadOnlyEndpoint(address1, actorA) should be(actorA)
-      reg.registerWritableEndpoint(address1, None, actorB) should be(actorB)
+      reg.registerWritableEndpoint(address1, None, None, actorB) should be(actorB)
 
       reg.readOnlyEndpointFor(address1) should be(Some(actorA))
-      reg.writableEndpointWithPolicyFor(address1) should be(Some(Pass(actorB, None)))
+      reg.writableEndpointWithPolicyFor(address1) should be(Some(Pass(actorB, None, None)))
 
       reg.isWritable(actorA) should be(false)
       reg.isWritable(actorB) should be(true)
@@ -66,7 +66,7 @@ class EndpointRegistrySpec extends AkkaSpec {
       val reg = new EndpointRegistry
 
       reg.writableEndpointWithPolicyFor(address1) should be(None)
-      reg.registerWritableEndpoint(address1, None, actorA)
+      reg.registerWritableEndpoint(address1, None, None, actorA)
       val deadline = Deadline.now
       reg.markAsFailed(actorA, deadline)
       reg.writableEndpointWithPolicyFor(address1) should be(Some(Gated(deadline)))
@@ -85,8 +85,8 @@ class EndpointRegistrySpec extends AkkaSpec {
     "keep tombstones when removing an endpoint" in {
       val reg = new EndpointRegistry
 
-      reg.registerWritableEndpoint(address1, None, actorA)
-      reg.registerWritableEndpoint(address2, None, actorB)
+      reg.registerWritableEndpoint(address1, None, None, actorA)
+      reg.registerWritableEndpoint(address2, None, None, actorB)
       val deadline = Deadline.now
       reg.markAsFailed(actorA, deadline)
       reg.markAsQuarantined(address2, 42, deadline)
@@ -102,8 +102,8 @@ class EndpointRegistrySpec extends AkkaSpec {
     "prune outdated Gated directives properly" in {
       val reg = new EndpointRegistry
 
-      reg.registerWritableEndpoint(address1, None, actorA)
-      reg.registerWritableEndpoint(address2, None, actorB)
+      reg.registerWritableEndpoint(address1, None, None, actorA)
+      reg.registerWritableEndpoint(address2, None, None, actorB)
       reg.markAsFailed(actorA, Deadline.now)
       val farInTheFuture = Deadline.now + Duration(60, SECONDS)
       reg.markAsFailed(actorB, farInTheFuture)
