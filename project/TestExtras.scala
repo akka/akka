@@ -26,7 +26,7 @@ object TestExtras {
 
   object StatsDMetrics {
 
-    val statsd = config("statsd") extend Test
+    val statsd = config("statsd")
 
     val enabled = settingKey[Boolean]("Set to true when you want to send stats to statsd; Enable with `-Dakka.sbt.statsd=true`")
 
@@ -35,7 +35,6 @@ object TestExtras {
     val host = settingKey[String]("Host where statsd is located (ip, or hostname)")
 
     val port = settingKey[Int]("Port on which statsd is listening, defaults to 8125")
-
 
 
     val settings = Seq(
@@ -112,9 +111,9 @@ object TestExtras {
 
       private def testTimerKey(det: Event): String = s"${det.fullyQualifiedName}.${testSelectorToId(det.selector)}"
 
-      private def testSelectorToId(sel: testing.Selector): String = sel.asInstanceOf[TestSelector].testName().replaceAll("[. ']", "_")
+      private def testSelectorToId(sel: testing.Selector): String = sanitize(sel.asInstanceOf[TestSelector].testName())
 
-      private def testCounterKey(det: Event, status: Status): String = s"${det.fullyQualifiedName}.${status.toString.toLowerCase}"
+      private def testCounterKey(det: Event, status: Status): String = s"${sanitize(det.fullyQualifiedName)}.${status.toString.toLowerCase}"
 
       private def keySuccess(fullyQualifiedName: String): String = fullyQualifiedName + ".success"
 
@@ -122,8 +121,49 @@ object TestExtras {
 
       private def keyError(fullyQualifiedName: String): String = fullyQualifiedName + ".error"
 
+      private def sanitize(s: String): String = s.replaceAll("""[^\w]""", "_")
+
     }
 
+  }
+
+  object Filter {
+    object Keys {
+      val excludeTestNames = settingKey[Set[String]]("Names of tests to be excluded. Not supported by MultiJVM tests. Example usage: -Dakka.test.names.exclude=TimingSpec")
+      val excludeTestTags = settingKey[Set[String]]("Tags of tests to be excluded. It will not be used if you specify -Dakka.test.tags.only. Example usage: -Dakka.test.tags.exclude=long-running")
+      val onlyTestTags = settingKey[Set[String]]("Tags of tests to be ran. Example usage: -Dakka.test.tags.only=long-running")
+    }
+
+    import Keys._
+
+    def settings = {
+      Seq(
+        excludeTestNames := systemPropertyAsSeq("akka.test.names.exclude").toSet,
+        excludeTestTags := {
+          if (onlyTestTags.value.isEmpty) systemPropertyAsSeq("akka.test.tags.exclude").toSet
+          else Set.empty
+        },
+        onlyTestTags := systemPropertyAsSeq("akka.test.tags.only").toSet,
+
+        // add filters for tests excluded by name
+        testOptions in Test <++= excludeTestNames map { _.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
+
+        // add arguments for tests excluded by tag
+        testOptions in Test <++= excludeTestTags map { tags =>
+          if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+        },
+
+        // add arguments for running only tests by tag
+        testOptions in Test <++= onlyTestTags map { tags =>
+          if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+        }
+      )
+    }
+
+    def systemPropertyAsSeq(name: String): Seq[String] = {
+      val prop = sys.props.get(name).getOrElse("")
+      if (prop.isEmpty) Seq.empty else prop.split(",").toSeq
+    }
   }
 
 }
