@@ -17,6 +17,7 @@ import static org.junit.Assert.assertEquals;
 
 import org.reactivestreams.api.Producer;
 
+import scala.Option;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
@@ -28,7 +29,6 @@ import akka.japi.Procedure;
 import akka.japi.Util;
 import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
-import akka.stream.RecoveryTransformer;
 import akka.stream.Transformer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -119,7 +119,7 @@ public class FlowTest {
       }
 
       @Override
-      public scala.collection.immutable.Seq<Integer> onComplete() {
+      public scala.collection.immutable.Seq<Integer> onTermination(Option<Throwable> e) {
         return Util.immutableSingletonSeq(sum);
       }
 
@@ -156,7 +156,7 @@ public class FlowTest {
         else
           return elem + elem;
       }
-    }).transformRecover(new RecoveryTransformer<Integer, String>() {
+    }).transform(new Transformer<Integer, String>() {
 
       @Override
       public scala.collection.immutable.Seq<String> onNext(Integer element) {
@@ -164,18 +164,17 @@ public class FlowTest {
       }
 
       @Override
-      public scala.collection.immutable.Seq<String> onErrorRecover(Throwable e) {
-        return Util.immutableSingletonSeq(e.getMessage());
+      public scala.collection.immutable.Seq<String> onTermination(Option<Throwable> e) {
+        if (e.isEmpty()) return Util.immutableSeq(new String[0]);
+        else return Util.immutableSingletonSeq(e.get().getMessage());
       }
+
+      @Override
+      public void onError(Throwable e) {}
 
       @Override
       public boolean isComplete() {
         return false;
-      }
-
-      @Override
-      public scala.collection.immutable.Seq<String> onComplete() {
-        return Util.immutableSeq(new String[0]);
       }
 
       @Override

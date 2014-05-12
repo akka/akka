@@ -9,7 +9,6 @@ import scala.util.Try
 import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
 import akka.stream.FlowMaterializer
-import akka.stream.RecoveryTransformer
 import akka.stream.Transformer
 import akka.stream.impl.DuctImpl
 
@@ -115,17 +114,6 @@ trait Duct[In, +Out] {
    * visibility constructs to access the state from the callback methods.
    */
   def transform[U](transformer: Transformer[Out, U]): Duct[In, U]
-
-  /**
-   * This transformation stage works exactly like [[#transform]] with the
-   * change that failure signaled from upstream will invoke
-   * [[RecoveryTransformer#onError]], which can emit an additional sequence of
-   * elements before the stream ends.
-   *
-   * After normal completion or error the [[RecoveryTransformer#cleanup]] function
-   * is called.
-   */
-  def transformRecover[U](recoveryTransformer: RecoveryTransformer[Out, U]): Duct[In, U]
 
   /**
    * This operation demultiplexes the incoming stream into separate output

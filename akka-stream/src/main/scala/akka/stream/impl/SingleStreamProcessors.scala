@@ -7,7 +7,6 @@ import scala.collection.immutable
 import scala.util.{ Failure, Success }
 import akka.actor.Props
 import akka.stream.MaterializerSettings
-import akka.stream.RecoveryTransformer
 import akka.stream.Transformer
 import scala.util.control.NonFatal
 
@@ -15,45 +14,57 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: Transformer[Any, Any]) extends ActorProcessorImpl(_settings) {
-  var isComplete = false
-  var hasOnCompleteRun = false
   var hasCleanupRun = false
   // TODO performance improvement: mutable buffer?
   var emits = immutable.Seq.empty[Any]
+  var errorEvent: Option[Throwable] = None
+
+  override def onError(e: Throwable): Unit = {
+    try {
+      transformer.onError(e)
+      errorEvent = Some(e)
+      pump()
+    } catch { case NonFatal(ex) ⇒ fail(ex) }
+  }
 
   object NeedsInputAndDemandOrCompletion extends TransferState {
     def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
     def isCompleted = false
   }
 
-  override def initialTransferState = NeedsInputAndDemandOrCompletion
-
-  override def transfer(): TransferState = {
-    val depleted = primaryInputs.inputsDepleted
-    if (emits.isEmpty) {
-      isComplete = transformer.isComplete
-      if (depleted || isComplete) {
-        emits = transformer.onComplete()
-        hasOnCompleteRun = true
-      } else {
-        val e = primaryInputs.dequeueInputElement()
-        emits = transformer.onNext(e)
-      }
+  val running: TransferPhase = TransferPhase(NeedsInputAndDemandOrCompletion) { () ⇒
+    if (primaryInputs.inputsDepleted || transformer.isComplete) {
+      emits = transformer.onTermination(errorEvent)
+      emitAndThen(completedPhase)
     } else {
-      primaryOutputs.enqueueOutputElement(emits.head)
-      emits = emits.tail
+      val e = primaryInputs.dequeueInputElement()
+      emits = transformer.onNext(e)
+      emitAndThen(running)
     }
-
-    if (emits.nonEmpty) primaryOutputs.NeedsDemand
-    else if (hasOnCompleteRun) Completed
-    else NeedsInputAndDemandOrCompletion
   }
 
-  override def toString: String = s"Transformer(isComplete=$isComplete, hasOnCompleteRun=$hasOnCompleteRun, emits=$emits, " +
-    s"transformer=$transformer)"
+  // Save previous phase we should return to in a var to avoid allocation
+  var phaseAfterFlush: TransferPhase = _
+
+  // Enters flushing phase if there are emits pending
+  def emitAndThen(andThen: TransferPhase): Unit =
+    if (emits.nonEmpty) {
+      phaseAfterFlush = andThen
+      nextPhase(emitting)
+    } else nextPhase(andThen)
+
+  // Emits all pending elements, then returns to savedPhase
+  val emitting = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
+    primaryOutputs.enqueueOutputElement(emits.head)
+    emits = emits.tail
+    if (emits.isEmpty) nextPhase(phaseAfterFlush)
+  }
+
+  nextPhase(running)
+
+  override def toString: String = s"Transformer(emits=$emits, transformer=$transformer)"
 
   override def softShutdown(): Unit = {
-    shutdownReason foreach transformer.onError
     transformer.cleanup()
     hasCleanupRun = true // for postStop
     super.softShutdown()
@@ -62,50 +73,6 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
   override def postStop(): Unit = {
     try super.postStop() finally if (!hasCleanupRun) transformer.cleanup()
   }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class RecoverProcessorImpl(_settings: MaterializerSettings, recoveryTransformer: RecoveryTransformer[Any, Any])
-  extends TransformProcessorImpl(_settings, recoveryTransformer) {
-
-  var error: Option[Throwable] = None
-
-  override def transfer(): TransferState = {
-    val inputDrained = !primaryInputs.inputsAvailable
-    val depleted = primaryInputs.inputsDepleted
-    if (emits.isEmpty && error.isDefined && inputDrained) {
-      val e = error.get
-      error = None
-      emits = recoveryTransformer.onErrorRecover(e)
-    } else if (emits.isEmpty) {
-      isComplete = recoveryTransformer.isComplete
-      if (depleted || isComplete) {
-        emits = recoveryTransformer.onComplete()
-        hasOnCompleteRun = true
-      } else {
-        val e = primaryInputs.dequeueInputElement()
-        emits = recoveryTransformer.onNext(e)
-      }
-
-    } else {
-      primaryOutputs.enqueueOutputElement(emits.head)
-      emits = emits.tail
-    }
-
-    if (emits.nonEmpty) primaryOutputs.NeedsDemand
-    else if (hasOnCompleteRun) Completed
-    else NeedsInputAndDemandOrCompletion
-  }
-
-  override def primaryInputOnError(e: Throwable): Unit = {
-    error = Some(e)
-    primaryInputs.complete()
-    context.become(flushing)
-    pump()
-  }
-
 }
 
 /**
@@ -120,10 +87,9 @@ private[akka] object IdentityProcessorImpl {
  */
 private[akka] class IdentityProcessorImpl(_settings: MaterializerSettings) extends ActorProcessorImpl(_settings) {
 
-  override def initialTransferState = needsPrimaryInputAndDemand
-  override protected def transfer(): TransferState = {
+  val running: TransferPhase = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     primaryOutputs.enqueueOutputElement(primaryInputs.dequeueInputElement())
-    needsPrimaryInputAndDemand
   }
 
+  nextPhase(running)
 }

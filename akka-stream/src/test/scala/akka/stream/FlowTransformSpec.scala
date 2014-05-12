@@ -11,6 +11,7 @@ import com.typesafe.config.ConfigFactory
 import akka.stream.scaladsl.Flow
 import akka.testkit.TestProbe
 import scala.util.control.NoStackTrace
+import scala.collection.immutable
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
@@ -145,7 +146,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             s += element
             Nil
           }
-          override def onComplete() = List(s + "B")
+          override def onTermination(e: Option[Throwable]) = List(s + "B")
         }).
         toProducer(materializer)
       val c = StreamTestKit.consumerProbe[String]
@@ -166,7 +167,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             s += element
             Nil
           }
-          override def onComplete() = List(s + "B")
+          override def onTermination(e: Option[Throwable]) = List(s + "B")
           override def cleanup() = cleanupProbe.ref ! s
         }).
         toProducer(materializer)
@@ -209,7 +210,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
               List(out)
             }
           }
-          override def onComplete() = List(s + "B")
+          override def onTermination(e: Option[Throwable]) = List(s + "B")
           override def cleanup() = cleanupProbe.ref ! s
         }).
         toProducer(materializer)
@@ -258,7 +259,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             List(element)
           }
           override def isComplete = s == "1"
-          override def onComplete() = List(s.length + 10)
+          override def onTermination(e: Option[Throwable]) = List(s.length + 10)
           override def cleanup() = cleanupProbe.ref ! s
         }).
         toProducer(materializer)
@@ -285,7 +286,6 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             if (elem == 2) throw new IllegalArgumentException("two not allowed")
             else List(elem, elem)
           }
-          override def onError(cause: Throwable): Unit = errProbe.ref ! cause
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]
@@ -298,7 +298,6 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
         consumer.expectError().getMessage should be("two not allowed")
         consumer.expectNoMsg(200.millis)
       }
-      errProbe.expectMsgType[IllegalArgumentException].getMessage should be("two not allowed")
     }
 
     "support cancel as expected" in {
@@ -325,7 +324,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           override def onNext(elem: Int) = Nil
-          override def onComplete() = List(1, 2, 3)
+          override def onTermination(e: Option[Throwable]) = List(1, 2, 3)
         }).
         toProducer(materializer)
       val consumer = StreamTestKit.consumerProbe[Int]

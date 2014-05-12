@@ -17,7 +17,6 @@ import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import akka.stream.Transformer
-import akka.stream.RecoveryTransformer
 import org.reactivestreams.api.Consumer
 
 /**
@@ -179,16 +178,6 @@ abstract class Flow[T] {
   def transform[U](transformer: Transformer[T, U]): Flow[U]
 
   /**
-   * This transformation stage works exactly like [[#transform]] with the
-   * change that failure signaled from upstream will invoke
-   * [[akka.stream.RecoveryTransformer#onError]], which can emit an additional sequence of
-   * elements before the stream ends.
-   *
-   * After normal completion or error the [[akka.stream.RecoveryTransformer#cleanup]] function is called.
-   */
-  def transformRecover[U](transformer: RecoveryTransformer[T, U]): Flow[U]
-
-  /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
@@ -342,9 +331,6 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def transform[U](transformer: Transformer[T, U]): Flow[U] =
     new FlowAdapter(delegate.transform(transformer))
-
-  override def transformRecover[U](transformer: RecoveryTransformer[T, U]): Flow[U] =
-    new FlowAdapter(delegate.transformRecover(transformer))
 
   override def groupBy[K](f: Function[T, K]): Flow[Pair[K, Producer[T]]] =
     new FlowAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step

@@ -4,10 +4,12 @@
 package akka.stream.impl
 
 import org.reactivestreams.api.Processor
-import org.reactivestreams.spi.Subscriber
+import org.reactivestreams.spi.{ Subscription, Subscriber }
 import akka.actor._
 import akka.stream.MaterializerSettings
 import akka.event.LoggingReceive
+import java.util.Arrays
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -17,7 +19,6 @@ private[akka] object ActorProcessor {
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
       case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
-      case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r.recoveryTransformer))
       case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
       case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
@@ -35,91 +36,182 @@ private[akka] class ActorProcessor[I, O]( final val impl: ActorRef) extends Proc
 /**
  * INTERNAL API
  */
-private[akka] trait PrimaryInputs {
-  this: Actor ⇒
-  // FIXME: have a NoInputs here to avoid nulls
-  // FIXME: make it a val and remove all lazy vals caching TransferStates
-  protected var primaryInputs: Inputs = _
+private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) extends DefaultInputTransferStates {
+  require(size > 0, "buffer size cannot be zero")
+  require((size & (size - 1)) == 0, "buffer size must be a power of two")
+  // TODO: buffer and batch sizing heuristics
+  private var upstream: Subscription = _
+  private val inputBuffer = Array.ofDim[AnyRef](size)
+  private var inputBufferElements = 0
+  private var nextInputElementCursor = 0
+  private var upstreamCompleted = false
+  private val IndexMask = size - 1
 
-  def settings: MaterializerSettings
+  private def requestBatchSize = math.max(1, inputBuffer.length / 2)
+  private var batchRemaining = requestBatchSize
 
-  def waitingForUpstream: Receive = {
-    case OnComplete ⇒
-      // Instead of introducing an edge case, handle it in the general way
-      primaryInputs = EmptyInputs
-      transitionToRunningWhenReady()
-    case OnSubscribe(subscription) ⇒
-      assert(subscription != null)
-      primaryInputs = new BatchingInputBuffer(subscription, settings.initialInputBufferSize)
-      transitionToRunningWhenReady()
-    case OnError(cause) ⇒ primaryInputOnError(cause)
-  }
+  override val subreceive: SubReceive = new SubReceive(waitingForUpstream)
 
-  def transitionToRunningWhenReady(): Unit =
-    if (primaryInputs ne null) {
-      primaryInputs.prefetch()
-      primaryInputsReady()
+  override def dequeueInputElement(): Any = {
+    val elem = inputBuffer(nextInputElementCursor)
+    inputBuffer(nextInputElementCursor) = null
+
+    batchRemaining -= 1
+    if (batchRemaining == 0 && !upstreamCompleted) {
+      upstream.requestMore(requestBatchSize)
+      batchRemaining = requestBatchSize
     }
 
-  def upstreamManagement: Receive = {
-    case OnNext(element) ⇒
-      primaryInputs.enqueueInputElement(element)
-      pumpInputs()
-    case OnComplete ⇒
-      primaryInputs.complete()
-      primaryInputOnComplete()
-      pumpInputs()
-    case OnError(cause) ⇒ primaryInputOnError(cause)
+    inputBufferElements -= 1
+    nextInputElementCursor += 1
+    nextInputElementCursor &= IndexMask
+    elem
   }
 
-  def pumpInputs(): Unit
-  def primaryInputsReady(): Unit
-  def primaryInputOnError(cause: Throwable): Unit
-  def primaryInputOnComplete(): Unit
+  protected final def enqueueInputElement(elem: Any): Unit = {
+    if (isOpen) {
+      if (inputBufferElements == size) throw new IllegalStateException("Input buffer overrun")
+      inputBuffer((nextInputElementCursor + inputBufferElements) & IndexMask) = elem.asInstanceOf[AnyRef]
+      inputBufferElements += 1
+    }
+    pump.pump()
+  }
+
+  override def cancel(): Unit = {
+    if (!upstreamCompleted) {
+      upstreamCompleted = true
+      if (upstream ne null) upstream.cancel()
+      clear()
+    }
+  }
+  override def isClosed: Boolean = upstreamCompleted
+
+  private def clear(): Unit = {
+    Arrays.fill(inputBuffer, 0, inputBuffer.length, null)
+    inputBufferElements = 0
+  }
+
+  override def inputsDepleted = upstreamCompleted && inputBufferElements == 0
+  override def inputsAvailable = inputBufferElements > 0
+
+  protected def onComplete(): Unit = {
+    upstreamCompleted = true
+    subreceive.become(completed)
+    pump.pump()
+  }
+
+  protected def onSubscribe(subscription: Subscription): Unit = {
+    assert(subscription != null)
+    upstream = subscription
+    // Prefetch
+    upstream.requestMore(inputBuffer.length)
+    subreceive.become(upstreamRunning)
+  }
+
+  protected def onError(e: Throwable): Unit = {
+    upstreamCompleted = true
+    subreceive.become(completed)
+    inputOnError(e)
+  }
+
+  protected def waitingForUpstream: Actor.Receive = {
+    case OnComplete                ⇒ onComplete()
+    case OnSubscribe(subscription) ⇒ onSubscribe(subscription)
+    case OnError(cause)            ⇒ onError(cause)
+  }
+
+  protected def upstreamRunning: Actor.Receive = {
+    case OnNext(element) ⇒ enqueueInputElement(element)
+    case OnComplete      ⇒ onComplete()
+    case OnError(cause)  ⇒ onError(cause)
+  }
+
+  protected def completed: Actor.Receive = {
+    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+  }
+
+  protected def inputOnError(e: Throwable): Unit = {
+    clear()
+  }
+
 }
 
 /**
  * INTERNAL API
  */
-private[akka] trait PrimaryOutputs {
-  this: Actor ⇒
-  // FIXME: avoid nulls and add a failing guard instance instead
+private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBufferSize: Int, self: ActorRef, val pump: Pump)
+  extends DefaultOutputTransferStates
+  with SubscriberManagement[Any] {
+
+  override type S = ActorSubscription[Any]
+  override def createSubscription(subscriber: Subscriber[Any]): S =
+    new ActorSubscription(self, subscriber)
   protected var exposedPublisher: ActorPublisher[Any] = _
 
-  def settings: MaterializerSettings
+  private var downstreamBufferSpace = 0
+  private var downstreamCompleted = false
+  def demandAvailable = downstreamBufferSpace > 0
 
-  val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize) {
-    override type S = ActorSubscription[Any]
-    override def createSubscription(subscriber: Subscriber[Any]): S =
-      new ActorSubscription(self, subscriber)
-    override def afterShutdown(completed: Boolean): Unit = primaryOutputsFinished(completed)
+  override val receive = new SubReceive(waitingExposedPublisher)
+
+  def enqueueOutputElement(elem: Any): Unit = {
+    downstreamBufferSpace -= 1
+    pushToDownstream(elem)
   }
 
-  def waitingExposedPublisher: Receive = {
+  def complete(): Unit =
+    if (!downstreamCompleted) {
+      downstreamCompleted = true
+      completeDownstream()
+    }
+
+  def cancel(e: Throwable): Unit = {
+    if (!downstreamCompleted) {
+      downstreamCompleted = true
+      abortDownstream(e)
+    }
+    if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
+  }
+
+  def isClosed: Boolean = downstreamCompleted
+
+  def afterShutdown(): Unit
+
+  override protected def requestFromUpstream(elements: Int): Unit = downstreamBufferSpace += elements
+
+  private def subscribePending(): Unit =
+    exposedPublisher.takePendingSubscribers() foreach super.registerSubscriber
+
+  override protected def shutdown(completed: Boolean): Unit = {
+    if (exposedPublisher ne null) {
+      if (completed) exposedPublisher.shutdown(None)
+      else exposedPublisher.shutdown(Some(new IllegalStateException("Cannot subscribe to shutdown publisher")))
+    }
+    afterShutdown()
+  }
+
+  override protected def cancelUpstream(): Unit = {
+    downstreamCompleted = true
+  }
+
+  protected def waitingExposedPublisher: Actor.Receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      primaryOutputsReady()
-    case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
+      receive.become(downstreamRunning)
+    case other ⇒
+      throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
 
-  def downstreamManagement: Receive = {
+  protected def downstreamRunning: Actor.Receive = {
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      primaryOutputs.handleRequest(subscription.asInstanceOf[ActorSubscription[Any]], elements)
-      pumpOutputs()
+      moreRequested(subscription.asInstanceOf[ActorSubscription[Any]], elements)
+      pump.pump()
     case Cancel(subscription) ⇒
-      primaryOutputs.removeSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
-      pumpOutputs()
+      unregisterSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
+      pump.pump()
   }
-
-  private def subscribePending(): Unit =
-    exposedPublisher.takePendingSubscribers() foreach primaryOutputs.addSubscriber
-
-  def primaryOutputsFinished(completed: Boolean): Unit
-  def primaryOutputsReady(): Unit
-
-  def pumpOutputs(): Unit
 
 }
 
@@ -130,70 +222,51 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   extends Actor
   with ActorLogging
   with SoftShutdown
-  with PrimaryInputs
-  with PrimaryOutputs
   with Pump {
 
-  override def receive = waitingExposedPublisher
-
-  override def primaryInputOnError(e: Throwable): Unit = fail(e)
-  override def primaryInputOnComplete(): Unit = context.become(flushing)
-  override def primaryInputsReady(): Unit = {
-    setTransferState(initialTransferState)
-    context.become(running)
+  // FIXME: make pump a member
+  protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
+    override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
   }
 
-  override def primaryOutputsReady(): Unit = context.become(downstreamManagement orElse waitingForUpstream)
-  override def primaryOutputsFinished(completed: Boolean): Unit = {
-    isShuttingDown = true
-    if (completed)
-      shutdownReason = None
-    shutdown()
-  }
+  protected val primaryOutputs: Outputs =
+    new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, this) {
+      override def afterShutdown(): Unit = {
+        primaryOutputsShutdown = true
+        shutdownHooks()
+      }
+    }
 
-  def running: Receive = LoggingReceive(downstreamManagement orElse upstreamManagement)
+  override def receive = primaryInputs.subreceive orElse primaryOutputs.receive
 
-  def flushing: Receive = downstreamManagement orElse {
-    case OnSubscribe(subscription) ⇒ fail(new IllegalStateException("Cannot subscribe shutdown subscriber"))
-    case _                         ⇒ // ignore everything else
-  }
+  protected def onError(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    shutdownReason = Some(e)
     log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    primaryInputs.cancel()
     primaryOutputs.cancel(e)
-    shutdown()
+    primaryOutputsShutdown = true
+    softShutdown()
   }
 
-  lazy val needsPrimaryInputAndDemand = primaryInputs.NeedsInput && primaryOutputs.NeedsDemand
-
-  protected def initialTransferState: TransferState
-
   override val pumpContext = context
-  override def pumpInputs(): Unit = pump()
-  override def pumpOutputs(): Unit = pump()
 
   override def pumpFinished(): Unit = {
     if (primaryInputs.isOpen) primaryInputs.cancel()
-    context.become(flushing)
     primaryOutputs.complete()
   }
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
-  var isShuttingDown = false
-  var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
-
-  def shutdown(): Unit = {
-    if (primaryInputs ne null) primaryInputs.cancel()
-    exposedPublisher.shutdown(shutdownReason)
+  protected def shutdownHooks(): Unit = {
+    primaryInputs.cancel()
     softShutdown()
   }
 
+  var primaryOutputsShutdown = false
+
   override def postStop(): Unit = {
-    if (exposedPublisher ne null)
-      exposedPublisher.shutdown(shutdownReason)
     // Non-gracefully stopped, do our best here
-    if (!isShuttingDown)
+    if (!primaryOutputsShutdown)
       primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
   }
 

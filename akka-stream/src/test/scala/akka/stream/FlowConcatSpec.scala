@@ -81,18 +81,14 @@ class FlowConcatSpec extends TwoStreamsSetup {
       consumer1.expectErrorOrSubscriptionFollowedByError(TestException)
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), failedPublisher)
-      val subscription2 = consumer2.expectSubscription()
-      subscription2.requestMore(5)
       consumer2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one delayed failed and one nonempty producer" in {
       val consumer1 = setup(soonToFailPublisher, nonemptyPublisher((1 to 4).iterator))
-      val subscription1 = consumer1.expectSubscription()
       consumer1.expectErrorOrSubscriptionFollowedByError(TestException)
 
       val consumer2 = setup(nonemptyPublisher((1 to 4).iterator), soonToFailPublisher)
-      val subscription2 = consumer2.expectSubscription()
       consumer2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 

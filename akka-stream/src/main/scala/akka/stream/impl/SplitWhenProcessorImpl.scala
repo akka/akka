@@ -12,64 +12,48 @@ import akka.actor.Terminated
 /**
  * INTERNAL API
  */
-private[akka] object SplitWhenProcessorImpl {
-
-  sealed trait SubstreamElementState
-  case object NoPending extends SubstreamElementState
-  case class PendingElement(elem: Any) extends SubstreamElementState
-  case class PendingElementForNewStream(elem: Any) extends SubstreamElementState
-}
-
-/**
- * INTERNAL API
- */
 private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val splitPredicate: Any ⇒ Boolean)
   extends MultiStreamOutputProcessor(_settings) {
-  import SplitWhenProcessorImpl._
 
-  var pendingElement: SubstreamElementState = NoPending
-  var started = false
   var currentSubstream: SubstreamOutputs = _
 
-  override def initialTransferState = needsPrimaryInputAndDemand
-
-  override def transfer(): TransferState = {
-    pendingElement match {
-      case NoPending ⇒
-        val elem = primaryInputs.dequeueInputElement()
-        if (!started) {
-          pendingElement = PendingElementForNewStream(elem)
-          started = true
-        } else if (splitPredicate(elem)) {
-          pendingElement = PendingElementForNewStream(elem)
-          currentSubstream.complete()
-        } else if (currentSubstream.isOpen) {
-          pendingElement = PendingElement(elem)
-        } else primaryInputs.NeedsInput
-      case PendingElement(elem) ⇒
-        currentSubstream.enqueueOutputElement(elem)
-        pendingElement = NoPending
-      case PendingElementForNewStream(elem) ⇒
-        val substreamOutput = newSubstream()
-        primaryOutputs.enqueueOutputElement(substreamOutput.processor)
-        currentSubstream = substreamOutput
-        pendingElement = PendingElement(elem)
-    }
-
-    pendingElement match {
-      case NoPending                     ⇒ primaryInputs.NeedsInput
-      case PendingElement(_)             ⇒ currentSubstream.NeedsDemand
-      case PendingElementForNewStream(_) ⇒ primaryOutputs.NeedsDemand
-    }
+  val waitFirst = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
+    nextPhase(openSubstream(primaryInputs.dequeueInputElement()))
   }
 
+  def openSubstream(elem: Any): TransferPhase = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
+    val substreamOutput = newSubstream()
+    primaryOutputs.enqueueOutputElement(substreamOutput.processor)
+    currentSubstream = substreamOutput
+    nextPhase(serveSubstreamFirst(currentSubstream, elem))
+  }
+
+  // Serving the substream is split into two phases to minimize elements "held in hand"
+  def serveSubstreamFirst(substream: SubstreamOutputs, elem: Any) = TransferPhase(substream.NeedsDemand) { () ⇒
+    substream.enqueueOutputElement(elem)
+    nextPhase(serveSubstreamRest(substream))
+  }
+
+  // Note that this phase is allocated only once per _slice_ and not per element
+  def serveSubstreamRest(substream: SubstreamOutputs) = TransferPhase(primaryInputs.NeedsInput && substream.NeedsDemand) { () ⇒
+    val elem = primaryInputs.dequeueInputElement()
+    if (splitPredicate(elem)) {
+      currentSubstream.complete()
+      currentSubstream = null
+      nextPhase(openSubstream(elem))
+    } else substream.enqueueOutputElement(elem)
+  }
+
+  // Ignore elements for a cancelled substream until a new substream needs to be opened
+  val ignoreUntilNewSubstream = TransferPhase(primaryInputs.NeedsInput) { () ⇒
+    val elem = primaryInputs.dequeueInputElement()
+    if (splitPredicate(elem)) nextPhase(openSubstream(elem))
+  }
+
+  nextPhase(waitFirst)
+
   override def invalidateSubstream(substream: ActorRef): Unit = {
-    pendingElement match {
-      case PendingElement(_) if substream == currentSubstream.substream ⇒
-        setTransferState(primaryInputs.NeedsInput)
-        pendingElement = NoPending
-      case _ ⇒
-    }
+    if ((currentSubstream ne null) && substream == currentSubstream.substream) nextPhase(ignoreUntilNewSubstream)
     super.invalidateSubstream(substream)
   }
 

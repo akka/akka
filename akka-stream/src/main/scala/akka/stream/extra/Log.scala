@@ -76,7 +76,7 @@ class Log[T](override val name: String = "log") extends Transformer[T, T] with T
     log.info("OnNext: [{}]", element)
   }
 
-  final override def onComplete(): immutable.Seq[T] = {
+  final override def onTermination(e: Option[Throwable]): immutable.Seq[T] = {
     logOnComplete()
     Nil
   }
@@ -85,7 +85,10 @@ class Log[T](override val name: String = "log") extends Transformer[T, T] with T
     log.info("OnComplete")
   }
 
-  final override def onError(cause: Throwable): Unit = logOnError(cause)
+  final override def onError(cause: Throwable): Unit = {
+    logOnError(cause)
+    throw cause
+  }
 
   def logOnError(cause: Throwable): Unit = {
     log.error(cause, "OnError")

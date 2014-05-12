@@ -10,7 +10,6 @@ import org.reactivestreams.spi.Subscriber
 import akka.actor.ActorRefFactory
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
 import akka.stream.Transformer
-import akka.stream.RecoveryTransformer
 import scala.util.Try
 import scala.concurrent.Future
 import scala.util.Success
@@ -33,9 +32,6 @@ private[akka] object Ast {
 
   case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
     override def name = transformer.name
-  }
-  case class Recover(recoveryTransformer: RecoveryTransformer[Any, Any]) extends AstNode {
-    override def name = recoveryTransformer.name
   }
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"

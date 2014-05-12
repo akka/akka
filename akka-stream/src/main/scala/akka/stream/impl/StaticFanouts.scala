@@ -15,58 +15,46 @@ import org.reactivestreams.spi.Subscription
 private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any])
   extends ActorProcessorImpl(_settings) {
 
-  lazy val needsBothInputAndDemand = primaryInputs.NeedsInput && primaryOutputs.NeedsDemand
-
-  override def initialTransferState = needsBothInputAndDemand
-
-  override def primaryOutputsReady(): Unit = {
-    primaryOutputs.addSubscriber(other.getSubscriber)
-    super.primaryOutputsReady()
-  }
-
-  override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize) {
+  override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
 
     var hasOtherSubscription = false
     var hasDownstreamSubscription = false
     var pendingRemoveSubscription: List[S] = Nil
 
-    override type S = ActorSubscription[Any]
-    override def createSubscription(subscriber: Subscriber[Any]): S =
-      new ActorSubscription(self, subscriber)
-    override def afterShutdown(completed: Boolean): Unit = {
-      primaryOutputsFinished(completed)
-    }
+    registerSubscriber(other.getSubscriber)
 
-    override val NeedsDemand: TransferState = new TransferState {
-      def isReady = demandAvailable
-      def isCompleted = isClosed
-    }
-
-    override def addSubscriber(subscriber: Subscriber[Any]): Unit = {
-      super.addSubscriber(subscriber)
+    override def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
+      super.registerSubscriber(subscriber)
       if (subscriber == other.getSubscriber)
         hasOtherSubscription = true
       else
         hasDownstreamSubscription = true
       if (pendingRemoveSubscription.nonEmpty && hasOtherSubscription && hasDownstreamSubscription) {
-        pendingRemoveSubscription foreach removeSubscription
+        pendingRemoveSubscription foreach unregisterSubscription
         pendingRemoveSubscription = Nil
       }
     }
 
-    override def removeSubscription(subscription: S): Unit = {
+    override def unregisterSubscription(subscription: S): Unit = {
       // make sure that we don't shutdown because of premature cancel
       if (hasOtherSubscription && hasDownstreamSubscription)
-        super.removeSubscription(subscription)
+        super.unregisterSubscription(subscription)
       else
         pendingRemoveSubscription :+= subscription // defer these until both subscriptions have been registered
     }
+
+    override def afterShutdown(): Unit = {
+      primaryOutputsShutdown = true
+      shutdownHooks()
+    }
   }
 
-  override def transfer(): TransferState = {
+  var running = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val in = primaryInputs.dequeueInputElement()
     primaryOutputs.enqueueOutputElement(in)
-    needsBothInputAndDemand
   }
+
+  nextPhase(running)
+
 }
 
