@@ -96,7 +96,7 @@ private[akka] trait MetricsKit extends MetricsKitOps {
    * HINT: this operation can be costy, run outside of your tested code, or rely on scheduled reporting.
    */
   def reportAndClearMetrics() {
-    reporters foreach { _.report() }
+    reportMetrics()
     clearMetrics()
   }
 
