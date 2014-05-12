@@ -102,6 +102,13 @@ trait Flow[+T] {
   def filter(p: T ⇒ Boolean): Flow[T]
 
   /**
+   * Transform this stream by applying the given partial function to each of the elements
+   * on which the function is defined as they pass through this processing step.
+   * Non-matching elements are filtered out.
+   */
+  def collect[U](pf: PartialFunction[T, U]): Flow[U]
+
+  /**
    * Invoke the given procedure for each received element and produce a Unit value
    * upon reaching the normal end of the stream. Please note that also in this case
    * the flow needs to be materialized (e.g. using [[#consume]]) to initiate its
