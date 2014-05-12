@@ -285,10 +285,10 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  * You access the singleton actor with `actorSelection` using the names you have
  * specified when creating the ClusterSingletonManager. You can subscribe to
  * [[akka.cluster.ClusterEvent.MemberEvent]] and sort the members by age
- * ([[akka.cluster.ClusterEvent.Member#isOlderThan]]) to keep track of oldest member.
+ * ([[akka.cluster.Member#isOlderThan]]) to keep track of oldest member.
  * Alternatively the singleton actor may broadcast its existence when it is started.
  *
- * Use factory method [[ClusterSingletonManager#props] to create the
+ * Use factory method [[ClusterSingletonManager#props]] to create the
  * [[akka.actor.Props]] for the actor.
  *
  * ==Arguments==
