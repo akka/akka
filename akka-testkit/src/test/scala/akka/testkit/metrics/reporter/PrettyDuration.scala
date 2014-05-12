@@ -7,19 +7,25 @@ import scala.concurrent.duration._
 
 object PrettyDuration {
 
-  implicit class PrettyPrintableDuration(val d: Duration) extends AnyVal {
+  implicit class PrettyPrintableDuration(val duration: Duration) extends AnyVal {
 
     def pretty: String = pretty(includeNanos = false)
 
     /** Selects most apropriate TimeUnit for given duration and formats it accordingly */
-    def pretty(includeNanos: Boolean, precision: Int = 2): String = {
+    def pretty(includeNanos: Boolean, precision: Int = 4): String = {
       require(precision > 0, "precision must be > 0")
 
-      val nanos = d.toNanos
-      val unit = chooseUnit(nanos)
-      val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
+      duration match {
+        case d: FiniteDuration ⇒
+          val nanos = d.toNanos
+          val unit = chooseUnit(nanos)
+          val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
 
-      s"%.${precision}g %s%s".format(value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
+          s"%.${precision}g %s%s".format(value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
+
+        case d: Duration.Infinite if d == Duration.MinusInf ⇒ s" -∞ (minus infinity)"
+        case d ⇒ s"∞ (infinity)"
+      }
     }
 
     def chooseUnit(nanos: Long): TimeUnit = {
