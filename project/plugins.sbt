@@ -19,3 +19,10 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-s3" % "0.5")
 
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
+
+// JMH, probably not all needed
+libraryDependencies += "org.openjdk.jmh"               % "jmh-core"                     % "0.7.1"            // ???
+
+libraryDependencies += "org.openjdk.jmh"               % "jmh-generator-bytecode"       % "0.7.1"            // ???
+
+libraryDependencies += "org.openjdk.jmh"               % "jmh-generator-reflection"     % "0.7.1"            // ???

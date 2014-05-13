@@ -187,6 +187,16 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val akkaJmh = Project(
+    id = "akka-jmh",
+    base = file("akka-jmh"),
+    dependencies = Seq(actor, stream, testkit % "compile;test->compile"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.testkit ++ Dependencies.jmh,
+      previousArtifact := akkaPreviousArtifact("akka-jmh")
+    ) ++ Jmh.settings
+  )
+
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
@@ -1168,10 +1178,15 @@ object Dependencies {
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.fusesource"                   % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
+
+    // JMH
+    val jmhCore          = "org.openjdk.jmh"          % "jmh-core"                     % "0.7.1"            // GPLv2
+    val jmhGenBytecode   = "org.openjdk.jmh"          % "jmh-generator-bytecode"       % "0.7.1"            // GPLv2
+    val jmhGenReflection = "org.openjdk.jmh"          % "jmh-generator-reflection"     % "0.7.1"            // GPLv2
 
     // Test
 
@@ -1208,6 +1223,8 @@ object Dependencies {
   val actor = Seq(config)
 
   val testkit = Seq(Test.junit, Test.scalatest)
+
+  val jmh = Seq(jmhCore, jmhGenBytecode, jmhGenReflection)
 
   val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf, Test.junitIntf)
 
