@@ -15,7 +15,8 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16)
+    maxFanOutBufferSize = 16,
+    dispatcher = "akka.test.stream-dispatcher")
 
   "A Filter" must {
 
@@ -25,15 +26,16 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      val gen = FlowMaterializer(MaterializerSettings(
+      val materializer = FlowMaterializer(MaterializerSettings(
         initialInputBufferSize = 1,
         maximumInputBufferSize = 1,
         initialFanOutBufferSize = 1,
-        maxFanOutBufferSize = 1))
+        maxFanOutBufferSize = 1,
+        dispatcher = "akka.test.stream-dispatcher"))
 
       val probe = StreamTestKit.consumerProbe[Int]
       Flow(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).
-        toProducer(gen).produceTo(probe)
+        toProducer(materializer).produceTo(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {

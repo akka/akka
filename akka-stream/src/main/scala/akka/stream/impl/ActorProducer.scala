@@ -56,7 +56,7 @@ private[akka] class ActorProducer[T]( final val impl: ActorRef, val equalityValu
  */
 private[akka] object ActorProducer {
   def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
-    Props(new ActorProducerImpl(f, settings))
+    Props(new ActorProducerImpl(f, settings)).withDispatcher(settings.dispatcher)
 
   def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
     case other: ActorProducer[_] ⇒ Some((other.impl, other.equalityValue))

@@ -27,8 +27,10 @@ object TcpFlowSpec {
 
   case object WriteAck extends Tcp.Event
 
-  def testClientProps(connection: ActorRef): Props = Props(new TestClient(connection))
-  def testServerProps(address: InetSocketAddress, probe: ActorRef): Props = Props(new TestServer(address, probe))
+  def testClientProps(connection: ActorRef): Props =
+    Props(new TestClient(connection)).withDispatcher("akka.test.stream-dispatcher")
+  def testServerProps(address: InetSocketAddress, probe: ActorRef): Props =
+    Props(new TestServer(address, probe)).withDispatcher("akka.test.stream-dispatcher")
 
   class TestClient(connection: ActorRef) extends Actor {
     connection ! Tcp.Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
@@ -111,7 +113,8 @@ class TcpFlowSpec extends AkkaSpec {
     initialInputBufferSize = 4,
     maximumInputBufferSize = 4,
     initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2)
+    maxFanOutBufferSize = 2,
+    dispatcher = "akka.test.stream-dispatcher")
 
   val materializer = FlowMaterializer(settings)
 

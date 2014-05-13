@@ -9,7 +9,7 @@ import akka.stream.testkit.StreamTestKit
 
 class FlowProduceToConsumerSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow with toProducer" must {
 

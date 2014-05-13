@@ -16,7 +16,8 @@ class FlowSplitWhenSpec extends AkkaSpec {
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2))
+    maxFanOutBufferSize = 2,
+    dispatcher = "akka.test.stream-dispatcher"))
 
   case class StreamPuppet(p: Producer[Int]) {
     val probe = StreamTestKit.consumerProbe[Int]

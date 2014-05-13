@@ -10,6 +10,7 @@ import akka.stream.impl.Ast
 import org.reactivestreams.api.Producer
 import scala.concurrent.duration._
 import org.reactivestreams.api.Consumer
+import akka.actor.Deploy
 
 object FlowMaterializer {
 
@@ -102,7 +103,8 @@ case class MaterializerSettings(
   initialInputBufferSize: Int = 4,
   maximumInputBufferSize: Int = 16,
   upstreamSubscriptionTimeout: FiniteDuration = 3.seconds,
-  downstreamSubscriptionTimeout: FiniteDuration = 3.seconds) {
+  downstreamSubscriptionTimeout: FiniteDuration = 3.seconds,
+  dispatcher: String = Deploy.NoDispatcherGiven) {
 
   private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0
   require(initialFanOutBufferSize > 0, "initialFanOutBufferSize must be > 0")
@@ -130,6 +132,8 @@ case class MaterializerSettings(
                               downstreamSubscriptionTimeout: FiniteDuration): MaterializerSettings =
     copy(upstreamSubscriptionTimeout = upstreamSubscriptionTimeout,
       downstreamSubscriptionTimeout = downstreamSubscriptionTimeout)
+
+  def withDispatcher(dispatcher: String): MaterializerSettings = copy(dispatcher = dispatcher)
 
 }
 

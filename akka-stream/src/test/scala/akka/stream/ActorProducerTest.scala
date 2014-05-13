@@ -26,7 +26,7 @@ class ActorProducerTest(_system: ActorSystem, env: TestEnvironment, publisherShu
     this(ActorSystem(classOf[ActorProducerTest].getSimpleName, AkkaSpec.testConf))
   }
 
-  private val materializer = FlowMaterializer(MaterializerSettings())
+  private val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   private def createProducer(elements: Int): Producer[Int] = {
     val iter = Iterator from 1000

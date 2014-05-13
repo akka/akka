@@ -21,7 +21,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2))
+    maxFanOutBufferSize = 2,
+    dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {

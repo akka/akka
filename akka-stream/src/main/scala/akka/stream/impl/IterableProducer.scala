@@ -21,7 +21,7 @@ import scala.concurrent.duration.Duration
  */
 private[akka] object IterableProducer {
   def props(iterable: immutable.Iterable[Any], settings: MaterializerSettings): Props =
-    Props(new IterableProducer(iterable, settings))
+    Props(new IterableProducer(iterable, settings)).withDispatcher(settings.dispatcher)
 
   object BasicActorSubscription {
     case object Cancel
@@ -102,7 +102,7 @@ private[akka] class IterableProducer(iterable: immutable.Iterable[Any], settings
     else {
       val iterator = withCtx(context)(iterable.iterator)
       val worker = context.watch(context.actorOf(IterableProducerWorker.props(iterator, subscriber,
-        settings.maximumInputBufferSize)))
+        settings.maximumInputBufferSize).withDispatcher(context.props.dispatcher)))
       val subscription = new BasicActorSubscription(worker)
       subscribers += subscriber
       workers = workers.updated(worker, subscriber)

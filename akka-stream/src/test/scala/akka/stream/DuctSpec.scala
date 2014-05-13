@@ -16,7 +16,7 @@ import scala.util.Failure
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DuctSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   "A Duct" must {
 

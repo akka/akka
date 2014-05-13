@@ -21,7 +21,7 @@ object LogSpec {
 class LogSpec extends AkkaSpec("akka.loglevel=INFO") {
   import LogSpec._
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   def flowCount = FlowNameCounter(system).counter.get
   def nextFlowCount = flowCount + 1

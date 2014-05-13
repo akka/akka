@@ -18,7 +18,7 @@ import scala.concurrent.Promise
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowFromFutureSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow based on a Future" must {
     "produce one element from already successful Future" in {

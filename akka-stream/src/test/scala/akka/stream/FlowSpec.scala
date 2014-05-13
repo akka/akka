@@ -20,7 +20,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16)
+    maxFanOutBufferSize = 16,
+    dispatcher = "akka.test.stream-dispatcher")
 
   val identity: Flow[Any] ⇒ Flow[Any] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any] ⇒ Flow[Any] = in ⇒ identity(in)

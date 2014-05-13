@@ -20,9 +20,9 @@ private[akka] object TcpStreamActor {
   class TcpStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
   def outboundProps(connectCmd: Connect, requester: ActorRef, settings: MaterializerSettings): Props =
-    Props(new OutboundTcpStreamActor(connectCmd, requester, settings))
+    Props(new OutboundTcpStreamActor(connectCmd, requester, settings)).withDispatcher(settings.dispatcher)
   def inboundProps(connection: ActorRef, settings: MaterializerSettings): Props =
-    Props(new InboundTcpStreamActor(connection, settings))
+    Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher)
 }
 
 /**

@@ -20,7 +20,7 @@ private[akka] object TcpListenStreamActor {
   class TcpListenStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
   def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props =
-    Props(new TcpListenStreamActor(bindCmd, requester, settings))
+    Props(new TcpListenStreamActor(bindCmd, requester, settings)).withDispatcher(settings.dispatcher)
 
   case class ConnectionProducer(getPublisher: Publisher[StreamTcp.IncomingTcpConnection])
     extends Producer[StreamTcp.IncomingTcpConnection] {

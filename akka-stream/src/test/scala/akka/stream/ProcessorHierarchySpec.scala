@@ -15,7 +15,7 @@ import akka.stream.impl.ActorBasedFlowMaterializer
 
 class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\nakka.loglevel=INFO") {
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   def self = ActorBasedFlowMaterializer.currentActorContext().self
 
