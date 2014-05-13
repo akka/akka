@@ -36,7 +36,7 @@ import akka.testkit.JavaTestKit;
 public class FlowTest {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("StashJavaAPI",
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
 
   final ActorSystem system = actorSystemResource.getSystem();
@@ -73,6 +73,27 @@ public class FlowTest {
 
     probe.expectMsgEquals("de");
 
+  }
+
+  @Test
+  public void mustBeAbleToUseVoidTypeInForeach() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final java.util.Iterator<String> input = Arrays.asList("a", "b", "c").iterator();
+    Flow.create(input).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }).map(new Function<Void, String>() {
+      public String apply(Void elem) {
+        probe.getRef().tell(String.valueOf(elem), ActorRef.noSender());
+        return String.valueOf(elem);
+      }
+    }).consume(materializer);
+
+    probe.expectMsgEquals("a");
+    probe.expectMsgEquals("b");
+    probe.expectMsgEquals("c");
+    probe.expectMsgEquals("null");
   }
 
   @Test
@@ -184,9 +205,9 @@ public class FlowTest {
       }
     }).foreach(new Procedure<Pair<String, Producer<String>>>() {
       public void apply(final Pair<String, Producer<String>> pair) {
-        Flow.create(pair.b()).foreach(new Procedure<String>() {
+        Flow.create(pair.second()).foreach(new Procedure<String>() {
           public void apply(String elem) {
-            probe.getRef().tell(new Pair<String, String>(pair.a(), elem), ActorRef.noSender());
+            probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
           }
         }).consume(materializer);
       }
@@ -196,11 +217,11 @@ public class FlowTest {
     for (Object o : probe.receiveN(5)) {
       @SuppressWarnings("unchecked")
       Pair<String, String> p = (Pair<String, String>) o;
-      List<String> g = grouped.get(p.a());
+      List<String> g = grouped.get(p.first());
       if (g == null)
         g = new ArrayList<String>();
-      g.add(p.b());
-      grouped.put(p.a(), g);
+      g.add(p.second());
+      grouped.put(p.first(), g);
     }
 
     assertEquals(Arrays.asList("Aaa", "Abb"), grouped.get("A"));
