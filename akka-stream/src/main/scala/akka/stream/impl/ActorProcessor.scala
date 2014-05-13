@@ -14,16 +14,17 @@ import akka.event.LoggingReceive
  */
 private[akka] object ActorProcessor {
   import Ast._
-  def props(settings: MaterializerSettings, op: AstNode): Props = op match {
-    case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
-    case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r.recoveryTransformer))
-    case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
-    case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
-    case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
-    case z: Zip       ⇒ Props(new ZipImpl(settings, z.other))
-    case c: Concat    ⇒ Props(new ConcatImpl(settings, c.next))
-    case t: Tee       ⇒ Props(new TeeImpl(settings, t.other))
-  }
+  def props(settings: MaterializerSettings, op: AstNode): Props =
+    (op match {
+      case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
+      case r: Recover   ⇒ Props(new RecoverProcessorImpl(settings, r.recoveryTransformer))
+      case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
+      case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
+      case z: Zip       ⇒ Props(new ZipImpl(settings, z.other))
+      case c: Concat    ⇒ Props(new ConcatImpl(settings, c.next))
+      case t: Tee       ⇒ Props(new TeeImpl(settings, t.other))
+    }).withDispatcher(settings.dispatcher)
 }
 
 /**
