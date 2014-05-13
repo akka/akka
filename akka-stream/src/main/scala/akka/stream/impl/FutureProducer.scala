@@ -23,7 +23,7 @@ import akka.stream.MaterializerSettings
  */
 private[akka] object FutureProducer {
   def props(future: Future[Any], settings: MaterializerSettings): Props =
-    Props(new FutureProducer(future, settings))
+    Props(new FutureProducer(future, settings)).withDispatcher(settings.dispatcher)
 
   object FutureSubscription {
     case class Cancel(subscription: FutureSubscription)

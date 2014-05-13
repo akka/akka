@@ -18,7 +18,8 @@ class FlowIteratorSpec extends AkkaSpec {
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 4,
-    maxFanOutBufferSize = 4))
+    maxFanOutBufferSize = 4,
+    dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow based on an iterator" must {
     "produce elements" in {
