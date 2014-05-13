@@ -11,19 +11,20 @@ import sbt.File
 
 object Jmh {
 
-  val jmhGenerator = taskKey[Seq[File]]("Instrumented JMH code, from compiled scala code")
+  val jmhGenerator = taskKey[Seq[File]]("Generate instrumented JMH code")
 
   val settings = Seq(
     sourceGenerators in Compile <+= jmhGenerator in Compile,
 
-    fork in Compile := false,
+    mainClass in (Compile, run) := Some("org.openjdk.jmh.Main"),
+
+    fork in (Compile, run) := true, // manages classpath for JMH when forking
 
     jmhGenerator in Compile := {
       val out = target.value
 
-      val jmhDir = out / "generated-sources" / "jmh"
       val compiledBytecodeDirectory = out / "classes"
-      val outputSourceDirectory = jmhDir
+      val outputSourceDirectory = out / "generated-sources" / "jmh"
       val outputResourceDirectory = compiledBytecodeDirectory
 
       val micro = classOf[GenerateMicroBenchmark]
@@ -31,7 +32,7 @@ object Jmh {
 
       JmhBytecodeGenerator.main(Array(compiledBytecodeDirectory, outputSourceDirectory, outputResourceDirectory).map(_.toString))
 
-      (outputSourceDirectory ** "*.java").filter(_.isFile).get
+      (outputSourceDirectory ** "*").filter(_.isFile).get
     }
   )
 

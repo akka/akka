@@ -187,13 +187,12 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val akkaJmh = Project(
-    id = "akka-jmh",
-    base = file("akka-jmh"),
+  lazy val benchJmh = Project(
+    id = "akka-bench-jmh",
+    base = file("akka-bench-jmh"),
     dependencies = Seq(actor, stream, testkit % "compile;test->compile"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.testkit ++ Dependencies.jmh,
-      previousArtifact := akkaPreviousArtifact("akka-jmh")
+      libraryDependencies ++= Dependencies.testkit ++ Dependencies.jmh
     ) ++ Jmh.settings
   )
 
