@@ -226,14 +226,20 @@ object TestExtras {
 
     import Keys._
 
+    private[Filter] object Params {
+      val testNamesExclude = systemPropertyAsSeq("akka.test.names.exclude").toSet
+      val testTagsExlcude = systemPropertyAsSeq("akka.test.tags.exclude").toSet
+      val testTagsOnly = systemPropertyAsSeq("akka.test.tags.only").toSet
+    }
+
     def settings = {
       Seq(
-        excludeTestNames := systemPropertyAsSeq("akka.test.names.exclude").toSet,
+        excludeTestNames := Params.testNamesExclude,
         excludeTestTags := {
-          if (onlyTestTags.value.isEmpty) systemPropertyAsSeq("akka.test.tags.exclude").toSet
+          if (onlyTestTags.value.isEmpty) Params.testTagsExlcude
           else Set.empty
         },
-        onlyTestTags := systemPropertyAsSeq("akka.test.tags.only").toSet,
+        onlyTestTags := Params.testTagsOnly,
 
         // add filters for tests excluded by name
         testOptions in Test <++= excludeTestNames map { _.toSeq.map(exclude => Tests.Filter(test => !test.contains(exclude))) },
@@ -248,6 +254,10 @@ object TestExtras {
           if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
         }
       )
+    }
+
+    def containsOrNotExcludesTag(tag: String) = {
+      Params.testTagsOnly.contains(tag) || !Params.testTagsExlcude(tag)
     }
 
     def systemPropertyAsSeq(name: String): Seq[String] = {
