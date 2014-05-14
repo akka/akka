@@ -55,6 +55,7 @@ trait Predicate[T] {
 /**
  * Java API: Represents a tuple of two elements.
  */
+@SerialVersionUID(1L)
 case class Pair[A, B](first: A, second: B)
 
 /**
