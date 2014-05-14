@@ -6,21 +6,19 @@ package akka
 
 import sbt._
 import sbt.Keys._
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions, scalatestOptions }
-import com.typesafe.sbt.SbtScalariform.ScalariformKeys
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions }
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
-import com.typesafe.sbt.SbtSite.site
 import java.io.{InputStreamReader, FileInputStream, File}
 import java.util.Properties
 import sbtunidoc.Plugin.UnidocKeys.unidoc
 import TestExtras.{ JUnitFileReporting, StatsDMetrics, GraphiteBuildEvents }
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
-import Unidoc.{ scaladocSettings, scaladocSettingsNoVerificationOfDiagrams, unidocSettings, javadocSettings }
-import Formatting.{ formatSettings, docFormatSettings }
-import MultiNode.{ multiJvmSettings, defaultMultiJvmOptions, defaultMultiJvmScalatestOptions }
+import Unidoc.{ scaladocSettings, unidocSettings }
+import Formatting.docFormatSettings
+import MultiNode.multiJvmSettings
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.Sphinx
 
@@ -39,7 +37,7 @@ object AkkaBuild extends Build {
     scalaBinaryVersion := System.getProperty("akka.scalaBinaryVersion", if (scalaVersion.value contains "-") scalaVersion.value else scalaBinaryVersion.value)
   )
 
-  lazy val akka = Project(
+  lazy val root = Project(
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ unidocSettings ++ Publish.versionSettings ++
@@ -74,162 +72,85 @@ object AkkaBuild extends Build {
 
   lazy val actor = Project(
     id = "akka-actor",
-    base = file("akka-actor"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.actor ++ Seq(
-      // to fix scaladoc generation
-      fullClasspath in doc in Compile <<= fullClasspath in Compile,
-      libraryDependencies ++= Dependencies.actor,
-      previousArtifact := akkaPreviousArtifact("akka-actor")
-    )
+    base = file("akka-actor")
   )
 
   lazy val testkit = Project(
     id = "akka-testkit",
     base = file("akka-testkit"),
-    dependencies = Seq(actor),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.testkit ++ Seq(
-      libraryDependencies ++= Dependencies.testkit,
-      initialCommands += "import akka.testkit._",
-      previousArtifact := akkaPreviousArtifact("akka-testkit")
-    )
+    dependencies = Seq(actor)
   )
 
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
-    dependencies = Seq(testkit % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ Seq(
-      publishArtifact in Compile := false,
-      libraryDependencies ++= Dependencies.actorTests
-    )
+    dependencies = Seq(testkit % "compile;test->test")
   )
 
   lazy val remote = Project(
     id = "akka-remote",
     base = file("akka-remote"),
-    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.remote ++ Seq(
-      libraryDependencies ++= Dependencies.remote,
-      // disable parallel tests
-      parallelExecution in Test := false,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
-    )
+    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test")
   )
 
   lazy val multiNodeTestkit = Project(
     id = "akka-multi-node-testkit",
     base = file("akka-multi-node-testkit"),
-    dependencies = Seq(remote, testkit),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
-    )
+    dependencies = Seq(remote, testkit)
   )
 
   lazy val remoteTests = Project(
     id = "akka-remote-tests",
     base = file("akka-remote-tests"),
-    dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
-      libraryDependencies ++= Dependencies.remoteTests,
-      // disable parallel tests
-      parallelExecution in Test := false,
-      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions.value,
-      publishArtifact in Compile := false,
-      reportBinaryIssues := () // disable bin comp check
-    )
+    dependencies = Seq(actorTests % "test->test", multiNodeTestkit)
   ) configs (MultiJvm)
 
   lazy val cluster = Project(
     id = "akka-cluster",
     base = file("akka-cluster"),
-    dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ OSGi.cluster ++ Seq(
-      libraryDependencies ++= Dependencies.cluster,
-      // disable parallel tests
-      parallelExecution in Test := false,
-      extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
-        (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
-      },
-      scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions.value,
-      previousArtifact := akkaPreviousArtifact("akka-cluster")
-    )
+    dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test")
   ) configs (MultiJvm)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.slf4j ++ Seq(
-      libraryDependencies ++= Dependencies.slf4j,
-      previousArtifact := akkaPreviousArtifact("akka-slf4j")
-    )
+    dependencies = Seq(actor, testkit % "test->test")
   )
 
   lazy val agent = Project(
     id = "akka-agent",
     base = file("akka-agent"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams ++ javadocSettings ++ OSGi.agent ++ Seq(
-      libraryDependencies ++= Dependencies.agent,
-      previousArtifact := akkaPreviousArtifact("akka-agent")
-    )
+    dependencies = Seq(actor, testkit % "test->test")
   )
 
   lazy val persistence = Project(
     id = "akka-persistence-experimental",
     base = file("akka-persistence"),
-    dependencies = Seq(actor, remote % "test->test", testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
-      fork in Test := true,
-      javaOptions in Test := defaultMultiJvmOptions,
-      libraryDependencies ++= Dependencies.persistence,
-      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
-    )
+    dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
   )
 
   lazy val zeroMQ = Project(
     id = "akka-zeromq",
     base = file("akka-zeromq"),
-    dependencies = Seq(actor, testkit % "test;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.zeroMQ ++ Seq(
-      libraryDependencies ++= Dependencies.zeroMQ,
-      previousArtifact := akkaPreviousArtifact("akka-zeromq")
-    )
+    dependencies = Seq(actor, testkit % "test;test->test")
   )
 
   lazy val kernel = Project(
     id = "akka-kernel",
     base = file("akka-kernel"),
-    dependencies = Seq(actor, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams ++ javadocSettings ++ Seq(
-      libraryDependencies ++= Dependencies.kernel,
-      previousArtifact := akkaPreviousArtifact("akka-kernel")
-    )
+    dependencies = Seq(actor, testkit % "test->test")
   )
 
   lazy val camel = Project(
     id = "akka-camel",
     base = file("akka-camel"),
-    dependencies = Seq(actor, slf4j, testkit % "test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
-      libraryDependencies ++= Dependencies.camel,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-      previousArtifact := akkaPreviousArtifact("akka-camel")
-    )
+    dependencies = Seq(actor, slf4j, testkit % "test->test")
   )
 
   lazy val osgi = Project(
     id = "akka-osgi",
     base = file("akka-osgi"),
-    dependencies = Seq(actor),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.osgi ++ Seq(
-      libraryDependencies ++= Dependencies.osgi,
-      parallelExecution in Test := false,
-      reportBinaryIssues := () // disable bin comp check
-    )
+    dependencies = Seq(actor)
   )
 
   lazy val samples = Project(
@@ -311,6 +232,20 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, persistence),
     settings = sampleSettings
   )
+
+  lazy val docs = Project(
+    id = "akka-docs",
+    base = file("akka-docs"),
+    dependencies = Seq(actor, testkit % "test->test",
+      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
+      persistence % "compile;test->test")
+  )
+
+  lazy val contrib = Project(
+    id = "akka-contrib",
+    base = file("akka-contrib"),
+    dependencies = Seq(remote, remoteTests % "test->test", cluster, persistence)
+  ) configs (MultiJvm)
 
   lazy val clusterSampleJava = Project(
     id = "akka-sample-cluster-java",
@@ -428,43 +363,6 @@ object AkkaBuild extends Build {
 
   lazy val osgiSampleSettings: Seq[Setting[_]] = Seq(target :=  baseDirectory.value / "target-sbt")
 
-  lazy val docs = Project(
-    id = "akka-docs",
-    base = file("akka-docs"),
-    dependencies = Seq(actor, testkit % "test->test",
-      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
-      persistence % "compile;test->test"),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++
-      SphinxDoc.docsSettings ++ SphinxDoc.sphinxPreprocessing ++ Seq(
-      libraryDependencies ++= Dependencies.docs,
-      publishArtifact in Compile := false,
-      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-      reportBinaryIssues := () // disable bin comp check
-    )
-  )
-
-  lazy val contrib = Project(
-    id = "akka-contrib",
-    base = file("akka-contrib"),
-    dependencies = Seq(remote, remoteTests % "test->test", cluster, persistence),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ multiJvmSettings ++ Seq(
-      libraryDependencies ++= Dependencies.contrib,
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
-      reportBinaryIssues := (), // disable bin comp check
-      description := """|
-                        |This subproject provides a home to modules contributed by external
-                        |developers which may or may not move into the officially supported code
-                        |base over time. A module in this subproject doesn't have to obey the rule
-                        |of staying binary compatible between minor releases. Breaking API changes
-                        |may be introduced in minor releases without notice as we refine and
-                        |simplify based on your feedback. A module may be dropped in any release
-                        |without prior deprecation. The Typesafe subscription does not cover
-                        |support for these modules.
-                        |""".stripMargin
-    )
-  ) configs (MultiJvm)
-
   // Settings
 
   override lazy val settings =
@@ -571,6 +469,10 @@ object AkkaBuild extends Build {
 
     // don't save test output to a file
     testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
+
+    // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
+    // -a Show stack traces and exception class name for AssertionErrors.
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
 
     validatePullRequestTask,
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
