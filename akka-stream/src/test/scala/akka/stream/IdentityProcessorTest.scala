@@ -44,7 +44,8 @@ class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publishe
         initialInputBufferSize = inputSize,
         maximumInputBufferSize = inputSize,
         initialFanOutBufferSize = fanoutSize,
-        maxFanOutBufferSize = fanoutSize),
+        maxFanOutBufferSize = fanoutSize,
+        dispatcher = "akka.test.stream-dispatcher"),
       system, system.name)
 
     val processor = materializer.processorForNode(Ast.Transform(
@@ -57,7 +58,7 @@ class IdentityProcessorTest(_system: ActorSystem, env: TestEnvironment, publishe
 
   def createHelperPublisher(elements: Int): Publisher[Int] = {
     val materializer = FlowMaterializer(MaterializerSettings(
-      maximumInputBufferSize = 512))(system)
+      maximumInputBufferSize = 512, dispatcher = "akka.test.stream-dispatcher"))(system)
     val iter = Iterator from 1000
     Flow(if (elements > 0) iter take elements else iter).toProducer(materializer).getPublisher
   }

@@ -26,7 +26,7 @@ class IterableProducerTest(_system: ActorSystem, env: TestEnvironment, publisher
   }
 
   val materializer = FlowMaterializer(MaterializerSettings(
-    maximumInputBufferSize = 512))(system)
+    maximumInputBufferSize = 512, dispatcher = "akka.test.stream-dispatcher"))(system)
 
   def createPublisher(elements: Int): Publisher[Int] = {
     val iterable: immutable.Iterable[Int] =

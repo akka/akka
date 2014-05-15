@@ -37,7 +37,8 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
     private var completed: Boolean = false
     private var demands: Int = 0
 
-    val substream = context.watch(context.actorOf(IdentityProcessorImpl.props(settings)))
+    val substream = context.watch(context.actorOf(IdentityProcessorImpl.props(settings).
+      withDispatcher(context.props.dispatcher)))
     val processor = new ActorProcessor[AnyRef, AnyRef](substream)
 
     override def isClosed: Boolean = completed

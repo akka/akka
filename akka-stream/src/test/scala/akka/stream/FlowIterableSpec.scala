@@ -17,7 +17,8 @@ import akka.stream.scaladsl.Flow
 class FlowIterableSpec extends AkkaSpec {
 
   val materializer = FlowMaterializer(MaterializerSettings(
-    maximumInputBufferSize = 512))
+    maximumInputBufferSize = 512,
+    dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow based on an iterable" must {
     "produce elements" in {

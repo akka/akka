@@ -23,13 +23,13 @@ class ProcessorNamingSpec extends AkkaSpec("akka.loglevel=INFO") {
   "Processors of a flow" must {
 
     "have sensible default names for flow with one step" in {
-      val materializer = FlowMaterializer(MaterializerSettings())
+      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
       Flow(List(1)).map(in ⇒ { testActor ! self; in }).consume(materializer)
       expectMsgType[ActorRef].path.name should be(s"flow-$flowCount-1-map")
     }
 
     "have sensible default names for flow with several steps" in {
-      val materializer = FlowMaterializer(MaterializerSettings())
+      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
       Flow(List(1)).
         map(in ⇒ { testActor ! self; in }).
         transform(new Transformer[Int, Int] {
@@ -44,19 +44,21 @@ class ProcessorNamingSpec extends AkkaSpec("akka.loglevel=INFO") {
     }
 
     "use specified flow namePrefix in materializer" in {
-      val materializer = FlowMaterializer(MaterializerSettings(), namePrefix = Some("myflow"))
+      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"),
+        namePrefix = Some("myflow"))
       Flow(List(1)).map(in ⇒ { testActor ! self; in }).consume(materializer)
       expectMsgType[ActorRef].path.name should be(s"myflow-$flowCount-1-map")
     }
 
     "use specified withNamePrefix in materializer" in {
-      val materializer = FlowMaterializer(MaterializerSettings())
+      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
       Flow(List(2)).map(in ⇒ { testActor ! self; in }).consume(materializer.withNamePrefix("myotherflow"))
       expectMsgType[ActorRef].path.name should be(s"myotherflow-$flowCount-1-map")
     }
 
     "create unique name for each materialization" in {
-      val materializer = FlowMaterializer(MaterializerSettings(), namePrefix = Some("myflow"))
+      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"),
+        namePrefix = Some("myflow"))
       val flow = Flow(List(1)).map(in ⇒ { testActor ! self; in })
       flow.consume(materializer)
       val name1 = expectMsgType[ActorRef].path.name

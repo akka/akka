@@ -30,7 +30,7 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
   val numMessages = 10
 
   val publisherSettings = PersistentPublisherSettings(idle = Some(100.millis))
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   var processor1: ActorRef = _
   var processor2: ActorRef = _
