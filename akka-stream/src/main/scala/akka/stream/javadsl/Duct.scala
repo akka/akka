@@ -3,6 +3,7 @@
  */
 package akka.stream.javadsl
 
+import scala.collection.immutable
 import scala.collection.JavaConverters._
 import scala.util.Failure
 import scala.util.Success
@@ -15,6 +16,7 @@ import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
 import akka.stream.Transformer
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
+import akka.stream.impl.Ast
 
 /**
  * Java API
@@ -181,6 +183,11 @@ abstract class Duct[In, Out] {
   def tee(other: Consumer[_ >: Out]): Duct[In, Out]
 
   /**
+   * Append the operations of a [[Duct]] to this `Duct`.
+   */
+  def append[U](duct: Duct[_ >: In, U]): Duct[In, U]
+
+  /**
    * Materialize this `Duct` by attaching it to the specified downstream `consumer`
    * and return a `Consumer` representing the input side of the `Duct`.
    * The returned `Consumer` can later be connected to an upstream `Producer`.
@@ -227,6 +234,12 @@ abstract class Duct[In, Out] {
    * broken down into individual processing steps.
    */
   def build(materializer: FlowMaterializer): Pair[Consumer[In], Producer[Out]]
+
+  /**
+   * INTERNAL API
+   * Used by `Flow.append(duct)`.
+   */
+  private[akka] def ops: immutable.Seq[Ast.AstNode]
 
 }
 
@@ -277,6 +290,9 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def tee(other: Consumer[_ >: T]): Duct[In, T] =
     new DuctAdapter(delegate.tee(other))
 
+  override def append[U](duct: Duct[_ >: In, U]): Duct[In, U] =
+    new DuctAdapter(delegate.appendJava(duct))
+
   override def produceTo(materializer: FlowMaterializer, consumer: Consumer[T]): Consumer[In] =
     delegate.produceTo(materializer, consumer)
 
@@ -293,5 +309,7 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
     val (in, out) = delegate.build(materializer)
     Pair(in, out)
   }
+
+  override private[akka] def ops: immutable.Seq[Ast.AstNode] = delegate.ops
 
 }

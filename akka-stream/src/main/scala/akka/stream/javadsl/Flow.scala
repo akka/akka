@@ -18,6 +18,7 @@ import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import akka.stream.Transformer
 import org.reactivestreams.api.Consumer
+import akka.stream.impl.DuctImpl
 
 /**
  * Java API
@@ -235,6 +236,11 @@ abstract class Flow[T] {
   def tee(other: Consumer[_ >: T]): Flow[T]
 
   /**
+   * Append the operations of a [[Duct]] to this flow.
+   */
+  def append[U](duct: Duct[_ >: T, U]): Flow[U]
+
+  /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
    * thing that is signaled to this stream, which can be either an element (after
    * which the upstream subscription is canceled), an error condition (putting
@@ -275,6 +281,16 @@ abstract class Flow[T] {
    * broken down into individual processing steps.
    */
   def toProducer(materializer: FlowMaterializer): Producer[T]
+
+  /**
+   * Attaches a consumer to this stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: T]): Unit
 
 }
 
@@ -350,6 +366,9 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def tee(other: Consumer[_ >: T]): Flow[T] =
     new FlowAdapter(delegate.tee(other))
 
+  override def append[U](duct: Duct[_ >: T, U]): Flow[U] =
+    new FlowAdapter(delegate.appendJava(duct))
+
   override def toFuture(materializer: FlowMaterializer): Future[T] =
     delegate.toFuture(materializer)
 
@@ -364,5 +383,8 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def toProducer(materializer: FlowMaterializer): Producer[T] =
     delegate.toProducer(materializer)
+
+  override def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: T]): Unit =
+    delegate.produceTo(materializer, consumer)
 
 }

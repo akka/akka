@@ -29,6 +29,12 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
   // Storing ops in reverse order
   override protected def andThen[U](op: Ast.AstNode): Flow[U] = this.copy(ops = op :: ops)
 
+  override def append[U](duct: Duct[_ >: O, U]): Flow[U] =
+    copy(ops = duct.ops ++: ops)
+
+  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: O, U]): Flow[U] =
+    copy(ops = duct.ops ++: ops)
+
   override def toFuture(materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
     transform(new Transformer[O, Unit] {
@@ -71,6 +77,12 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
 
   // Storing ops in reverse order
   override protected def andThen[U](op: Ast.AstNode): Duct[In, U] = this.copy(ops = op :: ops)
+
+  override def append[U](duct: Duct[_ >: In, U]): Duct[In, U] =
+    copy(ops = duct.ops ++: ops)
+
+  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: In, U]): Duct[In, U] =
+    copy(ops = duct.ops ++: ops)
 
   override def produceTo(materializer: FlowMaterializer, consumer: Consumer[Out]): Consumer[In] =
     materializer.ductProduceTo(consumer, ops)

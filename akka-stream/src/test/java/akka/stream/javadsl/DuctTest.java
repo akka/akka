@@ -120,6 +120,66 @@ public class DuctTest {
   }
 
   @Test
+  public void mustBeAppendableToFlow() {
+    final JavaTestKit probe = new JavaTestKit(system);
+
+    Duct<String, Void> duct = Duct.create(String.class).map(new Function<String, String>() {
+      public String apply(String elem) {
+        return elem.toLowerCase();
+      }
+    }).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    });
+
+    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+
+    Flow<String> flow = Flow.create(Arrays.asList("a", "b", "c")).map(new Function<String, String>() {
+      public String apply(String elem) {
+        return elem.toUpperCase();
+      }
+    });
+
+    flow.append(duct).consume(materializer);
+
+    probe.expectMsgEquals("a");
+    probe.expectMsgEquals("b");
+    probe.expectMsgEquals("c");
+  }
+
+  @Test
+  public void mustBeAppendableToDuct() {
+    final JavaTestKit probe = new JavaTestKit(system);
+
+    Duct<Integer, Integer> duct1 = Duct.create(Integer.class).map(new Function<Integer, Integer>() {
+      public Integer apply(Integer elem) {
+        return elem + 10;
+      }
+    });
+
+    Consumer<Integer> ductInConsumer = Duct.create(Integer.class).map(new Function<Integer, Integer>() {
+      public Integer apply(Integer elem) {
+        return elem * 2;
+      }
+    }).append(duct1).map(new Function<Integer, String>() {
+      public String apply(Integer elem) {
+        return "elem-" + elem;
+      }
+    }).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }).consume(materializer);
+
+    Flow.create(Arrays.asList(1, 2, 3)).produceTo(materializer, ductInConsumer);
+
+    probe.expectMsgEquals("elem-12");
+    probe.expectMsgEquals("elem-14");
+    probe.expectMsgEquals("elem-16");
+  }
+
+  @Test
   public void mustCallOnCompleteCallbackWhenDone() {
     final JavaTestKit probe = new JavaTestKit(system);
 
