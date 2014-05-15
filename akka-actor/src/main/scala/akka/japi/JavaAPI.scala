@@ -46,6 +46,19 @@ trait Effect {
 }
 
 /**
+ * Java API: Defines a criteria and determines whether the parameter meets this criteria.
+ */
+trait Predicate[T] {
+  def test(param: T): Boolean
+}
+
+/**
+ * Java API: Represents a tuple of two elements.
+ */
+@SerialVersionUID(1L)
+case class Pair[A, B](first: A, second: B)
+
+/**
  * A constructor/factory, takes no parameters but creates a new value of type T every call.
  */
 @SerialVersionUID(1L)
