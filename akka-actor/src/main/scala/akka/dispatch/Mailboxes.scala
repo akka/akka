@@ -135,7 +135,7 @@ private[akka] class Mailboxes(
     // TODO remove in 2.3
     if (!hasMailboxType && !mailboxSizeWarningIssued && dispatcherConfig.hasPath("mailbox-size")) {
       eventStream.publish(Warning("mailboxes", getClass,
-        "ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
+        s"ignoring setting 'mailbox-size' for dispatcher [$id], you need to specify 'mailbox-type=bounded'"))
       mailboxSizeWarningIssued = true
     }
 
