@@ -123,7 +123,7 @@ abstract class Flow[T] {
    * the flow needs to be materialized (e.g. using [[#consume]]) to initiate its
    * execution.
    */
-  def foreach(c: Procedure[T]): Flow[Unit]
+  def foreach(c: Procedure[T]): Flow[Void]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -304,7 +304,7 @@ trait OnCompleteCallback {
 /**
  * Java API: Represents a tuple of two elements.
  */
-case class Pair[A, B](a: A, b: B) // FIXME move this to akka.japi.Pair in akka-actor
+case class Pair[A, B](first: A, second: B) // FIXME move this to akka.japi.Pair in akka-actor
 
 /**
  * Java API: Defines a criteria and determines whether the parameter meets this criteria.
@@ -324,7 +324,8 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def collect[U](pf: PartialFunction[T, U]): Flow[U] = new FlowAdapter(delegate.collect(pf))
 
-  override def foreach(c: Procedure[T]): Flow[Unit] = new FlowAdapter(delegate.foreach(c.apply))
+  override def foreach(c: Procedure[T]): Flow[Void] =
+    new FlowAdapter(delegate.foreach(c.apply).map(_ ⇒ null)) // FIXME optimize to one step
 
   override def fold[U](zero: U, f: Function2[U, T, U]): Flow[U] =
     new FlowAdapter(delegate.fold(zero) { case (a, b) ⇒ f.apply(a, b) })
@@ -340,23 +341,10 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
     new FlowAdapter(delegate.mapConcat(elem ⇒ immutableSeq(f.apply(elem))))
 
   override def transform[U](transformer: Transformer[T, U]): Flow[U] =
-    new FlowAdapter(delegate.transform(new Transformer[T, U] {
-      override def onNext(in: T) = transformer.onNext(in)
-      override def isComplete = transformer.isComplete
-      override def onComplete() = transformer.onComplete()
-      override def onError(cause: Throwable) = transformer.onError(cause)
-      override def cleanup() = transformer.cleanup()
-    }))
+    new FlowAdapter(delegate.transform(transformer))
 
   override def transformRecover[U](transformer: RecoveryTransformer[T, U]): Flow[U] =
-    new FlowAdapter(delegate.transform(new RecoveryTransformer[T, U] {
-      override def onNext(in: T) = transformer.onNext(in)
-      override def isComplete = transformer.isComplete
-      override def onComplete() = transformer.onComplete()
-      override def onError(cause: Throwable) = transformer.onError(cause)
-      override def onErrorRecover(cause: Throwable) = transformer.onErrorRecover(cause)
-      override def cleanup() = transformer.cleanup()
-    }))
+    new FlowAdapter(delegate.transformRecover(transformer))
 
   override def groupBy[K](f: Function[T, K]): Flow[Pair[K, Producer[T]]] =
     new FlowAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
