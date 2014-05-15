@@ -13,7 +13,8 @@ class FlowDropSpec extends AkkaSpec with ScriptedTest {
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16)
+    maxFanOutBufferSize = 16,
+    dispatcher = "akka.test.stream-dispatcher")
 
   "A Drop" must {
 

@@ -9,7 +9,7 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowCollectSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings()
+  val settings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
 
   "A Collect" must {
 
