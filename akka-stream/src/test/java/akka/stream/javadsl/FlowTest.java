@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import akka.stream.FlattenStrategy;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -385,6 +386,41 @@ public class FlowTest {
     Future<String> future = Flow.create(input).toFuture(materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
+  }
+
+  @Test
+  public void mustBeAbleToUsePrefixAndTail() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
+    Future<Pair<List<Integer>, Producer<Integer>>> future = Flow.create(input).prefixAndTail(3).toFuture(materializer);
+    Pair<List<Integer>, Producer<Integer>> result =
+      Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Arrays.asList(1, 2, 3), result.first());
+
+    Future<List<Integer>> tailFuture = Flow.create(result.second()).grouped(4).toFuture(materializer);
+    List<Integer> tailResult =
+      Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Arrays.asList(4, 5, 6), tailResult);
+  }
+
+  @Test
+  public void mustBeAbleToUseConcatAll() throws Exception {
+      final JavaTestKit probe = new JavaTestKit(system);
+      final java.lang.Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
+      final java.lang.Iterable<Integer> input2 = Arrays.asList(4, 5);
+
+      final List<Producer<Integer>> mainInputs = Arrays.asList(
+              Flow.create(input1).toProducer(materializer),
+              Flow.create(input2).toProducer(materializer)
+      );
+
+      Future<List<Integer>> future =
+        Flow.create(mainInputs).<Integer>flatten(FlattenStrategy.<Integer>concat()).grouped(6).toFuture(materializer);
+
+      List<Integer> result =
+        Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+
+      assertEquals(Arrays.asList(1, 2, 3, 4, 5), result);
   }
 
 }

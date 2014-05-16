@@ -23,13 +23,15 @@ private[akka] object ActorProcessor {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
-      case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
-      case s: SplitWhen ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
-      case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
-      case m: Merge     ⇒ Props(new MergeImpl(settings, m.other))
-      case z: Zip       ⇒ Props(new ZipImpl(settings, z.other))
-      case c: Concat    ⇒ Props(new ConcatImpl(settings, c.next))
-      case t: Tee       ⇒ Props(new TeeImpl(settings, t.other))
+      case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
+      case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
+      case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case m: Merge          ⇒ Props(new MergeImpl(settings, m.other))
+      case z: Zip            ⇒ Props(new ZipImpl(settings, z.other))
+      case c: Concat         ⇒ Props(new ConcatImpl(settings, c.next))
+      case t: Tee            ⇒ Props(new TeeImpl(settings, t.other))
+      case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
+      case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
     }).withDispatcher(settings.dispatcher)
 }
 
@@ -159,7 +161,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   private var downstreamCompleted = false
   def demandAvailable = downstreamBufferSpace > 0
 
-  override val receive = new SubReceive(waitingExposedPublisher)
+  override val subreceive = new SubReceive(waitingExposedPublisher)
 
   def enqueueOutputElement(elem: Any): Unit = {
     downstreamBufferSpace -= 1
@@ -204,7 +206,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   protected def waitingExposedPublisher: Actor.Receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      receive.become(downstreamRunning)
+      subreceive.become(downstreamRunning)
     case other ⇒
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
   }
@@ -244,7 +246,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
       }
     }
 
-  override def receive = primaryInputs.subreceive orElse primaryOutputs.receive
+  override def receive = primaryInputs.subreceive orElse primaryOutputs.subreceive
 
   protected def onError(e: Throwable): Unit = fail(e)
 
