@@ -21,6 +21,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
 import akka.actor.Extension
+import akka.stream.actor.ActorConsumer
 
 /**
  * INTERNAL API
@@ -195,11 +196,11 @@ private[akka] class ActorBasedFlowMaterializer(
   private def consume[In, Out](ops: List[Ast.AstNode], flowName: String): Consumer[In] = {
     val c = ops match {
       case Nil ⇒
-        new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, blackholeTransform),
+        ActorConsumer[Any](context.actorOf(ActorConsumerProps.props(settings, blackholeTransform),
           name = s"$flowName-1-consume"))
       case head :: tail ⇒
         val opsSize = ops.size
-        val c = new ActorConsumer[Any](context.actorOf(ActorConsumer.props(settings, head),
+        val c = ActorConsumer[Any](context.actorOf(ActorConsumerProps.props(settings, head),
           name = s"$flowName-$opsSize-${head.name}"))
         processorChain(c, tail, flowName, ops.size - 1)
     }

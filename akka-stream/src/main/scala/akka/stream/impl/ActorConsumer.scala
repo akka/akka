@@ -12,34 +12,12 @@ import Ast.{ AstNode, Transform }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, actorRef2Scala }
 import akka.stream.MaterializerSettings
 import akka.stream.Transformer
+import akka.stream.actor.ActorConsumer.{ OnNext, OnError, OnComplete, OnSubscribe }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorSubscriber[T]( final val impl: ActorRef) extends Subscriber[T] {
-  override def onError(cause: Throwable): Unit = impl ! OnError(cause)
-  override def onComplete(): Unit = impl ! OnComplete
-  override def onNext(element: T): Unit = impl ! OnNext(element)
-  override def onSubscribe(subscription: Subscription): Unit = impl ! OnSubscribe(subscription)
-}
-
-/**
- * INTERNAL API
- */
-private[akka] trait ActorConsumerLike[T] extends Consumer[T] {
-  def impl: ActorRef
-  override val getSubscriber: Subscriber[T] = new ActorSubscriber[T](impl)
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ActorConsumer[T]( final val impl: ActorRef) extends ActorConsumerLike[T]
-
-/**
- * INTERNAL API
- */
-private[akka] object ActorConsumer {
+private[akka] object ActorConsumerProps {
   import Ast._
 
   def props(settings: MaterializerSettings, op: AstNode) = op match {
