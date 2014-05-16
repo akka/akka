@@ -48,7 +48,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
       case ExposedPublisher(publisher) ⇒
         exposedPublisher = publisher
         IO(Tcp) ! bindCmd.copy(handler = self)
-        receive.become(downstreamRunning)
+        subreceive.become(downstreamRunning)
       case other ⇒
         throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
     }
@@ -107,7 +107,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
 
   }
 
-  override def receive: Actor.Receive = primaryOutputs.receive orElse incomingConnections.subreceive
+  override def receive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive
 
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()

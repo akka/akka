@@ -9,11 +9,10 @@ import scala.util.Try
 import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
 import Ast.{ AstNode, Transform }
-import akka.stream.FlowMaterializer
+import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.Flow
 import scala.util.Success
 import scala.util.Failure
-import akka.stream.Transformer
 import org.reactivestreams.api.Consumer
 import akka.stream.scaladsl.Duct
 
@@ -210,6 +209,8 @@ private[akka] trait Builder[Out] {
       override def name = "take"
     })
 
+  def prefixAndTail(n: Int): Thing[(immutable.Seq[Out], Producer[Out])] = andThen(PrefixAndTail(n))
+
   def grouped(n: Int): Thing[immutable.Seq[Out]] =
     transform(new Transformer[Out, immutable.Seq[Out]] {
       var buf: Vector[Out] = Vector.empty
@@ -246,6 +247,11 @@ private[akka] trait Builder[Out] {
   def groupBy[K](f: (Out) ⇒ K): Thing[(K, Producer[Out])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
   def tee(other: Consumer[_ >: Out]): Thing[Out] = andThen(Tee(other.asInstanceOf[Consumer[Any]]))
+
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Thing[U] = strategy match {
+    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
+  }
 
 }
 

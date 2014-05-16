@@ -14,9 +14,8 @@ import akka.japi.Function
 import akka.japi.Function2
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
-import akka.stream.FlowMaterializer
+import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
-import akka.stream.Transformer
 import org.reactivestreams.api.Consumer
 import akka.stream.impl.DuctImpl
 
@@ -179,6 +178,13 @@ abstract class Flow[T] {
   def transform[U](transformer: Transformer[T, U]): Flow[U]
 
   /**
+   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
+   * of an empty collection and a stream containing the whole upstream unchanged.
+   */
+  def prefixAndTail(n: Int): Flow[Pair[java.util.List[T], Producer[T]]]
+
+  /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
@@ -239,6 +245,12 @@ abstract class Flow[T] {
    * Append the operations of a [[Duct]] to this flow.
    */
   def append[U](duct: Duct[_ >: T, U]): Flow[U]
+
+  /**
+   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
+   * This operation can be used on a stream of element type [[Producer]].
+   */
+  def flatten[U](strategy: FlattenStrategy[T, U]): Flow[U]
 
   /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
@@ -348,6 +360,9 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def transform[U](transformer: Transformer[T, U]): Flow[U] =
     new FlowAdapter(delegate.transform(transformer))
 
+  override def prefixAndTail(n: Int): Flow[Pair[java.util.List[T], Producer[T]]] =
+    new FlowAdapter(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ Pair(taken.asJava, tail) })
+
   override def groupBy[K](f: Function[T, K]): Flow[Pair[K, Producer[T]]] =
     new FlowAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
 
@@ -365,6 +380,9 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def tee(other: Consumer[_ >: T]): Flow[T] =
     new FlowAdapter(delegate.tee(other))
+
+  override def flatten[U](strategy: FlattenStrategy[T, U]): Flow[U] =
+    new FlowAdapter(delegate.flatten(strategy))
 
   override def append[U](duct: Duct[_ >: T, U]): Flow[U] =
     new FlowAdapter(delegate.appendJava(duct))
