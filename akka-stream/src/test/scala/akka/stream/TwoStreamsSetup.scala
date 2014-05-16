@@ -40,37 +40,15 @@ abstract class TwoStreamsSetup extends AkkaSpec {
     override def getPublisher: Publisher[T] = pub
   }
 
-  def failedPublisher[T]: Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit = {
-      subscriber.onError(TestException)
-    }
-  }
+  def failedPublisher[T]: Publisher[T] = StreamTestKit.errorProducer[T](TestException).getPublisher
 
-  def completedPublisher[T]: Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit = {
-      subscriber.onComplete()
-    }
-  }
+  def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyProducer[T].getPublisher
 
   def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Flow(elems).toProducer(materializer).getPublisher
 
-  def soonToFailPublisher[T]: Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onSubscribe(FailedSubscription(subscriber))
-  }
+  def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorProducer[T](TestException).getPublisher
 
-  def soonToCompletePublisher[T]: Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit = subscriber.onSubscribe(CompletedSubscription(subscriber))
-  }
-
-  case class FailedSubscription(subscriber: Subscriber[_]) extends Subscription {
-    override def requestMore(elements: Int): Unit = subscriber.onError(TestException)
-    override def cancel(): Unit = ()
-  }
-
-  case class CompletedSubscription(subscriber: Subscriber[_]) extends Subscription {
-    override def requestMore(elements: Int): Unit = subscriber.onComplete()
-    override def cancel(): Unit = ()
-  }
+  def soonToCompletePublisher[T]: Publisher[T] = StreamTestKit.lazyEmptyProducer[T].getPublisher
 
   def commonTests() = {
     "work with two immediately completed producers" in {
