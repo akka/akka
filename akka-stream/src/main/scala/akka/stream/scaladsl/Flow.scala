@@ -9,8 +9,7 @@ import scala.concurrent.Future
 import scala.util.Try
 import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
-import akka.stream.FlowMaterializer
-import akka.stream.Transformer
+import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.Ast.FutureProducerNode
 import akka.stream.impl.FlowImpl
@@ -175,6 +174,13 @@ trait Flow[+T] {
   def transform[U](transformer: Transformer[T, U]): Flow[U]
 
   /**
+   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
+   * of an empty collection and a stream containing the whole upstream unchanged.
+   */
+  def prefixAndTail(n: Int): Flow[(immutable.Seq[T], Producer[T @uncheckedVariance])]
+
+  /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
@@ -230,6 +236,12 @@ trait Flow[+T] {
    * one downstream consumer have been established.
    */
   def tee(other: Consumer[_ >: T]): Flow[T]
+
+  /**
+   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
+   * This operation can be used on a stream of element type [[Producer]].
+   */
+  def flatten[U](strategy: FlattenStrategy[T, U]): Flow[U]
 
   /**
    * Append the operations of a [[Duct]] to this flow.

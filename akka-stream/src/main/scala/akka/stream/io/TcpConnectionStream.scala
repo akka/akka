@@ -105,10 +105,10 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     def setConnection(c: ActorRef): Unit = {
       connection = c
       writePump.pump()
-      receive.become(handleWrite)
+      subreceive.become(handleWrite)
     }
 
-    val receive = new SubReceive(Actor.emptyBehavior)
+    val subreceive = new SubReceive(Actor.emptyBehavior)
 
     def handleWrite: Receive = {
       case WriteAck ⇒
@@ -165,7 +165,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
   }
 
   override def receive =
-    primaryInputs.subreceive orElse primaryOutputs.receive orElse tcpInputs.subreceive orElse tcpOutputs.receive
+    primaryInputs.subreceive orElse primaryOutputs.subreceive orElse tcpInputs.subreceive orElse tcpOutputs.subreceive
 
   readPump.nextPhase(readPump.running)
   writePump.nextPhase(writePump.running)
