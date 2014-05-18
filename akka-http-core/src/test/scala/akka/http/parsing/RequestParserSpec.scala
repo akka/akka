@@ -10,9 +10,10 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import org.reactivestreams.api.Producer
+import akka.stream.scaladsl.{ Flow, StreamProducer }
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import waves.{ StreamProducer, Flow }
 import akka.http.server.HttpServerPipeline
 import akka.http.util._
 import akka.http.model._
@@ -35,6 +36,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   val BOLT = HttpMethods.register(HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true))
+  val materializer = FlowMaterializer(MaterializerSettings())
 
   "The request parsing logic should" - {
     "properly parse a request" - {
@@ -357,27 +359,33 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def generalRawMultiParseTo(parser: HttpRequestParser,
                                expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
       equal(expected).matcher[Seq[Either[ParseError, HttpRequest]]] compose { input: Seq[String] ⇒
+        import HttpServerPipeline._
         val future =
-          Flow(input)
+          Flow(input.toList)
             .map(ByteString.apply)
             .transform(parser)
-            .split(HttpServerPipeline.splitParserOutput)
-            .headAndTail
+            .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
+            .headAndTail(materializer)
             .collect {
               case (x: ParserOutput.RequestStart, entityParts) ⇒
                 closeAfterResponseCompletion :+= x.closeAfterResponseCompletion
                 Right(HttpServerPipeline.constructRequest(x, entityParts))
               case (x: ParseError, _) ⇒ Left(x)
             }
-            .mapConcat {
-              case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x)) :: Nil)
-              case Left(error)    ⇒ Future.successful(Left(error) :: Nil)
+            .map { x ⇒
+              Flow {
+                x match {
+                  case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x)))
+                  case Left(error)    ⇒ Future.successful(Left(error))
+                }
+              }.toProducer(materializer)
             }
-            .drainToSeq
+            .concatAll
+            .grouped(1000).toFuture(materializer)
         Await.result(future, 250.millis)
       }
 
-    private def newParser = new HttpRequestParser(ParserSettings(system))()
+    private def newParser = new HttpRequestParser(ParserSettings(system), false, materializer)()
 
     private def compactEntity(entity: HttpEntity): Future[HttpEntity] =
       entity match {
@@ -390,13 +398,13 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       // compact and convert to `StreamProducer.ForIterable` which provides value equality
       Flow(data)
         .fold(ByteString.empty)(_ ++ _)
-        .mapConcat(bytes ⇒ if (bytes.isEmpty) None else Some(bytes))
-        .headFuture
+        .mapConcat(bytes ⇒ if (bytes.isEmpty) Nil else bytes :: Nil)
+        .toFuture(materializer)
         .map(StreamProducer.of(_)) // creates `StreamProducer.ForIterable`
         .recover { case _: NoSuchElementException ⇒ StreamProducer.empty[ByteString] }
 
     private def compactEntityChunks(data: Producer[ChunkStreamPart]): Future[Producer[ChunkStreamPart]] =
-      Flow(data).drainToSeq.map(StreamProducer.apply(_))
+      Flow(data).grouped(1000).toFuture(materializer).map(StreamProducer.apply(_))
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }

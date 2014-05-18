@@ -7,7 +7,8 @@ package akka.http.server
 import scala.concurrent.duration._
 import akka.io.{ Tcp, IO }
 import akka.stream.io.StreamTcp
-import waves.Flow
+import akka.stream.{ Transformer, FlowMaterializer }
+import akka.stream.scaladsl.Flow
 import akka.http.util.Timestamp
 import akka.http.{ Http, HttpExt }
 import akka.actor._
@@ -25,12 +26,12 @@ private[http] class HttpListener(bindCommander: ActorRef,
 
   {
     import context.system
-    IO(StreamTcp) ! StreamTcp.Bind(endpoint, backlog, options, materializerSettings)
+    IO(StreamTcp) ! StreamTcp.Bind(materializerSettings, endpoint, backlog, options)
   }
 
   context.setReceiveTimeout(settings.bindTimeout)
 
-  val httpServerPipeline = new HttpServerPipeline(settings, log)
+  val httpServerPipeline = new HttpServerPipeline(settings, FlowMaterializer(materializerSettings), log)
 
   // we cannot sensibly recover from crashes
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
@@ -40,10 +41,15 @@ private[http] class HttpListener(bindCommander: ActorRef,
   def binding: Receive = {
     case StreamTcp.TcpServerBinding(localAddress, connectionStream) ⇒
       log.info("Bound to {}", endpoint)
+      val materializer = FlowMaterializer(materializerSettings)
       val httpConnectionStream = Flow(connectionStream)
         .map(httpServerPipeline)
-        .onTerminate(_ ⇒ shutdown(gracePeriod = Duration.Zero))
-        .toProducer
+        .transform {
+          new Transformer[Http.IncomingConnection, Http.IncomingConnection] {
+            def onNext(element: Http.IncomingConnection) = element :: Nil
+            override def cleanup() = shutdown(gracePeriod = Duration.Zero)
+          }
+        }.toProducer(materializer)
       bindCommander ! Http.ServerBinding(localAddress, httpConnectionStream)
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(sender()))

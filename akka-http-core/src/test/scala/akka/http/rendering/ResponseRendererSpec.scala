@@ -11,12 +11,13 @@ import org.scalatest.{ FreeSpec, Matchers, BeforeAndAfterAll }
 import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
 import akka.event.NoLogging
-import waves.{ StreamProducer, Flow }
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 import akka.util.ByteString
 import HttpEntity._
+import akka.stream.scaladsl.{ Flow, StreamProducer }
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -26,6 +27,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   import system.dispatcher
 
   val ServerOnTheMove = StatusCodes.registerCustom(330, "Server on the move")
+  val materializer = FlowMaterializer(MaterializerSettings())
 
   "The response preparation logic should properly render" - {
     "an unchunked response" - {
@@ -306,7 +308,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
                   val chunklessStreaming: Boolean = false,
                   val transparentHeadRequests: Boolean = true)
     extends HttpResponseRendererFactory(serverHeaderValue.toOption.map(Server(_)), chunklessStreaming,
-      responseHeaderSizeHint = 64, NoLogging) {
+      responseHeaderSizeHint = 64, materializer, NoLogging) {
 
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderTo(expected, close = false) compose (ResponseRenderingContext(_))
@@ -315,7 +317,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { input ⇒
         val renderer = newRenderer
         val byteStringProducer :: Nil = renderer.onNext(input)
-        val future = Flow(byteStringProducer).drainToSeq.map(_.reduceLeft(_ ++ _).utf8String)
+        val future = Flow(byteStringProducer).grouped(1000).toFuture(materializer).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis) -> renderer.isComplete
       }
 

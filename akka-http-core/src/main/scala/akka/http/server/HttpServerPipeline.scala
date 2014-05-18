@@ -7,49 +7,57 @@ package akka.http.server
 import org.reactivestreams.api.Producer
 import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
+import akka.util.ByteString
 import akka.stream.io.StreamTcp
+import akka.stream.{ Transformer, FlowMaterializer }
+import akka.stream.scaladsl.{ Flow, Duct }
 import akka.http.parsing.HttpRequestParser
 import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.parsing.ParserOutput._
 import akka.http.Http
-import waves.{ Operation, Flow }
-import Operation.Split
 
-private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit ec: ExecutionContext)
+private[http] class HttpServerPipeline(settings: ServerSettings,
+                                       materializer: FlowMaterializer,
+                                       log: LoggingAdapter)(implicit ec: ExecutionContext)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
+  import HttpServerPipeline._
 
-  val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader)()
+  val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader, materializer)()
   val warnOnIllegalHeader: ErrorInfo ⇒ Unit = errorInfo ⇒
     if (settings.parserSettings.illegalHeaderWarnings)
       log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
 
   val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.chunklessStreaming,
-    settings.responseHeaderSizeHint, log)
+    settings.responseHeaderSizeHint, materializer, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    val applicationBypass =
-      Operation[(RequestOutput, Producer[RequestOutput])]
+    val (applicationBypassConsumer, applicationBypassProducer) =
+      Duct[(RequestOutput, Producer[RequestOutput])]
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .toProcessor
+        .build(materializer)
 
     val requestProducer =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
-        .split(HttpServerPipeline.splitParserOutput)
-        .headAndTail
-        .tee(_ produceTo applicationBypass)
+        .splitWhen(_.isInstanceOf[MessageStart])
+        .headAndTail(materializer)
+        .tee(applicationBypassConsumer)
         .collect { case (x: RequestStart, entityParts) ⇒ HttpServerPipeline.constructRequest(x, entityParts) }
-        .toProducer
+        .toProducer(materializer)
 
     val responseConsumer =
-      Operation[HttpResponse]
-        .merge(applicationBypass)
+      Duct[HttpResponse]
+        .merge(applicationBypassProducer)
         .transform(applyApplicationBypass)
         .transform(responseRendererFactory.newRenderer)
         .concatAll
-        .onError(e ⇒ log.error(e, "Response stream error"))
-        .produceTo(tcpConn.outputStream)
+        .transform {
+          new Transformer[ByteString, ByteString] {
+            def onNext(element: ByteString) = element :: Nil
+            override def onError(cause: Throwable): Unit = log.error(cause, "Response stream error")
+          }
+        }.produceTo(materializer, tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestProducer, responseConsumer)
   }
@@ -60,11 +68,11 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
    * If the parser produced a ParserOutput.ParseError the error response is immediately dispatched to downstream.
    */
   def applyApplicationBypass =
-    new Operation.Transformer[Any, ResponseRenderingContext] {
+    new Transformer[Any, ResponseRenderingContext] {
       var applicationResponse: HttpResponse = _
       var requestStart: RequestStart = _
 
-      def onNext(elem: Any): Seq[ResponseRenderingContext] = elem match {
+      def onNext(elem: Any) = elem match {
         case response: HttpResponse ⇒
           requestStart match {
             case null ⇒
@@ -88,7 +96,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
         case ParseError(status, info) ⇒ errorResponse(status, info) :: Nil
       }
 
-      def dispatch(requestStart: RequestStart, response: HttpResponse): Seq[ResponseRenderingContext] = {
+      def dispatch(requestStart: RequestStart, response: HttpResponse): List[ResponseRenderingContext] = {
         import requestStart._
         ResponseRenderingContext(response, method, protocol, closeAfterResponseCompletion) :: Nil
       }
@@ -102,13 +110,21 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
 }
 
 private[http] object HttpServerPipeline {
-  val splitParserOutput: RequestOutput ⇒ Split.Command = {
-    case _: MessageStart ⇒ Split.First
-    case _               ⇒ Split.Append
-  }
-
   def constructRequest(requestStart: RequestStart, entityParts: Producer[RequestOutput]): HttpRequest = {
     import requestStart._
     HttpRequest(method, uri, headers, createEntity(entityParts), protocol)
+  }
+
+  implicit class FlowWithHeadAndTail[T](val underlying: Flow[Producer[T]]) {
+    def headAndTail(materializer: FlowMaterializer): Flow[(T, Producer[T])] = {
+      val duct: Duct[Producer[T], (T, Producer[T])] =
+        Duct[Producer[T]].map { p ⇒
+          val (ductIn, tailStream) = Duct[T].drop(1).build(materializer)
+          Flow(p).tee(ductIn).take(1).map(_ -> tailStream).toProducer(materializer)
+        }.concatAll
+      val (headAndTailC, headAndTailP) = duct.build(materializer)
+      underlying.produceTo(materializer, headAndTailC)
+      Flow(headAndTailP)
+    }
   }
 }

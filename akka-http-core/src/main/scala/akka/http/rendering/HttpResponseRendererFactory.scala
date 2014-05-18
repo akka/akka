@@ -6,11 +6,12 @@ package akka.http.rendering
 
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.ExecutionContext
-import waves.{ Flow, StreamProducer, Operation }
-import waves.Operation.Transformer
 import akka.event.LoggingAdapter
 import akka.util.ByteString
+import akka.stream.scaladsl.{ Flow, StreamProducer }
+import akka.stream.{ FlowMaterializer, Transformer }
 import akka.http.model._
 import akka.http.util._
 import RenderSupport._
@@ -20,6 +21,7 @@ import headers._
 class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
                                   chunklessStreaming: Boolean,
                                   responseHeaderSizeHint: Int,
+                                  materializer: FlowMaterializer,
                                   log: LoggingAdapter)(implicit ec: ExecutionContext) {
 
   private val serverHeaderPlusDateColonSP: Array[Byte] =
@@ -48,12 +50,12 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
 
   def newRenderer: HttpResponseRenderer = new HttpResponseRenderer
 
-  class HttpResponseRenderer extends Operation.Transformer[ResponseRenderingContext, Producer[ByteString]] {
+  class HttpResponseRenderer extends Transformer[ResponseRenderingContext, Producer[ByteString]] {
     private[this] var close = false // signals whether the connection is to be closed after the current response
 
     override def isComplete = close
 
-    def onNext(ctx: ResponseRenderingContext): Seq[Producer[ByteString]] = {
+    def onNext(ctx: ResponseRenderingContext): immutable.Seq[Producer[ByteString]] = {
       val r = new ByteStringRendering(responseHeaderSizeHint)
 
       import ctx.response._
@@ -109,11 +111,11 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
         }
       }
 
-      def renderByteStrings(entityBytes: ⇒ Producer[ByteString]): Seq[Producer[ByteString]] = {
+      def renderByteStrings(entityBytes: ⇒ Producer[ByteString]): immutable.Seq[Producer[ByteString]] = {
         val messageStart = StreamProducer(r.get :: Nil)
         val messageBytes =
           if (!entity.isKnownEmpty && ctx.requestMethod != HttpMethods.HEAD)
-            Flow(messageStart).concat(entityBytes).toProducer
+            Flow(messageStart).concat(entityBytes).toProducer(materializer)
           else messageStart
         messageBytes :: Nil
       }
@@ -144,14 +146,14 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
           val transformer =
             if (chunkless) new ChunklessChunkTransformer(ctx.response.header[`Content-Length`])
             else new ChunkTransformer
-          renderByteStrings(Flow(chunks).transform(transformer).toProducer)
+          renderByteStrings(Flow(chunks).transform(transformer).toProducer(materializer))
       }
     }
   }
 
   class ChunkTransformer extends Transformer[HttpEntity.ChunkStreamPart, ByteString] {
     var lastChunkSeen = false
-    def onNext(chunk: HttpEntity.ChunkStreamPart): Seq[ByteString] = {
+    def onNext(chunk: HttpEntity.ChunkStreamPart): immutable.Seq[ByteString] = {
       if (chunk.isLastChunk) lastChunkSeen = true
       renderChunk(chunk) :: Nil
     }
@@ -165,7 +167,7 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
       case Some(`Content-Length`(x)) ⇒ x
       case None                      ⇒ -1
     }
-    def onNext(chunk: HttpEntity.ChunkStreamPart): Seq[ByteString] =
+    def onNext(chunk: HttpEntity.ChunkStreamPart): immutable.Seq[ByteString] =
       if (chunk.isLastChunk) onComplete
       else {
         if (remainingBytes >= 0) {
@@ -176,7 +178,7 @@ class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
         chunk.data :: Nil
       }
     override def isComplete = lastChunkSeen
-    override def onComplete: Seq[ByteString] =
+    override def onComplete: immutable.Seq[ByteString] =
       if (remainingBytes <= 0) {
         lastChunkSeen = true
         Nil

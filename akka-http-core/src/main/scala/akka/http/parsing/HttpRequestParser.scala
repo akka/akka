@@ -8,15 +8,17 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import org.reactivestreams.api.Producer
 import scala.annotation.tailrec
 import scala.concurrent.ExecutionContext
-import waves.Flow
 import akka.http.model.parser.CharacterClasses
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.http.model._
 import headers._
 import StatusCodes._
 
 private[http] class HttpRequestParser(_settings: ParserSettings,
-                                      rawRequestUriHeader: Boolean = false)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit ec: ExecutionContext)
+                                      rawRequestUriHeader: Boolean,
+                                      materializer: FlowMaterializer)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit ec: ExecutionContext)
   extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
 
   private[this] var method: HttpMethod = _
@@ -24,7 +26,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
   private[this] var uriBytes: Array[Byte] = _
 
   def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit): HttpRequestParser =
-    new HttpRequestParser(settings, rawRequestUriHeader)(headerParser.copyWith(warnOnIllegalHeader))
+    new HttpRequestParser(settings, rawRequestUriHeader, materializer)(headerParser.copyWith(warnOnIllegalHeader))
 
   def parseMessage(input: ByteString, offset: Int): StateResult = {
     var cursor = parseMethod(input, offset)
@@ -126,7 +128,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
               s"Request Content-Length $contentLength exceeds the configured limit of $settings.maxContentLength")
           else {
             emitRequestStart { entityParts ⇒
-              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toProducer
+              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toProducer(materializer)
               HttpEntity.Default(contentType, contentLength, data)
             }
             if (contentLength == 0) startNewMessage(input, bodyStart)
@@ -137,7 +139,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
           if (te.encodings.size == 1 && te.hasChunked) {
             if (clh.isEmpty) {
               emitRequestStart { entityChunks ⇒
-                val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toProducer
+                val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toProducer(materializer)
                 HttpEntity.Chunked(contentType, chunks)
               }
               parseChunk(input, bodyStart)

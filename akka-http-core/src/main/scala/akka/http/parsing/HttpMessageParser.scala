@@ -6,9 +6,10 @@ package akka.http.parsing
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable
 import org.parboiled2.CharUtils
-import waves.Operation
 import akka.util.ByteString
+import akka.stream.Transformer
 import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._
@@ -16,7 +17,7 @@ import HttpProtocols._
 
 private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOutput <: ParserOutput](val settings: ParserSettings,
                                                                                                      val headerParser: HttpHeaderParser)
-  extends Operation.Transformer[ByteString, Output] {
+  extends Transformer[ByteString, Output] {
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
 
@@ -24,7 +25,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
 
-  def onNext(input: ByteString): Seq[Output] = {
+  def onNext(input: ByteString): immutable.Seq[Output] = {
     result.clear()
     try state(input)
     catch {
