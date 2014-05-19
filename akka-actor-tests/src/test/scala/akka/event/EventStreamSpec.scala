@@ -388,7 +388,8 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
         es.subscribe(a2.ref, classOf[A])
         es.subscribe(a2.ref, classOf[T])
-        fishForDebugMessage(a1, s"watching ${a2.ref}")
+        fishForDebugMessage(a1, s"watching ${a2.ref}", 1 second)
+        fishForDebugMessage(a1, s"watching ${a2.ref}", 1 second) // the unsubscriber "starts to watch" each time, as watching is idempotent
 
         es.unsubscribe(a2.ref, classOf[A]) should equal(true)
         fishForDebugMessage(a1, s"unsubscribing ${a2.ref} from channel class akka.event.EventStreamSpec$$A")
@@ -416,8 +417,8 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
     msg foreach (expectMsg(_))
   }
 
-  private def fishForDebugMessage(a: TestProbe, messagePrefix: String) {
-    a.fishForMessage(3 seconds, hint = "expected debug message prefix: " + messagePrefix) {
+  private def fishForDebugMessage(a: TestProbe, messagePrefix: String, max: Duration = 3 seconds) {
+    a.fishForMessage(max, hint = "expected debug message prefix: " + messagePrefix) {
       case Logging.Debug(_, _, msg: String) if msg startsWith messagePrefix ⇒ true
       case other ⇒ false
     }
