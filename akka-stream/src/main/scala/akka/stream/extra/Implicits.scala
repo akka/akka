@@ -51,4 +51,24 @@ object Implicits {
       Timed.timedIntervalBetween[I](flow, matching, onInterval)
   }
 
+  /**
+   * Provides time measurement utilities on Stream elements.
+   *
+   * See [[Timed]]
+   */
+  implicit class TimedDuctDsl[I, O](val duct: Duct[I, O]) extends AnyVal {
+
+    /**
+     * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
+     */
+    def timed[Out](measuredOps: Duct[I, O] ⇒ Duct[O, Out], onComplete: FiniteDuration ⇒ Unit): Duct[O, Out] =
+      Timed.timed[I, O, Out](duct, measuredOps, onComplete)
+
+    /**
+     * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
+     */
+    def timedIntervalBetween(matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Duct[I, O] =
+      Timed.timedIntervalBetween[I, O](duct, matching, onInterval)
+  }
+
 }
