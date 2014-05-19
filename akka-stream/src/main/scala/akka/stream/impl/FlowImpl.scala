@@ -60,6 +60,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
 
   override def produceTo(materializer: FlowMaterializer, consumer: Consumer[_ >: O]) =
     toProducer(materializer).produceTo(consumer.asInstanceOf[Consumer[O]])
+
+  def concatAll[U](implicit ev: <:<[O, Producer[U]]): Flow[U] = ???
 }
 
 /**
@@ -93,6 +95,7 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override def build(materializer: FlowMaterializer): (Consumer[In], Producer[Out]) =
     materializer.ductBuild(ops)
 
+  def concatAll[U](implicit ev: <:<[Out, Producer[U]]): Duct[In, U] = ???
 }
 
 /**
@@ -229,7 +232,7 @@ private[akka] trait Builder[Out] {
 
   def concat[U >: Out](next: Producer[U]): Thing[U] = andThen(Concat(next.asInstanceOf[Producer[Any]]))
 
-  def merge[U >: Out](other: Producer[U]): Thing[U] = andThen(Merge(other.asInstanceOf[Producer[Any]]))
+  def merge[U >: Out](other: Producer[_ <: U]): Thing[U] = andThen(Merge(other.asInstanceOf[Producer[Any]]))
 
   def splitWhen(p: (Out) ⇒ Boolean): Thing[Producer[Out]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 

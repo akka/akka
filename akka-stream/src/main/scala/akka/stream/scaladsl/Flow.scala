@@ -218,7 +218,7 @@ trait Flow[+T] {
    * elements as they arrive from either side (picking randomly when both
    * have elements ready).
    */
-  def merge[U >: T](other: Producer[U]): Flow[U]
+  def merge[U >: T](other: Producer[_ <: U]): Flow[U]
 
   /**
    * Zip this stream together with the one emitted by the given producer.
@@ -233,6 +233,8 @@ trait Flow[+T] {
    * stream.
    */
   def concat[U >: T](next: Producer[U]): Flow[U]
+
+  def concatAll[U](implicit ev: T <:< Producer[U]): Flow[U]
 
   /**
    * Fan-out the stream to another consumer. Each element is produced to
