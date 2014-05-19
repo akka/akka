@@ -29,7 +29,6 @@ import akka.japi.Procedure;
 import akka.japi.Util;
 import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
-import akka.stream.RecoveryTransformer;
 import akka.stream.Transformer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
