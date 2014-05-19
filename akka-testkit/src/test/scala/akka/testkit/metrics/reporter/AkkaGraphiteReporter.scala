@@ -3,14 +3,13 @@
  */
 package akka.testkit.metrics.reporter
 
-import java.io.IOException
 import java.text.DateFormat
 import java.util
 import java.util.concurrent.TimeUnit
 import com.codahale.metrics._
 import java.util.{ Locale, Date }
 import akka.testkit.metrics._
-import com.codahale.metrics.graphite.Graphite
+import scala.concurrent.duration._
 
 /**
  * Used to report [[Metric]] types that the original [[com.codahale.metrics.graphite.GraphiteReporter]] is unaware of (cannot re-use directly because of private constructor).
@@ -18,8 +17,9 @@ import com.codahale.metrics.graphite.Graphite
 class AkkaGraphiteReporter(
   registry: AkkaMetricRegistry,
   prefix: String,
-  graphite: Graphite)
-  extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-graphite-reporter", MetricsKit.KnownOpsInTimespanCounterFilter, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
+  graphite: GraphiteClient,
+  verbose: Boolean = false)
+  extends ScheduledReporter(registry.asInstanceOf[MetricRegistry], "akka-graphite-reporter", MetricFilter.ALL, TimeUnit.SECONDS, TimeUnit.NANOSECONDS) {
 
   // todo get rid of ScheduledReporter (would mean removing codahale metrics)?
 
@@ -41,10 +41,8 @@ class AkkaGraphiteReporter(
     sendWithBanner("== AkkaGraphiteReporter @ " + dateTime + " == (" + metricsCount + " metrics)", '=')
 
     try {
-      graphite.connect()
-
       // graphite takes timestamps in seconds
-      val now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis)
+      val now = System.currentTimeMillis.millis.toSeconds
 
       // default Metrics types
       import collection.JavaConverters._
@@ -58,19 +56,15 @@ class AkkaGraphiteReporter(
       sendMetrics(now, hdrHistograms, sendHdrHistogram)
       sendMetrics(now, averagingGauges, sendAveragingGauge)
 
-    } finally {
-      try {
-        graphite.close()
-      } catch {
-        case ex: IOException ⇒
-          System.err.println(s"Unable to close connection to graphite!")
-      }
+    } catch {
+      case ex: Exception ⇒ throw new RuntimeException("Unable to send metrics to Graphite!", ex)
     }
   }
 
   def sendMetrics[T <: Metric](now: Long, metrics: Iterable[(String, T)], send: (Long, String, T) ⇒ Unit) {
     for ((key, metric) ← metrics) {
-      println("  " + key)
+      if (verbose)
+        println("  " + key)
       send(now, key, metric)
     }
   }
@@ -171,7 +165,7 @@ class AkkaGraphiteReporter(
   }
 
   private def send(key: String, value: Long, now: Long) {
-    if (value >= 0) //
+    if (value >= 0)
       graphite.send(s"$prefix.$key", value.toString, now)
   }
 
