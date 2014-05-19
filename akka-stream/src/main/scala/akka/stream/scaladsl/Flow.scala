@@ -170,7 +170,7 @@ trait Flow[+T] {
    *
    * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
    * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
-   * therefore you don not have to add any additional thread safety or memory
+   * therefore you do not have to add any additional thread safety or memory
    * visibility constructs to access the state from the callback methods.
    */
   def transform[U](transformer: Transformer[T, U]): Flow[U]
