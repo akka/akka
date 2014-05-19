@@ -34,71 +34,65 @@ private[akka] object TcpListenStreamActor {
  * INTERNAL API
  */
 private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, val settings: MaterializerSettings) extends Actor
-  with PrimaryOutputs with Pump {
+  with Pump {
   import TcpListenStreamActor._
   import context.system
 
-  var listener: ActorRef = _
+  object primaryOutputs extends FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
+    override def afterShutdown(): Unit = {
+      incomingConnections.cancel()
+      context.stop(self)
+    }
 
-  override def receive: Actor.Receive = waitingExposedPublisher
-  override def primaryOutputsReady(): Unit = {
-    IO(Tcp) ! bindCmd.copy(handler = self)
-    context.become(waitBound)
-  }
+    override def waitingExposedPublisher: Actor.Receive = {
+      case ExposedPublisher(publisher) ⇒
+        exposedPublisher = publisher
+        IO(Tcp) ! bindCmd.copy(handler = self)
+        receive.become(downstreamRunning)
+      case other ⇒
+        throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
+    }
 
-  val waitBound: Receive = {
-    case Bound(localAddress) ⇒
-      listener = sender()
-      setTransferState(NeedsInputAndDemand)
-      incomingConnections.prefetch()
-      requester ! StreamTcp.TcpServerBinding(
-        localAddress,
-        ConnectionProducer(exposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]]))
-      context.become(running)
-    case f: CommandFailed ⇒
-      val ex = new TcpListenStreamException("Bind failed")
-      requester ! Status.Failure(ex)
-      fail(ex)
-  }
-
-  val running: Receive = downstreamManagement orElse {
-    case c: Connected ⇒
-      incomingConnections.enqueueInputElement((c, sender()))
-      pump()
-    case f: CommandFailed ⇒
-      fail(new TcpListenStreamException(s"Command [${f.cmd}] failed"))
-  }
-
-  override def pumpOutputs(): Unit = pump()
-
-  override def primaryOutputsFinished(completed: Boolean): Unit = shutdown()
-
-  lazy val NeedsInputAndDemand = primaryOutputs.NeedsDemand && incomingConnections.NeedsInput
-
-  override protected def transfer(): TransferState = {
-    val (connected, connection) = incomingConnections.dequeueInputElement().asInstanceOf[(Connected, ActorRef)]
-    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
-    val processor = new ActorProcessor[ByteString, ByteString](tcpStreamActor)
-    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
-    NeedsInputAndDemand
+    def getExposedPublisher = exposedPublisher
   }
 
   override protected def pumpFinished(): Unit = incomingConnections.cancel()
   override protected def pumpFailed(e: Throwable): Unit = fail(e)
   override protected def pumpContext: ActorRefFactory = context
 
-  val incomingConnections = new DefaultInputTransferStates {
+  val incomingConnections: Inputs = new DefaultInputTransferStates {
+    var listener: ActorRef = _
     private var closed: Boolean = false
     private var pendingConnection: (Connected, ActorRef) = null
 
+    def waitBound: Receive = {
+      case Bound(localAddress) ⇒
+        listener = sender()
+        nextPhase(runningPhase)
+        listener ! ResumeAccepting(1)
+        requester ! StreamTcp.TcpServerBinding(
+          localAddress,
+          ConnectionProducer(primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]]))
+        subreceive.become(running)
+      case f: CommandFailed ⇒
+        val ex = new TcpListenStreamException("Bind failed")
+        requester ! Status.Failure(ex)
+        fail(ex)
+    }
+
+    def running: Receive = {
+      case c: Connected ⇒
+        pendingConnection = (c, sender())
+        pump()
+      case f: CommandFailed ⇒
+        fail(new TcpListenStreamException(s"Command [${f.cmd}] failed"))
+    }
+
+    override val subreceive = new SubReceive(waitBound)
+
     override def inputsAvailable: Boolean = pendingConnection ne null
     override def inputsDepleted: Boolean = closed && !inputsAvailable
-    override def prefetch(): Unit = listener ! ResumeAccepting(1)
     override def isClosed: Boolean = closed
-    override def complete(): Unit = {
-      if (!closed && listener != null) listener ! Unbind
-      closed = true
-    }
     override def cancel(): Unit = {
       if (!closed && listener != null) listener ! Unbind
       closed = true
@@ -110,19 +104,21 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
       listener ! ResumeAccepting(1)
       elem
     }
-    override def enqueueInputElement(elem: Any): Unit = pendingConnection = elem.asInstanceOf[(Connected, ActorRef)]
 
+  }
+
+  override def receive: Actor.Receive = primaryOutputs.receive orElse incomingConnections.subreceive
+
+  def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
+    val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
+    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
+    val processor = new ActorProcessor[ByteString, ByteString](tcpStreamActor)
+    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
   }
 
   def fail(e: Throwable): Unit = {
     incomingConnections.cancel()
     primaryOutputs.cancel(e)
-    exposedPublisher.shutdown(Some(e))
   }
 
-  def shutdown(): Unit = {
-    incomingConnections.complete()
-    primaryOutputs.complete()
-    exposedPublisher.shutdown(None)
-  }
 }

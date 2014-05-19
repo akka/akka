@@ -42,6 +42,15 @@ object StreamTestKit {
           case OnError(cause) ⇒ cause
         }
 
+      def expectCompletedOrSubscriptionFollowedByComplete(): Unit = {
+        probe.expectMsgPF() {
+          case s: OnSubscribe ⇒
+            s.subscription.requestMore(1)
+            expectComplete()
+          case OnComplete ⇒
+        }
+      }
+
       def expectNoMsg(): Unit = probe.expectNoMsg()
       def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
 
