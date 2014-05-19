@@ -3,7 +3,7 @@
  */
 package akka.stream.extra
 
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Duct, Flow }
 import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
@@ -32,6 +32,20 @@ private[akka] trait TimedOps {
     userFlow.transform(new StopTimed(ctx, onComplete))
   }
 
+  /**
+   * INTERNAL API
+   *
+   * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
+   */
+  def timed[I, O, Out](duct: Duct[I, O], measuredOps: Duct[I, O] ⇒ Duct[O, Out], onComplete: FiniteDuration ⇒ Unit): Duct[O, Out] = {
+    // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
+    val ctx = new TimedFlowContext
+
+    val startWithTime: Duct[I, O] = duct.transform(new StartTimedFlow(ctx))
+    val userFlow: Duct[O, Out] = measuredOps(startWithTime)
+    userFlow.transform(new StopTimed(ctx, onComplete))
+  }
+
 }
 
 /**
@@ -48,6 +62,14 @@ private[akka] trait TimedIntervalBetweenOps {
    */
   def timedIntervalBetween[O](flow: Flow[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[O] = {
     flow.transform(new TimedIntervalTransformer[O](matching, onInterval))
+  }
+
+  /**
+   * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
+   */
+  def timedIntervalBetween[I, O](duct: Duct[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Duct[I, O] = {
+    // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
+    duct.transform(new TimedIntervalTransformer[O](matching, onInterval))
   }
 }
 
