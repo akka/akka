@@ -265,7 +265,7 @@ private class RequestWriter(channelId: String, channelSettings: PersistentChanne
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit = {
     super.aroundReceive(receive, message)
     message match {
-      case WriteMessagesSuccess | WriteMessagesFailure(_) ⇒
+      case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
         // activate reader after to reduce delivery latency
         reader ! RequestsWritten
       case _ ⇒

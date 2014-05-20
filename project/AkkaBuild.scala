@@ -1028,7 +1028,15 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor#GotUid.apply"),
 
       // Change of private method to protected by #15212
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.akka$persistence$snapshot$local$LocalSnapshotStore$$save")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.akka$persistence$snapshot$local$LocalSnapshotStore$$save"),
+
+      // Changes in akka-stream-experimental - still source compatible (2.3.3 -> 2.3.4)
+      // Adding `Eventsourced.persistAsync`
+      FilterAnyProblem("akka.persistence.Eventsourced"),
+      FilterAnyProblem("akka.persistence.UntypedEventsourcedProcessor"),
+      FilterAnyProblem("akka.persistence.AbstractEventsourcedProcessor"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure"), // renamed internall messages
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$") // renamed internall messages
     )
   }
 

@@ -442,13 +442,13 @@ also process commands that do not change application state, such as query comman
 
 .. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
 
-Akka persistence supports event sourcing with the ``AbstractEventsourcedProcessor`` abstract class (which implements
+Akka persistence supports event sourcing with the ``AbstractPersistentActor`` abstract class (which implements
 event sourcing as a pattern on top of command sourcing). A processor that extends this abstract class does not handle
 ``Persistent`` messages directly but uses the ``persist`` method to persist and handle events. The behavior of an
-``AbstractEventsourcedProcessor`` is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is
+``AbstractEventsPersistentActordefined by implementing ``receiveRecover`` and ``receiveCommand``. This is
 demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/EventsourcedExample.java#eventsourced-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
@@ -473,7 +473,7 @@ calls in context of a single command.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples in Java with Lambdas <http://www.typesafe.com/activator/template/akka-sample-persistence-java-lambda>`_.
-It contains instructions on how to run the ``EventsourcedExample``.
+It contains instructions on how to run the ``PersistentActorExample``.
 
 .. note::
 
@@ -518,9 +518,9 @@ Applications that want to have more explicit control over batch writes and batch
 size is greater than ``max-message-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
 ``Persistent`` messages contained in a ``PersistentBatch`` are received individually by a processor.
 
-``PersistentBatch`` messages, for example, are used internally by an ``AbstractEventsourcedProcessor`` to ensure atomic
+``PersistentBatch`` messages, for example, are used internally by an ``AbstractEventsourcedPersistentActor atomic
 writes of events. All events that are persisted in context of a single command are written as a single batch to the
-journal (even if ``persist`` is called multiple times per command). The recovery of an ``AbstractEventsourcedProcessor``
+journal (even if ``persist`` is called multiple times per command). The recovery of an ``AbstractPersistentActor``
 will therefore never be done partially (with only a subset of events persisted by a single command).
 
 Confirmation and deletion operations performed by :ref:`channels-java-lambda` are also batched. The maximum

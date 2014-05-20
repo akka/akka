@@ -11,7 +11,7 @@ import akka.actor.Identify
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
-import akka.persistence.EventsourcedProcessor
+import akka.persistence.PersistentActor
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.persistence.journal.leveldb.SharedLeveldbStore
@@ -72,7 +72,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
   case object Stop
   case class CounterChanged(delta: Int)
 
-  class Counter extends EventsourcedProcessor {
+  class Counter extends PersistentActor {
     import ShardRegion.Passivate
 
     context.setReceiveTimeout(120.seconds)
