@@ -14,6 +14,7 @@ import org.reactivestreams.api.Consumer
 import akka.stream.actor.ActorSubscriber
 import akka.stream.actor.ActorConsumer.{ OnNext, OnError, OnComplete, OnSubscribe }
 import org.reactivestreams.spi.Subscription
+import akka.stream.TimerTransformer
 
 /**
  * INTERNAL API
@@ -23,6 +24,8 @@ private[akka] object ActorProcessor {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
+      case Transform(transformer: TimerTransformer[_, _]) ⇒
+        Props(new TimerTransformerProcessorsImpl(settings, transformer))
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))

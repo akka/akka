@@ -18,6 +18,7 @@ import akka.japi.Util.immutableSeq
 import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 import akka.stream.impl.Ast
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Java API
@@ -87,6 +88,11 @@ abstract class Duct[In, Out] {
   def drop(n: Int): Duct[In, Out]
 
   /**
+   * Discard the elements received within the given duration at beginning of the stream.
+   */
+  def dropWithin(d: FiniteDuration): Duct[In, Out]
+
+  /**
    * Terminate processing (and cancel the upstream producer) after the given
    * number of elements. Due to input buffering some elements may have been
    * requested from upstream producers that will then not be processed downstream
@@ -95,10 +101,30 @@ abstract class Duct[In, Out] {
   def take(n: Int): Duct[In, Out]
 
   /**
+   * Terminate processing (and cancel the upstream producer) after the given
+   * duration. Due to input buffering some elements may have been
+   * requested from upstream producers that will then not be processed downstream
+   * of this step.
+   *
+   * Note that this can be combined with [[#take]] to limit the number of elements
+   * within the duration.
+   */
+  def takeWithin(d: FiniteDuration): Duct[In, Out]
+
+  /**
    * Chunk up this stream into groups of the given size, with the last group
    * possibly smaller than requested due to end-of-stream.
    */
   def grouped(n: Int): Duct[In, java.util.List[Out]]
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the given number of elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   */
+  def groupedWithin(n: Int, d: FiniteDuration): Duct[In, java.util.List[Out]]
 
   /**
    * Transform each input element into a sequence of output elements that is
@@ -123,6 +149,9 @@ abstract class Duct[In, Out] {
    * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
    * therefore you don not have to add any additional thread safety or memory
    * visibility constructs to access the state from the callback methods.
+   *
+   * Note that you can use [[akka.stream.TimerTransformer]] if you need support
+   * for scheduled events in the transformer.
    */
   def transform[U](transformer: Transformer[Out, U]): Duct[In, U]
 
@@ -313,10 +342,17 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
 
   override def drop(n: Int): Duct[In, T] = new DuctAdapter(delegate.drop(n))
 
+  override def dropWithin(d: FiniteDuration): Duct[In, T] = new DuctAdapter(delegate.dropWithin(d))
+
   override def take(n: Int): Duct[In, T] = new DuctAdapter(delegate.take(n))
+
+  override def takeWithin(d: FiniteDuration): Duct[In, T] = new DuctAdapter(delegate.takeWithin(d))
 
   override def grouped(n: Int): Duct[In, java.util.List[T]] =
     new DuctAdapter(delegate.grouped(n).map(_.asJava)) // FIXME optimize to one step
+
+  def groupedWithin(n: Int, d: FiniteDuration): Duct[In, java.util.List[T]] =
+    new DuctAdapter(delegate.groupedWithin(n, d).map(_.asJava)) // FIXME optimize to one step
 
   override def mapConcat[U](f: Function[T, java.util.List[U]]): Duct[In, U] =
     new DuctAdapter(delegate.mapConcat(elem ⇒ immutableSeq(f.apply(elem))))
