@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.util.Try
 import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
-import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
+import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.impl.DuctImpl
 import akka.stream.impl.Ast
 
@@ -184,6 +184,44 @@ trait Duct[In, +Out] {
    * This operation can be used on a stream of element type [[Producer]].
    */
   def flatten[U](strategy: FlattenStrategy[Out, U]): Duct[In, U]
+
+  /**
+   * Allows a faster upstream to progress independently of a slower consumer by conflating elements into a summary
+   * until the consumer is ready to accept them. For example a conflate step might average incoming numbers if the
+   * upstream producer is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
+   * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
+   */
+  def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Duct[In, S]
+
+  /**
+   * Allows a faster downstream to progress independently of a slower producer by extrapolating elements from an older
+   * element until new element comes from the upstream. For example an expand step might repeat the last element for
+   * the consumer until it receives an update from upstream.
+   *
+   * This element will never "drop" upstream elements as all elements go through at least one extrapolation step.
+   * This means that if the upstream is actually faster than the upstream it will be backpressured by the downstream
+   * consumer.
+   *
+   * @param seed Provides the first state for extrapolation using the first unconsumed element
+   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                    state.
+   */
+  def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Duct[In, U]
+
+  /**
+   * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
+   * Depending on the defined [[OverflowStrategy]] it might drop elements or backpressure the upstream if there is no
+   * space available
+   *
+   * @param size The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, Out]
 
   /**
    * Append the operations of a [[Duct]] to this `Duct`.
