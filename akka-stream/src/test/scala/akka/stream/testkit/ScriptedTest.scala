@@ -3,7 +3,6 @@
  */
 package akka.stream.testkit
 
-import org.scalatest._
 import akka.actor.ActorSystem
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -12,8 +11,9 @@ import scala.concurrent.duration._
 import scala.util.control.NonFatal
 import akka.stream.scaladsl.Flow
 import akka.stream.MaterializerSettings
+import org.scalatest.Matchers
 
-trait ScriptedTest extends ShouldMatchers {
+trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
