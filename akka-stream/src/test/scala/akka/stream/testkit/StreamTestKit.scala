@@ -142,4 +142,15 @@ object StreamTestKit {
     override def requestMore(elements: Int): Unit = subscriber.onComplete()
     override def cancel(): Unit = ()
   }
+
+  class AutoProducer[T](probe: ProducerProbe[T], initialPendingRequests: Int = 0) {
+    val subscription = probe.expectSubscription()
+    var pendingRequests = initialPendingRequests
+
+    def sendNext(elem: T): Unit = {
+      if (pendingRequests == 0) pendingRequests = subscription.expectRequestMore()
+      pendingRequests -= 1
+      subscription.sendNext(elem)
+    }
+  }
 }
