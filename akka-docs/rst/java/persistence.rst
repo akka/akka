@@ -48,9 +48,14 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 Architecture
 ============
 
-* *Processor*: A processor is a persistent, stateful actor. Messages sent to a processor are written to a journal
-  before its ``onReceive`` method is called. When a processor is started or restarted, journaled messages are replayed
-  to that processor, so that it can recover internal state from these messages.
+* *Processor* (deprecated, use *PersistentActor* instead): A processor is a persistent, stateful actor. Messages sent
+  to a processor are written to a journal before its ``onReceive`` method is called. When a processor is started or
+  restarted, journaled messages are replayed to that processor, so that it can recover internal state from these messages.
+
+* *PersistentActor*: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
+  them in a thread-safe manner. It can be used to implement both *command* as well as *event sourced* actors.
+  When a persistent actor is started or restarted, journaled messages are replayed to that actor, so that it can
+  recover internal state from these messages.
 
 * *View*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
   processor. A view itself does not journal new messages, instead, it updates internal state only from a processor's
@@ -78,6 +83,12 @@ Architecture
 
 Processors
 ==========
+
+.. warning::
+  ``Processor`` is deprecated. Instead the current ``PersistentActor`` will be extended to provide equivalent
+  functionality if required (by introducing the ``persistAsync`` method).
+  For details see `Relaxed local consistency requirements and high throughput use-cases`_ as well as the discussion
+  and pull requests related to this `issue on Github <https://github.com/akka/akka/issues/15230>`_.
 
 A processor can be implemented by extending the abstract ``UntypedProcessor`` class and implementing the
 ``onReceive`` method.
@@ -451,6 +462,11 @@ use the ``deleteSnapshots`` method.
 Event sourcing
 ==============
 
+.. note::
+  The ``PersistentActor`` introduced in this section was previously known as ``EventsourcedProcessor``,
+  which was a subset of the ``PersistentActor``. Migrating your code to use persistent actors instead is
+  very simple and is explained in the :ref:`migration-guide-persistence-experimental-2.3.x-2.4.x`.
+
 In all the examples so far, messages that change a processor's state have been sent as ``Persistent`` messages
 by an application, so that they can be replayed during recovery. From this point of view, the journal acts as
 a write-ahead-log for whatever ``Persistent`` messages a processor receives. This is also known as *command
@@ -468,13 +484,13 @@ also process commands that do not change application state, such as query comman
 
 .. _Event Sourcing: http://martinfowler.com/eaaDev/EventSourcing.html
 
-Akka persistence supports event sourcing with the abstract ``UntypedEventsourcedProcessor`` class (which implements
+Akka persistence supports event sourcing with the abstract ``UntypedPersistentActor`` class (which implements
 event sourcing as a pattern on top of command sourcing). A processor that extends this abstract class does not handle
 ``Persistent`` messages directly but uses the ``persist`` method to persist and handle events. The behavior of an
-``UntypedEventsourcedProcessor`` is defined by implementing ``onReceiveRecover`` and ``onReceiveCommand``. This is
+``UntypedPersistentActor`` is defined by implementing ``onReceiveRecover`` and ``onReceiveCommand``. This is
 demonstrated in the following example.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java/src/main/java/sample/persistence/EventsourcedExample.java#eventsourced-example
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java/src/main/java/sample/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
 ``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
@@ -499,7 +515,7 @@ calls in context of a single command.
 
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples with Java <http://www.typesafe.com/activator/template/akka-sample-persistence-java>`_.
-It contains instructions on how to run the ``EventsourcedExample``.
+It contains instructions on how to run the ``PersistentActorExample``.
 
 .. note::
 
@@ -508,6 +524,29 @@ It contains instructions on how to run the ``EventsourcedExample``.
   recovery you need to take special care to perform the same state transitions with ``become`` and
   ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
 
+.. _persist-async-java:
+
+Relaxed local consistency requirements and high throughput use-cases
+--------------------------------------------------------------------
+
+If faced with Relaxed local consistency requirements and high throughput demands sometimes ``PersistentActor`` and it's
+``persist`` may not be enough in terms of consuming incoming Commands at a high rate, because it has to wait until all
+Events related to a given Command are processed in order to start processing the next Command. While this abstraction is
+very useful for most cases, sometimes you may be faced with relaxed requirements about consistency – for example you may
+want to process commands as fast as you can, assuming that Event will eventually be persisted and handled properly in
+the background and retroactively reacting to persistence failures if needed.
+
+The ``persistAsync`` method provides a tool for implementing high-throughput processors. It will *not*
+stash incoming Commands while the Journal is still working on persisting and/or user code is executing event callbacks.
+
+In the below example, the event callbacks may be called "at any time", even after the next Command has been processed.
+The ordering between events is still guaranteed ("evt-b-1" will be sent after "evt-a-2", which will be sent after "evt-a-1" etc.).
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#persist-async
+
+.. note::
+  In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
+  and handle them in the callback.
 
 Reliable event delivery
 -----------------------
@@ -543,9 +582,9 @@ Applications that want to have more explicit control over batch writes and batch
 size is greater than ``max-message-batch-size``. Also, a ``PersistentBatch`` is written isolated from other batches.
 ``Persistent`` messages contained in a ``PersistentBatch`` are received individually by a processor.
 
-``PersistentBatch`` messages, for example, are used internally by an ``UntypedEventsourcedProcessor`` to ensure atomic
+``PersistentBatch`` messages, for example, are used internally by an ``UntypedPersistentActor`` to ensure atomic
 writes of events. All events that are persisted in context of a single command are written as a single batch to the
-journal (even if ``persist`` is called multiple times per command). The recovery of an ``UntypedEventsourcedProcessor``
+journal (even if ``persist`` is called multiple times per command). The recovery of an ``UntypedPersistentActor``
 will therefore never be done partially (with only a subset of events persisted by a single command).
 
 Confirmation and deletion operations performed by :ref:`channels-java` are also batched. The maximum confirmation

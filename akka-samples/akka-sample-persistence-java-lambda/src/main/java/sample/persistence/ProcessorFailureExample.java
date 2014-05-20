@@ -11,8 +11,6 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.AbstractProcessor;
 import akka.persistence.Persistent;
 import scala.Option;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.util.ArrayList;
 

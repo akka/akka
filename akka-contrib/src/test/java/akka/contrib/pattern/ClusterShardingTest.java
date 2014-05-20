@@ -13,7 +13,7 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.ReceiveTimeout;
 import akka.japi.Procedure;
-import akka.persistence.UntypedEventsourcedProcessor;
+import akka.persistence.UntypedPersistentActor;
 
 // Doc code, compile only
 public class ClusterShardingTest {
@@ -78,7 +78,7 @@ public class ClusterShardingTest {
   }
 
   static//#counter-actor
-  public class Counter extends UntypedEventsourcedProcessor {
+  public class Counter extends UntypedPersistentActor {
 
     public static enum CounterOp {
       INCREMENT, DECREMENT

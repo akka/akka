@@ -47,7 +47,7 @@ object ProcessorChannelSpec {
     }
   }
 
-  class ResendingEventsourcedProcessor(name: String, channelProps: Props, destination: ActorRef) extends NamedProcessor(name) with EventsourcedProcessor {
+  class ResendingPersistentActor(name: String, channelProps: Props, destination: ActorRef) extends NamedProcessor(name) with PersistentActor {
     val channel = context.actorOf(channelProps)
 
     var events: List[String] = Nil
@@ -167,10 +167,10 @@ abstract class ProcessorChannelSpec(config: Config) extends AkkaSpec(config) wit
     }
   }
 
-  "An eventsourced processor that uses a channel" can {
+  "A persistent actor that uses a channel" can {
     "reliably deliver events" in {
       val probe = TestProbe()
-      val ep = system.actorOf(Props(classOf[ResendingEventsourcedProcessor], "rep", testResendingChannelProps, probe.ref))
+      val ep = system.actorOf(Props(classOf[ResendingPersistentActor], "rep", testResendingChannelProps, probe.ref))
 
       ep ! "cmd"
 

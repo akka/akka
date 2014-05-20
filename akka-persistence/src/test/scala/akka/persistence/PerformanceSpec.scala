@@ -87,7 +87,7 @@ object PerformanceSpec {
     }
   }
 
-  class EventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with EventsourcedProcessor {
+  class EventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with PersistentActor {
     val receiveRecover: Receive = {
       case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
     }
@@ -100,7 +100,7 @@ object PerformanceSpec {
     }
   }
 
-  class StashingEventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with EventsourcedProcessor {
+  class StashingEventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with PersistentActor {
     val receiveRecover: Receive = {
       case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
     }
@@ -141,7 +141,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
     }
   }
 
-  def stressEventsourcedProcessor(failAt: Option[Long]): Unit = {
+  def stressPersistentActor(failAt: Option[Long]): Unit = {
     val processor = namedProcessor[EventsourcedTestProcessor]
     failAt foreach { processor ! FailAt(_) }
     1 to warmupCycles foreach { i ⇒ processor ! s"msg${i}" }
@@ -153,7 +153,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
     }
   }
 
-  def stressStashingEventsourcedProcessor(): Unit = {
+  def stressStashingPersistentActor(): Unit = {
     val processor = namedProcessor[StashingEventsourcedTestProcessor]
     1 to warmupCycles foreach { i ⇒ processor ! "b" }
     processor ! StartMeasure
@@ -195,13 +195,13 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
 
   "An event sourced processor" should {
     "have some reasonable throughput" in {
-      stressEventsourcedProcessor(None)
+      stressPersistentActor(None)
     }
     "have some reasonable throughput under failure conditions" in {
-      stressEventsourcedProcessor(Some(warmupCycles + loadCycles / 10))
+      stressPersistentActor(Some(warmupCycles + loadCycles / 10))
     }
     "have some reasonable throughput with stashing and unstashing every 3rd command" in {
-      stressStashingEventsourcedProcessor()
+      stressStashingPersistentActor()
     }
   }
 

@@ -26,10 +26,10 @@ trait SyncWriteJournal extends Actor with AsyncRecovery {
     case WriteMessages(persistentBatch, processor) ⇒
       Try(writeMessages(persistentBatch.map(_.prepareWrite()))) match {
         case Success(_) ⇒
-          processor ! WriteMessagesSuccess
+          processor ! WriteMessagesSuccessful
           persistentBatch.foreach(p ⇒ processor.tell(WriteMessageSuccess(p), p.sender))
         case Failure(e) ⇒
-          processor ! WriteMessagesFailure(e)
+          processor ! WriteMessagesFailed(e)
           persistentBatch.foreach(p ⇒ processor tell (WriteMessageFailure(p, e), p.sender))
           throw e
       }

@@ -11,12 +11,14 @@ import akka.actor._
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
+import java.util.concurrent.atomic.AtomicInteger
+import scala.util.Random
 
-object EventsourcedSpec {
+object PersistentActorSpec {
   final case class Cmd(data: Any)
   final case class Evt(data: Any)
 
-  abstract class ExampleProcessor(name: String) extends NamedProcessor(name) with EventsourcedProcessor {
+  abstract class ExampleProcessor(name: String) extends NamedProcessor(name) with PersistentActor {
     var events: List[Any] = Nil
 
     val updateState: Receive = {
@@ -25,7 +27,7 @@ object EventsourcedSpec {
 
     val commonBehavior: Receive = {
       case "boom"   ⇒ throw new TestException("boom")
-      case GetState ⇒ sender ! events.reverse
+      case GetState ⇒ sender() ! events.reverse
     }
 
     def receiveRecover = updateState
@@ -122,7 +124,7 @@ object EventsourcedSpec {
     }
   }
 
-  class SnapshottingEventsourcedProcessor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
+  class SnapshottingPersistentActor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
     override def receiveRecover = super.receiveRecover orElse {
       case SnapshotOffer(_, events: List[_]) ⇒
         probe ! "offered"
@@ -141,7 +143,7 @@ object EventsourcedSpec {
     }
   }
 
-  class SnapshottingBecomingEventsourcedProcessor(name: String, probe: ActorRef) extends SnapshottingEventsourcedProcessor(name, probe) {
+  class SnapshottingBecomingPersistentActor(name: String, probe: ActorRef) extends SnapshottingPersistentActor(name, probe) {
     val becomingRecover: Receive = {
       case msg: SnapshotOffer ⇒
         context.become(becomingCommand)
@@ -160,17 +162,17 @@ object EventsourcedSpec {
 
   class ReplyInEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = {
-      case Cmd("a")      ⇒ persist(Evt("a"))(evt ⇒ sender ! evt.data)
-      case p: Persistent ⇒ sender ! p // not expected
+      case Cmd("a")      ⇒ persist(Evt("a"))(evt ⇒ sender() ! evt.data)
+      case p: Persistent ⇒ sender() ! p // not expected
     }
   }
 
   class UserStashProcessor(name: String) extends ExampleProcessor(name) {
     var stashed = false
     val receiveCommand: Receive = {
-      case Cmd("a") ⇒ if (!stashed) { stash(); stashed = true } else sender ! "a"
-      case Cmd("b") ⇒ persist(Evt("b"))(evt ⇒ sender ! evt.data)
-      case Cmd("c") ⇒ unstashAll(); sender ! "c"
+      case Cmd("a") ⇒ if (!stashed) { stash(); stashed = true } else sender() ! "a"
+      case Cmd("b") ⇒ persist(Evt("b"))(evt ⇒ sender() ! evt.data)
+      case Cmd("c") ⇒ unstashAll(); sender() ! "c"
     }
   }
 
@@ -192,6 +194,110 @@ object EventsourcedSpec {
         }
         unstashAll()
       case other ⇒ stash()
+    }
+  }
+  class AsyncPersistProcessor(name: String) extends ExampleProcessor(name) {
+    var counter = 0
+
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        sender() ! data
+        persistAsync(Evt(s"$data-${incCounter()}")) { evt ⇒
+          sender() ! evt.data
+        }
+    }
+
+    private def incCounter(): Int = {
+      counter += 1
+      counter
+    }
+  }
+  class AsyncPersistThreeTimesProcessor(name: String) extends ExampleProcessor(name) {
+    var counter = 0
+
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        sender() ! data
+
+        1 to 3 foreach { i ⇒
+          persistAsync(Evt(s"$data-${incCounter()}")) { evt ⇒
+            sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
+          }
+        }
+    }
+
+    private def incCounter(): Int = {
+      counter += 1
+      counter
+    }
+  }
+  class AsyncPersistSameEventTwiceProcessor(name: String) extends ExampleProcessor(name) {
+
+    // atomic because used from inside the *async* callbacks
+    val sendMsgCounter = new AtomicInteger()
+
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        sender() ! data
+        val event = Evt(data)
+
+        persistAsync(event) { evt ⇒
+          // be way slower, in order to be overtaken by the other callback
+          Thread.sleep(300)
+          sender() ! s"${evt.data}-a-${sendMsgCounter.incrementAndGet()}"
+        }
+        persistAsync(event) { evt ⇒ sender() ! s"${evt.data}-b-${sendMsgCounter.incrementAndGet()}" }
+    }
+  }
+  class AsyncPersistAndPersistMixedSyncAsyncSyncProcessor(name: String) extends ExampleProcessor(name) {
+
+    var counter = 0
+
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        sender() ! data
+
+        persist(Evt(data + "-e1")) { evt ⇒
+          sender() ! s"${evt.data}-${incCounter()}"
+        }
+
+        // this should be happily executed
+        persistAsync(Evt(data + "-ea2")) { evt ⇒
+          sender() ! s"${evt.data}-${incCounter()}"
+        }
+
+        persist(Evt(data + "-e3")) { evt ⇒
+          sender() ! s"${evt.data}-${incCounter()}"
+        }
+    }
+
+    private def incCounter(): Int = {
+      counter += 1
+      counter
+    }
+  }
+  class AsyncPersistAndPersistMixedSyncAsyncProcessor(name: String) extends ExampleProcessor(name) {
+
+    var sendMsgCounter = 0
+
+    val start = System.currentTimeMillis()
+    def time = s" ${System.currentTimeMillis() - start}ms"
+    val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        sender() ! data
+
+        persist(Evt(data + "-e1")) { evt ⇒
+          sender() ! s"${evt.data}-${incCounter()}"
+        }
+
+        persistAsync(Evt(data + "-ea2")) { evt ⇒
+          sender() ! s"${evt.data}-${incCounter()}"
+        }
+    }
+
+    def incCounter() = {
+      sendMsgCounter += 1
+      sendMsgCounter
     }
   }
 
@@ -218,13 +324,13 @@ object EventsourcedSpec {
 
   class AnyValEventProcessor(name: String) extends ExampleProcessor(name) {
     val receiveCommand: Receive = {
-      case Cmd("a") ⇒ persist(5)(evt ⇒ sender ! evt)
+      case Cmd("a") ⇒ persist(5)(evt ⇒ sender() ! evt)
     }
   }
 }
 
-abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
-  import EventsourcedSpec._
+abstract class PersistentActorSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
+  import PersistentActorSpec._
 
   override protected def beforeEach() {
     super.beforeEach()
@@ -235,7 +341,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
     expectMsg(List("a-1", "a-2"))
   }
 
-  "An eventsourced processor" must {
+  "A persistent actor" must {
     "recover from persisted events" in {
       val processor = namedProcessor[Behavior1Processor]
       processor ! GetState
@@ -306,7 +412,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       expectMsg(List("a-1", "a-2", "b-0", "c-30", "c-31", "c-32", "d-0", "e-30", "e-31", "e-32"))
     }
     "support snapshotting" in {
-      val processor1 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      val processor1 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
       processor1 ! Cmd("b")
       processor1 ! "snap"
       processor1 ! Cmd("c")
@@ -314,13 +420,13 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor1 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
 
-      val processor2 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      val processor2 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
       expectMsg("offered")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
     }
     "support context.become during recovery" in {
-      val processor1 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      val processor1 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
       processor1 ! Cmd("b")
       processor1 ! "snap"
       processor1 ! Cmd("c")
@@ -328,14 +434,14 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor1 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
 
-      val processor2 = system.actorOf(Props(classOf[SnapshottingBecomingEventsourcedProcessor], name, testActor))
+      val processor2 = system.actorOf(Props(classOf[SnapshottingBecomingPersistentActor], name, testActor))
       expectMsg("offered")
       expectMsg("I am becoming")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
     }
     "support confirmable persistent" in {
-      val processor1 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      val processor1 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
       processor1 ! Cmd("b")
       processor1 ! "snap"
       processor1 ! ConfirmablePersistentImpl(Cmd("c"), 4711, "some-id", false, 0, Seq.empty, null, null, null)
@@ -343,7 +449,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor1 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
 
-      val processor2 = system.actorOf(Props(classOf[SnapshottingEventsourcedProcessor], name, testActor))
+      val processor2 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
       expectMsg("offered")
       processor2 ! GetState
       expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
@@ -356,9 +462,9 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
         processor.tell(Persistent("not allowed"), probe.ref)
       }
 
-      processor.tell(Cmd("a"), probe.ref)
-      processor.tell(Cmd("a"), probe.ref)
-      processor.tell(Cmd("a"), probe.ref)
+      processor.tell(Cmd("w"), probe.ref)
+      processor.tell(Cmd("w"), probe.ref)
+      processor.tell(Cmd("w"), probe.ref)
       EventFilter[UnsupportedOperationException](occurrences = 1) intercept {
         processor.tell(Persistent("not allowed when persisting"), probe.ref)
       }
@@ -401,8 +507,105 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor ! Cmd("a")
       expectMsg(5)
     }
+    "be able to opt-out from stashing messages until all events have been processed" in {
+      val processor = namedProcessor[AsyncPersistProcessor]
+      processor ! Cmd("x")
+      processor ! Cmd("y")
+      expectMsg("x")
+      expectMsg("y") // "y" command was processed before event persisted
+      expectMsg("x-1")
+      expectMsg("y-2")
+    }
+    "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
+      val processor = namedProcessor[AsyncPersistThreeTimesProcessor]
+      val commands = 1 to 10 map { i ⇒ Cmd(s"c-$i") }
+
+      commands foreach { i ⇒
+        Thread.sleep(Random.nextInt(10))
+        processor ! i
+      }
+
+      val all: Seq[String] = this.receiveN(40).asInstanceOf[Seq[String]] // each command = 1 reply + 3 event-replies
+
+      val replies = all.filter(r ⇒ r.count(_ == '-') == 1)
+      replies should equal(commands.map(_.data))
+
+      val expectedAcks = (3 to 32) map { i ⇒ s"a-${i / 3}-${i - 2}" }
+      val acks = all.filter(r ⇒ r.count(_ == '-') == 2)
+      acks should equal(expectedAcks)
+    }
+    "reply to the original sender() of a command, even when using persistAsync" in {
+      // sanity check, the setting of sender() for PersistentRepl is handled by Processor currently
+      // but as we want to remove it soon, keeping the explicit test here.
+      val processor = namedProcessor[AsyncPersistThreeTimesProcessor]
+
+      val commands = 1 to 10 map { i ⇒ Cmd(s"c-$i") }
+      val probes = Vector.fill(10)(TestProbe())
+
+      (probes zip commands) foreach {
+        case (p, c) ⇒
+          processor.tell(c, p.ref)
+      }
+
+      val ackClass = classOf[String]
+      within(3.seconds) {
+        probes foreach { _.expectMsgAllClassOf(ackClass, ackClass, ackClass) }
+      }
+    }
+    "support the same event being asyncPersist'ed multiple times" in {
+      val processor = namedProcessor[AsyncPersistSameEventTwiceProcessor]
+      processor ! Cmd("x")
+      expectMsg("x")
+
+      expectMsg("x-a-1")
+      expectMsg("x-b-2")
+      expectNoMsg(100.millis)
+    }
+    "support a mix of persist calls (sync, async, sync) and persist calls in expected order" in {
+      val processor = namedProcessor[AsyncPersistAndPersistMixedSyncAsyncSyncProcessor]
+      processor ! Cmd("a")
+      processor ! Cmd("b")
+      processor ! Cmd("c")
+      expectMsg("a")
+      expectMsg("a-e1-1") // persist
+      expectMsg("a-ea2-2") // persistAsync, but ordering enforced by sync persist below
+      expectMsg("a-e3-3") // persist
+      expectMsg("b")
+      expectMsg("b-e1-4")
+      expectMsg("b-ea2-5")
+      expectMsg("b-e3-6")
+      expectMsg("c")
+      expectMsg("c-e1-7")
+      expectMsg("c-ea2-8")
+      expectMsg("c-e3-9")
+
+      expectNoMsg(100.millis)
+    }
+    "support a mix of persist calls (sync, async) and persist calls" in {
+      val processor = namedProcessor[AsyncPersistAndPersistMixedSyncAsyncProcessor]
+      processor ! Cmd("a")
+      processor ! Cmd("b")
+      processor ! Cmd("c")
+      expectMsg("a")
+      expectMsg("a-e1-1") // persist, must be before next command
+
+      var expectInAnyOrder1 = Set("b", "a-ea2-2")
+      expectInAnyOrder1 -= expectMsgAnyOf(expectInAnyOrder1.toList: _*) // ea2 is persistAsync, b (command) can processed before it
+      expectMsgAnyOf(expectInAnyOrder1.toList: _*)
+
+      expectMsg("b-e1-3") // persist, must be before next command
+
+      var expectInAnyOrder2 = Set("c", "b-ea2-4")
+      expectInAnyOrder2 -= expectMsgAnyOf(expectInAnyOrder2.toList: _*) // ea2 is persistAsync, b (command) can processed before it
+      expectMsgAnyOf(expectInAnyOrder2.toList: _*)
+
+      expectMsg("c-e1-5")
+      expectMsg("c-ea2-6")
+
+      expectNoMsg(100.millis)
+    }
   }
 }
 
-class LeveldbEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("leveldb", "LeveldbEventsourcedSpec"))
-class InmemEventsourcedSpec extends EventsourcedSpec(PersistenceSpec.config("inmem", "InmemEventsourcedSpec"))
+class LeveldbPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbEventsourcedSpec"))
+class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemEventsourcedSpec"))

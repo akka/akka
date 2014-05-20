@@ -17,6 +17,9 @@ import akka.persistence.serialization.Message
 /**
  * Persistent message.
  */
+@deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+  "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+  since = "2.3.4")
 sealed abstract class Persistent {
   /**
    * This persistent message's payload.
@@ -38,6 +41,9 @@ sealed abstract class Persistent {
   def withPayload(payload: Any): Persistent
 }
 
+@deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+  "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+  since = "2.3.4")
 object Persistent {
   /**
    * Java API: creates a new persistent message. Must only be used outside processors.
@@ -65,6 +71,9 @@ object Persistent {
    * @param payload payload of the new persistent message.
    * @param currentPersistentMessage optional current persistent message, defaults to `None`.
    */
+  @deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+    "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+    since = "2.3.4")
   def apply(payload: Any)(implicit currentPersistentMessage: Option[Persistent] = None): Persistent =
     currentPersistentMessage.map(_.withPayload(payload)).getOrElse(PersistentRepr(payload))
 
@@ -79,6 +88,9 @@ object Persistent {
  * Persistent message that has been delivered by a [[Channel]] or [[PersistentChannel]]. Channel
  * destinations that receive messages of this type can confirm their receipt by calling [[confirm]].
  */
+@deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+  "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+  since = "2.3.4")
 sealed abstract class ConfirmablePersistent extends Persistent {
   /**
    * Called by [[Channel]] and [[PersistentChannel]] destinations to confirm the receipt of a
@@ -93,6 +105,9 @@ sealed abstract class ConfirmablePersistent extends Persistent {
   def redeliveries: Int
 }
 
+@deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+  "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+  since = "2.3.4")
 object ConfirmablePersistent {
   /**
    * [[ConfirmablePersistent]] extractor.
@@ -106,7 +121,12 @@ object ConfirmablePersistent {
  * journal. The processor receives the written messages individually as [[Persistent]] messages.
  * During recovery, they are also replayed individually.
  */
-final case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) extends Message {
+@deprecated("Messages wrapped in Persistent were only required by Processor and Command Sourcing, " +
+  "which is now deprecated. Use `akka.persistence.PersistentActor` and Event Sourcing instead.",
+  since = "2.3.4")
+case class PersistentBatch(persistentBatch: immutable.Seq[Persistent]) extends Message {
+  // todo while we want to remove Persistent() from user-land, the batch may (probably?) become private[akka] to remain for journal internals #15230
+
   /**
    * INTERNAL API.
    */
@@ -151,6 +171,8 @@ private[persistence] final case class PersistentIdImpl(processorId: String, sequ
  * @see [[journal.AsyncRecovery]]
  */
 trait PersistentRepr extends Persistent with PersistentId with Message {
+  // todo we want to get rid of the Persistent() wrapper from user land; PersistentRepr is here to stay. #15230
+
   import scala.collection.JavaConverters._
 
   /**

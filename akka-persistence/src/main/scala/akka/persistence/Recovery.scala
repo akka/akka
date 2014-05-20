@@ -36,7 +36,8 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
     def updateLastSequenceNr(value: Long): Unit =
       _lastSequenceNr = value
 
-    protected def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit = try {
+    /** INTERNAL API */
+    private[akka] def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit = try {
       _currentPersistent = persistent
       updateLastSequenceNr(persistent)
       body(persistent)

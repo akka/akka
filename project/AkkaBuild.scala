@@ -478,7 +478,6 @@ object AkkaBuild extends Build {
     validatePullRequest <<= validatePullRequest.dependsOn(test in Test),
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
     validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
-
   ) ++
     mavenLocalResolverSettings ++
     JUnitFileReporting.settings ++ StatsDMetrics.settings
@@ -488,9 +487,9 @@ object AkkaBuild extends Build {
   val validatePullRequestTask = validatePullRequest := ()
 
   lazy val mimaIgnoredProblems = {
-     import com.typesafe.tools.mima.core._
-     Seq(
-       // add filters here, see release-2.2 branch
+    import com.typesafe.tools.mima.core._
+    Seq(
+      // add filters here, see release-2.2 branch
      )
   }
 

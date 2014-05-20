@@ -32,7 +32,7 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.pattern.ask
-import akka.persistence.EventsourcedProcessor
+import akka.persistence.PersistentActor
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.persistence.SnapshotOffer
 import akka.persistence.SaveSnapshotSuccess
@@ -1183,7 +1183,7 @@ object ShardCoordinator {
  */
 class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: FiniteDuration,
                        snapshotInterval: FiniteDuration, allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
-  extends EventsourcedProcessor with ActorLogging {
+  extends PersistentActor with ActorLogging {
   import ShardCoordinator._
   import ShardCoordinator.Internal._
   import ShardRegion.ShardId
