@@ -22,6 +22,7 @@ import akka.actor.ActorSystem
 import akka.actor.Extension
 import akka.stream.actor.ActorConsumer
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.TimerTransformer
 
 /**
  * INTERNAL API
