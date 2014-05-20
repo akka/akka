@@ -15,6 +15,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] object ActorProcessor {
+
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
