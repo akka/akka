@@ -15,7 +15,7 @@ import akka.japi.Pair
 import akka.japi.Predicate
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
-import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
+import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 import akka.stream.impl.Ast
 
@@ -202,6 +202,44 @@ abstract class Duct[In, Out] {
   def append[U](duct: Duct[_ >: In, U]): Duct[In, U]
 
   /**
+   * Allows a faster upstream to progress independently of a slower consumer by conflating elements into a summary
+   * until the consumer is ready to accept them. For example a conflate step might average incoming numbers if the
+   * upstream producer is faster.
+   *
+   * This element only rolls up elements if the upstream is faster, but if the downstream is faster it will not
+   * duplicate elements.
+   *
+   * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
+   * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
+   */
+  def conflate[S](seed: Function[Out, S], aggregate: Function2[S, Out, S]): Duct[In, S]
+
+  /**
+   * Allows a faster downstream to progress independently of a slower producer by extrapolating elements from an older
+   * element until new element comes from the upstream. For example an expand step might repeat the last element for
+   * the consumer until it receives an update from upstream.
+   *
+   * This element will never "drop" upstream elements as all elements go through at least one extrapolation step.
+   * This means that if the upstream is actually faster than the upstream it will be backpressured by the downstream
+   * consumer.
+   *
+   * @param seed Provides the first state for extrapolation using the first unconsumed element
+   * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
+   *                    state.
+   */
+  def expand[S, U](seed: Function[Out, S], extrapolate: Function[S, Pair[U, S]]): Duct[In, U]
+
+  /**
+   * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
+   * Depending on the defined [[OverflowStrategy]] it might drop elements or backpressure the upstream if there is no
+   * space available
+   *
+   * @param size The size of the buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   */
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, Out]
+
+  /**
    * Materialize this `Duct` by attaching it to the specified downstream `consumer`
    * and return a `Consumer` representing the input side of the `Duct`.
    * The returned `Consumer` can later be connected to an upstream `Producer`.
@@ -310,6 +348,18 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
 
   override def tee(other: Consumer[_ >: T]): Duct[In, T] =
     new DuctAdapter(delegate.tee(other))
+
+  override def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, T] =
+    new DuctAdapter(delegate.buffer(size, overflowStrategy))
+
+  override def expand[S, U](seed: Function[T, S], extrapolate: Function[S, Pair[U, S]]): Duct[In, U] =
+    new DuctAdapter(delegate.expand(seed.apply, (s: S) ⇒ {
+      val p = extrapolate.apply(s)
+      (p.first, p.second)
+    }))
+
+  override def conflate[S](seed: Function[T, S], aggregate: Function2[S, T, S]): Duct[In, S] =
+    new DuctAdapter(delegate.conflate(seed.apply, aggregate.apply))
 
   override def flatten[U](strategy: FlattenStrategy[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.flatten(strategy))
