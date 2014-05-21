@@ -19,23 +19,24 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 
 # print usage info
 function usage {
-  echo "Usage: ${script_name} v2.1.0 v2.2.0 path_to_assembla_export.csv"
+  echo "Usage: ${script_name} <tag-from> <tag-to> <milestone-name>"
+  echo "Example: ${script_name} v2.3.2 v2.3.3 2.3.3"
 }
 
 declare -r tag1=$1
 declare -r tag2=$2
-declare -r tickets_csv=$3
-
-if [ -z "$tickets_csv" ]; then
-  usage
-  exit 1
-fi
+declare -r milestone_name=$3
 
 declare -r tag_range="$tag1..$tag2"
 declare authors=$($script_dir/authors.pl $tag_range)
 declare author_count=$(echo "$authors" | wc -l | grep -o '[1-9].*')
 declare diff_short=$(git diff --shortstat $tag_range | grep -o '[1-9].*')
-declare tickets=$(tail -n +2 $tickets_csv | grep Fixed | cut -d ',' -f 1,2 | sed 's/","/  /g' | tr -d '"' | sort -n)
+
+declare script_user_agent="User-Agent: Akka-Stats-Script"
+declare open_milestones=$(curl -s -H "$script_user_agent" "https://api.github.com/repos/akka/akka/milestones?state=open")
+declare closed_milestones=$(curl -s -H "$script_user_agent" "https://api.github.com/repos/akka/akka/milestones?state=closed")
+declare milestone_id=$(echo "$open_milestones$closed_milestones" | sed 's/"description"/\n/g' | perl -ne 'm/number":([0-9]+),"title":"(.+?)",/ && print "$1,$2\n"' | grep "$milestone_name" | cut -d"," -f 1)
+declare tickets=$(curl -s -H "$script_user_agent" "https://api.github.com/repos/akka/akka/issues?milestone=$milestone_id&state=all&per_page=100" | sed 's/"comments"/\n/g' | perl -ne 'm/number":([0-9]+),"title":"(.+?)",/ && print " - *$1* $2\n"' | sort -n)
 declare ticket_count=$(echo "$tickets" | wc -l | grep -o '[1-9].*')
 
 echo "$tag1 compared to Akka $tag2":
