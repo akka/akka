@@ -132,7 +132,7 @@ dependency for akka-actor:
     <version>@version@</version>
   </dependency>
 
-For snapshot versions, snapshot repository need to be added as well:
+For snapshot versions, the snapshot repository needs to be added as well:
 
 .. code-block:: xml
 
@@ -170,8 +170,6 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     scalaVersion := "@scalaVersion@"
 
-    resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
-
     libraryDependencies +=
       "com.typesafe.akka" %% "akka-actor" % "@version@" @crossString@
 
@@ -181,6 +179,12 @@ SBT installation instructions on `https://github.com/harrah/xsbt/wiki/Setup <htt
 
     libraryDependencies +=
       "com.typesafe.akka" % "akka-actor_@binVersion@" % "@version@"
+
+For snapshot versions, the snapshot repository needs to be added as well:
+
+.. parsed-literal::
+
+    resolvers += "Akka Snapshot Repository" at "http://repo.akka.io/snapshots/"
 
 
 Using Akka with Gradle
@@ -208,6 +212,17 @@ Uses the `Scala plugin <http://gradle.org/docs/current/userguide/scala_plugin.ht
     dependencies {
       compile group: 'com.typesafe.akka', name: 'akka-actor_@binVersion@', version: '@version@'
       compile group: 'org.scala-lang', name: 'scala-library', version: '@scalaVersion@'
+    }
+
+For snapshot versions, the snapshot repository needs to be added as well:
+
+.. parsed-literal::
+
+    repositories {
+      mavenCentral()
+      maven {
+        url "http://repo.akka.io/snapshots/"
+      }
     }
 
 
