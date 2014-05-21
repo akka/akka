@@ -35,9 +35,6 @@ class AkkaConsoleReporter(
     printMetrics(registry.getKnownOpsInTimespanCounters, printKnownOpsInTimespanCounter)
     printMetrics(registry.getHdrHistograms, printHdrHistogram)
     printMetrics(registry.getAveragingGauges, printAveragingGauge)
-
-    output.println()
-    output.flush()
   }
 
   def printMetrics[T <: Metric](metrics: Iterable[(String, T)], printer: T ⇒ Unit)(implicit clazz: ClassTag[T]) {

@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 import java.util
 import scala.util.matching.Regex
 import scala.collection.mutable
-import akka.testkit.metrics.reporter.{GraphiteClient, AkkaGraphiteReporter, AkkaConsoleReporter}
+import akka.testkit.metrics.reporter.{ GraphiteClient, AkkaGraphiteReporter, AkkaConsoleReporter }
 import org.scalatest.{ Informing, Notifying }
 import scala.reflect.ClassTag
 
