@@ -7,7 +7,7 @@ object Dependencies {
   object Versions {
     val scalaVersion = sys.props.get("akka.scalaVersion").getOrElse("2.10.4")
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
-    val scalaZeroMQVersion = sys.props.get("akka.build.scalaZeroMQVersion").getOrElse("0.0.7")
+    val scalaJeroMQVersion = sys.props.get("akka.build.scalaJeroMQVersion").getOrElse("0.3.4")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.1.3")
     val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.3")
   }
@@ -30,7 +30,7 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
+    val zeroMQClient  = "org.zeromq"                  % "jeromq"                       % scalaJeroMQVersion // LGPL
     // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     // mirrored in OSGi sample
