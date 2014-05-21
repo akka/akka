@@ -74,4 +74,3 @@ tm.out
 worker*.log
 *-shim.sbt
 test-output
-
