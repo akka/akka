@@ -101,11 +101,10 @@ object ActorCreationPerfSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender
-  with MetricsKit with BeforeAndAfterAll {
+  with AkkaMetricsKit with BeforeAndAfterAll {
 
   import ActorCreationPerfSpec._
 
-  def metricsConfig = system.settings.config
   val ActorCreationKey = MetricKey.fromString("actor-creation")
   val BlockingTimeKey = ActorCreationKey / "synchronous-part"
   val TotalTimeKey = ActorCreationKey / "total"
