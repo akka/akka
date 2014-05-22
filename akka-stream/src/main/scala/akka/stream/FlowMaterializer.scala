@@ -46,7 +46,7 @@ object FlowMaterializer {
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
-abstract class FlowMaterializer {
+abstract class FlowMaterializer(val settings: MaterializerSettings) {
 
   /**
    * The `namePrefix` is used as the first part of the names of the actors running
@@ -59,20 +59,11 @@ abstract class FlowMaterializer {
    * ops are stored in reverse order
    */
   private[akka] def toProducer[I, O](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Producer[O]
-  /**
-   * INTERNAL API
-   */
-  private[akka] def consume[I](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Unit
 
   /**
    * INTERNAL API
    */
   private[akka] def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In]
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def ductConsume[In](ops: List[Ast.AstNode]): Consumer[In]
 
   /**
    * INTERNAL API
