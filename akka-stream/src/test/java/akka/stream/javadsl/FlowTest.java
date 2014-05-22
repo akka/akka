@@ -495,4 +495,26 @@ public class FlowTest {
       String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
       assertEquals("A", result);
   }
+  @Test
+  public void mustProduceTicks() throws Exception {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Callable<String> tick = new Callable<String>() {
+      private int count = 1;
+
+      @Override
+      public String call() {
+        return "tick-" + (count++);
+      }
+    };
+    Flow.create(FiniteDuration.create(1, TimeUnit.SECONDS), tick).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }).consume(materializer);
+    probe.expectMsgEquals("tick-1");
+    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+    probe.expectMsgEquals("tick-2");
+    probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
+
+  }
 }
