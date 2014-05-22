@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # tag an github issue with the given tag, api token is taken from env ($PR_VALIDATOR_GH_TOKEN)
 # usage: ghtag ISSUE_NR OWNER REPO ADD_TAGS RM_TAGS
