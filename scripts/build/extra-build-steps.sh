@@ -64,6 +64,29 @@ function mvncleantest {
   try mvn clean test "mvn execution in $2 failed"
 }
 
+# tag an github issue with the given tag, api token is taken from env ($PR_VALIDATOR_GH_TOKEN)
+# usage: ghtag ISSUE_NR OWNER REPO ADD_TAGS RM_TAGS
+# 
+# ADD_TAGS and RM_TAGS should be json with tokens you want to add, as in: ["tested"]
+function ghtag {
+  if [[ "$PR_VALIDATOR_GH_TOKEN" == "" ]]
+  then
+    echoerr "Env variable PR_VALIDATOR_GH_TOKEN was empty, unable to call github api!"
+    exit 1;
+  fi
+
+  issueNr=$2
+  owner=$3
+  repo=$4
+  data_add=$5
+  data_remove=$6
+
+  curl --user "akka-ci" -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issueNr/labels -X POST -d \'$data_add\'
+  curl --user "akka-ci" -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issueNr/labels -X DELETE -d \'$data_remove\'
+}
+
+echoerr() { echo "$@" 1>&2; }
+
 # initialize variables with defaults and override from environment
 declare java_home="$default_java_home"
 if [ $AKKA_BUILD_JAVA_HOME ]; then
