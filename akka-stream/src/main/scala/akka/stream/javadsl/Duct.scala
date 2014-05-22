@@ -11,6 +11,8 @@ import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
 import akka.japi.Function
 import akka.japi.Function2
+import akka.japi.Pair
+import akka.japi.Predicate
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
