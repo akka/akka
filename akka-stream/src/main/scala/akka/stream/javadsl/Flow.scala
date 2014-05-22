@@ -12,13 +12,14 @@ import scala.util.Success
 import org.reactivestreams.api.Producer
 import akka.japi.Function
 import akka.japi.Function2
+import akka.japi.Pair
+import akka.japi.Predicate
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import akka.stream.Transformer
 import org.reactivestreams.api.Consumer
-import akka.stream.impl.DuctImpl
 
 /**
  * Java API
@@ -304,19 +305,6 @@ trait OnCompleteCallback {
    * the abnormal termination.
    */
   def onComplete(e: Throwable)
-}
-
-/**
- * Java API: Represents a tuple of two elements.
- */
-case class Pair[A, B](first: A, second: B) // FIXME move this to akka.japi.Pair in akka-actor
-
-/**
- * Java API: Defines a criteria and determines whether the parameter meets this criteria.
- */
-trait Predicate[T] {
-  // FIXME move this to akka.japi.Predicate in akka-actor 
-  def test(param: T): Boolean
 }
 
 /**
