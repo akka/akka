@@ -24,16 +24,24 @@ private[akka] class HdrHistogram(
   private val hist = new hdr.Histogram(highestTrackableValue, numberOfSignificantValueDigits)
 
   def update(value: Long) {
-    hist.recordValue(value)
-  }
-
-  def updateWithExpectedInterval(value: Long, expectedIntervalBetweenValueSamples: Long) {
-    hist.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples)
+    try
+      hist.recordValue(value)
+    catch {
+      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+    }
   }
 
   def updateWithCount(value: Long, count: Long) {
-    hist.recordValueWithCount(value, count)
+    try
+      hist.recordValueWithCount(value, count)
+    catch {
+      case ex: ArrayIndexOutOfBoundsException ⇒ throw wrapHistogramOutOfBoundsException(value, ex)
+    }
   }
+
+  private def wrapHistogramOutOfBoundsException(value: Long, ex: ArrayIndexOutOfBoundsException): IllegalArgumentException =
+    new IllegalArgumentException(s"Given value $value can not be stored in this histogram " +
+      s"(min: ${hist.getLowestTrackableValue}, max: ${hist.getHighestTrackableValue}})", ex)
 
   def getData = hist.copy().getHistogramData
 
