@@ -11,6 +11,7 @@ import org.reactivestreams.api.Producer
 import akka.stream.FlowMaterializer
 import akka.stream.Transformer
 import akka.stream.impl.DuctImpl
+import akka.stream.impl.Ast
 
 object Duct {
 
@@ -173,6 +174,16 @@ trait Duct[In, +Out] {
   def tee(other: Consumer[_ >: Out]): Duct[In, Out]
 
   /**
+   * Append the operations of a [[Duct]] to this `Duct`.
+   */
+  def append[U](duct: Duct[_ >: In, U]): Duct[In, U]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: In, U]): Duct[In, U]
+
+  /**
    * Materialize this `Duct` by attaching it to the specified downstream `consumer`
    * and return a `Consumer` representing the input side of the `Duct`.
    * The returned `Consumer` can later be connected to an upstream `Producer`.
@@ -219,6 +230,12 @@ trait Duct[In, +Out] {
    * broken down into individual processing steps.
    */
   def build(materializer: FlowMaterializer): (Consumer[In], Producer[Out] @uncheckedVariance)
+
+  /**
+   * INTERNAL API
+   * Used by `Flow.append(duct)`.
+   */
+  private[akka] def ops: immutable.Seq[Ast.AstNode]
 
 }
 
