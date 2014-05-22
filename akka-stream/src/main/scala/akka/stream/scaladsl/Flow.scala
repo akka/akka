@@ -232,6 +232,16 @@ trait Flow[+T] {
   def tee(other: Consumer[_ >: T]): Flow[T]
 
   /**
+   * Append the operations of a [[Duct]] to this flow.
+   */
+  def append[U](duct: Duct[_ >: T, U]): Flow[U]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: T, U]): Flow[U]
+
+  /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
    * thing that is signaled to this stream, which can be either an element (after
    * which the upstream subscription is canceled), an error condition (putting
