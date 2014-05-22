@@ -27,7 +27,7 @@ import akka.stream.actor.ActorConsumer
  * INTERNAL API
  */
 private[akka] object Ast {
-  trait AstNode {
+  sealed trait AstNode {
     def name: String
   }
 
@@ -120,10 +120,10 @@ private[akka] object ActorBasedFlowMaterializer {
  * INTERNAL API
  */
 private[akka] class ActorBasedFlowMaterializer(
-  val settings: MaterializerSettings,
+  settings: MaterializerSettings,
   _context: ActorRefFactory,
   namePrefix: String)
-  extends FlowMaterializer {
+  extends FlowMaterializer(settings) {
   import Ast._
   import ActorBasedFlowMaterializer._
 
@@ -187,35 +187,12 @@ private[akka] class ActorBasedFlowMaterializer(
       override def onNext(element: Any) = List(element)
     })
 
-  override def consume[I](producerNode: ProducerNode[I], ops: List[AstNode]): Unit = {
-    val flowName = createFlowName()
-    val consumer = consume(ops, flowName)
-    producerNode.createProducer(this, flowName).produceTo(consumer.asInstanceOf[Consumer[I]])
-  }
-
-  private def consume[In, Out](ops: List[Ast.AstNode], flowName: String): Consumer[In] = {
-    val c = ops match {
-      case Nil ⇒
-        ActorConsumer[Any](context.actorOf(ActorConsumerProps.props(settings, blackholeTransform),
-          name = s"$flowName-1-consume"))
-      case head :: tail ⇒
-        val opsSize = ops.size
-        val c = ActorConsumer[Any](context.actorOf(ActorConsumerProps.props(settings, head),
-          name = s"$flowName-$opsSize-${head.name}"))
-        processorChain(c, tail, flowName, ops.size - 1)
-    }
-    c.asInstanceOf[Consumer[In]]
-  }
-
   def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] =
     new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op),
       name = s"$flowName-$n-${op.name}"))
 
   override def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In] =
     processorChain(consumer, ops, createFlowName(), ops.size).asInstanceOf[Consumer[In]]
-
-  override def ductConsume[In](ops: List[Ast.AstNode]): Consumer[In] =
-    consume(ops, createFlowName)
 
   override def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out]) = {
     val flowName = createFlowName()

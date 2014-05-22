@@ -47,7 +47,8 @@ private[akka] case class FlowImpl[I, O](producerNode: Ast.ProducerNode[I], ops: 
     p.future
   }
 
-  override def consume(materializer: FlowMaterializer): Unit = materializer.consume(producerNode, ops)
+  override def consume(materializer: FlowMaterializer): Unit =
+    produceTo(materializer, new BlackholeConsumer(materializer.settings.maximumInputBufferSize))
 
   override def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit =
     transform(new Transformer[O, Unit] {
@@ -88,7 +89,7 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
     materializer.ductProduceTo(consumer, ops)
 
   override def consume(materializer: FlowMaterializer): Consumer[In] =
-    materializer.ductConsume(ops)
+    produceTo(materializer, new BlackholeConsumer(materializer.settings.maximumInputBufferSize))
 
   override def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Consumer[In] =
     transform(new Transformer[Out, Unit] {

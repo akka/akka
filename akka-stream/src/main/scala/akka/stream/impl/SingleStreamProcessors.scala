@@ -28,7 +28,7 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
   }
 
   object NeedsInputAndDemandOrCompletion extends TransferState {
-    def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
+    def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || transformer.isComplete || primaryInputs.inputsDepleted
     def isCompleted = false
   }
 

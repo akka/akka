@@ -1,35 +1,20 @@
 package akka.stream.javadsl;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-
 import org.reactivestreams.api.Consumer;
 import org.reactivestreams.api.Producer;
-
-import scala.concurrent.Await;
-import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Function;
 import akka.japi.Function2;
 import akka.japi.Procedure;
-import akka.japi.Util;
 import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
-import akka.stream.Transformer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
