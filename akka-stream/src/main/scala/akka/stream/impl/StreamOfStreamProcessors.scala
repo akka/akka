@@ -7,6 +7,7 @@ import akka.stream.MaterializerSettings
 import akka.actor.{ Actor, Terminated, ActorRef }
 import org.reactivestreams.spi.{ Subscriber, Subscription }
 import org.reactivestreams.api.Producer
+import akka.stream.actor.ActorConsumer.{ OnNext, OnError, OnComplete, OnSubscribe }
 
 /**
  * INTERNAL API

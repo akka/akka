@@ -6,8 +6,7 @@ package akka.stream
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-import akka.stream.impl.OnNext
-import akka.stream.impl.OnComplete
+import akka.stream.actor.ActorConsumer.{ OnNext, OnComplete }
 import akka.stream.impl.RequestMore
 
 class FlowTakeSpec extends AkkaSpec with ScriptedTest {
