@@ -19,6 +19,7 @@ import akka.japi.Util.immutableSeq
 import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import org.reactivestreams.api.Consumer
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Java API
@@ -63,6 +64,16 @@ object Flow {
    * when any other exception is thrown.
    */
   def create[T](block: Callable[T]): Flow[T] = new FlowAdapter(SFlow.apply(() ⇒ block.call()))
+
+  /**
+   * Elements are produced from the tick `Callable` periodically with the specified interval.
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
+   * element is produced it will not receive that tick element later. It will
+   * receive new tick elements as soon as it has requested more elements.
+   */
+  def create[T](interval: FiniteDuration, tick: Callable[T]): Flow[T] =
+    new FlowAdapter(SFlow.apply(interval, () ⇒ tick.call()))
 
 }
 
