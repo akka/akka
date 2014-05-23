@@ -18,10 +18,10 @@ function ghtag {
   add=$4
   remove=$5
 
-  curl -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issue/labels -X POST -d $add
+  curl -s -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issue/labels -X POST -d $add
   for d in $remove
   do
-    curl -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issue/labels/$d -X DELETE
+    curl -s -H "Authorization: token $PR_VALIDATOR_GH_TOKEN" https://api.github.com/repos/$owner/$repo/issues/$issue/labels/$d -X DELETE
   done
 }
 
