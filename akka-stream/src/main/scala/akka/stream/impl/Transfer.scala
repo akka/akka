@@ -65,7 +65,7 @@ private[akka] trait Outputs {
   def demandAvailable: Boolean
   def enqueueOutputElement(elem: Any): Unit
 
-  def receive: SubReceive
+  def subreceive: SubReceive
 
   def complete(): Unit
   def cancel(e: Throwable): Unit

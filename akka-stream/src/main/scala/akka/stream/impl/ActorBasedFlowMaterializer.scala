@@ -52,6 +52,12 @@ private[akka] object Ast {
   case class Tee(other: Consumer[Any]) extends AstNode {
     override def name = "tee"
   }
+  case class PrefixAndTail(n: Int) extends AstNode {
+    override def name = "prefixAndTail"
+  }
+  case object ConcatAll extends AstNode {
+    override def name = "concatFlatten"
+  }
 
   trait ProducerNode[I] {
     private[akka] def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I]

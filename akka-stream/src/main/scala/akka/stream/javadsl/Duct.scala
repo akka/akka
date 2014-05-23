@@ -13,8 +13,7 @@ import akka.japi.Function
 import akka.japi.Function2
 import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
-import akka.stream.FlowMaterializer
-import akka.stream.Transformer
+import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 import akka.stream.impl.Ast
 
@@ -126,6 +125,13 @@ abstract class Duct[In, Out] {
   def transform[U](transformer: Transformer[Out, U]): Duct[In, U]
 
   /**
+   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
+   * of an empty collection and a stream containing the whole upstream unchanged.
+   */
+  def prefixAndTail(n: Int): Duct[In, Pair[java.util.List[Out], Producer[Out]]]
+
+  /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
@@ -181,6 +187,12 @@ abstract class Duct[In, Out] {
    * one downstream consumer have been established.
    */
   def tee(other: Consumer[_ >: Out]): Duct[In, Out]
+
+  /**
+   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
+   * This operation can be used on a stream of element type [[Producer]].
+   */
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Duct[In, U]
 
   /**
    * Append the operations of a [[Duct]] to this `Duct`.
@@ -272,6 +284,13 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def transform[U](transformer: Transformer[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.transform(transformer))
 
+  /**
+   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements.
+   */
+  override def prefixAndTail(n: Int): Duct[In, Pair[java.util.List[T], Producer[T]]] =
+    new DuctAdapter(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ Pair(taken.asJava, tail) })
+
   override def groupBy[K](f: Function[T, K]): Duct[In, Pair[K, Producer[T]]] =
     new DuctAdapter(delegate.groupBy(f.apply).map { case (k, p) ⇒ Pair(k, p) }) // FIXME optimize to one step
 
@@ -289,6 +308,9 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
 
   override def tee(other: Consumer[_ >: T]): Duct[In, T] =
     new DuctAdapter(delegate.tee(other))
+
+  override def flatten[U](strategy: FlattenStrategy[T, U]): Duct[In, U] =
+    new DuctAdapter(delegate.flatten(strategy))
 
   override def append[U](duct: Duct[_ >: In, U]): Duct[In, U] =
     new DuctAdapter(delegate.appendJava(duct))
