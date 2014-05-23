@@ -9,6 +9,7 @@ import scala.util.Try
 import org.reactivestreams.api.Consumer
 import org.reactivestreams.api.Producer
 import Ast.{ AstNode, Transform }
+import akka.stream.{ OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.Flow
 import scala.util.Success
@@ -247,6 +248,17 @@ private[akka] trait Builder[Out] {
   def groupBy[K](f: (Out) ⇒ K): Thing[(K, Producer[Out])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
   def tee(other: Consumer[_ >: Out]): Thing[Out] = andThen(Tee(other.asInstanceOf[Consumer[Any]]))
+
+  def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Thing[S] =
+    andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
+
+  def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Thing[U] =
+    andThen(Expand(seed.asInstanceOf[Any ⇒ Any], extrapolate.asInstanceOf[Any ⇒ (Any, Any)]))
+
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Thing[Out] = {
+    require(size > 0, s"Buffer size must be larger than zero but was [$size]")
+    andThen(Buffer(size, overflowStrategy))
+  }
 
   def flatten[U](strategy: FlattenStrategy[Out, U]): Thing[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)

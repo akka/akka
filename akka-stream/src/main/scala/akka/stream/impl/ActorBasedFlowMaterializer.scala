@@ -8,8 +8,7 @@ import scala.collection.immutable
 import org.reactivestreams.api.{ Consumer, Processor, Producer }
 import org.reactivestreams.spi.Subscriber
 import akka.actor.ActorRefFactory
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
-import akka.stream.Transformer
+import akka.stream.{ OverflowStrategy, MaterializerSettings, FlowMaterializer, Transformer }
 import scala.util.Try
 import scala.concurrent.Future
 import scala.util.Success
@@ -57,6 +56,18 @@ private[akka] object Ast {
   }
   case object ConcatAll extends AstNode {
     override def name = "concatFlatten"
+  }
+
+  case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any) extends AstNode {
+    override def name = "conflate"
+  }
+
+  case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any)) extends AstNode {
+    override def name = "expand"
+  }
+
+  case class Buffer(size: Int, overflowStrategy: OverflowStrategy) extends AstNode {
+    override def name = "buffer"
   }
 
   trait ProducerNode[I] {
