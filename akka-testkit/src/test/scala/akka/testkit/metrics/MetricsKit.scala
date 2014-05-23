@@ -13,7 +13,7 @@ import java.util
 import scala.util.matching.Regex
 import scala.collection.mutable
 import akka.testkit.metrics.reporter.{ GraphiteClient, AkkaGraphiteReporter, AkkaConsoleReporter }
-import org.scalatest.Notifying
+import org.scalatest.{ Informing, Notifying }
 import scala.reflect.ClassTag
 
 /**
@@ -27,7 +27,7 @@ import scala.reflect.ClassTag
  * In order to send registry to Graphite run sbt with the following property: `-Dakka.registry.reporting.0=graphite`.
  */
 private[akka] trait MetricsKit extends MetricsKitOps {
-  this: Notifying ⇒
+  this: Notifying with Informing ⇒
 
   import MetricsKit._
   import collection.JavaConverters._
@@ -50,34 +50,37 @@ private[akka] trait MetricsKit extends MetricsKitOps {
   def initMetricReporters() {
     val settings = new MetricsKitSettings(metricsConfig)
 
-    def configureConsoleReporter() {
-      if (settings.Reporters.contains("console")) {
-        val akkaConsoleReporter = new AkkaConsoleReporter(registry, settings.ConsoleReporter.Verbose)
+    reporters :::= configureConsoleReporter(settings)
+    reporters :::= configureGraphiteReporter(settings)
+  }
 
-        if (settings.ConsoleReporter.ScheduledReportInterval > Duration.Zero)
-          akkaConsoleReporter.start(settings.ConsoleReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
+  protected def configureConsoleReporter(settings: MetricsKitSettings): List[ScheduledReporter] = {
+    if (settings.Reporters.contains("console")) {
+      val akkaConsoleReporter = new AkkaConsoleReporter(registry, settings.ConsoleReporter.Verbose, l ⇒ if (!l.matches("""\W+""")) info(l))
 
-        reporters ::= akkaConsoleReporter
-      }
+      if (settings.ConsoleReporter.ScheduledReportInterval > Duration.Zero)
+        akkaConsoleReporter.start(settings.ConsoleReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
+
+      List(akkaConsoleReporter)
+    } else {
+      Nil
     }
+  }
 
-    def configureGraphiteReporter() {
-      if (settings.Reporters.contains("graphite")) {
-        note(s"MetricsKit: Graphite reporter enabled, sending metrics to: ${settings.GraphiteReporter.Host}:${settings.GraphiteReporter.Port}")
-        val address = new InetSocketAddress(settings.GraphiteReporter.Host, settings.GraphiteReporter.Port)
-        val graphite = new GraphiteClient(address)
-        val akkaGraphiteReporter = new AkkaGraphiteReporter(registry, settings.GraphiteReporter.Prefix, graphite, settings.GraphiteReporter.Verbose)
+  protected def configureGraphiteReporter(settings: MetricsKitSettings): List[ScheduledReporter] = {
+    if (settings.Reporters.contains("graphite")) {
+      note(s"MetricsKit: Graphite reporter enabled, sending metrics to: ${settings.GraphiteReporter.Host}:${settings.GraphiteReporter.Port}")
+      val graphite = new GraphiteClient(new InetSocketAddress(settings.GraphiteReporter.Host, settings.GraphiteReporter.Port))
+      val akkaGraphiteReporter = new AkkaGraphiteReporter(registry, settings.GraphiteReporter.Prefix, graphite)
 
-        if (settings.GraphiteReporter.ScheduledReportInterval > Duration.Zero) {
-          akkaGraphiteReporter.start(settings.GraphiteReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
-        }
-
-        reporters ::= akkaGraphiteReporter
+      if (settings.GraphiteReporter.ScheduledReportInterval > Duration.Zero) {
+        akkaGraphiteReporter.start(settings.GraphiteReporter.ScheduledReportInterval.toMillis, TimeUnit.MILLISECONDS)
       }
-    }
 
-    configureConsoleReporter()
-    configureGraphiteReporter()
+      List(akkaGraphiteReporter)
+    } else {
+      Nil
+    }
   }
 
   /**
