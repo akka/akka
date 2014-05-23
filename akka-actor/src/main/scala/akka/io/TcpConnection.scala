@@ -55,9 +55,15 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
 
       val info = ConnectionInfo(registration, handler, keepOpenOnPeerClosed, useResumeWriting)
-      if (!pullMode) doRead(info, None) // immediately try reading
+      doRead(info, None) // immediately try reading, pullMode is handled by readingSuspended
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(info))
+
+    case ResumeReading ⇒
+      readingSuspended = false
+
+    case SuspendReading ⇒
+      readingSuspended = true
 
     case cmd: CloseCommand ⇒
       val info = ConnectionInfo(registration, commander, keepOpenOnPeerClosed = false, useResumeWriting = false)
