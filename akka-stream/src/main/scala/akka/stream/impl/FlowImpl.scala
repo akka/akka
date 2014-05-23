@@ -152,6 +152,9 @@ private[akka] trait Builder[Out] {
       override def name = "map"
     })
 
+  def mapFuture[U](f: Out ⇒ Future[U]): Thing[U] =
+    andThen(MapFuture(f.asInstanceOf[Any ⇒ Future[Any]]))
+
   def filter(p: Out ⇒ Boolean): Thing[Out] =
     transform(new Transformer[Out, Out] {
       override def onNext(in: Out) = if (p(in)) List(in) else Nil

@@ -38,6 +38,7 @@ private[akka] object ActorProcessor {
       case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
+      case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
     }).withDispatcher(settings.dispatcher)
 }
 
@@ -165,7 +166,8 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 
   private var downstreamBufferSpace = 0
   private var downstreamCompleted = false
-  def demandAvailable = downstreamBufferSpace > 0
+  override def demandAvailable = downstreamBufferSpace > 0
+  def demandCount: Int = downstreamBufferSpace
 
   override val subreceive = new SubReceive(waitingExposedPublisher)
 
@@ -244,7 +246,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
     override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
   }
 
-  protected val primaryOutputs: Outputs =
+  protected val primaryOutputs: FanoutOutputs =
     new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, this) {
       override def afterShutdown(): Unit = {
         primaryOutputsShutdown = true

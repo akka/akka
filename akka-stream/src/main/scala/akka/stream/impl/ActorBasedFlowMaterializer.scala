@@ -35,6 +35,9 @@ private[akka] object Ast {
   case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
     override def name = transformer.name
   }
+  case class MapFuture(f: Any ⇒ Future[Any]) extends AstNode {
+    override def name = "mapFuture"
+  }
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"
   }
