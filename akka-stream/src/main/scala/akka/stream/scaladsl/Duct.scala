@@ -12,6 +12,7 @@ import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transf
 import akka.stream.impl.DuctImpl
 import akka.stream.impl.Ast
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Future
 
 object Duct {
 
@@ -41,6 +42,15 @@ trait Duct[In, +Out] {
    * as they pass through this processing step.
    */
   def map[U](f: Out ⇒ U): Duct[In, U]
+
+  /**
+   * Transform this stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function returns a `Future` of the
+   * element that will be emitted downstream. As many futures as requested elements by
+   * downstream may run in parallel and may complete in any order, but the elements that
+   * are emitted downstream are in the same order as from upstream.
+   */
+  def mapFuture[U](f: Out ⇒ Future[U]): Duct[In, U]
 
   /**
    * Only pass on those elements that satisfy the given predicate.
