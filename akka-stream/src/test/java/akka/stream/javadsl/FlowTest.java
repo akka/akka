@@ -26,6 +26,8 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Function;
 import akka.japi.Function2;
+import akka.japi.Pair;
+import akka.japi.Predicate;
 import akka.japi.Procedure;
 import akka.japi.Util;
 import akka.stream.FlowMaterializer;
