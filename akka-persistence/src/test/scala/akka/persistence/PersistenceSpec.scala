@@ -46,8 +46,10 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec â
 }
 
 object PersistenceSpec {
-  def config(plugin: String, test: String, serialization: String = "on") = ConfigFactory.parseString(
-    s"""
+  def config(plugin: String, test: String, serialization: String = "on", extraConfig: Option[String] = None) =
+    extraConfig.map(ConfigFactory.parseString(_)).getOrElse(ConfigFactory.empty()).withFallback(
+      ConfigFactory.parseString(
+        s"""
       akka.actor.serialize-creators = ${serialization}
       akka.actor.serialize-messages = ${serialization}
       akka.persistence.publish-confirmations = on
@@ -56,7 +58,7 @@ object PersistenceSpec {
       akka.persistence.journal.leveldb.dir = "target/journal-${test}"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-${test}/"
       akka.test.single-expect-default = 10s
-    """)
+    """))
 }
 
 trait Cleanup { this: AkkaSpec â‡’
