@@ -475,6 +475,7 @@ object AkkaBuild extends Build {
     testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
 
     validatePullRequestTask,
+    validatePullRequest <<= validatePullRequest.dependsOn(test in Test),
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
     validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
 
