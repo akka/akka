@@ -117,8 +117,7 @@ class Persist1CommandProcessor(respondAfter: Int) extends Processor {
 class PersistAsync1EventEventsourcedProcessor(respondAfter: Int) extends EventsourcedProcessor {
   override def receiveCommand  = {
     case n: Int  =>
-      val replyTo = sender()
-      persistAsync(Evt(n)) { e => if (e.i == respondAfter) replyTo ! e } // no guarantee about sender() being valid in persistAsync
+      persistAsync(Evt(n)) { e => if (e.i == respondAfter) sender() ! e }
   }
   override def receiveRecover = {
     case _ => // do nothing

@@ -6,7 +6,7 @@ package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
 
-import scala.collection.{ mutable, immutable }
+import scala.collection.immutable
 
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
@@ -56,7 +56,7 @@ private[persistence] trait Eventsourced extends Processor {
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case _: PersistentRepr ⇒
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case _: WriteMessageFailure | _: WriteMessageSuccess | WriteMessagesFailure if persistAsyncInvocations.nonEmpty ⇒
+      case _: WriteMessageFailure | _: WriteMessageSuccess | _@ WriteMessagesSuccess | _@ WriteMessagesFailure if persistAsyncInvocations.nonEmpty ⇒
         tryProcessAsyncEvents(this, receive, message)
       case _ ⇒
         doAroundReceive(receive, message)
@@ -65,12 +65,12 @@ private[persistence] trait Eventsourced extends Processor {
     private def doAroundReceive(receive: Receive, message: Any): Unit = {
       Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
 
-      if (!persistAsyncInvocations.isEmpty && persistentEventBatch.nonEmpty) {
+      if (persistAsyncInvocations.nonEmpty && persistentEventBatch.nonEmpty) {
         Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
         persistentEventBatch = Nil
       }
 
-      if (!persistInvocations.isEmpty) {
+      if (persistInvocations.nonEmpty) {
         currentState = persistingEvents
         Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
         persistInvocations = persistInvocations.reverse
@@ -100,14 +100,14 @@ private[persistence] trait Eventsourced extends Processor {
         deleteMessage(p.sequenceNr, permanent = true)
         throw new UnsupportedOperationException("Persistent commands not supported")
       case WriteMessageSuccess(p) ⇒
-        if (persistAsyncInvocations.isDefinedAt(p.payload)) {
+        if (persistAsyncInvocations.nonEmpty) {
           tryProcessAsyncEvents(this, receive, message)
         } else {
           withCurrentPersistent(p)(p ⇒ persistInvocations.head.handler(p.payload))
           onWriteComplete()
         }
       case e @ WriteMessageFailure(p, _) ⇒
-        if (persistAsyncInvocations.isDefinedAt(p.payload)) {
+        if (persistAsyncInvocations.nonEmpty) {
           tryProcessAsyncEvents(this, receive, message)
         } else {
           Eventsourced.super.aroundReceive(receive, message) // stops actor by default
@@ -116,14 +116,6 @@ private[persistence] trait Eventsourced extends Processor {
       case s @ WriteMessagesSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
       case other                    ⇒ processorStash.stash()
-    }
-
-    def onWriteComplete(): Unit = {
-      persistInvocations = persistInvocations.tail
-      if (persistInvocations.isEmpty) {
-        currentState = processingCommands
-        processorStash.unstash()
-      }
     }
   }
 
@@ -148,48 +140,45 @@ private[persistence] trait Eventsourced extends Processor {
   /** forces processor to stash incoming commands untill all these invocations are handled */
   final case class StashingPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
   /** does not force the processor to stash commands, sender() is not a the "original sender" when callback is called! */
-  final case class AsyncPersistInvocation(handler: Any ⇒ Unit) extends PersistInvocation
+  final case class AsyncPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
 
   private var persistInvocations: List[StashingPersistInvocation] = Nil
-  private val persistAsyncInvocations = new mutable.HashMap[Any, Vector[AsyncPersistInvocation]]()
+  private var persistAsyncInvocations: Vector[AsyncPersistInvocation] = Vector.empty
   private var persistentEventBatch: List[PersistentRepr] = Nil
 
   private var currentState: State = recovering
   private val processorStash = createStash()
 
-  def onAsyncWriteComplete(repr: PersistentRepr): Unit = {
-    val payload = repr.payload
-
-    persistAsyncInvocations.get(payload) match {
-      case Some(invocations) if invocations.size == 1 ⇒
-        // handled last element during this cycle, remove key
-        persistAsyncInvocations -= payload
-      case Some(invocations) ⇒
-        persistAsyncInvocations.put(payload, invocations.tail)
-      case _ ⇒
-      // do nothing
-    }
-  }
-
   def tryProcessAsyncEvents(state: State, receive: Receive, message: Any) = message match {
     case e @ WriteMessageFailure(p, _) ⇒
       Eventsourced.super.aroundReceive(receive, message) // stops actor by default
-      onAsyncWriteComplete(p)
+      onAsyncWriteComplete()
 
     case WriteMessageSuccess(p) ⇒
-      val payload = p.payload
-      persistAsyncInvocations.get(payload) match {
-        case Some(asyncInvocations) ⇒
-          state.withCurrentPersistent(p)(p ⇒ asyncInvocations.head.handler(p.payload))
-          onAsyncWriteComplete(p)
-
-        case _ ⇒
-          throw new UnsupportedOperationException(s"Got WriteMessageSuccess($p), yet no handler available for ${p.payload}!")
+      val handler = persistAsyncInvocations.head
+      if (handler.evt == p.payload) {
+        state.withCurrentPersistent(p)(p ⇒ persistAsyncInvocations.head.handler(p.payload))
+        onAsyncWriteComplete()
+      } else {
+        state.withCurrentPersistent(p)(p ⇒ persistInvocations.head.handler(p.payload))
+        onWriteComplete()
       }
 
     case s @ WriteMessagesSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
     case f: WriteMessagesFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
     case _                        ⇒ // do nothing
+  }
+
+  private def onAsyncWriteComplete(): Unit = {
+    persistAsyncInvocations = persistAsyncInvocations.tail
+  }
+
+  private def onWriteComplete(): Unit = {
+    persistInvocations = persistInvocations.tail
+    if (persistInvocations.isEmpty) {
+      currentState = processingCommands
+      processorStash.unstash()
+    }
   }
 
   /**
@@ -250,11 +239,12 @@ private[persistence] trait Eventsourced extends Processor {
    * @param handler handler for each persisted `event`
    */
   final def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
-    val invocation = AsyncPersistInvocation(handler.asInstanceOf[Any ⇒ Unit])
-    persistAsyncInvocations.get(event) match {
-      case Some(invocations) ⇒ persistAsyncInvocations.put(event, invocations :+ invocation)
-      case None              ⇒ persistAsyncInvocations.put(event, Vector(invocation))
-    }
+    val invocation = AsyncPersistInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    //    persistAsyncInvocations.get(event) match {
+    //      case Some(invocations) ⇒ persistAsyncInvocations.put(event, invocations :+ invocation)
+    //      case None              ⇒ persistAsyncInvocations.put(event, Vector(invocation))
+    //    }
+    persistAsyncInvocations = persistAsyncInvocations :+ invocation
     persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
   }
 

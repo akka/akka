@@ -203,7 +203,7 @@ object EventsourcedSpec {
       case Cmd(data) ⇒
         sender() ! data
         persistAsync(Evt(s"$data-${incCounter()}")) { evt ⇒
-          Thread.sleep(100) // enough time for a command to hit the processor
+          Thread.sleep(50) // enough time for a command to hit the processor
           sender() ! evt.data
         }
     }
@@ -222,7 +222,7 @@ object EventsourcedSpec {
 
         1 to 3 foreach { i ⇒
           persistAsync(Evt(s"$data-${incCounter()}")) { evt ⇒
-            Thread.sleep(10) // enough time for a command to hit the processor
+            Thread.sleep(100) // enough time for a command to hit the processor
             sender() ! ("a" + evt.data.toString.drop(1)) // c-1 => a-1, as in "ack"
           }
         }
@@ -519,8 +519,8 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor ! Cmd("y")
       expectMsg("x")
       expectMsg("y") // "y" command was processed before event persisted
-      val first = expectMsgAnyOf("x-1", "y-2")
-      if (first contains "x") expectMsg("y-2") else expectMsg("x-1")
+      expectMsg("x-1")
+      expectMsg("y-2")
     }
     "support multiple persistAsync calls for one command, and execute them 'when possible', not hindering command processing" in {
       val processor = namedProcessor[AsyncPersistThreeTimesProcessor]
@@ -561,7 +561,7 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       }
 
       val ackClass = classOf[String]
-      within(2.seconds) {
+      within(3.seconds) {
         probes foreach { _.expectMsgAllClassOf(ackClass, ackClass, ackClass) }
       }
     }
@@ -570,10 +570,8 @@ abstract class EventsourcedSpec(config: Config) extends AkkaSpec(config) with Pe
       processor ! Cmd("x")
       expectMsg("x")
 
-      // two callbacks are registered for the same event
-      // each must be called once, order does not matter
-      val first = expectMsgAnyOf("x-a-1", "x-b-1")
-      if (first contains "a") expectMsg("x-b-2") else expectMsg("x-a-2")
+      expectMsg("x-a-1")
+      expectMsg("x-b-2")
       expectNoMsg(100.millis)
     }
     "support a mix of persist calls (sync, async, sync) and persist calls in expected order" in {
