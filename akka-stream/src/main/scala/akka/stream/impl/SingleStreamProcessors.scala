@@ -33,14 +33,17 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
   }
 
   val running: TransferPhase = TransferPhase(NeedsInputAndDemandOrCompletion) { () ⇒
-    if (primaryInputs.inputsDepleted || transformer.isComplete) {
-      emits = transformer.onTermination(errorEvent)
-      emitAndThen(completedPhase)
-    } else {
-      val e = primaryInputs.dequeueInputElement()
-      emits = transformer.onNext(e)
-      emitAndThen(running)
+    if (primaryInputs.inputsDepleted) nextPhase(terminate)
+    else {
+      emits = transformer.onNext(primaryInputs.dequeueInputElement())
+      if (transformer.isComplete) emitAndThen(terminate)
+      else emitAndThen(running)
     }
+  }
+
+  val terminate = TransferPhase(Always) { () ⇒
+    emits = transformer.onTermination(errorEvent)
+    emitAndThen(completedPhase)
   }
 
   // Save previous phase we should return to in a var to avoid allocation
