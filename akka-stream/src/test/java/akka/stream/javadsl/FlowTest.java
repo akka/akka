@@ -169,12 +169,15 @@ public class FlowTest {
 
       @Override
       public scala.collection.immutable.Seq<String> onTermination(Option<Throwable> e) {
-        if (e.isEmpty()) return Util.immutableSeq(new String[0]);
-        else return Util.immutableSingletonSeq(e.get().getMessage());
+        if (e.isEmpty())
+          return Util.immutableSeq(new String[0]);
+        else
+          return Util.immutableSingletonSeq(e.get().getMessage());
       }
 
       @Override
-      public void onError(Throwable e) {}
+      public void onError(Throwable e) {
+      }
 
       @Override
       public boolean isComplete() {
@@ -375,7 +378,7 @@ public class FlowTest {
         if (e == null)
           probe.getRef().tell("done", ActorRef.noSender());
         else
-          probe.getRef().tell(e, ActorRef.noSender());
+          probe.getRef().tell(e.getMessage(), ActorRef.noSender());
       }
     });
 
