@@ -337,6 +337,39 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       consumer.expectComplete()
 
     }
+
+    "support converting onComplete into onError" in {
+      val consumer = StreamTestKit.consumerProbe[Int]
+      Flow(List(5, 1, 2, 3)).transform(new Transformer[Int, Int] {
+        var expectedNumberOfElements: Option[Int] = None
+        var count = 0
+        override def onNext(elem: Int) =
+          if (expectedNumberOfElements.isEmpty) {
+            expectedNumberOfElements = Some(elem)
+            Nil
+          } else {
+            count += 1
+            List(elem)
+          }
+        override def onTermination(err: Option[Throwable]) = err match {
+          case Some(e) ⇒ Nil
+          case None ⇒
+            expectedNumberOfElements match {
+              case Some(expected) if (count != expected) ⇒
+                throw new RuntimeException(s"Expected $expected, got $count") with NoStackTrace
+              case _ ⇒ Nil
+            }
+        }
+      }).produceTo(materializer, consumer)
+
+      val subscription = consumer.expectSubscription()
+      subscription.requestMore(10)
+
+      consumer.expectNext(1)
+      consumer.expectNext(2)
+      consumer.expectNext(3)
+      consumer.expectError.getMessage should be("Expected 5, got 3")
+    }
   }
 
 }
