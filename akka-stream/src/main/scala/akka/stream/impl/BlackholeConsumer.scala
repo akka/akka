@@ -22,7 +22,7 @@ private[akka] class BlackholeConsumer[T](highWatermark: Int) extends Consumer[T]
 
   override def onSubscribe(sub: Subscription): Unit = {
     subscription = sub
-    subscription.requestMore(1)
+    requestMore()
   }
 
   override def onError(cause: Throwable): Unit = ()
@@ -30,11 +30,6 @@ private[akka] class BlackholeConsumer[T](highWatermark: Int) extends Consumer[T]
   override def onComplete(): Unit = ()
 
   override def onNext(element: T): Unit = {
-    gotOne()
-    subscription.requestMore(1)
-  }
-
-  private def gotOne(): Unit = {
     requested -= 1
     requestMore()
   }
