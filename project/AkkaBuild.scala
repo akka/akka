@@ -308,7 +308,6 @@ object AkkaBuild extends Build {
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
-    dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.stream,
@@ -1271,8 +1270,7 @@ object Dependencies {
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % "2.3.3",
     "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.3",
-    //  NOTE: Using testkit directly because we need metrics kit
-    //    "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test",
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test",
     Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreams, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
