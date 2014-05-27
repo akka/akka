@@ -126,6 +126,14 @@ private[akka] object NotInitialized extends TransferState {
 /**
  * INTERNAL API
  */
+private[akka] object Always extends TransferState {
+  def isReady = true
+  def isCompleted = false
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
 
 /**
