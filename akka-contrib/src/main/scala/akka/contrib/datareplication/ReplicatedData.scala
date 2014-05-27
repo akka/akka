@@ -8,6 +8,17 @@ import akka.cluster.UniqueAddress
 /**
  * Interface for implementing a state based convergent
  * replicated data type (CvRDT).
+ *
+ * ReplicatedData types must be serializable with an Akka
+ * Serializer. It is higly recommended to implement a serializer with
+ * Protobuf or similar. The built in data types are marked with
+ * [[ReplicatedDataSerialization]] and serialized with
+ * [[akka.contrib.datareplication.protobuf.ReplicatedDataSerializer]].
+ *
+ * Serialization of the data types are used in remote messages and also
+ * for creating message digests (SHA-1) to detect changes. Therefore it is
+ * important that the serialization produce the same bytes for the same content.
+ * For example sets and maps should be sorted deterministically in the serialization.
  */
 trait ReplicatedData {
   type T <: ReplicatedData
@@ -60,4 +71,10 @@ trait RemovedNodePruning { this: ReplicatedData ⇒
    */
   def clear(from: UniqueAddress): T
 }
+
+/**
+ * Marker trait for `ReplicatedData` serialized by
+ * [[akka.contrib.datareplication.protobuf.ReplicatedDataSerializer]].
+ */
+trait ReplicatedDataSerialization extends Serializable
 

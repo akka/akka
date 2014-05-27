@@ -21,13 +21,13 @@ object PNCounterMap {
  */
 case class PNCounterMap(
   private[akka] val underlying: ORMap = ORMap.empty)
-  extends ReplicatedData with RemovedNodePruning {
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounterMap
 
-  def entries: Map[String, Long] = underlying.entries.map { case (k: String, c: PNCounter) ⇒ k -> c.value }
+  def entries: Map[String, Long] = underlying.entries.map { case (k, c: PNCounter) ⇒ k -> c.value }
 
-  def get(key: Any): Option[Long] = underlying.get(key) match {
+  def get(key: String): Option[Long] = underlying.get(key) match {
     case Some(c: PNCounter) ⇒ Some(c.value)
     case _                  ⇒ None
   }
@@ -43,7 +43,13 @@ case class PNCounterMap(
    * Increment the counter with the delta specified.
    * If the delta is negative then it will decrement instead of increment.
    */
-  def increment(node: Cluster, key: String, delta: Long): PNCounterMap = {
+  def increment(node: Cluster, key: String, delta: Long): PNCounterMap =
+    increment(node.selfUniqueAddress, key, delta)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def increment(node: UniqueAddress, key: String, delta: Long): PNCounterMap = {
     val counter = underlying.get(key) match {
       case Some(c: PNCounter) ⇒ c
       case _                  ⇒ PNCounter()
@@ -62,7 +68,13 @@ case class PNCounterMap(
    * Decrement the counter with the delta specified.
    * Agnostic to sign (does math.abs(delta)).
    */
-  def decrement(node: Cluster, key: String, delta: Long): PNCounterMap = {
+  def decrement(node: Cluster, key: String, delta: Long): PNCounterMap =
+    decrement(node.selfUniqueAddress, key, delta)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def decrement(node: UniqueAddress, key: String, delta: Long): PNCounterMap = {
     val counter = underlying.get(key) match {
       case Some(c: PNCounter) ⇒ c
       case _                  ⇒ PNCounter()

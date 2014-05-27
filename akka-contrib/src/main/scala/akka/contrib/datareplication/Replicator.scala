@@ -237,13 +237,20 @@ object Replicator {
     def apply(key: String): Get = Get(key, ReadOne, Duration.Zero, None)
   }
   case class Get(key: String, consistency: ReadConsistency, timeout: FiniteDuration, request: Option[Any] = None)
+    extends ReplicatorMessage
   case class GetSuccess(key: String, data: ReplicatedData, seqNo: Long, request: Option[Any])
+    extends ReplicatorMessage
   case class NotFound(key: String, request: Option[Any])
+    extends ReplicatorMessage
   case class GetFailure(key: String, request: Option[Any])
+    extends ReplicatorMessage
 
   case class Subscribe(key: String, subscriber: ActorRef)
+    extends ReplicatorMessage
   case class Unsubscribe(key: String, subscriber: ActorRef)
+    extends ReplicatorMessage
   case class Changed(key: String, data: ReplicatedData)
+    extends ReplicatorMessage
 
   object Update {
     /**
@@ -290,6 +297,12 @@ object Replicator {
     extends RuntimeException with NoStackTrace
 
   /**
+   * Marker trait for remote messages serialized by
+   * [[akka.contrib.datareplication.protobuf.ReplicatorMessageSerializer]].
+   */
+  trait ReplicatorMessage extends Serializable
+
+  /**
    * INTERNAL API
    */
   private[akka] object Internal {
@@ -297,19 +310,21 @@ object Replicator {
     case object GossipTick
     case object RemovedNodePruningTick
     case object ClockTick
-    case class Write(key: String, envelope: DataEnvelope)
-    case object WriteAck
-    case class Read(key: String)
-    case class ReadResult(envelope: Option[DataEnvelope])
+    case class Write(key: String, envelope: DataEnvelope) extends ReplicatorMessage
+    case object WriteAck extends ReplicatorMessage
+    case class Read(key: String) extends ReplicatorMessage
+    case class ReadResult(envelope: Option[DataEnvelope]) extends ReplicatorMessage
     case class ReadRepair(key: String, envelope: DataEnvelope)
 
-    // Gossip Status message contains MD5 digests of the data to determine when
+    // Gossip Status message contains SHA-1 digests of the data to determine when
     // to send the full data
     type Digest = ByteString
     val deletedDigest: Digest = ByteString.empty
 
-    case class DataEnvelope(data: ReplicatedData,
-                            pruning: Map[UniqueAddress, PruningState] = Map.empty) {
+    case class DataEnvelope(
+      data: ReplicatedData,
+      pruning: Map[UniqueAddress, PruningState] = Map.empty)
+      extends ReplicatorMessage {
 
       import PruningState._
 
@@ -369,13 +384,13 @@ object Replicator {
 
     val DeletedEnvelope = DataEnvelope(DeletedData)
 
-    case object DeletedData extends ReplicatedData {
+    case object DeletedData extends ReplicatedData with ReplicatedDataSerialization {
       type T = ReplicatedData
       override def merge(that: ReplicatedData): ReplicatedData = DeletedData
     }
 
-    case class Status(digests: Map[String, Digest])
-    case class Gossip(updatedData: Map[String, DataEnvelope])
+    case class Status(digests: Map[String, Digest]) extends ReplicatorMessage
+    case class Gossip(updatedData: Map[String, DataEnvelope]) extends ReplicatorMessage
 
     // Testing purpose
     case object GetNodeCount
@@ -593,7 +608,7 @@ class Replicator(
       if (envelope.data == DeletedData) deletedDigest
       else {
         val bytes = serializer.toBinary(envelope)
-        ByteString.fromArray(MessageDigest.getInstance("MD5").digest(bytes))
+        ByteString.fromArray(MessageDigest.getInstance("SHA-1").digest(bytes))
       }
 
     // notify subscribers, when changed

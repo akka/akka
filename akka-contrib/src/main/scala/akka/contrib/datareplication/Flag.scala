@@ -17,7 +17,7 @@ object Flag {
  * Implements a boolean flag CRDT that is initialized to `false` and
  * can be switched to `true`. `true` wins over `false` in merge.
  */
-case class Flag(enabled: Boolean) extends ReplicatedData {
+case class Flag(enabled: Boolean) extends ReplicatedData with ReplicatedDataSerialization {
 
   type T = Flag
 

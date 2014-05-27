@@ -11,7 +11,7 @@ object ORMap {
   val empty: ORMap = new ORMap
   def apply(): ORMap = empty
 
-  def unapply(value: Any): Option[Map[Any, ReplicatedData]] = value match {
+  def unapply(value: Any): Option[Map[String, ReplicatedData]] = value match {
     case r: ORMap ⇒ Some(r.entries)
     case _        ⇒ None
   }
@@ -26,30 +26,30 @@ object ORMap {
  */
 case class ORMap(
   private[akka] val keys: ORSet = ORSet(),
-  private[akka] val values: Map[Any, ReplicatedData] = Map.empty)
-  extends ReplicatedData with RemovedNodePruning {
+  private[akka] val values: Map[String, ReplicatedData] = Map.empty)
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = ORMap
 
   /**
    * Scala API
    */
-  def entries: Map[Any, ReplicatedData] = values
+  def entries: Map[String, ReplicatedData] = values
 
   /**
    * Java API
    */
-  def getEntries(): java.util.Map[Any, ReplicatedData] = {
+  def getEntries(): java.util.Map[String, ReplicatedData] = {
     import scala.collection.JavaConverters._
     entries.asJava
   }
 
-  def get(key: Any): Option[ReplicatedData] = values.get(key)
+  def get(key: String): Option[ReplicatedData] = values.get(key)
 
   /**
    * Adds an entry to the map
    */
-  def :+(entry: (Any, ReplicatedData))(implicit node: Cluster): ORMap = {
+  def :+(entry: (String, ReplicatedData))(implicit node: Cluster): ORMap = {
     val (key, value) = entry
     put(node, key, value)
   }
@@ -57,49 +57,50 @@ case class ORMap(
   /**
    * Adds an entry to the map
    */
-  def put(node: Cluster, key: Any, value: ReplicatedData): ORMap = put(node.selfUniqueAddress, key, value)
+  def put(node: Cluster, key: String, value: ReplicatedData): ORMap = put(node.selfUniqueAddress, key, value)
 
   /**
    * INTERNAL API
    */
-  private[akka] def put(node: UniqueAddress, key: Any, value: ReplicatedData): ORMap =
+  private[akka] def put(node: UniqueAddress, key: String, value: ReplicatedData): ORMap =
     ORMap(keys.add(node, key), values.updated(key, value))
 
   /**
    * Removes an entry from the map.
    */
-  def :-(key: Any)(implicit node: Cluster): ORMap = remove(node, key)
+  def :-(key: String)(implicit node: Cluster): ORMap = remove(node, key)
 
   /**
    * Removes an entry from the map.
    */
-  def remove(node: Cluster, key: Any): ORMap = remove(node.selfUniqueAddress, key)
+  def remove(node: Cluster, key: String): ORMap = remove(node.selfUniqueAddress, key)
 
   /**
    * INTERNAL API
    */
-  private[akka] def remove(node: UniqueAddress, key: Any): ORMap =
+  private[akka] def remove(node: UniqueAddress, key: String): ORMap =
     ORMap(keys.remove(node, key), values - key)
 
   override def merge(that: ORMap): ORMap = {
     val mergedKeys = keys.merge(that.keys)
-    var mergedValues = Map.empty[Any, ReplicatedData]
-    mergedKeys.elements.keysIterator foreach { key ⇒
-      (this.values.get(key), that.values.get(key)) match {
-        case (Some(thisValue), Some(thatValue)) ⇒
-          if (thisValue.getClass != thatValue.getClass) {
-            val errMsg = s"Wrong type for merging [$key] in [${getClass.getName}], existing type " +
-              s"[${thisValue.getClass.getName}], got [${thatValue.getClass.getName}]"
-            throw new IllegalArgumentException(errMsg)
-          }
-          val mergedValue = thisValue.merge(thatValue.asInstanceOf[thisValue.T])
-          mergedValues = mergedValues.updated(key, mergedValue)
-        case (Some(thisValue), None) ⇒
-          mergedValues = mergedValues.updated(key, thisValue)
-        case (None, Some(thatValue)) ⇒
-          mergedValues = mergedValues.updated(key, thatValue)
-        case (None, None) ⇒ throw new IllegalStateException(s"missing value for $key")
-      }
+    var mergedValues = Map.empty[String, ReplicatedData]
+    mergedKeys.elements.keysIterator foreach {
+      case key: String ⇒
+        (this.values.get(key), that.values.get(key)) match {
+          case (Some(thisValue), Some(thatValue)) ⇒
+            if (thisValue.getClass != thatValue.getClass) {
+              val errMsg = s"Wrong type for merging [$key] in [${getClass.getName}], existing type " +
+                s"[${thisValue.getClass.getName}], got [${thatValue.getClass.getName}]"
+              throw new IllegalArgumentException(errMsg)
+            }
+            val mergedValue = thisValue.merge(thatValue.asInstanceOf[thisValue.T])
+            mergedValues = mergedValues.updated(key, mergedValue)
+          case (Some(thisValue), None) ⇒
+            mergedValues = mergedValues.updated(key, thisValue)
+          case (None, Some(thatValue)) ⇒
+            mergedValues = mergedValues.updated(key, thatValue)
+          case (None, None) ⇒ throw new IllegalStateException(s"missing value for $key")
+        }
     }
 
     ORMap(mergedKeys, mergedValues)

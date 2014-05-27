@@ -1,0 +1,118 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.contrib.datareplication;
+
+option java_package = "akka.contrib.datareplication.protobuf.msg";
+option optimize_for = SPEED;
+
+message Get {
+  required string key = 1;
+  required int32 consistency = 2;
+  required int32 timeout = 3;
+  optional OtherMessage request = 4;   
+}
+
+message GetSuccess {
+  required string key = 1;
+  required OtherMessage data = 2;
+  required int64 seqNo = 3;
+  optional OtherMessage request = 4;
+}
+
+message NotFound {
+  required string key = 1;
+  optional OtherMessage request = 2;
+}
+
+message GetFailure {
+  required string key = 1;
+  optional OtherMessage request = 2;
+}
+
+message Subscribe {
+  required string key = 1;
+  required string ref = 2;
+}
+
+message Unsubscribe {
+  required string key = 1;
+  required string ref = 2;
+}
+
+message Changed {
+  required string key = 1;
+  required OtherMessage data = 2;
+}
+
+message Write {
+  required string key = 1;
+  required DataEnvelope envelope = 2;
+}
+
+// message WriteAck, via Empty
+
+message Empty {
+}
+
+message Read {
+  required string key = 1;
+}
+
+message ReadResult {
+  optional DataEnvelope envelope = 1;
+}
+
+message DataEnvelope {
+  message PruningEntry {
+    required UniqueAddress removedAddress = 1;
+    required UniqueAddress ownerAddress = 2;
+    required bool performed = 3;
+    repeated Address seen = 4;
+  } 
+  
+  required OtherMessage data = 1;
+  repeated PruningEntry pruning = 2;
+}
+
+message Status {
+  message Entry {
+    required string key = 1;
+    required bytes digest = 2;
+  }
+  
+  repeated Entry entries = 1;
+}
+
+message Gossip {
+  message Entry {
+    required string key = 1;
+    required DataEnvelope envelope = 2;
+  }
+  
+  repeated Entry entries = 1;
+}
+
+message UniqueAddress {
+  required Address address = 1;
+  required uint32 uid = 2;
+}
+
+message Address {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}
+
+message OtherMessage {
+  required bytes enclosedMessage = 1;
+  required int32 serializerId = 2;
+  optional bytes messageManifest = 4;
+}
+
+message StringGSet {
+  repeated string elements = 1;
+}
+
+

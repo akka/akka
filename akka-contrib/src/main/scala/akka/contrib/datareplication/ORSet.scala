@@ -103,7 +103,7 @@ object ORSet {
  * Elements can be added and removed any number of times. Concurrent add wins
  * over remove.
  *
- * It is not implemented as in the paper. This is more space inefficient
+ * It is not implemented as in the paper. This is more space efficient
  * and don't accumulate garbage for removed elements. It is inspired by the
  * <a href="https://github.com/basho/riak_dt/blob/develop/src/riak_dt_orswot.erl">
  * riak_dt_orswot</a>.
@@ -125,7 +125,7 @@ object ORSet {
 case class ORSet(
   private[akka] val elements: Map[Any, ORSet.Dot] = Map.empty,
   private[akka] val vclock: VectorClock = new VectorClock)
-  extends ReplicatedData with RemovedNodePruning {
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = ORSet
 

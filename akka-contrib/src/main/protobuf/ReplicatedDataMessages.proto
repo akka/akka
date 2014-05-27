@@ -1,0 +1,104 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.contrib.datareplication;
+
+option java_package = "akka.contrib.datareplication.protobuf.msg";
+option optimize_for = SPEED;
+import "ReplicatorMessages.proto";
+
+message GSet {
+  repeated string stringElements = 1;
+  repeated int32 intElements = 2;
+  repeated int64 longElements = 3;
+  repeated OtherMessage otherElements = 4;
+}
+
+message ORSet {
+  message StringEntry {
+    required string element = 1;
+    required VectorClock dot = 2;
+  }
+  message IntEntry {
+    required int32 element = 1;
+    required VectorClock dot = 2;
+  }
+  message LongEntry {
+    required int64 element = 1;
+    required VectorClock dot = 2;
+  }
+  message OtherEntry {
+    required OtherMessage element = 1;
+    required VectorClock dot = 2;
+  }
+  
+  required VectorClock vclock = 1;
+  repeated StringEntry stringElements = 2;
+  repeated IntEntry intElements = 3;
+  repeated LongEntry longElements = 4;
+  repeated OtherEntry otherElements = 5;
+}
+
+message Flag {
+  required bool enabled = 1;
+}
+
+message LWWRegister {
+  required int64 timestamp = 1;
+  required OtherMessage state = 2;
+}
+
+message GCounter {
+  message Entry {
+    required UniqueAddress node = 1;
+    required int64 value = 2;
+  }
+  
+  repeated Entry entries = 1; 
+}
+
+message PNCounter {
+  required GCounter increments = 1;
+  required GCounter decrements = 2;
+}
+
+message VectorClock {
+  message Entry {
+    required string node = 1;
+    required int64 clock = 2;
+  }
+  repeated Entry entries = 1;
+}
+
+message ORMap {
+  message Entry {
+    required string key = 1;
+    required OtherMessage value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+message LWWMap {
+  message Entry {
+    required string key = 1;
+    required LWWRegister value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+message PNCounterMap {
+  message Entry {
+    required string key = 1;
+    required PNCounter value = 2;
+  }
+  
+  required ORSet keys = 1;
+  repeated Entry entries = 2;  
+}
+
+
+

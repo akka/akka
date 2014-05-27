@@ -27,7 +27,7 @@ object PNCounter {
  */
 case class PNCounter(
   private[akka] val increments: GCounter, private[akka] val decrements: GCounter)
-  extends ReplicatedData with RemovedNodePruning {
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = PNCounter
 

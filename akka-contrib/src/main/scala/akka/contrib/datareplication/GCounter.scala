@@ -27,7 +27,7 @@ object GCounter {
  */
 case class GCounter(
   private[akka] val state: Map[UniqueAddress, Long] = Map.empty)
-  extends ReplicatedData with RemovedNodePruning {
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = GCounter
 

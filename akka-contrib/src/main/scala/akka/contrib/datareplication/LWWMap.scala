@@ -24,14 +24,14 @@ object LWWMap {
  *
  */
 case class LWWMap(
-  private val underlying: ORMap = ORMap.empty)
-  extends ReplicatedData with RemovedNodePruning {
+  private[akka] val underlying: ORMap = ORMap.empty)
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
 
   type T = LWWMap
 
-  def entries: Map[String, Any] = underlying.entries.map { case (k: String, r: LWWRegister) ⇒ k -> r.value }
+  def entries: Map[String, Any] = underlying.entries.map { case (k, r: LWWRegister) ⇒ k -> r.value }
 
-  def get(key: Any): Option[Any] = underlying.get(key) match {
+  def get(key: String): Option[Any] = underlying.get(key) match {
     case Some(r: LWWRegister) ⇒ Some(r.value)
     case _                    ⇒ None
   }
@@ -39,7 +39,7 @@ case class LWWMap(
   /**
    * Adds an entry to the map
    */
-  def :+(entry: (Any, Any))(implicit node: Cluster): LWWMap = {
+  def :+(entry: (String, Any))(implicit node: Cluster): LWWMap = {
     val (key, value) = entry
     put(node, key, value)
   }
@@ -47,7 +47,13 @@ case class LWWMap(
   /**
    * Adds an entry to the map
    */
-  def put(node: Cluster, key: Any, value: Any): LWWMap = {
+  def put(node: Cluster, key: String, value: Any): LWWMap =
+    put(node.selfUniqueAddress, key, value)
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def put(node: UniqueAddress, key: String, value: Any): LWWMap = {
     val newRegister = underlying.get(key) match {
       case Some(r: LWWRegister) ⇒ r.value = value
       case _                    ⇒ LWWRegister(value)

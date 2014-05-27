@@ -16,7 +16,7 @@ object LWWRegister {
    * INTERNAL API
    */
   private[akka] abstract class Clock extends (() ⇒ Long) with Serializable
-  private val defaultClock = new Clock {
+  private[akka] val defaultClock = new Clock {
     def apply() = System.currentTimeMillis()
   }
 }
@@ -32,7 +32,7 @@ case class LWWRegister(
   private[akka] val state: Any,
   private[akka] val timestamp: Long,
   private[akka] val clock: LWWRegister.Clock)
-  extends ReplicatedData {
+  extends ReplicatedData with ReplicatedDataSerialization {
 
   type T = LWWRegister
 
