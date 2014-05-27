@@ -202,9 +202,8 @@ private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: MaterializerSett
       generate()
   }
 
-  override def postStop(): Unit = {
-    pub.shutdown(shutdownReason)
-  }
+  override def postStop(): Unit =
+    if (pub ne null) pub.shutdown(shutdownReason)
 
   private var demand = 0
   private def generate(): Unit = {

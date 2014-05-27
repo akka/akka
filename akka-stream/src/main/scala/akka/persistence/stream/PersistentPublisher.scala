@@ -137,18 +137,18 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
     new ActorSubscription(self, subscriber)
 
   override def cancelUpstream(): Unit = {
-    pub.shutdown(shutdownReason)
+    if (pub ne null) pub.shutdown(shutdownReason)
     context.stop(buffer)
     softShutdown()
   }
   override def shutdown(completed: Boolean): Unit = {
-    pub.shutdown(shutdownReason)
+    if (pub ne null) pub.shutdown(shutdownReason)
     context.stop(buffer)
     softShutdown()
   }
 
   override def postStop(): Unit = {
-    pub.shutdown(shutdownReason)
+    if (pub ne null) pub.shutdown(shutdownReason)
   }
 }
 
