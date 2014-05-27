@@ -39,6 +39,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
+  val streamAndHttpVersion = "0.3-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -76,7 +77,8 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz")) 
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
+      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docs_dev, test in Test in stream,
+        test in Test in docs_dev) map { (_, _, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
@@ -308,7 +310,7 @@ object AkkaBuild extends Build {
     base = file("akka-stream"),
     dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.stream ++ Seq(
-      version := "0.3-SNAPSHOT",
+      version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.stream,
       // FIXME include mima when akka-stream-experimental-2.3.x has been released
       //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
@@ -616,6 +618,25 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val docs_dev = Project(
+    id = "akka-docs-dev",
+    base = file("akka-docs-dev"),
+    dependencies = Seq(stream),
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+      version := streamAndHttpVersion,
+      sourceDirectory in Sphinx <<= baseDirectory / "rst",
+      sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
+      enableOutput in generatePdf in Sphinx := true,
+      enableOutput in generateEpub in Sphinx := true,
+      unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
+      libraryDependencies ++= Dependencies.docs,
+      publishArtifact in Compile := false,
+      unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      reportBinaryIssues := () // disable bin comp check
+    )
+  )
+
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
@@ -822,9 +843,9 @@ object AkkaBuild extends Build {
     // don't save test output to a file
     testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
     
-    validatePullRequestTask,
+    validatePullRequestTask
     // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
-    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    //validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
     
   ) ++ mavenLocalResolverSettings ++ JUnitFileReporting.settings ++ StatsDMetrics.settings
 
@@ -844,7 +865,8 @@ object AkkaBuild extends Build {
     preprocessExts := Set("rst", "py"),
     // customization of sphinx @<key>@ replacements, add to all sphinx-using projects
     // add additional replacements here
-    preprocessVars <<= (scalaVersion, version) { (s, v) =>
+    preprocessVars <<= (scalaVersion, version) { (s, akkaV) =>
+      val v = streamAndHttpVersion
       val BinVer = """(\d+\.\d+)\.\d+""".r
       Map(
         "version" -> v,
