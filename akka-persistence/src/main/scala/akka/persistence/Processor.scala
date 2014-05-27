@@ -51,7 +51,10 @@ import akka.dispatch._
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
+@deprecated("Processor will be removed. Instead extend `EventsourcedProcessor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
 trait Processor extends Actor with Recovery {
+  // todo remove Processor in favor of EventsourcedProcessor
+
   import JournalProtocol._
 
   /**
@@ -113,7 +116,7 @@ trait Processor extends Actor with Recovery {
     }
 
     def addToBatch(p: PersistentRepr): Unit =
-      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender)
+      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender())
 
     def addToBatch(pb: PersistentBatch): Unit =
       pb.persistentReprList.foreach(addToBatch)

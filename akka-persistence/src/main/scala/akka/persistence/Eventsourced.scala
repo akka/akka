@@ -56,13 +56,21 @@ private[persistence] trait Eventsourced extends Processor {
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case _: PersistentRepr ⇒
         throw new UnsupportedOperationException("Persistent commands not supported")
+      case _: WriteMessageFailure | _: WriteMessageSuccess | _@ WriteMessagesSuccess | _@ WriteMessagesFailure if persistAsyncInvocations.nonEmpty ⇒
+        tryProcessAsyncEvents(this, receive, message)
       case _ ⇒
         doAroundReceive(receive, message)
     }
 
     private def doAroundReceive(receive: Receive, message: Any): Unit = {
       Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
-      if (!persistInvocations.isEmpty) {
+
+      if (persistAsyncInvocations.nonEmpty && persistentEventBatch.nonEmpty) {
+        Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
+        persistentEventBatch = Nil
+      }
+
+      if (persistInvocations.nonEmpty) {
         currentState = persistingEvents
         Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
         persistInvocations = persistInvocations.reverse
@@ -86,28 +94,28 @@ private[persistence] trait Eventsourced extends Processor {
       case _: ConfirmablePersistent ⇒
         processorStash.stash()
       case PersistentBatch(b) ⇒
-        b.foreach(p ⇒ deleteMessage(p.sequenceNr, true))
+        b.foreach(p ⇒ deleteMessage(p.sequenceNr, permanent = true))
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case p: PersistentRepr ⇒
-        deleteMessage(p.sequenceNr, true)
+        deleteMessage(p.sequenceNr, permanent = true)
         throw new UnsupportedOperationException("Persistent commands not supported")
       case WriteMessageSuccess(p) ⇒
-        withCurrentPersistent(p)(p ⇒ persistInvocations.head._2(p.payload))
-        onWriteComplete()
+        if (persistAsyncInvocations.nonEmpty) {
+          tryProcessAsyncEvents(this, receive, message)
+        } else {
+          withCurrentPersistent(p)(p ⇒ persistInvocations.head.handler(p.payload))
+          onWriteComplete()
+        }
       case e @ WriteMessageFailure(p, _) ⇒
-        Eventsourced.super.aroundReceive(receive, message) // stops actor by default
-        onWriteComplete()
+        if (persistAsyncInvocations.nonEmpty) {
+          tryProcessAsyncEvents(this, receive, message)
+        } else {
+          Eventsourced.super.aroundReceive(receive, message) // stops actor by default
+          onWriteComplete()
+        }
       case s @ WriteMessagesSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
       case other                    ⇒ processorStash.stash()
-    }
-
-    def onWriteComplete(): Unit = {
-      persistInvocations = persistInvocations.tail
-      if (persistInvocations.isEmpty) {
-        currentState = processingCommands
-        processorStash.unstash()
-      }
     }
   }
 
@@ -126,11 +134,52 @@ private[persistence] trait Eventsourced extends Processor {
       receiveRecover(f)
   }
 
-  private var persistInvocations: List[(Any, Any ⇒ Unit)] = Nil
+  sealed trait PersistInvocation {
+    def handler: Any ⇒ Unit
+  }
+  /** forces processor to stash incoming commands untill all these invocations are handled */
+  final case class StashingPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
+  /** does not force the processor to stash commands, sender() is not a the "original sender" when callback is called! */
+  final case class AsyncPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
+
+  private var persistInvocations: List[StashingPersistInvocation] = Nil
+  private var persistAsyncInvocations: Vector[AsyncPersistInvocation] = Vector.empty
   private var persistentEventBatch: List[PersistentRepr] = Nil
 
   private var currentState: State = recovering
   private val processorStash = createStash()
+
+  def tryProcessAsyncEvents(state: State, receive: Receive, message: Any) = message match {
+    case e @ WriteMessageFailure(p, _) ⇒
+      Eventsourced.super.aroundReceive(receive, message) // stops actor by default
+      onAsyncWriteComplete()
+
+    case WriteMessageSuccess(p) ⇒
+      val handler = persistAsyncInvocations.head
+      if (handler.evt == p.payload) {
+        state.withCurrentPersistent(p)(p ⇒ persistAsyncInvocations.head.handler(p.payload))
+        onAsyncWriteComplete()
+      } else {
+        state.withCurrentPersistent(p)(p ⇒ persistInvocations.head.handler(p.payload))
+        onWriteComplete()
+      }
+
+    case s @ WriteMessagesSuccess ⇒ Eventsourced.super.aroundReceive(receive, s)
+    case f: WriteMessagesFailure  ⇒ Eventsourced.super.aroundReceive(receive, f)
+    case _                        ⇒ // do nothing
+  }
+
+  private def onAsyncWriteComplete(): Unit = {
+    persistAsyncInvocations = persistAsyncInvocations.tail
+  }
+
+  private def onWriteComplete(): Unit = {
+    persistInvocations = persistInvocations.tail
+    if (persistInvocations.isEmpty) {
+      currentState = processingCommands
+      processorStash.unstash()
+    }
+  }
 
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -151,11 +200,11 @@ private[persistence] trait Eventsourced extends Processor {
    * If persistence of an event fails, the processor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
-   * @param event event to be persisted.
+   * @param event event to be persisted
    * @param handler handler for each persisted `event`
    */
   final def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
-    persistInvocations = (event, handler.asInstanceOf[Any ⇒ Unit]) :: persistInvocations
+    persistInvocations = StashingPersistInvocation(event, handler.asInstanceOf[Any ⇒ Unit]) :: persistInvocations
     persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
   }
 
@@ -164,11 +213,51 @@ private[persistence] trait Eventsourced extends Processor {
    * `persist[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
    * except that `events` are persisted atomically with this method.
    *
-   * @param events events to be persisted.
+   * @param events events to be persisted
    * @param handler handler for each persisted `events`
    */
   final def persist[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
     events.foreach(persist(_)(handler))
+
+  /**
+   * Asynchronously persists `event`. On successful persistence, `handler` is called with the
+   * persisted event.
+   *
+   * Unlike `persist` the processor will continue to receive incomming commands between the
+   * call to `persist` and executing it's `handler`. This asynchronous, non-stashing, version of
+   * of persist should be used when you favor throughput over the "command-2 only processed after
+   * command-1 effects' have been applied" guarantee, which is provided by the plain [[persist]] method.
+   *
+   * An event `handler` may close over processor state and modify it. The `sender` of a persisted
+   * event is the sender of the corresponding command. This means that one can reply to a command
+   * sender within an event `handler`.
+   *
+   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * handling [[PersistenceFailure]] in [[receiveCommand]].
+   *
+   * @param event event to be persisted
+   * @param handler handler for each persisted `event`
+   */
+  final def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
+    val invocation = AsyncPersistInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    //    persistAsyncInvocations.get(event) match {
+    //      case Some(invocations) ⇒ persistAsyncInvocations.put(event, invocations :+ invocation)
+    //      case None              ⇒ persistAsyncInvocations.put(event, Vector(invocation))
+    //    }
+    persistAsyncInvocations = persistAsyncInvocations :+ invocation
+    persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
+  }
+
+  /**
+   * Asynchronously persists `events` in specified order. This is equivalent to calling
+   * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
+   *
+   * @param events events to be persisted
+   * @param handler handler for each persisted `events`
+   */
+  final def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+    events.foreach(persistAsync(_)(handler))
 
   /**
    * Recovery handler that receives persisted events during recovery. If a state snapshot
@@ -236,6 +325,7 @@ private[persistence] trait Eventsourced extends Processor {
  * An event sourced processor.
  */
 trait EventsourcedProcessor extends Processor with Eventsourced {
+  // todo remove Processor
   def receive = receiveCommand
 }
 
@@ -358,6 +448,34 @@ abstract class AbstractEventsourcedProcessor extends AbstractActor with Eventsou
    */
   final def persist[A](events: JIterable[A], handler: Procedure[A]): Unit =
     persist(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  /**
+   * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
+   * persisted event.
+   *
+   * Unlike `persist` the processor will continue to receive incomming commands between the
+   * call to `persistAsync` and executing it's `handler`. This asynchronous, non-stashing, version of
+   * of persist should be used when you favor throughput over the strict ordering guarantees that `persist` guarantees.
+   *
+   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * handling [[PersistenceFailure]] in [[receiveCommand]].
+   *
+   * @param event event to be persisted
+   * @param handler handler for each persisted `event`
+   */
+  final def persistAsync[A](event: A, handler: Procedure[A]): Unit =
+    persistAsync(event)(event ⇒ handler(event))
+
+  /**
+   * Java API: asynchronously persists `events` in specified order. This is equivalent to calling
+   * `persistAsync[A](event: A)(handler: A => Unit)` multiple times with the same `handler`,
+   * except that `events` are persisted atomically with this method.
+   *
+   * @param events events to be persisted
+   * @param handler handler for each persisted `events`
+   */
+  final def persistAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
+    persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
 
   override def receive = super[EventsourcedProcessor].receive
 

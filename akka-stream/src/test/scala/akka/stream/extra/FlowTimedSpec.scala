@@ -20,8 +20,6 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher")
 
-  lazy val metricsConfig = system.settings.config
-
   val materializer = FlowMaterializer(settings)
 
   "Timed Flow" must {
