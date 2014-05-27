@@ -18,14 +18,14 @@ import akka.actor.ExtensionIdProvider
 object ActorConsumer {
 
   /**
-   * Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.Consumer]]
-   * to a [[org.reactivestreams.Producer]] or [[akka.stream.Flow]].
+   * Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.api.Consumer]]
+   * to a [[org.reactivestreams.api.Producer]] or [[akka.stream.Flow]].
    */
   def apply[T](ref: ActorRef): Consumer[T] = ActorConsumerImpl(ref)
 
   /**
-   * Java API: Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.Consumer]]
-   * to a [[org.reactivestreams.Producer]] or [[akka.stream.Flow]].
+   * Java API: Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.api.Consumer]]
+   * to a [[org.reactivestreams.api.Producer]] or [[akka.stream.Flow]].
    */
   def create[T](ref: ActorRef): Consumer[T] = apply(ref)
 
@@ -127,7 +127,7 @@ object ActorConsumer {
  * messages from the stream. It can also receive other, non-stream messages, in
  * the same way as any actor.
  *
- * Attach the actor as a [[org.reactivestreams.Consumer]] to the stream with
+ * Attach the actor as a [[org.reactivestreams.api.Consumer]] to the stream with
  * [[ActorConsumer#apply]].
  *
  * Subclass must define the [[RequestStrategy]] to control stream back pressure.
@@ -147,7 +147,7 @@ trait ActorConsumer extends Actor {
 
   private val state = ActorConsumerState(context.system)
   private var subscription: Option[Subscription] = None
-  private var requested = 0
+  private var requested = 0L
   private var canceled = false
 
   protected def requestStrategy: RequestStrategy
@@ -157,7 +157,7 @@ trait ActorConsumer extends Actor {
       requested -= 1
       if (!canceled) {
         super.aroundReceive(receive, msg)
-        request(requestStrategy.requestDemand(requested))
+        request(requestStrategy.requestDemand(remainingRequested))
       }
     case OnSubscribe(sub) ⇒
       if (subscription.isEmpty) {
@@ -165,19 +165,19 @@ trait ActorConsumer extends Actor {
         if (canceled)
           sub.cancel()
         else if (requested != 0)
-          sub.requestMore(requested)
+          sub.requestMore(remainingRequested)
       } else
         sub.cancel()
     case _: OnError ⇒
       if (!canceled) super.aroundReceive(receive, msg)
     case _ ⇒
       super.aroundReceive(receive, msg)
-      request(requestStrategy.requestDemand(requested))
+      request(requestStrategy.requestDemand(remainingRequested))
   }
 
   protected[akka] override def aroundPreStart(): Unit = {
     super.aroundPreStart()
-    request(requestStrategy.requestDemand(requested))
+    request(requestStrategy.requestDemand(remainingRequested))
   }
 
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
@@ -189,7 +189,7 @@ trait ActorConsumer extends Actor {
     }
     state.remove(self)
     super.aroundPostRestart(reason)
-    request(requestStrategy.requestDemand(requested))
+    request(requestStrategy.requestDemand(remainingRequested))
   }
 
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
@@ -223,6 +223,11 @@ trait ActorConsumer extends Actor {
     canceled = true
   }
 
+  private def remainingRequested: Int = longToIntMax(requested)
+
+  private def longToIntMax(n: Long): Int =
+    if (n > Int.MaxValue) Int.MaxValue
+    else n.toInt
 }
 
 /**
@@ -254,7 +259,7 @@ private[akka] object ActorConsumerState extends ExtensionId[ActorConsumerState] 
   override def createExtension(system: ExtendedActorSystem): ActorConsumerState =
     new ActorConsumerState
 
-  case class State(subscription: Option[Subscription], requested: Int, canceled: Boolean)
+  case class State(subscription: Option[Subscription], requested: Long, canceled: Boolean)
 
 }
 
