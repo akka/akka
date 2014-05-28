@@ -97,7 +97,6 @@ private[akka] class SingleElementProcessorImpl(_settings: MaterializerSettings, 
   }
 
   nextPhase(running)
-
 }
 
 /**
