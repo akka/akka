@@ -159,8 +159,12 @@ private[akka] trait Pump {
   // Exchange input buffer elements and output buffer "requests" until one of them becomes empty.
   // Generate upstream requestMore for every Nth consumed input element
   final def pump(): Unit = {
+    import ActorBasedFlowMaterializer._
     try while (transferState.isExecutable) {
-      ActorBasedFlowMaterializer.withCtx(pumpContext)(currentAction())
+      // inline ActorBasedFlowMaterializer.withCtx to avoid allocation of the closure
+      val old = ctx.get()
+      ctx.set(pumpContext)
+      try currentAction() finally ctx.set(old)
     } catch { case NonFatal(e) ⇒ pumpFailed(e) }
 
     if (isPumpFinished) pumpFinished()
