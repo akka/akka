@@ -55,6 +55,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       if (TraceLogging) log.debug("[{}] registered as connection handler", handler)
 
       val info = ConnectionInfo(registration, handler, keepOpenOnPeerClosed, useResumeWriting)
+      // if we have resumed reading from pullMode while waiting for Register then register OP_READ interest
+      if (pullMode && !readingSuspended) resumeReading(info)
       doRead(info, None) // immediately try reading, pullMode is handled by readingSuspended
       context.setReceiveTimeout(Duration.Undefined)
       context.become(connected(info))
