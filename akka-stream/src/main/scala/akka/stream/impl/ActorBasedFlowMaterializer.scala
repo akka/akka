@@ -33,6 +33,7 @@ private[akka] object Ast {
   case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
     override def name = transformer.name
   }
+  case class SingleElement(f: Any ⇒ Any, name: String) extends AstNode
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"
   }
