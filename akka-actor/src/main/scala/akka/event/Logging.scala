@@ -200,7 +200,7 @@ trait LoggingBus extends ActorEventBus {
  *   def name: String
  * }
  *
- * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
+ * implicit val myLogSourceType: LogSource[MyType] = new LogSource[MyType] {
  *   def genString(a: MyType) = a.name
  * }
  *
@@ -216,7 +216,7 @@ trait LoggingBus extends ActorEventBus {
  *   def name: String
  * }
  *
- * implicit val myLogSourceType: LogSource[MyType] = new LogSource {
+ * implicit val myLogSourceType: LogSource[MyType] = new LogSource[MyType] {
  *   def genString(a: MyType) = a.name
  *   def genString(a: MyType, s: ActorSystem) = a.name + "," + s
  * }
