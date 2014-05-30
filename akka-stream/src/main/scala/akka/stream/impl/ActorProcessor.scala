@@ -23,6 +23,7 @@ private[akka] object ActorProcessor {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
+      case t: Transform2     ⇒ Props(new Transform2ProcessorImpl(settings, t.transformer))
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.transformer))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))

@@ -16,6 +16,7 @@ import scala.util.Success
 import scala.util.Failure
 import org.reactivestreams.api.Consumer
 import akka.stream.scaladsl.Duct
+import akka.stream.Transformer2
 
 /**
  * INTERNAL API
@@ -140,8 +141,8 @@ private[akka] trait Builder[Out] {
   protected def andThen[U](op: Ast.AstNode): Thing[U]
 
   def map[U](f: Out ⇒ U): Thing[U] =
-    transform(new Transformer[Out, U] {
-      override def onNext(in: Out) = List(f(in))
+    transform2(new Transformer2[Out, U] {
+      override def onNext(in: Out) = Iterator.single(f(in))
       override def name = "map"
     })
 
@@ -237,6 +238,9 @@ private[akka] trait Builder[Out] {
 
   def transform[U](transformer: Transformer[Out, U]): Thing[U] =
     andThen(Transform(transformer.asInstanceOf[Transformer[Any, Any]]))
+
+  def transform2[U](transformer: Transformer2[Out, U]): Thing[U] =
+    andThen(Transform2(transformer.asInstanceOf[Transformer2[Any, Any]]))
 
   def zip[O2](other: Producer[O2]): Thing[(Out, O2)] = andThen(Zip(other.asInstanceOf[Producer[Any]]))
 

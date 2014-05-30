@@ -21,6 +21,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
 import akka.actor.Extension
 import akka.stream.actor.ActorConsumer
+import akka.stream.Transformer2
 
 /**
  * INTERNAL API
@@ -31,6 +32,9 @@ private[akka] object Ast {
   }
 
   case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
+    override def name = transformer.name
+  }
+  case class Transform2(transformer: Transformer2[Any, Any]) extends AstNode {
     override def name = transformer.name
   }
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
