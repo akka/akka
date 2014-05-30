@@ -17,6 +17,8 @@ import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
 import com.typesafe.sbt.site.SphinxSupport
+import pl.project13.scala.sbt.SbtJmh._
+import pl.project13.scala.sbt.SbtJmh.JmhKeys._
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
 import com.typesafe.sbt.preprocess.Preprocess.{ preprocess, preprocessExts, preprocessVars, simplePreprocess }
 import java.lang.Boolean.getBoolean
@@ -184,6 +186,17 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
       previousArtifact := akkaPreviousArtifact("akka-testkit")
+    )
+  )
+
+  lazy val benchJmh = Project(
+    id = "akka-bench-jmh",
+    base = file("akka-bench-jmh"),
+    dependencies = Seq(actor, stream, persistence, testkit).map(_ % "compile;compile->test"),
+    settings = defaultSettings ++ Seq(
+      libraryDependencies ++= Dependencies.testkit
+    ) ++ settings ++ jmhSettings ++ Seq(
+      outputTarget in Jmh := target.value
     )
   )
 
