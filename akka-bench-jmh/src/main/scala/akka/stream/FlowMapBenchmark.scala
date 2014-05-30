@@ -48,7 +48,7 @@ class FlowMapBenchmark {
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
   var flow: Flow[Int] = _
 
-  @Param(Array("1", "3", "5")) // "10", "15"
+  @Param(Array("1", "3", "5", "10", "15"))
   val numberOfMapOps = 3
 
   @Param(Array("16", "32")) // "8", "16", "32"
