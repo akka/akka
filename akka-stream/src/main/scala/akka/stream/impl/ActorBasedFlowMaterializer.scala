@@ -21,6 +21,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
 import akka.actor.Extension
 import akka.stream.actor.ActorConsumer
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API
@@ -107,6 +108,11 @@ private[akka] object Ast {
           new ActorProducer[I](materializer.context.actorOf(FutureProducer.props(future, materializer.settings),
             name = s"$flowName-0-future"), Some(future))
       }
+  }
+  final case class TickProducerNode[I](interval: FiniteDuration, tick: () ⇒ I) extends ProducerNode[I] {
+    def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[I] =
+      new ActorProducer(materializer.context.actorOf(TickProducer.props(interval, tick, materializer.settings),
+        name = s"$flowName-0-tick"))
   }
 }
 
