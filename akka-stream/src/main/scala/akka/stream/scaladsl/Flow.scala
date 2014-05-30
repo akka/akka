@@ -13,6 +13,8 @@ import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transf
 import akka.stream.impl.Ast.{ ExistingProducer, IterableProducerNode, IteratorProducerNode, ThunkProducerNode }
 import akka.stream.impl.Ast.FutureProducerNode
 import akka.stream.impl.FlowImpl
+import akka.stream.impl.Ast.TickProducerNode
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Scala API
@@ -58,6 +60,15 @@ object Flow {
    * The stream terminates with an error if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Flow[T] = FlowImpl(FutureProducerNode(future), Nil)
+
+  /**
+   * Elements are produced from the tick closure periodically with the specified interval.
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
+   * element is produced it will not receive that tick element later. It will
+   * receive new tick elements as soon as it has requested more elements.
+   */
+  def apply[T](interval: FiniteDuration, tick: () ⇒ T): Flow[T] = FlowImpl(TickProducerNode(interval, tick), Nil)
 
 }
 
