@@ -28,7 +28,7 @@ case class Flag(enabled: Boolean) extends ReplicatedData with ReplicatedDataSeri
     else Flag(true)
 
   override def merge(that: Flag): Flag =
-    if (that.enabled && !this.enabled) that
+    if (that.enabled) that
     else this
 }
 

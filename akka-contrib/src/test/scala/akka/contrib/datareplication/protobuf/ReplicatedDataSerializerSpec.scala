@@ -87,7 +87,7 @@ class ReplicatedDataSerializerSpec extends AkkaSpec {
 
     "serialize LWWRegister" in {
       checkSerialization(LWWRegister("value1"))
-      checkSerialization(LWWRegister("value2").value = "value3")
+      checkSerialization(LWWRegister("value2").withValue("value3"))
     }
 
     "serialize GCounter" in {

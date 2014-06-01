@@ -48,16 +48,16 @@ case class PNCounter(
 
   /**
    * Decrement the counter with the delta specified.
-   * Agnostic to sign (does math.abs(delta)).
+   * If the delta is negative then it will increment instead of decrement.
    */
   def :-(delta: Long)(implicit node: Cluster): PNCounter = decrement(node, delta)
 
   /**
    * Decrement the counter with the delta specified.
-   * Agnostic to sign (does math.abs(delta)).
+   * If the delta is negative then it will increment instead of decrement.
    */
   def decrement(node: Cluster, delta: Long = 1): PNCounter =
-    change(node.selfUniqueAddress, -math.abs(delta))
+    change(node.selfUniqueAddress, -delta)
 
   private[akka] def increment(key: UniqueAddress, delta: Long): PNCounter = change(key, delta)
   private[akka] def increment(key: UniqueAddress): PNCounter = increment(key, 1)
@@ -66,7 +66,7 @@ case class PNCounter(
 
   private[akka] def change(key: UniqueAddress, delta: Long): PNCounter =
     if (delta > 0) copy(increments = increments.increment(key, delta))
-    else if (delta < 0) copy(decrements = decrements.increment(key, math.abs(delta)))
+    else if (delta < 0) copy(decrements = decrements.increment(key, -delta))
     else this
 
   override def merge(that: PNCounter): PNCounter =

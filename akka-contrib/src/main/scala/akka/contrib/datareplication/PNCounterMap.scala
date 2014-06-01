@@ -59,14 +59,14 @@ case class PNCounterMap(
 
   /**
    * Decrement the counter with the delta specified.
-   * Agnostic to sign (does math.abs(delta)).
+   * If the delta is negative then it will increment instead of decrement.
    */
   def decrement(key: String, delta: Long = 1)(implicit node: Cluster): PNCounterMap =
     decrement(node, key, delta)
 
   /**
    * Decrement the counter with the delta specified.
-   * Agnostic to sign (does math.abs(delta)).
+   * If the delta is negative then it will increment instead of decrement.
    */
   def decrement(node: Cluster, key: String, delta: Long): PNCounterMap =
     decrement(node.selfUniqueAddress, key, delta)

@@ -5,7 +5,7 @@ package akka.contrib.datareplication;
 
 import akka.cluster.UniqueAddress;
 
-public class JavaImplOfReplicatedData extends ReplicatedDataBase implements
+public class JavaImplOfReplicatedData extends AbstractReplicatedData implements
     RemovedNodePruning {
 
   @Override

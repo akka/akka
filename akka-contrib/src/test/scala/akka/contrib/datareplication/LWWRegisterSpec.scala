@@ -15,7 +15,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
       val r = (1 to 100).foldLeft(LWWRegister(0)) {
         case (r, n) ⇒
           r.value should be(n - 1)
-          r.value = n
+          r.withValue(n)
       }
       r.value should be(100)
     }
@@ -26,7 +26,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
         def apply() = i.next()
       }
       val r1 = new LWWRegister("A", clock(), clock)
-      val r2 = r1.value = "B"
+      val r2 = r1.withValue("B")
       val m1 = r1 merge r2
       m1.value should be("B")
       val m2 = r2 merge r1
@@ -39,7 +39,7 @@ class LWWRegisterSpec extends WordSpec with Matchers {
         def apply() = 100 - i.next()
       }
       val r1 = new LWWRegister("A", badClock(), badClock)
-      val r2 = r1.value = "B"
+      val r2 = r1.withValue("B")
       val m1 = r1 merge r2
       m1.value should be("B")
       val m2 = r2 merge r1

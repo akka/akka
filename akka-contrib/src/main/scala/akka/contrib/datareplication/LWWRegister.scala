@@ -22,7 +22,7 @@ object LWWRegister {
 }
 
 /**
- * Implements a 'Last Writer Wins Register' CDDT, also called a 'LWW-Register'.
+ * Implements a 'Last Writer Wins Register' CRDT, also called a 'LWW-Register'.
  *
  * Merge takes the value of the register with highest timestamp. Note that this
  * relies on synchronized clocks. `LWWRegister` should only be used when the choice of
@@ -42,21 +42,12 @@ case class LWWRegister(
   def value: Any = state
 
   /**
-   * Scala API
-   */
-  def value_=(v: Any): LWWRegister =
-    copy(state = v, timestamp = math.max(clock(), timestamp + 1))
-
-  /**
    * Java API
    */
   def getValue(): AnyRef = state.asInstanceOf[AnyRef]
 
-  /**
-   * Java API
-   */
-  def setValue(v: AnyRef): LWWRegister =
-    value = v
+  def withValue(v: Any): LWWRegister =
+    copy(state = v, timestamp = math.max(clock(), timestamp + 1))
 
   override def merge(that: LWWRegister): LWWRegister =
     if (that.timestamp > this.timestamp) that

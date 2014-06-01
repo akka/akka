@@ -34,11 +34,11 @@ trait ReplicatedData {
  * Java API: Interface for implementing a [[ReplicatedData]] in
  * Java.
  */
-abstract class ReplicatedDataBase extends ReplicatedData {
+abstract class AbstractReplicatedData extends ReplicatedData {
   // it is not possible to use a more strict type, because it is erased somehow, and 
   // the implementation is anyway required to implement
   // merge(that: ReplicatedData): ReplicatedData
-  type T = ReplicatedDataBase
+  type T = AbstractReplicatedData
 
 }
 
@@ -60,7 +60,7 @@ trait RemovedNodePruning { this: ReplicatedData ⇒
 
   /**
    * When the `from` node has been removed from the cluster the state
-   * changes from that node will be pruned by moving the data entries
+   * changes from that node will be pruned by collapsing the data entries
    * `to` another node.
    */
   def prune(from: UniqueAddress, to: UniqueAddress): T
