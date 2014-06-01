@@ -3,7 +3,6 @@
  */
 package akka.contrib.datareplication
 
-import akka.cluster.VectorClock
 import akka.cluster.Cluster
 import akka.cluster.UniqueAddress
 import akka.cluster.UniqueAddress
@@ -37,7 +36,7 @@ object ORSet {
    */
   private[akka] def subtractDots(dot: Dot, vclock: VectorClock): Dot = {
 
-    @tailrec def dropDots(remaining: List[(VectorClock.Node, Long)], acc: List[(VectorClock.Node, Long)]): List[(VectorClock.Node, Long)] =
+    @tailrec def dropDots(remaining: List[(UniqueAddress, Long)], acc: List[(UniqueAddress, Long)]): List[(UniqueAddress, Long)] =
       remaining match {
         case Nil ⇒ acc
         case (d @ (node, v1)) :: rest ⇒
@@ -51,7 +50,7 @@ object ORSet {
       }
 
     val newDots = dropDots(dot.versions.toList, Nil)
-    new VectorClock(versions = TreeMap.empty[VectorClock.Node, Long] ++ newDots)
+    new VectorClock(versions = TreeMap.empty[UniqueAddress, Long] ++ newDots)
   }
 
   /**
@@ -158,18 +157,14 @@ case class ORSet(
    * INTERNAL API
    */
   private[akka] def add(node: UniqueAddress, element: Any): ORSet = {
-    val vNode = vclockNode(node)
-    val newVclock = vclock :+ vNode
-    val d = new VectorClock(versions = TreeMap(vNode -> newVclock.versions(vNode)))
+    val newVclock = vclock :+ node
+    val d = new VectorClock(versions = TreeMap(node -> newVclock.versions(node)))
     val newDot = elements.get(element) match {
       case Some(existing) ⇒ d.merge(existing)
       case None           ⇒ d
     }
     ORSet(elements = elements.updated(element, newDot), vclock = newVclock)
   }
-
-  private def vclockNode(node: UniqueAddress): String =
-    node.address + "-" + node.uid
 
   /**
    * Removes an element from the set.
@@ -216,21 +211,19 @@ case class ORSet(
   }
 
   override def hasDataFrom(node: UniqueAddress): Boolean =
-    vclock.hasDataFrom(vclockNode(node))
+    vclock.hasDataFrom(node)
 
   override def prune(from: UniqueAddress, to: UniqueAddress): ORSet = {
-    val vFromNode = vclockNode(from)
-    val vToNode = vclockNode(to)
     val pruned = elements.foldLeft(Map.empty[Any, ORSet.Dot]) {
       case (acc, (elem, dot)) ⇒
-        if (dot.hasDataFrom(vFromNode)) acc.updated(elem, dot.prune(vFromNode, vToNode))
+        if (dot.hasDataFrom(from)) acc.updated(elem, dot.prune(from, to))
         else acc
     }
     if (pruned.isEmpty)
-      copy(vclock = vclock.prune(vFromNode, vToNode))
+      copy(vclock = vclock.prune(from, to))
     else {
       // re-add elements that were pruned, to bump dots to right vclock
-      val newSet = ORSet(elements = elements ++ pruned, vclock = vclock.prune(vFromNode, vToNode))
+      val newSet = ORSet(elements = elements ++ pruned, vclock = vclock.prune(from, to))
       pruned.keys.foldLeft(newSet) {
         case (s, elem) ⇒ s.add(to, elem)
       }
@@ -239,13 +232,12 @@ case class ORSet(
   }
 
   override def clear(from: UniqueAddress): ORSet = {
-    val vFromNode = vclockNode(from)
     val updated = elements.foldLeft(elements) {
       case (acc, (elem, dot)) ⇒
-        if (dot.hasDataFrom(vFromNode)) acc.updated(elem, dot.clear(vFromNode))
+        if (dot.hasDataFrom(from)) acc.updated(elem, dot.clear(from))
         else acc
     }
-    ORSet(updated, vclock.clear(vFromNode))
+    ORSet(updated, vclock.clear(from))
   }
 }
 

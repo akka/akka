@@ -1,43 +1,26 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
-
-package akka.cluster
+package akka.contrib.datareplication
 
 import akka.AkkaException
-
 import System.{ currentTimeMillis ⇒ newTimestamp }
 import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicLong
 import scala.collection.immutable.TreeMap
 import scala.annotation.tailrec
+import akka.cluster.UniqueAddress
+import akka.cluster.Cluster
 
 /**
  * VectorClock module with helper classes and methods.
- *
- * Based on code from the 'vlock' VectorClock library by Coda Hale.
  */
-private[cluster] object VectorClock {
+object VectorClock {
 
-  /**
-   * Hash representation of a versioned node name.
-   */
-  type Node = String
+  val empty: VectorClock = new VectorClock
+  def apply(): VectorClock = empty
 
-  object Node {
-
-    def apply(name: String): Node = hash(name)
-
-    def fromHash(hash: String): Node = hash
-
-    private def hash(name: String): String = {
-      val digester = MessageDigest.getInstance("MD5")
-      digester update name.getBytes("UTF-8")
-      digester.digest.map { h ⇒ "%02x".format(0xFF & h) }.mkString
-    }
-  }
-
-  object Timestamp {
+  private object Timestamp {
     final val Zero = 0L
     final val EndMarker = Long.MinValue
   }
@@ -55,7 +38,7 @@ private[cluster] object VectorClock {
   /**
    * Marker to signal that we have reached the end of a vector clock.
    */
-  private val cmpEndMarker = (VectorClock.Node("endmarker"), Timestamp.EndMarker)
+  private val cmpEndMarker = (null, Timestamp.EndMarker)
 
 }
 
@@ -67,18 +50,38 @@ private[cluster] object VectorClock {
  *    2) Friedemann Mattern (1988). "Virtual Time and Global States of Distributed Systems". Workshop on Parallel and Distributed Algorithms: pp. 215-226
  * }}}
  *
- * Based on code from the 'vlock' VectorClock library by Coda Hale.
+ * Based on code from `akka.cluster.VectorClock`.
  */
 @SerialVersionUID(1L)
 final case class VectorClock(
-  versions: TreeMap[VectorClock.Node, Long] = TreeMap.empty[VectorClock.Node, Long]) {
+  private[akka] val versions: TreeMap[UniqueAddress, Long] = TreeMap.empty[UniqueAddress, Long])
+  extends ReplicatedData with ReplicatedDataSerialization with RemovedNodePruning {
+
+  type T = VectorClock
 
   import VectorClock._
 
   /**
    * Increment the version for the node passed as argument. Returns a new VectorClock.
    */
-  def :+(node: Node): VectorClock = {
+  def :+(node: Cluster): VectorClock = increment(node)
+
+  /**
+   * INTERNAL API
+   * Increment the version for the node passed as argument. Returns a new VectorClock.
+   */
+  private[akka] def :+(node: UniqueAddress): VectorClock = increment(node)
+
+  /**
+   * Increment the version for the node passed as argument. Returns a new VectorClock.
+   */
+  def increment(node: Cluster): VectorClock = increment(node.selfUniqueAddress)
+
+  /**
+   * INTERNAL API
+   * Increment the version for the node passed as argument. Returns a new VectorClock.
+   */
+  private[akka] def increment(node: UniqueAddress): VectorClock = {
     val currentTimestamp = versions.getOrElse(node, Timestamp.Zero)
     copy(versions = versions.updated(node, currentTimestamp + 1))
   }
@@ -117,9 +120,9 @@ final case class VectorClock(
   private final def compareOnlyTo(that: VectorClock, order: Ordering): Ordering = {
     def nextOrElse[T](iter: Iterator[T], default: T): T = if (iter.hasNext) iter.next() else default
 
-    def compare(i1: Iterator[(Node, Long)], i2: Iterator[(Node, Long)], requestedOrder: Ordering): Ordering = {
+    def compare(i1: Iterator[(UniqueAddress, Long)], i2: Iterator[(UniqueAddress, Long)], requestedOrder: Ordering): Ordering = {
       @tailrec
-      def compareNext(nt1: (Node, Long), nt2: (Node, Long), currentOrder: Ordering): Ordering =
+      def compareNext(nt1: (UniqueAddress, Long), nt2: (UniqueAddress, Long), currentOrder: Ordering): Ordering =
         if ((requestedOrder ne FullOrder) && (currentOrder ne Same) && (currentOrder ne requestedOrder)) currentOrder
         else if ((nt1 eq cmpEndMarker) && (nt2 eq cmpEndMarker)) currentOrder
         // i1 is empty but i2 is not, so i1 can only be Before
@@ -186,6 +189,14 @@ final case class VectorClock(
     }
     VectorClock(mergedVersions)
   }
+
+  override def hasDataFrom(node: UniqueAddress): Boolean =
+    versions.contains(node)
+
+  override def prune(from: UniqueAddress, to: UniqueAddress): VectorClock =
+    copy(versions = versions - from) :+ to
+
+  override def clear(from: UniqueAddress): VectorClock = copy(versions = versions - from)
 
   override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }

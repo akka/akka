@@ -19,6 +19,7 @@ import akka.contrib.datareplication.PNCounterMap
 import akka.contrib.datareplication.Replicator._
 import akka.contrib.datareplication.Replicator.Internal._
 import akka.testkit.AkkaSpec
+import akka.contrib.datareplication.VectorClock
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ReplicatedDataSerializerSpec extends AkkaSpec {
@@ -141,6 +142,19 @@ class ReplicatedDataSerializerSpec extends AkkaSpec {
 
     "serialize DeletedData" in {
       checkSerialization(DeletedData)
+    }
+
+    "serialize VectorClock" in {
+      checkSerialization(VectorClock())
+      checkSerialization(VectorClock().increment(address1))
+      checkSerialization(VectorClock().increment(address1).increment(address2))
+
+      checkSameContent(
+        VectorClock().increment(address1).increment(address2).increment(address1),
+        VectorClock().increment(address2).increment(address1).increment(address1))
+      checkSameContent(
+        VectorClock().increment(address1).increment(address3),
+        VectorClock().increment(address3).increment(address1))
     }
 
   }

@@ -64,7 +64,7 @@ message PNCounter {
 
 message VectorClock {
   message Entry {
-    required string node = 1;
+    required UniqueAddress node = 1;
     required int64 clock = 2;
   }
   repeated Entry entries = 1;

@@ -8,7 +8,6 @@ import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.cluster.UniqueAddress
 import akka.actor.Address
-import akka.cluster.VectorClock
 import scala.collection.immutable.TreeMap
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -16,6 +15,15 @@ class ORSetSpec extends WordSpec with Matchers {
 
   val node1 = UniqueAddress(Address("akka.tcp", "Sys", "localhost", 2551), 1)
   val node2 = UniqueAddress(node1.address.copy(port = Some(2552)), 2)
+
+  val nodeA = UniqueAddress(Address("akka.tcp", "Sys", "a", 2552), 1)
+  val nodeB = UniqueAddress(nodeA.address.copy(host = Some("b")), 2)
+  val nodeC = UniqueAddress(nodeA.address.copy(host = Some("c")), 3)
+  val nodeD = UniqueAddress(nodeA.address.copy(host = Some("d")), 4)
+  val nodeE = UniqueAddress(nodeA.address.copy(host = Some("e")), 5)
+  val nodeF = UniqueAddress(nodeA.address.copy(host = Some("f")), 6)
+  val nodeG = UniqueAddress(nodeA.address.copy(host = Some("g")), 7)
+  val nodeH = UniqueAddress(nodeA.address.copy(host = Some("h")), 8)
 
   val user1 = """{"username":"john","password":"coltrane"}"""
   val user2 = """{"username":"sonny","password":"rollins"}"""
@@ -211,30 +219,30 @@ class ORSetSpec extends WordSpec with Matchers {
 
   "ORSet unit test" must {
     "verify subtractDots" in {
-      val dot = new VectorClock(TreeMap("a" -> 3, "b" -> 2, "d" -> 14, "g" -> 22))
-      val vclock = new VectorClock(TreeMap("a" -> 4, "b" -> 1, "c" -> 1, "d" -> 14, "e" -> 5, "f" -> 2))
-      val expected = new VectorClock(TreeMap("b" -> 2, "g" -> 22))
+      val dot = new VectorClock(TreeMap(nodeA -> 3, nodeB -> 2, nodeD -> 14, nodeG -> 22))
+      val vclock = new VectorClock(TreeMap(nodeA -> 4, nodeB -> 1, nodeC -> 1, nodeD -> 14, nodeE -> 5, nodeF -> 2))
+      val expected = new VectorClock(TreeMap(nodeB -> 2, nodeG -> 22))
       ORSet.subtractDots(dot, vclock) should be(expected)
     }
 
     "verify mergeCommonKeys" in {
       val commonKeys: Set[Any] = Set("K1", "K2")
-      val thisDot1 = new VectorClock(TreeMap("a" -> 3, "d" -> 7))
-      val thisDot2 = new VectorClock(TreeMap("b" -> 5, "c" -> 2))
-      val thisVclock = new VectorClock(TreeMap("a" -> 3, "b" -> 5, "c" -> 2, "d" -> 7))
+      val thisDot1 = new VectorClock(TreeMap(nodeA -> 3, nodeD -> 7))
+      val thisDot2 = new VectorClock(TreeMap(nodeB -> 5, nodeC -> 2))
+      val thisVclock = new VectorClock(TreeMap(nodeA -> 3, nodeB -> 5, nodeC -> 2, nodeD -> 7))
       val thisSet = new ORSet(
         elements = Map("K1" -> thisDot1, "K2" -> thisDot2),
         vclock = thisVclock)
-      val thatDot1 = new VectorClock(TreeMap("a" -> 3))
-      val thatDot2 = new VectorClock(TreeMap("b" -> 6))
-      val thatVclock = new VectorClock(TreeMap("a" -> 3, "b" -> 6, "c" -> 1, "d" -> 8))
+      val thatDot1 = new VectorClock(TreeMap(nodeA -> 3))
+      val thatDot2 = new VectorClock(TreeMap(nodeB -> 6))
+      val thatVclock = new VectorClock(TreeMap(nodeA -> 3, nodeB -> 6, nodeC -> 1, nodeD -> 8))
       val thatSet = new ORSet(
         elements = Map("K1" -> thatDot1, "K2" -> thatDot2),
         vclock = thatVclock)
 
       val expectedDots = Map(
-        "K1" -> new VectorClock(TreeMap("a" -> 3)),
-        "K2" -> new VectorClock(TreeMap("b" -> 6, "c" -> 2)))
+        "K1" -> new VectorClock(TreeMap(nodeA -> 3)),
+        "K2" -> new VectorClock(TreeMap(nodeB -> 6, nodeC -> 2)))
 
       ORSet.mergeCommonKeys(commonKeys, thisSet, thatSet) should be(expectedDots)
     }
@@ -242,14 +250,14 @@ class ORSetSpec extends WordSpec with Matchers {
     "verify mergeDisjointKeys" in {
       val keys: Set[Any] = Set("K3", "K4", "K5")
       val elements: Map[Any, VectorClock] = Map(
-        "K3" -> new VectorClock(TreeMap("a" -> 4)),
-        "K4" -> new VectorClock(TreeMap("a" -> 3, "d" -> 8)),
-        "K5" -> new VectorClock(TreeMap("a" -> 2)))
-      val vclock = new VectorClock(TreeMap("a" -> 3, "d" -> 7))
-      val acc: Map[Any, VectorClock] = Map("K1" -> new VectorClock(TreeMap("a" -> 3)))
+        "K3" -> new VectorClock(TreeMap(nodeA -> 4)),
+        "K4" -> new VectorClock(TreeMap(nodeA -> 3, nodeD -> 8)),
+        "K5" -> new VectorClock(TreeMap(nodeA -> 2)))
+      val vclock = new VectorClock(TreeMap(nodeA -> 3, nodeD -> 7))
+      val acc: Map[Any, VectorClock] = Map("K1" -> new VectorClock(TreeMap(nodeA -> 3)))
       val expectedDots = acc ++ Map(
-        "K3" -> new VectorClock(TreeMap("a" -> 4)),
-        "K4" -> new VectorClock(TreeMap("d" -> 8))) // "a" -> 3 removed, optimized to include only those unseen
+        "K3" -> new VectorClock(TreeMap(nodeA -> 4)),
+        "K4" -> new VectorClock(TreeMap(nodeD -> 8))) // "a" -> 3 removed, optimized to include only those unseen
 
       ORSet.mergeDisjointKeys(keys, elements, vclock, acc) should be(expectedDots)
     }

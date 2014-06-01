@@ -11,7 +11,6 @@ import scala.annotation.tailrec
 import scala.collection.JavaConverters._
 import scala.collection.breakOut
 import akka.actor.ExtendedActorSystem
-import akka.cluster.VectorClock
 import akka.contrib.datareplication.Flag
 import akka.contrib.datareplication.GCounter
 import akka.contrib.datareplication.GSet
@@ -27,6 +26,7 @@ import akka.contrib.datareplication.Replicator.Internal._
 import akka.contrib.datareplication.protobuf.msg.{ ReplicatedDataMessages ⇒ rd }
 import akka.contrib.datareplication.protobuf.msg.{ ReplicatorMessages ⇒ dm }
 import akka.serialization.Serializer
+import akka.contrib.datareplication.VectorClock
 
 /**
  * Protobuf serializer of ReplicatedData.
@@ -43,7 +43,8 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem) extends Serializ
     classOf[ORMap] -> ormapFromBinary,
     classOf[LWWMap] -> lwwmapFromBinary,
     classOf[PNCounterMap] -> pncountermapFromBinary,
-    DeletedData.getClass -> (_ ⇒ DeletedData))
+    DeletedData.getClass -> (_ ⇒ DeletedData),
+    classOf[VectorClock] -> vectorClockFromBinary)
 
   def includeManifest: Boolean = true
 
@@ -60,6 +61,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem) extends Serializ
     case m: LWWMap       ⇒ compress(lwwmapToProto(m))
     case m: PNCounterMap ⇒ compress(pncountermapToProto(m))
     case DeletedData     ⇒ dm.Empty.getDefaultInstance.toByteArray
+    case m: VectorClock  ⇒ vectorClockToProto(m).toByteArray
     case _ ⇒
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass}")
   }
@@ -245,14 +247,17 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem) extends Serializ
     val b = rd.VectorClock.newBuilder()
     vectorClock.versions.foreach {
       case (node, value) ⇒ b.addEntries(rd.VectorClock.Entry.newBuilder().
-        setNode(node).setClock(value))
+        setNode(uniqueAddressToProto(node)).setClock(value))
     }
     b.build()
   }
 
+  def vectorClockFromBinary(bytes: Array[Byte]): VectorClock =
+    vectorClockFromProto(rd.VectorClock.parseFrom(bytes))
+
   def vectorClockFromProto(vectorClock: rd.VectorClock): VectorClock = {
     VectorClock(versions = vectorClock.getEntriesList.asScala.map(entry ⇒
-      entry.getNode -> entry.getClock)(breakOut))
+      uniqueAddressFromProto(entry.getNode) -> entry.getClock)(breakOut))
   }
 
   def ormapToProto(ormap: ORMap): rd.ORMap = {
