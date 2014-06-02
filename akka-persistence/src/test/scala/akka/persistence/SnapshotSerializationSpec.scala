@@ -60,7 +60,6 @@ object SnapshotSerializationSpec {
 
 class SnapshotSerializationSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotSerializationSpec", serialization = "off", extraConfig = Some(
   """
-    |akka.logelevel = debug
     |akka.actor {
     |  serializers {
     |    my-snapshot = "akka.persistence.SnapshotSerializationSpec$MySerializer"
