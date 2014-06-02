@@ -110,7 +110,11 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
 
   override def preStart() {
-    if (!snapshotDir.exists) snapshotDir.mkdirs()
+    if (!snapshotDir.isDirectory) {
+      if (!snapshotDir.mkdirs()) {
+        throw new IOException(s"Failed to create snapshot directory [${snapshotDir.getCanonicalPath}]")
+      }
+    }
     super.preStart()
   }
 
