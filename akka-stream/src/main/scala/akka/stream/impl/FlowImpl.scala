@@ -147,21 +147,17 @@ private[akka] trait Builder[Out] {
   protected def andThen[U](op: Ast.AstNode): Thing[U]
 
   def map[U](f: Out ⇒ U): Thing[U] =
-    transform(new Transformer[Out, U] {
-      override def onNext(in: Out) = List(f(in))
-      override def name = "map"
-    })
+    andThen(SingleElement(f.asInstanceOf[Any ⇒ Any], "map"))
 
-  def filter(p: Out ⇒ Boolean): Thing[Out] =
-    transform(new Transformer[Out, Out] {
-      override def onNext(in: Out) = if (p(in)) List(in) else Nil
-      override def name = "filter"
-    })
+  def filter(p: Out ⇒ Boolean): Thing[Out] = {
+    val f = (in: Out) ⇒ if (p(in)) in else null
+    andThen(SingleElement(f.asInstanceOf[Any ⇒ Any], "filter"))
+  }
 
-  def collect[U](pf: PartialFunction[Out, U]): Thing[U] =
-    transform(new Transformer[Out, U] {
-      override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
-    })
+  def collect[U](pf: PartialFunction[Out, U]): Thing[U] = {
+    val f = (in: Out) ⇒ if (pf.isDefinedAt(in)) pf(in) else null
+    andThen(SingleElement(f.asInstanceOf[Any ⇒ Any], "collect"))
+  }
 
   def foreach(c: Out ⇒ Unit): Thing[Unit] =
     transform(new Transformer[Out, Unit] {
@@ -181,23 +177,21 @@ private[akka] trait Builder[Out] {
     override def name = "fold"
   }
 
-  def drop(n: Int): Thing[Out] =
-    transform(new Transformer[Out, Out] {
-      var delegate: Transformer[Out, Out] =
-        if (n == 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
-        else new Transformer[Out, Out] {
-          var c = n
-          override def onNext(in: Out) = {
+  def drop(n: Int): Thing[Out] = {
+    val f: Any ⇒ Any =
+      if (n == 0) identity
+      else {
+        var c = n
+        (in: Any) ⇒ {
+          if (c == 0) in
+          else {
             c -= 1
-            if (c == 0)
-              delegate = identityTransformer.asInstanceOf[Transformer[Out, Out]]
-            Nil
+            null
           }
         }
-
-      override def onNext(in: Out) = delegate.onNext(in)
-      override def name = "drop"
-    })
+      }
+    andThen(SingleElement(f, "drop"))
+  }
 
   def dropWithin(d: FiniteDuration): Thing[Out] =
     transform(new TimerTransformer[Out, Out] {

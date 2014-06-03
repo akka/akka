@@ -86,6 +86,27 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
 /**
  * INTERNAL API
  */
+private[akka] class SingleElementProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Any) extends ActorProcessorImpl(_settings) {
+
+  object NeedsInputAndDemandOrCompletion extends TransferState {
+    def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
+    def isCompleted = false
+  }
+
+  val running: TransferPhase = TransferPhase(NeedsInputAndDemandOrCompletion) { () ⇒
+    if (primaryInputs.inputsDepleted) nextPhase(completedPhase)
+    else {
+      val emit = f(primaryInputs.dequeueInputElement())
+      if (emit != null) primaryOutputs.enqueueOutputElement(emit)
+    }
+  }
+
+  nextPhase(running)
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] object IdentityProcessorImpl {
   def props(settings: MaterializerSettings): Props = Props(new IdentityProcessorImpl(settings))
 }

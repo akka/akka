@@ -35,6 +35,7 @@ private[akka] object Ast {
   case class Transform(transformer: Transformer[Any, Any]) extends AstNode {
     override def name = transformer.name
   }
+  case class SingleElement(f: Any ⇒ Any, name: String) extends AstNode
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"
   }
@@ -177,7 +178,35 @@ private[akka] class ActorBasedFlowMaterializer(
 
   private def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
-  @tailrec private def processorChain(topConsumer: Consumer[_], ops: immutable.Seq[AstNode],
+  private def meld(ops: List[AstNode]): List[AstNode] = {
+    def meldTwo(op1: AstNode, op2: AstNode): Option[AstNode] =
+      (op1, op2) match {
+        case (SingleElement(f1, name1), SingleElement(f2, name2)) ⇒
+          val f = (in: Any) ⇒ {
+            val r2 = f2(in)
+            if (r2 == null) null
+            else f1(r2)
+          }
+          Some(SingleElement(f, name2 + "-" + name1))
+        case _ ⇒ None
+      }
+
+    @tailrec def doMeld(remaining: List[AstNode], acc: List[AstNode]): List[AstNode] =
+      remaining match {
+        case Nil       ⇒ acc.reverse
+        case op :: Nil ⇒ doMeld(Nil, op :: acc)
+        case op1 :: op2 :: tail ⇒
+          meldTwo(op1, op2) match {
+            case Some(op) ⇒ doMeld(op :: tail, acc)
+            case None     ⇒ doMeld(op2 :: tail, op1 :: acc)
+          }
+      }
+
+    if (ops.isEmpty || ops.tail.isEmpty) ops
+    else doMeld(ops, Nil)
+  }
+
+  @tailrec private def processorChain(topConsumer: Consumer[_], ops: List[AstNode],
                                       flowName: String, n: Int): Consumer[_] = {
     ops match {
       case op :: tail ⇒
@@ -193,9 +222,10 @@ private[akka] class ActorBasedFlowMaterializer(
     val flowName = createFlowName()
     if (ops.isEmpty) producerNode.createProducer(this, flowName).asInstanceOf[Producer[O]]
     else {
-      val opsSize = ops.size
-      val opProcessor = processorForNode(ops.head, flowName, opsSize)
-      val topConsumer = processorChain(opProcessor, ops.tail, flowName, opsSize - 1)
+      val meldedOps = meld(ops)
+      val opsSize = meldedOps.size
+      val opProcessor = processorForNode(meldedOps.head, flowName, opsSize)
+      val topConsumer = processorChain(opProcessor, meldedOps.tail, flowName, opsSize - 1)
       producerNode.createProducer(this, flowName).produceTo(topConsumer.asInstanceOf[Consumer[I]])
       opProcessor.asInstanceOf[Producer[O]]
     }
@@ -215,8 +245,10 @@ private[akka] class ActorBasedFlowMaterializer(
     new ActorProcessor(context.actorOf(ActorProcessor.props(settings, op),
       name = s"$flowName-$n-${op.name}"))
 
-  override def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In] =
-    processorChain(consumer, ops, createFlowName(), ops.size).asInstanceOf[Consumer[In]]
+  override def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In] = {
+    val meldedOps = meld(ops)
+    processorChain(consumer, meldedOps, createFlowName(), meldedOps.size).asInstanceOf[Consumer[In]]
+  }
 
   override def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out]) = {
     val flowName = createFlowName()
@@ -224,9 +256,10 @@ private[akka] class ActorBasedFlowMaterializer(
       val identityProcessor: Processor[In, Out] = processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[In, Out]]
       (identityProcessor, identityProcessor)
     } else {
-      val opsSize = ops.size
-      val outProcessor = processorForNode(ops.head, flowName, opsSize).asInstanceOf[Processor[In, Out]]
-      val topConsumer = processorChain(outProcessor, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Out]]
+      val meldedOps = meld(ops)
+      val opsSize = meldedOps.size
+      val outProcessor = processorForNode(meldedOps.head, flowName, opsSize).asInstanceOf[Processor[In, Out]]
+      val topConsumer = processorChain(outProcessor, meldedOps.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Out]]
       (topConsumer, outProcessor)
     }
   }
