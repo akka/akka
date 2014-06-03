@@ -593,6 +593,9 @@ object AkkaBuild extends Build {
       remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi, persistence),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
+      watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
+        source descendantsExcept ("*.rst", excl) get
+      },
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       // copy akka-contrib/docs into our rst_preprocess/contrib (and apply substitutions)
       preprocess in Sphinx <<= (preprocess in Sphinx,
@@ -624,6 +627,9 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
+      watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
+        source descendantsExcept ("*.rst", excl) get
+      },
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
       enableOutput in generatePdf in Sphinx := true,
       enableOutput in generateEpub in Sphinx := true,
