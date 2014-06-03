@@ -10,7 +10,7 @@ import scala.collection.immutable
 
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
-import akka.actor.AbstractActor
+import akka.actor.{ ActorRef, AbstractActor }
 
 /**
  * INTERNAL API.
@@ -58,8 +58,15 @@ private[persistence] trait Eventsourced extends Processor {
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case _: PersistentRepr ⇒
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteMessageSuccess(p) ⇒
-        withCurrentPersistent(p)(p ⇒ persistInvocations.get(0).handler(p.payload))
+      case WriteMessageSuccess(r) ⇒
+        r match {
+          case p: PersistentRepr ⇒
+            withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          case _ ⇒ pendingInvocations.peek().handler(r.payload)
+        }
+        onWriteComplete()
+      case LoopMessageSuccess(l) ⇒
+        pendingInvocations.peek().handler(l)
         onWriteComplete()
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
@@ -74,28 +81,13 @@ private[persistence] trait Eventsourced extends Processor {
         currentState = persistingEvents
       }
 
-      if (persistentEventBatch.nonEmpty) {
-        Eventsourced.super.aroundReceive(receive, PersistentBatch(persistentEventBatch.reverse))
-        persistentEventBatch = Nil
-      } else {
-        processorStash.unstash()
-      }
+      if (resequenceableEventBatch.nonEmpty) flushBatch()
+      else processorStash.unstash()
     }
 
     private def onWriteComplete(): Unit = {
-      persistInvocations.remove(0)
-
-      val nextIsStashing = !persistInvocations.isEmpty && persistInvocations.get(0).isInstanceOf[StashingPersistInvocation]
-
-      if (nextIsStashing) {
-        currentState = persistingEvents
-      }
-
-      if (persistInvocations.isEmpty) {
-        processorStash.unstash()
-      }
+      pendingInvocations.pop()
     }
-
   }
 
   /**
@@ -106,37 +98,48 @@ private[persistence] trait Eventsourced extends Processor {
   private val persistingEvents: State = new State {
     override def toString: String = "persisting events"
 
-    def aroundReceive(receive: Receive, message: Any) = message match {
+    def aroundReceive(receive: Receive, message: Any): Unit = message match {
       case _: ConfirmablePersistent ⇒
         processorStash.stash()
       case PersistentBatch(b) ⇒
-        b.foreach(p ⇒ deleteMessage(p.sequenceNr, permanent = true))
+        b foreach {
+          case p: PersistentRepr ⇒ deleteMessage(p.sequenceNr, permanent = true)
+          case r                 ⇒ // ignore, nothing to delete (was not a persistent message)
+        }
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case p: PersistentRepr ⇒
         deleteMessage(p.sequenceNr, permanent = true)
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteMessageSuccess(p) ⇒
-        val invocation = persistInvocations.get(0)
-        withCurrentPersistent(p)(p ⇒ invocation.handler(p.payload))
-        onWriteComplete(invocation)
+
+      case WriteMessageSuccess(m) ⇒
+        m match {
+          case p: PersistentRepr ⇒ withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          case _                 ⇒ pendingInvocations.peek().handler(m.payload)
+        }
+        onWriteComplete()
+
       case e @ WriteMessageFailure(p, _) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
-        onWriteComplete(persistInvocations.get(0))
+        onWriteComplete()
+      case LoopMessageSuccess(l) ⇒
+        pendingInvocations.peek().handler(l)
+        onWriteComplete()
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
       case other                       ⇒ processorStash.stash()
     }
 
-    private def onWriteComplete(invocation: PersistInvocation): Unit = {
-      if (invocation.isInstanceOf[StashingPersistInvocation]) {
-        // enables an early return to `processingCommands`, because if this counter hits `0`,
-        // we know the remaining persistInvocations are all `persistAsync` created, which
-        // means we can go back to processing commands also - and these callbacks will be called as soon as possible
-        pendingStashingPersistInvocations -= 1
+    private def onWriteComplete(): Unit = {
+      pendingInvocations.pop() match {
+        case _: StashingHandlerInvocation ⇒
+          // enables an early return to `processingCommands`, because if this counter hits `0`,
+          // we know the remaining pendingInvocations are all `persistAsync` created, which
+          // means we can go back to processing commands also - and these callbacks will be called as soon as possible
+          pendingStashingPersistInvocations -= 1
+        case _ ⇒ // do nothing
       }
-      persistInvocations.remove(0)
 
-      if (persistInvocations.isEmpty || pendingStashingPersistInvocations == 0) {
+      if (pendingStashingPersistInvocations == 0) {
         currentState = processingCommands
         processorStash.unstash()
       }
@@ -161,22 +164,28 @@ private[persistence] trait Eventsourced extends Processor {
       receiveRecover(RecoveryCompleted)
   }
 
-  sealed trait PersistInvocation {
+  sealed trait PendingHandlerInvocation {
+    def evt: Any
     def handler: Any ⇒ Unit
   }
   /** forces processor to stash incoming commands untill all these invocations are handled */
-  final case class StashingPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
-  /** does not force the processor to stash commands */
-  final case class AsyncPersistInvocation(evt: Any, handler: Any ⇒ Unit) extends PersistInvocation
+  final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+  /** does not force the processor to stash commands; Originates from either `persistAsync` or `defer` calls */
+  final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
 
-  /** Used instead of iterating `persistInvocations` in order to check if safe to revert to processing commands */
+  /** Used instead of iterating `pendingInvocations` in order to check if safe to revert to processing commands */
   private var pendingStashingPersistInvocations: Long = 0
   /** Holds user-supplied callbacks for persist/persistAsync calls */
-  private val persistInvocations = new java.util.LinkedList[PersistInvocation]() // we only append / isEmpty / get(0) on it
-  private var persistentEventBatch: List[PersistentRepr] = Nil
+  private val pendingInvocations = new java.util.LinkedList[PendingHandlerInvocation]() // we only append / isEmpty / get(0) on it
+  private var resequenceableEventBatch: List[Resequenceable] = Nil
 
   private var currentState: State = recovering
   private val processorStash = createStash()
+
+  private def flushBatch() {
+    Eventsourced.super.aroundReceive(receive, PersistentBatch(resequenceableEventBatch.reverse))
+    resequenceableEventBatch = Nil
+  }
 
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -202,8 +211,8 @@ private[persistence] trait Eventsourced extends Processor {
    */
   final def persist[A](event: A)(handler: A ⇒ Unit): Unit = {
     pendingStashingPersistInvocations += 1
-    persistInvocations addLast StashingPersistInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
+    pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    resequenceableEventBatch = PersistentRepr(event) :: resequenceableEventBatch
   }
 
   /**
@@ -237,8 +246,8 @@ private[persistence] trait Eventsourced extends Processor {
    * @param handler handler for each persisted `event`
    */
   final def persistAsync[A](event: A)(handler: A ⇒ Unit): Unit = {
-    persistInvocations addLast AsyncPersistInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
-    persistentEventBatch = PersistentRepr(event) :: persistentEventBatch
+    pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+    resequenceableEventBatch = PersistentRepr(event) :: resequenceableEventBatch
   }
 
   /**
@@ -251,6 +260,56 @@ private[persistence] trait Eventsourced extends Processor {
    */
   final def persistAsync[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
     events.foreach(persistAsync(_)(handler))
+
+  /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param event event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for the given `event`
+   */
+  final def defer[A](event: A)(handler: A ⇒ Unit): Unit = {
+    if (pendingInvocations.isEmpty) {
+      handler(event)
+    } else {
+      pendingInvocations addLast AsyncHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
+      resequenceableEventBatch = NonPersistentRepr(event, sender()) :: resequenceableEventBatch
+    }
+  }
+
+  /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param events event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for each `event`
+   */
+  final def defer[A](events: immutable.Seq[A])(handler: A ⇒ Unit): Unit =
+    events.foreach(defer(_)(handler))
 
   /**
    * Recovery handler that receives persisted events during recovery. If a state snapshot
@@ -426,6 +485,50 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
     super[Eventsourced].persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param event event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for the given `event`
+   */
+  final def defer[A](event: A)(handler: Procedure[A]): Unit =
+    super[Eventsourced].defer(event)(event ⇒ handler(event))
+
+  /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param events event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for each `event`
+   */
+  final def defer[A](events: JIterable[A])(handler: Procedure[A]): Unit =
+    super[Eventsourced].defer(Util.immutableSeq(events))(event ⇒ handler(event))
+
+  /**
    * Java API: recovery handler that receives persisted events during recovery. If a state snapshot
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
@@ -446,7 +549,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
    * Commands sent to event sourced processors must not be [[Persistent]] or
-   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+   * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
    * thrown by the processor.
    */
   def onReceiveCommand(msg: Any): Unit
@@ -458,7 +561,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
  * communication with other actors). On successful validation, one or more events are
  * derived from a command and these events are then persisted by calling `persist`.
  * Commands sent to event sourced processors must not be [[Persistent]] or
- * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+ * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
  * thrown by the processor.
  */
 @deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
@@ -515,6 +618,50 @@ abstract class AbstractEventsourcedProcessor extends AbstractActor with Eventsou
    */
   final def persistAsync[A](event: A, handler: Procedure[A]): Unit =
     persistAsync(event)(event ⇒ handler(event))
+
+  /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param event event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for the given `event`
+   */
+  final def defer[A](event: A)(handler: Procedure[A]): Unit =
+    super.defer(event)(event ⇒ handler(event))
+
+  /**
+   * Defer the handler execution until all pending handlers have been executed.
+   * Allows to define logic within the actor, which will respect the invocation-order-guarantee
+   * in respect to `persistAsync` calls. That is, if `persistAsync` was invoked before defer,
+   * the corresponding handlers will be invoked in the same order as they were registered in.
+   *
+   * This call will NOT result in `event` being persisted, please use `persist` or `persistAsync`,
+   * if the given event should possible to replay.
+   *
+   * If there are no pending persist handler calls, the handler will be called immediatly.
+   *
+   * In the event of persistence failures (indicated by [[PersistenceFailure]] messages being sent to the
+   * [[PersistentActor]], you can handle these messages, which in turn will enable the deferred handlers to run afterwards.
+   * If persistence failure messages are left `unhandled`, the default behavior is to stop the Actor, thus the handlers
+   * will not be run.
+   *
+   * @param events event to be handled in the future, when preceeding persist operations have been processes
+   * @param handler handler for each `event`
+   */
+  final def defer[A](events: JIterable[A])(handler: Procedure[A]): Unit =
+    super.defer(Util.immutableSeq(events))(event ⇒ handler(event))
 
   /**
    * Java API: asynchronously persists `events` in specified order. This is equivalent to calling

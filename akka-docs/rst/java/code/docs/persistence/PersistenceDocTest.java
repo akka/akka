@@ -319,9 +319,9 @@ public class PersistenceDocTest {
             final ActorRef processor = system.actorOf(Props.create(MyProcessor.class));
 
             public void batchWrite() {
-                processor.tell(PersistentBatch.create(asList(
-                        Persistent.create("a"),
-                        Persistent.create("b"))), null);
+              processor.tell(PersistentBatch.create(asList(
+                  Persistent.create("a"),
+                  Persistent.create("b"))), null);
             }
 
             // ...
@@ -423,7 +423,7 @@ public class PersistenceDocTest {
 
         public void usage() {
             final ActorSystem system = ActorSystem.create("example");
-            //#view-update
+            //#persist-async-usage
             final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
             processor.tell("a", null);
             processor.tell("b", null);
@@ -435,11 +435,56 @@ public class PersistenceDocTest {
             // evt-a-2
             // evt-b-1
             // evt-b-2
-            //#view-update
+            //#persist-async-usage
         }
     };
 
     static Object o10 = new Object() {
+        //#defer
+        class MyPersistentActor extends UntypedPersistentActor {
+
+            @Override
+            public void onReceiveRecover(Object msg) {
+                // handle recovery here
+            }
+
+            @Override
+            public void onReceiveCommand(Object msg) {
+                final Procedure<String> replyToSender = new Procedure<String>() {
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                    }
+                };
+
+                persistAsync(String.format("evt-%s-1", msg), replyToSender);
+                persistAsync(String.format("evt-%s-2", msg), replyToSender);
+                defer(String.format("evt-%s-3", msg), replyToSender);
+            }
+        }
+        //#defer
+
+        public void usage() {
+            final ActorSystem system = ActorSystem.create("example");
+            //#defer-caller
+            final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
+            processor.tell("a", null);
+            processor.tell("b", null);
+
+            // order of received messages:
+            // a
+            // b
+            // evt-a-1
+            // evt-a-2
+            // evt-a-3
+            // evt-b-1
+            // evt-b-2
+            // evt-b-3
+            //#defer-caller
+        }
+    };
+
+    static Object o11 = new Object() {
         //#view
         class MyView extends UntypedView {
             @Override

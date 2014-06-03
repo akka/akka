@@ -4,16 +4,18 @@
 
 package doc;
 
-import java.util.concurrent.TimeUnit;
-
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
+import akka.persistence.*;
 import scala.Option;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
-
-import akka.actor.*;
-import akka.persistence.*;
 import scala.runtime.BoxedUnit;
+
+import java.util.concurrent.TimeUnit;
 
 import static java.util.Arrays.asList;
 
@@ -359,7 +361,7 @@ public class LambdaPersistenceDocTest {
 
   static Object o8 = new Object() {
     //#reliable-event-delivery
-    class MyEventsourcedProcessor extends AbstractEventsourcedProcessor {
+    class MyEventsourcedProcessor extends AbstractPersistentActor {
       private ActorRef destination;
       private ActorRef channel;
 
@@ -392,6 +394,103 @@ public class LambdaPersistenceDocTest {
   };
 
   static Object o9 = new Object() {
+    //#persist-async
+    class MyPersistentActor extends AbstractPersistentActor {
+
+      private void handleCommand(String c) {
+        sender().tell(c, self());
+
+        persistAsync(String.format("evt-%s-1", c), e -> {
+          sender().tell(e, self());
+        });
+        persistAsync(String.format("evt-%s-2", c), e -> {
+          sender().tell(e, self());
+        });
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+        return ReceiveBuilder.
+          match(String.class, this::handleCommand).build();
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder.
+          match(String.class, this::handleCommand).build();
+      }
+    }
+    //#persist-async
+
+    public void usage() {
+      final ActorSystem system = ActorSystem.create("example");
+      //#persist-async-usage
+      final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
+      processor.tell("a", null);
+      processor.tell("b", null);
+
+      // possible order of received messages:
+      // a
+      // b
+      // evt-a-1
+      // evt-a-2
+      // evt-b-1
+      // evt-b-2
+      //#persist-async-usage
+    }
+  };
+
+
+  static Object o10 = new Object() {
+    //#defer
+    class MyPersistentActor extends AbstractPersistentActor {
+
+      private void handleCommand(String c) {
+        persistAsync(String.format("evt-%s-1", c), e -> {
+          sender().tell(e, self());
+        });
+        persistAsync(String.format("evt-%s-2", c), e -> {
+          sender().tell(e, self());
+        });
+
+        defer(String.format("evt-%s-3", c), e -> {
+          sender().tell(e, self());
+        });
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+        return ReceiveBuilder.
+          match(String.class, this::handleCommand).build();
+      }
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder.
+          match(String.class, this::handleCommand).build();
+      }
+    }
+    //#defer
+
+    public void usage() {
+      final ActorSystem system = ActorSystem.create("example");
+      final ActorRef sender = null; // your imaginary sender here
+      //#defer-caller
+      final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
+      processor.tell("a", sender);
+      processor.tell("b", sender);
+
+      // order of received messages:
+      // a
+      // b
+      // evt-a-1
+      // evt-a-2
+      // evt-a-3
+      // evt-b-1
+      // evt-b-2
+      // evt-b-3
+      //#defer-caller
+    }
+  };
+
+
+  static Object o11 = new Object() {
     //#view
     class MyView extends AbstractView {
       @Override

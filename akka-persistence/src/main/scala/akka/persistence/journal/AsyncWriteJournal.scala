@@ -16,7 +16,7 @@ import akka.persistence._
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
  */
-trait AsyncWriteJournal extends Actor with AsyncRecovery {
+trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import JournalProtocol._
   import AsyncWriteJournal._
   import context.dispatcher
@@ -24,16 +24,17 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
   private val extension = Persistence(context.system)
   private val publish = extension.settings.internal.publishPluginCommands
 
-  private val resequencer = context.actorOf(Props[Resequencer])
+  private val resequencer = context.actorOf(Props[Resequencer]())
   private var resequencerCounter = 1L
 
   def receive = {
-    case WriteMessages(persistentBatch, processor) ⇒
+    case WriteMessages(resequenceables, processor) ⇒
       val cctr = resequencerCounter
-      def resequence(f: PersistentRepr ⇒ Any) = persistentBatch.zipWithIndex.foreach {
-        case (p, i) ⇒ resequencer ! Desequenced(f(p), cctr + i + 1, processor, p.sender)
+      def resequence(f: PersistentRepr ⇒ Any) = resequenceables.zipWithIndex.foreach {
+        case (p: PersistentRepr, i) ⇒ resequencer ! Desequenced(f(p), cctr + i + 1, processor, p.sender)
+        case (r, i)                 ⇒ resequencer ! Desequenced(LoopMessageSuccess(r.payload), cctr + i + 1, processor, r.sender)
       }
-      asyncWriteMessages(persistentBatch.map(_.prepareWrite())) onComplete {
+      asyncWriteMessages(preparePersistentBatch(resequenceables)) onComplete {
         case Success(_) ⇒
           resequencer ! Desequenced(WriteMessagesSuccessful, cctr, processor, self)
           resequence(WriteMessageSuccess(_))
@@ -41,7 +42,7 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
           resequencer ! Desequenced(WriteMessagesFailed(e), cctr, processor, self)
           resequence(WriteMessageFailure(_, e))
       }
-      resequencerCounter += persistentBatch.length + 1
+      resequencerCounter += resequenceables.length + 1
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
       // Send replayed messages and replay result to processor directly. No need
       // to resequence replayed messages relative to written and looped messages.

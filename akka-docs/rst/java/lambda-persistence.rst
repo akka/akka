@@ -40,9 +40,14 @@ Akka persistence is a separate jar file. Make sure that you have the following d
 Architecture
 ============
 
-* *Processor*: A processor is a persistent, stateful actor. Messages sent to a processor are written to a journal
-  before its behavior is called. When a processor is started or restarted, journaled messages are replayed
-  to that processor, so that it can recover internal state from these messages.
+* *Processor* (deprecated, use *PersistentActor* instead): A processor is a persistent, stateful actor. Messages sent
+  to a processor are written to a journal before its ``onReceive`` method is called. When a processor is started or
+  restarted, journaled messages are replayed to that processor, so that it can recover internal state from these messages.
+
+* *PersistentActor*: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
+  them in a thread-safe manner. It can be used to implement both *command* as well as *event sourced* actors.
+  When a persistent actor is started or restarted, journaled messages are replayed to that actor, so that it can
+  recover internal state from these messages.
 
 * *View*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
   processor. A view itself does not journal new messages, instead, it updates internal state only from a processor's
@@ -427,6 +432,11 @@ use the ``deleteSnapshots`` method.
 Event sourcing
 ==============
 
+.. note::
+  The ``PersistentActor`` introduced in this section was previously known as ``EventsourcedProcessor``,
+  which was a subset of the ``PersistentActor``. Migrating your code to use persistent actors instead is
+  very simple and is explained in the :ref:`migration-guide-persistence-experimental-2.3.x-2.4.x`.
+
 In all the examples so far, messages that change a processor's state have been sent as ``Persistent`` messages
 by an application, so that they can be replayed during recovery. From this point of view, the journal acts as
 a write-ahead-log for whatever ``Persistent`` messages a processor receives. This is also known as *command
@@ -484,6 +494,50 @@ It contains instructions on how to run the ``PersistentActorExample``.
   recovery you need to take special care to perform the same state transitions with ``become`` and
   ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
 
+Relaxed local consistency requirements and high throughput use-cases
+--------------------------------------------------------------------
+
+If faced with Relaxed local consistency requirements and high throughput demands sometimes ``PersistentActor`` and it's
+``persist`` may not be enough in terms of consuming incoming Commands at a high rate, because it has to wait until all
+Events related to a given Command are processed in order to start processing the next Command. While this abstraction is
+very useful for most cases, sometimes you may be faced with relaxed requirements about consistency – for example you may
+want to process commands as fast as you can, assuming that Event will eventually be persisted and handled properly in
+the background and retroactively reacting to persistence failures if needed.
+
+The ``persistAsync`` method provides a tool for implementing high-throughput processors. It will *not*
+stash incoming Commands while the Journal is still working on persisting and/or user code is executing event callbacks.
+
+In the below example, the event callbacks may be called "at any time", even after the next Command has been processed.
+The ordering between events is still guaranteed ("evt-b-1" will be sent after "evt-a-2", which will be sent after "evt-a-1" etc.).
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persist-async
+
+Notice that the client does not have to wrap any messages in the `Persistent` class in order to obtain "command sourcing like"
+semantics. It's up to the processor to decide about persisting (or not) of messages, unlike ``Processor`` where the sender had to be aware of this decision.
+
+.. note::
+  In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
+  and handle them in the callback.
+
+.. _defer-java-lambda:
+
+Deferring actions until preceeding persist handlers have executed
+-----------------------------------------------------------------
+
+Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
+''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
+called ``defer``, which works similarily to ``persistAsync`` yet does not persist the passed in event. It is recommended to
+use it for *read* operations, and actions which do not have corresponding events in your domain model.
+
+Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
+It will be kept in memory and used when invoking the handler.
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#defer
+
+Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
+of the command for which this ``defer`` handler was called.
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#defer-caller
 
 Reliable event delivery
 -----------------------

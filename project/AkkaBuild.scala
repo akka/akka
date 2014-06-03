@@ -1030,8 +1030,10 @@ object AkkaBuild extends Build {
       // Change of private method to protected by #15212
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.akka$persistence$snapshot$local$LocalSnapshotStore$$save"),
 
-      // Changes in akka-persistence-experimental - still source compatible (2.3.3 -> 2.3.4)
-      // Adding `Eventsourced.persistAsync`
+      // Changes in akka-stream-experimental - still source compatible (2.3.3 -> 2.3.4)
+      // Adding `PersistentActor.persistAsync`
+      // Adding `PersistentActor.defer`
+      FilterAnyProblem("akka.persistence.Recovery"),
       FilterAnyProblem("akka.persistence.Eventsourced"),
       FilterAnyProblem("akka.persistence.UntypedEventsourcedProcessor"),
       FilterAnyProblem("akka.persistence.AbstractEventsourcedProcessor"),
