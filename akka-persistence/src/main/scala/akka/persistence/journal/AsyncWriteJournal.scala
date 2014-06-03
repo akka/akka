@@ -35,10 +35,10 @@ trait AsyncWriteJournal extends Actor with AsyncRecovery {
       }
       asyncWriteMessages(persistentBatch.map(_.prepareWrite())) onComplete {
         case Success(_) ⇒
-          resequencer ! Desequenced(WriteMessagesSuccess, cctr, processor, self)
+          resequencer ! Desequenced(WriteMessagesSuccessful, cctr, processor, self)
           resequence(WriteMessageSuccess(_))
         case Failure(e) ⇒
-          resequencer ! Desequenced(WriteMessagesFailure(e), cctr, processor, self)
+          resequencer ! Desequenced(WriteMessagesFailed(e), cctr, processor, self)
           resequence(WriteMessageFailure(_, e))
       }
       resequencerCounter += persistentBatch.length + 1
