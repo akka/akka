@@ -376,6 +376,80 @@ A persistent actor can delete individual snapshots by calling the ``deleteSnapsh
 timestamp of a snapshot as argument. To bulk-delete snapshots matching ``SnapshotSelectionCriteria``, persistent actors should
 use the ``deleteSnapshots`` method.
 
+.. _at-least-once-delivery-java:
+
+At-Least-Once Delivery
+======================
+
+To send messages with at-least-once delivery semantics to destinations you can extend the ``UntypedPersistentActorWithAtLeastOnceDelivery``
+class instead of ``UntypedPersistentActor`` on the sending side.  It takes care of re-sending messages when they
+have not been confirmed within a configurable timeout.
+
+.. note::
+
+  At-least-once delivery implies that original message send order is not always preserved
+  and the destination may receive duplicate messages.  That means that the
+  semantics do not match those of a normal :class:`ActorRef` send operation:
+
+  * it is not at-most-once delivery
+
+  * message order for the same sender–receiver pair is not preserved due to
+    possible resends
+
+  * after a crash and restart of the destination messages are still
+    delivered—to the new actor incarnation
+
+  These semantics is similar to what an :class:`ActorPath` represents (see
+  :ref:`actor-lifecycle-scala`), therefore you need to supply a path and not a
+  reference when delivering messages. The messages are sent to the path with
+  an actor selection.
+
+Use the ``deliver`` method to send a message to a destination. Call the ``confirmDelivery`` method
+when the destination has replied with a confirmation message.
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#at-least-once-example
+
+Correlation between ``deliver`` and ``confirmDelivery`` is performed with the ``deliveryId`` that is provided
+as parameter to the ``deliveryIdToMessage`` function. The ``deliveryId`` is typically passed in the message to the
+destination, which replies with a message containing the same ``deliveryId``.
+
+The ``deliveryId`` is a strictly monotonically increasing sequence number without gaps. The same sequence is
+used for all destinations of the actor, i.e. when sending to multiple destinations the destinations will see
+gaps in the sequence if no translation is performed.
+
+The ``UntypedPersistentActorWithAtLeastOnceDelivery`` class has a state consisting of unconfirmed messages and a
+sequence number. It does not store this state itself. You must persist events corresponding to the
+``deliver`` and ``confirmDelivery`` invocations from your ``PersistentActor`` so that the state can
+be restored by calling the same methods during the recovery phase of the ``PersistentActor``. Sometimes
+these events can be derived from other business level events, and sometimes you must create separate events.
+During recovery calls to ``delivery`` will not send out the message, but it will be sent later
+if no matching ``confirmDelivery`` was performed.
+
+Support for snapshots is provided by ``getDeliverySnapshot`` and ``setDeliverySnapshot``.
+The ``AtLeastOnceDeliverySnapshot`` contains the full delivery state, including unconfirmed messages.
+If you need a custom snapshot for other parts of the actor state you must also include the
+``AtLeastOnceDeliverySnapshot``. It is serialized using protobuf with the ordinary Akka 
+serialization mechanism. It is easiest to include the bytes of the ``AtLeastOnceDeliverySnapshot``
+as a blob in your custom snapshot.
+
+The interval between redelivery attempts is defined by the ``redeliverInterval`` method.
+The default value can be configured with the ``akka.persistence.at-least-once-delivery.redeliver-interval``
+configuration key. The method can be overridden by implementation classes to return non-default values.
+
+After a number of delivery attempts a ``AtLeastOnceDelivery.UnconfirmedWarning`` message
+will be sent to ``self``. The re-sending will still continue, but you can choose to call
+``confirmDelivery`` to cancel the re-sending. The number of delivery attempts before emitting the
+warning is defined by the ``warnAfterNumberOfUnconfirmedAttempts`` method. The default value can be
+configured with the ``akka.persistence.at-least-once-delivery.warn-after-number-of-unconfirmed-attempts``
+configuration key. The method can be overridden by implementation classes to return non-default values.
+
+The ``UntypedPersistentActorWithAtLeastOnceDelivery`` class holds messages in memory until their successful delivery has been confirmed.
+The limit of maximum number of unconfirmed messages that the actor is allowed to hold in memory
+is defined by the ``maxUnconfirmedMessages`` method. If this limit is exceed the ``deliver`` method will
+not accept more messages and it will throw ``AtLeastOnceDelivery.MaxUnconfirmedMessagesExceededException``.
+The default value can be configured with the ``akka.persistence.at-least-once-delivery.max-unconfirmed-messages``
+configuration key. The method can be overridden by implementation classes to return non-default values.
+
 Storage plugins
 ===============
 

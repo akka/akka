@@ -345,7 +345,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
   /**
    * INTERNAL API.
    */
-  final override protected[akka] def aroundReceive(receive: Receive, message: Any) {
+  override protected[akka] def aroundReceive(receive: Receive, message: Any) {
     currentState.aroundReceive(receive, message)
   }
 

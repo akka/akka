@@ -287,13 +287,13 @@ delivery is an explicit ACK–RETRY protocol. In its simplest form this requires
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
 to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
-supported by :ref:`channels` of the Akka Persistence module. Duplicates can be
-detected by tracking the sequence numbers of messages received via channels.
+supported by :ref:`at-least-once-delivery` of the Akka Persistence module. Duplicates can be
+detected by tracking the identifiers of messages sent via :ref:`at-least-once-delivery`.
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
 
 Another example of implementing all three requirements is shown at
-:ref:`reliable-proxy` (which is now superseded by :ref:`channels`).
+:ref:`reliable-proxy` (which is now superseded by :ref:`at-least-once-delivery`).
 
 Event Sourcing
 --------------
