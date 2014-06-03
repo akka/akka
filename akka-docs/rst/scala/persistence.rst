@@ -260,7 +260,7 @@ request  instructs a channel to send a ``Persistent`` message to a destination. 
 preserved by a channel, therefore, a destination can reply to the sender of a ``Deliver`` request.
 
 .. note::
-  
+
   Sending via a channel has at-least-once delivery semantics—by virtue of either
   the sending actor or the channel being persistent—which means that the
   semantics do not match those of a normal :class:`ActorRef` send operation:
@@ -558,13 +558,33 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#persist-async
 
 Notice that the client does not have to wrap any messages in the `Persistent` class in order to obtain "command sourcing like"
-semantics. It's up to the processor to decide about persisting (or not) of messages, unlike ``Processor`` where this decision
-was made by the sender.
-
+semantics. It's up to the processor to decide about persisting (or not) of messages, unlike ``Processor`` where the sender had to be aware of this decision.
 
 .. note::
   In order to implement the "*command sourcing*" simply call ``persistAsync(cmd)(...)`` right away on all incomming
   messages right away, and handle them in the callback.
+
+.. _defer-scala:
+
+Deferring actions until preceeding persist handlers have executed
+-----------------------------------------------------------------
+
+Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
+''happens-after the previous ``persistAsync`` handlers have been invoked''. ``PersistentActor`` provides an utility method
+called ``defer``, which works similarily to ``persistAsync`` yet does not persist the passed in event. It is recommended to
+use it for *read* operations, and actions which do not have corresponding events in your domain model.
+
+Using this method is very similar to the persist family of methods, yet it does **not** persist the passed in event.
+It will be kept in memory and used when invoking the handler.
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#defer
+
+Notice that the ``sender()`` is **safe** to access in the handler callback, and will be pointing to the original sender
+of the command for which this ``defer`` handler was called.
+
+The calling side will get the responses in this (guaranteed) order:
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#defer-caller
 
 Reliable event delivery
 -----------------------

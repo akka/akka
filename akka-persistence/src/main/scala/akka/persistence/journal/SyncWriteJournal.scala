@@ -15,7 +15,7 @@ import akka.persistence._
 /**
  * Abstract journal, optimized for synchronous writes.
  */
-trait SyncWriteJournal extends Actor with AsyncRecovery {
+trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   import JournalProtocol._
   import context.dispatcher
 
@@ -23,14 +23,20 @@ trait SyncWriteJournal extends Actor with AsyncRecovery {
   private val publish = extension.settings.internal.publishPluginCommands
 
   final def receive = {
-    case WriteMessages(persistentBatch, processor) ⇒
-      Try(writeMessages(persistentBatch.map(_.prepareWrite()))) match {
+    case WriteMessages(resequenceables, processor) ⇒
+      Try(writeMessages(preparePersistentBatch(resequenceables))) match {
         case Success(_) ⇒
           processor ! WriteMessagesSuccessful
-          persistentBatch.foreach(p ⇒ processor.tell(WriteMessageSuccess(p), p.sender))
+          resequenceables.foreach {
+            case p: PersistentRepr ⇒ processor.tell(WriteMessageSuccess(p), p.sender)
+            case r                 ⇒ processor.tell(LoopMessageSuccess(r.payload), r.sender)
+          }
         case Failure(e) ⇒
           processor ! WriteMessagesFailed(e)
-          persistentBatch.foreach(p ⇒ processor tell (WriteMessageFailure(p, e), p.sender))
+          resequenceables.foreach {
+            case p: PersistentRepr ⇒ processor tell (WriteMessageFailure(p, e), p.sender)
+            case r                 ⇒ processor tell (LoopMessageSuccess(r.payload), r.sender)
+          }
           throw e
       }
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒

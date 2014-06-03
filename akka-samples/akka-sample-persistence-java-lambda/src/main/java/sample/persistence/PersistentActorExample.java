@@ -48,7 +48,7 @@ class ExampleState implements Serializable {
     private final ArrayList<String> events;
 
     public ExampleState() {
-        this(new ArrayList<String>());
+        this(new ArrayList<>());
     }
 
     public ExampleState(ArrayList<String> events) {
@@ -56,7 +56,7 @@ class ExampleState implements Serializable {
     }
 
     public ExampleState copy() {
-        return new ExampleState(new ArrayList<String>(events));
+        return new ExampleState(new ArrayList<>(events));
     }
 
     public void update(Evt evt) {

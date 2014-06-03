@@ -23,7 +23,7 @@ trait PersistenceDocSpec {
 
   trait SomeOtherMessage
 
-  val system: ActorSystem
+  implicit val system: ActorSystem
 
   import system._
 
@@ -33,11 +33,11 @@ trait PersistenceDocSpec {
 
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent(payload, sequenceNr) =>
+        case Persistent(payload, sequenceNr)                =>
         // message successfully written to journal
         case PersistenceFailure(payload, sequenceNr, cause) =>
         // message failed to be written to journal
-        case m: SomeOtherMessage =>
+        case m: SomeOtherMessage                            =>
         // message not written to journal
       }
     }
@@ -368,6 +368,45 @@ trait PersistenceDocSpec {
     //#persist-async
   }
   new AnyRef {
+    import akka.actor.ActorRef
+
+    val processor = system.actorOf(Props[MyPersistentActor]())
+
+    //#defer
+    class MyPersistentActor extends PersistentActor {
+
+      def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      def receiveCommand: Receive = {
+        case c: String => {
+          sender() ! c
+          persistAsync(s"evt-$c-1") { e => sender() ! e }
+          persistAsync(s"evt-$c-2") { e => sender() ! e }
+          defer(s"evt-$c-3") { e => sender() ! e }
+        }
+      }
+    }
+    //#defer
+
+    //#defer-caller
+    processor ! "a"
+    processor ! "b"
+
+    // order of received messages:
+    // a
+    // b
+    // evt-a-1
+    // evt-a-2
+    // evt-a-3
+    // evt-b-1
+    // evt-b-2
+    // evt-b-3
+
+    //#defer-caller
+  }
+  new AnyRef {
     import akka.actor.Props
 
     //#view
@@ -385,4 +424,47 @@ trait PersistenceDocSpec {
     view ! Update(await = true)
     //#view-update
   }
+
+  new AnyRef {
+    // ------------------------------------------------------------------------------------------------
+    // FIXME: uncomment once going back to project dependencies (in akka-stream-experimental)
+    // ------------------------------------------------------------------------------------------------
+    /*
+    //#producer-creation
+    import org.reactivestreams.api.Producer
+
+    import akka.persistence.Persistent
+    import akka.persistence.stream.{ PersistentFlow, PersistentPublisherSettings }
+    import akka.stream.{ FlowMaterializer, MaterializerSettings }
+    import akka.stream.scaladsl.Flow
+
+    val materializer = FlowMaterializer(MaterializerSettings())
+
+    val flow: Flow[Persistent] = PersistentFlow.fromProcessor("some-processor-id")
+    val producer: Producer[Persistent] = flow.toProducer(materializer)
+    //#producer-creation
+
+    //#producer-buffer-size
+    PersistentFlow.fromProcessor("some-processor-id", PersistentPublisherSettings(maxBufferSize = 200))
+    //#producer-buffer-size
+
+    //#producer-examples
+    // 1 producer and 2 consumers:
+    val producer1: Producer[Persistent] =
+      PersistentFlow.fromProcessor("processor-1").toProducer(materializer)
+    Flow(producer1).foreach(p => println(s"consumer-1: ${p.payload}")).consume(materializer)
+    Flow(producer1).foreach(p => println(s"consumer-2: ${p.payload}")).consume(materializer)
+
+    // 2 producers (merged) and 1 consumer:
+    val producer2: Producer[Persistent] =
+      PersistentFlow.fromProcessor("processor-2").toProducer(materializer)
+    val producer3: Producer[Persistent] =
+      PersistentFlow.fromProcessor("processor-3").toProducer(materializer)
+    Flow(producer2).merge(producer3).foreach { p =>
+      println(s"consumer-3: ${p.payload}")
+    }.consume(materializer)
+    //#producer-examples
+    */
+  }
+
 }

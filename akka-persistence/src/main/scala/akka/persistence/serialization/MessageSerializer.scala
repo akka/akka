@@ -86,7 +86,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
 
   private def persistentMessageBatchBuilder(persistentBatch: PersistentBatch) = {
     val builder = PersistentMessageBatch.newBuilder
-    persistentBatch.persistentReprList.foreach(p ⇒ builder.addBatch(persistentMessageBuilder(p)))
+    persistentBatch.batch.
+      filter(_.isInstanceOf[PersistentRepr]).
+      foreach(p ⇒ builder.addBatch(persistentMessageBuilder(p.asInstanceOf[PersistentRepr])))
     builder
   }
 

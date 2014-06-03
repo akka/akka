@@ -18,7 +18,7 @@ object PersistentActorSpec {
   final case class Cmd(data: Any)
   final case class Evt(data: Any)
 
-  abstract class ExampleProcessor(name: String) extends NamedProcessor(name) with PersistentActor {
+  abstract class ExamplePersistentActor(name: String) extends NamedProcessor(name) with PersistentActor {
     var events: List[Any] = Nil
 
     val updateState: Receive = {
@@ -33,14 +33,14 @@ object PersistentActorSpec {
     def receiveRecover = updateState
   }
 
-  class Behavior1Processor(name: String) extends ExampleProcessor(name) {
+  class Behavior1Processor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
     }
   }
 
-  class Behavior2Processor(name: String) extends ExampleProcessor(name) {
+  class Behavior2Processor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-1"), Evt(s"${data}-2")))(updateState)
@@ -48,7 +48,7 @@ object PersistentActorSpec {
     }
   }
 
-  class Behavior3Processor(name: String) extends ExampleProcessor(name) {
+  class Behavior3Processor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-11"), Evt(s"${data}-12")))(updateState)
@@ -56,7 +56,7 @@ object PersistentActorSpec {
     }
   }
 
-  class ChangeBehaviorInLastEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
+  class ChangeBehaviorInLastEventHandlerProcessor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
       case Cmd(data) ⇒
         persist(Evt(s"${data}-21"))(updateState)
@@ -75,7 +75,7 @@ object PersistentActorSpec {
     }
   }
 
-  class ChangeBehaviorInFirstEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
+  class ChangeBehaviorInFirstEventHandlerProcessor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
       case Cmd(data) ⇒
         persist(Evt(s"${data}-21")) { event ⇒
@@ -94,7 +94,7 @@ object PersistentActorSpec {
     }
   }
 
-  class ChangeBehaviorInCommandHandlerFirstProcessor(name: String) extends ExampleProcessor(name) {
+  class ChangeBehaviorInCommandHandlerFirstProcessor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
       case Cmd(data) ⇒
         context.unbecome()
@@ -109,7 +109,7 @@ object PersistentActorSpec {
     }
   }
 
-  class ChangeBehaviorInCommandHandlerLastProcessor(name: String) extends ExampleProcessor(name) {
+  class ChangeBehaviorInCommandHandlerLastProcessor(name: String) extends ExamplePersistentActor(name) {
     val newBehavior: Receive = {
       case Cmd(data) ⇒
         persist(Seq(Evt(s"${data}-31"), Evt(s"${data}-32")))(updateState)
@@ -124,7 +124,7 @@ object PersistentActorSpec {
     }
   }
 
-  class SnapshottingPersistentActor(name: String, probe: ActorRef) extends ExampleProcessor(name) {
+  class SnapshottingPersistentActor(name: String, probe: ActorRef) extends ExamplePersistentActor(name) {
     override def receiveRecover = super.receiveRecover orElse {
       case SnapshotOffer(_, events: List[_]) ⇒
         probe ! "offered"
@@ -160,14 +160,14 @@ object PersistentActorSpec {
     }
   }
 
-  class ReplyInEventHandlerProcessor(name: String) extends ExampleProcessor(name) {
+  class ReplyInEventHandlerProcessor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
       case Cmd("a")      ⇒ persist(Evt("a"))(evt ⇒ sender() ! evt.data)
       case p: Persistent ⇒ sender() ! p // not expected
     }
   }
 
-  class UserStashProcessor(name: String) extends ExampleProcessor(name) {
+  class UserStashProcessor(name: String) extends ExamplePersistentActor(name) {
     var stashed = false
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ if (!stashed) { stash(); stashed = true } else sender() ! "a"
@@ -176,7 +176,7 @@ object PersistentActorSpec {
     }
   }
 
-  class UserStashManyProcessor(name: String) extends ExampleProcessor(name) {
+  class UserStashManyProcessor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd("a") ⇒ persist(Evt("a")) { evt ⇒
         updateState(evt)
@@ -196,7 +196,7 @@ object PersistentActorSpec {
       case other ⇒ stash()
     }
   }
-  class AsyncPersistProcessor(name: String) extends ExampleProcessor(name) {
+  class AsyncPersistProcessor(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
 
     val receiveCommand: Receive = commonBehavior orElse {
@@ -212,7 +212,7 @@ object PersistentActorSpec {
       counter
     }
   }
-  class AsyncPersistThreeTimesProcessor(name: String) extends ExampleProcessor(name) {
+  class AsyncPersistThreeTimesProcessor(name: String) extends ExamplePersistentActor(name) {
     var counter = 0
 
     val receiveCommand: Receive = commonBehavior orElse {
@@ -231,7 +231,7 @@ object PersistentActorSpec {
       counter
     }
   }
-  class AsyncPersistSameEventTwiceProcessor(name: String) extends ExampleProcessor(name) {
+  class AsyncPersistSameEventTwiceProcessor(name: String) extends ExamplePersistentActor(name) {
 
     // atomic because used from inside the *async* callbacks
     val sendMsgCounter = new AtomicInteger()
@@ -249,7 +249,7 @@ object PersistentActorSpec {
         persistAsync(event) { evt ⇒ sender() ! s"${evt.data}-b-${sendMsgCounter.incrementAndGet()}" }
     }
   }
-  class AsyncPersistAndPersistMixedSyncAsyncSyncProcessor(name: String) extends ExampleProcessor(name) {
+  class AsyncPersistAndPersistMixedSyncAsyncSyncProcessor(name: String) extends ExamplePersistentActor(name) {
 
     var counter = 0
 
@@ -276,12 +276,10 @@ object PersistentActorSpec {
       counter
     }
   }
-  class AsyncPersistAndPersistMixedSyncAsyncProcessor(name: String) extends ExampleProcessor(name) {
+  class AsyncPersistAndPersistMixedSyncAsyncProcessor(name: String) extends ExamplePersistentActor(name) {
 
     var sendMsgCounter = 0
 
-    val start = System.currentTimeMillis()
-    def time = s" ${System.currentTimeMillis() - start}ms"
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         sender() ! data
@@ -301,7 +299,7 @@ object PersistentActorSpec {
     }
   }
 
-  class UserStashFailureProcessor(name: String) extends ExampleProcessor(name) {
+  class UserStashFailureProcessor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = commonBehavior orElse {
       case Cmd(data) ⇒
         if (data == "b-2") throw new TestException("boom")
@@ -322,7 +320,7 @@ object PersistentActorSpec {
     }
   }
 
-  class AnyValEventProcessor(name: String) extends ExampleProcessor(name) {
+  class AnyValEventProcessor(name: String) extends ExamplePersistentActor(name) {
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ persist(5)(evt ⇒ sender() ! evt)
     }
@@ -348,6 +346,44 @@ object PersistentActorSpec {
     }
 
   }
+  class DeferringWithPersistActor(name: String) extends ExamplePersistentActor(name) {
+    val receiveCommand: Receive = {
+      case Cmd(data) ⇒
+        defer("d-1") { sender() ! _ }
+        persist(s"$data-2") { sender() ! _ }
+        defer("d-3") { sender() ! _ }
+        defer("d-4") { sender() ! _ }
+    }
+  }
+  class DeferringWithAsyncPersistActor(name: String) extends ExamplePersistentActor(name) {
+    val receiveCommand: Receive = {
+      case Cmd(data) ⇒
+        defer(s"d-$data-1") { sender() ! _ }
+        persistAsync(s"pa-$data-2") { sender() ! _ }
+        defer(s"d-$data-3") { sender() ! _ }
+        defer(s"d-$data-4") { sender() ! _ }
+    }
+  }
+  class DeferringMixedCallsPPADDPADPersistActor(name: String) extends ExamplePersistentActor(name) {
+    val receiveCommand: Receive = {
+      case Cmd(data) ⇒
+        persist(s"p-$data-1") { sender() ! _ }
+        persistAsync(s"pa-$data-2") { sender() ! _ }
+        defer(s"d-$data-3") { sender() ! _ }
+        defer(s"d-$data-4") { sender() ! _ }
+        persistAsync(s"pa-$data-5") { sender() ! _ }
+        defer(s"d-$data-6") { sender() ! _ }
+    }
+  }
+  class DeferringWithNoPersistCallsPersistActor(name: String) extends ExamplePersistentActor(name) {
+    val receiveCommand: Receive = {
+      case Cmd(data) ⇒
+        defer("d-1") { sender() ! _ }
+        defer("d-2") { sender() ! _ }
+        defer("d-3") { sender() ! _ }
+    }
+  }
+
 }
 
 abstract class PersistentActorSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
@@ -623,6 +659,71 @@ abstract class PersistentActorSpec(config: Config) extends AkkaSpec(config) with
       expectMsg("c-e1-5")
       expectMsg("c-ea2-6")
 
+      expectNoMsg(100.millis)
+    }
+    "allow deferring handlers in order to provide ordered processing in respect to persist handlers" in {
+      val processor = namedProcessor[DeferringWithPersistActor]
+      processor ! Cmd("a")
+      expectMsg("d-1")
+      expectMsg("a-2")
+      expectMsg("d-3")
+      expectMsg("d-4")
+      expectNoMsg(100.millis)
+    }
+    "allow deferring handlers in order to provide ordered processing in respect to asyncPersist handlers" in {
+      val processor = namedProcessor[DeferringWithAsyncPersistActor]
+      processor ! Cmd("a")
+      expectMsg("d-a-1")
+      expectMsg("pa-a-2")
+      expectMsg("d-a-3")
+      expectMsg("d-a-4")
+      expectNoMsg(100.millis)
+    }
+    "invoke deferred handlers, in presence of mixed a long series persist / persistAsync calls" in {
+      val processor = namedProcessor[DeferringMixedCallsPPADDPADPersistActor]
+      val p1, p2 = TestProbe()
+
+      processor.tell(Cmd("a"), p1.ref)
+      processor.tell(Cmd("b"), p2.ref)
+      p1.expectMsg("p-a-1")
+      p1.expectMsg("pa-a-2")
+      p1.expectMsg("d-a-3")
+      p1.expectMsg("d-a-4")
+      p1.expectMsg("pa-a-5")
+      p1.expectMsg("d-a-6")
+
+      p2.expectMsg("p-b-1")
+      p2.expectMsg("pa-b-2")
+      p2.expectMsg("d-b-3")
+      p2.expectMsg("d-b-4")
+      p2.expectMsg("pa-b-5")
+      p2.expectMsg("d-b-6")
+
+      expectNoMsg(100.millis)
+    }
+    "invoke deferred handlers right away, if there are no pending persist handlers registered" in {
+      val processor = namedProcessor[DeferringWithNoPersistCallsPersistActor]
+      processor ! Cmd("a")
+      expectMsg("d-1")
+      expectMsg("d-2")
+      expectMsg("d-3")
+      expectNoMsg(100.millis)
+    }
+    "invoke deferred handlers, perserving the original sender references" in {
+      val processor = namedProcessor[DeferringWithAsyncPersistActor]
+      val p1, p2 = TestProbe()
+
+      processor.tell(Cmd("a"), p1.ref)
+      processor.tell(Cmd("b"), p2.ref)
+      p1.expectMsg("d-a-1")
+      p1.expectMsg("pa-a-2")
+      p1.expectMsg("d-a-3")
+      p1.expectMsg("d-a-4")
+
+      p2.expectMsg("d-b-1")
+      p2.expectMsg("pa-b-2")
+      p2.expectMsg("d-b-3")
+      p2.expectMsg("d-b-4")
       expectNoMsg(100.millis)
     }
     "receive RecoveryFinished if it is handled after all events have been replayed" in {
