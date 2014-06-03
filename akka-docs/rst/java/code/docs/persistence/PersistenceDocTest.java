@@ -4,14 +4,17 @@
 
 package docs.persistence;
 
+import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
+import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.persistence.*;
 import scala.Option;
 import scala.concurrent.duration.Duration;
+import java.io.Serializable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -161,6 +164,103 @@ public class PersistenceDocTest {
             
             //#recovery-completed
         }
+    };
+    
+    static Object atLeastOnceExample = new Object() {
+      //#at-least-once-example
+      
+      class Msg implements Serializable {
+        public final long deliveryId;
+        public final String s;
+        
+        public Msg(long deliveryId, String s) {
+          this.deliveryId = deliveryId;
+          this.s = s;
+        }
+      }
+      
+      class Confirm implements Serializable {
+        public final long deliveryId;
+        
+        public Confirm(long deliveryId) {
+          this.deliveryId = deliveryId;
+        }
+      }
+      
+  
+      class MsgSent implements Serializable {
+        public final String s;
+        
+        public MsgSent(String s) {
+          this.s = s;
+        }
+      }
+      class MsgConfirmed implements Serializable {
+        public final long deliveryId;
+        
+        public MsgConfirmed(long deliveryId) {
+          this.deliveryId = deliveryId;
+        }
+      }
+      
+      class MyPersistentActor extends UntypedPersistentActorWithAtLeastOnceDelivery {
+        private final ActorPath destination;
+
+        public MyPersistentActor(ActorPath destination) {
+            this.destination = destination;
+        }
+
+        public void onReceiveCommand(Object message) {
+          if (message instanceof String) {
+            String s = (String) message;
+            persist(new MsgSent(s), new Procedure<MsgSent>() {
+              public void apply(MsgSent evt) {
+                updateState(evt);
+              }
+            });
+          } else if (message instanceof Confirm) {
+            Confirm confirm = (Confirm) message;
+            persist(new MsgConfirmed(confirm.deliveryId), new Procedure<MsgConfirmed>() {
+              public void apply(MsgConfirmed evt) {
+                updateState(evt);
+              }
+            });
+          } else {
+            unhandled(message);
+          }
+        }
+        
+        public void onReceiveRecover(Object event) {
+          updateState(event);
+        }
+        
+        void updateState(Object event) {
+          if (event instanceof MsgSent) {
+            final MsgSent evt = (MsgSent) event;
+            deliver(destination, new Function<Long, Object>() {
+              public Object apply(Long deliveryId) {
+                return new Msg(deliveryId, evt.s);
+              }
+            });
+          } else if (event instanceof MsgConfirmed) {
+            final MsgConfirmed evt = (MsgConfirmed) event;
+            confirmDelivery(evt.deliveryId);
+          }
+        }
+      }
+
+      class MyDestination extends UntypedActor {
+        public void onReceive(Object message) throws Exception {
+          if (message instanceof Msg) {
+            Msg msg = (Msg) message;
+            // ...
+            getSender().tell(new Confirm(msg.deliveryId), getSelf());
+          } else {
+            unhandled(message);
+          }
+        }
+      }
+      //#at-least-once-example
     };
 
     static Object o3 = new Object() {

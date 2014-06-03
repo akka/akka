@@ -245,21 +245,21 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
   /**
    * INTERNAL API.
    */
-  final override protected[akka] def aroundPreStart(): Unit = {
+  override protected[akka] def aroundPreStart(): Unit = {
     try preStart() finally super.preStart()
   }
 
   /**
    * INTERNAL API.
    */
-  final override protected[akka] def aroundPostStop(): Unit = {
+  override protected[akka] def aroundPostStop(): Unit = {
     try unstashAll(unstashFilterPredicate) finally postStop()
   }
 
   /**
    * INTERNAL API.
    */
-  final override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
+  override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     try {
       receiverStash.prepend(processorBatch.map(p ⇒ Envelope(p, p.sender, context.system)))
       receiverStash.unstashAll()
