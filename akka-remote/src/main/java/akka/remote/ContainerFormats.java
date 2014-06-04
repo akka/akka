@@ -156,6 +156,16 @@ public final class ContainerFormats {
      * <code>optional bytes messageManifest = 4;</code>
      */
     com.google.protobuf.ByteString getMessageManifest();
+
+    // optional bool wildcardFanOut = 5;
+    /**
+     * <code>optional bool wildcardFanOut = 5;</code>
+     */
+    boolean hasWildcardFanOut();
+    /**
+     * <code>optional bool wildcardFanOut = 5;</code>
+     */
+    boolean getWildcardFanOut();
   }
   /**
    * Protobuf type {@code SelectionEnvelope}
@@ -229,6 +239,11 @@ public final class ContainerFormats {
             case 34: {
               bitField0_ |= 0x00000004;
               messageManifest_ = input.readBytes();
+              break;
+            }
+            case 40: {
+              bitField0_ |= 0x00000008;
+              wildcardFanOut_ = input.readBool();
               break;
             }
           }
@@ -358,11 +373,28 @@ public final class ContainerFormats {
       return messageManifest_;
     }
 
+    // optional bool wildcardFanOut = 5;
+    public static final int WILDCARDFANOUT_FIELD_NUMBER = 5;
+    private boolean wildcardFanOut_;
+    /**
+     * <code>optional bool wildcardFanOut = 5;</code>
+     */
+    public boolean hasWildcardFanOut() {
+      return ((bitField0_ & 0x00000008) == 0x00000008);
+    }
+    /**
+     * <code>optional bool wildcardFanOut = 5;</code>
+     */
+    public boolean getWildcardFanOut() {
+      return wildcardFanOut_;
+    }
+
     private void initFields() {
       enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
       serializerId_ = 0;
       pattern_ = java.util.Collections.emptyList();
       messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      wildcardFanOut_ = false;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -402,6 +434,9 @@ public final class ContainerFormats {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         output.writeBytes(4, messageManifest_);
       }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        output.writeBool(5, wildcardFanOut_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -426,6 +461,10 @@ public final class ContainerFormats {
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
           .computeBytesSize(4, messageManifest_);
+      }
+      if (((bitField0_ & 0x00000008) == 0x00000008)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(5, wildcardFanOut_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -556,6 +595,8 @@ public final class ContainerFormats {
         }
         messageManifest_ = com.google.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000008);
+        wildcardFanOut_ = false;
+        bitField0_ = (bitField0_ & ~0x00000010);
         return this;
       }
 
@@ -605,6 +646,10 @@ public final class ContainerFormats {
           to_bitField0_ |= 0x00000004;
         }
         result.messageManifest_ = messageManifest_;
+        if (((from_bitField0_ & 0x00000010) == 0x00000010)) {
+          to_bitField0_ |= 0x00000008;
+        }
+        result.wildcardFanOut_ = wildcardFanOut_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -655,6 +700,9 @@ public final class ContainerFormats {
         }
         if (other.hasMessageManifest()) {
           setMessageManifest(other.getMessageManifest());
+        }
+        if (other.hasWildcardFanOut()) {
+          setWildcardFanOut(other.getWildcardFanOut());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1038,6 +1086,39 @@ public final class ContainerFormats {
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000008);
         messageManifest_ = getDefaultInstance().getMessageManifest();
+        onChanged();
+        return this;
+      }
+
+      // optional bool wildcardFanOut = 5;
+      private boolean wildcardFanOut_ ;
+      /**
+       * <code>optional bool wildcardFanOut = 5;</code>
+       */
+      public boolean hasWildcardFanOut() {
+        return ((bitField0_ & 0x00000010) == 0x00000010);
+      }
+      /**
+       * <code>optional bool wildcardFanOut = 5;</code>
+       */
+      public boolean getWildcardFanOut() {
+        return wildcardFanOut_;
+      }
+      /**
+       * <code>optional bool wildcardFanOut = 5;</code>
+       */
+      public Builder setWildcardFanOut(boolean value) {
+        bitField0_ |= 0x00000010;
+        wildcardFanOut_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional bool wildcardFanOut = 5;</code>
+       */
+      public Builder clearWildcardFanOut() {
+        bitField0_ = (bitField0_ & ~0x00000010);
+        wildcardFanOut_ = false;
         onChanged();
         return this;
       }
@@ -1641,14 +1722,14 @@ public final class ContainerFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\026ContainerFormats.proto\"x\n\021SelectionEnv" +
-      "elope\022\027\n\017enclosedMessage\030\001 \002(\014\022\024\n\014serial" +
-      "izerId\030\002 \002(\005\022\033\n\007pattern\030\003 \003(\0132\n.Selectio" +
-      "n\022\027\n\017messageManifest\030\004 \001(\014\"8\n\tSelection\022" +
-      "\032\n\004type\030\001 \002(\0162\014.PatternType\022\017\n\007matcher\030\002" +
-      " \001(\t*<\n\013PatternType\022\n\n\006PARENT\020\000\022\016\n\nCHILD" +
-      "_NAME\020\001\022\021\n\rCHILD_PATTERN\020\002B\017\n\013akka.remot" +
-      "eH\001"
+      "\n\026ContainerFormats.proto\"\220\001\n\021SelectionEn" +
+      "velope\022\027\n\017enclosedMessage\030\001 \002(\014\022\024\n\014seria" +
+      "lizerId\030\002 \002(\005\022\033\n\007pattern\030\003 \003(\0132\n.Selecti" +
+      "on\022\027\n\017messageManifest\030\004 \001(\014\022\026\n\016wildcardF" +
+      "anOut\030\005 \001(\010\"8\n\tSelection\022\032\n\004type\030\001 \002(\0162\014" +
+      ".PatternType\022\017\n\007matcher\030\002 \001(\t*<\n\013Pattern" +
+      "Type\022\n\n\006PARENT\020\000\022\016\n\nCHILD_NAME\020\001\022\021\n\rCHIL" +
+      "D_PATTERN\020\002B\017\n\013akka.remoteH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -1660,7 +1741,7 @@ public final class ContainerFormats {
           internal_static_SelectionEnvelope_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_SelectionEnvelope_descriptor,
-              new java.lang.String[] { "EnclosedMessage", "SerializerId", "Pattern", "MessageManifest", });
+              new java.lang.String[] { "EnclosedMessage", "SerializerId", "Pattern", "MessageManifest", "WildcardFanOut", });
           internal_static_Selection_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_Selection_fieldAccessorTable = new

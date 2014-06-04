@@ -14,6 +14,7 @@ message SelectionEnvelope {
   required int32 serializerId = 2;
   repeated Selection pattern = 3;
   optional bytes messageManifest = 4;
+  optional bool wildcardFanOut = 5; // optional for pre 2.3.4 compatibility 
 }
 
 enum PatternType {
