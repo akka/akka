@@ -69,5 +69,23 @@ class FlowTimerTransformerSpec extends AkkaSpec {
       pSub.sendComplete()
     }
 
+    "propagate error if onTimer throws an exception" in {
+      val exception = new Exception("Expected exception to the rule") with NoStackTrace
+      val p = StreamTestKit.producerProbe[Int]
+      val p2 = Flow(p).
+        transform(new TimerTransformer[Int, Int] {
+          scheduleOnce("tick", 100.millis)
+
+          def onNext(element: Int) = Nil
+          override def onTimer(timerKey: Any) =
+            throw exception
+        }).toProducer(materializer)
+
+      val consumer = StreamTestKit.consumerProbe[Int]
+      p2.produceTo(consumer)
+      val subscription = consumer.expectSubscription()
+      subscription.requestMore(5)
+      consumer.expectError(exception)
+    }
   }
 }
