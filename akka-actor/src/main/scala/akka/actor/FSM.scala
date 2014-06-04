@@ -123,7 +123,7 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil, notifies: Boolean = true) {
 
     /**
      * Modify state transition descriptor to include a state timeout for the
@@ -329,7 +329,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    *
    * @return descriptor for staying in current state
    */
-  final def stay(): State = goto(currentState.stateName) // cannot directly use currentState because of the timeout field
+  final def stay(): State = FSM.State(currentState.stateName, currentState.stateData, notifies = false) // cannot directly use currentState because of the timeout field
 
   /**
    * Produce change descriptor to stop this FSM actor with reason "Normal".
@@ -627,8 +627,10 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       if (currentState.stateName != nextState.stateName) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
-        gossip(Transition(self, currentState.stateName, nextState.stateName))
         this.nextState = null
+      }
+      if (nextState.notifies) {
+        gossip(Transition(self, currentState.stateName, nextState.stateName))
       }
       currentState = nextState
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)

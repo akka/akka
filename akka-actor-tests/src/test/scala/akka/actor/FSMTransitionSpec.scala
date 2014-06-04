@@ -33,9 +33,10 @@ object FSMTransitionSpec {
     startWith(0, 0)
     when(0) {
       case Event("tick", _) ⇒ goto(1) using (1)
+      case Event("stay", _) ⇒ stay
     }
     when(1) {
-      case _ ⇒ stay
+      case _ ⇒ goto(1)
     }
     onTransition {
       case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
@@ -90,6 +91,35 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       within(1 second) {
         fsm ! "tick"
         expectMsg((0, 1))
+      }
+    }
+
+    "send information of Transision when staying in same state" in {
+      import FSM.Transition
+      val forward = system.actorOf(Props(new Forwarder(testActor)))
+      val fsm = system.actorOf(Props(new OtherFSM(testActor)))
+
+      within(1 second) {
+        fsm ! FSM.SubscribeTransitionCallBack(forward)
+        expectMsg(FSM.CurrentState(fsm, 0))
+        fsm ! "tick"
+        expectMsg((0, 1))
+        expectMsg(Transition(fsm, 0, 1))
+        fsm ! "tick"
+        expectMsg(Transition(fsm, 1, 1))
+      }
+    }
+
+    "not send Transision on stay()" in {
+      import FSM.Transition
+      val forward = system.actorOf(Props(new Forwarder(testActor)))
+      val fsm = system.actorOf(Props(new OtherFSM(testActor)))
+
+      within(1 second) {
+        fsm ! FSM.SubscribeTransitionCallBack(forward)
+        expectMsg(FSM.CurrentState(fsm, 0))
+        fsm ! "stay"
+        expectNoMsg()
       }
     }
 
