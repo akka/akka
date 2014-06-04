@@ -49,7 +49,7 @@ class RemoteInitErrorSpec extends FlatSpec with Matchers {
   "Remoting" must "shut down properly on RemoteActorRefProvider initialization failure" in {
     val start = currentThreadIds()
     try {
-      ActorSystem("duplicate", conf)
+      ActorSystem("duplicate", ConfigFactory.parseString("akka.loglevel=OFF").withFallback(conf))
       fail("initialization should fail due to invalid IP address")
     } catch {
       case NonFatal(e) ⇒ {
