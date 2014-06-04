@@ -388,23 +388,31 @@ class NettyTransport(val settings: NettyTransportSettings, val system: ExtendedA
     for {
       address ← addressToSocketAddress(Address("", "", settings.Hostname, settings.PortSelector))
     } yield {
-      val newServerChannel = inboundBootstrap match {
-        case b: ServerBootstrap         ⇒ b.bind(address)
-        case b: ConnectionlessBootstrap ⇒ b.bind(address)
-      }
+      try {
+        val newServerChannel = inboundBootstrap match {
+          case b: ServerBootstrap         ⇒ b.bind(address)
+          case b: ConnectionlessBootstrap ⇒ b.bind(address)
+        }
 
-      // Block reads until a handler actor is registered
-      newServerChannel.setReadable(false)
-      channelGroup.add(newServerChannel)
+        // Block reads until a handler actor is registered
+        newServerChannel.setReadable(false)
+        channelGroup.add(newServerChannel)
 
-      serverChannel = newServerChannel
+        serverChannel = newServerChannel
 
-      addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname)) match {
-        case Some(address) ⇒
-          localAddress = address
-          associationListenerPromise.future.onSuccess { case listener ⇒ newServerChannel.setReadable(true) }
-          (address, associationListenerPromise)
-        case None ⇒ throw new NettyTransportException(s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
+        addressFromSocketAddress(newServerChannel.getLocalAddress, schemeIdentifier, system.name, Some(settings.Hostname)) match {
+          case Some(address) ⇒
+            localAddress = address
+            associationListenerPromise.future.onSuccess { case listener ⇒ newServerChannel.setReadable(true) }
+            (address, associationListenerPromise)
+          case None ⇒ throw new NettyTransportException(s"Unknown local address type [${newServerChannel.getLocalAddress.getClass.getName}]")
+        }
+      } catch {
+        case NonFatal(e) ⇒ {
+          log.error("failed to bind to {}, shutting down Netty transport", address)
+          try { shutdown() } catch { case NonFatal(e) ⇒ } // ingore possible exception during shutdown
+          throw e
+        }
       }
     }
   }
