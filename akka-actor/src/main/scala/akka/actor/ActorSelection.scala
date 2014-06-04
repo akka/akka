@@ -38,7 +38,7 @@ abstract class ActorSelection extends Serializable {
    */
   def tell(msg: Any, sender: ActorRef): Unit =
     ActorSelection.deliverSelection(anchor.asInstanceOf[InternalActorRef], sender,
-      ActorSelectionMessage(msg, path))
+      ActorSelectionMessage(msg, path, wildcardFanOut = false))
 
   /**
    * Forwards the message and passes the original sender actor as the sender.
@@ -177,11 +177,16 @@ object ActorSelection {
     if (sel.elements.isEmpty)
       anchor.tell(sel.msg, sender)
     else {
+
       val iter = sel.elements.iterator
 
       @tailrec def rec(ref: InternalActorRef): Unit = {
         ref match {
           case refWithCell: ActorRefWithCell ⇒
+
+            def emptyRef = new EmptyLocalActorRef(refWithCell.provider, anchor.path / sel.elements.map(_.toString),
+              refWithCell.underlying.system.eventStream)
+
             iter.next() match {
               case SelectParent ⇒
                 val parent = ref.getParent
@@ -192,9 +197,8 @@ object ActorSelection {
               case SelectChildName(name) ⇒
                 val child = refWithCell.getSingleChild(name)
                 if (child == Nobody) {
-                  val emptyRef = new EmptyLocalActorRef(refWithCell.provider, anchor.path / sel.elements.map(_.toString),
-                    refWithCell.underlying.system.eventStream)
-                  emptyRef.tell(sel, sender)
+                  // don't send to emptyRef after wildcard fan-out
+                  if (!sel.wildcardFanOut) emptyRef.tell(sel, sender)
                 } else if (iter.isEmpty)
                   child.tell(sel.msg, sender)
                 else
@@ -202,13 +206,23 @@ object ActorSelection {
               case p: SelectChildPattern ⇒
                 // fan-out when there is a wildcard
                 val chldr = refWithCell.children
-                if (iter.isEmpty)
-                  for (c ← chldr if p.pattern.matcher(c.path.name).matches)
-                    c.tell(sel.msg, sender)
-                else {
-                  val m = sel.copy(elements = iter.toVector)
-                  for (c ← chldr if p.pattern.matcher(c.path.name).matches)
-                    deliverSelection(c.asInstanceOf[InternalActorRef], sender, m)
+                if (iter.isEmpty) {
+                  // leaf
+                  val matchingChildren = chldr.filter(c ⇒ p.pattern.matcher(c.path.name).matches)
+                  if (matchingChildren.isEmpty && !sel.wildcardFanOut)
+                    emptyRef.tell(sel, sender)
+                  else
+                    matchingChildren.foreach(_.tell(sel.msg, sender))
+                } else {
+                  val matchingChildren = chldr.filter(c ⇒ p.pattern.matcher(c.path.name).matches)
+                  // don't send to emptyRef after wildcard fan-out 
+                  if (matchingChildren.isEmpty && !sel.wildcardFanOut)
+                    emptyRef.tell(sel, sender)
+                  else {
+                    val m = sel.copy(elements = iter.toVector,
+                      wildcardFanOut = sel.wildcardFanOut || matchingChildren.size > 1)
+                    matchingChildren.foreach(c ⇒ deliverSelection(c.asInstanceOf[InternalActorRef], sender, m))
+                  }
                 }
             }
 
@@ -238,8 +252,11 @@ trait ScalaActorSelection {
  * nested path descriptions whenever using ! on them, the idea being that the
  * message is delivered by traversing the various actor paths involved.
  */
-@SerialVersionUID(1L)
-private[akka] case class ActorSelectionMessage(msg: Any, elements: immutable.Iterable[SelectionPathElement])
+@SerialVersionUID(2L) // it has protobuf serialization in akka-remote
+private[akka] case class ActorSelectionMessage(
+  msg: Any,
+  elements: immutable.Iterable[SelectionPathElement],
+  wildcardFanOut: Boolean)
   extends AutoReceivedMessage with PossiblyHarmful {
 
   def identifyRequest: Option[Identify] = msg match {

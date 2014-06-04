@@ -34,7 +34,9 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends Serial
     val serializer = SerializationExtension(system).findSerializerFor(message)
     builder.
       setEnclosedMessage(ByteString.copyFrom(serializer.toBinary(message))).
-      setSerializerId(serializer.identifier)
+      setSerializerId(serializer.identifier).
+      setWildcardFanOut(sel.wildcardFanOut)
+
     if (serializer.includeManifest)
       builder.setMessageManifest(ByteString.copyFromUtf8(message.getClass.getName))
 
@@ -73,6 +75,7 @@ class MessageContainerSerializer(val system: ExtendedActorSystem) extends Serial
       }
 
     }(collection.breakOut)
-    ActorSelectionMessage(msg, elements)
+    val wildcardFanOut = if (selectionEnvelope.hasWildcardFanOut) selectionEnvelope.getWildcardFanOut else false
+    ActorSelectionMessage(msg, elements, wildcardFanOut)
   }
 }

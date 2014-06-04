@@ -1050,7 +1050,14 @@ object AkkaBuild extends Build {
       // Changes in private LevelDB Store by #13962
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_=")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$"), // renamed internall messages
+      
+      // Adding wildcardFanOut to internal message ActorSelectionMessage by #13992
+      FilterAnyProblem("akka.actor.ActorSelectionMessage$"),
+      FilterAnyProblem("akka.actor.ActorSelectionMessage"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.hasWildcardFanOut"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.getWildcardFanOut")
     )
   }
 

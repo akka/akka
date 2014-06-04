@@ -583,7 +583,7 @@ private[remote] class EndpointWriter(
 
   def enqueueInBuffer(msg: AnyRef): Unit = msg match {
     case s @ Send(_: PriorityMessage, _, _, _) ⇒ prioBuffer offer s
-    case s @ Send(ActorSelectionMessage(_: PriorityMessage, _), _, _, _) ⇒ prioBuffer offer s
+    case s @ Send(ActorSelectionMessage(_: PriorityMessage, _, _), _, _, _) ⇒ prioBuffer offer s
     case _ ⇒ buffer offer msg
   }
 
