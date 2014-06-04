@@ -19,6 +19,7 @@ import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transf
 import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 import akka.stream.impl.Ast
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.Future
 
 /**
  * Java API
@@ -50,6 +51,15 @@ abstract class Duct[In, Out] {
    * as they pass through this processing step.
    */
   def map[U](f: Function[Out, U]): Duct[In, U]
+
+  /**
+   * Transform this stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function returns a `Future` of the
+   * element that will be emitted downstream. As many futures as requested elements by
+   * downstream may run in parallel and may complete in any order, but the elements that
+   * are emitted downstream are in the same order as from upstream.
+   */
+  def mapFuture[U](f: Function[Out, Future[U]]): Duct[In, U]
 
   /**
    * Only pass on those elements that satisfy the given predicate.
@@ -329,6 +339,8 @@ abstract class Duct[In, Out] {
  */
 private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, T] {
   override def map[U](f: Function[T, U]): Duct[In, U] = new DuctAdapter(delegate.map(f.apply))
+
+  override def mapFuture[U](f: Function[T, Future[U]]): Duct[In, U] = new DuctAdapter(delegate.mapFuture(f.apply))
 
   override def filter(p: Predicate[T]): Duct[In, T] = new DuctAdapter(delegate.filter(p.test))
 

@@ -115,6 +115,15 @@ abstract class Flow[T] {
   def map[U](f: Function[T, U]): Flow[U]
 
   /**
+   * Transform this stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function returns a `Future` of the
+   * element that will be emitted downstream. As many futures as requested elements by
+   * downstream may run in parallel and may complete in any order, but the elements that
+   * are emitted downstream are in the same order as from upstream.
+   */
+  def mapFuture[U](f: Function[T, Future[U]]): Flow[U]
+
+  /**
    * Only pass on those elements that satisfy the given predicate.
    */
   def filter(p: Predicate[T]): Flow[T]
@@ -401,6 +410,8 @@ trait OnCompleteCallback {
  */
 private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def map[U](f: Function[T, U]): Flow[U] = new FlowAdapter(delegate.map(f.apply))
+
+  override def mapFuture[U](f: Function[T, Future[U]]): Flow[U] = new FlowAdapter(delegate.mapFuture(f.apply))
 
   override def filter(p: Predicate[T]): Flow[T] = new FlowAdapter(delegate.filter(p.test))
 
