@@ -18,9 +18,7 @@ import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
-import akka.testkit.DefaultTimeout
-import akka.testkit.ImplicitSender
-import akka.testkit.TestKit
+import akka.testkit.{ TestActors, DefaultTimeout, ImplicitSender, TestKit }
 import scala.concurrent.duration._
 import scala.collection.immutable
 
@@ -34,7 +32,7 @@ class TestKitUsageSpec
   with WordSpecLike with Matchers with BeforeAndAfterAll {
   import TestKitUsageSpec._
 
-  val echoRef = system.actorOf(Props[EchoActor])
+  val echoRef = system.actorOf(TestActors.echoActorProps)
   val forwardRef = system.actorOf(Props(classOf[ForwardingActor], testActor))
   val filterRef = system.actorOf(Props(classOf[FilteringActor], testActor))
   val randomHead = Random.nextInt(6)
@@ -111,15 +109,6 @@ object TestKitUsageSpec {
       loglevel = "WARNING"
     }
     """
-
-  /**
-   * An Actor that echoes everything you send to it
-   */
-  class EchoActor extends Actor {
-    def receive = {
-      case msg => sender() ! msg
-    }
-  }
 
   /**
    * An Actor that forwards every message to a next Actor

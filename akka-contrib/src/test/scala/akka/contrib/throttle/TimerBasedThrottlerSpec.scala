@@ -20,12 +20,6 @@ import org.scalatest.BeforeAndAfterAll
 import akka.testkit._
 
 object TimerBasedThrottlerSpec {
-  class EchoActor extends Actor {
-    def receive = {
-      case x ⇒ sender() ! x
-    }
-  }
-
   def println(a: Any) = ()
 
   //#demo-code
@@ -70,7 +64,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     }
 
     "keep messages until a target is set" in {
-      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
       1 to 6 foreach { throttler ! _ }
       expectNoMsg(1 second)
@@ -81,7 +75,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     }
 
     "send messages after a `SetTarget(None)` pause" in {
-      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 3 foreach { throttler ! _ }
@@ -99,7 +93,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     }
 
     "keep messages when the target is set to None" in {
-      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 7 foreach { throttler ! _ }
@@ -116,7 +110,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     }
 
     "respect the rate (3 msg/s)" in within(1.5 seconds, 2.5 seconds) {
-      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 3 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 7 foreach { throttler ! _ }
@@ -124,7 +118,7 @@ class TimerBasedThrottlerSpec extends TestKit(ActorSystem("TimerBasedThrottlerSp
     }
 
     "respect the rate (4 msg/s)" in within(1.5 seconds, 2.5 seconds) {
-      val echo = system.actorOf(Props[TimerBasedThrottlerSpec.EchoActor])
+      val echo = system.actorOf(TestActors.echoActorProps)
       val throttler = system.actorOf(Props(classOf[TimerBasedThrottler], 4 msgsPer (1.second.dilated)))
       throttler ! SetTarget(Some(echo))
       1 to 9 foreach { throttler ! _ }
