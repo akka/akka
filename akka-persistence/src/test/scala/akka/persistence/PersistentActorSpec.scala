@@ -135,7 +135,7 @@ object PersistentActorSpec {
       persist(Seq(Evt(s"${cmd.data}-41"), Evt(s"${cmd.data}-42")))(updateState)
     }
 
-    val receiveCommand: Receive = commonBehavior orElse {
+    def receiveCommand: Receive = commonBehavior orElse {
       case c: Cmd                              ⇒ handleCmd(c)
       case SaveSnapshotSuccess(_)              ⇒ probe ! "saved"
       case "snap"                              ⇒ saveSnapshot(events)
@@ -326,6 +326,27 @@ object PersistentActorSpec {
     val receiveCommand: Receive = {
       case Cmd("a") ⇒ persist(5)(evt ⇒ sender() ! evt)
     }
+  }
+
+  class HandleRecoveryFinishedEventProcessor(name: String, probe: ActorRef) extends SnapshottingPersistentActor(name, probe) {
+    val sendingRecover: Receive = {
+      case msg: SnapshotOffer ⇒
+        // sending ourself a normal message tests
+        // that we stash them until recovery is complete
+        self ! "I am the stashed"
+        super.receiveRecover(msg)
+      case RecoveryCompleted ⇒
+        probe ! RecoveryCompleted
+        self ! "I am the recovered"
+        updateState(Evt(RecoveryCompleted))
+    }
+
+    override def receiveRecover = sendingRecover.orElse(super.receiveRecover)
+
+    override def receiveCommand: Receive = super.receiveCommand orElse {
+      case s: String ⇒ probe ! s
+    }
+
   }
 }
 
@@ -604,8 +625,25 @@ abstract class PersistentActorSpec(config: Config) extends AkkaSpec(config) with
 
       expectNoMsg(100.millis)
     }
+    "receive RecoveryFinished if it is handled after all events have been replayed" in {
+      val processor1 = system.actorOf(Props(classOf[SnapshottingPersistentActor], name, testActor))
+      processor1 ! Cmd("b")
+      processor1 ! "snap"
+      processor1 ! Cmd("c")
+      expectMsg("saved")
+      processor1 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42"))
+
+      val processor2 = system.actorOf(Props(classOf[HandleRecoveryFinishedEventProcessor], name, testActor))
+      expectMsg("offered")
+      expectMsg(RecoveryCompleted)
+      expectMsg("I am the stashed")
+      expectMsg("I am the recovered")
+      processor2 ! GetState
+      expectMsg(List("a-1", "a-2", "b-41", "b-42", "c-41", "c-42", RecoveryCompleted))
+    }
   }
 }
 
-class LeveldbPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbEventsourcedSpec"))
-class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemEventsourcedSpec"))
+class LeveldbPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("leveldb", "LeveldbPersistentActorSpec"))
+class InmemPersistentActorSpec extends PersistentActorSpec(PersistenceSpec.config("inmem", "InmemPersistentActorSpec"))

@@ -21,6 +21,8 @@ trait PersistenceDocSpec {
       //#auto-update
     """
 
+  trait SomeOtherMessage
+
   val system: ActorSystem
 
   import system._
@@ -35,7 +37,7 @@ trait PersistenceDocSpec {
         // message successfully written to journal
         case PersistenceFailure(payload, sequenceNr, cause) =>
         // message failed to be written to journal
-        case other =>
+        case m: SomeOtherMessage =>
         // message not written to journal
       }
     }
@@ -87,20 +89,12 @@ trait PersistenceDocSpec {
 
     class MyProcessor4 extends Processor {
       //#recovery-completed
-      override def preStart(): Unit = {
-        super.preStart()
-        self ! "FIRST"
-      }
-
-      def receive = initializing.orElse(active)
+      def receive = initializing
 
       def initializing: Receive = {
-        case "FIRST" =>
+        case RecoveryCompleted =>
           recoveryCompleted()
           context.become(active)
-          unstashAll()
-        case other if recoveryFinished =>
-          stash()
       }
 
       def recoveryCompleted(): Unit = {
