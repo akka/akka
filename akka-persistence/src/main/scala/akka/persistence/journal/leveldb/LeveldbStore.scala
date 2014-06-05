@@ -27,8 +27,8 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
   val nativeLeveldb = config.getBoolean("native")
 
   val leveldbOptions = new Options().createIfMissing(true)
-  val leveldbReadOptions = new ReadOptions().verifyChecksums(config.getBoolean("checksum"))
-  val leveldbWriteOptions = new WriteOptions().sync(config.getBoolean("fsync"))
+  def leveldbReadOptions = new ReadOptions().verifyChecksums(config.getBoolean("checksum"))
+  val leveldbWriteOptions = new WriteOptions().sync(config.getBoolean("fsync")).snapshot(false)
   val leveldbDir = new File(config.getString("dir"))
   var leveldb: DB = _
 
@@ -73,14 +73,16 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     }
   }
 
-  def leveldbSnapshot = leveldbReadOptions.snapshot(leveldb.getSnapshot)
+  def leveldbSnapshot(): ReadOptions = leveldbReadOptions.snapshot(leveldb.getSnapshot)
 
   def withIterator[R](body: DBIterator ⇒ R): R = {
-    val iterator = leveldb.iterator(leveldbSnapshot)
+    val ro = leveldbSnapshot()
+    val iterator = leveldb.iterator(ro)
     try {
       body(iterator)
     } finally {
       iterator.close()
+      ro.snapshot().close()
     }
   }
 
