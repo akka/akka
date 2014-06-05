@@ -1057,7 +1057,10 @@ object AkkaBuild extends Build {
       FilterAnyProblem("akka.actor.ActorSelectionMessage$"),
       FilterAnyProblem("akka.actor.ActorSelectionMessage"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.hasWildcardFanOut"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.getWildcardFanOut")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.getWildcardFanOut"),
+
+      // Adding expectMsg overload to testkit #15425
+      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.expectMsg")
     )
   }
 
