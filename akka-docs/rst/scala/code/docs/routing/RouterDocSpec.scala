@@ -21,6 +21,8 @@ import akka.routing.ScatterGatherFirstCompletedGroup
 import akka.routing.RandomGroup
 import akka.routing.ScatterGatherFirstCompletedPool
 import akka.routing.BalancingPool
+import akka.routing.TailChoppingGroup
+import akka.routing.TailChoppingPool
 
 object RouterDocSpec {
 
@@ -128,10 +130,32 @@ akka.actor.deployment {
   }
 }
 #//#config-scatter-gather-group
+
+#//#config-tail-chopping-pool
+akka.actor.deployment {
+  /parent/router21 {
+    router = tail-chopping-pool
+    nr-of-instances = 5
+    within = 10 seconds
+    tail-chopping-router.interval = 20 milliseconds
+  }
+}
+#//#config-tail-chopping-pool
+    
+#//#config-tail-chopping-group
+akka.actor.deployment {
+  /parent/router23 {
+    router = tail-chopping-group
+    routees.paths = ["/user/workers/w1", "/user/workers/w2", "/user/workers/w3"]
+    within = 10 seconds
+    tail-chopping-router.interval = 20 milliseconds
+  }
+}
+#//#config-tail-chopping-group
     
 #//#config-consistent-hashing-pool
 akka.actor.deployment {
-  /parent/router21 {
+  /parent/router25 {
     router = consistent-hashing-pool
     nr-of-instances = 5
     virtual-nodes-factor = 10
@@ -141,7 +165,7 @@ akka.actor.deployment {
     
 #//#config-consistent-hashing-group
 akka.actor.deployment {
-  /parent/router23 {
+  /parent/router27 {
     router = consistent-hashing-group
     routees.paths = ["/user/workers/w1", "/user/workers/w2", "/user/workers/w3"]
     virtual-nodes-factor = 10
@@ -173,7 +197,7 @@ akka.actor.deployment {
     
 #//#config-resize-pool
 akka.actor.deployment {
-  /parent/router25 {
+  /parent/router29 {
     router = round-robin-pool
     resizer {
       lower-bound = 2
@@ -354,39 +378,61 @@ router-dispatcher {}
     val router20: ActorRef =
       context.actorOf(ScatterGatherFirstCompletedGroup(paths,
         within = 10.seconds).props(), "router20")
-    //#scatter-gather-group-2  
+    //#scatter-gather-group-2
 
-    //#consistent-hashing-pool-1
+    //#tail-chopping-pool-1
     val router21: ActorRef =
       context.actorOf(FromConfig.props(Props[Worker]), "router21")
+    //#tail-chopping-pool-1
+
+    //#tail-chopping-pool-2
+    val router22: ActorRef =
+      context.actorOf(TailChoppingPool(5, within = 10.seconds, interval = 20.millis).
+        props(Props[Worker]), "router22")
+    //#tail-chopping-pool-2
+
+    //#tail-chopping-group-1
+    val router23: ActorRef =
+      context.actorOf(FromConfig.props(), "router23")
+    //#tail-chopping-group-1
+
+    //#tail-chopping-group-2
+    val router24: ActorRef =
+      context.actorOf(TailChoppingGroup(paths,
+        within = 10.seconds, interval = 20.millis).props(), "router24")
+    //#tail-chopping-group-2
+
+    //#consistent-hashing-pool-1
+    val router25: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router25")
     //#consistent-hashing-pool-1
 
     //#consistent-hashing-pool-2
-    val router22: ActorRef =
+    val router26: ActorRef =
       context.actorOf(ConsistentHashingPool(5).props(Props[Worker]),
-        "router22")
+        "router26")
     //#consistent-hashing-pool-2
 
     //#consistent-hashing-group-1
-    val router23: ActorRef =
-      context.actorOf(FromConfig.props(), "router23")
+    val router27: ActorRef =
+      context.actorOf(FromConfig.props(), "router27")
     //#consistent-hashing-group-1
 
     //#consistent-hashing-group-2
-    val router24: ActorRef =
-      context.actorOf(ConsistentHashingGroup(paths).props(), "router24")
+    val router28: ActorRef =
+      context.actorOf(ConsistentHashingGroup(paths).props(), "router28")
     //#consistent-hashing-group-2  
 
     //#resize-pool-1
-    val router25: ActorRef =
-      context.actorOf(FromConfig.props(Props[Worker]), "router25")
+    val router29: ActorRef =
+      context.actorOf(FromConfig.props(Props[Worker]), "router29")
     //#resize-pool-1
 
     //#resize-pool-2
     val resizer = DefaultResizer(lowerBound = 2, upperBound = 15)
-    val router26: ActorRef =
+    val router30: ActorRef =
       context.actorOf(RoundRobinPool(5, Some(resizer)).props(Props[Worker]),
-        "router26")
+        "router30")
     //#resize-pool-2  
 
     def receive = {
