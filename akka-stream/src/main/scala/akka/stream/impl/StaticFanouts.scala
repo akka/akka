@@ -16,31 +16,14 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any
   extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
-
-    var hasOtherSubscription = false
-    var hasDownstreamSubscription = false
-    var pendingRemoveSubscription: List[S] = Nil
-
-    registerSubscriber(other.getSubscriber)
+    var secondarySubscribed = false
 
     override def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
-      super.registerSubscriber(subscriber)
-      if (subscriber == other.getSubscriber)
-        hasOtherSubscription = true
-      else
-        hasDownstreamSubscription = true
-      if (pendingRemoveSubscription.nonEmpty && hasOtherSubscription && hasDownstreamSubscription) {
-        pendingRemoveSubscription foreach unregisterSubscription
-        pendingRemoveSubscription = Nil
+      if (!secondarySubscribed) {
+        super.registerSubscriber(other.getSubscriber)
+        secondarySubscribed = true
       }
-    }
-
-    override def unregisterSubscription(subscription: S): Unit = {
-      // make sure that we don't shutdown because of premature cancel
-      if (hasOtherSubscription && hasDownstreamSubscription)
-        super.unregisterSubscription(subscription)
-      else
-        pendingRemoveSubscription :+= subscription // defer these until both subscriptions have been registered
+      super.registerSubscriber(subscriber)
     }
 
     override def afterShutdown(): Unit = {
@@ -49,7 +32,7 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any
     }
   }
 
-  var running = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
+  val running = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val in = primaryInputs.dequeueInputElement()
     primaryOutputs.enqueueOutputElement(in)
   }
