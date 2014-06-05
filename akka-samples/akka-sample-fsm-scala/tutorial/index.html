@@ -14,6 +14,7 @@ This sample is an adaptation of
 It illustrates how state and behavior can be managed within
 an Actor with two different approaches; using <code>become</code> and using
 the <code>FSM</code> trait.
+The sample also contains an implementation of a simple redelivering actor implemented as a FSM.
 </p>
 
 
@@ -33,7 +34,7 @@ behavior and its parameters.
 </p>
 
 <p>
-Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application main class
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application's main class
 <code>sample.become.DiningHakkersOnBecome</code>. 
 In the log output you can see the actions of the <code>Hakker</code> actors.
 </p>
@@ -57,8 +58,8 @@ It illustrates how the states and transitions can be defined with the <code>akka
 </p>
 
 <p>
-Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application main class
-<code>sample.fsm.DiningHakkersOnFsm</code>. 
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application's main class
+<code>sample.fsm.DiningHakkersOnFsm</code>.
 In the log output you can see the actions of the <code>Hakker</code> actors.
 </p>
 
@@ -66,7 +67,27 @@ In the log output you can see the actions of the <code>Hakker</code> actors.
 Read more about <code>akka.actor.FSM</code> in
 <a href="http://doc.akka.io/docs/akka/2.4-SNAPSHOT/scala/fsm.html" target="_blank">the documentation</a>.
 </p>
-  
+
+</div>
+<div>
+
+<h2>Simple redelivering FSM</h2>
+
+<p>
+Open <a href="#code/src/main/scala/sample/redelivery/FsmSimpleRedelivery.scala" class="shortcut">FsmSimpleRedelivery.scala</a>.
+</p>
+
+<p>
+It illustrates how you can take care of message redelivery between two or more sides.
+This implementation is able to process only one message at a time.
+</p>
+
+<p>
+Go to the <a href="#run" class="shortcut">Run</a> tab, and start the application's main class
+<code>sample.redelivery.FsmSimpleRedelivery</code>.
+In the log output you can see the actions of the <code>Requester</code> and the <code>Receiver</code> actors.
+</p>
+
 </div>
 
 </body>
