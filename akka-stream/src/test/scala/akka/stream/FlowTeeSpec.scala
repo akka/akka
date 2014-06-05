@@ -79,23 +79,6 @@ class FlowTeeSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
-    "produce to downstream even though other cancels before downstream has subscribed" in {
-      val c1 = StreamTestKit.consumerProbe[Int]
-      val c2 = StreamTestKit.consumerProbe[Int]
-      val p = Flow(List(1, 2, 3)).
-        tee(c1).
-        toProducer(materializer)
-      val sub1 = c1.expectSubscription()
-      sub1.cancel()
-      p.produceTo(c2)
-      val sub2 = c2.expectSubscription()
-      sub2.requestMore(3)
-      c2.expectNext(1)
-      c2.expectNext(2)
-      c2.expectNext(3)
-      c2.expectComplete()
-    }
-
   }
 
 }
