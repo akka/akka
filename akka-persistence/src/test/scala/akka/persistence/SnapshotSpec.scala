@@ -33,10 +33,10 @@ object SnapshotSpec {
   case class DeleteN(criteria: SnapshotSelectionCriteria)
 
   class DeleteSnapshotTestProcessor(name: String, probe: ActorRef) extends LoadSnapshotTestProcessor(name, probe) {
-    override def receive = {
+    override def receive = receiveDelete orElse super.receive
+    def receiveDelete: Receive = {
       case Delete1(metadata) ⇒ deleteSnapshot(metadata.sequenceNr, metadata.timestamp)
       case DeleteN(criteria) ⇒ deleteSnapshots(criteria)
-      case other             ⇒ super.receive(other)
     }
   }
 }
@@ -75,6 +75,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       }
       expectMsg("e-5")
       expectMsg("f-6")
+      expectMsg(RecoveryCompleted)
     }
     "recover state starting from the most recent snapshot matching an upper sequence number bound" in {
       val processor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
@@ -88,6 +89,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
           timestamp should be > (0L)
       }
       expectMsg("c-3")
+      expectMsg(RecoveryCompleted)
     }
     "recover state starting from the most recent snapshot matching an upper sequence number bound (without further replay)" in {
       val processor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
@@ -101,6 +103,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
           state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
+      expectMsg(RecoveryCompleted)
       expectMsg("done")
     }
     "recover state starting from the most recent snapshot matching criteria" in {
@@ -118,6 +121,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       expectMsg("d-4")
       expectMsg("e-5")
       expectMsg("f-6")
+      expectMsg(RecoveryCompleted)
     }
     "recover state starting from the most recent snapshot matching criteria and an upper sequence number bound" in {
       val processor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
@@ -131,6 +135,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
           timestamp should be > (0L)
       }
       expectMsg("c-3")
+      expectMsg(RecoveryCompleted)
     }
     "recover state from scratch if snapshot based recovery is disabled" in {
       val processor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
@@ -140,6 +145,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       expectMsg("a-1")
       expectMsg("b-2")
       expectMsg("c-3")
+      expectMsg(RecoveryCompleted)
     }
     "support single message deletions" in {
       val deleteProbe = TestProbe()
@@ -158,6 +164,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
           state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
       }
+      expectMsg(RecoveryCompleted)
       expectMsg("done")
 
       processor1 ! Delete1(metadata)
@@ -174,6 +181,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       }
       expectMsg("c-3")
       expectMsg("d-4")
+      expectMsg(RecoveryCompleted)
     }
     "support bulk message deletions" in {
       val deleteProbe = TestProbe()
@@ -190,6 +198,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
         case (md @ SnapshotMetadata(`processorId`, 4, _), state) ⇒
           state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
+      expectMsg(RecoveryCompleted)
       deleteProbe.expectMsgType[DeleteSnapshots]
 
       // recover processor from replayed messages (all snapshots deleted)
@@ -200,6 +209,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       expectMsg("b-2")
       expectMsg("c-3")
       expectMsg("d-4")
+      expectMsg(RecoveryCompleted)
     }
   }
 }

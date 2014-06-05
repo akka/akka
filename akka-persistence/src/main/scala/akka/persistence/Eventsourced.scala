@@ -157,6 +157,8 @@ private[persistence] trait Eventsourced extends Processor {
       receiveRecover(s)
     case f: RecoveryFailure if receiveRecover.isDefinedAt(f) ⇒
       receiveRecover(f)
+    case RecoveryCompleted if receiveRecover.isDefinedAt(RecoveryCompleted) ⇒
+      receiveRecover(RecoveryCompleted)
   }
 
   sealed trait PersistInvocation {
@@ -258,6 +260,9 @@ private[persistence] trait Eventsourced extends Processor {
    * This handler must not have side-effects other than changing processor state i.e. it
    * should not perform actions that may fail, such as interacting with external services,
    * for example.
+   *
+   * If recovery fails, the actor will be stopped. This can be customized by
+   * handling [[RecoveryFailure]].
    *
    * @see [[Recover]]
    */
@@ -428,6 +433,9 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * This handler must not have side-effects other than changing processor state i.e. it
    * should not perform actions that may fail, such as interacting with external services,
    * for example.
+   *
+   * If recovery fails, the actor will be stopped. This can be customized by
+   * handling [[RecoveryFailure]].
    *
    * @see [[Recover]]
    */

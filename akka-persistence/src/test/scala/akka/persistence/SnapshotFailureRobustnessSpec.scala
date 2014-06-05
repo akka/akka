@@ -55,6 +55,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
       val sProcessor = system.actorOf(Props(classOf[SaveSnapshotTestProcessor], name, testActor))
       val processorId = name
 
+      expectMsg(RecoveryCompleted)
       sProcessor ! Persistent("blahonga")
       expectMsg(1)
       sProcessor ! Persistent("kablama")
@@ -71,6 +72,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
             timestamp should be > (0L)
         }
         expectMsg("kablama-2")
+        expectMsg(RecoveryCompleted)
         expectNoMsg(1 second)
       } finally {
         system.eventStream.unsubscribe(testActor, classOf[Logging.Error])
