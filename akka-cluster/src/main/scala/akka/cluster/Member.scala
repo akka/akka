@@ -19,8 +19,7 @@ import MemberStatus._
  */
 @SerialVersionUID(1L)
 class Member private[cluster] (
-  /** INTERNAL API **/
-  private[cluster] val uniqueAddress: UniqueAddress,
+  val uniqueAddress: UniqueAddress,
   /** INTERNAL API **/
   private[cluster] val upNumber: Int,
   val status: MemberStatus,
@@ -216,10 +215,12 @@ object MemberStatus {
 }
 
 /**
- * INTERNAL API
+ * Member identifier consisting of address and random `uid`.
+ * The `uid` is needed to be able to distinguish different
+ * incarnations of a member with same hostname and port.
  */
 @SerialVersionUID(1L)
-private[cluster] final case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
+final case class UniqueAddress(address: Address, uid: Int) extends Ordered[UniqueAddress] {
   override def hashCode = uid
 
   def compare(that: UniqueAddress): Int = {
