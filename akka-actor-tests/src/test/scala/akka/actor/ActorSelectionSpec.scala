@@ -144,7 +144,6 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
 
     "select system-generated actors" in {
       identify("/user") should be(Some(user))
-      identify("/deadLetters") should be(Some(system.deadLetters))
       identify("/system") should be(Some(syst))
       identify(syst.path) should be(Some(syst))
       identify(syst.path.toStringWithoutAddress) should be(Some(syst))
@@ -155,19 +154,21 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       identify(root.path) should be(Some(root))
       identify(root.path.toStringWithoutAddress) should be(Some(root))
       identify("user") should be(Some(user))
-      identify("deadLetters") should be(Some(system.deadLetters))
       identify("system") should be(Some(syst))
       identify("user/") should be(Some(user))
-      identify("deadLetters/") should be(Some(system.deadLetters))
       identify("system/") should be(Some(syst))
     }
 
-    "return deadLetters or ActorIdentity(None), respectively, for non-existing paths" in {
+    "return ActorIdentity(None), respectively, for non-existing paths, and deadLetters" in {
       identify("a/b/c") should be(None)
       identify("a/b/c") should be(None)
       identify("akka://all-systems/Nobody") should be(None)
       identify("akka://all-systems/user") should be(None)
       identify(system / "hallo") should be(None)
+      identify("foo://user") should be(None)
+      identify("/deadLetters") should be(None)
+      identify("deadLetters") should be(None)
+      identify("deadLetters/") should be(None)
     }
 
   }

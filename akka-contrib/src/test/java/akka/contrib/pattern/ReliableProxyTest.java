@@ -92,7 +92,7 @@ public class ReliableProxyTest {
 
   @Test
   public void demonstrateTransitions() {
-    final ActorRef target = system.deadLetters();
+    final ActorRef target = TestProbe.apply(system).ref();
     final ActorRef parent = system.actorOf(Props.create(ProxyTransitionParent.class, target.path()));
     final TestProbe probe = TestProbe.apply(system);
     parent.tell("hello", probe.ref());
