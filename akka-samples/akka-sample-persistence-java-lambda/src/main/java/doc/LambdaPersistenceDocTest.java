@@ -19,6 +19,8 @@ import static java.util.Arrays.asList;
 
 public class LambdaPersistenceDocTest {
 
+  public interface SomeOtherMessage {}
+
   public interface ProcessorMethods {
     //#processor-id
     public String processorId();
@@ -50,7 +52,7 @@ public class LambdaPersistenceDocTest {
             Throwable cause = failure.cause();
             // ...
           }).
-          matchAny(otherwise -> {
+          match(SomeOtherMessage.class, message -> {
             // message not written to journal
           }).build()
         );
@@ -136,28 +138,14 @@ public class LambdaPersistenceDocTest {
       
       public MyProcessor5() {
         receive(ReceiveBuilder.
-          matchEquals("FIRST", s -> {
+          match(RecoveryCompleted.class, r -> {
             recoveryCompleted();
             getContext().become(active);
-            unstashAll();
-          }).
-          matchAny(message -> {
-            if (recoveryFinished()) {
-              stash(); 
-            } else {
-              active.apply(message);  
-            }
           }).
           build()
         );
       }
 
-      @Override
-      public void preStart() throws Exception {
-        super.preStart();
-        self().tell("FIRST", self());
-      }
-  
       private void recoveryCompleted() {
           // perform init after recovery, before any other messages
           // ...

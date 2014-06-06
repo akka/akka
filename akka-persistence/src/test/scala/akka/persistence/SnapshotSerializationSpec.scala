@@ -52,6 +52,7 @@ object SnapshotSerializationSpec {
       case s: String               ⇒ saveSnapshot(new MySnapshot(s))
       case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
       case SnapshotOffer(md, s)    ⇒ probe ! ((md, s))
+      case RecoveryCompleted       ⇒ // ignore
       case other                   ⇒ probe ! other
     }
   }
