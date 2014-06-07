@@ -141,18 +141,18 @@ trait ActorProducer[T] extends Actor {
    * otherwise `onNext` will throw `IllegalStateException`.
    */
   def onNext(element: T): Unit = lifecycleState match {
-    case Active | PreSubscriber =>
+    case Active | PreSubscriber ⇒
       if (demand > 0) {
         demand -= 1
         subscriber.onNext(element)
       } else
         throw new IllegalStateException(
           "onNext is not allowed when the stream has not requested elements, totalDemand was 0")
-    case _: ErrorEmitted =>
+    case _: ErrorEmitted ⇒
       throw new IllegalStateException("onNext must not be called after onError")
-    case Completed =>
+    case Completed ⇒
       throw new IllegalStateException("onNext must not be called after onComplete")
-    case Canceled => // drop
+    case Canceled ⇒ // drop
   }
 
   /**
@@ -160,16 +160,16 @@ trait ActorProducer[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onComplete(): Unit = lifecycleState match {
-    case Active | PreSubscriber =>
+    case Active | PreSubscriber ⇒
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
         subscriber.onComplete()
       subscriber = null // not used after onError
-    case Completed =>
+    case Completed ⇒
       throw new IllegalStateException("onComplete must only be called once")
-    case _: ErrorEmitted =>
+    case _: ErrorEmitted ⇒
       throw new IllegalStateException("onComplete must not be called after onError")
-    case Canceled => // drop
+    case Canceled ⇒ // drop
   }
 
   /**
@@ -177,16 +177,16 @@ trait ActorProducer[T] extends Actor {
    * call [[#onNext]], [[#onError]] and [[#onComplete]].
    */
   def onError(cause: Throwable): Unit = lifecycleState match {
-    case Active | PreSubscriber =>
+    case Active | PreSubscriber ⇒
       lifecycleState = ErrorEmitted(cause)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
         subscriber.onError(cause)
       subscriber = null // not used after onError
-    case _: ErrorEmitted =>
+    case _: ErrorEmitted ⇒
       throw new IllegalStateException("onError must only be called once")
-    case Completed =>
+    case Completed ⇒
       throw new IllegalStateException("onError must not be called after onComplete")
-    case Canceled => // drop
+    case Canceled ⇒ // drop
   }
 
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
