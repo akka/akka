@@ -47,7 +47,7 @@ import akka.actor.Terminated
  * <ul>
  * <li>Counters: [[GCounter]], [[PNCounter]]</li>
  * <li>Registers: [[LWWRegister]], [[Flag]]</li>
- * <li>Sets: [[GSet]], [[TwoPhaseSet]], [[ORSet]]</li>
+ * <li>Sets: [[GSet]], [[ORSet]]</li>
  * <li>Maps: [[ORMap]], [[LWWMap]], [[PNCounterMap]]</li>
  * </ul>
  *
