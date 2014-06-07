@@ -14,6 +14,10 @@ import scala.collection.immutable.TreeMap
 object ORSet {
   val empty: ORSet = new ORSet
   def apply(): ORSet = empty
+  /**
+   * Java API
+   */
+  def create(): ORSet = empty
 
   def unapply(value: Any): Option[Set[Any]] = value match {
     case s: ORSet ⇒ Some(s.value)

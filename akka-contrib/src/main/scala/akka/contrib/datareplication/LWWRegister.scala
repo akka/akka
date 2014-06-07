@@ -17,6 +17,12 @@ object LWWRegister {
   def apply(node: Cluster, initialValue: Any): LWWRegister =
     apply(node.selfUniqueAddress, initialValue)
 
+  /**
+   * Java API
+   */
+  def create(node: Cluster, initialValue: Any): LWWRegister =
+    apply(node.selfUniqueAddress, initialValue)
+
   def unapply(value: Any): Option[Any] = value match {
     case r: LWWRegister ⇒ Some(r.value)
     case _              ⇒ None

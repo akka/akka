@@ -19,11 +19,10 @@ object VectorClock {
 
   val empty: VectorClock = new VectorClock
   def apply(): VectorClock = empty
-
-  private object Timestamp {
-    final val Zero = 0L
-    final val EndMarker = Long.MinValue
-  }
+  /**
+   * Java API
+   */
+  def create(): VectorClock = empty
 
   sealed trait Ordering
   case object After extends Ordering
@@ -34,6 +33,31 @@ object VectorClock {
    * Marker to ensure that we do a full order comparison instead of bailing out early.
    */
   private case object FullOrder extends Ordering
+
+  /**
+   * Java API: The [[After]] instance
+   */
+  def AfterInstance = After
+
+  /**
+   * Java API: The [[Before]] instance
+   */
+  def BeforeInstance = Before
+
+  /**
+   * Java API: The [[Same]] instance
+   */
+  def SameInstance = Same
+
+  /**
+   * Java API: The [[Concurrent]] instance
+   */
+  def ConcurrentInstance = Concurrent
+
+  private object Timestamp {
+    final val Zero = 0L
+    final val EndMarker = Long.MinValue
+  }
 
   /**
    * Marker to signal that we have reached the end of a vector clock.

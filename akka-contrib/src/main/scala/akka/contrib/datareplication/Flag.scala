@@ -6,6 +6,10 @@ package akka.contrib.datareplication
 object Flag {
   val empty = new Flag(false)
   def apply(): Flag = empty
+  /**
+   * Java API
+   */
+  def create(): Flag = empty
 
   def unapply(value: Any): Option[Boolean] = value match {
     case f: Flag ⇒ Some(f.value)

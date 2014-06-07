@@ -9,6 +9,10 @@ import akka.cluster.UniqueAddress
 object PNCounterMap {
   val empty: PNCounterMap = new PNCounterMap
   def apply(): PNCounterMap = empty
+  /**
+   * Java API
+   */
+  def create(): PNCounterMap = empty
 
   def unapply(value: Any): Option[Map[String, Long]] = value match {
     case m: PNCounterMap ⇒ Some(m.entries)

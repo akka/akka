@@ -10,6 +10,10 @@ import akka.cluster.UniqueAddress
 object ORMap {
   val empty: ORMap = new ORMap
   def apply(): ORMap = empty
+  /**
+   * Java API
+   */
+  def create(): ORMap = empty
 
   def unapply(value: Any): Option[Map[String, ReplicatedData]] = value match {
     case r: ORMap ⇒ Some(r.entries)

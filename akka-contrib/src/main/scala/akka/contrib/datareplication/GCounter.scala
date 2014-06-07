@@ -9,6 +9,10 @@ import akka.cluster.UniqueAddress
 object GCounter {
   val empty: GCounter = new GCounter
   def apply(): GCounter = empty
+  /**
+   * Java API
+   */
+  def create(): GCounter = empty
 
   def unapply(value: Any): Option[Long] = value match {
     case c: GCounter ⇒ Some(c.value)

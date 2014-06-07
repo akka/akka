@@ -6,6 +6,10 @@ package akka.contrib.datareplication
 object GSet {
   val empty: GSet = new GSet(Set.empty)
   def apply(): GSet = empty
+  /**
+   * Java API
+   */
+  def create(): GSet = empty
 
   def unapply(value: Any): Option[Set[Any]] = value match {
     case s: GSet ⇒ Some(s.value)

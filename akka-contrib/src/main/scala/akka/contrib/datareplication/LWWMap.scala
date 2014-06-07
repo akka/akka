@@ -9,6 +9,10 @@ import akka.cluster.UniqueAddress
 object LWWMap {
   val empty: LWWMap = new LWWMap
   def apply(): LWWMap = empty
+  /**
+   * Java API
+   */
+  def create(): LWWMap = empty
 
   def unapply(value: Any): Option[Map[String, Any]] = value match {
     case m: LWWMap ⇒ Some(m.entries)

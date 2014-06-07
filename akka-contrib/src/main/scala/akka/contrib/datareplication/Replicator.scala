@@ -189,7 +189,11 @@ import akka.actor.Terminated
  */
 object Replicator {
 
-  // FIXME docs
+  /**
+   * Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor.
+   *
+   * Use `Option.apply` to create the `Option` from Java.
+   */
   def props(
     role: Option[String],
     gossipInterval: FiniteDuration = 2.second,
@@ -198,7 +202,13 @@ object Replicator {
     maxPruningDissemination: FiniteDuration = 60.seconds): Props =
     Props(new Replicator(role, gossipInterval, maxDeltaElements, pruningInterval, maxPruningDissemination))
 
-  // FIXME Java API props
+  /**
+   * Java API: Factory method for the [[akka.actor.Props]] of the [[Replicator]] actor
+   * with default values.
+   *
+   * Use `Option.apply` to create the `Option`.
+   */
+  def defaultProps(role: Option[String]): Props = props(role)
 
   sealed trait ReadConsistency
   object ReadOne extends ReadFrom(1)
@@ -216,9 +226,61 @@ object Replicator {
   case object WriteQuorum extends WriteConsistency
   case object WriteAll extends WriteConsistency
 
-  // FIXME Java API of nested case objects
+  /**
+   * Java API: The [[ReadOne]] instance
+   */
+  def ReadOneInstance = ReadOne
+
+  /**
+   * Java API: The [[ReadTwo]] instance
+   */
+  def ReadTwoInstance = ReadTwo
+
+  /**
+   * Java API: The [[ReadThree]] instance
+   */
+  def ReadThreeInstance = ReadThree
+
+  /**
+   * Java API: The [[ReadQuorum]] instance
+   */
+  def ReadQuorumInstance = ReadQuorum
+
+  /**
+   * Java API: The [[ReadAll]] instance
+   */
+  def ReadAllInstance = ReadAll
+
+  /**
+   * Java API: The [[WriteOne]] instance
+   */
+  def WriteOneInstance = WriteOne
+
+  /**
+   * Java API: The [[WriteTwo]] instance
+   */
+  def WriteTwoInstance = WriteTwo
+
+  /**
+   * Java API: The [[WriteThree]] instance
+   */
+  def WriteThreeInstance = WriteThree
+
+  /**
+   * Java API: The [[WriteQuorum]] instance
+   */
+  def WriteQuorumInstance = WriteQuorum
+
+  /**
+   * Java API: The [[WriteAll]] instance
+   */
+  def WriteAllInstance = WriteAll
 
   case object GetKeys
+  /**
+   * Java API: The [[GetKeys]] instance
+   */
+  def GetKeysInstance = GetKeys
   case class GetKeysResult(keys: Set[String]) {
     /**
      * Java API
@@ -237,7 +299,12 @@ object Replicator {
     def apply(key: String): Get = Get(key, ReadOne, Duration.Zero, None)
   }
   case class Get(key: String, consistency: ReadConsistency, timeout: FiniteDuration, request: Option[Any] = None)
-    extends ReplicatorMessage
+    extends ReplicatorMessage {
+    /**
+     * Java API: `Get` value from local `Replicator`, i.e. `ReadOne` consistency.
+     */
+    def this(key: String) = this(key, ReadOne, Duration.Zero, None)
+  }
   case class GetSuccess(key: String, data: ReplicatedData, seqNo: Long, request: Option[Any])
     extends ReplicatorMessage
   case class NotFound(key: String, request: Option[Any])
@@ -268,7 +335,20 @@ object Replicator {
       Update(key, data, seqNo, WriteOne, Duration.Zero, None)
   }
   case class Update(key: String, data: ReplicatedData, seqNo: Long,
-                    consistency: WriteConsistency, timeout: FiniteDuration, request: Option[Any] = None)
+                    consistency: WriteConsistency, timeout: FiniteDuration, request: Option[Any] = None) {
+    /**
+     * Java API `Update` value of local `Replicator`, i.e. `WriteOne` consistency.
+     */
+    def this(key: String, data: ReplicatedData, seqNo: Long) =
+      this(key, data, seqNo, WriteOne, Duration.Zero, None)
+
+    /**
+     * Java API: `Update` value of local `Replicator`, i.e. `WriteOne` consistency.
+     * Use `Option.apply` to create the `Option`.
+     */
+    def this(key: String, data: ReplicatedData, seqNo: Long, request: Option[Any]) =
+      this(key, data, seqNo, WriteOne, Duration.Zero, None)
+  }
   case class UpdateSuccess(key: String, seqNo: Any, request: Option[Any])
   sealed trait UpdateFailure {
     def key: String
@@ -290,7 +370,13 @@ object Replicator {
      */
     def apply(key: String): Delete = Delete(key, WriteOne, Duration.Zero)
   }
-  case class Delete(key: String, consistency: WriteConsistency, timeout: FiniteDuration)
+  case class Delete(key: String, consistency: WriteConsistency, timeout: FiniteDuration) {
+    /**
+     * Java API: `Delete` value of local `Replicator`, i.e. `WriteOne`
+     * consistency.
+     */
+    def this(key: String) = this(key, WriteOne, Duration.Zero)
+  }
   case class DeleteSuccess(key: String)
   case class ReplicationDeleteFailure(key: String)
   case class DataDeleted(key: String)
@@ -1020,9 +1106,3 @@ private[akka] class ReadAggregator(
   }
 }
 
-/*
-More TODO
-- Java API
-- additional documentation
-- protobuf
-*/ 

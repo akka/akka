@@ -16,7 +16,11 @@ import akka.actor.ExtendedActorSystem
 import akka.cluster.UniqueAddress
 import akka.contrib.datareplication.protobuf.msg.{ ReplicatorMessages ⇒ dm }
 import akka.serialization.SerializationExtension
+import akka.serialization.JSerializer
 
+/**
+ * Some useful serialization helper methods.
+ */
 trait SerializationSupport {
 
   private final val BufferSize = 1024 * 4
@@ -85,3 +89,8 @@ trait SerializationSupport {
   }
 
 }
+
+/**
+ * Java API
+ */
+abstract class AbstractSerializationSupport extends JSerializer with SerializationSupport
