@@ -75,13 +75,13 @@ case class LWWMap(
   override def merge(that: LWWMap): LWWMap =
     copy(underlying.merge(that.underlying))
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    underlying.hasDataFrom(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    underlying.needPruningFrom(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): LWWMap =
-    copy(underlying.prune(from, to))
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): LWWMap =
+    copy(underlying.prune(removedNode, collapseInto))
 
-  override def clear(from: UniqueAddress): LWWMap =
-    copy(underlying.clear(from))
+  override def pruningCleanup(removedNode: UniqueAddress): LWWMap =
+    copy(underlying.pruningCleanup(removedNode))
 }
 

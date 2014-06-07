@@ -14,17 +14,17 @@ public class JavaImplOfReplicatedData extends AbstractReplicatedData implements
   }
 
   @Override
-  public boolean hasDataFrom(UniqueAddress node) {
+  public boolean needPruningFrom(UniqueAddress removedNode) {
     return false;
   }
 
   @Override
-  public JavaImplOfReplicatedData prune(UniqueAddress from, UniqueAddress to) {
+  public JavaImplOfReplicatedData prune(UniqueAddress removedNode, UniqueAddress collapseInto) {
     return this;
   }
 
   @Override
-  public JavaImplOfReplicatedData clear(UniqueAddress from) {
+  public JavaImplOfReplicatedData pruningCleanup(UniqueAddress removedNode) {
     return this;
   }
 }

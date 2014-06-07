@@ -124,7 +124,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             expectMsgPF() {
               case GetSuccess(_, c: GCounter, _, _) ⇒
                 c.value should be(9)
-                c.hasDataFrom(thirdUniqueAddress) should be(false)
+                c.needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
@@ -134,7 +134,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             expectMsgPF() {
               case GetSuccess(_, s: ORSet, _, _) ⇒
                 s.value should be(Set("a", "b", "c"))
-                s.hasDataFrom(thirdUniqueAddress) should be(false)
+                s.needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }
@@ -144,7 +144,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
             expectMsgPF() {
               case GetSuccess(_, m: PNCounterMap, _, _) ⇒
                 m.entries should be(Map("x" -> 3L, "y" -> 3L))
-                m.hasDataFrom(thirdUniqueAddress) should be(false)
+                m.needPruningFrom(thirdUniqueAddress) should be(false)
             }
           }
         }

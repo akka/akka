@@ -76,15 +76,15 @@ case class GCounter(
     GCounter(merged)
   }
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    state.contains(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    state.contains(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): GCounter =
-    state.get(from) match {
-      case Some(value) ⇒ copy(state = state - from).increment(to, value)
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): GCounter =
+    state.get(removedNode) match {
+      case Some(value) ⇒ copy(state = state - removedNode).increment(collapseInto, value)
       case None        ⇒ this
     }
 
-  override def clear(from: UniqueAddress): GCounter = copy(state = state - from)
+  override def pruningCleanup(removedNode: UniqueAddress): GCounter = copy(state = state - removedNode)
 }
 

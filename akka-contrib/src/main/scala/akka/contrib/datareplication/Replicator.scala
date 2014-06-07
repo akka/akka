@@ -180,7 +180,7 @@ import akka.actor.Terminated
  * and the counts done by that node as value. When pruning the value of the removed node is
  * moved to the entry owned by the leader node. See [[RemovedNodePruning#prune]].</li>
  * <li>Thereafter the data is always cleared from parts associated with the removed node so that
- * it does not come back when merging. See [[RemovedNodePruning#clear]]</li>
+ * it does not come back when merging. See [[RemovedNodePruning#pruningCleanup]]</li>
  * <li>After another `maxPruningDissemination` duration after pruning the last entry from the
  * removed node the `PruningPerformed` markers in the data envelope are collapsed into a
  * single tombstone entry, for efficiency. Clients may continue to use old data and therefore
@@ -365,7 +365,7 @@ object Replicator {
 
       private def cleaned(c: ReplicatedData, p: Map[UniqueAddress, PruningState]): ReplicatedData = p.foldLeft(c) {
         case (c: RemovedNodePruning, (removed, PruningState(_, PruningPerformed))) ⇒
-          if (c.hasDataFrom(removed)) c.clear(removed) else c
+          if (c.needPruningFrom(removed)) c.pruningCleanup(removed) else c
         case (c, _) ⇒ c
       }
 
@@ -545,7 +545,7 @@ class Replicator(
           val currentSeqNo = seqNumbers(key)
           if (currentSeqNo == seqNo) {
             seqNumbers = seqNumbers.updated(key, currentSeqNo + 1)
-            val merged = envelope.merge(clearTombstoned(data))
+            val merged = envelope.merge(pruningCleanupTombstoned(data))
             setData(key, merged)
             Success(merged)
           } else
@@ -557,7 +557,7 @@ class Replicator(
         }
       case None ⇒
         seqNumbers = seqNumbers.updated(key, 1L)
-        val envelope = DataEnvelope(clearTombstoned(data))
+        val envelope = DataEnvelope(pruningCleanupTombstoned(data))
         setData(key, envelope)
         Success(envelope)
     }
@@ -573,14 +573,14 @@ class Replicator(
       case Some(DataEnvelope(DeletedData, _)) ⇒ // already deleted
       case Some(envelope @ DataEnvelope(existing, _)) ⇒
         if (existing.getClass == writeEnvelope.data.getClass || writeEnvelope.data == DeletedData) {
-          val merged = envelope.merge(clearTombstoned(writeEnvelope)).addSeen(selfAddress)
+          val merged = envelope.merge(pruningCleanupTombstoned(writeEnvelope)).addSeen(selfAddress)
           setData(key, merged)
         } else {
           log.warning("Wrong type for writing [{}], existing type [{}], got [{}]",
             key, existing.getClass.getName, writeEnvelope.data.getClass.getName)
         }
       case None ⇒
-        setData(key, clearTombstoned(writeEnvelope).addSeen(selfAddress))
+        setData(key, pruningCleanupTombstoned(writeEnvelope).addSeen(selfAddress))
     }
 
   def receiveGetKeys(): Unit =
@@ -817,31 +817,31 @@ class Replicator(
         tombstoneNodes += removed
         dataEntries.foreach {
           case (key, (envelope @ DataEnvelope(data: RemovedNodePruning, _), _)) ⇒
-            setData(key, clearTombstoned(removed, envelope))
+            setData(key, pruningCleanupTombstoned(removed, envelope))
           case _ ⇒ // deleted, or pruning not needed
         }
       case (removed, timestamp) ⇒ // not ready
     }
   }
 
-  def clearTombstoned(envelope: DataEnvelope): DataEnvelope =
-    tombstoneNodes.foldLeft(envelope)((c, removed) ⇒ clearTombstoned(removed, c))
+  def pruningCleanupTombstoned(envelope: DataEnvelope): DataEnvelope =
+    tombstoneNodes.foldLeft(envelope)((c, removed) ⇒ pruningCleanupTombstoned(removed, c))
 
-  def clearTombstoned(removed: UniqueAddress, envelope: DataEnvelope): DataEnvelope = {
-    val cleared = clearTombstoned(removed, envelope.data)
-    if ((cleared ne envelope.data) || envelope.pruning.contains(removed))
-      envelope.copy(data = cleared, pruning = envelope.pruning - removed)
+  def pruningCleanupTombstoned(removed: UniqueAddress, envelope: DataEnvelope): DataEnvelope = {
+    val pruningCleanuped = pruningCleanupTombstoned(removed, envelope.data)
+    if ((pruningCleanuped ne envelope.data) || envelope.pruning.contains(removed))
+      envelope.copy(data = pruningCleanuped, pruning = envelope.pruning - removed)
     else
       envelope
   }
 
-  def clearTombstoned(data: ReplicatedData): ReplicatedData =
-    tombstoneNodes.foldLeft(data)((c, removed) ⇒ clearTombstoned(removed, c))
+  def pruningCleanupTombstoned(data: ReplicatedData): ReplicatedData =
+    tombstoneNodes.foldLeft(data)((c, removed) ⇒ pruningCleanupTombstoned(removed, c))
 
-  def clearTombstoned(removed: UniqueAddress, data: ReplicatedData): ReplicatedData =
+  def pruningCleanupTombstoned(removed: UniqueAddress, data: ReplicatedData): ReplicatedData =
     data match {
       case dataWithRemovedNodePruning: RemovedNodePruning ⇒
-        if (dataWithRemovedNodePruning.hasDataFrom(removed)) dataWithRemovedNodePruning.clear(removed) else data
+        if (dataWithRemovedNodePruning.needPruningFrom(removed)) dataWithRemovedNodePruning.pruningCleanup(removed) else data
       case _ ⇒ data
     }
 

@@ -46,30 +46,29 @@ abstract class AbstractReplicatedData extends ReplicatedData {
  * [[ReplicatedData]] that has support for pruning of data
  * belonging to a specific node may implement this interface.
  * When a node is removed from the cluster these methods will be
- * used by the [[Replicator]] to migrate data from the removed node
- * to some other node in the cluster.
+ * used by the [[Replicator]] to collapse data from the removed node
+ * into some other node in the cluster.
  */
 trait RemovedNodePruning { this: ReplicatedData ⇒
 
   /**
    * Does it have any state changes from a specific node,
-   * which has been removed from the cluster and will be pruned
-   * or cleared.
+   * which has been removed from the cluster.
    */
-  def hasDataFrom(node: UniqueAddress): Boolean
+  def needPruningFrom(removedNode: UniqueAddress): Boolean
 
   /**
-   * When the `from` node has been removed from the cluster the state
+   * When the `removed` node has been removed from the cluster the state
    * changes from that node will be pruned by collapsing the data entries
-   * `to` another node.
+   * to another node.
    */
-  def prune(from: UniqueAddress, to: UniqueAddress): T
+  def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): T
 
   /**
    * Remove data entries from a node that has been removed from the cluster
    * and already been pruned.
    */
-  def clear(from: UniqueAddress): T
+  def pruningCleanup(removedNode: UniqueAddress): T
 }
 
 /**

@@ -106,31 +106,31 @@ case class ORMap(
     ORMap(mergedKeys, mergedValues)
   }
 
-  override def hasDataFrom(node: UniqueAddress): Boolean = {
-    keys.hasDataFrom(node) || values.exists {
-      case (_, data: RemovedNodePruning) ⇒ data.hasDataFrom(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean = {
+    keys.needPruningFrom(removedNode) || values.exists {
+      case (_, data: RemovedNodePruning) ⇒ data.needPruningFrom(removedNode)
       case _                             ⇒ false
     }
   }
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): ORMap = {
-    val prunedKeys = keys.prune(from, to)
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): ORMap = {
+    val prunedKeys = keys.prune(removedNode, collapseInto)
     val prunedValues = values.foldLeft(values) {
-      case (acc, (key, data: RemovedNodePruning)) if data.hasDataFrom(from) ⇒
-        acc.updated(key, data.prune(from, to))
+      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) ⇒
+        acc.updated(key, data.prune(removedNode, collapseInto))
       case (acc, _) ⇒ acc
     }
     ORMap(prunedKeys, prunedValues)
   }
 
-  override def clear(from: UniqueAddress): ORMap = {
-    val clearedKeys = keys.clear(from)
-    val clearedValues = values.foldLeft(values) {
-      case (acc, (key, data: RemovedNodePruning)) if data.hasDataFrom(from) ⇒
-        acc.updated(key, data.clear(from))
+  override def pruningCleanup(removedNode: UniqueAddress): ORMap = {
+    val pruningCleanupedKeys = keys.pruningCleanup(removedNode)
+    val pruningCleanupedValues = values.foldLeft(values) {
+      case (acc, (key, data: RemovedNodePruning)) if data.needPruningFrom(removedNode) ⇒
+        acc.updated(key, data.pruningCleanup(removedNode))
       case (acc, _) ⇒ acc
     }
-    ORMap(clearedKeys, clearedValues)
+    ORMap(pruningCleanupedKeys, pruningCleanupedValues)
   }
 }
 

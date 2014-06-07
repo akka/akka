@@ -73,15 +73,15 @@ case class PNCounter(
     copy(increments = that.increments.merge(this.increments),
       decrements = that.decrements.merge(this.decrements))
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    increments.hasDataFrom(node) || decrements.hasDataFrom(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    increments.needPruningFrom(removedNode) || decrements.needPruningFrom(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): PNCounter =
-    copy(increments = increments.prune(from, to),
-      decrements = decrements.prune(from, to))
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): PNCounter =
+    copy(increments = increments.prune(removedNode, collapseInto),
+      decrements = decrements.prune(removedNode, collapseInto))
 
-  override def clear(from: UniqueAddress): PNCounter =
-    copy(increments = increments.clear(from),
-      decrements = decrements.clear(from))
+  override def pruningCleanup(removedNode: UniqueAddress): PNCounter =
+    copy(increments = increments.pruningCleanup(removedNode),
+      decrements = decrements.pruningCleanup(removedNode))
 }
 

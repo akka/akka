@@ -210,34 +210,34 @@ case class ORSet(
     ORSet(entries, mergedVclock)
   }
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    vclock.hasDataFrom(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    vclock.needPruningFrom(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): ORSet = {
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): ORSet = {
     val pruned = elements.foldLeft(Map.empty[Any, ORSet.Dot]) {
       case (acc, (elem, dot)) ⇒
-        if (dot.hasDataFrom(from)) acc.updated(elem, dot.prune(from, to))
+        if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.prune(removedNode, collapseInto))
         else acc
     }
     if (pruned.isEmpty)
-      copy(vclock = vclock.prune(from, to))
+      copy(vclock = vclock.prune(removedNode, collapseInto))
     else {
       // re-add elements that were pruned, to bump dots to right vclock
-      val newSet = ORSet(elements = elements ++ pruned, vclock = vclock.prune(from, to))
+      val newSet = ORSet(elements = elements ++ pruned, vclock = vclock.prune(removedNode, collapseInto))
       pruned.keys.foldLeft(newSet) {
-        case (s, elem) ⇒ s.add(to, elem)
+        case (s, elem) ⇒ s.add(collapseInto, elem)
       }
     }
 
   }
 
-  override def clear(from: UniqueAddress): ORSet = {
+  override def pruningCleanup(removedNode: UniqueAddress): ORSet = {
     val updated = elements.foldLeft(elements) {
       case (acc, (elem, dot)) ⇒
-        if (dot.hasDataFrom(from)) acc.updated(elem, dot.clear(from))
+        if (dot.needPruningFrom(removedNode)) acc.updated(elem, dot.pruningCleanup(removedNode))
         else acc
     }
-    ORSet(updated, vclock.clear(from))
+    ORSet(updated, vclock.pruningCleanup(removedNode))
   }
 }
 

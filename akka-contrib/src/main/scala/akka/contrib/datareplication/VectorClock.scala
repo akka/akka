@@ -190,13 +190,13 @@ final case class VectorClock(
     VectorClock(mergedVersions)
   }
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    versions.contains(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    versions.contains(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): VectorClock =
-    copy(versions = versions - from) :+ to
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): VectorClock =
+    copy(versions = versions - removedNode) :+ collapseInto
 
-  override def clear(from: UniqueAddress): VectorClock = copy(versions = versions - from)
+  override def pruningCleanup(removedNode: UniqueAddress): VectorClock = copy(versions = versions - removedNode)
 
   override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }

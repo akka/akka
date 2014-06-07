@@ -96,13 +96,13 @@ case class PNCounterMap(
   override def merge(that: PNCounterMap): PNCounterMap =
     copy(underlying.merge(that.underlying))
 
-  override def hasDataFrom(node: UniqueAddress): Boolean =
-    underlying.hasDataFrom(node)
+  override def needPruningFrom(removedNode: UniqueAddress): Boolean =
+    underlying.needPruningFrom(removedNode)
 
-  override def prune(from: UniqueAddress, to: UniqueAddress): PNCounterMap =
-    copy(underlying.prune(from, to))
+  override def prune(removedNode: UniqueAddress, collapseInto: UniqueAddress): PNCounterMap =
+    copy(underlying.prune(removedNode, collapseInto))
 
-  override def clear(from: UniqueAddress): PNCounterMap =
-    copy(underlying.clear(from))
+  override def pruningCleanup(removedNode: UniqueAddress): PNCounterMap =
+    copy(underlying.pruningCleanup(removedNode))
 }
 
