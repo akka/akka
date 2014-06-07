@@ -45,7 +45,8 @@ message Flag {
 
 message LWWRegister {
   required int64 timestamp = 1;
-  required OtherMessage state = 2;
+  required UniqueAddress node = 2;
+  required OtherMessage state = 3;
 }
 
 message GCounter {

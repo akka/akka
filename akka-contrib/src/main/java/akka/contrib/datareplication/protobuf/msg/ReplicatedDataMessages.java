@@ -6271,17 +6271,31 @@ public final class ReplicatedDataMessages {
      */
     long getTimestamp();
 
-    // required .akka.contrib.datareplication.OtherMessage state = 2;
+    // required .akka.contrib.datareplication.UniqueAddress node = 2;
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+     */
+    boolean hasNode();
+    /**
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+     */
+    akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress getNode();
+    /**
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+     */
+    akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder getNodeOrBuilder();
+
+    // required .akka.contrib.datareplication.OtherMessage state = 3;
+    /**
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
      */
     boolean hasState();
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
      */
     akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage getState();
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
      */
     akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getStateOrBuilder();
   }
@@ -6342,8 +6356,21 @@ public final class ReplicatedDataMessages {
               break;
             }
             case 18: {
-              akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+              akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder subBuilder = null;
               if (((bitField0_ & 0x00000002) == 0x00000002)) {
+                subBuilder = node_.toBuilder();
+              }
+              node_ = input.readMessage(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(node_);
+                node_ = subBuilder.buildPartial();
+              }
+              bitField0_ |= 0x00000002;
+              break;
+            }
+            case 26: {
+              akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000004) == 0x00000004)) {
                 subBuilder = state_.toBuilder();
               }
               state_ = input.readMessage(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.PARSER, extensionRegistry);
@@ -6351,7 +6378,7 @@ public final class ReplicatedDataMessages {
                 subBuilder.mergeFrom(state_);
                 state_ = subBuilder.buildPartial();
               }
-              bitField0_ |= 0x00000002;
+              bitField0_ |= 0x00000004;
               break;
             }
           }
@@ -6410,23 +6437,45 @@ public final class ReplicatedDataMessages {
       return timestamp_;
     }
 
-    // required .akka.contrib.datareplication.OtherMessage state = 2;
-    public static final int STATE_FIELD_NUMBER = 2;
-    private akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage state_;
+    // required .akka.contrib.datareplication.UniqueAddress node = 2;
+    public static final int NODE_FIELD_NUMBER = 2;
+    private akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress node_;
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
      */
-    public boolean hasState() {
+    public boolean hasNode() {
       return ((bitField0_ & 0x00000002) == 0x00000002);
     }
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+     */
+    public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
+      return node_;
+    }
+    /**
+     * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+     */
+    public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder getNodeOrBuilder() {
+      return node_;
+    }
+
+    // required .akka.contrib.datareplication.OtherMessage state = 3;
+    public static final int STATE_FIELD_NUMBER = 3;
+    private akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage state_;
+    /**
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
+     */
+    public boolean hasState() {
+      return ((bitField0_ & 0x00000004) == 0x00000004);
+    }
+    /**
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
      */
     public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage getState() {
       return state_;
     }
     /**
-     * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+     * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
      */
     public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getStateOrBuilder() {
       return state_;
@@ -6434,6 +6483,7 @@ public final class ReplicatedDataMessages {
 
     private void initFields() {
       timestamp_ = 0L;
+      node_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
       state_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
     }
     private byte memoizedIsInitialized = -1;
@@ -6445,7 +6495,15 @@ public final class ReplicatedDataMessages {
         memoizedIsInitialized = 0;
         return false;
       }
+      if (!hasNode()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
       if (!hasState()) {
+        memoizedIsInitialized = 0;
+        return false;
+      }
+      if (!getNode().isInitialized()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -6464,7 +6522,10 @@ public final class ReplicatedDataMessages {
         output.writeInt64(1, timestamp_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        output.writeMessage(2, state_);
+        output.writeMessage(2, node_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        output.writeMessage(3, state_);
       }
       getUnknownFields().writeTo(output);
     }
@@ -6481,7 +6542,11 @@ public final class ReplicatedDataMessages {
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeMessageSize(2, state_);
+          .computeMessageSize(2, node_);
+      }
+      if (((bitField0_ & 0x00000004) == 0x00000004)) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeMessageSize(3, state_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -6591,6 +6656,7 @@ public final class ReplicatedDataMessages {
       }
       private void maybeForceBuilderInitialization() {
         if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          getNodeFieldBuilder();
           getStateFieldBuilder();
         }
       }
@@ -6602,12 +6668,18 @@ public final class ReplicatedDataMessages {
         super.clear();
         timestamp_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000001);
+        if (nodeBuilder_ == null) {
+          node_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
+        } else {
+          nodeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
         if (stateBuilder_ == null) {
           state_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
         } else {
           stateBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -6643,6 +6715,14 @@ public final class ReplicatedDataMessages {
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
+        if (nodeBuilder_ == null) {
+          result.node_ = node_;
+        } else {
+          result.node_ = nodeBuilder_.build();
+        }
+        if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
+          to_bitField0_ |= 0x00000004;
+        }
         if (stateBuilder_ == null) {
           result.state_ = state_;
         } else {
@@ -6667,6 +6747,9 @@ public final class ReplicatedDataMessages {
         if (other.hasTimestamp()) {
           setTimestamp(other.getTimestamp());
         }
+        if (other.hasNode()) {
+          mergeNode(other.getNode());
+        }
         if (other.hasState()) {
           mergeState(other.getState());
         }
@@ -6679,7 +6762,15 @@ public final class ReplicatedDataMessages {
           
           return false;
         }
+        if (!hasNode()) {
+          
+          return false;
+        }
         if (!hasState()) {
+          
+          return false;
+        }
+        if (!getNode().isInitialized()) {
           
           return false;
         }
@@ -6742,18 +6833,135 @@ public final class ReplicatedDataMessages {
         return this;
       }
 
-      // required .akka.contrib.datareplication.OtherMessage state = 2;
+      // required .akka.contrib.datareplication.UniqueAddress node = 2;
+      private akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress node_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> nodeBuilder_;
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public boolean hasNode() {
+        return ((bitField0_ & 0x00000002) == 0x00000002);
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
+        if (nodeBuilder_ == null) {
+          return node_;
+        } else {
+          return nodeBuilder_.getMessage();
+        }
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public Builder setNode(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress value) {
+        if (nodeBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          node_ = value;
+          onChanged();
+        } else {
+          nodeBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public Builder setNode(
+          akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder builderForValue) {
+        if (nodeBuilder_ == null) {
+          node_ = builderForValue.build();
+          onChanged();
+        } else {
+          nodeBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public Builder mergeNode(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress value) {
+        if (nodeBuilder_ == null) {
+          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+              node_ != akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance()) {
+            node_ =
+              akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.newBuilder(node_).mergeFrom(value).buildPartial();
+          } else {
+            node_ = value;
+          }
+          onChanged();
+        } else {
+          nodeBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000002;
+        return this;
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public Builder clearNode() {
+        if (nodeBuilder_ == null) {
+          node_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
+          onChanged();
+        } else {
+          nodeBuilder_.clear();
+        }
+        bitField0_ = (bitField0_ & ~0x00000002);
+        return this;
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder getNodeBuilder() {
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return getNodeFieldBuilder().getBuilder();
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder getNodeOrBuilder() {
+        if (nodeBuilder_ != null) {
+          return nodeBuilder_.getMessageOrBuilder();
+        } else {
+          return node_;
+        }
+      }
+      /**
+       * <code>required .akka.contrib.datareplication.UniqueAddress node = 2;</code>
+       */
+      private com.google.protobuf.SingleFieldBuilder<
+          akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> 
+          getNodeFieldBuilder() {
+        if (nodeBuilder_ == null) {
+          nodeBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+              akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder>(
+                  node_,
+                  getParentForChildren(),
+                  isClean());
+          node_ = null;
+        }
+        return nodeBuilder_;
+      }
+
+      // required .akka.contrib.datareplication.OtherMessage state = 3;
       private akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage state_ = akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
       private com.google.protobuf.SingleFieldBuilder<
           akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> stateBuilder_;
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public boolean hasState() {
-        return ((bitField0_ & 0x00000002) == 0x00000002);
+        return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage getState() {
         if (stateBuilder_ == null) {
@@ -6763,7 +6971,7 @@ public final class ReplicatedDataMessages {
         }
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public Builder setState(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage value) {
         if (stateBuilder_ == null) {
@@ -6775,11 +6983,11 @@ public final class ReplicatedDataMessages {
         } else {
           stateBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         return this;
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public Builder setState(
           akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder builderForValue) {
@@ -6789,15 +6997,15 @@ public final class ReplicatedDataMessages {
         } else {
           stateBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         return this;
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public Builder mergeState(akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage value) {
         if (stateBuilder_ == null) {
-          if (((bitField0_ & 0x00000002) == 0x00000002) &&
+          if (((bitField0_ & 0x00000004) == 0x00000004) &&
               state_ != akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance()) {
             state_ =
               akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.newBuilder(state_).mergeFrom(value).buildPartial();
@@ -6808,11 +7016,11 @@ public final class ReplicatedDataMessages {
         } else {
           stateBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         return this;
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public Builder clearState() {
         if (stateBuilder_ == null) {
@@ -6821,19 +7029,19 @@ public final class ReplicatedDataMessages {
         } else {
           stateBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000002);
+        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder getStateBuilder() {
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000004;
         onChanged();
         return getStateFieldBuilder().getBuilder();
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       public akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder getStateOrBuilder() {
         if (stateBuilder_ != null) {
@@ -6843,7 +7051,7 @@ public final class ReplicatedDataMessages {
         }
       }
       /**
-       * <code>required .akka.contrib.datareplication.OtherMessage state = 2;</code>
+       * <code>required .akka.contrib.datareplication.OtherMessage state = 3;</code>
        */
       private com.google.protobuf.SingleFieldBuilder<
           akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.contrib.datareplication.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
@@ -15077,38 +15285,39 @@ public final class ReplicatedDataMessages {
       "\n\nOtherEntry\022;\n\007element\030\001 \002(\0132*.akka.con" +
       "trib.datareplication.OtherMessage\0226\n\003dot" +
       "\030\002 \002(\0132).akka.contrib.datareplication.Ve" +
-      "ctorClock\"\027\n\004Flag\022\017\n\007enabled\030\001 \002(\010\"[\n\013LW" +
-      "WRegister\022\021\n\ttimestamp\030\001 \002(\003\0229\n\005state\030\002 " +
-      "\002(\0132*.akka.contrib.datareplication.Other" +
-      "Message\"\234\001\n\010GCounter\022=\n\007entries\030\001 \003(\0132,." +
-      "akka.contrib.datareplication.GCounter.En" +
-      "try\032Q\n\005Entry\0229\n\004node\030\001 \002(\0132+.akka.contri",
-      "b.datareplication.UniqueAddress\022\r\n\005value" +
-      "\030\002 \002(\003\"\203\001\n\tPNCounter\022:\n\nincrements\030\001 \002(\013" +
+      "ctorClock\"\027\n\004Flag\022\017\n\007enabled\030\001 \002(\010\"\226\001\n\013L" +
+      "WWRegister\022\021\n\ttimestamp\030\001 \002(\003\0229\n\004node\030\002 " +
+      "\002(\0132+.akka.contrib.datareplication.Uniqu" +
+      "eAddress\0229\n\005state\030\003 \002(\0132*.akka.contrib.d" +
+      "atareplication.OtherMessage\"\234\001\n\010GCounter" +
+      "\022=\n\007entries\030\001 \003(\0132,.akka.contrib.datarep",
+      "lication.GCounter.Entry\032Q\n\005Entry\0229\n\004node" +
+      "\030\001 \002(\0132+.akka.contrib.datareplication.Un" +
+      "iqueAddress\022\r\n\005value\030\002 \002(\003\"\203\001\n\tPNCounter" +
+      "\022:\n\nincrements\030\001 \002(\0132&.akka.contrib.data" +
+      "replication.GCounter\022:\n\ndecrements\030\002 \002(\013" +
       "2&.akka.contrib.datareplication.GCounter" +
-      "\022:\n\ndecrements\030\002 \002(\0132&.akka.contrib.data" +
-      "replication.GCounter\"\242\001\n\013VectorClock\022@\n\007" +
-      "entries\030\001 \003(\0132/.akka.contrib.datareplica" +
-      "tion.VectorClock.Entry\032Q\n\005Entry\0229\n\004node\030" +
-      "\001 \002(\0132+.akka.contrib.datareplication.Uni" +
-      "queAddress\022\r\n\005clock\030\002 \002(\003\"\307\001\n\005ORMap\0221\n\004k" +
-      "eys\030\001 \002(\0132#.akka.contrib.datareplication",
-      ".ORSet\022:\n\007entries\030\002 \003(\0132).akka.contrib.d" +
-      "atareplication.ORMap.Entry\032O\n\005Entry\022\013\n\003k" +
-      "ey\030\001 \002(\t\0229\n\005value\030\002 \002(\0132*.akka.contrib.d" +
-      "atareplication.OtherMessage\"\310\001\n\006LWWMap\0221" +
-      "\n\004keys\030\001 \002(\0132#.akka.contrib.datareplicat" +
-      "ion.ORSet\022;\n\007entries\030\002 \003(\0132*.akka.contri" +
-      "b.datareplication.LWWMap.Entry\032N\n\005Entry\022" +
-      "\013\n\003key\030\001 \002(\t\0228\n\005value\030\002 \002(\0132).akka.contr" +
-      "ib.datareplication.LWWRegister\"\322\001\n\014PNCou" +
-      "nterMap\0221\n\004keys\030\001 \002(\0132#.akka.contrib.dat",
-      "areplication.ORSet\022A\n\007entries\030\002 \003(\01320.ak" +
-      "ka.contrib.datareplication.PNCounterMap." +
-      "Entry\032L\n\005Entry\022\013\n\003key\030\001 \002(\t\0226\n\005value\030\002 \002" +
-      "(\0132\'.akka.contrib.datareplication.PNCoun" +
-      "terB-\n)akka.contrib.datareplication.prot" +
-      "obuf.msgH\001"
+      "\"\242\001\n\013VectorClock\022@\n\007entries\030\001 \003(\0132/.akka" +
+      ".contrib.datareplication.VectorClock.Ent" +
+      "ry\032Q\n\005Entry\0229\n\004node\030\001 \002(\0132+.akka.contrib" +
+      ".datareplication.UniqueAddress\022\r\n\005clock\030",
+      "\002 \002(\003\"\307\001\n\005ORMap\0221\n\004keys\030\001 \002(\0132#.akka.con" +
+      "trib.datareplication.ORSet\022:\n\007entries\030\002 " +
+      "\003(\0132).akka.contrib.datareplication.ORMap" +
+      ".Entry\032O\n\005Entry\022\013\n\003key\030\001 \002(\t\0229\n\005value\030\002 " +
+      "\002(\0132*.akka.contrib.datareplication.Other" +
+      "Message\"\310\001\n\006LWWMap\0221\n\004keys\030\001 \002(\0132#.akka." +
+      "contrib.datareplication.ORSet\022;\n\007entries" +
+      "\030\002 \003(\0132*.akka.contrib.datareplication.LW" +
+      "WMap.Entry\032N\n\005Entry\022\013\n\003key\030\001 \002(\t\0228\n\005valu" +
+      "e\030\002 \002(\0132).akka.contrib.datareplication.L",
+      "WWRegister\"\322\001\n\014PNCounterMap\0221\n\004keys\030\001 \002(" +
+      "\0132#.akka.contrib.datareplication.ORSet\022A" +
+      "\n\007entries\030\002 \003(\01320.akka.contrib.datarepli" +
+      "cation.PNCounterMap.Entry\032L\n\005Entry\022\013\n\003ke" +
+      "y\030\001 \002(\t\0226\n\005value\030\002 \002(\0132\'.akka.contrib.da" +
+      "tareplication.PNCounterB-\n)akka.contrib." +
+      "datareplication.protobuf.msgH\001"
     };
     com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -15162,7 +15371,7 @@ public final class ReplicatedDataMessages {
           internal_static_akka_contrib_datareplication_LWWRegister_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_contrib_datareplication_LWWRegister_descriptor,
-              new java.lang.String[] { "Timestamp", "State", });
+              new java.lang.String[] { "Timestamp", "Node", "State", });
           internal_static_akka_contrib_datareplication_GCounter_descriptor =
             getDescriptor().getMessageTypes().get(4);
           internal_static_akka_contrib_datareplication_GCounter_fieldAccessorTable = new

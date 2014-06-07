@@ -199,6 +199,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem) extends Serializ
   def lwwRegisterToProto(lwwRegister: LWWRegister): rd.LWWRegister =
     rd.LWWRegister.newBuilder().
       setTimestamp(lwwRegister.timestamp).
+      setNode(uniqueAddressToProto(lwwRegister.node)).
       setState(otherMessageToProto(lwwRegister.value)).
       build()
 
@@ -207,6 +208,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem) extends Serializ
 
   def lwwRegisterFromProto(lwwRegister: rd.LWWRegister): LWWRegister =
     LWWRegister(
+      uniqueAddressFromProto(lwwRegister.getNode),
       otherMessageFromProto(lwwRegister.getState),
       lwwRegister.getTimestamp,
       LWWRegister.defaultClock)

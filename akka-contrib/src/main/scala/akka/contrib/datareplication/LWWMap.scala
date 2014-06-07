@@ -55,8 +55,8 @@ case class LWWMap(
    */
   private[akka] def put(node: UniqueAddress, key: String, value: Any): LWWMap = {
     val newRegister = underlying.get(key) match {
-      case Some(r: LWWRegister) ⇒ r.withValue(value)
-      case _                    ⇒ LWWRegister(value)
+      case Some(r: LWWRegister) ⇒ r.withValue(node, value)
+      case _                    ⇒ LWWRegister(node, value)
     }
     copy(underlying.put(node, key, newRegister))
   }
