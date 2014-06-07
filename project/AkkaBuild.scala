@@ -860,7 +860,7 @@ object AkkaBuild extends Build {
   val validatePullRequestTask = validatePullRequest := ()
 
   def githubUrl(v: String): String = {
-    val branch = if (v.endsWith("SNAPSHOT")) "master" else "v" + v
+    val branch = "release-2.3-dev"
     "http://github.com/akka/akka/tree/" + branch
   }
 
