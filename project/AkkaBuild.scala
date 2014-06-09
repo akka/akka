@@ -1041,7 +1041,12 @@ object AkkaBuild extends Build {
       // Changes in akka-persistrence-experimental in #13944
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.Processor.akka$persistence$Processor$$super$unhandled"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException$")
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException$"),
+
+      // Changes in private LevelDB Store by #13962
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_=")
     )
   }
 
