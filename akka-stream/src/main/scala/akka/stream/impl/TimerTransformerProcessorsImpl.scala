@@ -6,6 +6,7 @@ package akka.stream.impl
 import java.util.LinkedList
 import akka.stream.MaterializerSettings
 import akka.stream.TimerTransformer
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -33,10 +34,12 @@ private[akka] class TimerTransformerProcessorsImpl(
 
     override def subreceive: SubReceive = new SubReceive({
       case s: Scheduled ⇒
-        transformer.onScheduled(s) foreach { elem ⇒
-          queue.add(elem)
-        }
-        pump()
+        try {
+          transformer.onScheduled(s) foreach { elem ⇒
+            queue.add(elem)
+          }
+          pump()
+        } catch { case NonFatal(ex) ⇒ pumpFailed(ex) }
     })
 
     override def cancel(): Unit = ()
