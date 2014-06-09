@@ -87,9 +87,14 @@ private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: Leveldb
   }
 
   def readHighestSequenceNr(processorId: Int) = {
-    leveldb.get(keyToBytes(counterKey(processorId)), leveldbSnapshot) match {
-      case null  ⇒ 0L
-      case bytes ⇒ counterFromBytes(bytes)
+    val ro = leveldbSnapshot()
+    try {
+      leveldb.get(keyToBytes(counterKey(processorId)), ro) match {
+        case null  ⇒ 0L
+        case bytes ⇒ counterFromBytes(bytes)
+      }
+    } finally {
+      ro.snapshot().close()
     }
   }
 }
