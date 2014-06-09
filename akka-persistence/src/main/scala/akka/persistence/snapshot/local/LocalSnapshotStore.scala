@@ -111,7 +111,8 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
 
   override def preStart() {
     if (!snapshotDir.isDirectory) {
-      if (!snapshotDir.mkdirs()) {
+      // try to create the directory, on failure double check if someone else beat us to it
+      if (!snapshotDir.mkdirs() && !snapshotDir.isDirectory) {
         throw new IOException(s"Failed to create snapshot directory [${snapshotDir.getCanonicalPath}]")
       }
     }
