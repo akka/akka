@@ -86,17 +86,22 @@ trait Processor extends Actor with Recovery {
     private var batching = false
 
     def aroundReceive(receive: Receive, message: Any) = message match {
-      case r: Recover             ⇒ // ignore
-      case ReplayedMessage(p)     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case WriteMessageSuccess(p) ⇒ processPersistent(receive, p)
-      case WriteMessageFailure(p, cause) ⇒
-        process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
-      case LoopMessageSuccess(m) ⇒ process(receive, m)
+      case r: Recover                             ⇒ // ignore
+      case ReplayedMessage(p)                     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case WriteMessageSuccess(p: PersistentRepr) ⇒ processPersistent(receive, p)
+      case WriteMessageSuccess(r: Resequenceable) ⇒ process(receive, r)
+      case WriteMessageFailure(p, cause)          ⇒ process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
+      case LoopMessageSuccess(m)                  ⇒ process(receive, m)
       case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
         if (processorBatch.isEmpty) batching = false else journalBatch()
       case p: PersistentRepr ⇒
         addToBatch(p)
         if (!batching || maxBatchSizeReached) journalBatch()
+      //      case rb: ResequenceableBatch ⇒
+      //        // submit all batched messages before submitting this user batch (isolated)
+      //        if (!processorBatch.isEmpty) journalBatch()
+      //        addToBatch(rb)
+      //        journalBatch()
       case pb: PersistentBatch ⇒
         // submit all batched messages before submitting this user batch (isolated)
         if (!processorBatch.isEmpty) journalBatch()
@@ -108,11 +113,15 @@ trait Processor extends Actor with Recovery {
         journal forward LoopMessage(m, self)
     }
 
-    def addToBatch(p: PersistentRepr): Unit =
-      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender())
+    def addToBatch(p: Resequenceable): Unit = p match {
+      case p: PersistentRepr ⇒
+        processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender())
+      case r ⇒
+        processorBatch = processorBatch :+ r
+    }
 
     def addToBatch(pb: PersistentBatch): Unit =
-      pb.persistentReprList.foreach(addToBatch)
+      pb.batch.foreach(addToBatch)
 
     def maxBatchSizeReached: Boolean =
       processorBatch.length >= extension.settings.journal.maxMessageBatchSize
@@ -154,7 +163,7 @@ trait Processor extends Actor with Recovery {
 
   private val _processorId = extension.processorId(self)
 
-  private var processorBatch = Vector.empty[PersistentRepr]
+  private var processorBatch = Vector.empty[Resequenceable]
   private var sequenceNr: Long = 0L
 
   /**

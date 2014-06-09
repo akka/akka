@@ -33,11 +33,11 @@ trait PersistenceDocSpec {
 
     class MyProcessor extends Processor {
       def receive = {
-        case Persistent(payload, sequenceNr) =>
+        case Persistent(payload, sequenceNr)                =>
         // message successfully written to journal
         case PersistenceFailure(payload, sequenceNr, cause) =>
         // message failed to be written to journal
-        case m: SomeOtherMessage =>
+        case m: SomeOtherMessage                            =>
         // message not written to journal
       }
     }
@@ -366,6 +366,45 @@ trait PersistenceDocSpec {
     // evt-b-2
 
     //#persist-async
+  }
+  new AnyRef {
+    import akka.actor.ActorRef
+
+    val processor = system.actorOf(Props[MyPersistentActor]())
+
+    //#defer
+    class MyPersistentActor extends PersistentActor {
+
+      def receiveRecover: Receive = {
+        case _ => // handle recovery here
+      }
+
+      def receiveCommand: Receive = {
+        case c: String => {
+          sender() ! c
+          persistAsync(s"evt-$c-1") { e => sender() ! e }
+          persistAsync(s"evt-$c-2") { e => sender() ! e }
+          defer(s"evt-$c-3") { e => sender() ! e }
+        }
+      }
+    }
+    //#defer
+
+    //#defer-caller
+    processor ! "a"
+    processor ! "b"
+
+    // order of received messages:
+    // a
+    // b
+    // evt-a-1
+    // evt-a-2
+    // evt-a-3
+    // evt-b-1
+    // evt-b-2
+    // evt-b-3
+
+    //#defer-caller
   }
   new AnyRef {
     import akka.actor.Props
