@@ -305,6 +305,27 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val parsing = Project(
+    id = "akka-parsing",
+    base = file("akka-parsing"),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
+      javacOptions ++= Seq(
+        "-encoding", "UTF-8",
+        "-source", "1.6",
+        "-target", "1.6",
+        "-Xlint:unchecked",
+        "-Xlint:deprecation"),
+      scalacOptions += "-language:_",
+      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
+      libraryDependencies ++= Seq(
+        "org.scala-lang" % "scala-reflect" % "2.10.4" % "provided",
+        "org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile"),
+      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
+      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-parsing"),
+      previousArtifact := None
+    )
+  )
+
   lazy val stream = Project(
     id = "akka-stream-experimental",
     base = file("akka-stream"),
