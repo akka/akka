@@ -29,6 +29,7 @@ import akka.routing.RoutingLogic
 import akka.routing.Routee
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
+import akka.routing.RouterEnvelope
 import akka.routing.RoundRobinRoutingLogic
 import akka.routing.ConsistentHashingRoutingLogic
 import akka.routing.BroadcastRoutingLogic
@@ -143,6 +144,11 @@ object DistributedPubSubMediator {
     @SerialVersionUID(1L)
     final case class SendToOneSubscriber(msg: Any)
 
+    @SerialVersionUID(1L)
+    final case class MediatorRouterEnvelope(msg: Any) extends RouterEnvelope {
+      override def message = msg
+    }
+
     def roleOption(role: String): Option[String] = role match {
       case null | "" ⇒ None
       case _         ⇒ Some(role)
@@ -224,8 +230,22 @@ object DistributedPubSubMediator {
       def business = {
         case SendToOneSubscriber(msg) ⇒
           if (subscribers.nonEmpty)
-            Router(routingLogic, (subscribers map ActorRefRoutee).toVector).route(msg, sender())
+            Router(routingLogic, (subscribers map ActorRefRoutee).toVector).route(wrapIfNeeded(msg), sender())
       }
+    }
+
+    /**
+     * Mediator uses [[Router]] to send messages to multiple destinations, Router in general
+     * unwraps messages from [[RouterEnvelope]] and sends the contents to [[Routee]]s.
+     *
+     * Using mediator services should not have an undesired effect of unwrapping messages
+     * out of [[RouterEnvelope]]. For this reason user messages are wrapped in
+     * [[MediatorRouterEnvelope]] which will be unwrapped by the [[Router]] leaving original
+     * user message.
+     */
+    def wrapIfNeeded: Any ⇒ Any = {
+      case msg: RouterEnvelope ⇒ MediatorRouterEnvelope(msg)
+      case msg: Any            ⇒ msg
     }
   }
 }
@@ -313,6 +333,9 @@ class DistributedPubSubMediator(
   import DistributedPubSubMediator._
   import DistributedPubSubMediator.Internal._
 
+  require(!routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],
+    "'consistent-hashing' routing logic can't be used by the pub-sub mediator")
+
   val cluster = Cluster(context.system)
   import cluster.selfAddress
 
@@ -358,19 +381,21 @@ class DistributedPubSubMediator(
   def receive = {
 
     case Send(path, msg, localAffinity) ⇒
-      registry(selfAddress).content.get(path) match {
-        case Some(ValueHolder(_, Some(ref))) if localAffinity ⇒
-          ref forward msg
+      val routees = registry(selfAddress).content.get(path) match {
+        case Some(valueHolder) if localAffinity ⇒
+          (for {
+            routee ← valueHolder.routee
+          } yield routee).toVector
         case _ ⇒
-          val routees = (for {
+          (for {
             (_, bucket) ← registry
             valueHolder ← bucket.content.get(path)
             routee ← valueHolder.routee
           } yield routee).toVector
-
-          if (routees.nonEmpty)
-            Router(routingLogic, routees).route(msg, sender())
       }
+
+      if (routees.nonEmpty)
+        Router(routingLogic, routees).route(wrapIfNeeded(msg), sender())
 
     case SendToAll(path, msg, skipSenderNode) ⇒
       publish(path, msg, skipSenderNode)
@@ -622,7 +647,7 @@ class DistributedPubSubExtension(system: ExtendedActorSystem) extends Extension 
       val routingLogic = config.getString("routing-logic") match {
         case "random"             ⇒ RandomRoutingLogic()
         case "round-robin"        ⇒ RoundRobinRoutingLogic()
-        case "consistent-hashing" ⇒ ConsistentHashingRoutingLogic(system)
+        case "consistent-hashing" ⇒ throw new IllegalArgumentException(s"'consistent-hashing' routing logic can't be used by the pub-sub mediator")
         case "broadcast"          ⇒ BroadcastRoutingLogic()
         case other                ⇒ throw new IllegalArgumentException(s"Unknown 'routing-logic': [$other]")
       }
