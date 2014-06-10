@@ -1,8 +1,8 @@
 .. _migration-eventsourced-2.3:
 
-#######################################################
- Migration Guide Eventsourced to Akka Persistence 2.3.x
-#######################################################
+######################################################
+Migration Guide Eventsourced to Akka Persistence 2.3.x
+######################################################
 
 General notes
 =============

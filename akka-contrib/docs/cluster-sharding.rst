@@ -29,7 +29,7 @@ This is how an entry actor may look like:
 
 .. includecode:: @contribSrc@/src/test/java/akka/contrib/pattern/ClusterShardingTest.java#counter-actor
 
-The above actor uses event sourcing and the support provided in ``UntypedEventsourcedProcessor`` to store its state.
+The above actor uses event sourcing and the support provided in ``UntypedPersistentActor`` to store its state.
 It does not have to be a processor, but in case of failure or migration of entries between nodes it must be able to recover
 its state if it is valuable.
 
@@ -73,7 +73,7 @@ This is how an entry actor may look like:
 
 .. includecode:: @contribSrc@/src/multi-jvm/scala/akka/contrib/pattern/ClusterShardingSpec.scala#counter-actor
 
-The above actor uses event sourcing and the support provided in ``EventsourcedProcessor`` to store its state.
+The above actor uses event sourcing and the support provided in ``PersistentActor`` to store its state.
 It does not have to be a processor, but in case of failure or migration of entries between nodes it must be able to recover
 its state if it is valuable.
 

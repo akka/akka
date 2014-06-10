@@ -66,7 +66,7 @@ private[persistence] object JournalProtocol {
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
    * before all subsequent [[WriteMessageSuccess]] replies.
    */
-  case object WriteMessagesSuccess
+  case object WriteMessagesSuccessful
 
   /**
    * Reply message to a failed [[WriteMessages]] request. This reply is sent to the requestor
@@ -74,7 +74,7 @@ private[persistence] object JournalProtocol {
    *
    * @param cause failure cause.
    */
-  final case class WriteMessagesFailure(cause: Throwable)
+  final case class WriteMessagesFailed(cause: Throwable)
 
   /**
    * Reply message to a successful [[WriteMessages]] request. For each contained [[PersistentRepr]] message

@@ -51,7 +51,10 @@ import akka.dispatch._
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
+@deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
 trait Processor extends Actor with Recovery {
+  // todo remove Processor in favor of PersistentActor #15230
+
   import JournalProtocol._
 
   /**
@@ -96,7 +99,7 @@ trait Processor extends Actor with Recovery {
           throw new ActorKilledException(errorMsg)
         }
       case LoopMessageSuccess(m) ⇒ process(receive, m)
-      case WriteMessagesSuccess | WriteMessagesFailure(_) ⇒
+      case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
         if (processorBatch.isEmpty) batching = false else journalBatch()
       case p: PersistentRepr ⇒
         addToBatch(p)
@@ -113,7 +116,7 @@ trait Processor extends Actor with Recovery {
     }
 
     def addToBatch(p: PersistentRepr): Unit =
-      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender)
+      processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender())
 
     def addToBatch(pb: PersistentBatch): Unit =
       pb.persistentReprList.foreach(addToBatch)
@@ -386,6 +389,7 @@ final case class RecoveryException(message: String, cause: Throwable) extends Ak
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
+@deprecated("UntypedProcessor will be removed. Instead extend `akka.persistence.UntypedPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
 abstract class UntypedProcessor extends UntypedActor with Processor
 
 /**
@@ -440,4 +444,5 @@ abstract class UntypedProcessor extends UntypedActor with Processor
  * @see [[Recover]]
  * @see [[PersistentBatch]]
  */
+@deprecated("AbstractProcessor will be removed. Instead extend `akka.persistence.AbstractPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
 abstract class AbstractProcessor extends AbstractActor with Processor

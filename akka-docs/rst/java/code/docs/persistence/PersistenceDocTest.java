@@ -4,13 +4,17 @@
 
 package docs.persistence;
 
-import java.util.concurrent.TimeUnit;
-
-import scala.Option;
-import scala.concurrent.duration.Duration;
-import akka.actor.*;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.actor.UntypedActor;
 import akka.japi.Procedure;
 import akka.persistence.*;
+import scala.Option;
+import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
+
 import static java.util.Arrays.asList;
 
 public class PersistenceDocTest {
@@ -353,11 +357,11 @@ public class PersistenceDocTest {
 
     static Object o8 = new Object() {
         //#reliable-event-delivery
-        class MyEventsourcedProcessor extends UntypedEventsourcedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             private ActorRef destination;
             private ActorRef channel;
 
-            public MyEventsourcedProcessor(ActorRef destination) {
+            public MyPersistentActor(ActorRef destination) {
                 this.destination = destination;
                 this.channel = getContext().actorOf(Channel.props(), "channel");
             }
@@ -390,6 +394,53 @@ public class PersistenceDocTest {
     };
 
     static Object o9 = new Object() {
+        //#persist-async
+        class MyPersistentActor extends UntypedPersistentActor {
+
+            @Override
+            public void onReceiveRecover(Object msg) {
+                // handle recovery here
+            }
+
+            @Override
+            public void onReceiveCommand(Object msg) {
+                sender().tell(msg, getSelf());
+
+                persistAsync(String.format("evt-%s-1", msg), new Procedure<String>(){
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                    }
+                });
+                persistAsync(String.format("evt-%s-2", msg), new Procedure<String>(){
+                    @Override
+                    public void apply(String event) throws Exception {
+                        sender().tell(event, self());
+                    }
+                });
+            }
+        }
+        //#persist-async
+
+        public void usage() {
+            final ActorSystem system = ActorSystem.create("example");
+            //#view-update
+            final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
+            processor.tell("a", null);
+            processor.tell("b", null);
+
+            // possible order of received messages:
+            // a
+            // b
+            // evt-a-1
+            // evt-a-2
+            // evt-b-1
+            // evt-b-2
+            //#view-update
+        }
+    };
+
+    static Object o10 = new Object() {
         //#view
         class MyView extends UntypedView {
             @Override
