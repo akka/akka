@@ -19,6 +19,8 @@ import static java.util.Arrays.asList;
 
 public class PersistenceDocTest {
 
+    public interface SomeOtherMessage {}
+
     public interface ProcessorMethods {
         //#processor-id
         public String processorId();
@@ -49,8 +51,11 @@ public class PersistenceDocTest {
                     Long sequenceNr = failure.sequenceNr();
                     Throwable cause = failure.cause();
                     // ...
-                } else {
+                } else if (message instanceof SomeOtherMessage) {
                     // message not written to journal
+                }
+                else {
+                    unhandled(message);
                 }
             }
         }
@@ -127,21 +132,12 @@ public class PersistenceDocTest {
         
         class MyProcessor5 extends UntypedProcessor {
             //#recovery-completed
-            @Override
-            public void preStart() throws Exception {
-                super.preStart();
-                self().tell("FIRST", self());
-            }
-            
             public void onReceive(Object message) throws Exception {
-                if (message.equals("FIRST")) {
+                if (message instanceof RecoveryCompleted) {
                     recoveryCompleted();
                     getContext().become(active);
-                    unstashAll();
-                } else if (recoveryFinished()) {
-                    stash(); 
                 } else {
-                    active.apply(message);  
+                    unhandled(message);
                 }
             }
             
@@ -155,6 +151,9 @@ public class PersistenceDocTest {
               public void apply(Object message) {
                 if (message instanceof Persistent) {
                     // ...
+                }
+                else {
+                    unhandled(message);
                 }
               }
             };

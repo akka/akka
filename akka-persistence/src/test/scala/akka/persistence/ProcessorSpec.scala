@@ -128,10 +128,11 @@ object ProcessorSpec {
   final case class DeleteN(toSnr: Long)
 
   class DeleteMessageTestProcessor(name: String) extends RecoverTestProcessor(name) {
-    override def receive = {
+    override def receive = deleteReceive orElse super.receive
+
+    def deleteReceive: Actor.Receive = {
       case Delete1(snr)   ⇒ deleteMessage(snr)
       case DeleteN(toSnr) ⇒ deleteMessages(toSnr)
-      case m              ⇒ super.receive(m)
     }
   }
 }

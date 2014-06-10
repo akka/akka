@@ -132,9 +132,11 @@ A processor can query its own recovery status via the methods
 
 Sometimes there is a need for performing additional initialization when the
 recovery has completed, before processing any other message sent to the processor.
-The processor can send itself a message from ``preStart``. It will be stashed and received
-after recovery. The mailbox may contain other messages that are queued in front of
-that message and therefore you need to stash until you receive that message.
+The processor will receive a special :class:`RecoveryCompleted` message right after recovery
+and before any other received messages. If there is a problem with recovering the state of
+the actor from the journal, the actor will be sent a :class:`RecoveryFailure` message that
+it can choose to handle. If the actor doesn't handle the :class:`RecoveryFailure` message it
+will be stopped.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recovery-completed
 
