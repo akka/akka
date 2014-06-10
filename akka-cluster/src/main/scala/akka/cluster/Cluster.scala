@@ -69,9 +69,11 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   import InfoLogger._
 
   /**
-   * INTERNAL API
+   * The address including a `uid` of this cluster member.
+   * The `uid` is needed to be able to distinguish different
+   * incarnations of a member with same hostname and port.
    */
-  private[cluster] val selfUniqueAddress: UniqueAddress = system.provider match {
+  val selfUniqueAddress: UniqueAddress = system.provider match {
     case c: ClusterActorRefProvider ⇒
       UniqueAddress(c.transport.defaultAddress, AddressUidExtension(system).addressUid)
     case other ⇒ throw new ConfigurationException(
