@@ -1037,10 +1037,12 @@ object AkkaBuild extends Build {
       FilterAnyProblem("akka.persistence.Eventsourced"),
       FilterAnyProblem("akka.persistence.UntypedEventsourcedProcessor"),
       FilterAnyProblem("akka.persistence.AbstractEventsourcedProcessor"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure"), // renamed internall messages
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$"), // renamed internall messages
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.PersistentBatch.persistentBatch"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.PersistentBatch.persistentReprList"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure"), // renamed internal messages
+      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$"), // renamed internal messages
 
-      // Changes in akka-persistrence-experimental in #13944
+      // Changes in akka-persistence-experimental in #13944
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.Processor.akka$persistence$Processor$$super$unhandled"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException"),
       ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException$"),
