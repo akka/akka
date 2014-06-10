@@ -194,7 +194,7 @@ trait Duct[In, +Out] {
    * elements as they arrive from either side (picking randomly when both
    * have elements ready).
    */
-  def merge[U >: Out](other: Producer[U]): Duct[In, U]
+  def merge[U >: Out](other: Producer[_ <: U]): Duct[In, U]
 
   /**
    * Zip this stream together with the one emitted by the given producer.

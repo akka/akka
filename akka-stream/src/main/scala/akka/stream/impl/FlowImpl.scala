@@ -309,7 +309,7 @@ private[akka] trait Builder[Out] {
 
   def concat[U >: Out](next: Producer[U]): Thing[U] = andThen(Concat(next.asInstanceOf[Producer[Any]]))
 
-  def merge[U >: Out](other: Producer[U]): Thing[U] = andThen(Merge(other.asInstanceOf[Producer[Any]]))
+  def merge[U >: Out](other: Producer[_ <: U]): Thing[U] = andThen(Merge(other.asInstanceOf[Producer[Any]]))
 
   def splitWhen(p: (Out) ⇒ Boolean): Thing[Producer[Out]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 
