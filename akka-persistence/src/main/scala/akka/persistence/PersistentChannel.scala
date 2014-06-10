@@ -82,6 +82,12 @@ case class PersistentChannelSettings(
     copy(pendingConfirmationsMin = pendingConfirmationsMin)
 
   /**
+   * Java API.
+   */
+  def withIdleTimeout(idleTimeout: FiniteDuration): PersistentChannelSettings =
+    copy(idleTimeout = idleTimeout)
+
+  /**
    * Converts this configuration object to [[ChannelSettings]].
    */
   def toChannelSettings: ChannelSettings =
@@ -99,7 +105,12 @@ object PersistentChannelSettings {
  * Resets a [[PersistentChannel]], forcing it to redeliver all unconfirmed persistent
  * messages. This does not affect writing [[Deliver]] requests.
  */
-case object Reset
+case object Reset {
+  /**
+   * Java API.
+   */
+  def getInstance() = this
+}
 
 /**
  * Exception thrown by a [[PersistentChannel]] child actor to re-initiate delivery.
