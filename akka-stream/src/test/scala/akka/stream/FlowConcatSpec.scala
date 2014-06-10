@@ -8,6 +8,7 @@ import akka.stream.scaladsl.Flow
 import org.reactivestreams.api.Producer
 import akka.stream.testkit.OnSubscribe
 import akka.stream.testkit.OnError
+import scala.concurrent.Promise
 
 class FlowConcatSpec extends TwoStreamsSetup {
 
@@ -92,5 +93,18 @@ class FlowConcatSpec extends TwoStreamsSetup {
       consumer2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
+    "correctly handle async errors in secondary upstream" in {
+      val promise = Promise[Int]()
+      val flow = Flow(List(1, 2, 3)).concat(Flow(promise.future).toProducer(materializer))
+      val consumer = StreamTestKit.consumerProbe[Int]
+      flow.produceTo(materializer, consumer)
+      val subscription = consumer.expectSubscription()
+      subscription.requestMore(4)
+      consumer.expectNext(1)
+      consumer.expectNext(2)
+      consumer.expectNext(3)
+      promise.failure(TestException)
+      consumer.expectError(TestException)
+    }
   }
 }
