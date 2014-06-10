@@ -61,7 +61,7 @@ class PersistentActorThroughputBenchmark {
   def tell_normalActor_reply_baseline() {
     for (i <- data10k) actor.tell(i, probe.ref)
 
-    probe.expectMsg(Evt(data10k.last))
+    probe.expectMsg(data10k.last)
   }
 
   @GenerateMicroBenchmark
@@ -95,9 +95,9 @@ class PersistentActorThroughputBenchmark {
 
     probe.expectMsg(Evt(data10k.last))
   }
+
 }
 
-final case class Evt(i: Int)
 
 class Persist1EventPersistentActor(respondAfter: Int) extends PersistentActor {
   override def receiveCommand  = {
@@ -133,12 +133,5 @@ class PersistAsync1EventQuickReplyPersistentActor(respondAfter: Int) extends Per
   }
   override def receiveRecover = {
     case _ => // do nothing
-  }
-}
-
-/** only as a "the best we could possibly get" baseline, does not persist anything */
-class BaselineActor(respondAfter: Int) extends Actor {
-  override def receive = {
-    case n: Int => if (n == respondAfter) sender() ! Evt(n)
   }
 }

@@ -8,8 +8,6 @@ import scala.collection.immutable
 
 import akka.actor._
 
-import akka.persistence.serialization.Message
-
 /**
  * INTERNAL API.
  *
@@ -60,7 +58,7 @@ private[persistence] object JournalProtocol {
    * @param messages messages to be written.
    * @param processor write requestor.
    */
-  final case class WriteMessages(messages: immutable.Seq[PersistentRepr], processor: ActorRef)
+  final case class WriteMessages(messages: immutable.Seq[Resequenceable], processor: ActorRef)
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
