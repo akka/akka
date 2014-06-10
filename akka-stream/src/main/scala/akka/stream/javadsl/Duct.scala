@@ -238,7 +238,7 @@ abstract class Duct[In, Out] {
   /**
    * Append the operations of a [[Duct]] to this `Duct`.
    */
-  def append[U](duct: Duct[_ >: In, U]): Duct[In, U]
+  def append[U](duct: Duct[_ >: Out, U]): Duct[In, U]
 
   /**
    * Allows a faster upstream to progress independently of a slower consumer by conflating elements into a summary
@@ -412,7 +412,7 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def flatten[U](strategy: FlattenStrategy[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.flatten(strategy))
 
-  override def append[U](duct: Duct[_ >: In, U]): Duct[In, U] =
+  override def append[U](duct: Duct[_ >: T, U]): Duct[In, U] =
     new DuctAdapter(delegate.appendJava(duct))
 
   override def produceTo(materializer: FlowMaterializer, consumer: Consumer[T]): Consumer[In] =

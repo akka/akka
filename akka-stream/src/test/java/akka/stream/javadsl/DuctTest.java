@@ -140,19 +140,19 @@ public class DuctTest {
   public void mustBeAppendableToDuct() {
     final JavaTestKit probe = new JavaTestKit(system);
 
-    Duct<Integer, Integer> duct1 = Duct.create(Integer.class).map(new Function<Integer, Integer>() {
-      public Integer apply(Integer elem) {
-        return elem + 10;
+    Duct<String, Integer> duct1 = Duct.create(String.class).map(new Function<String, Integer>() {
+      public Integer apply(String elem) {
+        return Integer.parseInt(elem);
       }
     });
 
-    Consumer<Integer> ductInConsumer = Duct.create(Integer.class).map(new Function<Integer, Integer>() {
-      public Integer apply(Integer elem) {
-        return elem * 2;
+    Consumer<Integer> ductInConsumer = Duct.create(Integer.class).map(new Function<Integer, String>() {
+      public String apply(Integer elem) {
+        return Integer.toString(elem * 2);
       }
     }).append(duct1).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
-        return "elem-" + elem;
+        return "elem-" + (elem + 10);
       }
     }).foreach(new Procedure<String>() {
       public void apply(String elem) {

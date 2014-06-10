@@ -265,12 +265,12 @@ trait Duct[In, +Out] {
   /**
    * Append the operations of a [[Duct]] to this `Duct`.
    */
-  def append[U](duct: Duct[_ >: In, U]): Duct[In, U]
+  def append[U](duct: Duct[_ >: Out, U]): Duct[In, U]
 
   /**
    * INTERNAL API
    */
-  private[akka] def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: In, U]): Duct[In, U]
+  private[akka] def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U]
 
   /**
    * Materialize this `Duct` by attaching it to the specified downstream `consumer`
