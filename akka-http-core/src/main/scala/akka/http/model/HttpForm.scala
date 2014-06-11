@@ -41,7 +41,7 @@ object MultipartFormData {
 
   def apply(fields: Map[String, BodyPart]): MultipartFormData = apply {
     fields.map {
-      case (key, value) ⇒ value.copy(headers = `Content-Disposition`(ContentDispositionType.`form-data`, Map("name" -> key)) +: value.headers)
+      case (key, value) ⇒ value.copy(headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> key)) +: value.headers)
     }(collection.breakOut): _*
   }
 }

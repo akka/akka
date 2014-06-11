@@ -8,7 +8,7 @@ import akka.http.util.{ Rendering, ValueRenderable }
 
 sealed trait RangeUnit extends ValueRenderable
 
-object RangeUnit {
+object RangeUnits {
   object Bytes extends RangeUnit {
     def render[R <: Rendering](r: R): r.type = r ~~ "bytes"
   }

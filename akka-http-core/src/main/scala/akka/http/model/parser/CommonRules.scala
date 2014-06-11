@@ -305,7 +305,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `byte-ranges-specifier` = rule { `bytes-unit` ~ ws('=') ~ `byte-range-set` }
 
-  def `bytes-unit` = rule { "bytes" ~ OWS ~ push(RangeUnit.Bytes) }
+  def `bytes-unit` = rule { "bytes" ~ OWS ~ push(RangeUnits.Bytes) }
 
   def `complete-length` = rule { longNumberCapped }
 
@@ -319,7 +319,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
 
   def `other-range-set` = rule { oneOrMore(VCHAR) ~ OWS }
 
-  def `other-range-unit` = rule { token ~> RangeUnit.Other }
+  def `other-range-unit` = rule { token ~> RangeUnits.Other }
 
   def `other-ranges-specifier` = rule { `other-range-unit` ~ ws('=') ~ `other-range-set` }
 
@@ -353,14 +353,14 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // ******************************************************************************************
 
   def `transfer-coding` = rule(
-    ignoreCase("chunked") ~ OWS ~ push(TransferEncoding.chunked)
-      | ignoreCase("gzip") ~ OWS ~ push(TransferEncoding.gzip)
-      | ignoreCase("deflate") ~ OWS ~ push(TransferEncoding.deflate)
-      | ignoreCase("compress") ~ OWS ~ push(TransferEncoding.compress)
+    ignoreCase("chunked") ~ OWS ~ push(TransferEncodings.chunked)
+      | ignoreCase("gzip") ~ OWS ~ push(TransferEncodings.gzip)
+      | ignoreCase("deflate") ~ OWS ~ push(TransferEncodings.deflate)
+      | ignoreCase("compress") ~ OWS ~ push(TransferEncodings.compress)
       | `transfer-extension`)
 
   def `transfer-extension` = rule {
-    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (_.toMap) ~> (TransferEncoding.Extension(_, _))
+    token ~ zeroOrMore(ws(';') ~ `transfer-parameter`) ~> (_.toMap) ~> (TransferEncodings.Extension(_, _))
   }
 
   def `transfer-parameter` = rule { token ~ ws('=') ~ word ~> (_ -> _) }

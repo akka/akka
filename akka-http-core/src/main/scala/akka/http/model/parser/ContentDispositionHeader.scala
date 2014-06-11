@@ -17,10 +17,10 @@ private[parser] trait ContentDispositionHeader { this: Parser with CommonRules w
   }
 
   def `disposition-type` = rule(
-    ignoreCase("inline") ~ OWS ~ push(ContentDispositionType.inline)
-      | ignoreCase("attachment") ~ OWS ~ push(ContentDispositionType.attachment)
-      | ignoreCase("form-data") ~ OWS ~ push(ContentDispositionType.`form-data`)
-      | `disp-ext-type` ~> (ContentDispositionType.Ext(_)))
+    ignoreCase("inline") ~ OWS ~ push(ContentDispositionTypes.inline)
+      | ignoreCase("attachment") ~ OWS ~ push(ContentDispositionTypes.attachment)
+      | ignoreCase("form-data") ~ OWS ~ push(ContentDispositionTypes.`form-data`)
+      | `disp-ext-type` ~> (ContentDispositionTypes.Ext(_)))
 
   def `disp-ext-type` = rule { token }
 
