@@ -27,7 +27,7 @@ object TestServer extends App {
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
     case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
     case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-    case _: HttpRequest                                ⇒ HttpResponse(404, "Unknown resource!")
+    case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
   val materializer = FlowMaterializer(MaterializerSettings())

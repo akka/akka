@@ -106,7 +106,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
       def errorResponse(status: StatusCode, info: ErrorInfo): ResponseRenderingContext = {
         log.warning("Illegal request, responding with status '{}': {}", status, info.formatPretty)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-        ResponseRenderingContext(HttpResponse(status, msg), closeAfterResponseCompletion = true)
+        ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true)
       }
     }
 }
