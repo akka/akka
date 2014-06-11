@@ -283,7 +283,3 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity) =
     if ((headers eq this.headers) && (entity eq this.entity)) this else copy(headers = headers, entity = entity)
 }
-
-object HttpResponse {
-  def apply(status: StatusCode, entity: HttpEntity): HttpResponse = HttpResponse(status, Nil, entity)
-}
