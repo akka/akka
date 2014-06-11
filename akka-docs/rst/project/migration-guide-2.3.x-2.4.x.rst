@@ -39,11 +39,10 @@ Please note that this change affects you only if you have implemented your own b
 is still there and does not require any attention from you concerning this change.
 
 FSM notifies on same state trasisions
-=====================================
-
-`FSM` notifies their subscribers about state transitions. In `2.3.x` when we are in state `A` and use `goto(A)` notifiaction wasn't send.
-In `2.4.x` `FSMs` send notifiaction about transisions which are done using `goto()`. When `stay()` is used notification is *not* 
-send to subscribers.
+====================================
+``FSM`` notifies their subscribers about state transitions. In `2.3.x` when an Actor is in state ``A`` and ``goto(A)`` is invoked, 
+no notifiaction will be send. In ``2.4.x`` FSMs send notifiaction about transisions which are done using ``goto()``. 
+When ``stay()`` is used notification is *not* sent to subscribers.
 
 Removed Deprecated Features
 ===========================

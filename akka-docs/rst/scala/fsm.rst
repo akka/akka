@@ -329,8 +329,8 @@ actor will be sent a :class:`CurrentState(self, stateName)` message immediately
 and will receive :class:`Transition(actorRef, oldState, newState)` messages
 whenever a new state is reached.
 
-Each time :class:`goto(state)` is used monitor actor is notified about transition
-(even this transision goes to same state). Use :class:`stay()` to prevent sending
+Each time ``goto(state)`` is used monitor actor is notified about transition
+(even this transision goes to same state). Use ``stay()`` to prevent sending
 notification messages to watching actors.
 
 External monitors may be unregistered by sending 
