@@ -13,7 +13,8 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.2
   def accept = rule {
-    zeroOrMore(`media-range-decl`).separatedBy(listSep) ~ EOI ~> (Accept(_: _*))
+
+    zeroOrMore(`media-range-decl`).separatedBy(listSep) ~ EOI ~> (Accept(_))
   }
 
   def `media-range-decl` = rule {
