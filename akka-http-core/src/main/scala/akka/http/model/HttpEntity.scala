@@ -60,14 +60,14 @@ sealed trait HttpEntity {
 }
 
 object HttpEntity {
-  implicit def apply(string: String): Regular = apply(ContentTypes.`text/plain(UTF-8)`, string)
-  implicit def apply(bytes: Array[Byte]): Regular = apply(ContentTypes.`application/octet-stream`, bytes)
-  implicit def apply(data: ByteString): Regular = apply(ContentTypes.`application/octet-stream`, data)
-  def apply(contentType: ContentType, string: String): Regular =
+  implicit def apply(string: String): Strict = apply(ContentTypes.`text/plain(UTF-8)`, string)
+  implicit def apply(bytes: Array[Byte]): Strict = apply(ContentTypes.`application/octet-stream`, bytes)
+  implicit def apply(data: ByteString): Strict = apply(ContentTypes.`application/octet-stream`, data)
+  def apply(contentType: ContentType, string: String): Strict =
     if (string.isEmpty) empty(contentType) else apply(contentType, ByteString(string.getBytes(contentType.charset.nioCharset)))
-  def apply(contentType: ContentType, bytes: Array[Byte]): Regular =
+  def apply(contentType: ContentType, bytes: Array[Byte]): Strict =
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
-  def apply(contentType: ContentType, data: ByteString): Regular =
+  def apply(contentType: ContentType, data: ByteString): Strict =
     if (data.isEmpty) empty(contentType) else Strict(contentType, data)
   def apply(contentType: ContentType, contentLength: Long, data: Producer[ByteString]): Regular =
     if (contentLength == 0) empty(contentType) else Default(contentType, contentLength, data)
@@ -78,7 +78,7 @@ object HttpEntity {
     else empty(contentType)
   }
 
-  val Empty = Strict(ContentTypes.NoContentType, data = ByteString.empty)
+  val Empty: Strict = Strict(ContentTypes.NoContentType, data = ByteString.empty)
 
   def empty(contentType: ContentType): Strict =
     if (contentType == Empty.contentType) Empty
