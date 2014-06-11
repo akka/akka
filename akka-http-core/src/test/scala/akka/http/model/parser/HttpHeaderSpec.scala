@@ -88,8 +88,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Accept-Ranges" in {
-      "Accept-Ranges: bytes" =!= `Accept-Ranges`(RangeUnit.Bytes)
-      "Accept-Ranges: bytes, sausages" =!= `Accept-Ranges`(RangeUnit.Bytes, RangeUnit.Other("sausages"))
+      "Accept-Ranges: bytes" =!= `Accept-Ranges`(RangeUnits.Bytes)
+      "Accept-Ranges: bytes, sausages" =!= `Accept-Ranges`(RangeUnits.Bytes, RangeUnits.Other("sausages"))
       "Accept-Ranges: none" =!= `Accept-Ranges`()
     }
 
@@ -153,9 +153,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Content-Disposition" in {
-      "Content-Disposition: form-data" =!= `Content-Disposition`(ContentDispositionType.`form-data`)
+      "Content-Disposition: form-data" =!= `Content-Disposition`(ContentDispositionTypes.`form-data`)
       "Content-Disposition: attachment; name=field1; filename=\"file/txt\"" =!=
-        `Content-Disposition`(ContentDispositionType.attachment, Map("name" -> "field1", "filename" -> "file/txt"))
+        `Content-Disposition`(ContentDispositionTypes.attachment, Map("name" -> "field1", "filename" -> "file/txt"))
     }
 
     "Content-Encoding" in {
@@ -274,28 +274,28 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Link" in {
-      "Link: </?page=2>; rel=next" =!= Link(Uri("/?page=2"), LinkParam.next)
-      "Link: <https://spray.io>; rel=next" =!= Link(Uri("https://spray.io"), LinkParam.next)
+      "Link: </?page=2>; rel=next" =!= Link(Uri("/?page=2"), LinkParams.next)
+      "Link: <https://spray.io>; rel=next" =!= Link(Uri("https://spray.io"), LinkParams.next)
       """Link: </>; rel=prev, </page/2>; rel="next"""" =!=
-        Link(LinkValue(Uri("/"), LinkParam.prev), LinkValue(Uri("/page/2"), LinkParam.next)).renderedTo("</>; rel=prev, </page/2>; rel=next")
+        Link(LinkValue(Uri("/"), LinkParams.prev), LinkValue(Uri("/page/2"), LinkParams.next)).renderedTo("</>; rel=prev, </page/2>; rel=next")
 
-      """Link: </>; rel="x.y-z http://spray.io"""" =!= Link(Uri("/"), LinkParam.rel("x.y-z http://spray.io"))
-      """Link: </>; title="My Title"""" =!= Link(Uri("/"), LinkParam.title("My Title"))
-      """Link: </>; rel=next; title="My Title"""" =!= Link(Uri("/"), LinkParam.next, LinkParam.title("My Title"))
-      """Link: </>; anchor="http://example.com"""" =!= Link(Uri("/"), LinkParam.anchor(Uri("http://example.com")))
+      """Link: </>; rel="x.y-z http://spray.io"""" =!= Link(Uri("/"), LinkParams.rel("x.y-z http://spray.io"))
+      """Link: </>; title="My Title"""" =!= Link(Uri("/"), LinkParams.title("My Title"))
+      """Link: </>; rel=next; title="My Title"""" =!= Link(Uri("/"), LinkParams.next, LinkParams.title("My Title"))
+      """Link: </>; anchor="http://example.com"""" =!= Link(Uri("/"), LinkParams.anchor(Uri("http://example.com")))
       """Link: </>; rev=foo; hreflang=de-de; media=print; type=application/json""" =!=
-        Link(Uri("/"), LinkParam.rev("foo"), LinkParam.hreflang(Language("de", "de")), LinkParam.media("print"), LinkParam.`type`(`application/json`))
+        Link(Uri("/"), LinkParams.rev("foo"), LinkParams.hreflang(Language("de", "de")), LinkParams.media("print"), LinkParams.`type`(`application/json`))
 
       /* RFC 5988 examples */
       """Link: <http://example.com/TheBook/chapter2>; rel="previous"; title="previous chapter"""" =!=
-        Link(Uri("http://example.com/TheBook/chapter2"), LinkParam.rel("previous"), LinkParam.title("previous chapter"))
+        Link(Uri("http://example.com/TheBook/chapter2"), LinkParams.rel("previous"), LinkParams.title("previous chapter"))
         .renderedTo("""<http://example.com/TheBook/chapter2>; rel=previous; title="previous chapter"""")
 
-      """Link: </>; rel="http://example.net/foo"""" =!= Link(Uri("/"), LinkParam.rel("http://example.net/foo"))
+      """Link: </>; rel="http://example.net/foo"""" =!= Link(Uri("/"), LinkParams.rel("http://example.net/foo"))
         .renderedTo("</>; rel=http://example.net/foo")
 
       """Link: <http://example.org/>; rel="start http://example.net/relation/other"""" =!= Link(Uri("http://example.org/"),
-        LinkParam.rel("start http://example.net/relation/other"))
+        LinkParams.rel("start http://example.net/relation/other"))
 
       // only one 'rel=' is allowed, http://tools.ietf.org/html/rfc5988#section-5.3 requires any subsequent ones to be skipped
       "Link: </>; rel=prev; rel=next" =!=> "</>; rel=prev"
@@ -321,8 +321,8 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
 
     "Transfer-Encoding" in {
-      "Transfer-Encoding: chunked" =!= `Transfer-Encoding`(TransferEncoding.chunked)
-      "Transfer-Encoding: gzip" =!= `Transfer-Encoding`(TransferEncoding.gzip)
+      "Transfer-Encoding: chunked" =!= `Transfer-Encoding`(TransferEncodings.chunked)
+      "Transfer-Encoding: gzip" =!= `Transfer-Encoding`(TransferEncodings.gzip)
     }
 
     "Range" in {

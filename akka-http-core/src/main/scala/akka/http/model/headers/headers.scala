@@ -245,7 +245,7 @@ final case class `Content-Length`(length: Long)(implicit ev: AllowProtectedHeade
 
 // http://tools.ietf.org/html/rfc7233#section-4.2
 object `Content-Range` extends ModeledCompanion {
-  def apply(byteContentRange: ByteContentRange): `Content-Range` = apply(RangeUnit.Bytes, byteContentRange)
+  def apply(byteContentRange: ByteContentRange): `Content-Range` = apply(RangeUnits.Bytes, byteContentRange)
 }
 final case class `Content-Range`(rangeUnit: RangeUnit, contentRange: ContentRange) extends ModeledHeader {
   protected def renderValue[R <: Rendering](r: R): r.type = r ~~ rangeUnit ~~ ' ' ~~ contentRange
@@ -398,7 +398,6 @@ object Origin extends ModeledCompanion {
   def apply(first: HttpOrigin, more: HttpOrigin*): Origin = apply(immutable.Seq(first +: more: _*))
 }
 final case class Origin(origins: immutable.Seq[HttpOrigin]) extends ModeledHeader {
-  import HttpOriginRange.originsRenderer
   protected def renderValue[R <: Rendering](r: R): r.type = r ~~ origins
   protected def companion = Origin
 }
@@ -406,7 +405,7 @@ final case class Origin(origins: immutable.Seq[HttpOrigin]) extends ModeledHeade
 // http://tools.ietf.org/html/rfc7233#section-3.1
 object Range extends ModeledCompanion {
   def apply(first: ByteRange, more: ByteRange*): Range = apply(immutable.Seq(first +: more: _*))
-  def apply(ranges: immutable.Seq[ByteRange]): Range = Range(RangeUnit.Bytes, ranges)
+  def apply(ranges: immutable.Seq[ByteRange]): Range = Range(RangeUnits.Bytes, ranges)
   private[http] implicit val rangesRenderer = Renderer.defaultSeqRenderer[ByteRange] // cache
 }
 final case class Range(rangeUnit: RangeUnit, ranges: immutable.Seq[ByteRange]) extends ModeledHeader {
@@ -477,7 +476,7 @@ object `Transfer-Encoding` extends ModeledCompanion {
 final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])(implicit ev: AllowProtectedHeaderCreation.Enabled) extends ModeledHeader {
   import `Transfer-Encoding`.encodingsRenderer
   require(encodings.nonEmpty, "encodings must not be empty")
-  def hasChunked: Boolean = encodings contains TransferEncoding.chunked
+  def hasChunked: Boolean = encodings contains TransferEncodings.chunked
   protected def renderValue[R <: Rendering](r: R): r.type = r ~~ encodings
   protected def companion = `Transfer-Encoding`
 }
