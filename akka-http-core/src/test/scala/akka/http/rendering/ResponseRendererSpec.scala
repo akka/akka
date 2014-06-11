@@ -126,14 +126,14 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
       "with one chunk and incorrect (too large) Content-Length" in new TestSetup() {
         the[RuntimeException] thrownBy {
-          HttpResponse(200, Default(ContentTypes.`application/json`, 10,
+          HttpResponse(200, entity = Default(ContentTypes.`application/json`, 10,
             producer(ByteString("body123")))) should renderTo("")
         } should have message "Response had declared Content-Length 10 but entity chunk stream amounts to 3 bytes less"
       }
 
       "with one chunk and incorrect (too small) Content-Length" in new TestSetup() {
         the[RuntimeException] thrownBy {
-          HttpResponse(200, Default(ContentTypes.`application/json`, 5,
+          HttpResponse(200, entity = Default(ContentTypes.`application/json`, 5,
             producer(ByteString("body123")))) should renderTo("")
         } should have message "Response had declared Content-Length 5 but entity chunk stream amounts to more bytes"
       }
@@ -142,7 +142,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     "a response with a CloseDelimited body" - {
       "without data" in new TestSetup() {
         ResponseRenderingContext(
-          HttpResponse(200, CloseDelimited(ContentTypes.`application/json`,
+          HttpResponse(200, entity = CloseDelimited(ContentTypes.`application/json`,
             producer(ByteString.empty)))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
@@ -154,7 +154,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
       "consisting of two parts" in new TestSetup() {
         ResponseRenderingContext(
-          HttpResponse(200, CloseDelimited(ContentTypes.`application/json`,
+          HttpResponse(200, entity = CloseDelimited(ContentTypes.`application/json`,
             producer(ByteString("abc"), ByteString("defg"))))) should renderTo(
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
