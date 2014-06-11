@@ -15,6 +15,7 @@ import akka.http.model.parser.UriParser
 import akka.http.model.parser.CharacterClasses._
 import akka.http.util._
 import Uri._
+import java.net.InetAddress
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -308,6 +309,7 @@ object Uri {
     def address: String
     def isEmpty: Boolean
     def toOption: Option[NonEmptyHost]
+    def inetAddresses: immutable.Seq[InetAddress]
     def equalsIgnoreCase(other: Host): Boolean
     override def toString() = UriRendering.HostRenderer.render(new StringRendering, this).get
   }
@@ -316,6 +318,8 @@ object Uri {
       def address: String = ""
       def isEmpty = true
       def toOption = None
+      def inetAddresses: immutable.Seq[InetAddress] = Nil
+
       def equalsIgnoreCase(other: Host): Boolean = other eq this
     }
     def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Host =
@@ -332,6 +336,8 @@ object Uri {
       case IPv4Host(`bytes`, _) ⇒ true
       case _                    ⇒ false
     }
+
+    def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv4Host {
     def apply(address: String): IPv4Host = apply(address.split('.').map(_.toInt.toByte))
@@ -346,6 +352,8 @@ object Uri {
       case IPv6Host(`bytes`, _) ⇒ true
       case _                    ⇒ false
     }
+
+    def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv6Host {
     def apply(bytes: String, address: String): IPv6Host = {
@@ -360,6 +368,8 @@ object Uri {
       case NamedHost(otherAddress) ⇒ address equalsIgnoreCase otherAddress
       case _                       ⇒ false
     }
+
+    def inetAddresses = InetAddress.getAllByName(address).toList
   }
 
   sealed abstract class Path {
