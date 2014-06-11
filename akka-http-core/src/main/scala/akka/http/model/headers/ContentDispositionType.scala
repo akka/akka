@@ -8,10 +8,14 @@ import akka.http.util.{ Rendering, SingletonValueRenderable, Renderable }
 
 sealed trait ContentDispositionType extends Renderable
 
-object ContentDispositionType {
-  case object inline extends ContentDispositionType with SingletonValueRenderable
-  case object attachment extends ContentDispositionType with SingletonValueRenderable
-  case object `form-data` extends ContentDispositionType with SingletonValueRenderable
+object ContentDispositionTypes {
+  protected abstract class Predefined extends ContentDispositionType with SingletonValueRenderable {
+    def name: String = value
+  }
+
+  case object inline extends Predefined
+  case object attachment extends Predefined
+  case object `form-data` extends Predefined
   final case class Ext(name: String) extends ContentDispositionType {
     def render[R <: Rendering](r: R): r.type = r ~~ name
   }
