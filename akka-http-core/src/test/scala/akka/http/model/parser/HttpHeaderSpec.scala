@@ -35,9 +35,9 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Accept: */*, text/*; foo=bar, custom/custom; bar=\"b>az\"" =!=
         Accept(`*/*`,
           MediaRange.custom("text", Map("foo" -> "bar")),
-          MediaType.custom("custom", "custom", parameters = Map("bar" -> "b>az")))
+          MediaType.custom("custom", "custom", params = Map("bar" -> "b>az")))
       "Accept: application/*+xml; version=2" =!=
-        Accept(MediaType.custom("application", "*+xml", parameters = Map("version" -> "2")))
+        Accept(MediaType.custom("application", "*+xml", params = Map("version" -> "2")))
     }
 
     "Accept-Charset" in {
@@ -175,7 +175,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Type: text/plain; charset=utf8" =!=
         `Content-Type`(ContentType(`text/plain`, `UTF-8`)).renderedTo("text/plain; charset=UTF-8")
       "Content-Type: text/xml; version=3; charset=windows-1252" =!=
-        `Content-Type`(ContentType(MediaType.custom("text", "xml", parameters = Map("version" -> "3")), HttpCharsets.getForKey("windows-1252")))
+        `Content-Type`(ContentType(MediaType.custom("text", "xml", params = Map("version" -> "3")), HttpCharsets.getForKey("windows-1252")))
       "Content-Type: text/plain; charset=fancy-pants" =!=
         ErrorInfo("Illegal HTTP header 'Content-Type': Unsupported charset", "fancy-pants")
       "Content-Type: multipart/mixed; boundary=ABC123" =!=
