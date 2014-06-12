@@ -22,6 +22,7 @@ object Dependencies {
     // Compile
     val camelCore     = "org.apache.camel"            % "camel-core"                   % "2.13.0" exclude("org.slf4j", "slf4j-api") // ApacheV2
 
+    // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.2.1"       // ApacheV2
     // mirrored in OSGi sample
     val netty         = "io.netty"                    % "netty"                        % "3.8.0.Final" // ApacheV2
