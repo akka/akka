@@ -11,21 +11,21 @@ private[parser] trait CommonActions {
 
   type StringMapBuilder = scala.collection.mutable.Builder[(String, String), Map[String, String]]
 
-  def getMediaType(mainType: String, subType: String, parameters: Map[String, String]): MediaType = {
+  def getMediaType(mainType: String, subType: String, params: Map[String, String]): MediaType = {
     mainType.toLowerCase match {
       case "multipart" ⇒ subType.toLowerCase match {
-        case "mixed"       ⇒ multipart.mixed(parameters)
-        case "alternative" ⇒ multipart.alternative(parameters)
-        case "related"     ⇒ multipart.related(parameters)
-        case "form-data"   ⇒ multipart.`form-data`(parameters)
-        case "signed"      ⇒ multipart.signed(parameters)
-        case "encrypted"   ⇒ multipart.encrypted(parameters)
-        case custom        ⇒ multipart(custom, parameters)
+        case "mixed"       ⇒ multipart.mixed(params)
+        case "alternative" ⇒ multipart.alternative(params)
+        case "related"     ⇒ multipart.related(params)
+        case "form-data"   ⇒ multipart.`form-data`(params)
+        case "signed"      ⇒ multipart.signed(params)
+        case "encrypted"   ⇒ multipart.encrypted(params)
+        case custom        ⇒ multipart(custom, params)
       }
       case mainLower ⇒
         MediaTypes.getForKey((mainLower, subType.toLowerCase)) match {
-          case Some(registered) ⇒ if (parameters.isEmpty) registered else registered.withParameters(parameters)
-          case None             ⇒ MediaType.custom(mainType, subType, parameters = parameters, allowArbitrarySubtypes = true)
+          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params)
+          case None             ⇒ MediaType.custom(mainType, subType, params = params, allowArbitrarySubtypes = true)
         }
     }
   }

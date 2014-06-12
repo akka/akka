@@ -11,7 +11,7 @@ import akka.http.util._
 sealed abstract class MediaRange extends Renderable with WithQValue[MediaRange] {
   def value: String
   def mainType: String
-  def parameters: Map[String, String]
+  def params: Map[String, String]
   def qValue: Float
   def matches(mediaType: MediaType): Boolean
   def isApplication = false
@@ -23,10 +23,10 @@ sealed abstract class MediaRange extends Renderable with WithQValue[MediaRange] 
   def isVideo = false
 
   /**
-   * Returns a copy of this instance with the parameters replaced by the given ones.
+   * Returns a copy of this instance with the params replaced by the given ones.
    * If the given map contains a "q" value the `qValue` member is (also) updated.
    */
-  def withParameters(parameters: Map[String, String]): MediaRange
+  def withParams(params: Map[String, String]): MediaRange
 
   /**
    * Constructs a `ContentTypeRange` from this instance and the given charset.
@@ -35,22 +35,22 @@ sealed abstract class MediaRange extends Renderable with WithQValue[MediaRange] 
 }
 
 object MediaRange {
-  private[http] def splitOffQValue(parameters: Map[String, String], defaultQ: Float = 1.0f): (Map[String, String], Float) =
-    parameters.get("q") match {
-      case Some(x) ⇒ (parameters - "q") -> (try x.toFloat catch { case _: NumberFormatException ⇒ 1.0f })
-      case None    ⇒ parameters -> defaultQ
+  private[http] def splitOffQValue(params: Map[String, String], defaultQ: Float = 1.0f): (Map[String, String], Float) =
+    params.get("q") match {
+      case Some(x) ⇒ (params - "q") -> (try x.toFloat catch { case _: NumberFormatException ⇒ 1.0f })
+      case None    ⇒ params -> defaultQ
     }
 
-  private final case class Custom(mainType: String, parameters: Map[String, String], qValue: Float)
+  private final case class Custom(mainType: String, params: Map[String, String], qValue: Float)
     extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     def matches(mediaType: MediaType) = mainType == "*" || mediaType.mainType == mainType
-    def withParameters(parameters: Map[String, String]) = custom(mainType, parameters, qValue)
-    def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, parameters, qValue) else this
+    def withParams(params: Map[String, String]) = custom(mainType, params, qValue)
+    def withQValue(qValue: Float) = if (qValue != this.qValue) custom(mainType, params, qValue) else this
     def render[R <: Rendering](r: R): r.type = {
       r ~~ mainType ~~ '/' ~~ '*'
       if (qValue < 1.0f) r ~~ ";q=" ~~ qValue
-      if (parameters.nonEmpty) parameters foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
+      if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
       r
     }
     override def isApplication = mainType == "application"
@@ -62,15 +62,15 @@ object MediaRange {
     override def isVideo = mainType == "video"
   }
 
-  def custom(mainType: String, parameters: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
-    val (params, q) = splitOffQValue(parameters, qValue)
-    Custom(mainType.toLowerCase, params, q)
+  def custom(mainType: String, params: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
+    val (ps, q) = splitOffQValue(params, qValue)
+    Custom(mainType.toLowerCase, ps, q)
   }
 
   final case class One(mediaType: MediaType, qValue: Float) extends MediaRange with ValueRenderable {
     require(0.0f <= qValue && qValue <= 1.0f, "qValue must be >= 0 and <= 1.0")
     def mainType = mediaType.mainType
-    def parameters = mediaType.parameters
+    def params = mediaType.params
     override def isApplication = mediaType.isApplication
     override def isAudio = mediaType.isAudio
     override def isImage = mediaType.isImage
@@ -80,7 +80,7 @@ object MediaRange {
     override def isVideo = mediaType.isVideo
     def matches(mediaType: MediaType) =
       this.mediaType.mainType == mediaType.mainType && this.mediaType.subType == mediaType.subType
-    def withParameters(parameters: Map[String, String]) = copy(mediaType = mediaType.withParameters(parameters))
+    def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType
   }
@@ -94,10 +94,10 @@ object MediaRanges extends ObjectRegistry[String, MediaRange] {
   sealed abstract case class PredefinedMediaRange(value: String) extends MediaRange with LazyValueBytesRenderable {
     val mainType = value takeWhile (_ != '/')
     register(mainType, this)
-    def parameters = Map.empty
+    def params = Map.empty
     def qValue = 1.0f
-    def withParameters(parameters: Map[String, String]) = MediaRange.custom(mainType, parameters)
-    def withQValue(qValue: Float) = if (qValue != 1.0f) MediaRange.custom(mainType, parameters, qValue) else this
+    def withParams(params: Map[String, String]) = MediaRange.custom(mainType, params)
+    def withQValue(qValue: Float) = if (qValue != 1.0f) MediaRange.custom(mainType, params, qValue) else this
   }
 
   val `*/*` = new PredefinedMediaRange("*/*") {
@@ -138,7 +138,7 @@ sealed abstract case class MediaType private[http] (value: String)(val mainType:
                                                                    val compressible: Boolean,
                                                                    val binary: Boolean,
                                                                    val fileExtensions: immutable.Seq[String],
-                                                                   val parameters: Map[String, String])
+                                                                   val params: Map[String, String])
   extends LazyValueBytesRenderable with WithQValue[MediaRange] {
   def isApplication = false
   def isAudio = false
@@ -149,9 +149,9 @@ sealed abstract case class MediaType private[http] (value: String)(val mainType:
   def isVideo = false
 
   /**
-   * Returns a copy of this instance with the parameters replaced by the given ones.
+   * Returns a copy of this instance with the params replaced by the given ones.
    */
-  def withParameters(parameters: Map[String, String]): MediaType
+  def withParams(params: Map[String, String]): MediaType
 
   /**
    * Constructs a `ContentType` from this instance and the given charset.
@@ -161,24 +161,24 @@ sealed abstract case class MediaType private[http] (value: String)(val mainType:
   def withQValue(qValue: Float): MediaRange = MediaRange(this, qValue.toFloat)
 }
 
-class MultipartMediaType private[http] (_value: String, _subType: String, _parameters: Map[String, String])
-  extends MediaType(_value)("multipart", _subType, compressible = true, binary = true, Nil, _parameters) {
+class MultipartMediaType private[http] (_value: String, _subType: String, _params: Map[String, String])
+  extends MediaType(_value)("multipart", _subType, compressible = true, binary = true, Nil, _params) {
   override def isMultipart = true
-  def withBoundary(boundary: String): MultipartMediaType = withParameters {
-    if (boundary.isEmpty) parameters - "boundary" else parameters.updated("boundary", boundary)
+  def withBoundary(boundary: String): MultipartMediaType = withParams {
+    if (boundary.isEmpty) params - "boundary" else params.updated("boundary", boundary)
   }
-  def withParameters(parameters: Map[String, String]) = MediaTypes.multipart(subType, parameters)
+  def withParams(params: Map[String, String]) = MediaTypes.multipart(subType, params)
 }
 
 sealed abstract class NonMultipartMediaType private[http] (_value: String, _mainType: String, _subType: String,
                                                            _compressible: Boolean, _binary: Boolean,
                                                            _fileExtensions: immutable.Seq[String],
-                                                           _parameters: Map[String, String])
-  extends MediaType(_value)(_mainType, _subType, _compressible, _binary, _fileExtensions, _parameters) {
+                                                           _params: Map[String, String])
+  extends MediaType(_value)(_mainType, _subType, _compressible, _binary, _fileExtensions, _params) {
   private[http] def this(mainType: String, subType: String, compressible: Boolean, binary: Boolean, fileExtensions: immutable.Seq[String]) =
     this(mainType + '/' + subType, mainType, subType, compressible, binary, fileExtensions, Map.empty)
-  def withParameters(parameters: Map[String, String]) =
-    MediaType.custom(mainType, subType, compressible, binary, fileExtensions, parameters)
+  def withParams(params: Map[String, String]) =
+    MediaType.custom(mainType, subType, compressible, binary, fileExtensions, params)
 }
 
 object MediaType {
@@ -188,13 +188,13 @@ object MediaType {
    * your custom Marshallers and Unmarshallers.
    */
   def custom(mainType: String, subType: String, compressible: Boolean = false, binary: Boolean = false,
-             fileExtensions: immutable.Seq[String] = Nil, parameters: Map[String, String] = Map.empty,
+             fileExtensions: immutable.Seq[String] = Nil, params: Map[String, String] = Map.empty,
              allowArbitrarySubtypes: Boolean = false): MediaType = {
     require(mainType != "multipart", "Cannot create a MultipartMediaType here, use `multipart.apply` instead!")
     require(allowArbitrarySubtypes || subType != "*", "Cannot create a MediaRange here, use `MediaRange.custom` instead!")
     val r = new StringRendering ~~ mainType ~~ '/' ~~ subType
-    if (parameters.nonEmpty) parameters foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
-    new NonMultipartMediaType(r.get, mainType, subType, compressible, binary, fileExtensions, parameters) {
+    if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
+    new NonMultipartMediaType(r.get, mainType, subType, compressible, binary, fileExtensions, params) {
       override def isApplication = mainType == "application"
       override def isAudio = mainType == "audio"
       override def isImage = mainType == "image"
@@ -374,19 +374,19 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
   val `message/rfc822`          = msg("rfc822", "eml", "mht", "mhtml", "mime")
 
   object multipart {
-    def apply(subType: String, parameters: Map[String, String]): MultipartMediaType = {
+    def apply(subType: String, params: Map[String, String]): MultipartMediaType = {
       require(subType != "*", "Cannot create a MediaRange here, use MediaRanges.`multipart/*` instead!")
       val r = new StringRendering ~~ "multipart/" ~~ subType
-      if (parameters.nonEmpty) parameters foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
-      new MultipartMediaType(r.get, subType, parameters)
+      if (params.nonEmpty) params foreach { case (k, v) ⇒ r ~~ ';' ~~ ' ' ~~ k ~~ '=' ~~# v }
+      new MultipartMediaType(r.get, subType, params)
     }
-    def mixed      (parameters: Map[String, String]) = apply("mixed", parameters)
-    def alternative(parameters: Map[String, String]) = apply("alternative", parameters)
-    def related    (parameters: Map[String, String]) = apply("related", parameters)
-    def `form-data`(parameters: Map[String, String]) = apply("form-data", parameters)
-    def signed     (parameters: Map[String, String]) = apply("signed", parameters)
-    def encrypted  (parameters: Map[String, String]) = apply("encrypted", parameters)
-    def byteRanges (parameters: Map[String, String]) = apply("byteranges", parameters)
+    def mixed      (params: Map[String, String]) = apply("mixed", params)
+    def alternative(params: Map[String, String]) = apply("alternative", params)
+    def related    (params: Map[String, String]) = apply("related", params)
+    def `form-data`(params: Map[String, String]) = apply("form-data", params)
+    def signed     (params: Map[String, String]) = apply("signed", params)
+    def encrypted  (params: Map[String, String]) = apply("encrypted", params)
+    def byteRanges (params: Map[String, String]) = apply("byteranges", params)
   }
 
   val `multipart/mixed`       = multipart.mixed(Map.empty)

@@ -22,7 +22,7 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
       if (sub == "*") {
         val mainLower = main.toLowerCase
         MediaRanges.getForKey(mainLower) match {
-          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParameters(params.toMap)
+          case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params.toMap)
           case None             ⇒ MediaRange.custom(mainLower, params.toMap)
         }
       } else {

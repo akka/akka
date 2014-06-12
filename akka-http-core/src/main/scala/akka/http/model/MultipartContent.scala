@@ -77,6 +77,6 @@ object BodyPart {
     }
 
   def apply(entity: HttpEntity, fieldName: String): BodyPart = apply(entity, fieldName, Map.empty[String, String])
-  def apply(entity: HttpEntity, fieldName: String, parameters: Map[String, String]): BodyPart =
-    BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionTypes.`form-data`, parameters.updated("name", fieldName))))
+  def apply(entity: HttpEntity, fieldName: String, params: Map[String, String]): BodyPart =
+    BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionTypes.`form-data`, params.updated("name", fieldName))))
 }

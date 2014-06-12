@@ -215,10 +215,10 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
 
 // http://tools.ietf.org/html/rfc6266
 object `Content-Disposition` extends ModeledCompanion
-final case class `Content-Disposition`(dispositionType: ContentDispositionType, parameters: Map[String, String] = Map.empty) extends ModeledHeader {
+final case class `Content-Disposition`(dispositionType: ContentDispositionType, params: Map[String, String] = Map.empty) extends ModeledHeader {
   protected def renderValue[R <: Rendering](r: R): r.type = {
     r ~~ dispositionType
-    parameters foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v }
+    params foreach { case (k, v) ⇒ r ~~ "; " ~~ k ~~ '=' ~~# v }
     r
   }
   protected def companion = `Content-Disposition`
