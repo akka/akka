@@ -64,11 +64,14 @@ public abstract class Util {
         return ((JavaUri) uri).uri();
     }
 
+    public static <J, V extends J> akka.japi.Option<J> lookupInRegistry(ObjectRegistry<Object, V> registry, int key) {
+        return Util.<J, V>convertOption(registry.getForKey(key));
+    }
     public static <J, V extends J> akka.japi.Option<J> lookupInRegistry(ObjectRegistry<String, V> registry, String key) {
         return Util.<String, J, V>lookupInRegistry(registry, key);
     }
     public static <K, J, V extends J> akka.japi.Option<J> lookupInRegistry(ObjectRegistry<K, V> registry, K key) {
-        return convertOption(registry.getForKey(key));
+        return Util.<J, V>convertOption(registry.getForKey(key));
     }
 
     /**

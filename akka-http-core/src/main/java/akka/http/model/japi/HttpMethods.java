@@ -31,6 +31,6 @@ public final class HttpMethods {
     }
 
     public static Option<HttpMethod> lookup(String name) {
-        return Util.lookupInRegistry(HttpMethods$.MODULE$, name);
+        return Util.<HttpMethod, akka.http.model.HttpMethod>lookupInRegistry(HttpMethods$.MODULE$, name);
     }
 }

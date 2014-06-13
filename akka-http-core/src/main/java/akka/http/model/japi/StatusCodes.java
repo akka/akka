@@ -109,6 +109,6 @@ public final class StatusCodes {
      * Looks up a status-code by numeric code and returns Some(code). Returns None otherwise.
      */
     public static Option<StatusCode> lookup(int intValue) {
-        return Util.lookupInRegistry(StatusCodes$.MODULE$, intValue);
+        return Util.<StatusCode, akka.http.model.StatusCode>lookupInRegistry(StatusCodes$.MODULE$, intValue);
     }
 }
