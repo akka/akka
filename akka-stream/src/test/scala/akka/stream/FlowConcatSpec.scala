@@ -6,8 +6,6 @@ package akka.stream
 import akka.stream.testkit.StreamTestKit
 import akka.stream.scaladsl.Flow
 import org.reactivestreams.api.Producer
-import akka.stream.testkit.OnSubscribe
-import akka.stream.testkit.OnError
 import scala.concurrent.Promise
 
 class FlowConcatSpec extends TwoStreamsSetup {

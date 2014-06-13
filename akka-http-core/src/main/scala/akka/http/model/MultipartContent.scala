@@ -55,7 +55,7 @@ final case class BodyPart(entity: HttpEntity, headers: immutable.Seq[HttpHeader]
 
   def dispositionParameterValue(parameter: String): Option[String] =
     headers.collectFirst {
-      case `Content-Disposition`(ContentDispositionType.`form-data`, parameters) if parameters.contains(parameter) ⇒
+      case `Content-Disposition`(ContentDispositionTypes.`form-data`, parameters) if parameters.contains(parameter) ⇒
         parameters(parameter)
     }
 
@@ -77,6 +77,6 @@ object BodyPart {
     }
 
   def apply(entity: HttpEntity, fieldName: String): BodyPart = apply(entity, fieldName, Map.empty[String, String])
-  def apply(entity: HttpEntity, fieldName: String, parameters: Map[String, String]): BodyPart =
-    BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionType.`form-data`, parameters.updated("name", fieldName))))
+  def apply(entity: HttpEntity, fieldName: String, params: Map[String, String]): BodyPart =
+    BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionTypes.`form-data`, params.updated("name", fieldName))))
 }

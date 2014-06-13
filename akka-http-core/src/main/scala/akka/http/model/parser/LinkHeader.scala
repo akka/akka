@@ -22,14 +22,14 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
   }
 
   def `link-param` = rule(
-    ws("rel") ~ ws('=') ~ `relation-types` ~> LinkParam.rel
-      | ws("anchor") ~ ws('=') ~ ws('"') ~ UriReference('"') ~ ws('"') ~> LinkParam.anchor
-      | ws("rev") ~ ws('=') ~ `relation-types` ~> LinkParam.rev
-      | ws("hreflang") ~ ws('=') ~ language ~> LinkParam.hreflang
-      | ws("media") ~ ws('=') ~ word ~> LinkParam.media
-      | ws("title") ~ ws('=') ~ word ~> LinkParam.title
-      | ws("title*") ~ ws('=') ~ word ~> LinkParam.`title*` // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
-      | ws("type") ~ ws('=') ~ (ws('"') ~ `link-media-type` ~ ws('"') | `link-media-type`) ~> LinkParam.`type`)
+    ws("rel") ~ ws('=') ~ `relation-types` ~> LinkParams.rel
+      | ws("anchor") ~ ws('=') ~ ws('"') ~ UriReference('"') ~ ws('"') ~> LinkParams.anchor
+      | ws("rev") ~ ws('=') ~ `relation-types` ~> LinkParams.rev
+      | ws("hreflang") ~ ws('=') ~ language ~> LinkParams.hreflang
+      | ws("media") ~ ws('=') ~ word ~> LinkParams.media
+      | ws("title") ~ ws('=') ~ word ~> LinkParams.title
+      | ws("title*") ~ ws('=') ~ word ~> LinkParams.`title*` // support full `ext-value` notation from http://tools.ietf.org/html/rfc5987#section-3.2.1
+      | ws("type") ~ ws('=') ~ (ws('"') ~ `link-media-type` ~ ws('"') | `link-media-type`) ~> LinkParams.`type`)
   // TODO: support `link-extension`
 
   def `relation-types` = rule(
@@ -69,12 +69,12 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
                                 seenMedia: Boolean = false, seenTitle: Boolean = false, seenTitleS: Boolean = false,
                                 seenType: Boolean = false): Seq[LinkParam] =
     params match {
-      case Seq((x: LinkParam.rel), tail @ _*)      ⇒ sanitize(tail, if (seenRel) result else result :+ x, seenRel = true, seenMedia, seenTitle, seenTitleS, seenType)
-      case Seq((x: LinkParam.media), tail @ _*)    ⇒ sanitize(tail, if (seenMedia) result else result :+ x, seenRel, seenMedia = true, seenTitle, seenTitleS, seenType)
-      case Seq((x: LinkParam.title), tail @ _*)    ⇒ sanitize(tail, if (seenTitle) result else result :+ x, seenRel, seenMedia, seenTitle = true, seenTitleS, seenType)
-      case Seq((x: LinkParam.`title*`), tail @ _*) ⇒ sanitize(tail, if (seenTitleS) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS = true, seenType)
-      case Seq((x: LinkParam.`type`), tail @ _*)   ⇒ sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
-      case Seq(head, tail @ _*)                    ⇒ sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
-      case Nil                                     ⇒ result
+      case Seq((x: LinkParams.rel), tail @ _*)      ⇒ sanitize(tail, if (seenRel) result else result :+ x, seenRel = true, seenMedia, seenTitle, seenTitleS, seenType)
+      case Seq((x: LinkParams.media), tail @ _*)    ⇒ sanitize(tail, if (seenMedia) result else result :+ x, seenRel, seenMedia = true, seenTitle, seenTitleS, seenType)
+      case Seq((x: LinkParams.title), tail @ _*)    ⇒ sanitize(tail, if (seenTitle) result else result :+ x, seenRel, seenMedia, seenTitle = true, seenTitleS, seenType)
+      case Seq((x: LinkParams.`title*`), tail @ _*) ⇒ sanitize(tail, if (seenTitleS) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS = true, seenType)
+      case Seq((x: LinkParams.`type`), tail @ _*)   ⇒ sanitize(tail, if (seenType) result else result :+ x, seenRel, seenMedia, seenTitle, seenTitleS, seenType = true)
+      case Seq(head, tail @ _*)                     ⇒ sanitize(tail, result :+ head, seenRel, seenMedia, seenTitle, seenTitleS, seenType)
+      case Nil                                      ⇒ result
     }
 }
