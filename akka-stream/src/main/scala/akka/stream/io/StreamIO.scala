@@ -8,7 +8,7 @@ import org.reactivestreams.api.{ Processor, Producer, Consumer }
 import java.net.InetSocketAddress
 import akka.actor._
 import scala.collection._
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
@@ -47,16 +47,18 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
    * `IO(StreamTcp)`. The manager replies with a [[StreamTcp.OutgoingTcpConnection]]
    * message.
    *
-   * @param remoteAddress is the address to connect to
+   * @param remoteAddress the address to connect to
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param timeout is the desired connection timeout, `null` means "no timeout"
+   * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
+   * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
    */
   case class Connect(settings: MaterializerSettings,
                      remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
                      options: immutable.Traversable[SocketOption] = Nil,
-                     timeout: Option[FiniteDuration] = None) {
+                     connectTimeout: Duration = Duration.Inf,
+                     idleTimeout: Duration = Duration.Inf) {
 
     /**
      * Java API
@@ -73,8 +75,14 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
     /**
      * Java API
      */
-    def withTimeout(timeout: FiniteDuration): Connect =
-      copy(timeout = Option(timeout))
+    def withConnectTimeout(connectTimeout: Duration): Connect =
+      copy(connectTimeout = connectTimeout)
+
+    /**
+     * Java API
+     */
+    def withIdleTimeout(idleTimeout: Duration): Connect =
+      copy(idleTimeout = idleTimeout)
   }
 
   /**
@@ -84,18 +92,17 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
    * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
    * the actual port which was bound to.
    *
-   * @param localAddress The socket address to bind to; use port zero for
-   *                automatic assignment (i.e. an ephemeral port)
-   *
-   * @param backlog This specifies the number of unaccepted connections the O/S
+   * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
+   * @param backlog the number of unaccepted connections the O/S
    *                kernel will hold for this port before refusing connections.
-   *
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
+   * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
    */
   case class Bind(settings: MaterializerSettings,
                   localAddress: InetSocketAddress,
                   backlog: Int = 100,
-                  options: immutable.Traversable[SocketOption] = Nil) {
+                  options: immutable.Traversable[SocketOption] = Nil,
+                  idleTimeout: Duration = Duration.Inf) {
 
     /**
      * Java API
@@ -108,6 +115,11 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
     def withSocketOptions(options: java.lang.Iterable[SocketOption]): Bind =
       copy(options = Util.immutableSeq(options))
 
+    /**
+     * Java API
+     */
+    def withIdleTimeout(idleTimeout: Duration): Bind =
+      copy(idleTimeout = idleTimeout)
   }
 
 }
@@ -124,15 +136,18 @@ object StreamTcpMessage {
    * @param remoteAddress is the address to connect to
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param timeout is the desired connection timeout, `null` means "no timeout"
+   * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
+   * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
    */
   def connect(
     settings: MaterializerSettings,
     remoteAddress: InetSocketAddress,
     localAddress: InetSocketAddress,
     options: java.lang.Iterable[SocketOption],
-    timeout: FiniteDuration): StreamTcp.Connect =
-    StreamTcp.Connect(settings, remoteAddress, Option(localAddress), Util.immutableSeq(options), Option(timeout))
+    connectTimeout: Duration,
+    idleTimeout: Duration): StreamTcp.Connect =
+    StreamTcp.Connect(settings, remoteAddress, Option(localAddress), Util.immutableSeq(options),
+      connectTimeout, idleTimeout)
 
   /**
    * Java API: Message to Connect to the given `remoteAddress` without binding to a local address and without
@@ -148,19 +163,18 @@ object StreamTcpMessage {
    * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
    * the actual port which was bound to.
    *
-   * @param localAddress The socket address to bind to; use port zero for
-   *                automatic assignment (i.e. an ephemeral port)
-   *
-   * @param backlog This specifies the number of unaccepted connections the O/S
+   * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
+   * @param backlog the number of unaccepted connections the O/S
    *                kernel will hold for this port before refusing connections.
-   *
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
+   * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
    */
   def bind(settings: MaterializerSettings,
            localAddress: InetSocketAddress,
            backlog: Int,
-           options: java.lang.Iterable[SocketOption]): StreamTcp.Bind =
-    StreamTcp.Bind(settings, localAddress, backlog, Util.immutableSeq(options))
+           options: java.lang.Iterable[SocketOption],
+           idleTimeout: Duration): StreamTcp.Bind =
+    StreamTcp.Bind(settings, localAddress, backlog, Util.immutableSeq(options), idleTimeout)
 
   /**
    * Java API: Message to open a listening socket without specifying options.
@@ -197,20 +211,23 @@ private[akka] class StreamTcpManager extends Actor {
   }
 
   def receive: Receive = {
-    case StreamTcp.Connect(settings, remoteAddress, localAddress, options, timeout) ⇒
+    case StreamTcp.Connect(settings, remoteAddress, localAddress, options, connectTimeout, idleTimeout) ⇒
+      val connTimeout = connectTimeout match {
+        case x: FiniteDuration ⇒ Some(x)
+        case _                 ⇒ None
+      }
       val processorActor = context.actorOf(TcpStreamActor.outboundProps(
-        Tcp.Connect(remoteAddress, localAddress, options, timeout, pullMode = true),
+        Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         requester = sender(),
         settings), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(new ActorProcessor[ByteString, ByteString](processorActor))
 
-    case StreamTcp.Bind(settings, localAddress, backlog, options) ⇒
+    case StreamTcp.Bind(settings, localAddress, backlog, options, idleTimeout) ⇒
       val publisherActor = context.actorOf(TcpListenStreamActor.props(
         Tcp.Bind(context.system.deadLetters, localAddress, backlog, options, pullMode = true),
         requester = sender(),
         settings), name = encName("server", localAddress))
       publisherActor ! ExposedPublisher(new ActorPublisher(publisherActor))
   }
-
 }
 
