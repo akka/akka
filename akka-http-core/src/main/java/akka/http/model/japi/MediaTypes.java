@@ -195,6 +195,6 @@ public abstract class MediaTypes {
      * Looks up a media-type with the given main-type and sub-type.
      */
     public static Option<MediaType> lookup(String mainType, String subType) {
-        return Util.lookupInRegistry(MediaTypes$.MODULE$, new scala.Tuple2<String, String>(mainType, subType));
+        return Util.<scala.Tuple2<String, String>, MediaType, akka.http.model.MediaType>lookupInRegistry(MediaTypes$.MODULE$, new scala.Tuple2<String, String>(mainType, subType));
     }
 }
