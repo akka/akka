@@ -101,7 +101,7 @@ public abstract class DateTime {
      * parsing has failed.
      */
     public static Option<DateTime> fromIsoDateTimeString(String isoDateTimeString) {
-        return Util.convertOption(akka.http.util.DateTime.fromIsoDateTimeString(isoDateTimeString));
+        return Util.<DateTime, akka.http.util.DateTime>convertOption(akka.http.util.DateTime.fromIsoDateTimeString(isoDateTimeString));
     }
 
     /**
