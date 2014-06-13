@@ -20,7 +20,6 @@ final case class ParserSettings(
   maxChunkSize: Int,
   uriParsingMode: Uri.ParsingMode,
   illegalHeaderWarnings: Boolean,
-  sslSessionInfoHeader: Boolean,
   headerValueCacheLimits: Map[String, Int]) {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
@@ -53,7 +52,6 @@ object ParserSettings extends SettingsCompanion[ParserSettings]("akka.http.parsi
       c getIntBytes "max-chunk-size",
       Uri.ParsingMode(c getString "uri-parsing-mode"),
       c getBoolean "illegal-header-warnings",
-      c getBoolean "ssl-session-info-header",
       cacheConfig.entrySet.asScala.map(kvp ⇒ kvp.getKey -> cacheConfig.getInt(kvp.getKey))(collection.breakOut))
   }
 }
