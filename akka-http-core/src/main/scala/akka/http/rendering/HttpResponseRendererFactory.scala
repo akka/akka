@@ -10,8 +10,8 @@ import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
 import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.{ FlowMaterializer, Transformer }
 import akka.http.model._
 import akka.http.util._
 import RenderSupport._
@@ -26,24 +26,26 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
                                                 materializer: FlowMaterializer,
                                                 log: LoggingAdapter) {
 
-  private val serverHeaderPlusDateColonSP: Array[Byte] =
+  private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
-      case None         ⇒ "Date: ".getAsciiBytes
-      case Some(header) ⇒ (new ByteArrayRendering(64) ~~ header ~~ Rendering.CrLf ~~ "Date: ").get
+      case Some(h) ⇒
+        val bytes = (new ByteArrayRendering(32) ~~ h ~~ CrLf).get
+        _ ~~ bytes
+      case None ⇒ _ ⇒ ()
     }
 
-  // as an optimization we cache the ServerAndDateHeader of the last second here
-  @volatile private[this] var cachedServerAndDateHeader: (Long, Array[Byte]) = (0L, null)
+  // as an optimization we cache the Date header of the last second here
+  @volatile private[this] var cachedDateHeader: (Long, Array[Byte]) = (0L, null)
 
-  private def serverAndDateHeader: Array[Byte] = {
-    var (cachedSeconds, cachedBytes) = cachedServerAndDateHeader
+  private def dateHeader: Array[Byte] = {
+    var (cachedSeconds, cachedBytes) = cachedDateHeader
     val now = System.currentTimeMillis
-    if (now / 1000 != cachedSeconds) {
+    if (now - 1000 > cachedSeconds) {
       cachedSeconds = now / 1000
-      val r = new ByteArrayRendering(serverHeaderPlusDateColonSP.length + 31)
-      dateTime(now).renderRfc1123DateTimeString(r ~~ serverHeaderPlusDateColonSP) ~~ CrLf
+      val r = new ByteArrayRendering(48)
+      dateTime(now).renderRfc1123DateTimeString(r ~~ headers.Date) ~~ CrLf
       cachedBytes = r.get
-      cachedServerAndDateHeader = cachedSeconds -> cachedBytes
+      cachedDateHeader = cachedSeconds -> cachedBytes
     }
     cachedBytes
   }
@@ -52,7 +54,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
   def newRenderer: HttpResponseRenderer = new HttpResponseRenderer
 
-  class HttpResponseRenderer extends Transformer[ResponseRenderingContext, Producer[ByteString]] {
+  final class HttpResponseRenderer extends Transformer[ResponseRenderingContext, Producer[ByteString]] {
     private[this] var close = false // signals whether the connection is to be closed after the current response
 
     override def isComplete = close
@@ -61,32 +63,36 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       val r = new ByteStringRendering(responseHeaderSizeHint)
 
       import ctx.response._
-      if (status eq StatusCodes.OK) r ~~ DefaultStatusLine else r ~~ StatusLineStart ~~ status ~~ CrLf
-      r ~~ serverAndDateHeader
+      val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
+
+      def renderStatusLine(): Unit =
+        if (status eq StatusCodes.OK) r ~~ DefaultStatusLine else r ~~ StatusLineStart ~~ status ~~ CrLf
+
+      def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
       @tailrec def renderHeaders(remaining: List[HttpHeader], alwaysClose: Boolean = false,
-                                 connHeader: Connection = null): Unit = {
-        def render(h: HttpHeader) = r ~~ h ~~ CrLf
-        def suppressionWarning(h: HttpHeader, msg: String = "the akka-http-core layer sets this header automatically!"): Unit =
-          log.warning("Explicitly set response header '{}' is ignored, {}", h, msg)
-
+                                 connHeader: Connection = null, serverHeaderSeen: Boolean = false): Unit =
         remaining match {
           case head :: tail ⇒ head match {
             case x: `Content-Length` ⇒
-              suppressionWarning(x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
-              renderHeaders(tail, alwaysClose, connHeader)
+              suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
 
             case x: `Content-Type` ⇒
-              suppressionWarning(x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType`, instead.")
-              renderHeaders(tail, alwaysClose, connHeader)
+              suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
 
-            case `Transfer-Encoding`(_) | Date(_) | Server(_) ⇒
-              suppressionWarning(head)
-              renderHeaders(tail, alwaysClose, connHeader)
+            case `Transfer-Encoding`(_) | Date(_) ⇒
+              suppressionWarning(log, head)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
 
             case x: `Connection` ⇒
               val connectionHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
-              renderHeaders(tail, alwaysClose, connectionHeader)
+              renderHeaders(tail, alwaysClose, connectionHeader, serverHeaderSeen)
+
+            case x: `Server` ⇒
+              render(x)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen = true)
 
             case x: RawHeader if x.lowercaseName == "content-type" ||
               x.lowercaseName == "content-length" ||
@@ -94,15 +100,17 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               x.lowercaseName == "date" ||
               x.lowercaseName == "server" ||
               x.lowercaseName == "connection" ⇒
-              suppressionWarning(x, "illegal RawHeader")
-              renderHeaders(tail, alwaysClose, connHeader)
+              suppressionWarning(log, x, "illegal RawHeader")
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
 
             case x ⇒
               render(x)
-              renderHeaders(tail, alwaysClose, connHeader)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
           }
 
           case Nil ⇒
+            if (!serverHeaderSeen) renderDefaultServerHeader(r)
+            r ~~ dateHeader
             close = alwaysClose ||
               ctx.closeAfterResponseCompletion || // request wants to close
               (connHeader != null && connHeader.hasClose) // application wants to close
@@ -112,80 +120,46 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               case _                    ⇒ // no need for rendering
             }
         }
-      }
 
-      def renderByteStrings(entityBytes: ⇒ Producer[ByteString]): immutable.Seq[Producer[ByteString]] = {
-        val messageStart = SynchronousProducerFromIterable(r.get :: Nil)
-        val messageBytes =
-          if (!entity.isKnownEmpty && ctx.requestMethod != HttpMethods.HEAD)
-            Flow(messageStart).concat(entityBytes).toProducer(materializer)
-          else messageStart
-        messageBytes :: Nil
-      }
+      def byteStrings(entityBytes: ⇒ Producer[ByteString]): immutable.Seq[Producer[ByteString]] =
+        renderByteStrings(r, entityBytes, materializer, skipEntity = noEntity)
 
-      def renderContentType(entity: HttpEntity): Unit =
-        if (!entity.isKnownEmpty && entity.contentType != ContentTypes.NoContentType)
-          r ~~ `Content-Type` ~~ entity.contentType ~~ CrLf
-
-      def renderEntity(entity: HttpEntity): immutable.Seq[Producer[ByteString]] =
+      def completeResponseRendering(entity: HttpEntity): immutable.Seq[Producer[ByteString]] =
         entity match {
           case HttpEntity.Strict(contentType, data) ⇒
             renderHeaders(headers.toList)
-            renderContentType(entity)
+            renderEntityContentType(r, entity)
             r ~~ `Content-Length` ~~ data.length ~~ CrLf ~~ CrLf
-            if (!entity.isKnownEmpty && ctx.requestMethod != HttpMethods.HEAD) r ~~ data
-            SynchronousProducerFromIterable(r.get :: Nil) :: Nil
+            val entityBytes = if (noEntity) Nil else data :: Nil
+            SynchronousProducerFromIterable(r.get :: entityBytes) :: Nil
 
           case HttpEntity.Default(contentType, contentLength, data) ⇒
             renderHeaders(headers.toList)
-            renderContentType(entity)
+            renderEntityContentType(r, entity)
             r ~~ `Content-Length` ~~ contentLength ~~ CrLf ~~ CrLf
-            renderByteStrings(Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toProducer(materializer))
+            byteStrings(Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toProducer(materializer))
 
           case HttpEntity.CloseDelimited(contentType, data) ⇒
             renderHeaders(headers.toList, alwaysClose = true)
-            renderContentType(entity)
+            renderEntityContentType(r, entity)
             r ~~ CrLf
-            renderByteStrings(data)
+            byteStrings(data)
 
           case HttpEntity.Chunked(contentType, chunks) ⇒
             if (ctx.requestProtocol == `HTTP/1.0`)
-              renderEntity(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toProducer(materializer)))
+              completeResponseRendering(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toProducer(materializer)))
             else {
               renderHeaders(headers.toList)
-              renderContentType(entity)
-              if (!entity.isKnownEmpty) r ~~ `Transfer-Encoding` ~~ Chunked ~~ CrLf
+              renderEntityContentType(r, entity)
+              if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
+                r ~~ `Transfer-Encoding` ~~ Chunked ~~ CrLf
               r ~~ CrLf
-              renderByteStrings(Flow(chunks).transform(new ChunkTransformer).toProducer(materializer))
+              byteStrings(Flow(chunks).transform(new ChunkTransformer).toProducer(materializer))
             }
         }
 
-      renderEntity(entity)
-    }
-  }
-
-  class ChunkTransformer extends Transformer[HttpEntity.ChunkStreamPart, ByteString] {
-    var lastChunkSeen = false
-    def onNext(chunk: HttpEntity.ChunkStreamPart): immutable.Seq[ByteString] = {
-      if (chunk.isLastChunk) lastChunkSeen = true
-      renderChunk(chunk) :: Nil
-    }
-    override def isComplete = lastChunkSeen
-    override def onTermination(e: Option[Throwable]) = if (lastChunkSeen) Nil else defaultLastChunkBytes :: Nil
-  }
-  class CheckContentLengthTransformer(length: Long) extends Transformer[ByteString, ByteString] {
-    var sent = 0L
-    def onNext(elem: ByteString): immutable.Seq[ByteString] = {
-      sent += elem.length
-      if (sent > length)
-        throw new InvalidContentLengthException(s"Response had declared Content-Length $length but entity chunk stream amounts to more bytes")
-      elem :: Nil
-    }
-
-    override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = {
-      if (sent < length)
-        throw new InvalidContentLengthException(s"Response had declared Content-Length $length but entity chunk stream amounts to ${length - sent} bytes less")
-      Nil
+      renderStatusLine()
+      completeResponseRendering(entity)
     }
   }
 }
