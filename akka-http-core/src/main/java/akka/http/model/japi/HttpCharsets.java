@@ -34,6 +34,6 @@ public final class HttpCharsets {
      * Returns Some(charset) if the charset with the given name was found and None otherwise.
      */
     public static Option<HttpCharset> lookup(String name) {
-        return Util.lookupInRegistry(HttpCharsets$.MODULE$, name);
+        return Util.<HttpCharset, akka.http.model.HttpCharset>lookupInRegistry(HttpCharsets$.MODULE$, name);
     }
 }
