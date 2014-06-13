@@ -7,6 +7,7 @@ package akka.http.model
 import org.scalatest.{ Matchers, WordSpec }
 import akka.parboiled2.UTF8
 import Uri._
+import java.net.InetAddress
 
 class UriSpec extends WordSpec with Matchers {
 
@@ -20,6 +21,23 @@ class UriSpec extends WordSpec with Matchers {
       Host("2.0.0.0") shouldEqual IPv4Host("2.0.0.0")
       Host("3.0.0.0") shouldEqual IPv4Host("3.0.0.0")
       Host("30.0.0.0") shouldEqual IPv4Host("30.0.0.0")
+    }
+    "support inetAddresses round-trip for Inet4Addresses" in {
+      def roundTrip(ip: String): Unit = {
+        val inetAddr = InetAddress.getByName(ip)
+        val addr = Host(inetAddr)
+        addr shouldEqual IPv4Host(ip)
+        addr.inetAddresses shouldEqual Seq(inetAddr)
+      }
+
+      roundTrip("192.0.2.16")
+      roundTrip("192.0.2.16")
+      roundTrip("255.0.0.0")
+      roundTrip("0.0.0.0")
+      roundTrip("1.0.0.0")
+      roundTrip("2.0.0.0")
+      roundTrip("3.0.0.0")
+      roundTrip("30.0.0.0")
     }
 
     "parse correctly from IPv6 literals (RFC2732)" in {
@@ -78,6 +96,22 @@ class UriSpec extends WordSpec with Matchers {
       Host("[2001:db8:100:f101::1]") shouldEqual IPv6Host("20010db80100f1010000000000000001", "2001:db8:100:f101::1")
       Host("[a:b:c::12:1]") shouldEqual IPv6Host("000a000b000c00000000000000120001", "a:b:c::12:1")
       Host("[a:b::0:1:2:3]") shouldEqual IPv6Host("000a000b000000000000000100020003", "a:b::0:1:2:3")
+    }
+    "support inetAddresses round-trip for Inet6Addresses" in {
+      def fromAddress(address: String): IPv6Host = Host(s"[$address]").asInstanceOf[IPv6Host]
+      def roundTrip(ip: String): Unit = {
+        val inetAddr = InetAddress.getByName(ip)
+        val addr = Host(inetAddr)
+        addr equalsIgnoreCase fromAddress(ip) should be(true)
+        addr.inetAddresses shouldEqual Seq(inetAddr)
+      }
+
+      roundTrip("1:1:1::1:1:1:1")
+      roundTrip("::1:2:3:4:5:6:7")
+      roundTrip("2001:0DB8:0100:F101:0210:A4FF:FEE3:9566")
+      roundTrip("2001:0db8:100:f101:0:0:0:1")
+      roundTrip("abcd::12")
+      roundTrip("::192.9.5.5")
     }
 
     "parse correctly from NamedHost literals" in {

@@ -11,7 +11,6 @@ import akka.http.util._
 import UriRendering.UriRenderer
 
 final case class LinkValue(uri: Uri, params: immutable.Seq[LinkParam]) extends ValueRenderable {
-  import LinkParam.paramsRenderer
   def render[R <: Rendering](r: R): r.type = {
     r ~~ '<' ~~ uri ~~ '>'
     if (params.nonEmpty) r ~~ "; " ~~ params
@@ -24,10 +23,11 @@ object LinkValue {
 }
 
 sealed abstract class LinkParam extends ToStringRenderable
-
 object LinkParam {
   implicit val paramsRenderer: Renderer[immutable.Seq[LinkParam]] = Renderer.seqRenderer(separator = "; ")
+}
 
+object LinkParams {
   private val reserved = CharPredicate(" ,;")
 
   // A few convenience rels

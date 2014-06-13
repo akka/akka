@@ -15,6 +15,7 @@ import akka.http.model.parser.UriParser
 import akka.http.model.parser.CharacterClasses._
 import akka.http.util._
 import Uri._
+import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -308,6 +309,7 @@ object Uri {
     def address: String
     def isEmpty: Boolean
     def toOption: Option[NonEmptyHost]
+    def inetAddresses: immutable.Seq[InetAddress]
     def equalsIgnoreCase(other: Host): Boolean
     override def toString() = UriRendering.HostRenderer.render(new StringRendering, this).get
   }
@@ -316,50 +318,70 @@ object Uri {
       def address: String = ""
       def isEmpty = true
       def toOption = None
+      def inetAddresses: immutable.Seq[InetAddress] = Nil
+
       def equalsIgnoreCase(other: Host): Boolean = other eq this
     }
     def apply(string: String, charset: Charset = UTF8, mode: Uri.ParsingMode = Uri.ParsingMode.Relaxed): Host =
       if (!string.isEmpty) new UriParser(string, UTF8, mode).parseHost() else Empty
+
+    def apply(address: InetAddress): Host = address match {
+      case ipv4: Inet4Address ⇒ apply(ipv4)
+      case ipv6: Inet6Address ⇒ apply(ipv6)
+      case _                  ⇒ throw new IllegalArgumentException(s"Unexpected address type(${address.getClass.getSimpleName}): $address")
+    }
+    def apply(address: Inet4Address): IPv4Host = IPv4Host(address.getAddress, address.getHostAddress)
+    def apply(address: Inet6Address): IPv6Host = IPv6Host(address.getAddress, address.getHostAddress)
   }
   sealed abstract class NonEmptyHost extends Host {
     def isEmpty = false
     def toOption = Some(this)
   }
-  final case class IPv4Host(bytes: immutable.Seq[Byte], address: String) extends NonEmptyHost {
+  final case class IPv4Host private[http] (bytes: immutable.Seq[Byte], address: String) extends NonEmptyHost {
     require(bytes.length == 4, "bytes array must have length 4")
     require(!address.isEmpty, "address must not be empty")
     def equalsIgnoreCase(other: Host): Boolean = other match {
       case IPv4Host(`bytes`, _) ⇒ true
       case _                    ⇒ false
     }
+
+    def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv4Host {
     def apply(address: String): IPv4Host = apply(address.split('.').map(_.toInt.toByte))
     def apply(byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte): IPv4Host = apply(Array(byte1, byte2, byte3, byte4))
     def apply(bytes: Array[Byte]): IPv4Host = apply(bytes, bytes.map(_ & 0xFF).mkString("."))
-    def apply(bytes: Array[Byte], address: String): IPv4Host = apply(immutable.Seq(bytes: _*), address)
+
+    private[http] def apply(bytes: Array[Byte], address: String): IPv4Host = IPv4Host(immutable.Seq(bytes: _*), address)
   }
-  final case class IPv6Host(bytes: immutable.Seq[Byte], address: String) extends NonEmptyHost {
+  final case class IPv6Host private (bytes: immutable.Seq[Byte], address: String) extends NonEmptyHost {
     require(bytes.length == 16, "bytes array must have length 16")
     require(!address.isEmpty, "address must not be empty")
     def equalsIgnoreCase(other: Host): Boolean = other match {
       case IPv6Host(`bytes`, _) ⇒ true
       case _                    ⇒ false
     }
+
+    def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv6Host {
-    def apply(bytes: String, address: String): IPv6Host = {
+    def apply(bytes: Array[Byte]): IPv6Host = Host(InetAddress.getByAddress(bytes).asInstanceOf[Inet6Address])
+    def apply(bytes: immutable.Seq[Byte]): IPv6Host = apply(bytes.toArray)
+
+    private[http] def apply(bytes: String, address: String): IPv6Host = {
       import CharUtils.{ hexValue ⇒ hex }
       require(bytes.length == 32, "`bytes` must be a 32 character hex string")
       apply(bytes.toCharArray.grouped(2).map(s ⇒ (hex(s(0)) * 16 + hex(s(1))).toByte).toArray, address)
     }
-    def apply(bytes: Array[Byte], address: String): IPv6Host = apply(immutable.Seq(bytes: _*), address)
+    private[http] def apply(bytes: Array[Byte], address: String): IPv6Host = apply(immutable.Seq(bytes: _*), address)
   }
   final case class NamedHost(address: String) extends NonEmptyHost {
     def equalsIgnoreCase(other: Host): Boolean = other match {
       case NamedHost(otherAddress) ⇒ address equalsIgnoreCase otherAddress
       case _                       ⇒ false
     }
+
+    def inetAddresses = InetAddress.getAllByName(address).toList
   }
 
   sealed abstract class Path {
