@@ -158,6 +158,11 @@ object HttpEntity {
     def extension: String
     def isLastChunk: Boolean
   }
+  object ChunkStreamPart {
+    implicit def apply(string: String): ChunkStreamPart = Chunk(string)
+    implicit def apply(bytes: Array[Byte]): ChunkStreamPart = Chunk(bytes)
+    implicit def apply(bytes: ByteString): ChunkStreamPart = Chunk(bytes)
+  }
 
   /**
    * An intermediate entity chunk guaranteed to carry non-empty data.
@@ -165,6 +170,10 @@ object HttpEntity {
   final case class Chunk(data: ByteString, extension: String = "") extends ChunkStreamPart {
     require(data.nonEmpty, "An HttpEntity.Chunk must have non-empty data")
     def isLastChunk = false
+  }
+  object Chunk {
+    def apply(string: String): Chunk = apply(ByteString(string))
+    def apply(bytes: Array[Byte]): Chunk = apply(ByteString(bytes))
   }
 
   /**

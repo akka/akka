@@ -131,14 +131,14 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             startNewMessage(input, bodyStart + cl)
           } else {
             emitRequestStart(defaultEntity(cth, contentLength, materializer))
-            parseFixedLengthBody(contentLength)(input, bodyStart)
+            parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
           }
 
         case Some(te) ⇒
           if (te.encodings.size == 1 && te.hasChunked) {
             if (clh.isEmpty) {
               emitRequestStart(chunkedEntity(cth, materializer))
-              parseChunk(input, bodyStart)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion)
             } else fail("A chunked request must not contain a Content-Length header.")
           } else fail(NotImplemented, s"`$te` is not supported by this server")
       }
