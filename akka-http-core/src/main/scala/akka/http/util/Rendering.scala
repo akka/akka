@@ -132,7 +132,7 @@ private[http] object Renderer {
 /**
  * INTERNAL API
  *
- * The interface for a rendering sink. May be implemented with different backing stores.
+ * The interface for a rendering sink. Implemented for several serialization targets.
  */
 private[http] trait Rendering {
   def ~~(ch: Char): this.type

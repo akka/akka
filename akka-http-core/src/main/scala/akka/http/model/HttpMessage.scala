@@ -97,7 +97,9 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              entity: HttpEntity.Regular = HttpEntity.Empty,
                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends HttpMessage {
   require(!uri.isEmpty, "An HttpRequest must not have an empty Uri")
-  require(entity.isKnownEmpty || method.isEntityAccepted)
+  require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
+  require(protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
+    "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
 
@@ -108,23 +110,8 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
    * Returns a copy of this requests with the URI resolved according to the logic defined at
    * http://tools.ietf.org/html/rfc7230#section-5.5
    */
-  def effectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): Uri = {
-    val hostHeader = header[Host]
-    if (uri.isRelative) {
-      def fail(detail: String) =
-        throw new IllegalUriException(s"Cannot establish effective request URI of $this, request has a relative URI and $detail")
-      val Host(host, port) = hostHeader match {
-        case None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
-        case Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
-        case Some(x)              ⇒ x
-      }
-      uri.toEffectiveHttpRequestUri(host, port, securedConnection)
-    } else // http://tools.ietf.org/html/rfc7230#section-5.4
-    if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
-      hostHeader.get.host.equalsIgnoreCase(uri.authority.host)) uri
-    else throw new IllegalUriException("'Host' header value doesn't match request target authority",
-      s"Host header: $hostHeader\nrequest target authority: ${uri.authority}")
-  }
+  def effectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): Uri =
+    HttpRequest.effectiveUri(uri, headers, securedConnection, defaultHostHeader)
 
   /**
    * The media-ranges accepted by the client according to the `Accept` request header.
@@ -261,6 +248,30 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
       case _                     ⇒ throw new IllegalArgumentException("entity must be HttpEntity.Regular")
     }
     else this
+}
+
+object HttpRequest {
+  /**
+   * Determines the effective request URI according to the logic defined at
+   * http://tools.ietf.org/html/rfc7230#section-5.5
+   */
+  def effectiveUri(uri: Uri, headers: immutable.Seq[HttpHeader], securedConnection: Boolean, defaultHostHeader: Host): Uri = {
+    val hostHeader = headers.collectFirst { case x: Host ⇒ x }
+    if (uri.isRelative) {
+      def fail(detail: String) =
+        throw new IllegalUriException(s"Cannot establish effective URI of request to `$uri`, request has a relative URI and $detail")
+      val Host(host, port) = hostHeader match {
+        case None                 ⇒ if (defaultHostHeader.isEmpty) fail("is missing a `Host` header") else defaultHostHeader
+        case Some(x) if x.isEmpty ⇒ if (defaultHostHeader.isEmpty) fail("an empty `Host` header") else defaultHostHeader
+        case Some(x)              ⇒ x
+      }
+      uri.toEffectiveHttpRequestUri(host, port, securedConnection)
+    } else // http://tools.ietf.org/html/rfc7230#section-5.4
+    if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
+      hostHeader.get.host.equalsIgnoreCase(uri.authority.host)) uri
+    else throw new IllegalUriException("'Host' header value of request to `$uri` doesn't match request target authority",
+      s"Host header: $hostHeader\nrequest target authority: ${uri.authority}")
+  }
 }
 
 /**

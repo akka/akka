@@ -6,7 +6,6 @@ package akka.http.server
 
 import org.reactivestreams.api.Producer
 import akka.event.LoggingAdapter
-import akka.util.ByteString
 import akka.stream.io.StreamTcp
 import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
 import akka.stream.scaladsl.{ Flow, Duct }
@@ -15,6 +14,8 @@ import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFacto
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.parsing.ParserOutput._
 import akka.http.Http
+import akka.http.util._
+import akka.http.model.headers.Host
 
 /**
  * INTERNAL API
@@ -23,7 +24,6 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
                                        materializer: FlowMaterializer,
                                        log: LoggingAdapter)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
-  import HttpServerPipeline._
 
   val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader, materializer)()
   val warnOnIllegalHeader: ErrorInfo ⇒ Unit = errorInfo ⇒
@@ -45,7 +45,11 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .splitWhen(_.isInstanceOf[MessageStart])
         .headAndTail(materializer)
         .tee(applicationBypassConsumer)
-        .collect { case (x: RequestStart, entityParts) ⇒ HttpServerPipeline.constructRequest(x, entityParts) }
+        .collect {
+          case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
+            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
+            HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
+        }
         .toProducer(materializer)
 
     val responseConsumer =
@@ -54,12 +58,8 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .transform(applyApplicationBypass)
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
-        .transform {
-          new Transformer[ByteString, ByteString] {
-            def onNext(element: ByteString) = element :: Nil
-            override def onError(cause: Throwable): Unit = log.error(cause, "Response stream error")
-          }
-        }.produceTo(materializer, tcpConn.outputStream)
+        .transform(errorLogger(log, "Outgoing response stream error"))
+        .produceTo(materializer, tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestProducer, responseConsumer)
   }
@@ -109,18 +109,4 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true)
       }
     }
-}
-
-private[http] object HttpServerPipeline {
-  def constructRequest(requestStart: RequestStart, entityParts: Producer[RequestOutput]): HttpRequest = {
-    import requestStart._
-    HttpRequest(method, uri, headers, createEntity(entityParts), protocol)
-  }
-
-  implicit class FlowWithHeadAndTail[T](val underlying: Flow[Producer[T]]) {
-    def headAndTail(materializer: FlowMaterializer): Flow[(T, Producer[T])] =
-      underlying.map { p ⇒
-        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toProducer(materializer)
-      }.flatten(FlattenStrategy.Concat())
-  }
 }

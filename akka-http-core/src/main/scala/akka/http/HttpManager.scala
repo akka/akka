@@ -4,13 +4,17 @@
 
 package akka.http
 
-import scala.util.control.NonFatal
-import scala.collection.immutable
-import akka.io.Inet
-import akka.http.model.{ HttpHeader, Uri, HttpRequest }
-import akka.http.server.HttpListener
+import scala.util.{ Failure, Success }
+import scala.concurrent.duration._
+import akka.io.IO
+import akka.util.Timeout
+import akka.stream.io.StreamTcp
+import akka.stream.FlowMaterializer
 import akka.http.client._
 import akka.actor._
+import akka.http.server.{ HttpServerPipeline, ServerSettings }
+import akka.pattern.ask
+import akka.stream.scaladsl.Flow
 
 /**
  * INTERNAL API
@@ -18,232 +22,62 @@ import akka.actor._
  * The gateway actor into the low-level HTTP layer.
  */
 private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor with ActorLogging {
-  import HttpManager._
-  import httpSettings._
+  import context.dispatcher
 
-  // counters for naming the various sub-actors we create
-  private[this] val listenerCounter = Iterator from 0
-  private[this] val groupCounter = Iterator from 0
-  private[this] val hostConnectorCounter = Iterator from 0
-  private[this] val proxyConnectorCounter = Iterator from 0
+  private[this] var clientPipelines = Map.empty[ClientConnectionSettings, HttpClientPipeline]
 
-  // our child actors
-  private[this] var settingsGroups = Map.empty[ClientConnectionSettings, ActorRef]
-  private[this] var connectors = Map.empty[Http.HostConnectorSetup, ActorRef]
-  private[this] var listeners = Seq.empty[ActorRef]
-
-  /////////////////// INITIAL / RUNNING STATE //////////////////////
-
-  def receive = withTerminationManagement {
-    case request: HttpRequest ⇒
-      try {
-        val uri = request.effectiveUri(securedConnection = false)
-        val connector = connectorForUri(uri)
-        // we never render absolute URIs, also drop any potentially existing fragment
-        connector.forward(request.copy(uri = uri.toRelative.withoutFragment))
-      } catch {
-        case NonFatal(e) ⇒
-          log.error("Illegal request: {}", e.getMessage)
-          sender() ! Status.Failure(e)
-      }
-
-    // 3xx Redirect, sent up from one of our HttpHostConnector children for us to
-    // forward to the respective HttpHostConnector for the redirection target
-    case ctx @ HttpHostConnector.RequestContext(req, _, _, commander) ⇒
-      val connector = connectorForUri(req.uri)
-      // we never render absolute URIs, also drop any potentially existing fragment
-      val newReq = req.copy(uri = req.uri.toRelative.withoutFragment)
-      connector.tell(ctx.copy(request = newReq), commander)
-
-    case connect: Http.Connect ⇒
-      settingsGroupFor(ClientConnectionSettings(connect.settings)).forward(connect)
-
-    case setup: Http.HostConnectorSetup ⇒
-      val connector = connectorFor(setup)
-      sender().tell(Http.HostConnectorInfo(connector, setup), connector)
-
-    // we support sending an HttpRequest instance together with a corresponding HostConnectorSetup
-    // in one step (rather than sending the setup first and having to wait for the response)
-    case (request: HttpRequest, setup: Http.HostConnectorSetup) ⇒
-      connectorFor(setup).forward(request)
-
-    case Http.HttpRequestChannelSetup ⇒ sender() ! Http.HttpRequestChannelInfo
-
-    case bind: Http.Bind ⇒
+  def receive = {
+    case connect @ Http.Connect(remoteAddress, localAddress, options, settings, materializerSettings) ⇒
+      log.debug("Attempting connection to {}", remoteAddress)
       val commander = sender()
-      listeners :+= context.watch {
-        context.actorOf(
-          props = HttpListener.props(commander, bind, httpSettings),
-          name = "listener-" + listenerCounter.next())
+      val effectiveSettings = ClientConnectionSettings(settings)
+      val tcpConnect = StreamTcp.Connect(materializerSettings, remoteAddress, localAddress, options,
+        effectiveSettings.connectingTimeout, effectiveSettings.idleTimeout)
+      val askTimeout = Timeout(effectiveSettings.connectingTimeout + 5.seconds) // FIXME: how can we improve this?
+      val tcpConnectionFuture = IO(StreamTcp)(context.system).ask(tcpConnect)(askTimeout)
+      tcpConnectionFuture onComplete {
+        case Success(tcpConn: StreamTcp.OutgoingTcpConnection) ⇒
+          val pipeline = clientPipelines.getOrElse(effectiveSettings, {
+            val pl = new HttpClientPipeline(effectiveSettings, FlowMaterializer(materializerSettings), log)
+            clientPipelines = clientPipelines.updated(effectiveSettings, pl)
+            pl
+          })
+          commander ! pipeline(tcpConn)
+
+        case Failure(error) ⇒
+          log.debug("Could not connect to {} due to {}", remoteAddress, error)
+          commander ! Status.Failure(new Http.ConnectionAttemptFailedException(remoteAddress))
+
+        case x ⇒ throw new IllegalStateException("Unexpected response to `Connect` from StreamTcp: " + x)
       }
 
-    case cmd: Http.CloseCommand ⇒
-      // start triggering an orderly complete shutdown by first closing all outgoing connections 
-      shutdownSettingsGroups(cmd, Set(sender()))
-  }
+    case Http.Bind(endpoint, backlog, options, settings, materializerSettings) ⇒
+      log.debug("Binding to {}", endpoint)
+      val commander = sender()
+      val effectiveSettings = ServerSettings(settings)
+      val tcpBind = StreamTcp.Bind(materializerSettings, endpoint, backlog, options)
+      val askTimeout = Timeout(effectiveSettings.bindTimeout + 5.seconds) // FIXME: how can we improve this?
+      val tcpServerBindingFuture = IO(StreamTcp)(context.system).ask(tcpBind)(askTimeout)
+      tcpServerBindingFuture onComplete {
+        case Success(StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
+          log.info("Bound to {}", endpoint)
+          val materializer = FlowMaterializer(materializerSettings)
+          val httpServerPipeline = new HttpServerPipeline(effectiveSettings, materializer, log)
+          val httpConnectionStream = Flow(connectionStream)
+            .map(httpServerPipeline)
+            .toProducer(materializer)
+          commander ! Http.ServerBinding(localAddress, httpConnectionStream)
 
-  def withTerminationManagement(behavior: Receive): Receive = ({
-    case ev @ Terminated(child) ⇒
-      if (listeners contains child)
-        listeners = listeners filter (_ != child)
-      else if (connectors exists (_._2 == child))
-        connectors = connectors filter { _._2 != child }
-      else
-        settingsGroups = settingsGroups filter { _._2 != child }
-      behavior.applyOrElse(ev, (_: Terminated) ⇒ ())
+        case Failure(error) ⇒
+          log.warning("Bind to {} failed due to ", endpoint, error)
+          commander ! Status.Failure(Http.BindFailedException)
 
-    case HttpHostConnector.DemandIdleShutdown ⇒
-      val hostConnector = sender()
-      var sendPoisonPill = true
-      connectors = connectors filter {
-        case (x: ProxyConnectorSetup, proxiedConnector) if x.proxyConnector == hostConnector ⇒
-          proxiedConnector ! HttpHostConnector.DemandIdleShutdown
-          sendPoisonPill = false // the PoisonPill will be sent by the proxiedConnector
-          false
-        case (_, `hostConnector`) ⇒ false
-        case _                    ⇒ true
+        case x ⇒ throw new IllegalStateException("Unexpected response to `Bind` from StreamTcp: " + x)
       }
-      if (sendPoisonPill) hostConnector ! PoisonPill
-  }: Receive) orElse behavior
-
-  def connectorForUri(uri: Uri) = {
-    val host = uri.authority.host
-    connectorFor(Http.HostConnectorSetup(host.toString(), uri.effectivePort, sslEncryption = uri.scheme == "https"))
   }
-
-  def connectorFor(setup: Http.HostConnectorSetup) = {
-    val normalizedSetup = resolveAutoProxied(setup)
-    import Http.ClientConnectionType._
-    normalizedSetup.connectionType match {
-      case _: Proxied  ⇒ proxiedConnectorFor(normalizedSetup)
-      case Direct      ⇒ hostConnectorFor(normalizedSetup)
-      case AutoProxied ⇒ throw new IllegalStateException("Unexpected unresolved connectionType `AutoProxied`")
-    }
-  }
-
-  def proxiedConnectorFor(normalizedSetup: Http.HostConnectorSetup): ActorRef = {
-    val Http.ClientConnectionType.Proxied(proxyHost, proxyPort) = normalizedSetup.connectionType
-    val proxyConnector = hostConnectorFor(normalizedSetup.copy(host = proxyHost, port = proxyPort))
-    val proxySetup = proxyConnectorSetup(normalizedSetup, proxyConnector)
-    def createAndRegisterProxiedConnector = {
-      val proxiedConnector = context.actorOf(
-        props = ProxiedHostConnector.props(normalizedSetup.host, normalizedSetup.port, proxyConnector),
-        name = "proxy-connector-" + proxyConnectorCounter.next())
-      connectors = connectors.updated(proxySetup, proxiedConnector)
-      context.watch(proxiedConnector)
-    }
-    connectors.getOrElse(proxySetup, createAndRegisterProxiedConnector)
-  }
-
-  def hostConnectorFor(normalizedSetup: Http.HostConnectorSetup): ActorRef = {
-    def createAndRegisterHostConnector = {
-      val settingsGroup = settingsGroupFor(normalizedSetup.settings.get.connectionSettings)
-      val hostConnector = context.actorOf(
-        props = HttpHostConnector.props(normalizedSetup, settingsGroup, HostConnectorDispatcher),
-        name = "host-connector-" + hostConnectorCounter.next())
-      connectors = connectors.updated(normalizedSetup, hostConnector)
-      context.watch(hostConnector)
-    }
-    connectors.getOrElse(normalizedSetup, createAndRegisterHostConnector)
-  }
-
-  def settingsGroupFor(settings: ClientConnectionSettings): ActorRef = {
-    def createAndRegisterSettingsGroup = {
-      val group = context.actorOf(
-        props = HttpClientSettingsGroup.props(settings, httpSettings),
-        name = "group-" + groupCounter.next())
-      settingsGroups = settingsGroups.updated(settings, group)
-      context.watch(group)
-    }
-    settingsGroups.getOrElse(settings, createAndRegisterSettingsGroup)
-  }
-
-  /////////////////// ORDERLY SHUTDOWN PROCESS //////////////////////
-
-  // TODO: add configurable timeouts for these shutdown steps
-
-  def shutdownSettingsGroups(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Unit =
-    if (!settingsGroups.isEmpty) {
-      settingsGroups.values.foreach(_ ! cmd)
-      context.become(closingSettingsGroups(cmd, commanders))
-    } else shutdownHostConnectors(cmd, commanders) // if we are done with the outgoing connections, close all host connectors
-
-  def closingSettingsGroups(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Receive =
-    withTerminationManagement {
-      case _: Http.CloseCommand ⇒ // the first CloseCommand we received has precedence over ones potentially sent later
-        context.become(closingSettingsGroups(cmd, commanders + sender()))
-
-      case Terminated(_) ⇒
-        if (settingsGroups.isEmpty) // if we are done with the outgoing connections, close all host connectors
-          shutdownHostConnectors(cmd, commanders)
-    }
-
-  def shutdownHostConnectors(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Unit =
-    if (!connectors.isEmpty) {
-      connectors.values.foreach(_ ! cmd)
-      context.become(closingConnectors(cmd, commanders))
-    } else shutdownListeners(cmd, commanders) // if we are done with the host connectors, close all listeners
-
-  def closingConnectors(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Receive =
-    withTerminationManagement {
-      case _: Http.CloseCommand ⇒ // the first CloseCommand we received has precedence over ones potentially sent later
-        context.become(closingConnectors(cmd, commanders + sender()))
-
-      case Terminated(_) ⇒
-        if (connectors.isEmpty) // if we are done with the host connectors, close all listeners
-          shutdownListeners(cmd, commanders)
-    }
-
-  def shutdownListeners(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Unit = {
-    listeners foreach { x ⇒ x ! cmd }
-    context.become(unbinding(cmd, commanders))
-    if (listeners.isEmpty) self ! Http.Unbound
-  }
-
-  def unbinding(cmd: Http.CloseCommand, commanders: Set[ActorRef]): Receive =
-    withTerminationManagement {
-      case _: Http.CloseCommand ⇒ // the first CloseCommand we received has precedence over ones potentially sent later
-        context.become(unbinding(cmd, commanders + sender()))
-
-      case Terminated(_) ⇒
-        if (connectors.isEmpty) {
-          // if we are done with the listeners we have completed the full orderly shutdown
-          commanders.foreach(_ ! cmd.event)
-          context.become(receive)
-        }
-    }
 }
 
 private[http] object HttpManager {
   def props(httpSettings: HttpExt#Settings) =
     Props(classOf[HttpManager], httpSettings) withDispatcher httpSettings.ManagerDispatcher
-
-  private class ProxyConnectorSetup(host: String, port: Int, sslEncryption: Boolean,
-                                    options: immutable.Traversable[Inet.SocketOption],
-                                    settings: Option[HostConnectorSettings], connectionType: Http.ClientConnectionType,
-                                    defaultHeaders: immutable.Seq[HttpHeader], val proxyConnector: ActorRef)
-    extends Http.HostConnectorSetup(host, port, sslEncryption, options, settings, connectionType, defaultHeaders)
-
-  private def proxyConnectorSetup(normalizedSetup: Http.HostConnectorSetup, proxyConnector: ActorRef) = {
-    import normalizedSetup._
-    new ProxyConnectorSetup(host, port, sslEncryption, options, settings, connectionType, defaultHeaders, proxyConnector)
-  }
-
-  def resolveAutoProxied(setup: Http.HostConnectorSetup)(implicit refFactory: ActorRefFactory) = {
-    val normalizedSetup = setup.normalized
-    import normalizedSetup._
-    val resolved =
-      if (sslEncryption) Http.ClientConnectionType.Direct // TODO
-      else connectionType match {
-        case Http.ClientConnectionType.AutoProxied ⇒
-          val scheme = Uri.httpScheme(sslEncryption)
-          val proxySettings = settings.get.connectionSettings.proxySettings.get(scheme)
-          proxySettings.filter(_.matchesHost(host)) match {
-            case Some(ProxySettings(proxyHost, proxyPort, _)) ⇒ Http.ClientConnectionType.Proxied(proxyHost, proxyPort)
-            case None                                         ⇒ Http.ClientConnectionType.Direct
-          }
-        case x ⇒ x
-      }
-    normalizedSetup.copy(connectionType = resolved)
-  }
 }
