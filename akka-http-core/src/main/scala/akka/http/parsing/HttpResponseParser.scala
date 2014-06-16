@@ -12,24 +12,26 @@ import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.http.model._
 import headers._
+import HttpResponseParser.NoMethod
 
 /**
  * INTERNAL API
  */
 private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       materializer: FlowMaterializer)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
+                                       materializer: FlowMaterializer,
+                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
   extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
-
-  import HttpResponseParser.NoMethod
 
   private[this] var requestMethodForCurrentResponse: HttpMethod = NoMethod
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
-  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit): HttpResponseParser =
-    new HttpResponseParser(settings, materializer)(headerParser.copyWith(warnOnIllegalHeader))
+  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit, dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
+    new HttpResponseParser(settings, materializer, dequeueRequestMethodForNextResponse)(headerParser.copyWith(warnOnIllegalHeader))
 
-  def setRequestMethodForNextResponse(method: HttpMethod): Unit =
-    requestMethodForCurrentResponse = method
+  override def startNewMessage(input: ByteString, offset: Int): StateResult = {
+    requestMethodForCurrentResponse = dequeueRequestMethodForNextResponse()
+    super.startNewMessage(input, offset)
+  }
 
   def parseMessage(input: ByteString, offset: Int): StateResult =
     if (requestMethodForCurrentResponse ne NoMethod) {
@@ -93,7 +95,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
               startNewMessage(input, bodyStart + cl)
             } else {
               emitResponseStart(defaultEntity(cth, contentLength, materializer))
-              parseFixedLengthBody(contentLength)(input, bodyStart)
+              parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
@@ -107,7 +109,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
           if (te.encodings.size == 1 && te.hasChunked) {
             if (clh.isEmpty) {
               emitResponseStart(chunkedEntity(cth, materializer))
-              parseChunk(input, bodyStart)
+              parseChunk(input, bodyStart, closeAfterResponseCompletion)
             } else fail("A chunked request must not contain a Content-Length header.")
           } else fail(s"`$te` is not supported by this client")
       }
@@ -127,6 +129,6 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
 /**
  * INTERNAL API
  */
-private[parsing] object HttpResponseParser {
+private[http] object HttpResponseParser {
   val NoMethod = HttpMethod.custom("NONE", safe = false, idempotent = false, entityAccepted = false)
 }

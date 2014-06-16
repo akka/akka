@@ -4,7 +4,7 @@
 
 package akka.http.util
 
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ FiniteDuration, Duration }
 import com.typesafe.config.Config
 import akka.ConfigurationException
 
@@ -16,6 +16,11 @@ private[http] class EnhancedConfig(val underlying: Config) extends AnyVal {
   def getPotentiallyInfiniteDuration(path: String): Duration = underlying.getString(path) match {
     case "infinite" ⇒ Duration.Inf
     case x          ⇒ Duration(x)
+  }
+
+  def getFiniteDuration(path: String): FiniteDuration = Duration(underlying.getString(path)) match {
+    case x: FiniteDuration ⇒ x
+    case _                 ⇒ throw new ConfigurationException(s"Config setting '$path' must be a finite duration")
   }
 
   def getPossiblyInfiniteInt(path: String): Int = underlying.getString(path) match {
