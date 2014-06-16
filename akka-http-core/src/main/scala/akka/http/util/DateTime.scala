@@ -17,7 +17,7 @@ final case class DateTime private (year: Int, // the year
                                    second: Int, // the second of the minute. The first second is 0.
                                    weekday: Int, // the day of the week. Sunday is 0.
                                    clicks: Long, // milliseconds since January 1, 1970, 00:00:00 GMT
-                                   isLeapYear: Boolean) extends Ordered[DateTime] with Renderable {
+                                   isLeapYear: Boolean) extends akka.http.model.japi.DateTime with Ordered[DateTime] with Renderable {
   /**
    * The day of the week as a 3 letter abbreviation:
    * `Sun`, `Mon`, `Tue`, `Wed`, `Thu`, `Fri` or `Sat`

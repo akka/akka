@@ -10,7 +10,7 @@ import akka.http.util.ToStringRenderable
  * The model of an HTTP header. In its most basic form headers are simple name-value pairs. Header names
  * are compared in a case-insensitive way.
  */
-abstract class HttpHeader extends ToStringRenderable {
+abstract class HttpHeader extends japi.HttpHeader with ToStringRenderable {
   def name: String
   def value: String
   def lowercaseName: String

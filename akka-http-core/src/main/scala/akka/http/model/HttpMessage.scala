@@ -12,11 +12,12 @@ import headers._
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.FlowMaterializer
 import scala.concurrent.{ ExecutionContext, Future }
+import akka.util.ByteString
 
 /**
  * Common base class of HttpRequest and HttpResponse.
  */
-sealed abstract class HttpMessage {
+sealed trait HttpMessage extends japi.HttpMessage {
   type Self <: HttpMessage
 
   def isRequest: Boolean
@@ -42,7 +43,7 @@ sealed abstract class HttpMessage {
     }
 
   /** Returns a copy of this message with the entity set to the given one. */
-  def withEntity(entity: HttpEntity): Self
+  def withEntity(entity: japi.HttpEntity): Self
 
   /** Returns a sharable and serializable copy of this message with a strict entity. */
   def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Self] =
@@ -67,7 +68,7 @@ sealed abstract class HttpMessage {
   }
 
   /** Returns the first header of the given type if there is one */
-  def header[T <: HttpHeader: ClassTag]: Option[T] = {
+  def header[T <: japi.HttpHeader: ClassTag]: Option[T] = {
     val erasure = classTag[T].runtimeClass
     headers.find(erasure.isInstance).asInstanceOf[Option[T]]
   }
@@ -78,6 +79,33 @@ sealed abstract class HttpMessage {
    *  - HttpResponse and the server will close the connection after this response
    */
   def connectionCloseExpected: Boolean = HttpMessage.connectionCloseExpected(protocol, header[Connection])
+
+  def addHeader(header: japi.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
+  def removeHeader(headerName: String): Self = {
+    val lowerHeaderName = headerName.toLowerCase()
+    mapHeaders(_.filterNot(_.is(lowerHeaderName)))
+  }
+
+  def withEntity(string: String): Self = withEntity(HttpEntity(string))
+  def withEntity(bytes: Array[Byte]): Self = withEntity(HttpEntity(bytes))
+  def withEntity(bytes: ByteString): Self = withEntity(HttpEntity(bytes))
+  def withEntity(contentType: japi.ContentType, string: String): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], string))
+  def withEntity(contentType: japi.ContentType, bytes: Array[Byte]): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
+  def withEntity(contentType: japi.ContentType, bytes: ByteString): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], bytes))
+  def withEntity(contentType: japi.ContentType, file: java.io.File): Self = withEntity(HttpEntity(contentType.asInstanceOf[ContentType], file))
+
+  import collection.JavaConverters._
+  /** Java API */
+  def getHeaders: java.lang.Iterable[japi.HttpHeader] = (headers: immutable.Seq[japi.HttpHeader]).asJava
+  /** Java API */
+  def getHeader[T <: japi.HttpHeader](headerClass: Class[T]): akka.japi.Option[T] = header(ClassTag(headerClass))
+  /** Java API */
+  def getHeader(headerName: String): akka.japi.Option[japi.HttpHeader] = {
+    val lowerCased = headerName.toLowerCase
+    headers.find(_.is(lowerCased))
+  }
+  /** Java API */
+  def addHeaders(headers: java.lang.Iterable[japi.HttpHeader]): Self = mapHeaders(_ ++ headers.asScala.asInstanceOf[Iterable[HttpHeader]])
 }
 
 object HttpMessage {
@@ -95,7 +123,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              uri: Uri = Uri./,
                              headers: immutable.Seq[HttpHeader] = Nil,
                              entity: HttpEntity.Regular = HttpEntity.Empty,
-                             protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends HttpMessage {
+                             protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpRequest with HttpMessage {
   require(!uri.isEmpty, "An HttpRequest must not have an empty Uri")
   require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
   require(protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
@@ -235,7 +263,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   def withHeaders(headers: immutable.Seq[HttpHeader]): HttpRequest =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  def withEntity(entity: HttpEntity): HttpRequest =
+  def withEntity(entity: japi.HttpEntity): HttpRequest =
     if (entity ne this.entity) entity match {
       case x: HttpEntity.Regular ⇒ copy(entity = x)
       case _                     ⇒ throw new IllegalArgumentException("entity must be HttpEntity.Regular")
@@ -248,6 +276,15 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
       case _                     ⇒ throw new IllegalArgumentException("entity must be HttpEntity.Regular")
     }
     else this
+
+  def withMethod(method: akka.http.model.japi.HttpMethod): HttpRequest = copy(method = method.asInstanceOf[HttpMethod])
+  def withProtocol(protocol: akka.http.model.japi.HttpProtocol): HttpRequest = copy(protocol = protocol.asInstanceOf[HttpProtocol])
+  def withUri(path: String): HttpRequest = copy(uri = Uri(path))
+
+  /** Java API */
+  def getUri: japi.Uri = japi.Accessors.Uri(uri)
+  /** Java API */
+  def withUri(relativeUri: akka.http.model.japi.Uri): HttpRequest = copy(uri = relativeUri.asInstanceOf[japi.JavaUri].uri)
 }
 
 object HttpRequest {
@@ -280,7 +317,7 @@ object HttpRequest {
 final case class HttpResponse(status: StatusCode = StatusCodes.OK,
                               headers: immutable.Seq[HttpHeader] = Nil,
                               entity: HttpEntity = HttpEntity.Empty,
-                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends HttpMessage {
+                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpResponse with HttpMessage {
   type Self = HttpResponse
 
   def isRequest = false
@@ -289,8 +326,12 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
   def withHeaders(headers: immutable.Seq[HttpHeader]) =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  def withEntity(entity: HttpEntity) = if (entity eq this.entity) this else copy(entity = entity)
+  def withEntity(entity: japi.HttpEntity) = if (entity eq this.entity) this else copy(entity = entity.asInstanceOf[HttpEntity])
 
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity) =
     if ((headers eq this.headers) && (entity eq this.entity)) this else copy(headers = headers, entity = entity)
+
+  def withProtocol(protocol: akka.http.model.japi.HttpProtocol): akka.http.model.japi.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
+  def withStatus(statusCode: Int): akka.http.model.japi.HttpResponse = copy(status = statusCode)
+  def withStatus(statusCode: akka.http.model.japi.StatusCode): akka.http.model.japi.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
 }
