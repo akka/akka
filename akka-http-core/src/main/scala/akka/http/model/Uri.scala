@@ -5,7 +5,7 @@
 package akka.http.model
 
 import language.implicitConversions
-import java.lang.{ StringBuilder ⇒ JStringBuilder }
+import java.lang.{ StringBuilder ⇒ JStringBuilder, Iterable }
 import java.nio.charset.Charset
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable, LinearSeqOptimized }
@@ -305,13 +305,25 @@ object Uri {
     val Empty = Authority(Host.Empty)
   }
 
-  sealed abstract class Host {
+  sealed abstract class Host extends japi.Host {
     def address: String
     def isEmpty: Boolean
     def toOption: Option[NonEmptyHost]
     def inetAddresses: immutable.Seq[InetAddress]
+
     def equalsIgnoreCase(other: Host): Boolean
     override def toString() = UriRendering.HostRenderer.render(new StringRendering, this).get
+
+    // default implementations
+    def isNamedHost: Boolean = false
+    def isIPv6: Boolean = false
+    def isIPv4: Boolean = false
+
+    /** Java API */
+    def getInetAddresses: Iterable[InetAddress] = {
+      import akka.http.model.japi.JavaMapping.Implicits._
+      inetAddresses.asJava
+    }
   }
   object Host {
     case object Empty extends Host {
@@ -345,6 +357,7 @@ object Uri {
       case _                    ⇒ false
     }
 
+    override def isIPv4: Boolean = true
     def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv4Host {
@@ -362,6 +375,7 @@ object Uri {
       case _                    ⇒ false
     }
 
+    override def isIPv6: Boolean = true
     def inetAddresses = immutable.Seq(InetAddress.getByAddress(bytes.toArray))
   }
   object IPv6Host {
@@ -381,6 +395,7 @@ object Uri {
       case _                       ⇒ false
     }
 
+    override def isNamedHost: Boolean = true
     def inetAddresses = InetAddress.getAllByName(address).toList
   }
 

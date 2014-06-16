@@ -2,13 +2,17 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.model.headers
+package akka.http.model
 
 import akka.http.util.{ Rendering, SingletonValueRenderable, Renderable }
 
-sealed trait TransferEncoding extends Renderable {
+import akka.http.model.japi.JavaMapping.Implicits._
+
+sealed abstract class TransferEncoding extends japi.TransferEncoding with Renderable {
   def name: String
   def params: Map[String, String]
+
+  def getParams: java.util.Map[String, String] = params.asJava
 }
 
 object TransferEncodings {
