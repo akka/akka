@@ -9,16 +9,19 @@ import java.io.File
 import org.reactivestreams.api.Producer
 import scala.collection.immutable
 import akka.util.ByteString
+
 import akka.stream.{ TimerTransformer, FlowMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.stream.impl.{ EmptyProducer, SynchronousProducerFromIterable }
+import java.lang.Iterable
+import japi.JavaMapping.Implicits._
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
  */
-sealed trait HttpEntity {
+sealed trait HttpEntity extends japi.HttpEntity {
   /**
    * Determines whether this entity is known to be empty.
    */
@@ -57,6 +60,15 @@ sealed trait HttpEntity {
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       })
       .toFuture(materializer)
+
+  /** Java API */
+  def getDataBytes(materializer: FlowMaterializer): Producer[ByteString] = dataBytes(materializer)
+
+  // default implementations, should be overridden
+  def isCloseDelimited: Boolean = false
+  def isDefault: Boolean = false
+  def isChunked: Boolean = false
+  def isRegular: Boolean = false
 }
 
 object HttpEntity {
@@ -89,7 +101,9 @@ object HttpEntity {
    * it is either chunked or defines a content-length that is known a-priori.
    * Close-delimited entities are not `Regular` as they exists primarily for backwards compatibility with HTTP/1.0.
    */
-  sealed trait Regular extends HttpEntity
+  sealed trait Regular extends japi.HttpEntityRegular with HttpEntity {
+    override def isRegular: Boolean = true
+  }
 
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?
@@ -99,7 +113,7 @@ object HttpEntity {
    * @param contentType
    * @param data
    */
-  final case class Strict(contentType: ContentType, data: ByteString) extends Regular {
+  final case class Strict(contentType: ContentType, data: ByteString) extends japi.HttpEntityStrict with Regular {
     def isKnownEmpty: Boolean = data.isEmpty
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] = SynchronousProducerFromIterable(data :: Nil)
@@ -113,9 +127,10 @@ object HttpEntity {
    */
   final case class Default(contentType: ContentType,
                            contentLength: Long,
-                           data: Producer[ByteString]) extends Regular {
+                           data: Producer[ByteString]) extends japi.HttpEntityDefault with Regular {
     require(contentLength > 0, "contentLength must be positive (use `HttpEntity.empty(contentType)` for empty entities)")
     def isKnownEmpty = false
+    override def isDefault: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] = data
   }
@@ -125,8 +140,9 @@ object HttpEntity {
    * The content-length of such responses is unknown at the time the response headers have been received.
    * Note that this type of HttpEntity cannot be used for HttpRequests!
    */
-  final case class CloseDelimited(contentType: ContentType, data: Producer[ByteString]) extends HttpEntity {
+  final case class CloseDelimited(contentType: ContentType, data: Producer[ByteString]) extends japi.HttpEntityCloseDelimited with HttpEntity {
     def isKnownEmpty = data eq EmptyProducer
+    override def isCloseDelimited: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] = data
   }
@@ -134,11 +150,15 @@ object HttpEntity {
   /**
    * The model for the entity of a chunked HTTP message (with `Transfer-Encoding: chunked`).
    */
-  final case class Chunked(contentType: ContentType, chunks: Producer[ChunkStreamPart]) extends Regular {
+  final case class Chunked(contentType: ContentType, chunks: Producer[ChunkStreamPart]) extends japi.HttpEntityChunked with Regular {
     def isKnownEmpty = chunks eq EmptyProducer
+    override def isChunked: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] =
       Flow(chunks).map(_.data).filter(_.nonEmpty).toProducer(materializer)
+
+    /** Java API */
+    def getChunks: Producer[japi.ChunkStreamPart] = chunks.asInstanceOf[Producer[japi.ChunkStreamPart]]
   }
   object Chunked {
     /**
@@ -153,7 +173,7 @@ object HttpEntity {
    * An element of the HttpEntity data stream.
    * Can be either a `Chunk` or a `LastChunk`.
    */
-  sealed trait ChunkStreamPart {
+  sealed abstract class ChunkStreamPart extends japi.ChunkStreamPart {
     def data: ByteString
     def extension: String
     def isLastChunk: Boolean
@@ -170,6 +190,8 @@ object HttpEntity {
   final case class Chunk(data: ByteString, extension: String = "") extends ChunkStreamPart {
     require(data.nonEmpty, "An HttpEntity.Chunk must have non-empty data")
     def isLastChunk = false
+
+    def getTrailerHeaders: Iterable[japi.HttpHeader] = java.util.Collections.emptyList[japi.HttpHeader]
   }
   object Chunk {
     def apply(string: String): Chunk = apply(ByteString(string))
@@ -184,6 +206,9 @@ object HttpEntity {
   case class LastChunk(extension: String = "", trailer: immutable.Seq[HttpHeader] = Nil) extends ChunkStreamPart {
     def data = ByteString.empty
     def isLastChunk = true
+
+    /** Java API */
+    def getTrailerHeaders: Iterable[japi.HttpHeader] = trailer.asJava
   }
   object LastChunk extends LastChunk("", Nil)
 }
