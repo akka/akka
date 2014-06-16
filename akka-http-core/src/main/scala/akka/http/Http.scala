@@ -12,7 +12,7 @@ import akka.io.Inet
 import akka.stream.MaterializerSettings
 import akka.http.client.{ HttpClientProcessor, ClientConnectionSettings }
 import akka.http.server.ServerSettings
-import akka.http.model.{ HttpResponse, HttpRequest }
+import akka.http.model.{ HttpResponse, HttpRequest, japi }
 import akka.http.util._
 import akka.actor._
 
@@ -110,11 +110,19 @@ object Http extends ExtensionKey[HttpExt] {
   }
 
   final case class ServerBinding(localAddress: InetSocketAddress,
-                                 connectionStream: Producer[IncomingConnection])
+                                 connectionStream: Producer[IncomingConnection]) extends model.japi.ServerBinding {
+    /** Java API */
+    def getConnectionStream: Producer[japi.IncomingConnection] = connectionStream.asInstanceOf[Producer[japi.IncomingConnection]]
+  }
 
   final case class IncomingConnection(remoteAddress: InetSocketAddress,
                                       requestProducer: Producer[HttpRequest],
-                                      responseConsumer: Consumer[HttpResponse])
+                                      responseConsumer: Consumer[HttpResponse]) extends model.japi.IncomingConnection {
+    /** Java API */
+    def getRequestProducer: Producer[japi.HttpRequest] = requestProducer.asInstanceOf[Producer[japi.HttpRequest]]
+    /** Java API */
+    def getResponseConsumer: Consumer[japi.HttpResponse] = responseConsumer.asInstanceOf[Consumer[japi.HttpResponse]]
+  }
 
   case object BindFailedException extends SingletonException
 

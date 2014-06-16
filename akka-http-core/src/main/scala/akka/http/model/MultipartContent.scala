@@ -55,8 +55,8 @@ final case class BodyPart(entity: HttpEntity, headers: immutable.Seq[HttpHeader]
 
   def dispositionParameterValue(parameter: String): Option[String] =
     headers.collectFirst {
-      case `Content-Disposition`(ContentDispositionTypes.`form-data`, parameters) if parameters.contains(parameter) ⇒
-        parameters(parameter)
+      case `Content-Disposition`(ContentDispositionTypes.`form-data`, params) if params.contains(parameter) ⇒
+        params(parameter)
     }
 
   def contentRange: Option[ContentRange] =

@@ -8,7 +8,7 @@ import language.implicitConversions
 import akka.http.util._
 
 /** The result status code of an HTTP response. */
-sealed abstract class StatusCode extends LazyValueBytesRenderable {
+sealed abstract class StatusCode extends japi.StatusCode with LazyValueBytesRenderable {
   def intValue: Int
   def value: String = intValue.toString + ' ' + reason
   def reason: String

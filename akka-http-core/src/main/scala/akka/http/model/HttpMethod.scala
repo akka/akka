@@ -17,7 +17,7 @@ final case class HttpMethod private[http] (override val value: String,
                                            fingerprint: Int,
                                            isSafe: Boolean,
                                            isIdempotent: Boolean,
-                                           isEntityAccepted: Boolean) extends SingletonValueRenderable {
+                                           isEntityAccepted: Boolean) extends japi.HttpMethod with SingletonValueRenderable {
   def name = value
 
   override def hashCode(): Int = fingerprint

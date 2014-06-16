@@ -7,10 +7,14 @@ package headers
 
 import language.implicitConversions
 import akka.http.util._
+import akka.http.model.japi.JavaMapping.Implicits._
 
-sealed abstract class HttpEncodingRange extends ValueRenderable with WithQValue[HttpEncodingRange] {
+sealed abstract class HttpEncodingRange extends japi.headers.HttpEncodingRange with ValueRenderable with WithQValue[HttpEncodingRange] {
   def qValue: Float
   def matches(encoding: HttpEncoding): Boolean
+
+  /** Java API */
+  def matches(encoding: japi.headers.HttpEncoding): Boolean = matches(encoding.asScala)
 }
 
 object HttpEncodingRange {
@@ -34,7 +38,7 @@ object HttpEncodingRange {
   def apply(encoding: HttpEncoding, qValue: Float): HttpEncodingRange = One(encoding, qValue)
 }
 
-final case class HttpEncoding private[http] (value: String) extends LazyValueBytesRenderable with WithQValue[HttpEncodingRange] {
+final case class HttpEncoding private[http] (value: String) extends japi.headers.HttpEncoding with LazyValueBytesRenderable with WithQValue[HttpEncodingRange] {
   def withQValue(qValue: Float): HttpEncodingRange = HttpEncodingRange(this, qValue.toFloat)
 }
 
