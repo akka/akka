@@ -307,7 +307,7 @@ object AkkaBuild extends Build {
   lazy val httpCore = Project(
     id = "akka-http-core",
     base = file("akka-http-core"),
-    dependencies = Seq(parsing, stream),
+    dependencies = Seq(parsing, stream % "compile;test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
       // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
       publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http-core"),
@@ -1308,7 +1308,10 @@ object Dependencies {
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
 
-  val httpCore = Seq(Test.junit, Test.scalatest)
+  val httpCore = Seq(
+    // FIXME switch back to project dependency
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test",
+    Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
