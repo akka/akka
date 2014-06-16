@@ -2,11 +2,12 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.model.headers
+package akka.http.model
+package headers
 
 import akka.http.util.{ Rendering, SingletonValueRenderable, Renderable }
 
-sealed trait ContentDispositionType extends Renderable
+sealed trait ContentDispositionType extends Renderable with japi.headers.ContentDispositionType
 
 object ContentDispositionTypes {
   protected abstract class Predefined extends ContentDispositionType with SingletonValueRenderable {
