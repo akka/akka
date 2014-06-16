@@ -7,3 +7,4 @@ Scala Documentation
    :maxdepth: 2
 
    experimental/index
+   scala/index-http
