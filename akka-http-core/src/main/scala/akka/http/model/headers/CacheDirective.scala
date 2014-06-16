@@ -2,13 +2,14 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.model.headers
+package akka.http.model
+package headers
 
-import scala.annotation.tailrec
+import scala.annotation.{ varargs, tailrec }
 import scala.collection.immutable
 import akka.http.util._
 
-sealed trait CacheDirective extends Renderable {
+sealed trait CacheDirective extends Renderable with japi.headers.CacheDirective {
   def value: String
 }
 
@@ -67,7 +68,7 @@ object CacheDirectives {
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.4
   case object `no-cache` extends SingletonValueRenderable with RequestDirective with ResponseDirective {
-    def apply(fieldNames: String*): `no-cache` = apply(immutable.Seq(fieldNames: _*))
+    @varargs def apply(fieldNames: String*): `no-cache` = apply(immutable.Seq(fieldNames: _*))
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.1.5
@@ -93,7 +94,7 @@ object CacheDirectives {
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.6
   final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
-    def apply(fieldNames: String*): `private` = apply(immutable.Seq(fieldNames: _*))
+    @varargs def apply(fieldNames: String*): `private` = apply(immutable.Seq(fieldNames: _*))
   }
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.7

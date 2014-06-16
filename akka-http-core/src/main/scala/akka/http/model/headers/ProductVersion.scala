@@ -4,13 +4,15 @@
 
 package akka.http.model.headers
 
+import akka.http.model.japi
+
 import scala.collection.immutable
 import scala.util.{ Failure, Success }
 import akka.parboiled2.ParseError
 import akka.http.model.parser.HeaderParser
 import akka.http.util._
 
-final case class ProductVersion(product: String = "", version: String = "", comment: String = "") extends ValueRenderable {
+final case class ProductVersion(product: String = "", version: String = "", comment: String = "") extends japi.headers.ProductVersion with ValueRenderable {
   def render[R <: Rendering](r: R): r.type = {
     r ~~ product
     if (!version.isEmpty) r ~~ '/' ~~ version
