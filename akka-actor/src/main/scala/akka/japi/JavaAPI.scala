@@ -117,6 +117,15 @@ abstract class JavaPartialFunction[A, B] extends AbstractPartialFunction[A, B] {
  */
 sealed abstract class Option[A] extends java.lang.Iterable[A] {
   def get: A
+  /**
+   * Returns the <code>a</code> if this is <code>some(a)</code> or <code>strictValue</code> if
+   * this is <code>none</code>.
+   *
+   * Note that <code>strictValue</code> is always evaluated even
+   * if this value is <code>none</code>. This behavior differs from Scala's where the parameter
+   * of <code>getOrElse</code> is call-by-name.
+   */
+  def getOrElse[B >: A](strictValue: B): B
   def isEmpty: Boolean
   def isDefined: Boolean = !isEmpty
   def asScala: scala.Option[A]
@@ -154,6 +163,7 @@ object Option {
    */
   final case class Some[A](v: A) extends Option[A] {
     def get: A = v
+    def getOrElse[B >: A](strictValue: B): B = v
     def isEmpty: Boolean = false
     def asScala: scala.Some[A] = scala.Some(v)
   }
@@ -163,6 +173,7 @@ object Option {
    */
   private case object None extends Option[Nothing] {
     def get: Nothing = throw new NoSuchElementException("None.get")
+    def getOrElse[B](strictValue: B): B = strictValue
     def isEmpty: Boolean = true
     def asScala: scala.None.type = scala.None
   }
