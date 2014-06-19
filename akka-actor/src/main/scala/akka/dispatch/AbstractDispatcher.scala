@@ -8,7 +8,7 @@ import java.util.concurrent._
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.{ BusLogging, EventStream }
+import akka.event.EventStream
 import com.typesafe.config.{ ConfigFactory, Config }
 import akka.util.{ Unsafe, Index }
 import scala.annotation.tailrec

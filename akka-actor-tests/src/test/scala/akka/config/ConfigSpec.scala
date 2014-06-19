@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.event.Logging.DefaultLogger
 import java.util.concurrent.TimeUnit
+import akka.event.DefaultLoggingFilter
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) {
@@ -57,6 +58,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getDuration("akka.logger-startup-timeout", TimeUnit.MILLISECONDS) should be(5.seconds.toMillis)
         settings.LoggerStartTimeout.duration should be(5.seconds)
+
+        getString("akka.logging-filter") should be(classOf[DefaultLoggingFilter].getName)
 
         getInt("akka.log-dead-letters") should be(10)
         settings.LogDeadLetters should be(10)

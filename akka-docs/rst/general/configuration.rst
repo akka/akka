@@ -147,6 +147,10 @@ A custom ``application.conf`` might look like this::
     # This logger prints the log messages to stdout (System.out).
     # Options: OFF, ERROR, WARNING, INFO, DEBUG
     stdout-loglevel = "DEBUG"
+    
+    # Filter of log events that is used by the LoggingAdapter before 
+    # publishing log events to the eventStream.
+    logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
 
     actor {
       provider = "akka.cluster.ClusterActorRefProvider"

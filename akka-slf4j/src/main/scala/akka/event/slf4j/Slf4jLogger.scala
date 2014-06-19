@@ -10,6 +10,8 @@ import akka.event.Logging._
 import akka.actor._
 import akka.event.DummyClassForStringSources
 import akka.util.Helpers
+import akka.event.LoggingFilter
+import akka.event.EventStream
 
 /**
  * Base trait for all classes that wants to be able use the SLF4J logging infrastructure.
@@ -104,3 +106,18 @@ class Slf4jLogger extends Actor with SLF4JLogging {
     Helpers.currentTimeMillisToUTCString(timestamp)
 }
 
+/**
+ * [[akka.event.LoggingFilter]] that uses the log level defined in in the SLF4J
+ * backend configuration (e.g. logback.xml) to filter log events before publishing
+ * the log events to the `eventStream`.
+ */
+class Slf4jLoggingFilter(settings: ActorSystem.Settings, eventStream: EventStream) extends LoggingFilter {
+  def isErrorEnabled(logClass: Class[_], logSource: String) =
+    (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled
+  def isWarningEnabled(logClass: Class[_], logSource: String) =
+    (eventStream.logLevel >= WarningLevel) && Logger(logClass, logSource).isWarnEnabled
+  def isInfoEnabled(logClass: Class[_], logSource: String) =
+    (eventStream.logLevel >= InfoLevel) && Logger(logClass, logSource).isInfoEnabled
+  def isDebugEnabled(logClass: Class[_], logSource: String) =
+    (eventStream.logLevel >= DebugLevel) && Logger(logClass, logSource).isDebugEnabled
+}

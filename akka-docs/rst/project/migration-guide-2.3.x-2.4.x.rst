@@ -94,3 +94,12 @@ The following, previously deprecated, features have been removed:
 
 * Java API TestKit.dilated, moved to JavaTestKit.dilated
 
+Slf4j logging filter
+====================
+
+If you use ``Slf4jLogger`` you should add the following configuration::
+
+    akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter" 
+
+It will filter the log events using the backend configuration (e.g. logback.xml) before
+they are published to the event bus.
