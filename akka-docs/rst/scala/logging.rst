@@ -263,7 +263,9 @@ and it will receive the log events in the same order as they were emitted.
 
 You can configure which event handlers are created at system start-up and listen to logging events. That is done using the 
 ``loggers`` element in the :ref:`configuration`.
-Here you can also define the log level.
+Here you can also define the log level. More fine grained filtering based on the log source 
+can be implemented in a custom ``LoggingFilter``, which can be defined in the ``logging-filter`` 
+configuration property.
 
 .. code-block:: ruby
 
@@ -284,8 +286,6 @@ Example of creating a listener:
 .. includecode:: code/docs/event/LoggingDocSpec.scala
    :include: my-event-listener
 
-.. _slf4j-scala:
-
 Logging to stdout during startup and shutdown
 =============================================
 
@@ -293,6 +293,8 @@ When the actor system is starting up and shutting down the configured ``loggers`
 Instead log messages are printed to stdout (System.out). The default log level for this
 stdout logger is ``WARNING`` and it can be silenced completely by setting 
 ``akka.stdout-loglevel=OFF``.
+
+.. _slf4j-scala:
 
 SLF4J
 =====
@@ -302,19 +304,22 @@ It has one single dependency; the slf4j-api jar. In runtime you also need a SLF4
 
   .. code-block:: scala
 
-     lazy val logback = "ch.qos.logback" % "logback-classic" % "1.0.13"
+     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.13"
 
 
-You need to enable the Slf4jLogger in the 'loggers' element in
+You need to enable the Slf4jLogger in the ``loggers`` element in
 the :ref:`configuration`. Here you can also define the log level of the event bus.
 More fine grained log levels can be defined in the configuration of the SLF4J backend
-(e.g. logback.xml).
+(e.g. logback.xml). You should also define ``akka.event.slf4j.Slf4jLoggingFilter`` in
+the ``logging-filter`` configuration property. It will filter the log events using the backend
+configuration (e.g. logback.xml) before they are published to the event bus.
 
 .. code-block:: ruby
 
   akka {
     loggers = ["akka.event.slf4j.Slf4jLogger"]
     loglevel = "DEBUG"
+    logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
   }
 
 One gotcha is that the timestamp is attributed in the event handler, not when actually doing the logging.
