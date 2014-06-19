@@ -51,12 +51,14 @@ class LoggingReceive(source: Option[AnyRef], r: Receive, label: Option[String])(
   def this(source: Option[AnyRef], r: Receive)(implicit context: ActorContext) = this(source, r, None)
   def isDefinedAt(o: Any): Boolean = {
     val handled = r.isDefinedAt(o)
-    val (str, clazz) = LogSource.fromAnyRef(source getOrElse context.asInstanceOf[ActorCell].actor)
-    context.system.eventStream.publish(Debug(str, clazz, "received " + (if (handled) "handled" else "unhandled") + " message " + o
-      + (label match {
-        case Some(l) ⇒ " in state " + l
-        case _       ⇒ ""
-      })))
+    if (context.system.eventStream.logLevel >= Logging.DebugLevel) {
+      val (str, clazz) = LogSource.fromAnyRef(source getOrElse context.asInstanceOf[ActorCell].actor)
+      context.system.eventStream.publish(Debug(str, clazz, "received " + (if (handled) "handled" else "unhandled") + " message " + o
+        + (label match {
+          case Some(l) ⇒ " in state " + l
+          case _       ⇒ ""
+        })))
+    }
     handled
   }
   def apply(o: Any): Unit = r(o)
