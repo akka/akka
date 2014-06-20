@@ -343,7 +343,7 @@ trait TestKitBase {
 
   private def expectMsg_internal[T](max: Duration, obj: T, hint: Option[String] = None): T = {
     val o = receiveOne(max)
-    lazy val hintOrEmptyString = hint.map(": " + _).getOrElse("")
+    val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     assert(o ne null, s"timeout ($max) during expectMsg while waiting for $obj" + hintOrEmptyString)
     assert(obj == o, s"expected $obj, found $o" + hintOrEmptyString)
     o.asInstanceOf[T]
