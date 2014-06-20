@@ -9,6 +9,7 @@ import akka.actor._
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import akka.pattern.ask
+import scala.util.Try
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TestProbeSpec extends AkkaSpec with DefaultTimeout {
@@ -39,7 +40,40 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       probe1.send(probe2.ref, "hello")
       probe2.expectMsg(0 millis, "hello")
       probe2.lastMessage.sender ! "world"
-      probe1.expectMsg(0 millis, "world")
+      probe1.expectMsg(0 millis, "some hint here", "world")
+    }
+
+    def assertFailureMessageContains(expectedHint: String)(block: ⇒ Unit) {
+      Try {
+        block
+      } match {
+        case scala.util.Failure(e: AssertionError) ⇒
+          if (!(e.getMessage contains expectedHint))
+            fail(s"failure message did not contain hint! Was: ${e.getMessage}, expected to contain $expectedHint")
+        case scala.util.Failure(oth) ⇒
+          fail(s"expected AssertionError but got: $oth")
+        case scala.util.Success(result) ⇒
+          fail(s"expected failure but got: $result")
+      }
+    }
+
+    "throw AssertionError containing hint in its message if max await time is exceeded" in {
+      val probe = TestProbe()
+      val hint = "some hint"
+
+      assertFailureMessageContains(hint) {
+        probe.expectMsg(0 millis, hint, "hello")
+      }
+    }
+
+    "throw AssertionError containing hint in its message if received message doesn't match" in {
+      val probe = TestProbe()
+      val hint = "some hint"
+
+      assertFailureMessageContains(hint) {
+        probe.ref ! "hello"
+        probe.expectMsg(0 millis, hint, "bye")
+      }
     }
 
     "have an AutoPilot" in {
