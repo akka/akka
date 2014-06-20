@@ -21,7 +21,7 @@ object ProcessorChannelExample extends App {
     def receive = {
       case p @ ConfirmablePersistent(payload, snr, _) =>
         println(s"received ${payload}")
-        sender ! s"re: ${payload} (${snr})"
+        sender() ! s"re: ${payload} (${snr})"
         p.confirm()
     }
   }

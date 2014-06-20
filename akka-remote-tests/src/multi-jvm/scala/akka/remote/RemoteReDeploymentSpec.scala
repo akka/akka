@@ -53,7 +53,7 @@ object RemoteReDeploymentMultiJvmSpec extends MultiNodeConfig {
   class Echo(target: ActorRef) extends Actor with ActorLogging {
     def receive = {
       case msg ⇒
-        log.info(s"received $msg from $sender")
+        log.info(s"received $msg from ${sender()}")
         target ! msg
     }
   }

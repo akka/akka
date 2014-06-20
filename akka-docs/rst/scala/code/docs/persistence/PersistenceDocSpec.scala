@@ -172,7 +172,7 @@ trait PersistenceDocSpec {
       def receive = {
         case p @ Persistent(payload, _) =>
           //#channel-example-reply
-          channel ! Deliver(p.withPayload(s"processed ${payload}"), sender.path)
+          channel ! Deliver(p.withPayload(s"processed ${payload}"), sender().path)
         //#channel-example-reply
       }
 

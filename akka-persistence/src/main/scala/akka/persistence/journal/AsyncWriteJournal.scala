@@ -81,7 +81,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case Failure(e) ⇒
       }
     case LoopMessage(message, processor) ⇒
-      resequencer ! Desequenced(LoopMessageSuccess(message), resequencerCounter, processor, sender)
+      resequencer ! Desequenced(LoopMessageSuccess(message), resequencerCounter, processor, sender())
       resequencerCounter += 1
   }
 

@@ -256,10 +256,10 @@ private class RequestWriter(channelId: String, channelSettings: PersistentChanne
       }
 
       if (!recoveryRunning && replyPersistent)
-        sender ! wrapped
+        sender() ! wrapped
 
     case p: PersistenceFailure ⇒
-      if (replyPersistent) sender ! p
+      if (replyPersistent) sender() ! p
   }
 
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit = {

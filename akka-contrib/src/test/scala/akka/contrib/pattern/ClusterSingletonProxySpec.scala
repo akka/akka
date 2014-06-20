@@ -85,7 +85,7 @@ object ClusterSingletonProxySpec {
 
     def receive: Actor.Receive = {
       case msg ⇒
-        sender ! "Got " + msg
+        sender() ! "Got " + msg
     }
   }
 

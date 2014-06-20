@@ -17,9 +17,9 @@ object ConversationRecoveryExample extends App {
         println(s"received ping ${counter} times ...")
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
-        pongChannel ! Deliver(m.withPayload(Pong), sender.path)
+        pongChannel ! Deliver(m.withPayload(Pong), sender().path)
       case "init" if (counter == 0) =>
-        pongChannel ! Deliver(Persistent(Pong), sender.path)
+        pongChannel ! Deliver(Persistent(Pong), sender().path)
     }
   }
 
@@ -33,7 +33,7 @@ object ConversationRecoveryExample extends App {
         println(s"received pong ${counter} times ...")
         m.confirm()
         if (!recoveryRunning) Thread.sleep(1000)
-        pingChannel ! Deliver(m.withPayload(Ping), sender.path)
+        pingChannel ! Deliver(m.withPayload(Ping), sender().path)
     }
   }
 

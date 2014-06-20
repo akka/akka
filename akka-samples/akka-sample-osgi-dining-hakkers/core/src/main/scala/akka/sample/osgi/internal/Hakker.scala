@@ -165,8 +165,8 @@ class Hakker(name: String, chair: Int) extends Actor {
     case state: CurrentClusterState         => state.leader foreach updateTable
     case LeaderChanged(Some(leaderAddress)) => updateTable(leaderAddress)
     case SubscribeToHakkerStateChanges =>
-      subscribers += sender
-      context watch sender
+      subscribers += sender()
+      context watch sender()
     case Terminated(subscriber) =>
       subscribers -= subscriber
   }

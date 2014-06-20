@@ -41,7 +41,7 @@ object PerformanceSpec {
     def stopMeasure(): Unit = {
       stopSequenceNr = lastSequenceNr
       stopTime = System.nanoTime
-      sender ! (NanoToSecond * (stopSequenceNr - startSequenceNr) / (stopTime - startTime))
+      sender() ! (NanoToSecond * (stopSequenceNr - startSequenceNr) / (stopTime - startTime))
     }
 
     def lastSequenceNr: Long

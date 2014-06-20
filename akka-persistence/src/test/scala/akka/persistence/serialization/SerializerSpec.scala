@@ -139,17 +139,17 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 object MessageSerializerRemotingSpec {
   class LocalActor(port: Int) extends Actor {
     def receive = {
-      case m ⇒ context.actorSelection(s"akka.tcp://remote@127.0.0.1:${port}/user/remote") tell (m, sender)
+      case m ⇒ context.actorSelection(s"akka.tcp://remote@127.0.0.1:${port}/user/remote") tell (m, sender())
     }
   }
 
   class RemoteActor extends Actor {
     def receive = {
-      case PersistentBatch(Persistent(MyPayload(data), _) +: tail) ⇒ sender ! s"b${data}"
-      case ConfirmablePersistent(MyPayload(data), _, _)            ⇒ sender ! s"c${data}"
-      case Persistent(MyPayload(data), _)                          ⇒ sender ! s"p${data}"
-      case DeliveredByChannel(pid, cid, msnr, dsnr, ep)            ⇒ sender ! s"${pid},${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
-      case DeliveredByPersistentChannel(cid, msnr, dsnr, ep)       ⇒ sender ! s"${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
+      case PersistentBatch(Persistent(MyPayload(data), _) +: tail) ⇒ sender() ! s"b${data}"
+      case ConfirmablePersistent(MyPayload(data), _, _)            ⇒ sender() ! s"c${data}"
+      case Persistent(MyPayload(data), _)                          ⇒ sender() ! s"p${data}"
+      case DeliveredByChannel(pid, cid, msnr, dsnr, ep)            ⇒ sender() ! s"${pid},${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
+      case DeliveredByPersistentChannel(cid, msnr, dsnr, ep)       ⇒ sender() ! s"${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
       case Deliver(Persistent(payload, _), dp)                     ⇒ context.actorSelection(dp) ! payload
     }
   }

@@ -52,7 +52,7 @@ class HakkerTracker extends EventsourcedProcessor {
       }
 
     case GetEatingCount(name) =>
-      sender ! EatingCount(name, 17)
+      sender() ! EatingCount(name, 17)
   }
 
 }

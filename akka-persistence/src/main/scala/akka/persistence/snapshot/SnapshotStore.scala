@@ -23,14 +23,14 @@ trait SnapshotStore extends Actor {
 
   final def receive = {
     case LoadSnapshot(processorId, criteria, toSequenceNr) ⇒
-      val p = sender
+      val p = sender()
       loadAsync(processorId, criteria.limit(toSequenceNr)) map {
         sso ⇒ LoadSnapshotResult(sso, toSequenceNr)
       } recover {
         case e ⇒ LoadSnapshotResult(None, toSequenceNr)
       } pipeTo (p)
     case SaveSnapshot(metadata, snapshot) ⇒
-      val p = sender
+      val p = sender()
       val md = metadata.copy(timestamp = System.currentTimeMillis)
       saveAsync(md, snapshot) map {
         _ ⇒ SaveSnapshotSuccess(md)
@@ -39,10 +39,10 @@ trait SnapshotStore extends Actor {
       } to (self, p)
     case evt @ SaveSnapshotSuccess(metadata) ⇒
       saved(metadata)
-      sender ! evt // sender is processor
+      sender() ! evt // sender is processor
     case evt @ SaveSnapshotFailure(metadata, _) ⇒
       delete(metadata)
-      sender ! evt // sender is processor
+      sender() ! evt // sender is processor
     case d @ DeleteSnapshot(metadata) ⇒
       delete(metadata)
       if (publish) context.system.eventStream.publish(d)
