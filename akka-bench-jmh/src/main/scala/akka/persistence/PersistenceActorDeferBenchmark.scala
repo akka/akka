@@ -65,7 +65,7 @@ class PersistentActorDeferBenchmark {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_processor_Persistent_reply() {
     for (i <- data10k) processor.tell(i, probe.ref)
@@ -73,7 +73,7 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
   
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_processor_Persistent_replyASAP() {
     for (i <- data10k) processor_replyASAP.tell(i, probe.ref)
@@ -81,7 +81,7 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_reply() {
     for (i <- data10k) persistAsync_defer.tell(i, probe.ref)
@@ -89,7 +89,7 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_replyASAP() {
     for (i <- data10k) persistAsync_defer_replyASAP.tell(i, probe.ref)
