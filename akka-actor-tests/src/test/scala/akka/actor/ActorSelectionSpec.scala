@@ -159,7 +159,7 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       identify("system/") should be(Some(syst))
     }
 
-    "return deadLetters or ActorIdentity(None), respectively, for non-existing paths, and deadLetters" in {
+    "return ActorIdentity(None), respectively, for non-existing paths, and deadLetters" in {
       identify("a/b/c") should be(None)
       identify("a/b/c") should be(None)
       identify("akka://all-systems/Nobody") should be(None)
@@ -351,24 +351,45 @@ class ActorSelectionSpec extends AkkaSpec("akka.loglevel=DEBUG") with DefaultTim
       d.recipient.path.toStringWithoutAddress should be("/user/missing")
     }
 
-    "send ActorSelection wildcard targeted to missing actor to deadLetters" in {
+    "identify actors with wildcard selection correctly" in {
       val creator = TestProbe()
       implicit def self = creator.ref
-      val top = system.actorOf(p, "top")
-      top ! Create("child1")
-      top ! Create("child2")
+      val top = system.actorOf(p, "a")
+      val b1 = Await.result((top ? Create("b1")).mapTo[ActorRef], timeout.duration)
+      val b2 = Await.result((top ? Create("b2")).mapTo[ActorRef], timeout.duration)
+      val c = Await.result((b2 ? Create("c")).mapTo[ActorRef], timeout.duration)
+      val d = Await.result((c ? Create("d")).mapTo[ActorRef], timeout.duration)
 
       val probe = TestProbe()
-      system.eventStream.subscribe(probe.ref, classOf[DeadLetter])
-      system.actorSelection("/user/top/*/a").tell("wild", testActor)
-      // wildcard matches both child1 and child2
-      val d1 = probe.expectMsgType[DeadLetter]
-      val d2 = probe.expectMsgType[DeadLetter]
-      List(d1, d2) foreach { d ⇒
-        d.message should be("wild")
-        d.sender should be(testActor)
-        d.recipient.path.toStringWithoutAddress should (equal("/user/top/child1/a") or equal("/user/top/child2/a"))
-      }
+      system.actorSelection("/user/a/*").tell(Identify(1), probe.ref)
+      probe.receiveN(2).map { case ActorIdentity(1, r) ⇒ r }.toSet should be(Set(Some(b1), Some(b2)))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/b1/*").tell(Identify(2), probe.ref)
+      probe.expectMsg(ActorIdentity(2, None))
+
+      system.actorSelection("/user/a/*/c").tell(Identify(3), probe.ref)
+      probe.expectMsg(ActorIdentity(3, Some(c)))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/b2/*/d").tell(Identify(4), probe.ref)
+      probe.expectMsg(ActorIdentity(4, Some(d)))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/*/*/d").tell(Identify(5), probe.ref)
+      probe.expectMsg(ActorIdentity(5, Some(d)))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/*/c/*").tell(Identify(6), probe.ref)
+      probe.expectMsg(ActorIdentity(6, Some(d)))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/b2/*/d/e").tell(Identify(7), probe.ref)
+      probe.expectMsg(ActorIdentity(7, None))
+      probe.expectNoMsg(200.millis)
+
+      system.actorSelection("/user/a/*/c/d/e").tell(Identify(8), probe.ref)
+      probe.expectNoMsg(500.millis)
     }
 
     "forward to selection" in {
