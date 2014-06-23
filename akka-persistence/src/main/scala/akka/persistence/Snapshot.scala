@@ -8,12 +8,12 @@ package akka.persistence
 /**
  * Snapshot metadata.
  *
- * @param processorId id of processor from which the snapshot was taken.
+ * @param persistenceId id of processor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved.
  */
 @SerialVersionUID(1L) //#snapshot-metadata
-final case class SnapshotMetadata(processorId: String, sequenceNr: Long, timestamp: Long = 0L)
+final case class SnapshotMetadata(@deprecatedName('processorId) persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
 /**
@@ -116,11 +116,11 @@ private[persistence] object SnapshotProtocol {
   /**
    * Instructs a snapshot store to load a snapshot.
    *
-   * @param processorId processor id.
+   * @param persistenceId processor id.
    * @param criteria criteria for selecting a snapshot from which recovery should start.
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
-  final case class LoadSnapshot(processorId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
+  final case class LoadSnapshot(@deprecatedName('processorId) persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
 
   /**
    * Response message to a [[LoadSnapshot]] message.
@@ -147,8 +147,8 @@ private[persistence] object SnapshotProtocol {
   /**
    * Instructs snapshot store to delete all snapshots that match `criteria`.
    *
-   * @param processorId processor id.
+   * @param persistenceId processor id.
    * @param criteria criteria for selecting snapshots to be deleted.
    */
-  final case class DeleteSnapshots(processorId: String, criteria: SnapshotSelectionCriteria)
+  final case class DeleteSnapshots(@deprecatedName('processorId) persistenceId: String, criteria: SnapshotSelectionCriteria)
 }

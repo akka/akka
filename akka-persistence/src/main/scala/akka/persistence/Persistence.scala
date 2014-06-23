@@ -102,26 +102,33 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   /**
    * Creates a canonical processor id from a processor actor ref.
    */
+  @deprecated("Use `persistenceId` instead. Processor will be removed.", since = "2.3.4")
   def processorId(processor: ActorRef): String = id(processor)
+
+  /**
+   * Creates a canonical persistent actor id from a processor actor ref.
+   */
+  def persistenceId(persistentActor: ActorRef): String = id(persistentActor)
 
   /**
    * Creates a canonical channel id from a channel actor ref.
    */
+  @deprecated("Channels will be removed. You may want to use `akka.persistence.AtLeastOnceDelivery` instead.", since = "2.3.4")
   def channelId(channel: ActorRef): String = id(channel)
 
   /**
-   * Returns a snapshot store for a processor identified by `processorId`.
+   * Returns a snapshot store for a processor identified by `persistenceId`.
    */
-  def snapshotStoreFor(processorId: String): ActorRef = {
+  def snapshotStoreFor(persistenceId: String): ActorRef = {
     // Currently returns a snapshot store singleton but this methods allows for later
     // optimizations where each processor can have its own snapshot store actor.
     snapshotStore
   }
 
   /**
-   * Returns a journal for a processor identified by `processorId`.
+   * Returns a journal for a processor identified by `persistenceId`.
    */
-  def journalFor(processorId: String): ActorRef = {
+  def journalFor(persistenceId: String): ActorRef = {
     // Currently returns a journal singleton but this methods allows for later
     // optimizations where each processor can have its own journal actor.
     journal

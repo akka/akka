@@ -24,9 +24,9 @@ public class LambdaPersistenceDocTest {
   public interface SomeOtherMessage {}
 
   public interface ProcessorMethods {
-    //#processor-id
-    public String processorId();
-    //#processor-id
+    //#persistence-id
+    public String persistenceId();
+    //#persistence-id
     //#recovery-status
     public boolean recoveryRunning();
     public boolean recoveryFinished();
@@ -121,13 +121,13 @@ public class LambdaPersistenceDocTest {
     }
 
     class MyProcessor4 extends AbstractProcessor implements ProcessorMethods {
-      //#processor-id-override
+      //#persistence-id-override
       @Override
-      public String processorId() {
-        return "my-stable-processor-id";
+      public String persistenceId() {
+        return "my-stable-persistence-id";
       }
 
-      //#processor-id-override
+      //#persistence-id-override
       public MyProcessor4() {
         receive(ReceiveBuilder.
           match(Persistent.class, received -> {/* ... */}).build()
@@ -494,8 +494,8 @@ public class LambdaPersistenceDocTest {
     //#view
     class MyView extends AbstractView {
       @Override
-      public String processorId() {
-        return "some-processor-id";
+      public String persistenceId() {
+        return "some-persistence-id";
       }
 
       public MyView() {

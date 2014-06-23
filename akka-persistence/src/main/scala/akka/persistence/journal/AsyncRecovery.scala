@@ -27,7 +27,7 @@ trait AsyncRecovery {
    * The channel ids of delivery confirmations that are available for a replayed
    * message must be contained in that message's `confirms` sequence.
    *
-   * @param processorId processor id.
+   * @param persistenceId processor id.
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param max maximum number of messages to be replayed.
@@ -37,16 +37,16 @@ trait AsyncRecovery {
    * @see [[AsyncWriteJournal]]
    * @see [[SyncWriteJournal]]
    */
-  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit]
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: PersistentRepr ⇒ Unit): Future[Unit]
 
   /**
    * Plugin API: asynchronously reads the highest stored sequence number for the
-   * given `processorId`.
+   * given `persistenceId`.
    *
-   * @param processorId processor id.
+   * @param persistenceId processor id.
    * @param fromSequenceNr hint where to start searching for the highest sequence
    *                       number.
    */
-  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long]
+  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long]
   //#journal-plugin-api
 }

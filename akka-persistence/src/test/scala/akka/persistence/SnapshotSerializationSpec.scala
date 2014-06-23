@@ -77,14 +77,14 @@ class SnapshotSerializationSpec extends AkkaSpec(PersistenceSpec.config("leveldb
   "A processor with custom Serializer" must {
     "be able to handle serialization header of more than 255 bytes" in {
       val sProcessor = system.actorOf(Props(classOf[TestProcessor], name, testActor))
-      val processorId = name
+      val persistenceId = name
 
       sProcessor ! "blahonga"
       expectMsg(0)
       val lProcessor = system.actorOf(Props(classOf[TestProcessor], name, testActor))
       lProcessor ! Recover()
       expectMsgPF() {
-        case (SnapshotMetadata(`processorId`, 0, timestamp), state) ⇒
+        case (SnapshotMetadata(`persistenceId`, 0, timestamp), state) ⇒
           state should be(new MySnapshot("blahonga"))
           timestamp should be > (0L)
       }

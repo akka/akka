@@ -22,7 +22,6 @@ object NumberProcessorSpec {
   case object GetNumber
 
   class NumberProcessorWithPersistentChannel(name: String) extends NamedProcessor(name) {
-    override def processorId = name
     var num = 0
 
     val channel = context.actorOf(PersistentChannel.props(channelId = "stable_id",
@@ -52,7 +51,7 @@ class NumberProcessorSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Nu
 
     "resurrect with the correct state, not replaying confirmed messages to clients" in {
       val deliveredProbe = TestProbe()
-      system.eventStream.subscribe(deliveredProbe.testActor, classOf[DeliveredByPersistentChannel])
+      system.eventStream.subscribe(deliveredProbe.testActor, classOf[DeliveredByPersistenceChannel])
 
       val probe = TestProbe()
 
@@ -63,7 +62,7 @@ class NumberProcessorSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Nu
       zero.confirm()
       zero.payload should equal(0)
 
-      deliveredProbe.expectMsgType[DeliveredByPersistentChannel]
+      deliveredProbe.expectMsgType[DeliveredByPersistenceChannel]
 
       processor.tell(Persistent(DecrementAndGet), probe.testActor)
 
@@ -71,7 +70,7 @@ class NumberProcessorSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Nu
       decrementFrom0.confirm()
       decrementFrom0.payload should equal(-1)
 
-      deliveredProbe.expectMsgType[DeliveredByPersistentChannel]
+      deliveredProbe.expectMsgType[DeliveredByPersistenceChannel]
 
       watch(processor)
       system.stop(processor)
@@ -84,7 +83,7 @@ class NumberProcessorSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Nu
       decrementFromMinus1.confirm()
       decrementFromMinus1.payload should equal(-2)
 
-      deliveredProbe.expectMsgType[DeliveredByPersistentChannel]
+      deliveredProbe.expectMsgType[DeliveredByPersistenceChannel]
     }
   }
 }

@@ -13,7 +13,7 @@ object SnapshotDirectoryFailureSpec {
 
   class TestProcessor(name: String, probe: ActorRef) extends Processor {
 
-    override def processorId: String = name
+    override def persistenceId: String = name
 
     override def preStart(): Unit = ()
 
