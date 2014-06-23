@@ -517,7 +517,8 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
       true
     case sel: ActorSelectionMessage ⇒
       sel.identifyRequest match {
-        case Some(identify) ⇒ sender ! ActorIdentity(identify.messageId, None)
+        case Some(identify) ⇒
+          if (!sel.wildcardFanOut) sender ! ActorIdentity(identify.messageId, None)
         case None ⇒
           eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
       }
