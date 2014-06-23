@@ -43,21 +43,21 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Future[Unit] =
     (store ? WriteConfirmations(confirmations)).mapTo[Unit]
 
-  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit] =
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit] =
     (store ? DeleteMessages(messageIds, permanent)).mapTo[Unit]
 
-  def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
-    (store ? DeleteMessagesTo(processorId, toSequenceNr, permanent)).mapTo[Unit]
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
+    (store ? DeleteMessagesTo(persistenceId, toSequenceNr, permanent)).mapTo[Unit]
 
-  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = {
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] = {
     val replayCompletionPromise = Promise[Unit]
     val mediator = context.actorOf(Props(classOf[ReplayMediator], replayCallback, replayCompletionPromise, timeout.duration).withDeploy(Deploy.local))
-    store.tell(ReplayMessages(processorId, fromSequenceNr, toSequenceNr, max), mediator)
+    store.tell(ReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max), mediator)
     replayCompletionPromise.future
   }
 
-  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] =
-    (store ? ReadHighestSequenceNr(processorId, fromSequenceNr)).mapTo[Long]
+  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
+    (store ? ReadHighestSequenceNr(persistenceId, fromSequenceNr)).mapTo[Long]
 }
 
 /**
@@ -78,13 +78,13 @@ private[persistence] object AsyncWriteTarget {
   case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation])
 
   @SerialVersionUID(1L)
-  case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean)
+  case class DeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class DeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean)
+  case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
 
   @SerialVersionUID(1L)
-  case class ReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
+  case class ReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)
 
   @SerialVersionUID(1L)
   case object ReplaySuccess
@@ -93,7 +93,7 @@ private[persistence] object AsyncWriteTarget {
   case class ReplayFailure(cause: Throwable)
 
   @SerialVersionUID(1L)
-  case class ReadHighestSequenceNr(processorId: String, fromSequenceNr: Long)
+  case class ReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long)
 }
 
 /**

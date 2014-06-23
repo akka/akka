@@ -126,16 +126,16 @@ trait SharedLeveldbPluginDocSpec {
 class MyJournal extends AsyncWriteJournal {
   def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = ???
   def asyncWriteConfirmations(confirmations: Seq[PersistentConfirmation]): Future[Unit] = ???
-  def asyncDeleteMessages(messageIds: Seq[PersistentId], permanent: Boolean): Future[Unit] = ???
-  def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
-  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
-  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] = ???
+  def asyncDeleteMessages(messageIds: Seq[PersistenceId], permanent: Boolean): Future[Unit] = ???
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = ???
 }
 
 class MySnapshotStore extends SnapshotStore {
-  def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
+  def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
   def saved(metadata: SnapshotMetadata): Unit = ???
   def delete(metadata: SnapshotMetadata): Unit = ???
-  def delete(processorId: String, criteria: SnapshotSelectionCriteria): Unit = ???
+  def delete(persistenceId: String, criteria: SnapshotSelectionCriteria): Unit = ???
 }

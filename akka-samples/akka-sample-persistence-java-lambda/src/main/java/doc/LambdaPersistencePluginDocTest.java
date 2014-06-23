@@ -6,7 +6,6 @@ package doc;
 
 //#plugin-imports
 import akka.japi.pf.ReceiveBuilder;
-import scala.PartialFunction;
 import scala.concurrent.Future;
 import akka.japi.Option;
 import akka.japi.Procedure;
@@ -17,7 +16,6 @@ import akka.persistence.snapshot.japi.*;
 import akka.actor.*;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
-import scala.runtime.BoxedUnit;
 
 public class LambdaPersistencePluginDocTest {
 
@@ -55,7 +53,7 @@ public class LambdaPersistencePluginDocTest {
 
   class MySnapshotStore extends SnapshotStore {
     @Override
-    public Future<Option<SelectedSnapshot>> doLoadAsync(String processorId, SnapshotSelectionCriteria criteria) {
+    public Future<Option<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria) {
       return null;
     }
 
@@ -73,7 +71,7 @@ public class LambdaPersistencePluginDocTest {
     }
 
     @Override
-    public void doDelete(String processorId, SnapshotSelectionCriteria criteria) throws Exception {
+    public void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception {
     }
   }
 
@@ -89,17 +87,17 @@ public class LambdaPersistencePluginDocTest {
     }
 
     @Override
-    public Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent) {
+    public Future<Void> doAsyncDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent) {
       return null;
     }
 
     @Override
-    public Future<Void> doAsyncDeleteMessagesTo(String processorId, long toSequenceNr, boolean permanent) {
+    public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr, boolean permanent) {
       return null;
     }
 
     @Override
-    public Future<Void> doAsyncReplayMessages(String processorId, long fromSequenceNr,
+    public Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr,
                                               long toSequenceNr,
                                               long max,
                                               Procedure<PersistentRepr> replayCallback) {
@@ -107,7 +105,7 @@ public class LambdaPersistencePluginDocTest {
     }
 
     @Override
-    public Future<Long> doAsyncReadHighestSequenceNr(String processorId, long fromSequenceNr) {
+    public Future<Long> doAsyncReadHighestSequenceNr(String persistenceId, long fromSequenceNr) {
       return null;
     }
   }

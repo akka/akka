@@ -37,9 +37,9 @@ private[persistence] trait InmemMessages {
   // processor id -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
-  def add(p: PersistentRepr) = messages = messages + (messages.get(p.processorId) match {
-    case Some(ms) ⇒ p.processorId -> (ms :+ p)
-    case None     ⇒ p.processorId -> Vector(p)
+  def add(p: PersistentRepr) = messages = messages + (messages.get(p.persistenceId) match {
+    case Some(ms) ⇒ p.persistenceId -> (ms :+ p)
+    case None     ⇒ p.persistenceId -> Vector(p)
   })
 
   def update(pid: String, snr: Long)(f: PersistentRepr ⇒ PersistentRepr) = messages = messages.get(pid) match {
@@ -79,11 +79,11 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
     case WriteMessages(msgs) ⇒
       sender ! msgs.foreach(add)
     case WriteConfirmations(cnfs) ⇒
-      sender ! cnfs.foreach(cnf ⇒ update(cnf.processorId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
+      sender ! cnfs.foreach(cnf ⇒ update(cnf.persistenceId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
     case DeleteMessages(msgIds, false) ⇒
-      sender ! msgIds.foreach(msgId ⇒ update(msgId.processorId, msgId.sequenceNr)(_.update(deleted = true)))
+      sender ! msgIds.foreach(msgId ⇒ update(msgId.persistenceId, msgId.sequenceNr)(_.update(deleted = true)))
     case DeleteMessages(msgIds, true) ⇒
-      sender ! msgIds.foreach(msgId ⇒ delete(msgId.processorId, msgId.sequenceNr))
+      sender ! msgIds.foreach(msgId ⇒ delete(msgId.persistenceId, msgId.sequenceNr))
     case DeleteMessagesTo(pid, tsnr, false) ⇒
       sender ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
     case DeleteMessagesTo(pid, tsnr, true) ⇒
@@ -91,7 +91,7 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
       read(pid, fromSnr, toSnr, max).foreach(sender ! _)
       sender ! ReplaySuccess
-    case ReadHighestSequenceNr(processorId, _) ⇒
-      sender ! highestSequenceNr(processorId)
+    case ReadHighestSequenceNr(persistenceId, _) ⇒
+      sender ! highestSequenceNr(persistenceId)
   }
 }

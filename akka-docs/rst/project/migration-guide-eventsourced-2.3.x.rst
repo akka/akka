@@ -84,7 +84,7 @@ Processors
   channel in order to avoid redundant replies during replay. Sender references of type ``PromiseActorRef`` are
   not journaled, they are ``system.deadLetters`` on replay.
 - Supports :ref:`snapshots`.
-- :ref:`processor-identifiers` are of type ``String``, have a default value and can be overridden by applications.
+- :ref:`persistence-identifiers` are of type ``String``, have a default value and can be overridden by applications.
 - Supports :ref:`batch-writes`.
 - Supports stashing of messages.
 

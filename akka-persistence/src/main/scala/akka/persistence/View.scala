@@ -50,7 +50,7 @@ case object Update {
  * message stream as [[Persistent]] messages. These messages can be processed to update internal state
  * in order to maintain an (eventual consistent) view of the state of the corresponding processor. A
  * view can also run on a different node, provided that a replicated journal is used. Implementation
- * classes reference a processor by implementing `processorId`.
+ * classes reference a processor by implementing `persistenceId`.
  *
  * Views can also store snapshots of internal state by calling [[#saveSnapshot]]. The snapshots of a view
  * are independent of those of the referenced processor. During recovery, a saved snapshot is offered
@@ -106,7 +106,7 @@ trait View extends Actor with Recovery {
       case r: Recover ⇒ // ignore
       case Update(awaitUpdate, replayMax) ⇒
         _currentState = replayStarted(await = awaitUpdate)
-        journal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, replayMax, processorId, self)
+        journal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, replayMax, persistenceId, self)
       case other ⇒ process(receive, other)
     }
   }
@@ -132,7 +132,7 @@ trait View extends Actor with Recovery {
     if (await) receiverStash.unstashAll()
   }
 
-  private val _viewId = extension.processorId(self)
+  private val _viewId = extension.persistenceId(self)
   private val viewSettings = extension.settings.view
 
   private var schedule: Option[Cancellable] = None

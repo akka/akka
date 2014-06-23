@@ -14,10 +14,10 @@ interface SnapshotStorePlugin {
     /**
      * Java API, Plugin API: asynchronously loads a snapshot.
      *
-     * @param processorId processor id.
+     * @param persistenceId processor id.
      * @param criteria selection criteria for loading.
      */
-    Future<Option<SelectedSnapshot>> doLoadAsync(String processorId, SnapshotSelectionCriteria criteria);
+    Future<Option<SelectedSnapshot>> doLoadAsync(String persistenceId, SnapshotSelectionCriteria criteria);
 
     /**
      * Java API, Plugin API: asynchronously saves a snapshot.
@@ -44,9 +44,9 @@ interface SnapshotStorePlugin {
     /**
      * Java API, Plugin API: deletes all snapshots matching `criteria`.
      *
-     * @param processorId processor id.
+     * @param persistenceId processor id.
      * @param criteria selection criteria for deleting.
      */
-    void doDelete(String processorId, SnapshotSelectionCriteria criteria) throws Exception;
+    void doDelete(String persistenceId, SnapshotSelectionCriteria criteria) throws Exception;
     //#snapshot-store-plugin-api
 }

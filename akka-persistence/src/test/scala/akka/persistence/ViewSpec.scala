@@ -27,7 +27,7 @@ object ViewSpec {
       this(name, probe, 100.milliseconds)
 
     override def autoUpdateInterval: FiniteDuration = interval.dilated(context.system)
-    override val processorId: String = name
+    override val persistenceId: String = name
 
     var last: String = _
 
@@ -50,7 +50,7 @@ object ViewSpec {
   }
 
   class PassiveTestView(name: String, probe: ActorRef, var failAt: Option[String]) extends View {
-    override val processorId: String = name
+    override val persistenceId: String = name
 
     override def autoUpdate: Boolean = false
     override def autoUpdateReplayMax: Long = 0L // no message replay during initial recovery
@@ -70,10 +70,11 @@ object ViewSpec {
       super.postRestart(reason)
       failAt = None
     }
+
   }
 
   class ActiveTestView(name: String, probe: ActorRef) extends View {
-    override val processorId: String = name
+    override val persistenceId: String = name
     override def autoUpdateInterval: FiniteDuration = 50.millis
     override def autoUpdateReplayMax: Long = 2
 
@@ -92,8 +93,8 @@ object ViewSpec {
   }
 
   class EmittingView(name: String, destination: ActorRef) extends View {
+    override val persistenceId: String = name
     override def autoUpdateInterval: FiniteDuration = 100.milliseconds.dilated(context.system)
-    override val processorId: String = name
 
     val channel = context.actorOf(Channel.props(s"${name}-channel"))
 
@@ -106,9 +107,10 @@ object ViewSpec {
   }
 
   class SnapshottingView(name: String, probe: ActorRef) extends View {
-    override def autoUpdateInterval: FiniteDuration = 100.microseconds.dilated(context.system)
-    override val processorId: String = name
+    override val persistenceId: String = name
     override val viewId: String = s"${name}-replicator"
+
+    override def autoUpdateInterval: FiniteDuration = 100.microseconds.dilated(context.system)
 
     var last: String = _
 

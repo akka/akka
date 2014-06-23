@@ -53,7 +53,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
   "A processor with a failing snapshot" must {
     "recover state starting from the most recent complete snapshot" in {
       val sProcessor = system.actorOf(Props(classOf[SaveSnapshotTestProcessor], name, testActor))
-      val processorId = name
+      val persistenceId = name
 
       expectMsg(RecoveryCompleted)
       sProcessor ! Persistent("blahonga")
@@ -67,7 +67,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
         val lProcessor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
         lProcessor ! Recover()
         expectMsgPF() {
-          case (SnapshotMetadata(`processorId`, 1, timestamp), state) ⇒
+          case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
             state should be("blahonga")
             timestamp should be > (0L)
         }

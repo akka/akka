@@ -721,20 +721,20 @@ public final class MessageFormats {
      */
     long getSequenceNr();
 
-    // optional string processorId = 3;
+    // optional string persistenceId = 3;
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
-    boolean hasProcessorId();
+    boolean hasPersistenceId();
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
-    java.lang.String getProcessorId();
+    java.lang.String getPersistenceId();
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
     com.google.protobuf.ByteString
-        getProcessorIdBytes();
+        getPersistenceIdBytes();
 
     // optional bool deleted = 4;
     /**
@@ -901,7 +901,7 @@ public final class MessageFormats {
             }
             case 26: {
               bitField0_ |= 0x00000004;
-              processorId_ = input.readBytes();
+              persistenceId_ = input.readBytes();
               break;
             }
             case 32: {
@@ -1031,20 +1031,20 @@ public final class MessageFormats {
       return sequenceNr_;
     }
 
-    // optional string processorId = 3;
-    public static final int PROCESSORID_FIELD_NUMBER = 3;
-    private java.lang.Object processorId_;
+    // optional string persistenceId = 3;
+    public static final int PersistenceId_FIELD_NUMBER = 3;
+    private java.lang.Object persistenceId_;
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
-    public boolean hasProcessorId() {
+    public boolean hasPersistenceId() {
       return ((bitField0_ & 0x00000004) == 0x00000004);
     }
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
-    public java.lang.String getProcessorId() {
-      java.lang.Object ref = processorId_;
+    public java.lang.String getPersistenceId() {
+      java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -1052,22 +1052,22 @@ public final class MessageFormats {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          processorId_ = s;
+          persistenceId_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>optional string processorId = 3;</code>
+     * <code>optional string persistenceId = 3;</code>
      */
     public com.google.protobuf.ByteString
-        getProcessorIdBytes() {
-      java.lang.Object ref = processorId_;
+        getPersistenceIdBytes() {
+      java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        processorId_ = b;
+        persistenceId_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
@@ -1263,7 +1263,7 @@ public final class MessageFormats {
     private void initFields() {
       payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
       sequenceNr_ = 0L;
-      processorId_ = "";
+      persistenceId_ = "";
       deleted_ = false;
       redeliveries_ = 0;
       confirms_ = com.google.protobuf.LazyStringArrayList.EMPTY;
@@ -1297,7 +1297,7 @@ public final class MessageFormats {
         output.writeInt64(2, sequenceNr_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        output.writeBytes(3, getProcessorIdBytes());
+        output.writeBytes(3, getPersistenceIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         output.writeBool(4, deleted_);
@@ -1339,7 +1339,7 @@ public final class MessageFormats {
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(3, getProcessorIdBytes());
+          .computeBytesSize(3, getPersistenceIdBytes());
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
         size += com.google.protobuf.CodedOutputStream
@@ -1500,7 +1500,7 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000001);
         sequenceNr_ = 0L;
         bitField0_ = (bitField0_ & ~0x00000002);
-        processorId_ = "";
+        persistenceId_ = "";
         bitField0_ = (bitField0_ & ~0x00000004);
         deleted_ = false;
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1563,7 +1563,7 @@ public final class MessageFormats {
         if (((from_bitField0_ & 0x00000004) == 0x00000004)) {
           to_bitField0_ |= 0x00000004;
         }
-        result.processorId_ = processorId_;
+        result.persistenceId_ = persistenceId_;
         if (((from_bitField0_ & 0x00000008) == 0x00000008)) {
           to_bitField0_ |= 0x00000008;
         }
@@ -1620,9 +1620,9 @@ public final class MessageFormats {
         if (other.hasSequenceNr()) {
           setSequenceNr(other.getSequenceNr());
         }
-        if (other.hasProcessorId()) {
+        if (other.hasPersistenceId()) {
           bitField0_ |= 0x00000004;
-          processorId_ = other.processorId_;
+          persistenceId_ = other.persistenceId_;
           onChanged();
         }
         if (other.hasDeleted()) {
@@ -1840,76 +1840,76 @@ public final class MessageFormats {
         return this;
       }
 
-      // optional string processorId = 3;
-      private java.lang.Object processorId_ = "";
+      // optional string persistenceId = 3;
+      private java.lang.Object persistenceId_ = "";
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
-      public boolean hasProcessorId() {
+      public boolean hasPersistenceId() {
         return ((bitField0_ & 0x00000004) == 0x00000004);
       }
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
-      public java.lang.String getProcessorId() {
-        java.lang.Object ref = processorId_;
+      public java.lang.String getPersistenceId() {
+        java.lang.Object ref = persistenceId_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((com.google.protobuf.ByteString) ref)
               .toStringUtf8();
-          processorId_ = s;
+          persistenceId_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
       public com.google.protobuf.ByteString
-          getProcessorIdBytes() {
-        java.lang.Object ref = processorId_;
+          getPersistenceIdBytes() {
+        java.lang.Object ref = persistenceId_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          processorId_ = b;
+          persistenceId_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
-      public Builder setProcessorId(
+      public Builder setPersistenceId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000004;
-        processorId_ = value;
+        persistenceId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
-      public Builder clearProcessorId() {
+      public Builder clearPersistenceId() {
         bitField0_ = (bitField0_ & ~0x00000004);
-        processorId_ = getDefaultInstance().getProcessorId();
+        persistenceId_ = getDefaultInstance().getPersistenceId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string processorId = 3;</code>
+       * <code>optional string persistenceId = 3;</code>
        */
-      public Builder setProcessorIdBytes(
+      public Builder setPersistenceIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000004;
-        processorId_ = value;
+        persistenceId_ = value;
         onChanged();
         return this;
       }
@@ -2965,20 +2965,20 @@ public final class MessageFormats {
   public interface DeliveredMessageOrBuilder
       extends com.google.protobuf.MessageOrBuilder {
 
-    // optional string processorId = 1;
+    // optional string persistenceId = 1;
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
-    boolean hasProcessorId();
+    boolean hasPersistenceId();
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
-    java.lang.String getProcessorId();
+    java.lang.String getPersistenceId();
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
     com.google.protobuf.ByteString
-        getProcessorIdBytes();
+        getPersistenceIdBytes();
 
     // optional string channelId = 2;
     /**
@@ -3083,7 +3083,7 @@ public final class MessageFormats {
             }
             case 10: {
               bitField0_ |= 0x00000001;
-              processorId_ = input.readBytes();
+              persistenceId_ = input.readBytes();
               break;
             }
             case 18: {
@@ -3146,20 +3146,20 @@ public final class MessageFormats {
     }
 
     private int bitField0_;
-    // optional string processorId = 1;
-    public static final int PROCESSORID_FIELD_NUMBER = 1;
-    private java.lang.Object processorId_;
+    // optional string persistenceId = 1;
+    public static final int PersistenceId_FIELD_NUMBER = 1;
+    private java.lang.Object persistenceId_;
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
-    public boolean hasProcessorId() {
+    public boolean hasPersistenceId() {
       return ((bitField0_ & 0x00000001) == 0x00000001);
     }
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
-    public java.lang.String getProcessorId() {
-      java.lang.Object ref = processorId_;
+    public java.lang.String getPersistenceId() {
+      java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
@@ -3167,22 +3167,22 @@ public final class MessageFormats {
             (com.google.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
-          processorId_ = s;
+          persistenceId_ = s;
         }
         return s;
       }
     }
     /**
-     * <code>optional string processorId = 1;</code>
+     * <code>optional string persistenceId = 1;</code>
      */
     public com.google.protobuf.ByteString
-        getProcessorIdBytes() {
-      java.lang.Object ref = processorId_;
+        getPersistenceIdBytes() {
+      java.lang.Object ref = persistenceId_;
       if (ref instanceof java.lang.String) {
         com.google.protobuf.ByteString b = 
             com.google.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
-        processorId_ = b;
+        persistenceId_ = b;
         return b;
       } else {
         return (com.google.protobuf.ByteString) ref;
@@ -3308,7 +3308,7 @@ public final class MessageFormats {
     }
 
     private void initFields() {
-      processorId_ = "";
+      persistenceId_ = "";
       channelId_ = "";
       persistentSequenceNr_ = 0L;
       deliverySequenceNr_ = 0L;
@@ -3327,7 +3327,7 @@ public final class MessageFormats {
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        output.writeBytes(1, getProcessorIdBytes());
+        output.writeBytes(1, getPersistenceIdBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         output.writeBytes(2, getChannelIdBytes());
@@ -3352,7 +3352,7 @@ public final class MessageFormats {
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
         size += com.google.protobuf.CodedOutputStream
-          .computeBytesSize(1, getProcessorIdBytes());
+          .computeBytesSize(1, getPersistenceIdBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
         size += com.google.protobuf.CodedOutputStream
@@ -3486,7 +3486,7 @@ public final class MessageFormats {
 
       public Builder clear() {
         super.clear();
-        processorId_ = "";
+        persistenceId_ = "";
         bitField0_ = (bitField0_ & ~0x00000001);
         channelId_ = "";
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -3527,7 +3527,7 @@ public final class MessageFormats {
         if (((from_bitField0_ & 0x00000001) == 0x00000001)) {
           to_bitField0_ |= 0x00000001;
         }
-        result.processorId_ = processorId_;
+        result.persistenceId_ = persistenceId_;
         if (((from_bitField0_ & 0x00000002) == 0x00000002)) {
           to_bitField0_ |= 0x00000002;
         }
@@ -3560,9 +3560,9 @@ public final class MessageFormats {
 
       public Builder mergeFrom(akka.persistence.serialization.MessageFormats.DeliveredMessage other) {
         if (other == akka.persistence.serialization.MessageFormats.DeliveredMessage.getDefaultInstance()) return this;
-        if (other.hasProcessorId()) {
+        if (other.hasPersistenceId()) {
           bitField0_ |= 0x00000001;
-          processorId_ = other.processorId_;
+          persistenceId_ = other.persistenceId_;
           onChanged();
         }
         if (other.hasChannelId()) {
@@ -3608,76 +3608,76 @@ public final class MessageFormats {
       }
       private int bitField0_;
 
-      // optional string processorId = 1;
-      private java.lang.Object processorId_ = "";
+      // optional string persistenceId = 1;
+      private java.lang.Object persistenceId_ = "";
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
-      public boolean hasProcessorId() {
+      public boolean hasPersistenceId() {
         return ((bitField0_ & 0x00000001) == 0x00000001);
       }
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
-      public java.lang.String getProcessorId() {
-        java.lang.Object ref = processorId_;
+      public java.lang.String getPersistenceId() {
+        java.lang.Object ref = persistenceId_;
         if (!(ref instanceof java.lang.String)) {
           java.lang.String s = ((com.google.protobuf.ByteString) ref)
               .toStringUtf8();
-          processorId_ = s;
+          persistenceId_ = s;
           return s;
         } else {
           return (java.lang.String) ref;
         }
       }
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
       public com.google.protobuf.ByteString
-          getProcessorIdBytes() {
-        java.lang.Object ref = processorId_;
+          getPersistenceIdBytes() {
+        java.lang.Object ref = persistenceId_;
         if (ref instanceof String) {
           com.google.protobuf.ByteString b = 
               com.google.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
-          processorId_ = b;
+          persistenceId_ = b;
           return b;
         } else {
           return (com.google.protobuf.ByteString) ref;
         }
       }
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
-      public Builder setProcessorId(
+      public Builder setPersistenceId(
           java.lang.String value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        processorId_ = value;
+        persistenceId_ = value;
         onChanged();
         return this;
       }
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
-      public Builder clearProcessorId() {
+      public Builder clearPersistenceId() {
         bitField0_ = (bitField0_ & ~0x00000001);
-        processorId_ = getDefaultInstance().getProcessorId();
+        persistenceId_ = getDefaultInstance().getPersistenceId();
         onChanged();
         return this;
       }
       /**
-       * <code>optional string processorId = 1;</code>
+       * <code>optional string persistenceId = 1;</code>
        */
-      public Builder setProcessorIdBytes(
+      public Builder setPersistenceIdBytes(
           com.google.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
   bitField0_ |= 0x00000001;
-        processorId_ = value;
+        persistenceId_ = value;
         onChanged();
         return this;
       }
@@ -4620,14 +4620,14 @@ public final class MessageFormats {
       "ageBatch\022!\n\005batch\030\001 \003(\0132\022.PersistentMess" +
       "age\"\201\002\n\021PersistentMessage\022#\n\007payload\030\001 \001" +
       "(\0132\022.PersistentPayload\022\022\n\nsequenceNr\030\002 \001" +
-      "(\003\022\023\n\013processorId\030\003 \001(\t\022\017\n\007deleted\030\004 \001(\010" +
+      "(\003\022\023\n\013persistenceId\030\003 \001(\t\022\017\n\007deleted\030\004 \001(\010" +
       "\022\024\n\014redeliveries\030\006 \001(\005\022\020\n\010confirms\030\007 \003(\t" +
       "\022\023\n\013confirmable\030\010 \001(\010\022)\n\016confirmMessage\030" +
       "\t \001(\0132\021.DeliveredMessage\022\025\n\rconfirmTarge" +
       "t\030\n \001(\t\022\016\n\006sender\030\013 \001(\t\"S\n\021PersistentPay" +
       "load\022\024\n\014serializerId\030\001 \002(\005\022\017\n\007payload\030\002 ",
       "\002(\014\022\027\n\017payloadManifest\030\003 \001(\014\"\205\001\n\020Deliver" +
-      "edMessage\022\023\n\013processorId\030\001 \001(\t\022\021\n\tchanne" +
+      "edMessage\022\023\n\013persistenceId\030\001 \001(\t\022\021\n\tchanne" +
       "lId\030\002 \001(\t\022\034\n\024persistentSequenceNr\030\003 \001(\003\022" +
       "\032\n\022deliverySequenceNr\030\004 \001(\003\022\017\n\007channel\030\005" +
       " \001(\t\"M\n\016DeliverMessage\022&\n\npersistent\030\001 \001" +
@@ -4650,7 +4650,7 @@ public final class MessageFormats {
           internal_static_PersistentMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentMessage_descriptor,
-              new java.lang.String[] { "Payload", "SequenceNr", "ProcessorId", "Deleted", "Redeliveries", "Confirms", "Confirmable", "ConfirmMessage", "ConfirmTarget", "Sender", });
+              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Redeliveries", "Confirms", "Confirmable", "ConfirmMessage", "ConfirmTarget", "Sender", });
           internal_static_PersistentPayload_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_PersistentPayload_fieldAccessorTable = new
@@ -4662,7 +4662,7 @@ public final class MessageFormats {
           internal_static_DeliveredMessage_fieldAccessorTable = new
             com.google.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_DeliveredMessage_descriptor,
-              new java.lang.String[] { "ProcessorId", "ChannelId", "PersistentSequenceNr", "DeliverySequenceNr", "Channel", });
+              new java.lang.String[] { "PersistenceId", "ChannelId", "PersistentSequenceNr", "DeliverySequenceNr", "Channel", });
           internal_static_DeliverMessage_descriptor =
             getDescriptor().getMessageTypes().get(4);
           internal_static_DeliverMessage_fieldAccessorTable = new

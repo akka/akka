@@ -77,7 +77,7 @@ trait Cleanup { this: AkkaSpec ⇒
 }
 
 abstract class NamedProcessor(name: String) extends Processor {
-  override def processorId: String = name
+  override def persistenceId: String = name
 }
 
 trait TurnOffRecoverOnStart { this: Processor ⇒

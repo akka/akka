@@ -97,11 +97,6 @@ trait Processor extends Actor with Recovery {
       case p: PersistentRepr ⇒
         addToBatch(p)
         if (!batching || maxBatchSizeReached) journalBatch()
-      //      case rb: ResequenceableBatch ⇒
-      //        // submit all batched messages before submitting this user batch (isolated)
-      //        if (!processorBatch.isEmpty) journalBatch()
-      //        addToBatch(rb)
-      //        journalBatch()
       case pb: PersistentBatch ⇒
         // submit all batched messages before submitting this user batch (isolated)
         if (!processorBatch.isEmpty) journalBatch()
@@ -115,7 +110,7 @@ trait Processor extends Actor with Recovery {
 
     def addToBatch(p: Resequenceable): Unit = p match {
       case p: PersistentRepr ⇒
-        processorBatch = processorBatch :+ p.update(processorId = processorId, sequenceNr = nextSequenceNr(), sender = sender())
+        processorBatch = processorBatch :+ p.update(persistenceId = persistenceId, sequenceNr = nextSequenceNr(), sender = sender())
       case r ⇒
         processorBatch = processorBatch :+ r
     }
@@ -140,7 +135,7 @@ trait Processor extends Actor with Recovery {
    */
   private[persistence] def onReplaySuccess(receive: Receive, awaitReplay: Boolean): Unit = {
     _currentState = initializing
-    journal ! ReadHighestSequenceNr(lastSequenceNr, processorId, self)
+    journal ! ReadHighestSequenceNr(lastSequenceNr, persistenceId, self)
   }
 
   /**
@@ -161,7 +156,7 @@ trait Processor extends Actor with Recovery {
   private def onRecoveryCompleted(receive: Receive): Unit =
     receive.applyOrElse(RecoveryCompleted, unhandled)
 
-  private val _processorId = extension.processorId(self)
+  private val _persistenceId = extension.persistenceId(self)
 
   private var processorBatch = Vector.empty[Resequenceable]
   private var sequenceNr: Long = 0L
@@ -169,12 +164,18 @@ trait Processor extends Actor with Recovery {
   /**
    * Processor id. Defaults to this processor's path and can be overridden.
    */
-  def processorId: String = _processorId
+  @deprecated("Override `persistenceId: String` instead. Processor will be removed.", since = "2.3.4")
+  override def processorId: String = _persistenceId // TODO: remove processorId
 
   /**
-   * Returns `processorId`.
+   * Persistence id. Defaults to this persistent-actors's path and can be overridden.
    */
-  def snapshotterId: String = processorId
+  override def persistenceId: String = processorId
+
+  /**
+   * Returns `persistenceId`.
+   */
+  def snapshotterId: String = persistenceId
 
   /**
    * Returns `true` if this processor is currently recovering.
@@ -197,7 +198,7 @@ trait Processor extends Actor with Recovery {
    * @param sequenceNr sequence number of the persistent message to be deleted.
    */
   def deleteMessage(sequenceNr: Long): Unit = {
-    deleteMessage(sequenceNr, false)
+    deleteMessage(sequenceNr, permanent = false)
   }
 
   /**
@@ -212,7 +213,7 @@ trait Processor extends Actor with Recovery {
    * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
    */
   def deleteMessage(sequenceNr: Long, permanent: Boolean): Unit = {
-    journal ! DeleteMessages(List(PersistentIdImpl(processorId, sequenceNr)), permanent)
+    journal ! DeleteMessages(List(PersistenceIdImpl(persistenceId, sequenceNr)), permanent)
   }
 
   /**
@@ -221,7 +222,7 @@ trait Processor extends Actor with Recovery {
    * @param toSequenceNr upper sequence number bound of persistent messages to be deleted.
    */
   def deleteMessages(toSequenceNr: Long): Unit = {
-    deleteMessages(toSequenceNr, true)
+    deleteMessages(toSequenceNr, permanent = true)
   }
 
   /**
@@ -233,7 +234,7 @@ trait Processor extends Actor with Recovery {
    * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
    */
   def deleteMessages(toSequenceNr: Long, permanent: Boolean): Unit = {
-    journal ! DeleteMessagesTo(processorId, toSequenceNr, permanent)
+    journal ! DeleteMessagesTo(persistenceId, toSequenceNr, permanent)
   }
 
   /**
@@ -300,13 +301,13 @@ trait Processor extends Actor with Recovery {
     message match {
       case RecoveryCompleted ⇒ // mute
       case RecoveryFailure(cause) ⇒
-        val errorMsg = s"Processor killed after recovery failure (processor id = [${processorId}]). " +
+        val errorMsg = s"Processor killed after recovery failure (persisten id = [${persistenceId}]). " +
           "To avoid killing processors on recovery failure, a processor must handle RecoveryFailure messages. " +
           "RecoveryFailure was caused by: " + cause
         throw new ActorKilledException(errorMsg)
       case PersistenceFailure(payload, sequenceNumber, cause) ⇒
         val errorMsg = "Processor killed after persistence failure " +
-          s"(processor id = [${processorId}], sequence nr = [${sequenceNumber}], payload class = [${payload.getClass.getName}]). " +
+          s"(persistent id = [${persistenceId}], sequence nr = [${sequenceNumber}], payload class = [${payload.getClass.getName}]). " +
           "To avoid killing processors on persistence failure, a processor must handle PersistenceFailure messages. " +
           "PersistenceFailure was caused by: " + cause
         throw new ActorKilledException(errorMsg)

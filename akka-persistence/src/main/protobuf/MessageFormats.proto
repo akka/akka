@@ -12,7 +12,7 @@ message PersistentMessageBatch {
 message PersistentMessage {
   optional PersistentPayload payload = 1;
   optional int64 sequenceNr = 2;
-  optional string processorId = 3;
+  optional string persistenceId = 3;
   optional bool deleted = 4;
   optional int32 redeliveries = 6;
   repeated string confirms = 7;
@@ -29,7 +29,7 @@ message PersistentPayload {
 }
 
 message DeliveredMessage {
-  optional string processorId = 1;
+  optional string persistenceId = 1;
   optional string channelId = 2;
   optional int64 persistentSequenceNr = 3;
   optional int64 deliverySequenceNr = 4;

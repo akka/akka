@@ -18,7 +18,7 @@ object ViewExample extends App {
   class ExampleView extends View {
     private var numReplicated = 0
 
-    override def processorId = "processor-5"
+    override def persistenceId: String = "processor-5"
     override def viewId = "view-5"
 
     private val destination = context.actorOf(Props[ExampleDestination])
@@ -35,6 +35,7 @@ object ViewExample extends App {
         println(s"view received ${payload} (sequence nr = ${sequenceNr}, num replicated = ${numReplicated})")
         channel ! Deliver(Persistent(s"replicated-${payload}"), destination.path)
     }
+
   }
 
   class ExampleDestination extends Actor {

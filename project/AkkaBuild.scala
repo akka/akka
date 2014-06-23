@@ -1030,29 +1030,14 @@ object AkkaBuild extends Build {
       // Change of private method to protected by #15212
       ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.snapshot.local.LocalSnapshotStore.akka$persistence$snapshot$local$LocalSnapshotStore$$save"),
 
-      // Changes in akka-stream-experimental - still source compatible (2.3.3 -> 2.3.4)
+      // Changes in akka-stream-experimental are not binary compatible - still source compatible (2.3.3 -> 2.3.4)
       // Adding `PersistentActor.persistAsync`
       // Adding `PersistentActor.defer`
-      FilterAnyProblem("akka.persistence.Recovery"),
-      FilterAnyProblem("akka.persistence.Eventsourced"),
-      FilterAnyProblem("akka.persistence.UntypedEventsourcedProcessor"),
-      FilterAnyProblem("akka.persistence.AbstractEventsourcedProcessor"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.PersistentBatch.persistentBatch"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.PersistentBatch.persistentReprList"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure"), // renamed internal messages
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$"), // renamed internal messages
-
       // Changes in akka-persistence-experimental in #13944
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.Processor.akka$persistence$Processor$$super$unhandled"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.RecoveryException$"),
-
       // Changes in private LevelDB Store by #13962
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.SharedLeveldbStore.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.persistence.journal.leveldb.LeveldbJournal.akka$persistence$journal$leveldb$LeveldbStore$_setter_$leveldbReadOptions_="),
-      ProblemFilters.exclude[MissingClassProblem]("akka.persistence.JournalProtocol$WriteMessagesFailure$"), // renamed internall messages
-      
+      // Renamed `processorId` to `persistenceId`
+      ProblemFilters.excludePackage("akka.persistence"),
+
       // Adding wildcardFanOut to internal message ActorSelectionMessage by #13992
       FilterAnyProblem("akka.actor.ActorSelectionMessage$"),
       FilterAnyProblem("akka.actor.ActorSelectionMessage"),

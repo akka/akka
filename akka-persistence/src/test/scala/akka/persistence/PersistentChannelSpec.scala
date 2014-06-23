@@ -71,8 +71,8 @@ abstract class PersistentChannelSpec(config: Config) extends ChannelSpec(config)
     "not modify certain persistent message fields" in {
       val destProbe = TestProbe()
 
-      val persistent1 = PersistentRepr(payload = "a", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel, sequenceNr = 13)
-      val persistent2 = PersistentRepr(payload = "b", processorId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel)
+      val persistent1 = PersistentRepr(payload = "a", persistenceId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel, sequenceNr = 13)
+      val persistent2 = PersistentRepr(payload = "b", persistenceId = "p1", confirms = List("c1", "c2"), sender = defaultTestChannel)
 
       defaultTestChannel ! Deliver(persistent1, destProbe.ref.path)
       defaultTestChannel ! Deliver(persistent2, destProbe.ref.path)
