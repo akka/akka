@@ -56,7 +56,7 @@ class PersistentActorThroughputBenchmark {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_normalActor_reply_baseline() {
     for (i <- data10k) actor.tell(i, probe.ref)
@@ -64,7 +64,7 @@ class PersistentActorThroughputBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persist_reply() {
     for (i <- data10k) persist1EventProcessor.tell(i, probe.ref)
@@ -72,7 +72,7 @@ class PersistentActorThroughputBenchmark {
     probe.expectMsg(Evt(data10k.last))
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_commandPersist_reply() {
     for (i <- data10k) persist1CommandProcessor.tell(i, probe.ref)
@@ -80,7 +80,7 @@ class PersistentActorThroughputBenchmark {
     probe.expectMsg(Evt(data10k.last))
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_reply() {
     for (i <- data10k) persistAsync1EventProcessor.tell(i, probe.ref)
@@ -88,7 +88,7 @@ class PersistentActorThroughputBenchmark {
     probe.expectMsg(Evt(data10k.last))
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_replyRightOnCommandReceive() {
     for (i <- data10k) persistAsync1QuickReplyEventProcessor.tell(i, probe.ref)
