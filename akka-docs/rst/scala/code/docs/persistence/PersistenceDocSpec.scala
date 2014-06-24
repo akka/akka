@@ -4,11 +4,11 @@
 
 package docs.persistence
 
+import akka.actor.{ Actor, ActorSystem, Props }
+import akka.persistence._
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
-import akka.actor.{ Props, Actor, ActorSystem }
-import akka.persistence._
 
 trait PersistenceDocSpec {
   val config =
@@ -29,7 +29,7 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     //#definition
-    import akka.persistence.{ Persistent, PersistenceFailure, Processor }
+    import akka.persistence.{ PersistenceFailure, Persistent, Processor }
 
     class MyProcessor extends Processor {
       def receive = {
@@ -208,7 +208,7 @@ trait PersistenceDocSpec {
   new AnyRef {
     //#fsm-example
     import akka.actor.FSM
-    import akka.persistence.{ Processor, Persistent }
+    import akka.persistence.{ Persistent, Processor }
 
     class PersistentDoor extends Processor with FSM[String, Int] {
       startWith("closed", 0)
@@ -332,7 +332,6 @@ trait PersistenceDocSpec {
   }
 
   new AnyRef {
-    import akka.actor.ActorRef
 
     val processor = system.actorOf(Props[MyPersistentActor]())
 
@@ -367,7 +366,6 @@ trait PersistenceDocSpec {
     //#persist-async
   }
   new AnyRef {
-    import akka.actor.ActorRef
 
     val processor = system.actorOf(Props[MyPersistentActor]())
 
@@ -409,11 +407,15 @@ trait PersistenceDocSpec {
     import akka.actor.Props
 
     //#view
-    class MyView extends View {
+    class MyView extends PersistentView {
       override def persistenceId: String = "some-persistence-id"
+      override def viewId: String = "some-persistence-id-view"
 
       def receive: Actor.Receive = {
-        case Persistent(payload, sequenceNr) => // ...
+        case payload if isPersistent =>
+        // handle message from journal...
+        case payload                 =>
+        // handle message from user-land...
       }
     }
     //#view

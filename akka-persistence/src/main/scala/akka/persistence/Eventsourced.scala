@@ -6,11 +6,11 @@ package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
 
-import scala.collection.immutable
-
+import akka.actor.AbstractActor
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
-import akka.actor.{ ActorRef, AbstractActor }
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API.
@@ -550,7 +550,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
    * Commands sent to event sourced processors must not be [[Persistent]] or
-   * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
+   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
    * thrown by the processor.
    */
   @throws(classOf[Exception])
@@ -563,7 +563,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
  * communication with other actors). On successful validation, one or more events are
  * derived from a command and these events are then persisted by calling `persist`.
  * Commands sent to event sourced processors must not be [[Persistent]] or
- * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
+ * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
  * thrown by the processor.
  */
 @deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")

@@ -1188,6 +1188,8 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, rebalanceInterval: Finite
   import ShardCoordinator.Internal._
   import ShardRegion.ShardId
 
+  override def persistenceId = self.path.toStringWithoutAddress
+
   var persistentState = State.empty
   var rebalanceInProgress = Set.empty[ShardId]
 
