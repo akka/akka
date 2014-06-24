@@ -30,8 +30,8 @@ object PerformanceSpec {
     var startTime: Long = 0L
     var stopTime: Long = 0L
 
-    var startSequenceNr = 0L;
-    var stopSequenceNr = 0L;
+    var startSequenceNr = 0L
+    var stopSequenceNr = 0L
 
     def startMeasure(): Unit = {
       startSequenceNr = lastSequenceNr
@@ -169,9 +169,9 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
   def stressPersistentChannel(): Unit = {
     val channel = system.actorOf(PersistentChannel.props())
     val destination = system.actorOf(Props[PerformanceTestDestination])
-    1 to warmupCycles foreach { i ⇒ channel ! Deliver(PersistentRepr(s"msg${i}", processorId = "test"), destination.path) }
+    1 to warmupCycles foreach { i ⇒ channel ! Deliver(PersistentRepr(s"msg${i}", persistenceId = "test"), destination.path) }
     channel ! Deliver(Persistent(StartMeasure), destination.path)
-    1 to loadCycles foreach { i ⇒ channel ! Deliver(PersistentRepr(s"msg${i}", processorId = "test"), destination.path) }
+    1 to loadCycles foreach { i ⇒ channel ! Deliver(PersistentRepr(s"msg${i}", persistenceId = "test"), destination.path) }
     channel ! Deliver(Persistent(StopMeasure), destination.path)
     expectMsgPF(100 seconds) {
       case throughput: Double ⇒ println(f"\nthroughput = $throughput%.2f persistent messages per second")
@@ -179,10 +179,10 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
   }
 
   def subscribeToConfirmation(probe: TestProbe): Unit =
-    system.eventStream.subscribe(probe.ref, classOf[DeliveredByPersistentChannel])
+    system.eventStream.subscribe(probe.ref, classOf[DeliveredByPersistenceChannel])
 
   def awaitConfirmation(probe: TestProbe): Unit =
-    probe.expectMsgType[DeliveredByPersistentChannel]
+    probe.expectMsgType[DeliveredByPersistenceChannel]
 
   "A command sourced processor" should {
     "have some reasonable throughput" in {
@@ -213,7 +213,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
       stressPersistentChannel()
 
       probe.fishForMessage(100.seconds) {
-        case DeliveredByPersistentChannel(_, snr, _, _) ⇒ snr == warmupCycles + loadCycles + 2
+        case DeliveredByPersistenceChannel(_, snr, _, _) ⇒ snr == warmupCycles + loadCycles + 2
       }
     }
   }

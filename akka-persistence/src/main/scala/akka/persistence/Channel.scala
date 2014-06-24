@@ -139,7 +139,7 @@ final class Channel private[akka] (_channelId: Option[String], channelSettings: 
   private def prepareDelivery(persistent: PersistentRepr): PersistentRepr =
     ConfirmablePersistentImpl(persistent,
       confirmTarget = journal,
-      confirmMessage = DeliveredByChannel(persistent.processorId, id, persistent.sequenceNr, channel = self))
+      confirmMessage = DeliveredByChannel(persistent.persistenceId, id, persistent.sequenceNr, channel = self))
 }
 
 object Channel {
@@ -216,7 +216,7 @@ trait Delivered extends Message {
  * Plugin API.
  */
 case class DeliveredByChannel(
-  processorId: String,
+  @deprecatedName('processorId) persistenceId: String,
   channelId: String,
   persistentSequenceNr: Long,
   deliverySequenceNr: Long = 0L,

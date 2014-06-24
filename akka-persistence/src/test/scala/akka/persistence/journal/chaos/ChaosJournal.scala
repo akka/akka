@@ -16,7 +16,7 @@ class WriteFailedException(ps: Seq[PersistentRepr])
   extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")
 
 class ConfirmFailedException(cs: Seq[PersistentConfirmation])
-  extends TestException(s"write failed for confirmations = [${cs.map(c ⇒ s"${c.processorId}-${c.sequenceNr}-${c.channelId}")}]")
+  extends TestException(s"write failed for confirmations = [${cs.map(c ⇒ s"${c.persistenceId}-${c.sequenceNr}-${c.channelId}")}]")
 
 class ReplayFailedException(ps: Seq[PersistentRepr])
   extends TestException(s"recovery failed after replaying payloads = [${ps.map(_.payload)}]")
@@ -24,7 +24,7 @@ class ReplayFailedException(ps: Seq[PersistentRepr])
 class ReadHighestFailedException
   extends TestException(s"recovery failed when reading highest sequence number")
 
-class DeleteFailedException(messageIds: immutable.Seq[PersistentId])
+class DeleteFailedException(messageIds: immutable.Seq[PersistenceId])
   extends TestException(s"delete failed for message ids = [${messageIds}]")
 
 /**
@@ -51,30 +51,30 @@ class ChaosJournal extends SyncWriteJournal {
 
   def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Unit =
     if (shouldFail(confirmFailureRate)) throw new ConfirmFailedException(confirmations)
-    else confirmations.foreach(cnf ⇒ update(cnf.processorId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
+    else confirmations.foreach(cnf ⇒ update(cnf.persistenceId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
 
-  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Unit =
+  def deleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Unit =
     if (shouldFail(deleteFailureRate)) throw new DeleteFailedException(messageIds)
-    else if (permanent) messageIds.foreach(mid ⇒ update(mid.processorId, mid.sequenceNr)(_.update(deleted = true)))
-    else messageIds.foreach(mid ⇒ del(mid.processorId, mid.sequenceNr))
+    else if (permanent) messageIds.foreach(mid ⇒ update(mid.persistenceId, mid.sequenceNr)(_.update(deleted = true)))
+    else messageIds.foreach(mid ⇒ del(mid.persistenceId, mid.sequenceNr))
 
-  def deleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Unit =
-    (1L to toSequenceNr).map(PersistentIdImpl(processorId, _))
+  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit =
+    (1L to toSequenceNr).map(PersistenceIdImpl(persistenceId, _))
 
-  def asyncReplayMessages(processorId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) ⇒ Unit): Future[Unit] =
     if (shouldFail(replayFailureRate)) {
-      val rm = read(processorId, fromSequenceNr, toSequenceNr, max)
+      val rm = read(persistenceId, fromSequenceNr, toSequenceNr, max)
       val sm = rm.take(random.nextInt(rm.length + 1))
       sm.foreach(replayCallback)
       Future.failed(new ReplayFailedException(sm))
     } else {
-      read(processorId, fromSequenceNr, toSequenceNr, max).foreach(replayCallback)
+      read(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(replayCallback)
       Future.successful(())
     }
 
-  def asyncReadHighestSequenceNr(processorId: String, fromSequenceNr: Long): Future[Long] =
+  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
     if (shouldFail(readHighestFailureRate)) Future.failed(new ReadHighestFailedException)
-    else Future.successful(highestSequenceNr(processorId))
+    else Future.successful(highestSequenceNr(persistenceId))
 
   def shouldFail(rate: Double): Boolean =
     random.nextDouble() < rate

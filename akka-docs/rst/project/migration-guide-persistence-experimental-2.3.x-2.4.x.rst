@@ -21,7 +21,42 @@ To extend ``PersistentActor``::
 
     class NewPersistentProcessor extends PersistentActor { /*...*/ }
 
-No other API changes are required for this migration.
+
+Renamed processorId to persistenceId
+====================================
+In Akka Persistence ``2.3.3`` and previously, the main building block of applications were Processors.
+Persistent messages, as well as processors implemented the ``processorId`` method to identify which persistent entity a message belonged to.
+
+This concept remains the same in Akka ``2.3.4``, yet we rename ``processorId`` to ``persistenceId`` because Processors will be removed,
+and persistent messages can be used from different classes not only ``PersistentActor`` (Views, directly from Journals etc).
+
+We provided the renamed method also on already deprecated classes (Channels), so you can simply apply a global rename of ``processorId`` to ``persistenceId``.
+
+Plugin APIs: Renamed PersistentId to PersistenceId
+==================================================
+Following the removal of Processors and moving to ``persistenceId``, the plugin SPI visible type has changed.
+The move from ``2.3.3`` to ``2.3.4`` should be relatively painless, and plugins will work even when using the deprecated ``PersistentId`` type.
+
+Change your implementations from::
+
+    def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] = // ...
+
+    def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit] = {
+      val p = messageIds.head.processorId // old
+      // ...
+    }
+
+to::
+
+    def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] = // ...
+
+    def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit] = {
+      val p = messageIds.head.persistenceId // new
+      // ...
+    }
+
+Plugins written for ``2.3.3`` are source level compatible with ``2.3.4``, using the deprecated types, but will not work with future releases.
+Plugin maintainers are asked to update their plugins to ``2.3.4`` as soon as possible.
 
 Removed Processor in favour of extending PersistentActor with persistAsync
 ==========================================================================

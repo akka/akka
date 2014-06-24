@@ -25,23 +25,23 @@ interface AsyncRecoveryPlugin {
      * The channel ids of delivery confirmations that are available for a replayed
      * message must be contained in that message's `confirms` sequence.
      *
-     * @param processorId processor id.
+     * @param persistenceId processor id.
      * @param fromSequenceNr sequence number where replay should start (inclusive).
      * @param toSequenceNr sequence number where replay should end (inclusive).
      * @param max maximum number of messages to be replayed.
      * @param replayCallback called to replay a single message. Can be called from any
      *                       thread.
      */
-    Future<Void> doAsyncReplayMessages(String processorId, long fromSequenceNr, long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback);
+    Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback);
 
     /**
      * Java API, Plugin API: asynchronously reads the highest stored sequence number
-     * for the given `processorId`.
+     * for the given `persistenceId`.
      *
-     * @param processorId processor id.
+     * @param persistenceId processor id.
      * @param fromSequenceNr hint where to start searching for the highest sequence
      *                       number.
      */
-    Future<Long> doAsyncReadHighestSequenceNr(String processorId, long fromSequenceNr);
+    Future<Long> doAsyncReadHighestSequenceNr(String persistenceId, long fromSequenceNr);
     //#async-replay-plugin-api
 }

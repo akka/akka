@@ -61,7 +61,7 @@ object FailureSpec {
 
     val channel = context.actorOf(Channel.props("channel", ChannelSettings(redeliverMax = 10, redeliverInterval = 500 milliseconds)), "channel")
 
-    override def processorId = "chaos"
+    override def persistenceId = "chaos"
 
     def receive = {
       case p @ Persistent(i: Int, _) ⇒

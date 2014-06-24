@@ -33,7 +33,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   private val serializationExtension = SerializationExtension(context.system)
   private var saving = immutable.Set.empty[SnapshotMetadata] // saving in progress
 
-  def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+  def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
     //
     // Heuristics:
     //
@@ -44,7 +44,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     //
     // TODO: make number of loading attempts configurable
     //
-    val metadata = snapshotMetadata(processorId, criteria).sorted.takeRight(3)
+    val metadata = snapshotMetadata(persistenceId, criteria).sorted.takeRight(3)
     Future(load(metadata))(streamDispatcher)
   }
 
@@ -62,8 +62,8 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     snapshotFile(metadata).delete()
   }
 
-  def delete(processorId: String, criteria: SnapshotSelectionCriteria) = {
-    snapshotMetadata(processorId, criteria).foreach(delete)
+  def delete(persistenceId: String, criteria: SnapshotSelectionCriteria) = {
+    snapshotMetadata(persistenceId, criteria).foreach(delete)
   }
 
   @scala.annotation.tailrec
@@ -102,10 +102,10 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     try { p(stream) } finally { stream.close() }
 
   private def snapshotFile(metadata: SnapshotMetadata, extension: String = ""): File =
-    new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.processorId, "UTF-8")}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
+    new File(snapshotDir, s"snapshot-${URLEncoder.encode(metadata.persistenceId, "UTF-8")}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
-  private def snapshotMetadata(processorId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] =
-    snapshotDir.listFiles(new SnapshotFilenameFilter(processorId)).map(_.getName).collect {
+  private def snapshotMetadata(persistenceId: String, criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] =
+    snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId)).map(_.getName).collect {
       case FilenamePattern(pid, snr, tms) ⇒ SnapshotMetadata(URLDecoder.decode(pid, "UTF-8"), snr.toLong, tms.toLong)
     }.filter(md ⇒ criteria.matches(md) && !saving.contains(md)).toVector
 
@@ -119,7 +119,7 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
     super.preStart()
   }
 
-  private class SnapshotFilenameFilter(processorId: String) extends FilenameFilter {
-    def accept(dir: File, name: String): Boolean = name.startsWith(s"snapshot-${URLEncoder.encode(processorId, "UTF-8")}")
+  private class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
+    def accept(dir: File, name: String): Boolean = name.startsWith(s"snapshot-${URLEncoder.encode(persistenceId, "UTF-8")}")
   }
 }

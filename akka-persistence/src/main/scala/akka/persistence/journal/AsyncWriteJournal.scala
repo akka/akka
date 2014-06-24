@@ -43,10 +43,10 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           resequence(WriteMessageFailure(_, e))
       }
       resequencerCounter += resequenceables.length + 1
-    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, processor, replayDeleted) ⇒
       // Send replayed messages and replay result to processor directly. No need
       // to resequence replayed messages relative to written and looped messages.
-      asyncReplayMessages(processorId, fromSequenceNr, toSequenceNr, max) { p ⇒
+      asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
         if (!p.deleted || replayDeleted) processor.tell(ReplayedMessage(p), p.sender)
       } map {
         case _ ⇒ ReplayMessagesSuccess
@@ -55,10 +55,10 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       } pipeTo (processor) onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
-    case ReadHighestSequenceNr(fromSequenceNr, processorId, processor) ⇒
+    case ReadHighestSequenceNr(fromSequenceNr, persistenceId, processor) ⇒
       // Send read highest sequence number to processor directly. No need
       // to resequence the result relative to written and looped messages.
-      asyncReadHighestSequenceNr(processorId, fromSequenceNr).map {
+      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).map {
         highest ⇒ ReadHighestSequenceNrSuccess(highest)
       } recover {
         case e ⇒ ReadHighestSequenceNrFailure(e)
@@ -75,8 +75,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
-    case d @ DeleteMessagesTo(processorId, toSequenceNr, permanent) ⇒
-      asyncDeleteMessagesTo(processorId, toSequenceNr, permanent) onComplete {
+    case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
+      asyncDeleteMessagesTo(persistenceId, toSequenceNr, permanent) onComplete {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
@@ -103,14 +103,14 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * journal. If `permanent` is set to `false`, the persistent messages are marked as
    * deleted, otherwise they are permanently deleted.
    */
-  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit]
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit]
 
   /**
    * Plugin API: asynchronously deletes all persistent messages up to `toSequenceNr`
    * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
    * as deleted, otherwise they are permanently deleted.
    */
-  def asyncDeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit]
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit]
   //#journal-plugin-api
 }
 

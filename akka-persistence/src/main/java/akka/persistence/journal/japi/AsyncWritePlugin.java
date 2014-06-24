@@ -28,7 +28,7 @@ interface AsyncWritePlugin {
      * from the journal. If `permanent` is set to `false`, the persistent messages are
      * marked as deleted, otherwise they are permanently deleted.
      */
-    Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent);
+    Future<Void> doAsyncDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent);
 
     /**
      * Java API, Plugin API: synchronously deletes all persistent messages up to
@@ -37,6 +37,6 @@ interface AsyncWritePlugin {
      *
      * @see AsyncRecoveryPlugin
      */
-    Future<Void> doAsyncDeleteMessagesTo(String processorId, long toSequenceNr, boolean permanent);
+    Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr, boolean permanent);
     //#async-write-plugin-api
 }

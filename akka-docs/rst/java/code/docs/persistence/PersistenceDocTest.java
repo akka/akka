@@ -22,9 +22,9 @@ public class PersistenceDocTest {
     public interface SomeOtherMessage {}
 
     public interface ProcessorMethods {
-        //#processor-id
-        public String processorId();
-        //#processor-id
+        //#persistence-id
+        public String persistenceId();
+        //#persistence-id
         //#recovery-status
         public boolean recoveryRunning();
         public boolean recoveryFinished();
@@ -120,12 +120,12 @@ public class PersistenceDocTest {
         }
 
         class MyProcessor4 extends UntypedProcessor implements ProcessorMethods {
-            //#processor-id-override
+            //#persistence-id-override
             @Override
-            public String processorId() {
-                return "my-stable-processor-id";
+            public String persistenceId() {
+                return "my-stable-persistence-id";
             }
-            //#processor-id-override
+            //#persistence-id-override
             @Override
             public void onReceive(Object message) throws Exception {}
         }
@@ -488,8 +488,8 @@ public class PersistenceDocTest {
         //#view
         class MyView extends UntypedView {
             @Override
-            public String processorId() {
-                return "some-processor-id";
+            public String persistenceId() {
+                return "some-persistence-id";
             }
 
             @Override
