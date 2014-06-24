@@ -137,7 +137,7 @@ Views
 **Akka Persistence:** ``View``
 
 - Receives the message stream written by a ``PersistentActor`` by reading it directly from the
-  journal (see :ref:`views`). Alternative to using channels. Useful in situations where actors shall receive a
+  journal (see :ref:`persistent-views`). Alternative to using channels. Useful in situations where actors shall receive a
   persistent message stream in correct order without duplicates.
 - Supports :ref:`snapshots`.
 

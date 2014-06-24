@@ -52,7 +52,15 @@ import akka.dispatch._
  * @see [[PersistentBatch]]
  */
 @deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-trait Processor extends Actor with Recovery {
+trait Processor extends ProcessorImpl {
+  /**
+   * Persistence id. Defaults to this persistent-actors's path and can be overridden.
+   */
+  override def persistenceId: String = processorId
+}
+
+@deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
+trait ProcessorImpl extends Actor with Recovery {
   // todo remove Processor in favor of PersistentActor #15230
 
   import JournalProtocol._
@@ -166,11 +174,6 @@ trait Processor extends Actor with Recovery {
    */
   @deprecated("Override `persistenceId: String` instead. Processor will be removed.", since = "2.3.4")
   override def processorId: String = _persistenceId // TODO: remove processorId
-
-  /**
-   * Persistence id. Defaults to this persistent-actors's path and can be overridden.
-   */
-  override def persistenceId: String = processorId
 
   /**
    * Returns `persistenceId`.
@@ -412,7 +415,7 @@ case object RecoveryCompleted extends RecoveryCompleted {
  * @see [[PersistentBatch]]
  */
 @deprecated("UntypedProcessor will be removed. Instead extend `akka.persistence.UntypedPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-abstract class UntypedProcessor extends UntypedActor with Processor
+abstract class UntypedProcessor extends UntypedActor with ProcessorImpl
 
 /**
  * Java API: compatible with lambda expressions
@@ -467,4 +470,4 @@ abstract class UntypedProcessor extends UntypedActor with Processor
  * @see [[PersistentBatch]]
  */
 @deprecated("AbstractProcessor will be removed. Instead extend `akka.persistence.AbstractPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-abstract class AbstractProcessor extends AbstractActor with Processor
+abstract class AbstractProcessor extends AbstractActor with ProcessorImpl

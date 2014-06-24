@@ -485,7 +485,7 @@ public class PersistenceDocTest {
 
     static Object o11 = new Object() {
         //#view
-        class MyView extends UntypedView {
+        class MyView extends UntypedPersistentView {
             @Override
             public String persistenceId() {
                 return "some-persistence-id";
@@ -493,8 +493,12 @@ public class PersistenceDocTest {
 
             @Override
             public void onReceive(Object message) throws Exception {
-                if (message instanceof Persistent) {
-                    // ...
+                if (isPersistent()) {
+                    // handle message from Journal...
+                } else if (message instanceof String) {
+                    // handle message from user...
+                } else {
+                  unhandled(message);
                 }
             }
         }
