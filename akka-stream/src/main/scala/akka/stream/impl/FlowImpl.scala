@@ -82,10 +82,10 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   // Storing ops in reverse order
   override protected def andThen[U](op: Ast.AstNode): Duct[In, U] = this.copy(ops = op :: ops)
 
-  override def append[U](duct: Duct[_ >: In, U]): Duct[In, U] =
+  override def append[U](duct: Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
-  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: In, U]): Duct[In, U] =
+  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
   override def produceTo(materializer: FlowMaterializer, consumer: Consumer[Out]): Consumer[In] =
