@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-package akka.parboiled2
+package akka.http.model
+package parser
 
+import akka.parboiled2._
 import akka.parboiled2.util.Base64
 
 /**
