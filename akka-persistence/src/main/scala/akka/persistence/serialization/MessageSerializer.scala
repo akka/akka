@@ -30,7 +30,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   val PersistentImplClass = classOf[PersistentImpl]
   val ConfirmablePersistentImplClass = classOf[ConfirmablePersistentImpl]
   val DeliveredByTransientChannelClass = classOf[DeliveredByChannel]
-  val DeliveredByPersistentChannelClass = classOf[DeliveredByPersistenceChannel]
+  val DeliveredByPersistentChannelClass = classOf[DeliveredByPersistentChannel]
   val DeliverClass = classOf[Deliver]
 
   def identifier: Int = 7
@@ -47,12 +47,12 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
    * serialization of a persistent message's payload to a matching `akka.serialization.Serializer`.
    */
   def toBinary(o: AnyRef): Array[Byte] = o match {
-    case b: PersistentBatch               ⇒ persistentMessageBatchBuilder(b).build().toByteArray
-    case p: PersistentRepr                ⇒ persistentMessageBuilder(p).build().toByteArray
-    case c: DeliveredByChannel            ⇒ deliveredMessageBuilder(c).build().toByteArray
-    case c: DeliveredByPersistenceChannel ⇒ deliveredMessageBuilder(c).build().toByteArray
-    case d: Deliver                       ⇒ deliverMessageBuilder(d).build.toByteArray
-    case _                                ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
+    case b: PersistentBatch              ⇒ persistentMessageBatchBuilder(b).build().toByteArray
+    case p: PersistentRepr               ⇒ persistentMessageBuilder(p).build().toByteArray
+    case c: DeliveredByChannel           ⇒ deliveredMessageBuilder(c).build().toByteArray
+    case c: DeliveredByPersistentChannel ⇒ deliveredMessageBuilder(c).build().toByteArray
+    case d: Deliver                      ⇒ deliverMessageBuilder(d).build.toByteArray
+    case _                               ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
   /**
@@ -192,7 +192,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
         deliveredMessage.getDeliverySequenceNr,
         channel)
     } else {
-      DeliveredByPersistenceChannel(
+      DeliveredByPersistentChannel(
         deliveredMessage.getChannelId,
         deliveredMessage.getPersistentSequenceNr,
         deliveredMessage.getDeliverySequenceNr,

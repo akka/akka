@@ -124,11 +124,11 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         deserialized should be(confirmation)
       }
       "handle DeliveredByPersistentChannel message serialization" in {
-        val confirmation = DeliveredByPersistenceChannel("c2", 14)
+        val confirmation = DeliveredByPersistentChannel("c2", 14)
         val serializer = serialization.findSerializerFor(confirmation)
 
         val bytes = serializer.toBinary(confirmation)
-        val deserialized = serializer.fromBinary(bytes, Some(classOf[DeliveredByPersistenceChannel]))
+        val deserialized = serializer.fromBinary(bytes, Some(classOf[DeliveredByPersistentChannel]))
 
         deserialized should be(confirmation)
       }
@@ -149,7 +149,7 @@ object MessageSerializerRemotingSpec {
       case ConfirmablePersistent(MyPayload(data), _, _)            ⇒ sender ! s"c${data}"
       case Persistent(MyPayload(data), _)                          ⇒ sender ! s"p${data}"
       case DeliveredByChannel(pid, cid, msnr, dsnr, ep)            ⇒ sender ! s"${pid},${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
-      case DeliveredByPersistenceChannel(cid, msnr, dsnr, ep)      ⇒ sender ! s"${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
+      case DeliveredByPersistentChannel(cid, msnr, dsnr, ep)       ⇒ sender ! s"${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
       case Deliver(Persistent(payload, _), dp)                     ⇒ context.actorSelection(dp) ! payload
     }
   }
@@ -194,7 +194,7 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
       expectMsg("a,b,2,3,true")
     }
     "serialize DeliveredByPersistentChannel messages during remoting" in {
-      localActor ! DeliveredByPersistenceChannel("c", 2, 3, testActor)
+      localActor ! DeliveredByPersistentChannel("c", 2, 3, testActor)
       expectMsg("c,2,3,true")
     }
     "serialize Deliver messages during remoting" in {

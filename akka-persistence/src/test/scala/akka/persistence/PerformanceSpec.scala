@@ -179,10 +179,10 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
   }
 
   def subscribeToConfirmation(probe: TestProbe): Unit =
-    system.eventStream.subscribe(probe.ref, classOf[DeliveredByPersistenceChannel])
+    system.eventStream.subscribe(probe.ref, classOf[DeliveredByPersistentChannel])
 
   def awaitConfirmation(probe: TestProbe): Unit =
-    probe.expectMsgType[DeliveredByPersistenceChannel]
+    probe.expectMsgType[DeliveredByPersistentChannel]
 
   "A command sourced processor" should {
     "have some reasonable throughput" in {
@@ -213,7 +213,7 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
       stressPersistentChannel()
 
       probe.fishForMessage(100.seconds) {
-        case DeliveredByPersistenceChannel(_, snr, _, _) ⇒ snr == warmupCycles + loadCycles + 2
+        case DeliveredByPersistentChannel(_, snr, _, _) ⇒ snr == warmupCycles + loadCycles + 2
       }
     }
   }
