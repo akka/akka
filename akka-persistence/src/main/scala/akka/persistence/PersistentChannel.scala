@@ -183,15 +183,16 @@ object PersistentChannel {
 /**
  * Plugin API.
  */
-final case class DeliveredByPersistentChannel(
+@deprecated("PersistentChannel will be removed, see `AtLeastOnceDelivery` instead.", since = "2.3.4")
+final case class DeliveredByPersistenceChannel(
   channelId: String,
   persistentSequenceNr: Long,
   deliverySequenceNr: Long = 0L,
-  channel: ActorRef = null) extends Delivered with PersistentId {
+  channel: ActorRef = null) extends Delivered with PersistenceId {
 
-  def processorId: String = channelId
+  def persistenceId: String = channelId
   def sequenceNr: Long = persistentSequenceNr
-  def update(deliverySequenceNr: Long, channel: ActorRef): DeliveredByPersistentChannel =
+  def update(deliverySequenceNr: Long, channel: ActorRef): DeliveredByPersistenceChannel =
     copy(deliverySequenceNr = deliverySequenceNr, channel = channel)
 }
 
@@ -203,25 +204,25 @@ private[persistence] class DeliveredByPersistentChannelBatching(journal: ActorRe
   private val batchMax = settings.journal.maxConfirmationBatchSize
 
   private var batching = false
-  private var batch = Vector.empty[DeliveredByPersistentChannel]
+  private var batch = Vector.empty[DeliveredByPersistenceChannel]
 
   def receive = {
     case DeleteMessagesSuccess(messageIds) ⇒
       if (batch.isEmpty) batching = false else journalBatch()
       messageIds.foreach {
-        case c: DeliveredByPersistentChannel ⇒
+        case c: DeliveredByPersistenceChannel ⇒
           c.channel ! c
           if (publish) context.system.eventStream.publish(c)
       }
     case DeleteMessagesFailure(_) ⇒
       if (batch.isEmpty) batching = false else journalBatch()
-    case d: DeliveredByPersistentChannel ⇒
+    case d: DeliveredByPersistenceChannel ⇒
       addToBatch(d)
       if (!batching || maxBatchSizeReached) journalBatch()
     case m ⇒ journal forward m
   }
 
-  def addToBatch(pc: DeliveredByPersistentChannel): Unit =
+  def addToBatch(pc: DeliveredByPersistenceChannel): Unit =
     batch = batch :+ pc
 
   def maxBatchSizeReached: Boolean =
@@ -243,16 +244,16 @@ private class RequestWriter(channelId: String, channelSettings: PersistentChanne
 
   private val cbJournal = extension.confirmationBatchingJournalForChannel(channelId)
 
-  override val processorId = channelId
+  override val persistenceId = channelId
 
   def receive = {
     case p @ Persistent(Deliver(wrapped: PersistentRepr, _), _) ⇒
-      if (!recoveryRunning && wrapped.processorId != PersistentRepr.Undefined) {
+      if (!recoveryRunning && wrapped.persistenceId != PersistentRepr.Undefined) {
         // Write a delivery confirmation to the journal so that replayed Deliver
         // requests from a sending processor are not persisted again. Replaying
         // Deliver requests is now the responsibility of this processor
         // and confirmation by destination is done to the wrapper p.sequenceNr.
-        cbJournal ! DeliveredByChannel(wrapped.processorId, channelId, wrapped.sequenceNr)
+        cbJournal ! DeliveredByChannel(wrapped.persistenceId, channelId, wrapped.sequenceNr)
       }
 
       if (!recoveryRunning && replyPersistent)
@@ -341,8 +342,7 @@ private class RequestReader(channelId: String, channelSettings: PersistentChanne
     onReplayComplete()
   }
 
-  def processorId: String =
-    channelId
+  override def persistenceId: String = channelId
 
   def snapshotterId: String =
     s"${channelId}-reader"
@@ -368,7 +368,7 @@ private class RequestReader(channelId: String, channelSettings: PersistentChanne
 
   private def onReadRequest(): Unit = if (_currentState == idle) {
     _currentState = replayStarted(await = false)
-    dbJournal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, pendingConfirmationsMax - numPending, processorId, self)
+    dbJournal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, pendingConfirmationsMax - numPending, persistenceId, self)
   }
 
   /**
@@ -378,7 +378,7 @@ private class RequestReader(channelId: String, channelSettings: PersistentChanne
   private def prepareDelivery(wrapped: PersistentRepr, wrapper: PersistentRepr): PersistentRepr = {
     ConfirmablePersistentImpl(wrapped,
       confirmTarget = dbJournal,
-      confirmMessage = DeliveredByPersistentChannel(channelId, wrapper.sequenceNr, channel = self))
+      confirmMessage = DeliveredByPersistenceChannel(channelId, wrapper.sequenceNr, channel = self))
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

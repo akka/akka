@@ -23,8 +23,8 @@ trait Snapshotter extends Actor {
    */
   def snapshotSequenceNr: Long
 
-  def loadSnapshot(processorId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) =
-    snapshotStore ! LoadSnapshot(processorId, criteria, toSequenceNr)
+  def loadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) =
+    snapshotStore ! LoadSnapshot(persistenceId, criteria, toSequenceNr)
 
   /**
    * Saves a `snapshot` of this snapshotter's state. If saving succeeds, this snapshotter will receive a

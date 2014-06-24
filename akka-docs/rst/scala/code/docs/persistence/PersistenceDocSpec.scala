@@ -111,9 +111,9 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     trait ProcessorMethods {
-      //#processor-id
-      def processorId: String
-      //#processor-id
+      //#persistence-id
+      def persistenceId: String
+      //#persistence-id
       //#recovery-status
       def recoveryRunning: Boolean
       def recoveryFinished: Boolean
@@ -123,9 +123,9 @@ trait PersistenceDocSpec {
       //#current-message
     }
     class MyProcessor1 extends Processor with ProcessorMethods {
-      //#processor-id-override
-      override def processorId = "my-stable-processor-id"
-      //#processor-id-override
+      //#persistence-id-override
+      override def persistenceId = "my-stable-persistence-id"
+      //#persistence-id-override
       def receive = {
         case _ =>
       }
@@ -411,7 +411,7 @@ trait PersistenceDocSpec {
 
     //#view
     class MyView extends View {
-      def processorId: String = "some-processor-id"
+      override def persistenceId: String = "some-persistence-id"
 
       def receive: Actor.Receive = {
         case Persistent(payload, sequenceNr) => // ...
@@ -440,26 +440,26 @@ trait PersistenceDocSpec {
 
     val materializer = FlowMaterializer(MaterializerSettings())
 
-    val flow: Flow[Persistent] = PersistentFlow.fromProcessor("some-processor-id")
+    val flow: Flow[Persistent] = PersistentFlow.fromPersistence("some-persistence-id")
     val producer: Producer[Persistent] = flow.toProducer(materializer)
     //#producer-creation
 
     //#producer-buffer-size
-    PersistentFlow.fromProcessor("some-processor-id", PersistentPublisherSettings(maxBufferSize = 200))
+    PersistentFlow.fromPersistence("some-persistence-id", PersistentPublisherSettings(maxBufferSize = 200))
     //#producer-buffer-size
 
     //#producer-examples
     // 1 producer and 2 consumers:
     val producer1: Producer[Persistent] =
-      PersistentFlow.fromProcessor("processor-1").toProducer(materializer)
+      PersistentFlow.fromPersistence("processor-1").toProducer(materializer)
     Flow(producer1).foreach(p => println(s"consumer-1: ${p.payload}")).consume(materializer)
     Flow(producer1).foreach(p => println(s"consumer-2: ${p.payload}")).consume(materializer)
 
     // 2 producers (merged) and 1 consumer:
     val producer2: Producer[Persistent] =
-      PersistentFlow.fromProcessor("processor-2").toProducer(materializer)
+      PersistentFlow.fromPersistence("processor-2").toProducer(materializer)
     val producer3: Producer[Persistent] =
-      PersistentFlow.fromProcessor("processor-3").toProducer(materializer)
+      PersistentFlow.fromPersistence("processor-3").toProducer(materializer)
     Flow(producer2).merge(producer3).foreach { p =>
       println(s"consumer-3: ${p.payload}")
     }.consume(materializer)

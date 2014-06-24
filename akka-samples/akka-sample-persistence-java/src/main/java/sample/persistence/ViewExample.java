@@ -35,7 +35,7 @@ public class ViewExample {
         }
 
         @Override
-        public String processorId() {
+        public String persistenceId() {
             return "processor-5";
         }
 

@@ -161,30 +161,30 @@ Identifiers
 -----------
 
 A processor must have an identifier that doesn't change across different actor incarnations. It defaults to the
-``String`` representation of processor's path without the address part and can be obtained via the ``processorId``
+``String`` representation of processor's path without the address part and can be obtained via the ``persistenceId``
 method.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistence-id
 
 Applications can customize a processor's id by specifying an actor name during processor creation as shown in
 section :ref:`processors-java`. This changes that processor's name in its actor hierarchy and hence influences only
-part of the processor id. To fully customize a processor's id, the ``processorId`` method must be overridden.
+part of the processor id. To fully customize a processor's id, the ``persistenceId`` method must be overridden.
 
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#processor-id-override
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistence-id-override
 
-Overriding ``processorId`` is the recommended way to generate stable identifiers.
+Overriding ``persistenceId`` is the recommended way to generate stable identifiers.
 
 .. _views-java-lambda:
 
 Views
 =====
 
-Views can be implemented by extending the ``AbstractView`` abstract class, implement the ``processorId`` method
+Views can be implemented by extending the ``AbstractView`` abstract class, implement the ``persistenceId`` method
 and setting the “initial behavior” in the constructor by calling the :meth:`receive` method.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#view
 
-The ``processorId`` identifies the processor from which the view receives journaled messages. It is not necessary
+The ``persistenceId`` identifies the processor from which the view receives journaled messages. It is not necessary
 the referenced processor is actually running. Views read messages from a processor's journal directly. When a
 processor is started later and begins to write new messages, the corresponding view is updated automatically, by
 default.
@@ -234,7 +234,7 @@ Applications can customize a view's id by specifying an actor name during view c
 name in its actor hierarchy and hence influences only part of the view id. To fully customize a view's id, the
 ``viewId`` method must be overridden. Overriding ``viewId`` is the recommended way to generate stable identifiers.
 
-The ``viewId`` must differ from the referenced ``processorId``, unless :ref:`snapshots-java` of a view and its
+The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java` of a view and its
 processor shall be shared (which is what applications usually do not want).
 
 .. _channels-java-lambda:

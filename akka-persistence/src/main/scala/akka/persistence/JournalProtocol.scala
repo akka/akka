@@ -18,12 +18,12 @@ private[persistence] object JournalProtocol {
    * Request to delete messages identified by `messageIds`. If `permanent` is set to `false`,
    * the persistent messages are marked as deleted, otherwise they are permanently deleted.
    */
-  final case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean, requestor: Option[ActorRef] = None)
+  final case class DeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean, requestor: Option[ActorRef] = None)
 
   /**
    * Reply message to a successful [[DeleteMessages]] request.
    */
-  final case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistentId])
+  final case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistenceId])
 
   /**
    * Reply message to a failed [[DeleteMessages]] request.
@@ -35,7 +35,7 @@ private[persistence] object JournalProtocol {
    * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
    * as deleted in the journal, otherwise they are permanently deleted from the journal.
    */
-  final case class DeleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean)
+  final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
 
   /**
    * Request to write delivery confirmations.
@@ -113,11 +113,11 @@ private[persistence] object JournalProtocol {
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param max maximum number of messages to be replayed.
-   * @param processorId requesting processor id.
+   * @param persistenceId requesting processor id.
    * @param processor requesting processor.
    * @param replayDeleted `true` if messages marked as deleted shall be replayed.
    */
-  final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, processorId: String, processor: ActorRef, replayDeleted: Boolean = false)
+  final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, persistenceId: String, processor: ActorRef, replayDeleted: Boolean = false)
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each
@@ -143,10 +143,10 @@ private[persistence] object JournalProtocol {
    * Request to read the highest stored sequence number of a given processor.
    *
    * @param fromSequenceNr optional hint where to start searching for the maximum sequence number.
-   * @param processorId requesting processor id.
+   * @param persistenceId requesting processor id.
    * @param processor requesting processor.
    */
-  final case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, processorId: String, processor: ActorRef)
+  final case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, persistenceId: String, processor: ActorRef)
 
   /**
    * Reply message to a successful [[ReadHighestSequenceNr]] request.

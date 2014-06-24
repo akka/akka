@@ -16,8 +16,8 @@ import akka.persistence.snapshot.{ SnapshotStore ⇒ SSnapshotStore }
 abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   import context.dispatcher
 
-  final def loadAsync(processorId: String, criteria: SnapshotSelectionCriteria) =
-    doLoadAsync(processorId, criteria).map(_.asScala)
+  final def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria) =
+    doLoadAsync(persistenceId, criteria).map(_.asScala)
 
   final def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] =
     doSaveAsync(metadata, snapshot).map(Unit.unbox)
@@ -28,7 +28,7 @@ abstract class SnapshotStore extends SSnapshotStore with SnapshotStorePlugin {
   final def delete(metadata: SnapshotMetadata) =
     doDelete(metadata)
 
-  final def delete(processorId: String, criteria: SnapshotSelectionCriteria) =
-    doDelete(processorId: String, criteria: SnapshotSelectionCriteria)
+  final def delete(persistenceId: String, criteria: SnapshotSelectionCriteria) =
+    doDelete(persistenceId: String, criteria: SnapshotSelectionCriteria)
 
 }

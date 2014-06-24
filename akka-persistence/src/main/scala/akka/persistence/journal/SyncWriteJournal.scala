@@ -39,8 +39,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           }
           throw e
       }
-    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, processorId, processor, replayDeleted) ⇒
-      asyncReplayMessages(processorId, fromSequenceNr, toSequenceNr, max) { p ⇒
+    case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, processor, replayDeleted) ⇒
+      asyncReplayMessages(persistenceId, fromSequenceNr, toSequenceNr, max) { p ⇒
         if (!p.deleted || replayDeleted) processor.tell(ReplayedMessage(p), p.sender)
       } map {
         case _ ⇒ ReplayMessagesSuccess
@@ -49,8 +49,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
       } pipeTo (processor) onSuccess {
         case _ if publish ⇒ context.system.eventStream.publish(r)
       }
-    case ReadHighestSequenceNr(fromSequenceNr, processorId, processor) ⇒
-      asyncReadHighestSequenceNr(processorId, fromSequenceNr).map {
+    case ReadHighestSequenceNr(fromSequenceNr, persistenceId, processor) ⇒
+      asyncReadHighestSequenceNr(persistenceId, fromSequenceNr).map {
         highest ⇒ ReadHighestSequenceNrSuccess(highest)
       } recover {
         case e ⇒ ReadHighestSequenceNrFailure(e)
@@ -68,8 +68,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case Failure(e) ⇒
           requestorOption.foreach(_ ! DeleteMessagesFailure(e))
       }
-    case d @ DeleteMessagesTo(processorId, toSequenceNr, permanent) ⇒
-      Try(deleteMessagesTo(processorId, toSequenceNr, permanent)) match {
+    case d @ DeleteMessagesTo(persistenceId, toSequenceNr, permanent) ⇒
+      Try(deleteMessagesTo(persistenceId, toSequenceNr, permanent)) match {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
@@ -95,13 +95,13 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * journal. If `permanent` is set to `false`, the persistent messages are marked as
    * deleted, otherwise they are permanently deleted.
    */
-  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Unit
+  def deleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Unit
 
   /**
    * Plugin API: synchronously deletes all persistent messages up to `toSequenceNr`
    * (inclusive). If `permanent` is set to `false`, the persistent messages are marked
    * as deleted, otherwise they are permanently deleted.
    */
-  def deleteMessagesTo(processorId: String, toSequenceNr: Long, permanent: Boolean): Unit
+  def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Unit
   //#journal-plugin-api
 }

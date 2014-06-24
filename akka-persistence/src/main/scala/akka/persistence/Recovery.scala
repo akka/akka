@@ -87,7 +87,7 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
             process(receive, SnapshotOffer(metadata, snapshot))
         }
         _currentState = replayStarted(await = true)
-        journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, processorId, self)
+        journal ! ReplayMessages(lastSequenceNr + 1L, toSnr, replayMax, persistenceId, self)
       case other ⇒ receiverStash.stash()
     }
   }
@@ -171,7 +171,10 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
   /**
    * Id of the processor for which messages should be replayed.
    */
-  def processorId: String
+  @deprecated("Override `persistenceId` instead. Processor will be removed.", since = "2.3.4")
+  def processorId: String = extension.persistenceId(self) // TODO: remove processorId
+
+  def persistenceId: String = processorId
 
   /**
    * Returns the current persistent message if there is any.
@@ -229,7 +232,7 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
   /**
    * INTERNAL API.
    */
-  private[persistence] lazy val journal = extension.journalFor(processorId)
+  private[persistence] lazy val journal = extension.journalFor(persistenceId)
 
   /**
    * INTERNAL API.
