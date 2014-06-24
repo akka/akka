@@ -50,7 +50,7 @@ object Release {
 
       val repo = extracted.get(Publish.defaultPublishTo)
       val state1 = extracted.runAggregated(publishSigned in LocalProject(subprojectId), state)
-      val (state2, (api, japi)) = extracted.runTask(Unidoc.unidoc, state1)   
+      val (state2, (api, japi)) = extracted.runTask(Unidoc.unidoc in LocalProject(subprojectId), state1)
     
       IO.delete(release)
       IO.createDirectory(release)

@@ -16,6 +16,7 @@ import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
+import com.typesafe.sbt.SbtSite.SiteKeys.packageSite
 import com.typesafe.sbt.site.SphinxSupport
 import pl.project13.scala.sbt.SbtJmh._
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -57,7 +58,7 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      unidocExclude := Seq(samples.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, remoteTests.id, parsing.id),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
@@ -76,11 +77,12 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz"))
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docs_dev, test in Test in stream, test in Test in httpCore,
-        test in Test in docs_dev) map { (_, _, _, _) => }
+      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev, test in Test in stream, test in Test in httpCore,
+        test in Test in docsDev) map { (_, _, _, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
+      docsDev)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -304,24 +306,51 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val streamAndHttp = Project(
+    id = "akka-stream-and-http-experimental",
+    base = file("akka-stream-and-http"),
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
+      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++
+      StatsDMetrics.settings ++
+      Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+      version := streamAndHttpVersion,
+      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
+      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
+      unidocExclude := Seq(parsing.id, docsDev.id),
+      sources in JavaDoc <<= junidocSources,
+      javacOptions in JavaDoc := Seq(),
+      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
+      packageDoc in Compile <<= packageDoc in JavaDoc,
+      Dist.distExclude := Seq(docsDev.id),
+      // generate online version of docs
+      sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docsDev.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
+      // don't regenerate the pdf, just reuse the akka-docs version
+      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docsDev.id) map identity,
+      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
+      publishArtifact in packageSite := false
+    ),
+    aggregate = Seq(parsing, stream, httpCore, docsDev)
+  )
+
   lazy val httpCore = Project(
-    id = "akka-http-core",
+    id = "akka-http-core-experimental",
     base = file("akka-http-core"),
     dependencies = Seq(parsing, stream % "compile;test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
-      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
-      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http-core"),
+      version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.httpCore,
       // FIXME include mima when akka-http-core-2.3.x is released
-      //previousArtifact := akkaPreviousArtifact("akka-http-core")
+      //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
     )
   )
 
   lazy val parsing = Project(
-    id = "akka-parsing",
+    id = "akka-parsing-experimental",
     base = file("akka-parsing"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.parsing ++ Seq(
+      version := streamAndHttpVersion,
       javacOptions ++= Seq(
         "-encoding", "UTF-8",
         "-source", "1.6",
@@ -329,12 +358,15 @@ object AkkaBuild extends Build {
         "-Xlint:unchecked",
         "-Xlint:deprecation"),
       scalacOptions += "-language:_",
-      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
       libraryDependencies ++= Seq(
         "org.scala-lang" % "scala-reflect" % "2.10.4" % "provided",
         "org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile"),
+      // ScalaDoc doesn't like the macros
+      sources in doc in Compile := List(),
+      publishArtifact in packageDoc := false,
       addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
-      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-parsing"),
+      // FIXME include mima when akka-http-core-2.3.x is released
+      //previousArtifact := akkaPreviousArtifact("akka-parsing-experimental")
       previousArtifact := None
     )
   )
@@ -654,7 +686,7 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val docs_dev = Project(
+  lazy val docsDev = Project(
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
     dependencies = Seq(stream % "test -> test", httpCore),
@@ -669,9 +701,9 @@ object AkkaBuild extends Build {
       enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      publishArtifact := false,
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -696,13 +728,6 @@ object AkkaBuild extends Build {
                         |""".stripMargin
     )
   ) configs (MultiJvm)
-
-  // // this issue will be fixed in M8, for now we need to exclude M6, M7 modules used to compile the compiler
-  def excludeOldModules(m: ModuleID) = List("M6", "M7").foldLeft(m) { (mID, mStone) =>
-    val version = s"2.11.0-$mStone"
-    mID.exclude("org.scala-lang.modules", s"scala-parser-combinators_$version").exclude("org.scala-lang.modules", s"scala-xml_$version")
-  }
-
 
   // Settings
 
@@ -1140,6 +1165,8 @@ object AkkaBuild extends Build {
     val camel = exports(Seq("akka.camel.*"))
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
+
+    val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"))
 
     val httpCore = exports(Seq("akka.http.*"))
 
