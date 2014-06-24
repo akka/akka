@@ -13,8 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package akka.http.model
+package parser
 
-package akka.parboiled2
+import akka.parboiled2._
 
 /**
  * For certain high-performance use-cases it is better to construct Strings
