@@ -149,7 +149,7 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
       case UnregistrationOk ⇒
         context stop self
       case Ping ⇒
-        sender ! Pong
+        sender() ! Pong
       //#consumer-end
     }
   }

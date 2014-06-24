@@ -77,7 +77,7 @@ object ReceiverApp /*extends App*/ { // no app until https://github.com/typesafe
     def receive = {
       case p @ ConfirmablePersistent(payload, snr, redel) =>
         println(s"[destination] received payload: ${payload} (snr = ${snr}, redel = ${redel})")
-        sender ! s"re: ${payload} (snr = ${snr})"
+        sender() ! s"re: ${payload} (snr = ${snr})"
         p.confirm()
     }
   }

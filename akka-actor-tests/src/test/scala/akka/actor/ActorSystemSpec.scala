@@ -326,7 +326,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       try {
         val ref = system2.actorOf(Props(new Actor {
           def receive = {
-            case "ping" ⇒ sender ! "pong"
+            case "ping" ⇒ sender() ! "pong"
           }
         }))
 
@@ -351,7 +351,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       try {
         val ref = system2.actorOf(Props(new Actor {
           def receive = {
-            case "ping" ⇒ sender ! "pong"
+            case "ping" ⇒ sender() ! "pong"
           }
         }))
 

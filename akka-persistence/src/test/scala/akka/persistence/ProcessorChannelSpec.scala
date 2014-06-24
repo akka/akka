@@ -24,17 +24,17 @@ object ProcessorChannelSpec {
         channel forward Deliver(m.withPayload(s"fw: ${s}"), destination.path)
       case m @ Persistent(s: String, _) if s.startsWith("b") ⇒
         // reply to sender via channel
-        channel ! Deliver(m.withPayload(s"re: ${s}"), sender.path)
+        channel ! Deliver(m.withPayload(s"re: ${s}"), sender().path)
       case m @ Persistent(s: String, _) if s.startsWith("c") ⇒
         // don't use channel
-        sender ! s"got: ${s}"
+        sender() ! s"got: ${s}"
       case "replay" ⇒ throw new TestException("replay requested")
     }
   }
 
   class TestDestination extends Actor {
     def receive = {
-      case m: Persistent ⇒ sender ! m
+      case m: Persistent ⇒ sender() ! m
     }
   }
 

@@ -77,21 +77,21 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
 
   def receive = {
     case WriteMessages(msgs) ⇒
-      sender ! msgs.foreach(add)
+      sender() ! msgs.foreach(add)
     case WriteConfirmations(cnfs) ⇒
-      sender ! cnfs.foreach(cnf ⇒ update(cnf.processorId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
+      sender() ! cnfs.foreach(cnf ⇒ update(cnf.processorId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
     case DeleteMessages(msgIds, false) ⇒
-      sender ! msgIds.foreach(msgId ⇒ update(msgId.processorId, msgId.sequenceNr)(_.update(deleted = true)))
+      sender() ! msgIds.foreach(msgId ⇒ update(msgId.processorId, msgId.sequenceNr)(_.update(deleted = true)))
     case DeleteMessages(msgIds, true) ⇒
-      sender ! msgIds.foreach(msgId ⇒ delete(msgId.processorId, msgId.sequenceNr))
+      sender() ! msgIds.foreach(msgId ⇒ delete(msgId.processorId, msgId.sequenceNr))
     case DeleteMessagesTo(pid, tsnr, false) ⇒
-      sender ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
+      sender() ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
     case DeleteMessagesTo(pid, tsnr, true) ⇒
-      sender ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
+      sender() ! (1L to tsnr foreach { snr ⇒ delete(pid, snr) })
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      read(pid, fromSnr, toSnr, max).foreach(sender ! _)
-      sender ! ReplaySuccess
+      read(pid, fromSnr, toSnr, max).foreach(sender() ! _)
+      sender() ! ReplaySuccess
     case ReadHighestSequenceNr(processorId, _) ⇒
-      sender ! highestSequenceNr(processorId)
+      sender() ! highestSequenceNr(processorId)
   }
 }

@@ -36,9 +36,9 @@ object PersistentActorFailureSpec {
       case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
         val readFromStore = read(pid, fromSnr, toSnr, max)
         if (readFromStore.length == 0)
-          sender ! ReplaySuccess
+          sender() ! ReplaySuccess
         else
-          sender ! ReplayFailure(new IllegalArgumentException(s"blahonga $fromSnr $toSnr"))
+          sender() ! ReplayFailure(new IllegalArgumentException(s"blahonga $fromSnr $toSnr"))
     }
 
     override def receive = failingReceive.orElse(super.receive)
@@ -50,8 +50,8 @@ object PersistentActorFailureSpec {
     }
 
     def receive = {
-      case props: Props ⇒ sender ! context.actorOf(props)
-      case m            ⇒ sender ! m
+      case props: Props ⇒ sender() ! context.actorOf(props)
+      case m            ⇒ sender() ! m
     }
   }
 }

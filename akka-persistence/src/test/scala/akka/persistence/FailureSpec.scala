@@ -47,7 +47,7 @@ object FailureSpec {
 
     def add(i: Int): Unit = {
       state :+= i
-      if (state.length == numMessages) sender ! Done(state)
+      if (state.length == numMessages) sender() ! Done(state)
     }
 
     def shouldFail(rate: Double) =
@@ -77,7 +77,7 @@ object FailureSpec {
         }
       case PersistenceFailure(i: Int, _, _) ⇒
         // inform sender about journaling failure so that it can resend
-        sender ! JournalingFailure(i)
+        sender() ! JournalingFailure(i)
       case RecoveryFailure(_) ⇒
         // journal failed during recovery, throw exception to re-recover processor
         throw new TestException(debugMessage("recovery failed"))
@@ -89,7 +89,7 @@ object FailureSpec {
           deleteMessage(p.sequenceNr)
           log.debug(debugMessage(s"requested deletion of payload ${i}"))
           // inform sender about processing failure so that it can resend
-          sender ! ProcessingFailure(i)
+          sender() ! ProcessingFailure(i)
         case _ ⇒
       }
       super.preRestart(reason, message)

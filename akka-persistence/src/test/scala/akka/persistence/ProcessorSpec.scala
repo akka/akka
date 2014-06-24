@@ -19,7 +19,7 @@ object ProcessorSpec {
       case "boom"                   ⇒ throw new TestException("boom")
       case Persistent("boom", _)    ⇒ throw new TestException("boom")
       case Persistent(payload, snr) ⇒ state = s"${payload}-${snr}" :: state
-      case GetState                 ⇒ sender ! state.reverse
+      case GetState                 ⇒ sender() ! state.reverse
     }
 
     override def preRestart(reason: Throwable, message: Option[Any]) = {
@@ -35,27 +35,27 @@ object ProcessorSpec {
 
   class StoredSenderTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
-      case Persistent(payload, _) ⇒ sender ! payload
+      case Persistent(payload, _) ⇒ sender() ! payload
     }
   }
 
   class RecoveryStatusTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
-      case Persistent("c", _) if !recoveryRunning    ⇒ sender ! "c"
-      case Persistent(payload, _) if recoveryRunning ⇒ sender ! payload
+      case Persistent("c", _) if !recoveryRunning    ⇒ sender() ! "c"
+      case Persistent(payload, _) if recoveryRunning ⇒ sender() ! payload
     }
   }
 
   class BehaviorChangeTestProcessor(name: String) extends NamedProcessor(name) {
     val acceptA: Actor.Receive = {
       case Persistent("a", _) ⇒
-        sender ! "a"
+        sender() ! "a"
         context.become(acceptB)
     }
 
     val acceptB: Actor.Receive = {
       case Persistent("b", _) ⇒
-        sender ! "b"
+        sender() ! "b"
         context.become(acceptA)
     }
 
@@ -78,7 +78,7 @@ object ProcessorSpec {
 
   class OutboundMessageTestProcessor(name: String) extends NamedProcessor(name) {
     def receive = {
-      case Persistent(payload, snr) ⇒ sender ! Persistent(snr)
+      case Persistent(payload, snr) ⇒ sender() ! Persistent(snr)
     }
   }
 
@@ -102,7 +102,7 @@ object ProcessorSpec {
     def receive = {
       case "boom"                   ⇒ throw new ResumeTestException
       case Persistent(payload, snr) ⇒ state = s"${payload}-${snr}" :: state
-      case GetState                 ⇒ sender ! state.reverse
+      case GetState                 ⇒ sender() ! state.reverse
     }
   }
 

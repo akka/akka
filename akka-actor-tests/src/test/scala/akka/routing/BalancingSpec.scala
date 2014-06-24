@@ -21,7 +21,7 @@ object BalancingSpec {
       case msg ⇒
         if (id == 1) Thread.sleep(10) // dispatch to other routees
         else Await.ready(latch, 1.minute)
-        sender ! id
+        sender() ! id
     }
   }
 }

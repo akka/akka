@@ -132,15 +132,15 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
   import AsyncWriteTarget._
 
   def receive = {
-    case WriteMessages(msgs)                        ⇒ sender ! writeMessages(msgs)
-    case WriteConfirmations(cnfs)                   ⇒ sender ! writeConfirmations(cnfs)
-    case DeleteMessages(messageIds, permanent)      ⇒ sender ! deleteMessages(messageIds, permanent)
-    case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender ! deleteMessagesTo(pid, tsnr, permanent)
-    case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender ! readHighestSequenceNr(numericId(pid))
+    case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(msgs)
+    case WriteConfirmations(cnfs)                   ⇒ sender() ! writeConfirmations(cnfs)
+    case DeleteMessages(messageIds, permanent)      ⇒ sender() ! deleteMessages(messageIds, permanent)
+    case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender() ! deleteMessagesTo(pid, tsnr, permanent)
+    case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender() ! readHighestSequenceNr(numericId(pid))
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
-      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(sender ! _)) match {
-        case Success(max)   ⇒ sender ! ReplaySuccess
-        case Failure(cause) ⇒ sender ! ReplayFailure(cause)
+      Try(replayMessages(numericId(pid), fromSnr, toSnr, max)(sender() ! _)) match {
+        case Success(max)   ⇒ sender() ! ReplaySuccess
+        case Failure(cause) ⇒ sender() ! ReplayFailure(cause)
       }
   }
 }

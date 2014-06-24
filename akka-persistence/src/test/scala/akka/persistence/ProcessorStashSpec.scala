@@ -26,7 +26,7 @@ object ProcessorStashSpec {
         update("x")
       case "boom"                ⇒ throw new TestException("boom")
       case Persistent("boom", _) ⇒ throw new TestException("boom")
-      case GetState              ⇒ sender ! state.reverse
+      case GetState              ⇒ sender() ! state.reverse
     }
 
     val behaviorB: Actor.Receive = {

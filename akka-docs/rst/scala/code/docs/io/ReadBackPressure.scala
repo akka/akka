@@ -25,8 +25,8 @@ object PullReadingExample {
       //#pull-accepting
       case Bound(localAddress) =>
         // Accept connections one by one
-        sender ! ResumeAccepting(batchSize = 1)
-        context.become(listening(sender))
+        sender() ! ResumeAccepting(batchSize = 1)
+        context.become(listening(sender()))
         //#pull-accepting
         monitor ! localAddress
     }
@@ -34,8 +34,8 @@ object PullReadingExample {
     //#pull-accepting-cont
     def listening(listener: ActorRef): Receive = {
       case Connected(remote, local) =>
-        val handler = context.actorOf(Props(classOf[PullEcho], sender))
-        sender ! Register(handler, keepOpenOnPeerClosed = true)
+        val handler = context.actorOf(Props(classOf[PullEcho], sender()))
+        sender() ! Register(handler, keepOpenOnPeerClosed = true)
         listener ! ResumeAccepting(batchSize = 1)
     }
     //#pull-accepting-cont

@@ -295,8 +295,8 @@ private class ReliableDelivery(redeliverSettings: ChannelSettings) extends Actor
       val psnr = persistent.sequenceNr
       val confirm = persistent.confirmMessage.update(deliverySequenceNr = dsnr)
       val updated = persistent.update(confirmMessage = confirm, sequenceNr = if (psnr == 0) dsnr else psnr)
-      context.actorSelection(destination).tell(updated, sender)
-      deliveryAttempts += (dsnr -> DeliveryAttempt(updated, destination, sender))
+      context.actorSelection(destination).tell(updated, sender())
+      deliveryAttempts += (dsnr -> DeliveryAttempt(updated, destination, sender()))
     case d: Delivered ⇒
       deliveryAttempts -= d.deliverySequenceNr
       redelivery forward d
