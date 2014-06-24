@@ -182,8 +182,12 @@ class DuctSpec extends AkkaSpec {
 
     "be appendable to a Duct" in {
       val c = StreamTestKit.consumerProbe[String]
-      val duct1 = Duct[Int].map(_ + 10).map(_.toString)
-      val ductInConsumer = Duct[Int].map(_ * 2).append(duct1).map((s: String) ⇒ "elem-" + s).produceTo(materializer, c)
+      val duct1 = Duct[String].map(Integer.parseInt)
+      val ductInConsumer = Duct[Int]
+        .map { i ⇒ (i * 2).toString }
+        .append(duct1)
+        .map { i ⇒ "elem-" + (i + 10) }
+        .produceTo(materializer, c)
 
       Flow(List(1, 2, 3)).produceTo(materializer, ductInConsumer)
 
