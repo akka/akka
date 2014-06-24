@@ -24,11 +24,10 @@ object ViewExample extends App {
     }
   }
 
-  class ExampleView extends View {
+  class ExampleView extends PersistentView {
     private var numReplicated = 0
 
     override def persistenceId: String = "persistentActor-5"
-
     override def viewId = "view-5"
 
     def receive = {
@@ -37,9 +36,11 @@ object ViewExample extends App {
       case SnapshotOffer(metadata, snapshot: Int) =>
         numReplicated = snapshot
         println(s"view received snapshot offer ${snapshot} (metadata = ${metadata})")
-      case Persistent(payload, _) =>
+      case payload if isPersistent =>
         numReplicated += 1
-        println(s"view received ${payload} (num replicated = ${numReplicated})")
+        println(s"view received persistent ${payload} (num replicated = ${numReplicated})")
+      case payload =>
+        println(s"view received not persitent ${payload}")
     }
 
   }

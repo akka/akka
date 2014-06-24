@@ -1,13 +1,17 @@
 package sample.persistence;
 
-import java.util.concurrent.TimeUnit;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.japi.Procedure;
+import akka.persistence.SnapshotOffer;
+import akka.persistence.UntypedPersistentActor;
+import akka.persistence.UntypedPersistentView;
 import scala.concurrent.duration.Duration;
 
-import akka.actor.*;
-import akka.persistence.*;
-import akka.japi.Procedure;
+import java.util.concurrent.TimeUnit;
 
-public class ViewExample {
+public class PersistentViewExample {
     public static class ExamplePersistentActor extends UntypedPersistentActor {
         private int count = 1;
       
@@ -41,32 +45,26 @@ public class ViewExample {
         }
     }
 
-    public static class ExampleView extends UntypedView {
+    public static class ExampleView extends UntypedPersistentView {
 
         private int numReplicated = 0;
 
-        @Override
-        public String viewId() {
-            return "view-5";
-        }
-
-        @Override
-        public String persistenceId() {
-            return "persistentActor-5";
-        }
+        @Override public String persistenceId() { return "persistentActor-5"; }
+        @Override public String viewId() { return "view-5"; }
 
         @Override
         public void onReceive(Object message) throws Exception {
-            if (message instanceof Persistent) {
-                Persistent p = (Persistent)message;
+            if (isPersistent()) {
                 numReplicated += 1;
-                System.out.println(String.format("view received %s (num replicated = %d)", p.payload(), numReplicated));
+                System.out.println(String.format("view received %s (num replicated = %d)", message, numReplicated));
             } else if (message instanceof SnapshotOffer) {
                 SnapshotOffer so = (SnapshotOffer)message;
                 numReplicated = (Integer)so.snapshot();
                 System.out.println(String.format("view received snapshot offer %s (metadata = %s)", numReplicated, so.metadata()));
             } else if (message.equals("snap")) {
                 saveSnapshot(numReplicated);
+            } else {
+              unhandled(message);
             }
         }
     }

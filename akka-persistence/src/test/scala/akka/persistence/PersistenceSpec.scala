@@ -76,7 +76,12 @@ trait Cleanup { this: AkkaSpec ⇒
   }
 }
 
+@deprecated("Use NamedPersistentActor instead.", since = "2.3.4")
 abstract class NamedProcessor(name: String) extends Processor {
+  override def persistenceId: String = name
+}
+
+abstract class NamedPersistentActor(name: String) extends PersistentActor {
   override def persistenceId: String = name
 }
 

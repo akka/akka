@@ -26,6 +26,18 @@ concepts and architecture of `eventsourced`_ but significantly differs on API an
 
 .. _eventsourced: https://github.com/eligosource/eventsourced
 
+Changes in Akka 2.3.4
+=====================
+
+In Akka 2.3.4 several of the concepts of the earlier versions were collapsed and simplified.
+In essence; ``Processor`` and ``EventsourcedProcessor`` are replaced by ``PersistentActor``. ``Channel``
+and ``PersistentChannel`` are replaced by ``AtLeastOnceDelivery``. ``View`` is replaced by ``PersistentView``.
+
+See full details of the changes in the :ref:`migration-guide-persistence-experimental-2.3.x-2.4.x`.
+The old classes are still included, and deprecated, for a while to make the transition smooth.
+In case you need the old documentation it is located `here <http://doc.akka.io/docs/akka/2.3.3/scala/persistence.html>`_.
+
+
 Dependencies
 ============
 
@@ -41,7 +53,7 @@ Architecture
   When a persistent actor is started or restarted, journaled messages are replayed to that actor, so that it can
   recover internal state from these messages.
 
-* *View*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
+* *PersistentView*: A view is a persistent, stateful actor that receives journaled messages that have been written by another
   persistent actor. A view itself does not journal new messages, instead, it updates internal state only from a persistent actor's
   replicated message stream.
 
@@ -263,12 +275,12 @@ persistent actors should call the ``deleteMessages`` method.
 
 
 
-.. _views:
+.. _persistent-views:
 
-Views
-=====
+Persistent Views
+================
 
-Views can be implemented by extending the ``View`` trait  and implementing the ``receive`` and the ``persistenceId``
+Persistent views can be implemented by extending the ``PersistentView`` trait  and implementing the ``receive`` and the ``persistenceId``
 methods.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#view
@@ -278,6 +290,10 @@ the referenced persistent actor is actually running. Views read messages from a 
 persistent actor is started later and begins to write new messages, the corresponding view is updated automatically, by
 default.
 
+It is possible to determine if a message was sent from the Journal or from another actor in user-land by calling the ``isPersistent``
+method. Having that said, very often you don't need this information at all and can simply apply the same logic to both cases
+(skip the ``if isPersistent`` check).
+
 Updates
 -------
 
@@ -285,7 +301,7 @@ The default update interval of all views of an actor system is configurable:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#auto-update-interval
 
-``View`` implementation classes may also override the ``autoUpdateInterval`` method to return a custom update
+``PersistentView`` implementation classes may also override the ``autoUpdateInterval`` method to return a custom update
 interval for a specific view class or view instance. Applications may also trigger additional updates at
 any time by sending a view an ``Update`` message.
 
@@ -296,7 +312,7 @@ incremental message replay, triggered by that update request, completed. If set 
 following the update request may interleave with the replayed message stream. Automated updates always run with
 ``await = false``.
 
-Automated updates of all views of an actor system can be turned off by configuration:
+Automated updates of all persistent views of an actor system can be turned off by configuration:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#auto-update
 
@@ -308,7 +324,7 @@ of replayed messages for manual updates can be limited with the ``replayMax`` pa
 Recovery
 --------
 
-Initial recovery of views works in the very same way as for a persistent actor (i.e. by sending a ``Recover`` message
+Initial recovery of persistent views works in the very same way as for a persistent actor (i.e. by sending a ``Recover`` message
 to self). The maximum number of replayed messages during initial recovery is determined by ``autoUpdateReplayMax``.
 Further possibilities to customize initial recovery are explained in section :ref:`recovery`.
 
@@ -317,11 +333,11 @@ Further possibilities to customize initial recovery are explained in section :re
 Identifiers
 -----------
 
-A view must have an identifier that doesn't change across different actor incarnations. It defaults to the
+A persistent view must have an identifier that doesn't change across different actor incarnations. It defaults to the
 ``String`` representation of the actor path without the address part and can be obtained via the ``viewId``
 method.
 
-Applications can customize a view's id by specifying an actor name during view creation. This changes that view's
+Applications can customize a view's id by specifying an actor name during view creation. This changes that persistent view's
 name in its actor hierarchy and hence influences only part of the view id. To fully customize a view's id, the
 ``viewId`` method must be overridden. Overriding ``viewId`` is the recommended way to generate stable identifiers.
 
@@ -372,7 +388,7 @@ Snapshots
 =========
 
 Snapshots can dramatically reduce recovery times of persistent actors and views. The following discusses snapshots
-in context of persistent actors but this is also applicable to views.
+in context of persistent actors but this is also applicable to persistent views.
 
 Persistent actors can save snapshots of internal state by calling the  ``saveSnapshot`` method. If saving of a snapshot
 succeeds, the persistent actor receives a ``SaveSnapshotSuccess`` message, otherwise a ``SaveSnapshotFailure`` message
