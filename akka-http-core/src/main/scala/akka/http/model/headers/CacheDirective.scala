@@ -17,7 +17,7 @@ object CacheDirective {
   sealed trait RequestDirective extends CacheDirective
   sealed trait ResponseDirective extends CacheDirective
 
-  private final case class CustomCacheDirective(name: String, content: Option[String])
+  final case class CustomCacheDirective(name: String, content: Option[String])
     extends RequestDirective with ResponseDirective with ValueRenderable {
     def render[R <: Rendering](r: R): r.type = content match {
       case Some(s) ⇒ r ~~ name ~~ '=' ~~# s
@@ -91,11 +91,17 @@ object CacheDirectives {
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.5
   case object `public` extends SingletonValueRenderable with ResponseDirective
 
+  /** Java API */
+  def getPublic: ResponseDirective = `public`
+
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.6
   final case class `private`(fieldNames: immutable.Seq[String]) extends FieldNamesDirective with ResponseDirective
   object `private` {
     @varargs def apply(fieldNames: String*): `private` = apply(immutable.Seq(fieldNames: _*))
   }
+
+  /** Java API */
+  @varargs def createPrivate(fieldNames: String*): ResponseDirective = `private`.apply(immutable.Seq(fieldNames: _*))
 
   // http://tools.ietf.org/html/rfc7234#section-5.2.2.7
   case object `proxy-revalidate` extends SingletonValueRenderable with ResponseDirective
