@@ -58,7 +58,7 @@ trait PersistenceDocSpec {
   }
 
   new AnyRef {
-    trait MyProcessor1 extends Processor {
+    trait MyProcessor1 extends PersistentActor {
       //#recover-on-start-disabled
       override def preStart() = ()
       //#recover-on-start-disabled
@@ -67,7 +67,7 @@ trait PersistenceDocSpec {
       //#recover-on-restart-disabled
     }
 
-    trait MyProcessor2 extends Processor {
+    trait MyProcessor2 extends PersistentActor {
       //#recover-on-start-custom
       override def preStart() {
         self ! Recover(toSequenceNr = 457L)
@@ -75,7 +75,7 @@ trait PersistenceDocSpec {
       //#recover-on-start-custom
     }
 
-    trait MyProcessor3 extends Processor {
+    trait MyProcessor3 extends PersistentActor {
       //#deletion
       override def preRestart(reason: Throwable, message: Option[Any]) {
         message match {
@@ -87,14 +87,16 @@ trait PersistenceDocSpec {
       //#deletion
     }
 
-    class MyProcessor4 extends Processor {
+    class MyProcessor4 extends PersistentActor {
       //#recovery-completed
-      def receive = initializing
 
-      def initializing: Receive = {
-        case RecoveryCompleted =>
-          recoveryCompleted()
-          context.become(active)
+      def receiveRecover: Receive = {
+        case evt => //...
+      }
+
+      def receiveCommand: Receive = {
+        case RecoveryCompleted => recoveryCompleted()
+        case msg               => //...
       }
 
       def recoveryCompleted(): Unit = {
@@ -102,9 +104,6 @@ trait PersistenceDocSpec {
         // ...
       }
 
-      def active: Receive = {
-        case Persistent(msg, _) => //...
-      }
       //#recovery-completed
     }
   }

@@ -10,7 +10,6 @@ import akka.persistence.UntypedPersistentActor;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-
 import static java.util.Arrays.asList;
 
 class Cmd implements Serializable {
@@ -66,21 +65,25 @@ class ExampleState implements Serializable {
     }
 }
 
-class ExampleProcessor extends UntypedPersistentActor {
+class ExamplePersistentActor extends UntypedPersistentActor {
     private ExampleState state = new ExampleState();
 
     public int getNumEvents() {
         return state.size();
     }
 
+    @Override
     public void onReceiveRecover(Object msg) {
         if (msg instanceof Evt) {
             state.update((Evt) msg);
         } else if (msg instanceof SnapshotOffer) {
             state = (ExampleState)((SnapshotOffer)msg).snapshot();
+        } else {
+          unhandled(msg);
         }
     }
 
+    @Override
     public void onReceiveCommand(Object msg) {
         if (msg instanceof Cmd) {
             final String data = ((Cmd)msg).getData();
@@ -100,6 +103,8 @@ class ExampleProcessor extends UntypedPersistentActor {
             saveSnapshot(state.copy());
         } else if (msg.equals("print")) {
             System.out.println(state);
+        } else {
+          unhandled(msg);
         }
     }
 }
@@ -108,14 +113,15 @@ class ExampleProcessor extends UntypedPersistentActor {
 public class PersistentActorExample {
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
-        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class), "processor-4-java");
+        final ActorRef persistentActor = 
+            system.actorOf(Props.create(ExamplePersistentActor.class), "persistentActor-4-java");
 
-        processor.tell(new Cmd("foo"), null);
-        processor.tell(new Cmd("baz"), null);
-        processor.tell(new Cmd("bar"), null);
-        processor.tell("snap", null);
-        processor.tell(new Cmd("buzz"), null);
-        processor.tell("print", null);
+        persistentActor.tell(new Cmd("foo"), null);
+        persistentActor.tell(new Cmd("baz"), null);
+        persistentActor.tell(new Cmd("bar"), null);
+        persistentActor.tell("snap", null);
+        persistentActor.tell(new Cmd("buzz"), null);
+        persistentActor.tell("print", null);
 
         Thread.sleep(1000);
         system.shutdown();

@@ -86,7 +86,7 @@ public class PersistenceDocTest {
     };
 
     static Object o2 = new Object() {
-        abstract class MyProcessor1 extends UntypedProcessor {
+        abstract class MyProcessor1 extends UntypedPersistentActor {
             //#recover-on-start-disabled
             @Override
             public void preStart() {}
@@ -98,7 +98,7 @@ public class PersistenceDocTest {
             //#recover-on-restart-disabled
         }
 
-        abstract class MyProcessor2 extends UntypedProcessor {
+        abstract class MyProcessor2 extends UntypedPersistentActor {
             //#recover-on-start-custom
             @Override
             public void preStart() {
@@ -107,7 +107,7 @@ public class PersistenceDocTest {
             //#recover-on-start-custom
         }
 
-        abstract class MyProcessor3 extends UntypedProcessor {
+        abstract class MyProcessor3 extends UntypedPersistentActor {
             //#deletion
             @Override
             public void preRestart(Throwable reason, Option<Object> message) {
@@ -119,7 +119,7 @@ public class PersistenceDocTest {
             //#deletion
         }
 
-        class MyProcessor4 extends UntypedProcessor implements ProcessorMethods {
+        class MyProcessor4 extends UntypedPersistentActor implements ProcessorMethods {
             //#persistence-id-override
             @Override
             public String persistenceId() {
@@ -127,15 +127,25 @@ public class PersistenceDocTest {
             }
             //#persistence-id-override
             @Override
-            public void onReceive(Object message) throws Exception {}
+            public void onReceiveRecover(Object message) throws Exception {}
+            @Override
+            public void onReceiveCommand(Object message) throws Exception {}
         }
         
-        class MyProcessor5 extends UntypedProcessor {
+        class MyProcessor5 extends UntypedPersistentActor {
             //#recovery-completed
-            public void onReceive(Object message) throws Exception {
+          
+            @Override
+            public void onReceiveRecover(Object message) {
+              // ...
+            }
+            
+            @Override
+            public void onReceiveCommand(Object message) throws Exception {
                 if (message instanceof RecoveryCompleted) {
                     recoveryCompleted();
-                    getContext().become(active);
+                } else if (message instanceof String) {
+                  // ...
                 } else {
                     unhandled(message);
                 }
@@ -146,17 +156,6 @@ public class PersistenceDocTest {
                 // ...
             }
             
-            Procedure<Object> active = new Procedure<Object>() {
-              @Override
-              public void apply(Object message) {
-                if (message instanceof Persistent) {
-                    // ...
-                }
-                else {
-                    unhandled(message);
-                }
-              }
-            };
             //#recovery-completed
         }
     };

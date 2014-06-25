@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 import akka.actor.*;
 import akka.persistence.*;
+import akka.japi.Procedure;
 
 public class SnapshotExample {
     public static class ExampleState implements Serializable {
@@ -32,38 +33,57 @@ public class SnapshotExample {
         }
     }
 
-    public static class ExampleProcessor extends UntypedProcessor {
+    public static class ExamplePersistentActor extends UntypedPersistentActor {
         private ExampleState state = new ExampleState();
 
         @Override
-        public void onReceive(Object message) throws Exception {
-            if (message instanceof Persistent) {
-                Persistent persistent = (Persistent)message;
-                state.update(String.format("%s-%d", persistent.payload(), persistent.sequenceNr()));
-            } else if (message instanceof SnapshotOffer) {
-                ExampleState s = (ExampleState)((SnapshotOffer)message).snapshot();
-                System.out.println("offered state = " + s);
-                state = s;
-            } else if (message.equals("print")) {
+        public void onReceiveCommand(Object message) {
+            if (message.equals("print")) {
                 System.out.println("current state = " + state);
             } else if (message.equals("snap")) {
                 // IMPORTANT: create a copy of snapshot
                 // because ExampleState is mutable !!!
                 saveSnapshot(state.copy());
+            } else if (message instanceof SaveSnapshotSuccess) {
+              // ...
+            } else if (message instanceof SaveSnapshotFailure) {
+              // ...  
+            } else if (message instanceof String) {
+              String s = (String) message;
+              persist(s, new Procedure<String>() {
+                public void apply(String evt) throws Exception {
+                  state.update(evt);
+                }
+              });
+            } else {
+              unhandled(message);
             }
+        }
+        
+        @Override
+        public void onReceiveRecover(Object message) {
+          if (message instanceof SnapshotOffer) {
+            ExampleState s = (ExampleState)((SnapshotOffer)message).snapshot();
+            System.out.println("offered state = " + s);
+            state = s;
+          } else if (message instanceof String) {
+            state.update((String) message);
+          } else {
+            unhandled(message);
+          }
         }
     }
 
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
-        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class), "processor-3-java");
+        final ActorRef persistentActor = system.actorOf(Props.create(ExamplePersistentActor.class), "persistentActor-3-java");
 
-        processor.tell(Persistent.create("a"), null);
-        processor.tell(Persistent.create("b"), null);
-        processor.tell("snap", null);
-        processor.tell(Persistent.create("c"), null);
-        processor.tell(Persistent.create("d"), null);
-        processor.tell("print", null);
+        persistentActor.tell("a", null);
+        persistentActor.tell("b", null);
+        persistentActor.tell("snap", null);
+        persistentActor.tell("c", null);
+        persistentActor.tell("d", null);
+        persistentActor.tell("print", null);
 
         Thread.sleep(1000);
         system.shutdown();
