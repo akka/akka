@@ -59,9 +59,10 @@ trait Processor extends ProcessorImpl {
   override def persistenceId: String = processorId
 }
 
+/** INTERNAL API */
 @deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-trait ProcessorImpl extends Actor with Recovery {
-  // todo remove Processor in favor of PersistentActor #15230
+private[akka] trait ProcessorImpl extends Actor with Recovery {
+  // TODO: remove Processor in favor of PersistentActor #15230
 
   import JournalProtocol._
 
@@ -415,7 +416,7 @@ case object RecoveryCompleted extends RecoveryCompleted {
  * @see [[PersistentBatch]]
  */
 @deprecated("UntypedProcessor will be removed. Instead extend `akka.persistence.UntypedPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-abstract class UntypedProcessor extends UntypedActor with ProcessorImpl
+abstract class UntypedProcessor extends UntypedActor with Processor
 
 /**
  * Java API: compatible with lambda expressions
@@ -470,4 +471,4 @@ abstract class UntypedProcessor extends UntypedActor with ProcessorImpl
  * @see [[PersistentBatch]]
  */
 @deprecated("AbstractProcessor will be removed. Instead extend `akka.persistence.AbstractPersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-abstract class AbstractProcessor extends AbstractActor with ProcessorImpl
+abstract class AbstractProcessor extends AbstractActor with Processor

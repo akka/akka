@@ -1,11 +1,16 @@
 package sample.persistence;
 
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.japi.Procedure;
+import akka.persistence.SaveSnapshotFailure;
+import akka.persistence.SaveSnapshotSuccess;
+import akka.persistence.SnapshotOffer;
+import akka.persistence.UntypedPersistentActor;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-
-import akka.actor.*;
-import akka.persistence.*;
-import akka.japi.Procedure;
 
 public class SnapshotExample {
     public static class ExampleState implements Serializable {
@@ -34,6 +39,9 @@ public class SnapshotExample {
     }
 
     public static class ExamplePersistentActor extends UntypedPersistentActor {
+        @Override
+        public String persistenceId() { return "persistence-id"; }
+
         private ExampleState state = new ExampleState();
 
         @Override
@@ -72,6 +80,7 @@ public class SnapshotExample {
             unhandled(message);
           }
         }
+
     }
 
     public static void main(String... args) throws Exception {

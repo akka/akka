@@ -6,11 +6,11 @@ package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
 
-import scala.collection.immutable
-
+import akka.actor.{ AbstractActor, UntypedActor }
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
-import akka.actor.{ Actor, ActorRef, AbstractActor }
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API.
@@ -388,7 +388,6 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
 /**
  * An persistent Actor - can be used to implement command or event sourcing.
  */
-// TODO remove EventsourcedProcessor / Processor #15230
 trait PersistentActor extends ProcessorImpl with Eventsourced {
   def receive = receiveCommand
 }
@@ -396,7 +395,8 @@ trait PersistentActor extends ProcessorImpl with Eventsourced {
 /**
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
-abstract class UntypedPersistentActor extends PersistentActor with Eventsourced {
+abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl with Eventsourced {
+
   final def onReceive(message: Any) = onReceiveCommand(message)
 
   final def receiveRecover: Receive = {
@@ -542,7 +542,7 @@ abstract class UntypedPersistentActor extends PersistentActor with Eventsourced 
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
    * Commands sent to event sourced processors must not be [[Persistent]] or
-   * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
+   * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
    * thrown by the processor.
    */
   @throws(classOf[Exception])
@@ -552,7 +552,7 @@ abstract class UntypedPersistentActor extends PersistentActor with Eventsourced 
 /**
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
-abstract class AbstractPersistentActor extends PersistentActor with Eventsourced {
+abstract class AbstractPersistentActor extends AbstractActor with PersistentActor with Eventsourced {
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
@@ -680,7 +680,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedPersistentActor {
  * communication with other actors). On successful validation, one or more events are
  * derived from a command and these events are then persisted by calling `persist`.
  * Commands sent to event sourced processors must not be [[Persistent]] or
- * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
+ * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
  * thrown by the processor.
  */
 @deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")

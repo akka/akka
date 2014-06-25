@@ -13,13 +13,11 @@ import java.util.concurrent.TimeUnit;
 
 public class PersistentViewExample {
     public static class ExamplePersistentActor extends UntypedPersistentActor {
-        private int count = 1;
-      
         @Override
-        public String persistenceId() {
-            return "persistentActor-5";
-        }
-        
+        public String persistenceId() { return "persistentActor-5"; }
+
+        private int count = 1;
+
         @Override
         public void onReceiveRecover(Object message) {
           if (message instanceof String) {

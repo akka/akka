@@ -498,9 +498,7 @@ public class LambdaPersistenceDocTest {
     //#view
     class MyView extends AbstractPersistentView {
       @Override
-      public String persistenceId() {
-        return "some-persistence-id";
-      }
+      public String persistenceId() { return "some-persistence-id"; }
 
       public MyView() {
         receive(ReceiveBuilder.
