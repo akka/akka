@@ -17,6 +17,7 @@ public class JavaAPITestBase {
     assertFalse(o.isEmpty());
     assertTrue(o.isDefined());
     assertEquals("abc", o.get());
+    assertEquals("abc", o.getOrElse("other"));
   }
 
   @Test
@@ -24,10 +25,12 @@ public class JavaAPITestBase {
     Option<String> o1 = Option.none();
     assertTrue(o1.isEmpty());
     assertFalse(o1.isDefined());
+    assertEquals("other", o1.getOrElse("other"));
 
     Option<Float> o2 = Option.none();
     assertTrue(o2.isEmpty());
     assertFalse(o2.isDefined());
+    assertEquals("other", o1.getOrElse("other"));
   }
 
   @Test

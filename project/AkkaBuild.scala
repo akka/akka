@@ -1045,7 +1045,10 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ContainerFormats#SelectionEnvelopeOrBuilder.getWildcardFanOut"),
 
       // Adding expectMsg overload to testkit #15425
-      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.expectMsg")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.expectMsg"),
+
+      // Adding akka.japi.Option.getOrElse #15383
+      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Option.getOrElse")
     )
   }
 
