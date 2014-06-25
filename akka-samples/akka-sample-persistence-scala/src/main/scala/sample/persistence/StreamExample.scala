@@ -3,6 +3,8 @@
  */
 package sample.persistence
 
+/* FIXME when akka-stream-experimental-0.4 has been published
+
 import org.reactivestreams.api._
 
 import akka.actor._
@@ -20,15 +22,15 @@ import akka.stream.scaladsl._
 object StreamExample extends App {
   implicit val system = ActorSystem("example")
 
-  class ExampleProcessor(pid: String) extends Processor {
+  class ExamplePersistentActor(pid: String) extends Processor {
     override def processorId = pid
     def receive = {
       case Persistent(payload, _) =>
     }
   }
 
-  val p1 = system.actorOf(Props(classOf[ExampleProcessor], "p1"))
-  val p2 = system.actorOf(Props(classOf[ExampleProcessor], "p2"))
+  val p1 = system.actorOf(Props(classOf[ExamplePersistentActor], "p1"))
+  val p2 = system.actorOf(Props(classOf[ExamplePersistentActor], "p2"))
 
   val materializer = FlowMaterializer(MaterializerSettings())
 
@@ -50,3 +52,4 @@ object StreamExample extends App {
   }
 }
 
+*/ 
