@@ -64,7 +64,7 @@ class HttpServerExampleSpec
       case HttpRequest(GET, Uri.Path("/"), _, _, _) ⇒
         HttpResponse(
           entity = HttpEntity(MediaTypes.`text/html`,
-            <html><body>Hello world!</body></html>.toString))
+            "<html><body>Hello world!</body></html>"))
 
       case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
       case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")

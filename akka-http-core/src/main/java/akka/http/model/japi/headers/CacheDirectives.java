@@ -29,9 +29,9 @@ public final class CacheDirectives {
     public static CacheDirective NO_CACHE(String... fieldNames) {
         return akka.http.model.headers.CacheDirectives.no$minuscache$.MODULE$.apply(fieldNames);
     }
-    public static final CacheDirective PUBLIC = akka.http.model.headers.CacheDirectives.public$.MODULE$;
+    public static final CacheDirective PUBLIC = akka.http.model.headers.CacheDirectives.getPublic();
     public static CacheDirective PRIVATE(String... fieldNames) {
-        return akka.http.model.headers.CacheDirectives.private$.MODULE$.apply(fieldNames);
+        return akka.http.model.headers.CacheDirectives.createPrivate(fieldNames);
     }
     public static final CacheDirective PROXY_REVALIDATE = akka.http.model.headers.CacheDirectives.proxy$minusrevalidate$.MODULE$;
     public static CacheDirective S_MAXAGE(long deltaSeconds) {

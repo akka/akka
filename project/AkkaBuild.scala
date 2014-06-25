@@ -25,7 +25,7 @@ import java.lang.Boolean.getBoolean
 import java.io.{InputStreamReader, FileInputStream, File}
 import java.util.Properties
 import annotation.tailrec
-import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
+import Unidoc.{ JavaDoc, GenJavaDocEnabled, javadocSettings, junidocSources, sunidoc, unidocExclude }
 import TestExtras. { JUnitFileReporting, StatsDMetrics }
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
@@ -343,28 +343,32 @@ object AkkaBuild extends Build {
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
-    )
+    ) ++ (if (GenJavaDocEnabled) Seq(
+      // genjavadoc needs to generate synthetic methods since the java code uses them
+      scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
+    ) else Nil)
+  )
+
+  val macroParadise = Seq(
+    libraryDependencies <++= scalaVersion { v =>
+      Seq("org.scala-lang" % "scala-reflect" % v) ++ (
+        if (v.startsWith("2.10."))
+          Seq("org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile")
+        else Nil)
+    },
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
   )
 
   lazy val parsing = Project(
     id = "akka-parsing-experimental",
     base = file("akka-parsing"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.parsing ++ Seq(
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.parsing ++ macroParadise ++ Seq(
       version := streamAndHttpVersion,
-      javacOptions ++= Seq(
-        "-encoding", "UTF-8",
-        "-source", "1.6",
-        "-target", "1.6",
-        "-Xlint:unchecked",
-        "-Xlint:deprecation"),
+      unmanagedSourceDirectories in Compile += (sourceDirectory in Compile).value / sourceDirName(scalaVersion.value),
       scalacOptions += "-language:_",
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-reflect" % "2.10.4" % "provided",
-        "org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile"),
       // ScalaDoc doesn't like the macros
       sources in doc in Compile := List(),
       publishArtifact in packageDoc := false,
-      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-parsing-experimental")
       previousArtifact := None
@@ -690,7 +694,7 @@ object AkkaBuild extends Build {
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
     dependencies = Seq(stream % "test -> test", httpCore),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
@@ -1137,6 +1141,16 @@ object AkkaBuild extends Build {
       props.load(in)
       in.close()
       sys.props ++ props.asScala
+    }
+  }
+
+  def sourceDirName(version: String): String = {
+    val parts = version.split("\\.").toList
+    // this is here to make it easy to compensate for changes in minor versions
+    parts match {
+      case "2" :: "10" :: _ => "scala-2.10"
+      case "2" :: "11" :: _ => "scala-2.11"
+      case _ => "unknow-scala-version"
     }
   }
 
