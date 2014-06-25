@@ -136,27 +136,31 @@ public class LambdaPersistenceDocTest {
     }
 
     //#recovery-completed
-    class MyProcessor5 extends AbstractProcessor {
-      
-      public MyProcessor5() {
-        receive(ReceiveBuilder.
-          match(RecoveryCompleted.class, r -> {
-            recoveryCompleted();
-            getContext().become(active);
-          }).
-          build()
-        );
+    class MyPersistentActor5 extends AbstractPersistentActor {
+
+      @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
+        return ReceiveBuilder.
+          match(String.class, this::handleEvent).build();
       }
 
+      @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
+        return ReceiveBuilder.
+          match(RecoveryCompleted.class, r -> {
+            recoveryCompleted();
+          }).
+          match(String.class, s -> s.equals("cmd"),
+            s -> persist("evt", this::handleEvent)).build();
+      }      
+      
       private void recoveryCompleted() {
           // perform init after recovery, before any other messages
           // ...
       }
 
-      PartialFunction<Object, BoxedUnit> active =
-        ReceiveBuilder.
-          match(Persistent.class, message -> {/* ... */}).
-          build();
+      private void handleEvent(String event) {
+        // update state
+        // ...
+      }
       
     }
     //#recovery-completed

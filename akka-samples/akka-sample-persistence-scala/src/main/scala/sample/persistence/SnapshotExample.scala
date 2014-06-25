@@ -5,34 +5,40 @@ import akka.persistence._
 
 object SnapshotExample extends App {
   final case class ExampleState(received: List[String] = Nil) {
-    def update(s: String) = copy(s :: received)
+    def updated(s: String): ExampleState = copy(s :: received)
     override def toString = received.reverse.toString
   }
 
-  class ExampleProcessor extends Processor {
+  class ExamplePersistentActor extends PersistentActor {
     var state = ExampleState()
 
-    def receive = {
-      case Persistent(s, snr)                    => state = state.update(s"${s}-${snr}")
+    def receiveCommand: Actor.Receive = {
+      case "print"                               => println("current state = " + state)
+      case "snap"                                => saveSnapshot(state)
       case SaveSnapshotSuccess(metadata)         => // ...
       case SaveSnapshotFailure(metadata, reason) => // ...
+      case s: String =>
+        persist(s) { evt => state = state.updated(evt) }
+    }
+
+    def receiveRecover: Actor.Receive = {
       case SnapshotOffer(_, s: ExampleState) =>
         println("offered state = " + s)
         state = s
-      case "print" => println("current state = " + state)
-      case "snap"  => saveSnapshot(state)
+      case evt: String =>
+        state = state.updated(evt)
     }
   }
 
   val system = ActorSystem("example")
-  val processor = system.actorOf(Props(classOf[ExampleProcessor]), "processor-3-scala")
+  val persistentActor = system.actorOf(Props(classOf[ExamplePersistentActor]), "persistentActor-3-scala")
 
-  processor ! Persistent("a")
-  processor ! Persistent("b")
-  processor ! "snap"
-  processor ! Persistent("c")
-  processor ! Persistent("d")
-  processor ! "print"
+  persistentActor ! "a"
+  persistentActor ! "b"
+  persistentActor ! "snap"
+  persistentActor ! "c"
+  persistentActor ! "d"
+  persistentActor ! "print"
 
   Thread.sleep(1000)
   system.shutdown()

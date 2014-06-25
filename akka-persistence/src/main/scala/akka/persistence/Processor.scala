@@ -90,7 +90,7 @@ trait Processor extends Actor with Recovery {
       case ReplayedMessage(p)                     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
       case WriteMessageSuccess(p: PersistentRepr) ⇒ processPersistent(receive, p)
       case WriteMessageSuccess(r: Resequenceable) ⇒ process(receive, r)
-      case WriteMessageFailure(p, cause)          ⇒ 
+      case WriteMessageFailure(p, cause) ⇒
         process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
       case LoopMessageSuccess(m) ⇒ process(receive, m)
       case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
@@ -156,7 +156,7 @@ trait Processor extends Actor with Recovery {
    */
   private def onRecoveryCompleted(receive: Receive): Unit =
     receive.applyOrElse(RecoveryCompleted, unhandled)
-  
+
   private val _persistenceId = extension.persistenceId(self)
 
   private var processorBatch = Vector.empty[Resequenceable]

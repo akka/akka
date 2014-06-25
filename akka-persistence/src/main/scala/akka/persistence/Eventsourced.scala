@@ -542,6 +542,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    *
    * @see [[Recover]]
    */
+  @throws(classOf[Exception])
   def onReceiveRecover(msg: Any): Unit
 
   /**
@@ -552,6 +553,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
    * [[ResequenceableBatch]] messages. In this case an `UnsupportedOperationException` is
    * thrown by the processor.
    */
+  @throws(classOf[Exception])
   def onReceiveCommand(msg: Any): Unit
 }
 

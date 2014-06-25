@@ -36,14 +36,14 @@ Eventsourced and Akka Persistence are both :ref:`extending-akka-scala`.
 **Akka Persistence:** ``Persistence`` extension
 
 - Must **not** be explicitly created by an application. A ``Persistence`` extension is implicitly created upon first
-  processor or channel creation. Journal actors are automatically created from a journal plugin configuration (see
+  `PersistentActor`` creation. Journal actors are automatically created from a journal plugin configuration (see
   :ref:`journal-plugin-api`).
-- :ref:`processors` and :ref:`channels` can be created like any other actor with ``actorOf`` without using the
+- ``PersistentActor``  can be created like any other actor with ``actorOf`` without using the
   ``Persistence`` extension.
-- Is **not** a central registry of processors and channels.
+- Is **not** a central registry of persistent actors.
 
-Processors
-==========
+Processors / PersistentActor
+============================
 
 **Eventsourced:** ``Eventsourced``
 
@@ -70,29 +70,21 @@ Processors
 - Does not support batch-writes of messages to the journal.
 - Does not support stashing of messages.
 
-**Akka Persistence:** ``Processor``
+**Akka Persistence:** ``PersistentActor``
 
-- Trait that adds journaling (write-ahead-logging) to actors (see :ref:`processors`) and used by applications for
-  *command sourcing*. Corresponds to ``Eventsourced`` processors in Eventsourced but is not a stackable trait.
+- Trait that adds journaling to actors (see :ref:`event-sourcing`) and used by applications for
+  *event sourcing* or *command sourcing*. Corresponds to ``Eventsourced`` processors in Eventsourced but is not a stackable trait.
 - Automatically recovers on start and re-start, by default. :ref:`recovery` can be customized or turned off by
   overriding actor life cycle hooks ``preStart`` and ``preRestart``. ``Processor`` takes care that new messages
   never interfere with replayed messages. New messages are internally buffered until recovery completes.
 - No special-purpose behavior change methods. Default behavior change methods ``context.become`` and
   ``context.unbecome`` can be used and are journaling-preserving.
-- Writes messages of type ``Persistent`` to the journal (see :ref:`persistent-messages`). Corresponds to ``Message``
-  in Eventsourced. Sender references are written to the journal. A reply to senders must therefore be done via a
-  channel in order to avoid redundant replies during replay. Sender references of type ``PromiseActorRef`` are
+- Sender references are written to the journal. Sender references of type ``PromiseActorRef`` are
   not journaled, they are ``system.deadLetters`` on replay.
 - Supports :ref:`snapshots`.
 - :ref:`persistence-identifiers` are of type ``String``, have a default value and can be overridden by applications.
 - Supports :ref:`batch-writes`.
 - Supports stashing of messages.
-
-**Akka Persistence:** ``EventsourcedProcessor``
-
-- Extension trait and pattern on top of ``Processor`` to support :ref:`event-sourcing`. Has no direct counterpart in
-  Eventsourced. Can be considered as a replacement of two processors in Eventsourced where one processor processes
-  commands and the other processes events that have been emitted by the command processor.
 
 Channels
 ========
@@ -112,25 +104,6 @@ Channels
 - Does not redeliver messages on missing or negative delivery confirmation.
 - Cannot be used standalone.
 
-**Akka Persistence:** ``Channel``
-
-- Prevents redundant delivery of messages to a destination (see :ref:`channels`) i.e. serves the same primary purpose
-  as in Eventsourced.
-- Is not associated with a single destination. A destination can be specified with each ``Deliver`` request and is
-  referred to by an actor path. A destination path is resolved to the current destination incarnation during delivery
-  (via ``actorSelection``).
-- Must not be explicitly activated. Also, a network of processors and channels automatically recover consistently,
-  even if they are distributed. This enhancement, together with improved processor recovery, makes recovery of complex
-  Akka Persistence applications trivial. No special recovery procedures must be run by applications.
-- Redelivers messages on missing delivery confirmation (see :ref:`redelivery`). In contrast to Eventsourced, Akka
-  Persistence doesn't distinguish between missing and negative confirmations. It only has a notion of missing
-  confirmations using timeouts (which are closely related to negative confirmations as both trigger message
-  redelivery).
-- Can be used standalone.
-
-Persistent channels
-===================
-
 **Eventsourced:** ``ReliableChannel``
 
 - Provides ``DefaultChannel`` functionality plus persistence and recovery from sender JVM crashes (see `ReliableChannel
@@ -142,16 +115,17 @@ Persistent channels
 - Cannot reply on persistence.
 - Can be used standalone.
 
-**Akka Persistence:** ``PersistentChannel``
+**Akka Persistence:** ``AtLeastOnceDelivery``
 
-- Provides ``Channel`` functionality plus persistence and recovery from sender JVM crashes (see
-  :ref:`persistent-channels`). Same message redelivery features as ``Channel``.
-- Redelivers unconfirmed messages concurrently to newly delivered messages. Flow control is done by channel using
-  a configurable minimum and maximum number of pending confirmations.
-- Optionally notifies applications about messages for which the maximum number of delivery attempts has been reached
-  (also offered by ``Channel``).
-- Can reply on persistence (= accept acknowledgement).
-- Can be used standalone.
+- ``AtLeastOnceDelivery`` trait is mixed in to a ``PersistentActor``
+- Does not prevent redundant delivery of messages to a destination
+- Is not associated with a single destination. A destination can be specified with each ``deliver`` request and is
+  referred to by an actor path. A destination path is resolved to the current destination incarnation during delivery
+  (via ``actorSelection``).
+- Redelivers messages on missing delivery confirmation. In contrast to Eventsourced, Akka
+  Persistence doesn't distinguish between missing and negative confirmations. It only has a notion of missing
+  confirmations using timeouts (which are closely related to negative confirmations as both trigger message
+  redelivery).
 
 Views
 =====
@@ -162,10 +136,9 @@ Views
 
 **Akka Persistence:** ``View``
 
-- Receives the message stream written by a ``Processor`` or ``EventsourcedProcessor`` by reading it directly from the
+- Receives the message stream written by a ``PersistentActor`` by reading it directly from the
   journal (see :ref:`views`). Alternative to using channels. Useful in situations where actors shall receive a
   persistent message stream in correct order without duplicates.
-- Can be used in combination with :ref:`channels` for sending messages.
 - Supports :ref:`snapshots`.
 
 Serializers
@@ -194,7 +167,7 @@ Sequence numbers
 
 **Akka Persistence:**
 
-- Generated on a per-processor basis.
+- Generated on a per persistent actor basis.
 
 Storage plugins
 ===============

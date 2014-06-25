@@ -1,31 +1,47 @@
 package sample.persistence;
 
 import java.util.concurrent.TimeUnit;
-
 import scala.concurrent.duration.Duration;
 
 import akka.actor.*;
 import akka.persistence.*;
+import akka.japi.Procedure;
 
 public class ViewExample {
-    public static class ExampleProcessor extends UntypedProcessor {
+    public static class ExamplePersistentActor extends UntypedPersistentActor {
+        private int count = 1;
+      
         @Override
-        public String processorId() {
-            return "processor-5";
+        public String persistenceId() {
+            return "persistentActor-5";
+        }
+        
+        @Override
+        public void onReceiveRecover(Object message) {
+          if (message instanceof String) {
+            count += 1;
+          } else {
+            unhandled(message);
+          }
         }
 
         @Override
-        public void onReceive(Object message) throws Exception {
-            if (message instanceof Persistent) {
-                Persistent p = (Persistent)message;
-                System.out.println(String.format("processor received %s (sequence nr = %d)", p.payload(), p.sequenceNr()));
-            }
+        public void onReceiveCommand(Object message) {
+          if (message instanceof String) {
+            String s = (String) message;
+            System.out.println(String.format("persistentActor received %s (nr = %d)", s, count));
+            persist(s + count, new Procedure<String>() {
+              public void apply(String evt) {
+                count += 1;
+              }
+            });
+          } else {
+            unhandled(message);
+          }
         }
     }
 
     public static class ExampleView extends UntypedView {
-        private final ActorRef destination = getContext().actorOf(Props.create(ExampleDestination.class));
-        private final ActorRef channel = getContext().actorOf(Channel.props("channel"));
 
         private int numReplicated = 0;
 
@@ -36,7 +52,7 @@ public class ViewExample {
 
         @Override
         public String persistenceId() {
-            return "processor-5";
+            return "persistentActor-5";
         }
 
         @Override
@@ -44,8 +60,7 @@ public class ViewExample {
             if (message instanceof Persistent) {
                 Persistent p = (Persistent)message;
                 numReplicated += 1;
-                System.out.println(String.format("view received %s (sequence nr = %d, num replicated = %d)", p.payload(), p.sequenceNr(), numReplicated));
-                channel.tell(Deliver.create(p.withPayload("replicated-" + p.payload()), destination.path()), getSelf());
+                System.out.println(String.format("view received %s (num replicated = %d)", p.payload(), numReplicated));
             } else if (message instanceof SnapshotOffer) {
                 SnapshotOffer so = (SnapshotOffer)message;
                 numReplicated = (Integer)so.snapshot();
@@ -56,23 +71,12 @@ public class ViewExample {
         }
     }
 
-    public static class ExampleDestination extends UntypedActor {
-        @Override
-        public void onReceive(Object message) throws Exception {
-            if (message instanceof ConfirmablePersistent) {
-                ConfirmablePersistent cp = (ConfirmablePersistent)message;
-                System.out.println(String.format("destination received %s (sequence nr = %s)", cp.payload(), cp.sequenceNr()));
-                cp.confirm();
-            }
-        }
-    }
-
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
-        final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class));
+        final ActorRef persistentActor = system.actorOf(Props.create(ExamplePersistentActor.class));
         final ActorRef view = system.actorOf(Props.create(ExampleView.class));
 
-        system.scheduler().schedule(Duration.Zero(), Duration.create(2, TimeUnit.SECONDS), processor, Persistent.create("scheduled"), system.dispatcher(), null);
+        system.scheduler().schedule(Duration.Zero(), Duration.create(2, TimeUnit.SECONDS), persistentActor, "scheduled", system.dispatcher(), null);
         system.scheduler().schedule(Duration.Zero(), Duration.create(5, TimeUnit.SECONDS), view, "snap", system.dispatcher(), null);
     }
 }
