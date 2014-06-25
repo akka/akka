@@ -22,6 +22,15 @@ import scala.collection.breakOut
 import scala.collection.immutable.ListMap
 import scala.reflect.macros.Context
 
+// provides a source compatibility stub
+// in Scala 2.10.x, it will make `import compat._` compile just fine,
+// even though `c.universe` doesn't have `compat`
+// in Scala 2.11.0, it will be ignored, becase `import c.universe._`
+// brings its own `compat` in scope and that one takes precedence
+private[shapeless] object HasCompat { val compat = ??? }
+
+import HasCompat._
+
 trait Generic[T] {
   type Repr
   def to(t: T): Repr
@@ -131,6 +140,7 @@ object GenericMacros {
 
     import c.universe._
     import Flag._
+    import compat._
 
     def unitValueTree = reify { () }.tree
     def absurdValueTree = reify { ??? }.tree

@@ -35,7 +35,7 @@ public abstract class Util {
     }
     @SuppressWarnings("unchecked")
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {
-        return Map$.MODULE$.apply(scala.collection.JavaConverters.asScalaMapConverter(map).asScala().toSeq());
+        return Map$.MODULE$.apply(scala.collection.JavaConverters.mapAsScalaMapConverter(map).asScala().toSeq());
     }
     @SuppressWarnings("unchecked") // contains an upcast
     public static <T, U extends T> scala.Option<U> convertOptionToScala(Option<T> o) {
@@ -53,7 +53,7 @@ public abstract class Util {
 
     @SuppressWarnings("unchecked")
     public static <T, U extends T> Seq<U> convertIterable(Iterable<T> els) {
-        return scala.collection.JavaConverters.asScalaIterableConverter((Iterable<U>)els).asScala().toVector();
+        return scala.collection.JavaConverters.iterableAsScalaIterableConverter((Iterable<U>)els).asScala().toVector();
     }
     @SuppressWarnings("unchecked")
     public static <T, U extends T> Seq<U> convertArray(T[] els) {

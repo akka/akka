@@ -21,6 +21,8 @@ import language.experimental.macros
 
 import reflect.macros.Context
 
+import HasCompat._
+
 // Typically the contents of this object will be imported via val alias `poly` in the shapeless package object.
 object PolyDefns extends Cases {
   /**
@@ -52,13 +54,14 @@ object PolyDefns extends Cases {
 
     def materializeFromValueImpl[P: c.WeakTypeTag, FT: c.WeakTypeTag, T: c.WeakTypeTag](c: Context): c.Expr[Case[P, FT :: HNil]] = {
       import c.universe._
+      import compat._
 
       val pTpe = weakTypeOf[P]
       val ftTpe = weakTypeOf[FT]
       val tTpe = weakTypeOf[T]
 
       val recTpe = weakTypeOf[Case[P, FT :: HNil]]
-      if (c.openImplicits.tail.exists(_._1 =:= recTpe))
+      if (c.openImplicits.tail.exists(_.pt =:= recTpe))
         c.abort(c.enclosingPosition, s"Diverging implicit expansion for Case.Aux[$pTpe, $ftTpe :: HNil]")
 
       val value = pTpe match {
@@ -227,6 +230,7 @@ object Poly extends PolyInst {
 
   def liftFnImpl(c: Context)(f: c.Expr[Any]): c.Expr[Poly] = {
     import c.universe._
+    import compat._
     import Flag._
 
     val pendingSuperCall = Apply(Select(Super(This(tpnme.EMPTY), tpnme.EMPTY), nme.CONSTRUCTOR), List())
