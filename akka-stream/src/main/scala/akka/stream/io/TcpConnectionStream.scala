@@ -102,6 +102,8 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     private var pendingDemand = true
     private var connection: ActorRef = _
 
+    private def initialized: Boolean = connection ne null
+
     def setConnection(c: ActorRef): Unit = {
       connection = c
       writePump.pump()
@@ -119,11 +121,11 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
 
     override def isClosed: Boolean = closed
     override def cancel(e: Throwable): Unit = {
-      if (!closed) connection ! Abort
+      if (!closed && initialized) connection ! Abort
       closed = true
     }
     override def complete(): Unit = {
-      if (!closed) connection ! ConfirmedClose
+      if (!closed && initialized) connection ! ConfirmedClose
       closed = true
     }
     override def enqueueOutputElement(elem: Any): Unit = {
