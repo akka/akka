@@ -133,6 +133,9 @@ public class PersistenceDocTest {
         }
         
         class MyProcessor5 extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "persistence-id"; }
+
             //#recovery-completed
           
             @Override
@@ -356,6 +359,9 @@ public class PersistenceDocTest {
     static Object o8 = new Object() {
         //#reliable-event-delivery
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
+
             private ActorRef destination;
             private ActorRef channel;
 
@@ -394,6 +400,8 @@ public class PersistenceDocTest {
     static Object o9 = new Object() {
         //#persist-async
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceiveRecover(Object msg) {
@@ -441,6 +449,8 @@ public class PersistenceDocTest {
     static Object o10 = new Object() {
         //#defer
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceiveRecover(Object msg) {
@@ -485,16 +495,18 @@ public class PersistenceDocTest {
 
     static Object o11 = new Object() {
         //#view
-        class MyView extends UntypedView {
+        class MyView extends UntypedPersistentView {
             @Override
-            public String persistenceId() {
-                return "some-persistence-id";
-            }
+            public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceive(Object message) throws Exception {
-                if (message instanceof Persistent) {
-                    // ...
+                if (isPersistent()) {
+                    // handle message from Journal...
+                } else if (message instanceof String) {
+                    // handle message from user...
+                } else {
+                  unhandled(message);
                 }
             }
         }

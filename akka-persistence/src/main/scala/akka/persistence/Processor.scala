@@ -52,8 +52,17 @@ import akka.dispatch._
  * @see [[PersistentBatch]]
  */
 @deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
-trait Processor extends Actor with Recovery {
-  // todo remove Processor in favor of PersistentActor #15230
+trait Processor extends ProcessorImpl {
+  /**
+   * Persistence id. Defaults to this persistent-actors's path and can be overridden.
+   */
+  override def persistenceId: String = processorId
+}
+
+/** INTERNAL API */
+@deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
+private[akka] trait ProcessorImpl extends Actor with Recovery {
+  // TODO: remove Processor in favor of PersistentActor #15230
 
   import JournalProtocol._
 
@@ -166,11 +175,6 @@ trait Processor extends Actor with Recovery {
    */
   @deprecated("Override `persistenceId: String` instead. Processor will be removed.", since = "2.3.4")
   override def processorId: String = _persistenceId // TODO: remove processorId
-
-  /**
-   * Persistence id. Defaults to this persistent-actors's path and can be overridden.
-   */
-  override def persistenceId: String = processorId
 
   /**
    * Returns `persistenceId`.

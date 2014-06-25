@@ -5,6 +5,8 @@ import akka.persistence._
 
 object PersistentActorFailureExample extends App {
   class ExamplePersistentActor extends PersistentActor {
+    override def persistenceId = "persistence-id"
+
     var received: List[String] = Nil // state
 
     def receiveCommand: Actor.Receive = {

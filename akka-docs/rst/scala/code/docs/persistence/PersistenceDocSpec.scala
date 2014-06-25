@@ -4,11 +4,11 @@
 
 package docs.persistence
 
+import akka.actor.{ Actor, ActorSystem, Props }
+import akka.persistence._
+
 import scala.concurrent.duration._
 import scala.language.postfixOps
-
-import akka.actor.{ Props, Actor, ActorSystem }
-import akka.persistence._
 
 trait PersistenceDocSpec {
   val config =
@@ -29,7 +29,7 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     //#definition
-    import akka.persistence.{ Persistent, PersistenceFailure, Processor }
+    import akka.persistence.{ PersistenceFailure, Persistent, Processor }
 
     class MyProcessor extends Processor {
       def receive = {
@@ -89,6 +89,7 @@ trait PersistenceDocSpec {
 
     class MyProcessor4 extends PersistentActor {
       //#recovery-completed
+      override def persistenceId: String = "my-stable-persistence-id"
 
       def receiveRecover: Receive = {
         case evt => //...
@@ -208,7 +209,7 @@ trait PersistenceDocSpec {
   new AnyRef {
     //#fsm-example
     import akka.actor.FSM
-    import akka.persistence.{ Processor, Persistent }
+    import akka.persistence.{ Persistent, Processor }
 
     class PersistentDoor extends Processor with FSM[String, Int] {
       startWith("closed", 0)
@@ -308,6 +309,9 @@ trait PersistenceDocSpec {
 
     //#reliable-event-delivery
     class MyPersistentActor(destination: ActorRef) extends PersistentActor {
+
+      override def persistenceId: String = "my-stable-persistence-id"
+
       val channel = context.actorOf(Channel.props("channel"))
 
       def handleEvent(event: String) = {
@@ -332,12 +336,12 @@ trait PersistenceDocSpec {
   }
 
   new AnyRef {
-    import akka.actor.ActorRef
 
     val processor = system.actorOf(Props[MyPersistentActor]())
 
     //#persist-async
     class MyPersistentActor extends PersistentActor {
+      override def persistenceId: String = "my-stable-persistence-id"
 
       def receiveRecover: Receive = {
         case _ => // handle recovery here
@@ -367,12 +371,12 @@ trait PersistenceDocSpec {
     //#persist-async
   }
   new AnyRef {
-    import akka.actor.ActorRef
 
     val processor = system.actorOf(Props[MyPersistentActor]())
 
     //#defer
     class MyPersistentActor extends PersistentActor {
+      override def persistenceId: String = "my-stable-persistence-id"
 
       def receiveRecover: Receive = {
         case _ => // handle recovery here
@@ -409,11 +413,14 @@ trait PersistenceDocSpec {
     import akka.actor.Props
 
     //#view
-    class MyView extends View {
+    class MyView extends PersistentView {
       override def persistenceId: String = "some-persistence-id"
 
       def receive: Actor.Receive = {
-        case Persistent(payload, sequenceNr) => // ...
+        case payload if isPersistent =>
+        // handle message from journal...
+        case payload                 =>
+        // handle message from user-land...
       }
     }
     //#view

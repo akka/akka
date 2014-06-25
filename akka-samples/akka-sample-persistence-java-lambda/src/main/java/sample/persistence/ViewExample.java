@@ -45,7 +45,7 @@ public class ViewExample {
     }
   }
 
-  public static class ExampleView extends AbstractView {
+  public static class ExampleView extends AbstractPersistentView {
 
     private int numReplicated = 0;
 
@@ -61,10 +61,10 @@ public class ViewExample {
 
     public ExampleView() {
       receive(ReceiveBuilder.
-        match(Persistent.class, p -> {
+        match(Object.class, m -> isPersistent(), msg -> {
           numReplicated += 1;
           System.out.println(String.format("view received %s (num replicated = %d)",
-            p.payload(),
+            msg,
             numReplicated));
         }).
         match(SnapshotOffer.class, so -> {
