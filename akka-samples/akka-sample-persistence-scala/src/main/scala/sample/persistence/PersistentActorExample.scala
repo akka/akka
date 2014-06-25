@@ -8,16 +8,16 @@ case class Cmd(data: String)
 case class Evt(data: String)
 
 case class ExampleState(events: List[String] = Nil) {
-  def update(evt: Evt) = copy(evt.data :: events)
-  def size = events.length
+  def updated(evt: Evt): ExampleState = copy(evt.data :: events)
+  def size: Int = events.length
   override def toString: String = events.reverse.toString
 }
 
-class ExampleProcessor extends PersistentActor {
+class ExamplePersistentActor extends PersistentActor {
   var state = ExampleState()
 
   def updateState(event: Evt): Unit =
-    state = state.update(event)
+    state = state.updated(event)
 
   def numEvents =
     state.size
@@ -44,14 +44,14 @@ class ExampleProcessor extends PersistentActor {
 object PersistentActorExample extends App {
 
   val system = ActorSystem("example")
-  val processor = system.actorOf(Props[ExampleProcessor], "processor-4-scala")
+  val persistentActor = system.actorOf(Props[ExamplePersistentActor], "persistentActor-4-scala")
 
-  processor ! Cmd("foo")
-  processor ! Cmd("baz")
-  processor ! Cmd("bar")
-  processor ! "snap"
-  processor ! Cmd("buzz")
-  processor ! "print"
+  persistentActor ! Cmd("foo")
+  persistentActor ! Cmd("baz")
+  persistentActor ! Cmd("bar")
+  persistentActor ! "snap"
+  persistentActor ! Cmd("buzz")
+  persistentActor ! "print"
 
   Thread.sleep(1000)
   system.shutdown()

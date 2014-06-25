@@ -14,11 +14,11 @@ import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
 
 public class ProcessorChannelExample {
-  public static class ExampleProcessor extends AbstractProcessor {
+  public static class ExamplePersistentActor extends AbstractProcessor {
     private ActorRef destination;
     private ActorRef channel;
 
-    public ExampleProcessor(ActorRef destination) {
+    public ExamplePersistentActor(ActorRef destination) {
       this.destination = destination;
       this.channel = context().actorOf(Channel.props(), "channel");
 
@@ -47,7 +47,7 @@ public class ProcessorChannelExample {
   public static void main(String... args) throws Exception {
     final ActorSystem system = ActorSystem.create("example");
     final ActorRef destination = system.actorOf(Props.create(ExampleDestination.class));
-    final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class, destination), "processor-1");
+    final ActorRef processor = system.actorOf(Props.create(ExamplePersistentActor.class, destination), "processor-1");
 
     processor.tell(Persistent.create("a"), null);
     processor.tell(Persistent.create("b"), null);

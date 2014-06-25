@@ -8,7 +8,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
-import akka.persistence.AbstractProcessor;
+import akka.persistence.AbstractPersistentActor;
 import akka.persistence.Persistent;
 import akka.persistence.SnapshotOffer;
 import scala.PartialFunction;
@@ -43,36 +43,47 @@ public class SnapshotExample {
     }
   }
 
-  public static class ExampleProcessor extends AbstractProcessor {
+  public static class ExamplePersistentActor extends AbstractPersistentActor {
     private ExampleState state = new ExampleState();
 
-    public ExampleProcessor() {
-      receive(ReceiveBuilder.
-        match(Persistent.class, p -> state.update(String.format("%s-%d", p.payload(), p.sequenceNr()))).
-        match(SnapshotOffer.class, s -> {
-          ExampleState exState = (ExampleState) s.snapshot();
-          System.out.println("offered state = " + exState);
-          state = exState;
-        }).
+    @Override
+    public PartialFunction<Object, BoxedUnit> receiveCommand() {
+      return ReceiveBuilder.
         match(String.class, s -> s.equals("print"), s -> System.out.println("current state = " + state)).
         match(String.class, s -> s.equals("snap"), s ->
           // IMPORTANT: create a copy of snapshot
           // because ExampleState is mutable !!!
-          saveSnapshot(state.copy())).build()
-      );
+          saveSnapshot(state.copy())).
+        match(String.class, s -> {
+          persist(s, evt -> {
+            state.update(evt);
+          });
+        }).
+        build();
+    }
+
+    @Override
+    public PartialFunction<Object, BoxedUnit> receiveRecover() {
+      return ReceiveBuilder.
+        match(String.class, evt -> state.update(evt)).
+        match(SnapshotOffer.class, ss -> {
+          System.out.println("offered state = " + ss);
+          state = (ExampleState) ss.snapshot();
+        }).
+        build();
     }
   }
 
   public static void main(String... args) throws Exception {
     final ActorSystem system = ActorSystem.create("example");
-    final ActorRef processor = system.actorOf(Props.create(ExampleProcessor.class), "processor-3-java");
+    final ActorRef persistentActor = system.actorOf(Props.create(ExamplePersistentActor.class), "persistentActor-3-java");
 
-    processor.tell(Persistent.create("a"), null);
-    processor.tell(Persistent.create("b"), null);
-    processor.tell("snap", null);
-    processor.tell(Persistent.create("c"), null);
-    processor.tell(Persistent.create("d"), null);
-    processor.tell("print", null);
+    persistentActor.tell("a", null);
+    persistentActor.tell("b", null);
+    persistentActor.tell("snap", null);
+    persistentActor.tell("c", null);
+    persistentActor.tell("d", null);
+    persistentActor.tell("print", null);
 
     Thread.sleep(1000);
     system.shutdown();
