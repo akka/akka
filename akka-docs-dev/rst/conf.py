@@ -71,9 +71,9 @@ latex_paper_size = 'a4'
 latex_font_size = '10pt'
 
 latex_documents = [
-  ('java', 'AkkaJava.tex', u' Akka Java Documentation',
+  ('java', 'AkkaStreamAndHTTPJava.tex', u' Akka Stream and HTTP Experimental Java Documentation',
    u'Typesafe Inc', 'manual'),
-  ('scala', 'AkkaScala.tex', u' Akka Scala Documentation',
+  ('scala', 'AkkaStreamAndHTTPScala.tex', u' Akka Stream and HTTP Experimental Scala Documentation',
    u'Typesafe Inc', 'manual'),
 ]
 
