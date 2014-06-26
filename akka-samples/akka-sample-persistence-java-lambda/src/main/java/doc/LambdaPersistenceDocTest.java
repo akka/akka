@@ -496,15 +496,13 @@ public class LambdaPersistenceDocTest {
 
   static Object o11 = new Object() {
     //#view
-    class MyView extends AbstractView {
-      @Override
-      public String persistenceId() {
-        return "some-persistence-id";
-      }
+    class MyView extends AbstractPersistentView {
+      @Override public String persistenceId() { return "some-persistence-id"; }
+      @Override public String viewId() { return "some-persistence-id-view"; }
 
       public MyView() {
         receive(ReceiveBuilder.
-          match(Persistent.class, persistent -> {
+          match(Object.class, p -> isPersistent(),  persistent -> {
             // ...
           }).build()
         );
