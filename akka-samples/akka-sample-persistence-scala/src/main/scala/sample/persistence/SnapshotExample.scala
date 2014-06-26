@@ -10,6 +10,8 @@ object SnapshotExample extends App {
   }
 
   class ExamplePersistentActor extends PersistentActor {
+    def persistenceId: String = "sample-id-3"
+
     var state = ExampleState()
 
     def receiveCommand: Actor.Receive = {
@@ -28,6 +30,7 @@ object SnapshotExample extends App {
       case evt: String =>
         state = state.updated(evt)
     }
+
   }
 
   val system = ActorSystem("example")

@@ -6,7 +6,7 @@ package akka.persistence
 
 import java.lang.{ Iterable ⇒ JIterable }
 
-import akka.actor.AbstractActor
+import akka.actor.{ AbstractActor, UntypedActor }
 import akka.japi.{ Procedure, Util }
 import akka.persistence.JournalProtocol._
 
@@ -17,7 +17,7 @@ import scala.collection.immutable
  *
  * Event sourcing mixin for a [[Processor]].
  */
-private[persistence] trait Eventsourced extends Processor {
+private[persistence] trait Eventsourced extends ProcessorImpl {
   // TODO consolidate these traits as PersistentActor #15230
 
   /**
@@ -388,23 +388,15 @@ trait EventsourcedProcessor extends Processor with Eventsourced {
 /**
  * An persistent Actor - can be used to implement command or event sourcing.
  */
-// TODO remove EventsourcedProcessor / Processor #15230
-trait PersistentActor extends EventsourcedProcessor
+trait PersistentActor extends ProcessorImpl with Eventsourced {
+  def receive = receiveCommand
+}
 
 /**
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
-abstract class UntypedPersistentActor extends UntypedEventsourcedProcessor
-/**
- * Java API: an persistent actor - can be used to implement command or event sourcing.
- */
-abstract class AbstractPersistentActor extends AbstractEventsourcedProcessor
+abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl with Eventsourced {
 
-/**
- * Java API: an event sourced processor.
- */
-@deprecated("UntypedEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
-abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Eventsourced {
   final def onReceive(message: Any) = onReceiveCommand(message)
 
   final def receiveRecover: Receive = {
@@ -558,16 +550,10 @@ abstract class UntypedEventsourcedProcessor extends UntypedProcessor with Events
 }
 
 /**
- * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]):
- * command handler. Typically validates commands against current state (and/or by
- * communication with other actors). On successful validation, one or more events are
- * derived from a command and these events are then persisted by calling `persist`.
- * Commands sent to event sourced processors must not be [[Persistent]] or
- * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
- * thrown by the processor.
+ * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
-@deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
-abstract class AbstractEventsourcedProcessor extends AbstractActor with EventsourcedProcessor {
+abstract class AbstractPersistentActor extends AbstractActor with PersistentActor with Eventsourced {
+
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event. It is guaranteed that no new commands will be received by a processor
@@ -676,9 +662,28 @@ abstract class AbstractEventsourcedProcessor extends AbstractActor with Eventsou
   final def persistAsync[A](events: JIterable[A], handler: Procedure[A]): Unit =
     persistAsync(Util.immutableSeq(events))(event ⇒ handler(event))
 
-  override def receive = super[EventsourcedProcessor].receive
+  override def receive = super[PersistentActor].receive
 
-  override def receive(receive: Receive): Unit = {
-    throw new IllegalArgumentException("Define the behavior by overriding receiveRecover and receiveCommand")
-  }
+}
+
+/**
+ * Java API: an event sourced processor.
+ */
+@deprecated("UntypedEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
+abstract class UntypedEventsourcedProcessor extends UntypedPersistentActor {
+  override def persistenceId: String = processorId
+}
+
+/**
+ * Java API: compatible with lambda expressions (to be used with [[akka.japi.pf.ReceiveBuilder]]):
+ * command handler. Typically validates commands against current state (and/or by
+ * communication with other actors). On successful validation, one or more events are
+ * derived from a command and these events are then persisted by calling `persist`.
+ * Commands sent to event sourced processors must not be [[Persistent]] or
+ * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
+ * thrown by the processor.
+ */
+@deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
+abstract class AbstractEventsourcedProcessor extends AbstractPersistentActor {
+  override def persistenceId: String = processorId
 }

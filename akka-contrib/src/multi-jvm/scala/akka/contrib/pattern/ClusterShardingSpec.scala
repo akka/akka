@@ -77,6 +77,10 @@ object ClusterShardingSpec extends MultiNodeConfig {
 
     context.setReceiveTimeout(120.seconds)
 
+    // self.path.parent.name is the type name (utf-8 URL-encoded) 
+    // self.path.name is the entry identifier (utf-8 URL-encoded)
+    override def persistenceId: String = self.path.parent.name + "-" + self.path.name
+
     var count = 0
     //#counter-actor
 

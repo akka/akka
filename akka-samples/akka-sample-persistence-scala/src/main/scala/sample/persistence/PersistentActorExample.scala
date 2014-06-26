@@ -14,6 +14,8 @@ case class ExampleState(events: List[String] = Nil) {
 }
 
 class ExamplePersistentActor extends PersistentActor {
+  override def persistenceId = "sample-id-1"
+
   var state = ExampleState()
 
   def updateState(event: Evt): Unit =
