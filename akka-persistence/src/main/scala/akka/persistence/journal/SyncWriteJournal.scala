@@ -23,19 +23,19 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private val publish = extension.settings.internal.publishPluginCommands
 
   final def receive = {
-    case WriteMessages(resequenceables, processor) ⇒
+    case WriteMessages(resequenceables, processor, actorInstanceId) ⇒
       Try(writeMessages(preparePersistentBatch(resequenceables))) match {
         case Success(_) ⇒
           processor ! WriteMessagesSuccessful
           resequenceables.foreach {
-            case p: PersistentRepr ⇒ processor.tell(WriteMessageSuccess(p), p.sender)
-            case r                 ⇒ processor.tell(LoopMessageSuccess(r.payload), r.sender)
+            case p: PersistentRepr ⇒ processor.tell(WriteMessageSuccess(p, actorInstanceId), p.sender)
+            case r                 ⇒ processor.tell(LoopMessageSuccess(r.payload, actorInstanceId), r.sender)
           }
         case Failure(e) ⇒
           processor ! WriteMessagesFailed(e)
           resequenceables.foreach {
-            case p: PersistentRepr ⇒ processor tell (WriteMessageFailure(p, e), p.sender)
-            case r                 ⇒ processor tell (LoopMessageSuccess(r.payload), r.sender)
+            case p: PersistentRepr ⇒ processor tell (WriteMessageFailure(p, e, actorInstanceId), p.sender)
+            case r                 ⇒ processor tell (LoopMessageSuccess(r.payload, actorInstanceId), r.sender)
           }
           throw e
       }
@@ -73,8 +73,8 @@ trait SyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
-    case LoopMessage(message, processor) ⇒
-      processor forward LoopMessageSuccess(message)
+    case LoopMessage(message, processor, actorInstanceId) ⇒
+      processor forward LoopMessageSuccess(message, actorInstanceId)
   }
 
   //#journal-plugin-api

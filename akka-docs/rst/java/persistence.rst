@@ -218,10 +218,14 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
   and handle them in the callback.
+  
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``persistAsync`` and the journal has confirmed the write.  
 
 .. _defer-java:
 
-Deferring actions until preceeding persist handlers have executed
+Deferring actions until preceding persist handlers have executed
 -----------------------------------------------------------------
 
 Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
@@ -238,6 +242,10 @@ Notice that the ``sender()`` is **safe** to access in the handler callback, and 
 of the command for which this ``defer`` handler was called.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#defer-caller
+
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``defer`` and the journal has processed and confirmed all preceding writes.
 
 Batch writes
 ------------
