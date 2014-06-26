@@ -346,9 +346,6 @@ object Uri {
     def apply(address: Inet6Address): IPv6Host = IPv6Host(address.getAddress, address.getHostAddress)
   }
 
-  /** Java API */
-  def getHostEmpty: Host = Host.Empty
-
   sealed abstract class NonEmptyHost extends Host {
     def isEmpty = false
     def toOption = Some(this)
@@ -599,13 +596,6 @@ object Uri {
         case x                        ⇒ throw new IllegalArgumentException(x + " is not a legal UriParsingMode")
       }
   }
-
-  /** Java API */
-  def getParsingModeStrict: ParsingMode = ParsingMode.Strict
-  /** Java API */
-  def getParsingModeRelaxed: ParsingMode = ParsingMode.Relaxed
-  /** Java API */
-  def getParsingModeRelaxedWithRawQuery: ParsingMode = ParsingMode.RelaxedWithRawQuery
 
   // http://tools.ietf.org/html/rfc3986#section-5.2.2
   private[http] def resolve(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Query,
