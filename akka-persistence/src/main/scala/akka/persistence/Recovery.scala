@@ -9,6 +9,8 @@ import akka.dispatch.Envelope
 import akka.persistence.JournalProtocol._
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 
+import scala.util.control.NonFatal
+
 /**
  * Recovery state machine that loads snapshots and replays messages.
  *
@@ -29,19 +31,6 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
 
     protected def processPersistent(receive: Receive, persistent: Persistent) =
       withCurrentPersistent(persistent)(receive.applyOrElse(_, unhandled))
-
-    protected def updateLastSequenceNr(persistent: Persistent): Unit =
-      if (persistent.sequenceNr > _lastSequenceNr) _lastSequenceNr = persistent.sequenceNr
-
-    def updateLastSequenceNr(value: Long): Unit =
-      _lastSequenceNr = value
-
-    /** INTERNAL API */
-    private[akka] def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit = try {
-      _currentPersistent = persistent
-      updateLastSequenceNr(persistent)
-      body(persistent)
-    } finally _currentPersistent = null
 
     protected def recordFailure(cause: Throwable): Unit = {
       _recoveryFailureCause = cause
@@ -108,11 +97,12 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
 
     def aroundReceive(receive: Receive, message: Any) = message match {
       case r: Recover ⇒ // ignore
-      case ReplayedMessage(p) ⇒ try { processPersistent(receive, p) } catch {
-        case t: Throwable ⇒
-          _currentState = replayFailed // delay throwing exception to prepareRestart
-          recordFailure(t)
-      }
+      case ReplayedMessage(p) ⇒
+        try processPersistent(receive, p) catch {
+          case NonFatal(t) ⇒
+            _currentState = replayFailed // delay throwing exception to prepareRestart
+            recordFailure(t)
+        }
       case ReplayMessagesSuccess        ⇒ onReplaySuccess(receive, await)
       case ReplayMessagesFailure(cause) ⇒ onReplayFailure(receive, await, cause)
       case other ⇒
@@ -174,7 +164,25 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
   @deprecated("Override `persistenceId` instead. Processor will be removed.", since = "2.3.4")
   def processorId: String = extension.persistenceId(self) // TODO: remove processorId
 
-  def persistenceId: String = processorId
+  /**
+   * Id of the persistent entity for which messages should be replayed.
+   */
+  def persistenceId: String
+
+  /** INTERNAL API */
+  private[persistence] def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit = try {
+    _currentPersistent = persistent
+    updateLastSequenceNr(persistent)
+    body(persistent)
+  } finally _currentPersistent = null
+
+  /** INTERNAL API. */
+  private[persistence] def updateLastSequenceNr(persistent: Persistent): Unit =
+    if (persistent.sequenceNr > _lastSequenceNr) _lastSequenceNr = persistent.sequenceNr
+
+  /** INTERNAL API. */
+  private[persistence] def updateLastSequenceNr(value: Long): Unit =
+    _lastSequenceNr = value
 
   /**
    * Returns the current persistent message if there is any.

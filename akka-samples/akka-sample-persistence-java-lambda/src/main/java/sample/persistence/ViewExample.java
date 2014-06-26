@@ -45,26 +45,21 @@ public class ViewExample {
     }
   }
 
-  public static class ExampleView extends AbstractView {
+  public static class ExampleView extends AbstractPersistentView {
 
     private int numReplicated = 0;
 
-    @Override
-    public String viewId() {
+    @Override public String persistenceId() { return "persistentActor-5"; }
+    @Override public String viewId() {
       return "view-5";
-    }
-
-    @Override
-    public String persistenceId() {
-      return "persistentActor-5";
     }
 
     public ExampleView() {
       receive(ReceiveBuilder.
-        match(Persistent.class, p -> {
+        match(Object.class, m -> isPersistent(), msg -> {
           numReplicated += 1;
           System.out.println(String.format("view received %s (num replicated = %d)",
-            p.payload(),
+            msg,
             numReplicated));
         }).
         match(SnapshotOffer.class, so -> {

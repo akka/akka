@@ -85,6 +85,7 @@ object Persistent {
   /**
    * [[Persistent]] extractor.
    */
+  @deprecated("Use akka.persistence.PersistentActor instead", since = "2.3.4")
   def unapply(persistent: Persistent): Option[(Any, Long)] =
     Some((persistent.payload, persistent.sequenceNr))
 }
@@ -113,6 +114,7 @@ object ConfirmablePersistent {
   /**
    * [[ConfirmablePersistent]] extractor.
    */
+  @deprecated("Use akka.persistence.PersistentActor instead", since = "2.3.4")
   def unapply(persistent: ConfirmablePersistent): Option[(Any, Long, Int)] =
     Some((persistent.payload, persistent.sequenceNr, persistent.redeliveries))
 }
@@ -328,6 +330,7 @@ private[persistence] case class PersistentImpl(
 /**
  * INTERNAL API.
  */
+@deprecated("ConfirmablePersistent will be removed, see `AtLeastOnceDelivery` instead.", since = "2.3.4")
 private[persistence] case class ConfirmablePersistentImpl(
   payload: Any,
   sequenceNr: Long,
@@ -357,6 +360,7 @@ private[persistence] case class ConfirmablePersistentImpl(
 /**
  * INTERNAL API.
  */
+@deprecated("ConfirmablePersistent will be removed, see `AtLeastOnceDelivery` instead.", since = "2.3.4")
 private[persistence] object ConfirmablePersistentImpl {
   def apply(persistent: PersistentRepr, confirmMessage: Delivered, confirmTarget: ActorRef = null): ConfirmablePersistentImpl =
     ConfirmablePersistentImpl(persistent.payload, persistent.sequenceNr, persistent.persistenceId, persistent.deleted, persistent.redeliveries, persistent.confirms, confirmMessage, confirmTarget, persistent.sender)

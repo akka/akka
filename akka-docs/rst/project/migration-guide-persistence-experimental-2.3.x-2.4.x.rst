@@ -15,22 +15,39 @@ Migrating to ``2.4.x`` is as simple as changing all your classes to extending  `
 
 Replace all classes like::
 
-    class DeprecatedProcessor extends EventsourcedProcessor { /*...*/ }
+    class DeprecatedProcessor extends EventsourcedProcessor {
+      def processorId = "id"
+      /*...*/
+    }
 
 To extend ``PersistentActor``::
 
-    class NewPersistentProcessor extends PersistentActor { /*...*/ }
+    class NewPersistentProcessor extends PersistentActor {
+      def persistenceId = "id"
+      /*...*/
+    }
 
 
-Renamed processorId to persistenceId
-====================================
+Changed processorId to (abstract) persistenceId
+===============================================
 In Akka Persistence ``2.3.3`` and previously, the main building block of applications were Processors.
 Persistent messages, as well as processors implemented the ``processorId`` method to identify which persistent entity a message belonged to.
 
 This concept remains the same in Akka ``2.3.4``, yet we rename ``processorId`` to ``persistenceId`` because Processors will be removed,
 and persistent messages can be used from different classes not only ``PersistentActor`` (Views, directly from Journals etc).
 
-We provided the renamed method also on already deprecated classes (Channels), so you can simply apply a global rename of ``processorId`` to ``persistenceId``.
+Please note that ``processorId`` is **abstract** in the new API classes (``PersistentActor`` and ``PersistentView``),
+and we do **not** provide a default (actor-path derrived) value for it like we did for ``processorId``.
+The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical "which persistent entity this actor represents".
+A longer discussion on this subject can be found on `issue #15436 <https://github.com/akka/akka/issues/15436>`_ on github.
+
+In case you want to perserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
+implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
+
+    override def persistenceId = self.path.toStringWithoutAddress
+
+We provided the renamed method also on already deprecated classes (Channels),
+so you can simply apply a global rename of ``processorId`` to ``persistenceId``.
 
 Plugin APIs: Renamed PersistentId to PersistenceId
 ==================================================
@@ -76,6 +93,8 @@ the throughput
 Now deprecated code using Processor::
 
     class OldProcessor extends Processor {
+      override def processorId = "user-wallet-1337"
+
       def receive = {
         case Persistent(cmd) => sender() ! cmd
       }
@@ -84,6 +103,8 @@ Now deprecated code using Processor::
 Replacement code, with the same semantics, using PersistentActor::
 
     class NewProcessor extends PersistentActor {
+      override def persistenceId = "user-wallet-1337"
+
       def receiveCommand = {
         case cmd =>
           persistAsync(cmd) { e => sender() ! e }
@@ -100,3 +121,43 @@ any of the problems Futures have when closing over the sender reference.
 Using the``PersistentActor`` instead of ``Processor`` also shifts the responsibility of deciding if a message should be persisted
 to the receiver instead of the sender of the message. Previously, using ``Processor``, clients would have to wrap messages as ``Persistent(cmd)``
 manually, as well as have to be aware of the receiver being a ``Processor``, which didn't play well with transparency of the ActorRefs in general.
+
+Renamed View to PersistentView, which receives plain messages (Persistent() wrapper is gone)
+============================================================================================
+Views used to receive messages wrapped as ``Persistent(payload, seqNr)``, this is no longer the case and views receive
+the ``payload`` as message from the ``Journal`` directly. The rationale here is that the wrapper aproach was inconsistent
+with the other Akka Persistence APIs and also is not easily "discoverable" (you have to *know* you will be getting this Persistent wrapper).
+
+Instead, since ``2.3.4``, views get plain messages, and can use additional methods provided by the ``View`` to identify if a message
+was sent from the Journal (had been played back to the view). So if you had code like this::
+
+    class AverageView extends View {
+      override def processorId = "average-view"
+
+      def receive = {
+        case Persistent(msg, seqNr) =>
+          // from Journal
+
+        case msg =>
+          // from user-land
+    }
+
+You should update it to extend ``PersistentView`` instead::
+
+    class AverageView extends PersistentView {
+      override def persistenceId = "persistence-sample"
+      override def viewId = "persistence-sample-average"
+
+      def receive = {
+        case msg if isPersistent =>
+          // from Journal
+          val seqNr = lastSequenceNr // in case you require the sequence number
+
+        case msg =>
+          // from user-land
+      }
+    }
+
+In case you need to obtain the current sequence number the view is looking at, you can use the ``lastSequenceNr`` method.
+It is equivalent to "current sequence number", when ``isPersistent`` returns true, otherwise it yields the sequence number
+of the last persistent message that this view was updated with.

@@ -485,18 +485,21 @@ public class PersistenceDocTest {
 
     static Object o11 = new Object() {
         //#view
-        class MyView extends UntypedView {
-            @Override
-            public String persistenceId() {
-                return "some-persistence-id";
-            }
+        class MyView extends UntypedPersistentView {
+          @Override public String viewId() { return "some-persistence-id-view"; }
+          @Override public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceive(Object message) throws Exception {
-                if (message instanceof Persistent) {
-                    // ...
+                if (isPersistent()) {
+                    // handle message from Journal...
+                } else if (message instanceof String) {
+                    // handle message from user...
+                } else {
+                  unhandled(message);
                 }
             }
+
         }
         //#view
 
