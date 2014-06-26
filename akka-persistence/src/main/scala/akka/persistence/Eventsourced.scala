@@ -58,16 +58,20 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case _: PersistentRepr ⇒
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteMessageSuccess(r) ⇒
-        r match {
-          case p: PersistentRepr ⇒
-            withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
-          case _ ⇒ pendingInvocations.peek().handler(r.payload)
+      case WriteMessageSuccess(p, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          onWriteComplete()
         }
-        onWriteComplete()
-      case LoopMessageSuccess(l) ⇒
-        pendingInvocations.peek().handler(l)
-        onWriteComplete()
+      case LoopMessageSuccess(l, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          pendingInvocations.peek().handler(l)
+          onWriteComplete()
+        }
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
       case _ ⇒
@@ -75,7 +79,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
     }
 
     private def doAroundReceive(receive: Receive, message: Any): Unit = {
-      Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
+      Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message, instanceId))
 
       if (pendingStashingPersistInvocations > 0) {
         currentState = persistingEvents
@@ -111,19 +115,25 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
         deleteMessage(p.sequenceNr, permanent = true)
         throw new UnsupportedOperationException("Persistent commands not supported")
 
-      case WriteMessageSuccess(m) ⇒
-        m match {
-          case p: PersistentRepr ⇒ withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
-          case _                 ⇒ pendingInvocations.peek().handler(m.payload)
+      case WriteMessageSuccess(p, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          onWriteComplete()
         }
-        onWriteComplete()
 
-      case e @ WriteMessageFailure(p, _) ⇒
+      case e @ WriteMessageFailure(p, _, id) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
-        onWriteComplete()
-      case LoopMessageSuccess(l) ⇒
-        pendingInvocations.peek().handler(l)
-        onWriteComplete()
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case the handler has already been discarded
+        if (id == instanceId)
+          onWriteComplete()
+      case LoopMessageSuccess(l, id) ⇒
+        if (id == instanceId) {
+          pendingInvocations.peek().handler(l)
+          onWriteComplete()
+        }
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
       case other                       ⇒ processorStash.stash()

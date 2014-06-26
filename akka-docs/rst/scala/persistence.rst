@@ -210,10 +210,14 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync(cmd)(...)`` right away on all incomming
   messages right away, and handle them in the callback.
+  
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``persistAsync`` and the journal has confirmed the write.
 
 .. _defer-scala:
 
-Deferring actions until preceeding persist handlers have executed
+Deferring actions until preceding persist handlers have executed
 -----------------------------------------------------------------
 
 Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
@@ -233,6 +237,9 @@ The calling side will get the responses in this (guaranteed) order:
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#defer-caller
 
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``defer`` and the journal has processed and confirmed all preceding writes.
 
 .. _batch-writes:
 
