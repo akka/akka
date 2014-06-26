@@ -138,6 +138,10 @@ public class LambdaPersistenceDocTest {
     //#recovery-completed
     class MyPersistentActor5 extends AbstractPersistentActor {
 
+      @Override public String persistenceId() { 
+        return "my-stable-persistence-id";
+      }
+
       @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
         return ReceiveBuilder.
           match(String.class, this::handleEvent).build();
@@ -374,6 +378,10 @@ public class LambdaPersistenceDocTest {
         this.channel = context().actorOf(Channel.props(), "channel");
       }
 
+      @Override public String persistenceId() { 
+        return "my-stable-persistence-id";
+      }
+
       private void handleEvent(String event) {
         // update state
         // ...
@@ -400,6 +408,10 @@ public class LambdaPersistenceDocTest {
   static Object o9 = new Object() {
     //#persist-async
     class MyPersistentActor extends AbstractPersistentActor {
+
+      @Override public String persistenceId() { 
+        return "my-stable-persistence-id";
+      }
 
       private void handleCommand(String c) {
         sender().tell(c, self());
@@ -446,6 +458,10 @@ public class LambdaPersistenceDocTest {
   static Object o10 = new Object() {
     //#defer
     class MyPersistentActor extends AbstractPersistentActor {
+
+      @Override public String persistenceId() { 
+        return "my-stable-persistence-id";
+      }
 
       private void handleCommand(String c) {
         persistAsync(String.format("evt-%s-1", c), e -> {

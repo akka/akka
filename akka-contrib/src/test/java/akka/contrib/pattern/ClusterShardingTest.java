@@ -111,6 +111,13 @@ public class ClusterShardingTest {
     }
 
     int count = 0;
+    
+    // getSelf().path().parent().name() is the type name (utf-8 URL-encoded) 
+    // getSelf().path().name() is the entry identifier (utf-8 URL-encoded)
+    @Override
+    public String persistenceId() {
+      return getSelf().path().parent().name() + "-" + getSelf().path().name();
+    }
 
     @Override
     public void preStart() throws Exception {

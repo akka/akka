@@ -1,12 +1,18 @@
 package sample.persistence;
 
-import java.util.ArrayList;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
 import akka.japi.Procedure;
-import akka.actor.*;
-import akka.persistence.*;
+import akka.persistence.UntypedPersistentActor;
+
+import java.util.ArrayList;
 
 public class PersistentActorFailureExample {
   public static class ExamplePersistentActor extends UntypedPersistentActor {
+    @Override
+    public String persistenceId() { return "sample-id-2"; }
+
     private ArrayList<Object> received = new ArrayList<Object>();
 
     @Override
@@ -35,7 +41,6 @@ public class PersistentActorFailureExample {
         unhandled(message);
       }
     }
-
   }
 
   public static void main(String... args) throws Exception {

@@ -63,6 +63,9 @@ public class SnapshotExample {
     }
 
     @Override
+    public String persistenceId() { return "sample-id-3"; }
+
+    @Override
     public PartialFunction<Object, BoxedUnit> receiveRecover() {
       return ReceiveBuilder.
         match(String.class, evt -> state.update(evt)).

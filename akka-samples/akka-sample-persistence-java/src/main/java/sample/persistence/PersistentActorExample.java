@@ -66,6 +66,9 @@ class ExampleState implements Serializable {
 }
 
 class ExamplePersistentActor extends UntypedPersistentActor {
+    @Override
+    public String persistenceId() { return "sample-id-1"; }
+
     private ExampleState state = new ExampleState();
 
     public int getNumEvents() {
