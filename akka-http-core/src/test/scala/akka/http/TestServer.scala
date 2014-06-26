@@ -52,14 +52,14 @@ object TestServer extends App {
 
   lazy val index = HttpResponse(
     entity = HttpEntity(MediaTypes.`text/html`,
-      <html>
-        <body>
-          <h1>Say hello to <i>akka-http-core</i>!</h1>
-          <p>Defined resources:</p>
-          <ul>
-            <li><a href="/ping">/ping</a></li>
-            <li><a href="/crash">/crash</a></li>
-          </ul>
-        </body>
-      </html>.toString()))
+      """|<html>
+         | <body>
+         |    <h1>Say hello to <i>akka-http-core</i>!</h1>
+         |    <p>Defined resources:</p>
+         |    <ul>
+         |      <li><a href="/ping">/ping</a></li>
+         |      <li><a href="/crash">/crash</a></li>
+         |    </ul>
+         |  </body>
+         |</html>""".stripMargin))
 }

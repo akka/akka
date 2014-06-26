@@ -16,6 +16,7 @@ import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
 import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
 import com.typesafe.sbt.SbtSite.site
+import com.typesafe.sbt.SbtSite.SiteKeys.packageSite
 import com.typesafe.sbt.site.SphinxSupport
 import pl.project13.scala.sbt.SbtJmh._
 import com.typesafe.sbt.site.SphinxSupport.{ enableOutput, generatePdf, generatedPdf, generateEpub, generatedEpub, sphinxInputs, sphinxPackages, Sphinx }
@@ -24,7 +25,7 @@ import java.lang.Boolean.getBoolean
 import java.io.{InputStreamReader, FileInputStream, File}
 import java.util.Properties
 import annotation.tailrec
-import Unidoc.{ JavaDoc, javadocSettings, junidocSources, sunidoc, unidocExclude }
+import Unidoc.{ JavaDoc, GenJavaDocEnabled, javadocSettings, junidocSources, sunidoc, unidocExclude }
 import TestExtras. { JUnitFileReporting, StatsDMetrics }
 import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
 
@@ -38,7 +39,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "0.3-SNAPSHOT"
+  val streamAndHttpVersion = "0.4-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -57,7 +58,7 @@ object AkkaBuild extends Build {
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
-      unidocExclude := Seq(samples.id, remoteTests.id),
+      unidocExclude := Seq(samples.id, remoteTests.id, parsing.id),
       sources in JavaDoc <<= junidocSources,
       javacOptions in JavaDoc := Seq(),
       artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
@@ -76,11 +77,12 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz"))
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docs_dev, test in Test in stream, test in Test in httpCore,
-        test in Test in docs_dev) map { (_, _, _, _) => }
+      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev, test in Test in stream, test in Test in httpCore,
+        test in Test in docsDev) map { (_, _, _, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
+      docsDev)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -304,37 +306,74 @@ object AkkaBuild extends Build {
     )
   )
 
+  lazy val streamAndHttp = Project(
+    id = "akka-stream-and-http-experimental",
+    base = file("akka-stream-and-http"),
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
+      SphinxSupport.settings ++ Dist.settings ++ mimaSettings ++ unidocScaladocSettings ++
+      StatsDMetrics.settings ++
+      Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
+      version := streamAndHttpVersion,
+      testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
+      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
+      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
+      unidocExclude := Seq(parsing.id, docsDev.id),
+      sources in JavaDoc <<= junidocSources,
+      javacOptions in JavaDoc := Seq(),
+      artifactName in packageDoc in JavaDoc := ((sv, mod, art) => "" + mod.name + "_" + sv.binary + "-" + mod.revision + "-javadoc.jar"),
+      packageDoc in Compile <<= packageDoc in JavaDoc,
+      Dist.distExclude := Seq(docsDev.id),
+      // generate online version of docs
+      sphinxInputs in Sphinx <<= sphinxInputs in Sphinx in LocalProject(docsDev.id) map { inputs => inputs.copy(tags = inputs.tags :+ "online") },
+      // don't regenerate the pdf, just reuse the akka-docs version
+      generatedPdf in Sphinx <<= generatedPdf in Sphinx in LocalProject(docsDev.id) map identity,
+      generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
+      publishArtifact in packageSite := false
+    ),
+    aggregate = Seq(parsing, stream, httpCore, docsDev)
+  )
+
   lazy val httpCore = Project(
-    id = "akka-http-core",
+    id = "akka-http-core-experimental",
     base = file("akka-http-core"),
     dependencies = Seq(parsing, stream % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
-      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
-      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http-core"),
+    // FIXME enable javadoc generation when genjavadoc is fixed (++ javadocSettings)
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.httpCore ++ Seq(
+      version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.httpCore,
       // FIXME include mima when akka-http-core-2.3.x is released
-      //previousArtifact := akkaPreviousArtifact("akka-http-core")
+      //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
     )
+    // FIXME enable javadoc generation when genjavadoc is fixed
+    //++ (if (GenJavaDocEnabled) Seq(
+    //  // genjavadoc needs to generate synthetic methods since the java code uses them
+    //  scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
+    //) else Nil)
+  )
+
+  val macroParadise = Seq(
+    libraryDependencies <++= scalaVersion { v =>
+      Seq("org.scala-lang" % "scala-reflect" % v) ++ (
+        if (v.startsWith("2.10."))
+          Seq("org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile")
+        else Nil)
+    },
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
   )
 
   lazy val parsing = Project(
-    id = "akka-parsing",
+    id = "akka-parsing-experimental",
     base = file("akka-parsing"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
-      javacOptions ++= Seq(
-        "-encoding", "UTF-8",
-        "-source", "1.6",
-        "-target", "1.6",
-        "-Xlint:unchecked",
-        "-Xlint:deprecation"),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.parsing ++ macroParadise ++ Seq(
+      version := streamAndHttpVersion,
+      unmanagedSourceDirectories in Compile += (sourceDirectory in Compile).value / sourceDirName(scalaVersion.value),
       scalacOptions += "-language:_",
-      // FIXME remove this publishArtifact when akka-http-core-2.3.x is released
-      libraryDependencies ++= Seq(
-        "org.scala-lang" % "scala-reflect" % "2.10.4" % "provided",
-        "org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile"),
-      addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full),
-      publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-parsing"),
+      // ScalaDoc doesn't like the macros
+      sources in doc in Compile := List(),
+      publishArtifact in packageDoc := false,
+      // FIXME include mima when akka-http-core-2.3.x is released
+      //previousArtifact := akkaPreviousArtifact("akka-parsing-experimental")
       previousArtifact := None
     )
   )
@@ -654,11 +693,11 @@ object AkkaBuild extends Build {
     )
   )
 
-  lazy val docs_dev = Project(
+  lazy val docsDev = Project(
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
     dependencies = Seq(stream % "test -> test", httpCore),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>
@@ -669,9 +708,9 @@ object AkkaBuild extends Build {
       enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
       libraryDependencies ++= Dependencies.docs,
-      publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
+      publishArtifact := false,
       reportBinaryIssues := () // disable bin comp check
     )
   )
@@ -696,13 +735,6 @@ object AkkaBuild extends Build {
                         |""".stripMargin
     )
   ) configs (MultiJvm)
-
-  // // this issue will be fixed in M8, for now we need to exclude M6, M7 modules used to compile the compiler
-  def excludeOldModules(m: ModuleID) = List("M6", "M7").foldLeft(m) { (mID, mStone) =>
-    val version = s"2.11.0-$mStone"
-    mID.exclude("org.scala-lang.modules", s"scala-parser-combinators_$version").exclude("org.scala-lang.modules", s"scala-xml_$version")
-  }
-
 
   // Settings
 
@@ -1115,6 +1147,16 @@ object AkkaBuild extends Build {
     }
   }
 
+  def sourceDirName(version: String): String = {
+    val parts = version.split("\\.").toList
+    // this is here to make it easy to compensate for changes in minor versions
+    parts match {
+      case "2" :: "10" :: _ => "scala-2.10"
+      case "2" :: "11" :: _ => "scala-2.11"
+      case _ => "unknow-scala-version"
+    }
+  }
+
   // OSGi settings
 
   object OSGi {
@@ -1141,9 +1183,13 @@ object AkkaBuild extends Build {
 
     val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
+    val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"))
+
     val httpCore = exports(Seq("akka.http.*"))
 
-    val stream = exports(Seq("akka.stream.*"))
+    // Temporary fix for #15379. Should be removed when stream is stabilized.
+    // And yes OSGi wont like you mixing the persistence and stream artifacts.
+    val stream = exports(Seq("akka.stream.*", "akka.persistence.stream.*"))
 
     val fileMailbox = exports(Seq("akka.actor.mailbox.filebased.*"))
 
@@ -1201,7 +1247,7 @@ object Dependencies {
   object Versions {
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
-    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.7")
+    val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
