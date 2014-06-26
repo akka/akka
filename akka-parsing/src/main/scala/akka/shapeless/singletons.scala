@@ -23,6 +23,8 @@ import scala.reflect.macros.Context
 
 import tag.@@
 
+import HasCompat._
+
 trait Witness {
   type T
   val value: T {}
@@ -73,6 +75,7 @@ trait SingletonTypeMacros[C <: Context] {
 
   import c.universe._
   import Flag._
+  import compat._
 
   def mkWitnessT(sTpe: Type, s: Any): Tree =
     mkWitness(TypeTree(sTpe), Literal(Constant(s)))

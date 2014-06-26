@@ -2,13 +2,14 @@ package docs.http
 
 //#import-model
 import akka.http.model._
-import org.scalatest.MustMatchers
 
 //#import-model
 
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
 import akka.http.model.headers.{ GenericHttpCredentials, BasicHttpCredentials }
+import org.scalatest.MustMatchers
+
 
 class ModelSpec extends AkkaSpec {
   "construct request" in {

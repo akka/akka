@@ -345,6 +345,7 @@ object Uri {
     def apply(address: Inet4Address): IPv4Host = IPv4Host(address.getAddress, address.getHostAddress)
     def apply(address: Inet6Address): IPv6Host = IPv6Host(address.getAddress, address.getHostAddress)
   }
+
   sealed abstract class NonEmptyHost extends Host {
     def isEmpty = false
     def toOption = Some(this)
