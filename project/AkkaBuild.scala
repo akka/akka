@@ -337,16 +337,19 @@ object AkkaBuild extends Build {
     id = "akka-http-core-experimental",
     base = file("akka-http-core"),
     dependencies = Seq(parsing, stream % "compile;test->test"),
-    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.httpCore ++ Seq(
+    // FIXME enable javadoc generation when genjavadoc is fixed (++ javadocSettings)
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.httpCore ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.httpCore,
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-http-core-experimental")
       previousArtifact := None
-    ) ++ (if (GenJavaDocEnabled) Seq(
-      // genjavadoc needs to generate synthetic methods since the java code uses them
-      scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
-    ) else Nil)
+    )
+    // FIXME enable javadoc generation when genjavadoc is fixed
+    //++ (if (GenJavaDocEnabled) Seq(
+    //  // genjavadoc needs to generate synthetic methods since the java code uses them
+    //  scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
+    //) else Nil)
   )
 
   val macroParadise = Seq(
