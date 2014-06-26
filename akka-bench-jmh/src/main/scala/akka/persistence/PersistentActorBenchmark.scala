@@ -98,10 +98,12 @@ class PersistentActorThroughputBenchmark {
 
 }
 
-
 class Persist1EventPersistentActor(respondAfter: Int) extends PersistentActor {
-  override def receiveCommand  = {
-    case n: Int  => persist(Evt(n)) { e => if (e.i == respondAfter) sender() ! e }
+
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
+    case n: Int => persist(Evt(n)) { e => if (e.i == respondAfter) sender() ! e }
   }
   override def receiveRecover = {
     case _ => // do nothing
@@ -110,13 +112,15 @@ class Persist1EventPersistentActor(respondAfter: Int) extends PersistentActor {
 }
 class Persist1CommandProcessor(respondAfter: Int) extends Processor {
   override def receive = {
-    case n: Int  => if (n == respondAfter) sender() ! Evt(n)
+    case n: Int => if (n == respondAfter) sender() ! Evt(n)
   }
 }
 
 class PersistAsync1EventPersistentActor(respondAfter: Int) extends PersistentActor {
-  override def receiveCommand  = {
-    case n: Int  =>
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
+    case n: Int =>
       persistAsync(Evt(n)) { e => if (e.i == respondAfter) sender() ! e }
   }
   override def receiveRecover = {
@@ -125,8 +129,11 @@ class PersistAsync1EventPersistentActor(respondAfter: Int) extends PersistentAct
 }
 
 class PersistAsync1EventQuickReplyPersistentActor(respondAfter: Int) extends PersistentActor {
-  override def receiveCommand  = {
-    case n: Int  =>
+
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
+    case n: Int =>
       val e = Evt(n)
       if (n == respondAfter) sender() ! e
       persistAsync(e)(identity)
