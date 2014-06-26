@@ -21,9 +21,7 @@ public class ViewExample {
     private int count = 1;
 
     @Override
-    public String persistenceId() {
-      return "persistentActor-5";
-    }
+    public String persistenceId() { return "sample-id-4"; }
 
     @Override
     public PartialFunction<Object, BoxedUnit> receiveCommand() {
@@ -49,10 +47,8 @@ public class ViewExample {
 
     private int numReplicated = 0;
 
-    @Override public String persistenceId() { return "persistentActor-5"; }
-    @Override public String viewId() {
-      return "view-5";
-    }
+    @Override public String persistenceId() { return "sample-id-4"; }
+    @Override public String viewId() { return "sample-view-id-4"; }
 
     public ExampleView() {
       receive(ReceiveBuilder.

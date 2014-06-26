@@ -74,11 +74,15 @@ class ExampleState implements Serializable {
 }
 
 class ExamplePersistentActor extends AbstractPersistentActor {
+
     private ExampleState state = new ExampleState();
 
     public int getNumEvents() {
         return state.size();
     }
+
+    @Override
+    public String persistenceId() { return "sample-id-1"; }
 
     @Override
     public PartialFunction<Object, BoxedUnit> receiveRecover() {

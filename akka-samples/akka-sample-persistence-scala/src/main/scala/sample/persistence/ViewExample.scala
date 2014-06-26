@@ -7,7 +7,7 @@ import akka.persistence._
 
 object ViewExample extends App {
   class ExamplePersistentActor extends PersistentActor {
-    override def persistenceId = "persistentActor-5"
+    override def persistenceId = "sample-id-4"
 
     var count = 1
 
@@ -27,8 +27,8 @@ object ViewExample extends App {
   class ExampleView extends PersistentView {
     private var numReplicated = 0
 
-    override def persistenceId: String = "persistentActor-5"
-    override def viewId = "view-5"
+    override def persistenceId: String = "sample-id-4"
+    override def viewId = "sample-view-id-4"
 
     def receive = {
       case "snap" =>

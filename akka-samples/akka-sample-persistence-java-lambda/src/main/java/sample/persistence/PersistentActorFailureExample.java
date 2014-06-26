@@ -19,6 +19,9 @@ public class PersistentActorFailureExample {
     private ArrayList<Object> received = new ArrayList<Object>();
 
     @Override
+    public String persistenceId() { return "sample-id-2"; }
+
+    @Override
     public PartialFunction<Object, BoxedUnit> receiveCommand() {
       return ReceiveBuilder.
         match(String.class, s -> s.equals("boom"), s -> {throw new RuntimeException("boom");}).

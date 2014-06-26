@@ -88,6 +88,8 @@ trait PersistenceDocSpec {
     }
 
     class MyProcessor4 extends PersistentActor {
+      override def persistenceId = "my-stable-persistence-id"
+
       //#recovery-completed
 
       def receiveRecover: Receive = {
@@ -310,6 +312,8 @@ trait PersistenceDocSpec {
     class MyPersistentActor(destination: ActorRef) extends PersistentActor {
       val channel = context.actorOf(Channel.props("channel"))
 
+      override def persistenceId = "my-stable-persistence-id"
+
       def handleEvent(event: String) = {
         // update state
         // ...
@@ -337,6 +341,8 @@ trait PersistenceDocSpec {
 
     //#persist-async
     class MyPersistentActor extends PersistentActor {
+
+      override def persistenceId = "my-stable-persistence-id"
 
       def receiveRecover: Receive = {
         case _ => // handle recovery here
@@ -371,6 +377,8 @@ trait PersistenceDocSpec {
 
     //#defer
     class MyPersistentActor extends PersistentActor {
+
+      override def persistenceId = "my-stable-persistence-id"
 
       def receiveRecover: Receive = {
         case _ => // handle recovery here
