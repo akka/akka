@@ -156,9 +156,9 @@ public abstract class Uri {
      */
     public abstract Uri fragment(Option<String> fragment);
 
-    public static final akka.http.model.Uri.ParsingMode STRICT = akka.http.model.Uri.getParsingModeStrict();
-    public static final akka.http.model.Uri.ParsingMode RELAXED = akka.http.model.Uri.getParsingModeRelaxed();
-    public static final akka.http.model.Uri.ParsingMode RELAXED_WITH_RAW_QUERY = akka.http.model.Uri.getParsingModeRelaxedWithRawQuery();
+    public static final akka.http.model.Uri.ParsingMode STRICT = akka.http.model.Uri$ParsingMode$Strict$.MODULE$;
+    public static final akka.http.model.Uri.ParsingMode RELAXED = akka.http.model.Uri$ParsingMode$Relaxed$.MODULE$;
+    public static final akka.http.model.Uri.ParsingMode RELAXED_WITH_RAW_QUERY = akka.http.model.Uri$ParsingMode$RelaxedWithRawQuery$.MODULE$;
 
     /**
      * Creates a default Uri to be modified using the modification methods.

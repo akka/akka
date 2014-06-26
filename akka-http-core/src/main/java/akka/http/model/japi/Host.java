@@ -34,7 +34,7 @@ public abstract class Host {
     /**
      * The constant representing an empty Host.
      */
-    public static final Host EMPTY = akka.http.model.Uri.getHostEmpty();
+    public static final Host EMPTY = akka.http.model.Uri$Host$Empty$.MODULE$;
 
     /**
      * Parse the given Host string using the default charset and parsing-mode.
