@@ -133,6 +133,9 @@ public class PersistenceDocTest {
         }
         
         class MyProcessor5 extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "persistence-id"; }
+
             //#recovery-completed
           
             @Override
@@ -356,6 +359,9 @@ public class PersistenceDocTest {
     static Object o8 = new Object() {
         //#reliable-event-delivery
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
+
             private ActorRef destination;
             private ActorRef channel;
 
@@ -394,6 +400,8 @@ public class PersistenceDocTest {
     static Object o9 = new Object() {
         //#persist-async
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceiveRecover(Object msg) {
@@ -441,6 +449,8 @@ public class PersistenceDocTest {
     static Object o10 = new Object() {
         //#defer
         class MyPersistentActor extends UntypedPersistentActor {
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
 
             @Override
             public void onReceiveRecover(Object msg) {
@@ -486,8 +496,11 @@ public class PersistenceDocTest {
     static Object o11 = new Object() {
         //#view
         class MyView extends UntypedPersistentView {
-          @Override public String viewId() { return "some-persistence-id-view"; }
-          @Override public String persistenceId() { return "some-persistence-id"; }
+            @Override
+            public String persistenceId() { return "some-persistence-id"; }
+            
+            @Override
+            public String viewId() { return "my-stable-persistence-view-id"; }
 
             @Override
             public void onReceive(Object message) throws Exception {
@@ -499,7 +512,6 @@ public class PersistenceDocTest {
                   unhandled(message);
                 }
             }
-
         }
         //#view
 

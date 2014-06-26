@@ -105,7 +105,7 @@ is defined by implementing ``receiveRecover`` and ``receiveCommand``. This is de
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/sample/persistence/PersistentActorExample.java#persistent-actor-example
 
 The example defines two data types, ``Cmd`` and ``Evt`` to represent commands and events, respectively. The
-``state`` of the ``ExampleProcessor`` is a list of persisted event data contained in ``ExampleState``.
+``state`` of the ``ExamplePersistentActor`` is a list of persisted event data contained in ``ExampleState``.
 
 The persistent actor's ``receiveRecover`` method defines how ``state`` is updated during recovery by handling ``Evt``
 and ``SnapshotOffer`` messages. The persistent actor's ``receiveCommand`` method is a command handler. In this example,
@@ -139,19 +139,10 @@ It contains instructions on how to run the ``PersistentActorExample``.
 Identifiers
 -----------
 
-A persistent actor must have an identifier that doesn't change across different actor incarnations. It defaults to the
-``String`` representation of persistent actor's path without the address part and can be obtained via the ``persistenceId``
-method.
-
-.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistence-id
-
-Applications can customize a persistent actor's id by specifying an actor name during persistent actor creation as shown in
-section :ref:`event-sourcing-java-lambda`. This changes that persistent actor's name in its actor hierarchy and hence influences only
-part of the persistent actor id. To fully customize a persistent actor's id, the ``persistenceId`` method must be overridden.
+A persistent actor must have an identifier that doesn't change across different actor incarnations.
+The identifier must be defined with the ``persistenceId`` method.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persistence-id-override
-
-Overriding ``persistenceId`` is the recommended way to generate stable identifiers.
 
 .. _recovery-java-lambda:
 
@@ -329,13 +320,8 @@ Further possibilities to customize initial recovery are explained in section :re
 Identifiers
 -----------
 
-A persistent view must have an identifier that doesn't change across different actor incarnations. It defaults to the
-``String`` representation of the actor path without the address part and can be obtained via the ``viewId``
-method.
-
-Applications can customize a view's id by specifying an actor name during view creation. This changes that persistent view's
-name in its actor hierarchy and hence influences only part of the view id. To fully customize a view's id, the
-``viewId`` method must be overridden. Overriding ``viewId`` is the recommended way to generate stable identifiers.
+A persistent view must have an identifier that doesn't change across different actor incarnations.
+The identifier must be defined with the ``viewId`` method.
 
 The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java-lambda` of a view and its
 persistent actor shall be shared (which is what applications usually do not want).
