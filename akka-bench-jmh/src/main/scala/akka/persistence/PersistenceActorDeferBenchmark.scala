@@ -51,9 +51,9 @@ class PersistentActorDeferBenchmark {
     probe = TestProbe()(system)
 
     storageLocations.foreach(FileUtils.deleteDirectory)
-    processor                    = system.actorOf(Props(classOf[`processor, forward Persistent, like defer`], data10k.last), "p-1")
-    processor_replyASAP          = system.actorOf(Props(classOf[`processor, forward Persistent, reply ASAP`], data10k.last), "p-2")
-    persistAsync_defer           = system.actorOf(Props(classOf[`persistAsync, defer`], data10k.last), "a-1")
+    processor = system.actorOf(Props(classOf[`processor, forward Persistent, like defer`], data10k.last), "p-1")
+    processor_replyASAP = system.actorOf(Props(classOf[`processor, forward Persistent, reply ASAP`], data10k.last), "p-2")
+    persistAsync_defer = system.actorOf(Props(classOf[`persistAsync, defer`], data10k.last), "a-1")
     persistAsync_defer_replyASAP = system.actorOf(Props(classOf[`persistAsync, defer, respond ASAP`], data10k.last), "a-2")
   }
 
@@ -65,15 +65,15 @@ class PersistentActorDeferBenchmark {
     storageLocations.foreach(FileUtils.deleteDirectory)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_processor_Persistent_reply() {
     for (i <- data10k) processor.tell(i, probe.ref)
 
     probe.expectMsg(data10k.last)
   }
-  
-  @GenerateMicroBenchmark
+
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_processor_Persistent_replyASAP() {
     for (i <- data10k) processor_replyASAP.tell(i, probe.ref)
@@ -81,7 +81,7 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_reply() {
     for (i <- data10k) persistAsync_defer.tell(i, probe.ref)
@@ -89,7 +89,7 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(10000)
   def tell_persistAsync_defer_persistAsync_replyASAP() {
     for (i <- data10k) persistAsync_defer_replyASAP.tell(i, probe.ref)
@@ -104,7 +104,7 @@ class `processor, forward Persistent, like defer`(respondAfter: Int) extends Pro
     case n: Int =>
       self forward Persistent(Evt(n))
       self forward Evt(n)
-    case Persistent(p) => // ignore
+    case Persistent(p)               => // ignore
     case Evt(n) if n == respondAfter => sender() ! respondAfter
   }
 }
@@ -118,8 +118,11 @@ class `processor, forward Persistent, reply ASAP`(respondAfter: Int) extends Pro
 }
 
 class `persistAsync, defer`(respondAfter: Int) extends PersistentActor {
-  override def receiveCommand  = {
-    case n: Int  =>
+
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
+    case n: Int =>
       persistAsync(Evt(n)) { e => }
       defer(Evt(n)) { e => if (e.i == respondAfter) sender() ! e.i }
   }
@@ -128,11 +131,14 @@ class `persistAsync, defer`(respondAfter: Int) extends PersistentActor {
   }
 }
 class `persistAsync, defer, respond ASAP`(respondAfter: Int) extends PersistentActor {
-  override def receiveCommand  = {
-    case n: Int  =>
+
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
+    case n: Int =>
       persistAsync(Evt(n)) { e => }
       defer(Evt(n)) { e => }
-      if (n == respondAfter) sender() ! n 
+      if (n == respondAfter) sender() ! n
   }
   override def receiveRecover = {
     case _ => // do nothing
