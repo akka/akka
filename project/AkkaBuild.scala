@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "0.3-SNAPSHOT"
+  val streamAndHttpVersion = "0.4-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -694,7 +694,7 @@ object AkkaBuild extends Build {
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
     dependencies = Seq(stream % "test -> test", httpCore),
-    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ Seq(
+    settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       watchSources <++= (sourceDirectory in Sphinx, excludeFilter in Global) map { (source, excl) =>

@@ -51,12 +51,14 @@ object Release {
       val repo = extracted.get(Publish.defaultPublishTo)
       val state1 = extracted.runAggregated(publishSigned in LocalProject(subprojectId), state)
       val (state2, (api, japi)) = extracted.runTask(Unidoc.unidoc in LocalProject(subprojectId), state1)
-    
+      val (state3, docs) = extracted.runTask(generate in (LocalProject(subprojectId), Sphinx), state2)
+
       IO.delete(release)
       IO.createDirectory(release)
       IO.copyDirectory(repo, release / "releases")
       IO.copyDirectory(api, release / "api" / subprojectId / subprojectVersion)
       IO.copyDirectory(japi, release / "japi" / subprojectId / subprojectVersion)
+      IO.copyDirectory(docs, release / "docs" / subprojectId / subprojectVersion)
       state2
   }
 
