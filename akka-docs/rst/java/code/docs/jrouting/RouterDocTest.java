@@ -59,6 +59,7 @@ import akka.routing.RoundRobinPool;
 import akka.routing.RoundRobinRoutingLogic;
 import akka.routing.ScatterGatherFirstCompletedGroup;
 import akka.routing.ScatterGatherFirstCompletedPool;
+import akka.routing.BalancingPool;
 import akka.routing.SmallestMailboxPool;
 
 //#imports2
@@ -211,7 +212,7 @@ public class RouterDocTest {
 
     //#balancing-pool-2
     ActorRef router10 =
-      getContext().actorOf(new SmallestMailboxPool(5).props(
+      getContext().actorOf(new BalancingPool(5).props(
         Props.create(Worker.class)), "router10");
     //#balancing-pool-2
 
