@@ -160,6 +160,9 @@ object Props {
 @SerialVersionUID(2L)
 final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]) {
 
+  if (Modifier.isAbstract(clazz.getModifiers))
+    throw new IllegalArgumentException(s"Actor class [${clazz.getName}] must not be abstract")
+
   // derived property, does not need to be serialized
   @transient
   private[this] var _producer: IndirectActorProducer = _
