@@ -178,13 +178,23 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
   /** Holds user-supplied callbacks for persist/persistAsync calls */
   private val pendingInvocations = new java.util.LinkedList[PendingHandlerInvocation]() // we only append / isEmpty / get(0) on it
   private var resequenceableEventBatch: List[Resequenceable] = Nil
+  // When using only `persistAsync` and `defer` max throughput is increased by using the
+  // batching implemented in `Processor`, but when using `persist` we want to use the atomic
+  // PeristentBatch for the emitted events. This implementation can be improved when
+  // Processor and Eventsourced are consolidated into one class 
+  private var useProcessorBatching: Boolean = true
 
   private var currentState: State = recovering
   private val processorStash = createStash()
 
   private def flushBatch() {
-    Eventsourced.super.aroundReceive(receive, PersistentBatch(resequenceableEventBatch.reverse))
+    if (useProcessorBatching)
+      resequenceableEventBatch.reverse foreach { Eventsourced.super.aroundReceive(receive, _) }
+    else
+      Eventsourced.super.aroundReceive(receive, PersistentBatch(resequenceableEventBatch.reverse))
+
     resequenceableEventBatch = Nil
+    useProcessorBatching = true
   }
 
   /**
@@ -213,6 +223,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
     pendingStashingPersistInvocations += 1
     pendingInvocations addLast StashingHandlerInvocation(event, handler.asInstanceOf[Any ⇒ Unit])
     resequenceableEventBatch = PersistentRepr(event) :: resequenceableEventBatch
+    useProcessorBatching = false
   }
 
   /**

@@ -87,6 +87,26 @@ object PerformanceSpec {
     }
   }
 
+  class CommandsourcedTestPersistentActor(name: String) extends PerformanceTestProcessor(name) with PersistentActor {
+
+    override val controlBehavior: Receive = {
+      case StartMeasure       ⇒ startMeasure()
+      case StopMeasure        ⇒ defer(StopMeasure)(_ ⇒ stopMeasure())
+      case FailAt(sequenceNr) ⇒ failAt = sequenceNr
+    }
+
+    val receiveRecover: Receive = {
+      case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
+    }
+
+    val receiveCommand: Receive = controlBehavior orElse {
+      case cmd ⇒ persistAsync(cmd) { _ ⇒
+        if (lastSequenceNr % 1000 == 0) print(".")
+        if (lastSequenceNr == failAt) throw new TestException("boom")
+      }
+    }
+  }
+
   class EventsourcedTestProcessor(name: String) extends PerformanceTestProcessor(name) with PersistentActor {
     val receiveRecover: Receive = {
       case _ ⇒ if (lastSequenceNr % 1000 == 0) print("r")
@@ -137,7 +157,19 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
     1 to loadCycles foreach { i ⇒ processor ! Persistent(s"msg${i}") }
     processor ! StopMeasure
     expectMsgPF(100 seconds) {
-      case throughput: Double ⇒ println(f"\nthroughput = $throughput%.2f persistent commands per second")
+      case throughput: Double ⇒ println(f"\nthroughput = $throughput%.2f persistent processor commands per second")
+    }
+  }
+
+  def stressCommandsourcedPersistentActor(failAt: Option[Long]): Unit = {
+    val processor = namedProcessor[CommandsourcedTestPersistentActor]
+    failAt foreach { processor ! FailAt(_) }
+    1 to warmupCycles foreach { i ⇒ processor ! s"msg${i}" }
+    processor ! StartMeasure
+    1 to loadCycles foreach { i ⇒ processor ! s"msg${i}" }
+    processor ! StopMeasure
+    expectMsgPF(100 seconds) {
+      case throughput: Double ⇒ println(f"\nthroughput = $throughput%.2f persistent actor commands per second")
     }
   }
 
@@ -193,7 +225,13 @@ class PerformanceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "Perfor
     }
   }
 
-  "An event sourced processor" should {
+  "A command sourced persistent actor" should {
+    "have some reasonable throughput" in {
+      stressCommandsourcedPersistentActor(None)
+    }
+  }
+
+  "An event sourced persistent actor" should {
     "have some reasonable throughput" in {
       stressPersistentActor(None)
     }
