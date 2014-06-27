@@ -371,7 +371,6 @@ object AkkaBuild extends Build {
       scalacOptions += "-language:_",
       // ScalaDoc doesn't like the macros
       sources in doc in Compile := List(),
-      publishArtifact in packageDoc := false,
       // FIXME include mima when akka-http-core-2.3.x is released
       //previousArtifact := akkaPreviousArtifact("akka-parsing-experimental")
       previousArtifact := None
