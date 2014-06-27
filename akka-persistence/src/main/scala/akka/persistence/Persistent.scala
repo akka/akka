@@ -15,17 +15,22 @@ import akka.pattern.PromiseActorRef
 import akka.persistence.serialization.Message
 
 /**
+ * INTERNAL API
+ *
  * Marks messages which can be resequenced by the [[akka.persistence.journal.AsyncWriteJournal]].
  *
  * In essence it is either an [[NonPersistentRepr]] or [[Persistent]].
  */
-sealed trait Resequenceable {
+private[persistence] sealed trait Resequenceable {
   def payload: Any
   def sender: ActorRef
 }
 
-/** Message which can be resequenced by the Journal, but will not be persisted. */
-final case class NonPersistentRepr(payload: Any, sender: ActorRef) extends Resequenceable
+/**
+ * INTERNAL API
+ * Message which can be resequenced by the Journal, but will not be persisted.
+ */
+private[persistence] final case class NonPersistentRepr(payload: Any, sender: ActorRef) extends Resequenceable
 
 /** Persistent message. */
 @deprecated("Use akka.persistence.PersistentActor instead.", since = "2.3.4")
@@ -124,11 +129,22 @@ object ConfirmablePersistent {
  * journal. The processor receives the written messages individually as [[Persistent]] messages.
  * During recovery, they are also replayed individually.
  */
+@deprecated("Use akka.persistence.PersistentActor instead", since = "2.3.4")
 case class PersistentBatch(batch: immutable.Seq[Resequenceable]) extends Message
+
+@deprecated("Use akka.persistence.PersistentActor instead", since = "2.3.4")
+object PersistentBatch {
+  /**
+   * Java API.
+   */
+  def create(persistentBatch: JIterable[Persistent]) =
+    PersistentBatch(immutableSeq(persistentBatch))
+}
 
 /**
  * Plugin API: confirmation entry written by journal plugins.
  */
+@deprecated("Channel will be removed, see `akka.persistence.AtLeastOnceDelivery` instead.", since = "2.3.4")
 trait PersistentConfirmation {
   @deprecated("Use `persistenceId` instead. Processor will be removed.", since = "2.3.4")
   final def processorId: String = persistenceId
@@ -197,33 +213,39 @@ trait PersistentRepr extends Persistent with Resequenceable with PersistenceId w
    * Number of redeliveries. Only greater than zero if message has been redelivered by a [[Channel]]
    * or [[PersistentChannel]].
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def redeliveries: Int
 
   /**
    * Channel ids of delivery confirmations that are available for this message. Only non-empty
    * for replayed messages.
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def confirms: immutable.Seq[String]
 
   /**
    * Java API, Plugin API: channel ids of delivery confirmations that are available for this
    * message. Only non-empty for replayed messages.
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def getConfirms: JList[String] = confirms.asJava
 
   /**
    * `true` only if this message has been delivered by a channel.
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def confirmable: Boolean
 
   /**
    * Delivery confirmation message.
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def confirmMessage: Delivered
 
   /**
    * Delivery confirmation message.
    */
+  @deprecated("Channel will be removed.", since = "2.3.4")
   def confirmTarget: ActorRef
 
   /**
@@ -249,10 +271,10 @@ trait PersistentRepr extends Persistent with Resequenceable with PersistenceId w
     sequenceNr: Long = sequenceNr,
     @deprecatedName('processorId) persistenceId: String = persistenceId,
     deleted: Boolean = deleted,
-    redeliveries: Int = redeliveries,
-    confirms: immutable.Seq[String] = confirms,
-    confirmMessage: Delivered = confirmMessage,
-    confirmTarget: ActorRef = confirmTarget,
+    @deprecated("Channel will be removed.", since = "2.3.4") redeliveries: Int = redeliveries,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirms: immutable.Seq[String] = confirms,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirmMessage: Delivered = confirmMessage,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirmTarget: ActorRef = confirmTarget,
     sender: ActorRef = sender): PersistentRepr
 }
 
@@ -270,11 +292,11 @@ object PersistentRepr {
     sequenceNr: Long = 0L,
     @deprecatedName('processorId) persistenceId: String = PersistentRepr.Undefined,
     deleted: Boolean = false,
-    redeliveries: Int = 0,
-    confirms: immutable.Seq[String] = Nil,
-    confirmable: Boolean = false,
-    confirmMessage: Delivered = null,
-    confirmTarget: ActorRef = null,
+    @deprecated("Channel will be removed.", since = "2.3.4") redeliveries: Int = 0,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirms: immutable.Seq[String] = Nil,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirmable: Boolean = false,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirmMessage: Delivered = null,
+    @deprecated("Channel will be removed.", since = "2.3.4") confirmTarget: ActorRef = null,
     sender: ActorRef = null) =
     if (confirmable) ConfirmablePersistentImpl(payload, sequenceNr, persistenceId, deleted, redeliveries, confirms, confirmMessage, confirmTarget, sender)
     else PersistentImpl(payload, sequenceNr, persistenceId, deleted, confirms, sender)
@@ -283,14 +305,6 @@ object PersistentRepr {
    * Java API, Plugin API.
    */
   def create = apply _
-}
-
-object PersistentBatch {
-  /**
-   * Java API.
-   */
-  def create(persistentBatch: JIterable[Persistent]) =
-    PersistentBatch(immutableSeq(persistentBatch))
 }
 
 /**

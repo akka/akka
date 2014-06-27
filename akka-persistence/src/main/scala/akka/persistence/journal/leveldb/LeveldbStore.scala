@@ -36,10 +36,6 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     if (nativeLeveldb) org.fusesource.leveldbjni.JniDBFactory.factory
     else org.iq80.leveldb.impl.Iq80DBFactory.factory
 
-  // TODO: support migration of processor and channel ids
-  // needed if default processor and channel ids are used
-  // (actor paths, which contain deployment information).
-
   val serialization = SerializationExtension(context.system)
 
   import Key._

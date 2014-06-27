@@ -14,8 +14,8 @@ import scala.util.control.NonFatal
 /**
  * Recovery state machine that loads snapshots and replays messages.
  *
- * @see [[Processor]]
- * @see [[View]]
+ * @see [[PersistentActor]]
+ * @see [[PersistentView]]
  */
 trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
   /**
@@ -187,11 +187,13 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
   /**
    * Returns the current persistent message if there is any.
    */
+  @deprecated("currentPersistentMessage will be removed, sequence number can be retrieved with `lastSequenceNr`.", since = "2.3.4")
   implicit def currentPersistentMessage: Option[Persistent] = Option(_currentPersistent)
 
   /**
    * Java API: returns the current persistent message or `null` if there is none.
    */
+  @deprecated("getCurrentPersistentMessage will be removed, sequence number can be retrieved with `lastSequenceNr`.", since = "2.3.4")
   def getCurrentPersistentMessage = currentPersistentMessage.getOrElse(null)
 
   /**
@@ -256,12 +258,12 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
 }
 
 /**
- * Instructs a processor to recover itself. Recovery will start from a snapshot if the processor has
+ * Instructs a persistent actor to recover itself. Recovery will start from a snapshot if the persistent actor has
  * previously saved one or more snapshots and at least one of these snapshots matches the specified
  * `fromSnapshot` criteria. Otherwise, recovery will start from scratch by replaying all journaled
  * messages.
  *
- * If recovery starts from a snapshot, the processor is offered that snapshot with a [[SnapshotOffer]]
+ * If recovery starts from a snapshot, the persistent actor is offered that snapshot with a [[SnapshotOffer]]
  * message, followed by replayed messages, if any, that are younger than the snapshot, up to the
  * specified upper sequence number bound (`toSequenceNr`).
  *

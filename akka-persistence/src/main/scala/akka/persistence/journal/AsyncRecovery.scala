@@ -27,7 +27,7 @@ trait AsyncRecovery {
    * The channel ids of delivery confirmations that are available for a replayed
    * message must be contained in that message's `confirms` sequence.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId persistent actor id.
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param max maximum number of messages to be replayed.
@@ -43,7 +43,7 @@ trait AsyncRecovery {
    * Plugin API: asynchronously reads the highest stored sequence number for the
    * given `persistenceId`.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId persistent actor id.
    * @param fromSequenceNr hint where to start searching for the highest sequence
    *                       number.
    */

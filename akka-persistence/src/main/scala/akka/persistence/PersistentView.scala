@@ -48,7 +48,7 @@ object Update {
 /**
  * A view replicates the persistent message stream of a [[PersistentActor]]. Implementation classes receive
  * the message stream directly from the Journal. These messages can be processed to update internal state
- * in order to maintain an (eventual consistent) view of the state of the corresponding processor. A
+ * in order to maintain an (eventual consistent) view of the state of the corresponding persistent actor. A
  * persistent view can also run on a different node, provided that a replicated journal is used.
  *
  * Implementation classes refer to a persistent actors' message stream by implementing `persistenceId`

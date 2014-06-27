@@ -34,7 +34,7 @@ private[persistence] class InmemJournal extends AsyncWriteProxy {
  * INTERNAL API.
  */
 private[persistence] trait InmemMessages {
-  // processor id -> persistent message
+  // persistentActorId -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
 
   def add(p: PersistentRepr) = messages = messages + (messages.get(p.persistenceId) match {
