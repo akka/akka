@@ -8,7 +8,7 @@ package akka.persistence
 /**
  * Snapshot metadata.
  *
- * @param persistenceId id of processor from which the snapshot was taken.
+ * @param persistenceId id of persistent actor from which the snapshot was taken.
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved.
  */
@@ -17,7 +17,7 @@ case class SnapshotMetadata(@deprecatedName('processorId) persistenceId: String,
 //#snapshot-metadata
 
 /**
- * Sent to a [[Processor]] after successful saving of a snapshot.
+ * Sent to a [[PersistentActor]] after successful saving of a snapshot.
  *
  * @param metadata snapshot metadata.
  */
@@ -25,7 +25,7 @@ case class SnapshotMetadata(@deprecatedName('processorId) persistenceId: String,
 case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
 
 /**
- * Sent to a [[Processor]] after failed saving of a snapshot.
+ * Sent to a [[PersistentActor]] after failed saving of a snapshot.
  *
  * @param metadata snapshot metadata.
  * @param cause failure cause.
@@ -34,7 +34,7 @@ case class SaveSnapshotSuccess(metadata: SnapshotMetadata)
 case class SaveSnapshotFailure(metadata: SnapshotMetadata, cause: Throwable)
 
 /**
- * Offers a [[Processor]] a previously saved `snapshot` during recovery. This offer is received
+ * Offers a [[PersistentActor]] a previously saved `snapshot` during recovery. This offer is received
  * before any further replayed messages.
  */
 @SerialVersionUID(1L)
@@ -110,13 +110,13 @@ object SelectedSnapshot {
 /**
  * INTERNAL API.
  *
- * Defines messages exchanged between processors and a snapshot store.
+ * Defines messages exchanged between persistent actors and a snapshot store.
  */
 private[persistence] object SnapshotProtocol {
   /**
    * Instructs a snapshot store to load a snapshot.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId persistent actor id.
    * @param criteria criteria for selecting a snapshot from which recovery should start.
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
@@ -147,7 +147,7 @@ private[persistence] object SnapshotProtocol {
   /**
    * Instructs snapshot store to delete all snapshots that match `criteria`.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId persistent actor id.
    * @param criteria criteria for selecting snapshots to be deleted.
    */
   case class DeleteSnapshots(@deprecatedName('processorId) persistenceId: String, criteria: SnapshotSelectionCriteria)
