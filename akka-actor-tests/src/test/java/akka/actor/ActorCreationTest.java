@@ -61,6 +61,10 @@ public class ActorCreationTest {
       return null;
     }
   }
+  
+  abstract class H extends UntypedActor {
+    public H(String a) {}
+  }
 
   @Test
   @SuppressWarnings("unchecked")
@@ -102,6 +106,16 @@ public class ActorCreationTest {
   public void testSuperinterface() {
     final Props p = Props.create(new F());
     assertEquals(UntypedActor.class, p.actorClass());
+  }
+  
+  @Test
+  public void testRejectAbstractActorClass() {
+    try {
+      Props.create(H.class, "a");
+      assert false;
+    } catch (IllegalArgumentException e) {
+      assertEquals(String.format("Actor class [%s] must not be abstract", H.class.getName()), e.getMessage());
+    }
   }
   
 }
