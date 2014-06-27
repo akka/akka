@@ -1,8 +1,8 @@
 .. _migration-guide-persistence-experimental-2.3.x-2.4.x:
 
-#####################################################
-Migration Guide Akka Persistence (experimental) 2.3.3
-#####################################################
+##########################################################################
+Migration Guide Akka Persistence (experimental) 2.3.3 to 2.3.4 (and 2.4.x)
+##########################################################################
 
 **Akka Persistence** is an **experimental module**, which means that neither Binary Compatibility nor API stability
 is provided for Persistence while under the *experimental* flag. The goal of this phase is to gather user feedback
@@ -121,6 +121,17 @@ any of the problems Futures have when closing over the sender reference.
 Using the``PersistentActor`` instead of ``Processor`` also shifts the responsibility of deciding if a message should be persisted
 to the receiver instead of the sender of the message. Previously, using ``Processor``, clients would have to wrap messages as ``Persistent(cmd)``
 manually, as well as have to be aware of the receiver being a ``Processor``, which didn't play well with transparency of the ActorRefs in general.
+
+Removed deleteMessage
+=====================
+
+``deleteMessage`` is deprecated and will be removed. When using command sourced ``Processor`` the command was stored before it was
+received and could be validated and then there was a reason to remove faulty commands to avoid repeating the error during replay.
+When using ``PersistentActor`` you can always validate the command before persisting and therefore the stored event (or command)
+should always be valid for replay.
+
+``deleteMessages`` can still be used for pruning of all messages up to a sequence number.
+
 
 Renamed View to PersistentView, which receives plain messages (Persistent() wrapper is gone)
 ============================================================================================
