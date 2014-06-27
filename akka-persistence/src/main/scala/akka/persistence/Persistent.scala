@@ -155,26 +155,19 @@ trait PersistentConfirmation {
 
 /**
  * Plugin API: persistent message identifier.
- *
- * Deprecated, please use [[PersistenceId]].
  */
-@deprecated("Use PersistenceId instead.", since = "2.3.4")
-trait PersistentId extends PersistenceId {
-  /**
-   * Persistent id that journals a persistent message
-   */
-  @deprecated("Use `persistenceId` instead.", since = "2.3.4")
-  def processorId: String = persistenceId
-}
+@deprecated("deleteMessages will be removed.", since = "2.3.4")
+trait PersistentId {
 
-/**
- * Plugin API: persistent message identifier.
- */
-trait PersistenceId {
   /**
    * Persistent id that journals a persistent message
    */
-  def persistenceId: String
+  def processorId: String
+
+  /**
+   * Persistent id that journals a persistent message
+   */
+  def persistenceId: String = processorId
 
   /**
    * A persistent message's sequence number.
@@ -185,7 +178,8 @@ trait PersistenceId {
 /**
  * INTERNAL API.
  */
-private[persistence] case class PersistenceIdImpl(persistenceId: String, sequenceNr: Long) extends PersistenceId
+@deprecated("deleteMessages will be removed.", since = "2.3.4")
+private[persistence] case class PersistentIdImpl(processorId: String, sequenceNr: Long) extends PersistentId
 
 /**
  * Plugin API: representation of a persistent message in the journal plugin API.
@@ -194,7 +188,7 @@ private[persistence] case class PersistenceIdImpl(persistenceId: String, sequenc
  * @see [[journal.AsyncWriteJournal]]
  * @see [[journal.AsyncRecovery]]
  */
-trait PersistentRepr extends Persistent with Resequenceable with PersistenceId with Message {
+trait PersistentRepr extends Persistent with Resequenceable with PersistentId with Message {
   // todo we want to get rid of the Persistent() wrapper from user land; PersistentRepr is here to stay. #15230
 
   import scala.collection.JavaConverters._
@@ -313,7 +307,7 @@ object PersistentRepr {
 private[persistence] case class PersistentImpl(
   payload: Any,
   sequenceNr: Long,
-  @deprecatedName('processorId) persistenceId: String,
+  @deprecatedName('processorId) override val persistenceId: String,
   deleted: Boolean,
   confirms: immutable.Seq[String],
   sender: ActorRef) extends Persistent with PersistentRepr {
@@ -339,6 +333,9 @@ private[persistence] case class PersistentImpl(
   val confirmable: Boolean = false
   val confirmMessage: Delivered = null
   val confirmTarget: ActorRef = null
+
+  @deprecated("Use persistenceId.", since = "2.3.4")
+  override def processorId = persistenceId
 }
 
 /**
@@ -348,7 +345,7 @@ private[persistence] case class PersistentImpl(
 private[persistence] case class ConfirmablePersistentImpl(
   payload: Any,
   sequenceNr: Long,
-  @deprecatedName('processorId) persistenceId: String,
+  @deprecatedName('processorId) override val persistenceId: String,
   deleted: Boolean,
   redeliveries: Int,
   confirms: immutable.Seq[String],
@@ -369,6 +366,9 @@ private[persistence] case class ConfirmablePersistentImpl(
 
   def update(sequenceNr: Long, @deprecatedName('processorId) persistenceId: String, deleted: Boolean, redeliveries: Int, confirms: immutable.Seq[String], confirmMessage: Delivered, confirmTarget: ActorRef, sender: ActorRef) =
     copy(sequenceNr = sequenceNr, persistenceId = persistenceId, deleted = deleted, redeliveries = redeliveries, confirms = confirms, confirmMessage = confirmMessage, confirmTarget = confirmTarget, sender = sender)
+
+  @deprecated("Use persistenceId.", since = "2.3.4")
+  override def processorId = persistenceId
 }
 
 /**

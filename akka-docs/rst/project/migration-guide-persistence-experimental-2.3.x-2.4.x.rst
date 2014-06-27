@@ -27,6 +27,8 @@ To extend ``PersistentActor``::
       /*...*/
     }
 
+Read more about the persistent actor in the :ref:`documentation for Scala <event-sourcing>` and 
+:ref:`documentation for Java <event-sourcing-java>`.
 
 Changed processorId to (abstract) persistenceId
 ===============================================
@@ -36,7 +38,7 @@ Persistent messages, as well as processors implemented the ``processorId`` metho
 This concept remains the same in Akka ``2.3.4``, yet we rename ``processorId`` to ``persistenceId`` because Processors will be removed,
 and persistent messages can be used from different classes not only ``PersistentActor`` (Views, directly from Journals etc).
 
-Please note that ``processorId`` is **abstract** in the new API classes (``PersistentActor`` and ``PersistentView``),
+Please note that ``persistenceId`` is **abstract** in the new API classes (``PersistentActor`` and ``PersistentView``),
 and we do **not** provide a default (actor-path derrived) value for it like we did for ``processorId``.
 The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical "which persistent entity this actor represents".
 A longer discussion on this subject can be found on `issue #15436 <https://github.com/akka/akka/issues/15436>`_ on github.
@@ -48,32 +50,6 @@ implement it yourself either as a helper trait or simply by overriding ``persist
 
 We provided the renamed method also on already deprecated classes (Channels),
 so you can simply apply a global rename of ``processorId`` to ``persistenceId``.
-
-Plugin APIs: Renamed PersistentId to PersistenceId
-==================================================
-Following the removal of Processors and moving to ``persistenceId``, the plugin SPI visible type has changed.
-The move from ``2.3.3`` to ``2.3.4`` should be relatively painless, and plugins will work even when using the deprecated ``PersistentId`` type.
-
-Change your implementations from::
-
-    def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] = // ...
-
-    def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit] = {
-      val p = messageIds.head.processorId // old
-      // ...
-    }
-
-to::
-
-    def asyncWriteMessages(messages: immutable.Seq[PersistentRepr]): Future[Unit] = // ...
-
-    def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit] = {
-      val p = messageIds.head.persistenceId // new
-      // ...
-    }
-
-Plugins written for ``2.3.3`` are source level compatible with ``2.3.4``, using the deprecated types, but will not work with future releases.
-Plugin maintainers are asked to update their plugins to ``2.3.4`` as soon as possible.
 
 Removed Processor in favour of extending PersistentActor with persistAsync
 ==========================================================================
@@ -110,7 +86,7 @@ Replacement code, with the same semantics, using PersistentActor::
           persistAsync(cmd) { e => sender() ! e }
       }
 
-      def receiveEvent = {
+      def receiveRecover = {
         case _ => // logic for handling replay
       }
     }
@@ -118,7 +94,7 @@ Replacement code, with the same semantics, using PersistentActor::
 It is worth pointing out that using ``sender()`` inside the persistAsync callback block is **valid**, and does *not* suffer
 any of the problems Futures have when closing over the sender reference.
 
-Using the``PersistentActor`` instead of ``Processor`` also shifts the responsibility of deciding if a message should be persisted
+Using the ``PersistentActor`` instead of ``Processor`` also shifts the responsibility of deciding if a message should be persisted
 to the receiver instead of the sender of the message. Previously, using ``Processor``, clients would have to wrap messages as ``Persistent(cmd)``
 manually, as well as have to be aware of the receiver being a ``Processor``, which didn't play well with transparency of the ActorRefs in general.
 
@@ -172,3 +148,24 @@ You should update it to extend ``PersistentView`` instead::
 In case you need to obtain the current sequence number the view is looking at, you can use the ``lastSequenceNr`` method.
 It is equivalent to "current sequence number", when ``isPersistent`` returns true, otherwise it yields the sequence number
 of the last persistent message that this view was updated with.
+
+Removed Channel and PersistentChannel in favour of AtLeastOnceDelivery trait
+============================================================================
+
+One of the primary tasks of a ``Channel`` was to de-duplicate messages that were sent from a
+``Processor`` during recovery. Performing external side effects during recovery is not 
+encouraged with event sourcing and therefore the ``Channel`` is not needed for this purpose.
+
+The ``Channel`` and ``PersistentChannel`` also performed at-least-once delivery of messages,
+but it did not free a sending actor from implementing retransmission or timeouts, since the 
+acknowledgement from the channel is needed to guarantee safe hand-off. Therefore at-least-once
+delivery is provided in a new ``AtLeastOnceDelivery`` trait that is mixed-in to the
+persistent actor on the sending side. 
+
+Read more about at-least-once delivery in the :ref:`documentation for Scala <at-least-once-delivery>` and 
+:ref:`documentation for Java <at-least-once-delivery-java>`.  
+
+
+
+
+   

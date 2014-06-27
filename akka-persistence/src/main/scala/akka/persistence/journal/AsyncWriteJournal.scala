@@ -105,7 +105,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * deleted, otherwise they are permanently deleted.
    */
   @deprecated("asyncDeleteMessages will be removed.", since = "2.3.4")
-  def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit]
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit]
 
   /**
    * Plugin API: asynchronously deletes all persistent messages up to `toSequenceNr`

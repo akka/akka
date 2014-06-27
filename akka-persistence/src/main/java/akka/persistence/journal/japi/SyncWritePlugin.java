@@ -30,7 +30,7 @@ interface SyncWritePlugin {
      * 
      * @deprecated doDeleteMessages will be removed (since 2.3.4)
      */
-    @Deprecated void doDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent);
+    @Deprecated void doDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent);
 
     /**
      * Java API, Plugin API: synchronously deletes all persistent messages up to

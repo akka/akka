@@ -32,7 +32,7 @@ interface AsyncWritePlugin {
      * 
      * @deprecated doAsyncDeleteMessages will be removed (since 2.3.4)
      */
-    @Deprecated Future<Void> doAsyncDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent);
+    @Deprecated Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent);
 
     /**
      * Java API, Plugin API: synchronously deletes all persistent messages up to
