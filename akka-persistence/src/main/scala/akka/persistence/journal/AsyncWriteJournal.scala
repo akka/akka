@@ -96,6 +96,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   /**
    * Plugin API: asynchronously writes a batch of delivery confirmations to the journal.
    */
+  @deprecated("writeConfirmations will be removed, since Channels will be removed.", since = "2.3.4")
   def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Future[Unit]
 
   /**
@@ -103,6 +104,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * journal. If `permanent` is set to `false`, the persistent messages are marked as
    * deleted, otherwise they are permanently deleted.
    */
+  @deprecated("asyncDeleteMessages will be removed.", since = "2.3.4")
   def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit]
 
   /**
