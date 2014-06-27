@@ -5,13 +5,14 @@
 package akka.persistence.serialization
 
 import scala.collection.immutable
-
 import com.typesafe.config._
-
 import akka.actor._
 import akka.persistence._
 import akka.serialization._
 import akka.testkit._
+
+import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
+import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
 
 object SerializerSpecConfigs {
   val customSerializers = ConfigFactory.parseString(
@@ -133,6 +134,35 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         deserialized should be(confirmation)
       }
     }
+
+    "given AtLeastOnceDeliverySnapshot" must {
+      "handle empty unconfirmed" in {
+        val unconfirmed = Vector.empty
+        val snap = AtLeastOnceDeliverySnapshot(13, unconfirmed)
+        val serializer = serialization.findSerializerFor(snap)
+
+        val bytes = serializer.toBinary(snap)
+        val deserialized = serializer.fromBinary(bytes, Some(classOf[AtLeastOnceDeliverySnapshot]))
+
+        deserialized should be(snap)
+      }
+
+      "handle a few unconfirmed" in {
+        val unconfirmed = Vector(
+          UnconfirmedDelivery(deliveryId = 1, destination = testActor.path, "a"),
+          UnconfirmedDelivery(deliveryId = 2, destination = testActor.path, "b"),
+          UnconfirmedDelivery(deliveryId = 3, destination = testActor.path, 42))
+        val snap = AtLeastOnceDeliverySnapshot(17, unconfirmed)
+        val serializer = serialization.findSerializerFor(snap)
+
+        val bytes = serializer.toBinary(snap)
+        val deserialized = serializer.fromBinary(bytes, Some(classOf[AtLeastOnceDeliverySnapshot]))
+
+        deserialized should be(snap)
+      }
+
+    }
+
   }
 }
 

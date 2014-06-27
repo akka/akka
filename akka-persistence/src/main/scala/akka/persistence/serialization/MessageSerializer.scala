@@ -5,14 +5,15 @@
 package akka.persistence.serialization
 
 import scala.language.existentials
-
 import com.google.protobuf._
-
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.japi.Util.immutableSeq
 import akka.persistence._
 import akka.persistence.serialization.MessageFormats._
 import akka.serialization._
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot ⇒ AtLeastOnceDeliverySnap }
+import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
+import scala.collection.immutable.VectorBuilder
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.
@@ -32,6 +33,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   val DeliveredByTransientChannelClass = classOf[DeliveredByChannel]
   val DeliveredByPersistentChannelClass = classOf[DeliveredByPersistentChannel]
   val DeliverClass = classOf[Deliver]
+  val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnap]
 
   def identifier: Int = 7
   def includeManifest: Boolean = true
@@ -52,6 +54,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
     case c: DeliveredByChannel           ⇒ deliveredMessageBuilder(c).build().toByteArray
     case c: DeliveredByPersistentChannel ⇒ deliveredMessageBuilder(c).build().toByteArray
     case d: Deliver                      ⇒ deliverMessageBuilder(d).build.toByteArray
+    case a: AtLeastOnceDeliverySnap      ⇒ atLeastOnceDeliverySnapshotBuilder(a).build.toByteArray
     case _                               ⇒ throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass}")
   }
 
@@ -69,6 +72,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
       case DeliveredByTransientChannelClass  ⇒ delivered(DeliveredMessage.parseFrom(bytes))
       case DeliveredByPersistentChannelClass ⇒ delivered(DeliveredMessage.parseFrom(bytes))
       case DeliverClass                      ⇒ deliver(DeliverMessage.parseFrom(bytes))
+      case AtLeastOnceDeliverySnapshotClass  ⇒ atLeastOnceDeliverySnapshot(AtLeastOnceDeliverySnapshot.parseFrom(bytes))
       case _                                 ⇒ throw new IllegalArgumentException(s"Can't deserialize object of type ${c}")
     }
   }
@@ -82,6 +86,33 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
     builder.setPersistent(persistentMessageBuilder(deliver.persistent.asInstanceOf[PersistentRepr]))
     builder.setDestination(deliver.destination.toString)
     builder
+  }
+
+  def atLeastOnceDeliverySnapshotBuilder(snap: AtLeastOnceDeliverySnap): AtLeastOnceDeliverySnapshot.Builder = {
+    val builder = AtLeastOnceDeliverySnapshot.newBuilder
+    builder.setCurrentDeliveryId(snap.currentDeliveryId)
+    snap.unconfirmedDeliveries.foreach { unconfirmed ⇒
+      val unconfirmedBuilder =
+        AtLeastOnceDeliverySnapshot.UnconfirmedDelivery.newBuilder.
+          setDeliveryId(unconfirmed.deliveryId).
+          setDestination(unconfirmed.destination.toString).
+          setPayload(persistentPayloadBuilder(unconfirmed.message.asInstanceOf[AnyRef]))
+      builder.addUnconfirmedDeliveries(unconfirmedBuilder)
+    }
+    builder
+  }
+
+  def atLeastOnceDeliverySnapshot(atLeastOnceDeliverySnapshot: AtLeastOnceDeliverySnapshot): AtLeastOnceDeliverySnap = {
+    import scala.collection.JavaConverters._
+    val unconfirmedDeliveries = new VectorBuilder[UnconfirmedDelivery]()
+    atLeastOnceDeliverySnapshot.getUnconfirmedDeliveriesList().iterator().asScala foreach { next ⇒
+      unconfirmedDeliveries += UnconfirmedDelivery(next.getDeliveryId, ActorPath.fromString(next.getDestination),
+        payload(next.getPayload))
+    }
+
+    AtLeastOnceDeliverySnap(
+      atLeastOnceDeliverySnapshot.getCurrentDeliveryId,
+      unconfirmedDeliveries.result())
   }
 
   private def persistentMessageBatchBuilder(persistentBatch: PersistentBatch) = {

@@ -40,3 +40,14 @@ message DeliverMessage {
   optional PersistentMessage persistent = 1;
   optional string destination = 2;
 }
+
+message AtLeastOnceDeliverySnapshot {
+  message UnconfirmedDelivery {
+    required int64 deliveryId = 1;
+    required string destination = 2;
+    required PersistentPayload payload = 3;
+  }
+  
+  required int64 currentDeliveryId = 1;
+  repeated UnconfirmedDelivery unconfirmedDeliveries = 2;
+}
