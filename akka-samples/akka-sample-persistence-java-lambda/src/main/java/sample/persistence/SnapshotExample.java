@@ -9,7 +9,6 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.AbstractPersistentActor;
-import akka.persistence.Persistent;
 import akka.persistence.SnapshotOffer;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;

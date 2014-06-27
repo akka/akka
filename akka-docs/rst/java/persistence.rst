@@ -261,12 +261,13 @@ single command).
 Message deletion
 ----------------
 
-A persistent actor can delete a single message by calling the ``deleteMessage`` method with the sequence number of
-that message as argument. An optional ``permanent`` parameter specifies whether the message shall be permanently
+To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
+persistent actors may call the ``deleteMessages`` method.
+
+An optional ``permanent`` parameter specifies whether the message shall be permanently
 deleted from the journal or only marked as deleted. In both cases, the message won't be replayed. Later extensions
 to Akka persistence will allow to replay messages that have been marked as deleted which can be useful for debugging
-purposes, for example. To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
-persistent actors should call the ``deleteMessages`` method.
+purposes, for example.
 
 .. _persistent-views-java:
 

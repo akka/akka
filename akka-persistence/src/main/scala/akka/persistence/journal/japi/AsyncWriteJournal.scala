@@ -22,7 +22,7 @@ abstract class AsyncWriteJournal extends AsyncRecovery with SAsyncWriteJournal w
   final def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
     doAsyncWriteConfirmations(confirmations.asJava).map(Unit.unbox)
 
-  final def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean) =
+  final def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) =
     doAsyncDeleteMessages(messageIds.asJava, permanent).map(Unit.unbox)
 
   final def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) =

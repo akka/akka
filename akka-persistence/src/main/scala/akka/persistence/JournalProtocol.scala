@@ -11,19 +11,19 @@ import akka.actor._
 /**
  * INTERNAL API.
  *
- * Messages exchanged between processors, views, channels and a journal.
+ * Messages exchanged between persistent actors, views, channels and a journal.
  */
 private[persistence] object JournalProtocol {
   /**
    * Request to delete messages identified by `messageIds`. If `permanent` is set to `false`,
    * the persistent messages are marked as deleted, otherwise they are permanently deleted.
    */
-  case class DeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean, requestor: Option[ActorRef] = None)
+  case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean, requestor: Option[ActorRef] = None)
 
   /**
    * Reply message to a successful [[DeleteMessages]] request.
    */
-  case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistenceId])
+  case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistentId])
 
   /**
    * Reply message to a failed [[DeleteMessages]] request.
@@ -56,9 +56,9 @@ private[persistence] object JournalProtocol {
    * Request to write messages.
    *
    * @param messages messages to be written.
-   * @param processor write requestor.
+   * @param persistentActor write requestor.
    */
-  case class WriteMessages(messages: immutable.Seq[Resequenceable], processor: ActorRef)
+  case class WriteMessages(messages: immutable.Seq[Resequenceable], persistentActor: ActorRef)
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
@@ -92,13 +92,13 @@ private[persistence] object JournalProtocol {
   case class WriteMessageFailure(message: PersistentRepr, cause: Throwable)
 
   /**
-   * Request to loop a `message` back to `processor`, without persisting the message. Looping of messages
+   * Request to loop a `message` back to `persistent actor`, without persisting the message. Looping of messages
    * through a journal is required to preserve message order with persistent messages.
    *
    * @param message message to be looped through the journal.
-   * @param processor loop requestor.
+   * @param persistentActor loop requestor.
    */
-  case class LoopMessage(message: Any, processor: ActorRef)
+  case class LoopMessage(message: Any, persistentActor: ActorRef)
 
   /**
    * Reply message to a [[LoopMessage]] request.
@@ -108,16 +108,16 @@ private[persistence] object JournalProtocol {
   case class LoopMessageSuccess(message: Any)
 
   /**
-   * Request to replay messages to `processor`.
+   * Request to replay messages to `persistentActor`.
    *
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).
    * @param max maximum number of messages to be replayed.
-   * @param persistenceId requesting processor id.
-   * @param processor requesting processor.
+   * @param persistenceId requesting persistent actor id.
+   * @param persistentActor requesting persistent actor.
    * @param replayDeleted `true` if messages marked as deleted shall be replayed.
    */
-  case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, persistenceId: String, processor: ActorRef, replayDeleted: Boolean = false)
+  case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, persistenceId: String, persistentActor: ActorRef, replayDeleted: Boolean = false)
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each
@@ -140,13 +140,13 @@ private[persistence] object JournalProtocol {
   case class ReplayMessagesFailure(cause: Throwable)
 
   /**
-   * Request to read the highest stored sequence number of a given processor.
+   * Request to read the highest stored sequence number of a given persistent actor.
    *
    * @param fromSequenceNr optional hint where to start searching for the maximum sequence number.
-   * @param persistenceId requesting processor id.
-   * @param processor requesting processor.
+   * @param persistenceId requesting persistent actor id.
+   * @param persistentActor requesting persistent actor.
    */
-  case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, persistenceId: String, processor: ActorRef)
+  case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, persistenceId: String, persistentActor: ActorRef)
 
   /**
    * Reply message to a successful [[ReadHighestSequenceNr]] request.

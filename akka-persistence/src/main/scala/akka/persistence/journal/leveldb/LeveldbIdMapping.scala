@@ -11,7 +11,7 @@ import akka.actor.Actor
 /**
  * INTERNAL API.
  *
- * LevelDB backed persistent mapping of `String`-based processor and channel ids to numeric ids.
+ * LevelDB backed persistent mapping of `String`-based persistent actor and channel ids to numeric ids.
  */
 private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â‡’
   import Key._
@@ -20,7 +20,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
   private var idMap: Map[String, Int] = Map.empty
 
   /**
-   * Get the mapped numeric id for the specified processor or channel `id`. Creates and
+   * Get the mapped numeric id for the specified persistent actor or channel `id`. Creates and
    * stores a new mapping if necessary.
    */
   def numericId(id: String): Int = idMap.get(id) match {

@@ -36,10 +36,6 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     if (nativeLeveldb) org.fusesource.leveldbjni.JniDBFactory.factory
     else org.iq80.leveldb.impl.Iq80DBFactory.factory
 
-  // TODO: support migration of processor and channel ids
-  // needed if default processor and channel ids are used
-  // (actor paths, which contain deployment information).
-
   val serialization = SerializationExtension(context.system)
 
   import Key._
@@ -50,7 +46,7 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
   def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
     withBatch(batch ⇒ confirmations.foreach(confirmation ⇒ addToConfirmationBatch(confirmation, batch)))
 
-  def deleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean) = withBatch { batch ⇒
+  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) = withBatch { batch ⇒
     messageIds foreach { messageId ⇒
       if (permanent) batch.delete(keyToBytes(Key(numericId(messageId.persistenceId), messageId.sequenceNr, 0)))
       else batch.put(keyToBytes(deletionKey(numericId(messageId.persistenceId), messageId.sequenceNr)), Array.emptyByteArray)

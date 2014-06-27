@@ -20,7 +20,7 @@ abstract class SyncWriteJournal extends AsyncRecovery with SSyncWriteJournal wit
   final def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
     doWriteConfirmations(confirmations.asJava)
 
-  final def deleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean) =
+  final def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) =
     doDeleteMessages(messageIds.asJava, permanent)
 
   final def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) =

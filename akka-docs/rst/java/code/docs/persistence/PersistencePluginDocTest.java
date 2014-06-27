@@ -87,7 +87,7 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public Future<Void> doAsyncDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent) {
+        public Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent) {
             return null;
         }
 

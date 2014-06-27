@@ -126,7 +126,7 @@ trait SharedLeveldbPluginDocSpec {
 class MyJournal extends AsyncWriteJournal {
   def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = ???
   def asyncWriteConfirmations(confirmations: Seq[PersistentConfirmation]): Future[Unit] = ???
-  def asyncDeleteMessages(messageIds: Seq[PersistenceId], permanent: Boolean): Future[Unit] = ???
+  def asyncDeleteMessages(messageIds: Seq[PersistentId], permanent: Boolean): Future[Unit] = ???
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
   def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
   def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = ???

@@ -205,9 +205,11 @@ case class DeliveredByPersistentChannel(
   channelId: String,
   persistentSequenceNr: Long,
   deliverySequenceNr: Long = 0L,
-  channel: ActorRef = null) extends Delivered with PersistenceId {
+  channel: ActorRef = null) extends Delivered with PersistentId {
 
-  def persistenceId: String = channelId
+  override def persistenceId: String = channelId
+  @deprecated("Use persistenceId.", since = "2.3.4")
+  override def processorId = persistenceId
   def sequenceNr: Long = persistentSequenceNr
   def update(deliverySequenceNr: Long, channel: ActorRef): DeliveredByPersistentChannel =
     copy(deliverySequenceNr = deliverySequenceNr, channel = channel)
