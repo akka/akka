@@ -107,6 +107,9 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
       case p: PersistentRepr ⇒
         addToBatch(p)
         if (!batching || maxBatchSizeReached) journalBatch()
+      case n: NonPersistentRepr ⇒
+        addToBatch(n)
+        if (!batching || maxBatchSizeReached) journalBatch()
       case pb: PersistentBatch ⇒
         // submit all batched messages before submitting this user batch (isolated)
         if (!processorBatch.isEmpty) journalBatch()
