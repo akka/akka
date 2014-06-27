@@ -46,7 +46,7 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
   def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
     withBatch(batch ⇒ confirmations.foreach(confirmation ⇒ addToConfirmationBatch(confirmation, batch)))
 
-  def deleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean) = withBatch { batch ⇒
+  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) = withBatch { batch ⇒
     messageIds foreach { messageId ⇒
       if (permanent) batch.delete(keyToBytes(Key(numericId(messageId.persistenceId), messageId.sequenceNr, 0)))
       else batch.put(keyToBytes(deletionKey(numericId(messageId.persistenceId), messageId.sequenceNr)), Array.emptyByteArray)

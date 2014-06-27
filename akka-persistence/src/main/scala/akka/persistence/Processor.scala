@@ -223,7 +223,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
    */
   @deprecated("deleteMessage(sequenceNr) will be removed. Instead, validate before persist, and use deleteMessages for pruning.", since = "2.3.4")
   def deleteMessage(sequenceNr: Long, permanent: Boolean): Unit = {
-    journal ! DeleteMessages(List(PersistenceIdImpl(persistenceId, sequenceNr)), permanent)
+    journal ! DeleteMessages(List(PersistentIdImpl(persistenceId, sequenceNr)), permanent)
   }
 
   /**

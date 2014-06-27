@@ -18,12 +18,12 @@ private[persistence] object JournalProtocol {
    * Request to delete messages identified by `messageIds`. If `permanent` is set to `false`,
    * the persistent messages are marked as deleted, otherwise they are permanently deleted.
    */
-  final case class DeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean, requestor: Option[ActorRef] = None)
+  final case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean, requestor: Option[ActorRef] = None)
 
   /**
    * Reply message to a successful [[DeleteMessages]] request.
    */
-  final case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistenceId])
+  final case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistentId])
 
   /**
    * Reply message to a failed [[DeleteMessages]] request.
