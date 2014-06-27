@@ -5,6 +5,7 @@
 package doc;
 
 import akka.actor.AbstractActor;
+import akka.actor.ActorPath;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
@@ -14,6 +15,7 @@ import scala.Option;
 import scala.PartialFunction;
 import scala.concurrent.duration.Duration;
 import scala.runtime.BoxedUnit;
+import java.io.Serializable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -169,6 +171,93 @@ public class LambdaPersistenceDocTest {
     }
     //#recovery-completed
   };
+
+  static Object atLeastOnceExample = new Object() {
+      //#at-least-once-example
+      
+      class Msg implements Serializable {
+        public final long deliveryId;
+        public final String s;
+        
+        public Msg(long deliveryId, String s) {
+          this.deliveryId = deliveryId;
+          this.s = s;
+        }
+      }
+      
+      class Confirm implements Serializable {
+        public final long deliveryId;
+        
+        public Confirm(long deliveryId) {
+          this.deliveryId = deliveryId;
+        }
+      }
+      
+  
+      class MsgSent implements Serializable {
+        public final String s;
+        
+        public MsgSent(String s) {
+          this.s = s;
+        }
+      }
+      class MsgConfirmed implements Serializable {
+        public final long deliveryId;
+        
+        public MsgConfirmed(long deliveryId) {
+          this.deliveryId = deliveryId;
+        }
+      }
+      
+      class MyPersistentActor extends AbstractPersistentActorWithAtLeastOnceDelivery {
+        private final ActorPath destination;
+
+        public MyPersistentActor(ActorPath destination) {
+            this.destination = destination;
+        }
+
+        @Override
+        public PartialFunction<Object, BoxedUnit> receiveCommand() {
+          return ReceiveBuilder.
+            match(String.class, s -> {
+              persist(new MsgSent(s), evt -> updateState(evt));
+            }).
+            match(Confirm.class, confirm -> {
+              persist(new MsgConfirmed(confirm.deliveryId), evt -> updateState(evt));
+            }).
+            build();
+        }
+
+        @Override
+        public PartialFunction<Object, BoxedUnit> receiveRecover() {
+          return ReceiveBuilder.
+              match(Object.class, evt -> updateState(evt)).build();
+        }        
+        
+        void updateState(Object event) {
+          if (event instanceof MsgSent) {
+            final MsgSent evt = (MsgSent) event;
+            deliver(destination, deliveryId -> new Msg(deliveryId, evt.s));
+          } else if (event instanceof MsgConfirmed) {
+            final MsgConfirmed evt = (MsgConfirmed) event;
+            confirmDelivery(evt.deliveryId);
+          }
+        }
+      }
+
+      class MyDestination extends AbstractActor {
+        public MyDestination() {
+          receive(ReceiveBuilder.
+            match(Msg.class, msg -> {
+              // ...
+              sender().tell(new Confirm(msg.deliveryId), self());
+            }).build()
+          );
+        }
+      }
+      //#at-least-once-example
+    };
+
 
   static Object o3 = new Object() {
     //#channel-example

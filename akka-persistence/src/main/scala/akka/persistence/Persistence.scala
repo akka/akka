@@ -42,6 +42,18 @@ final class PersistenceSettings(config: Config) {
       if (v < 0) Long.MaxValue else v
   }
 
+  object atLeastOnceDelivery {
+
+    val redeliverInterval: FiniteDuration =
+      config.getMillisDuration("at-least-once-delivery.redeliver-interval")
+
+    val warnAfterNumberOfUnconfirmedAttempts: Int =
+      config.getInt("at-least-once-delivery.warn-after-number-of-unconfirmed-attempts")
+
+    val maxUnconfirmedMessages: Int =
+      config.getInt("at-least-once-delivery.max-unconfirmed-messages")
+  }
+
   /**
    * INTERNAL API.
    *
