@@ -536,7 +536,7 @@ Managagement Messages
 These management messages may be handled after other messages, so if you send ``AddRoutee`` immediately followed
 an ordinary message you are not guaranteed that the routees have been changed when the ordinary message
 is routed. If you need to know when the change has been applied you can send ``AddRoutee`` followed by ``GetRoutees``
-and when you receive the ``Routees`` reply you know that the preceeding change has been applied.
+and when you receive the ``Routees`` reply you know that the preceding change has been applied.
 
 .. _resizable-routers-java:
 

@@ -58,7 +58,7 @@ private[persistence] object JournalProtocol {
    * @param messages messages to be written.
    * @param persistentActor write requestor.
    */
-  case class WriteMessages(messages: immutable.Seq[Resequenceable], persistentActor: ActorRef)
+  case class WriteMessages(messages: immutable.Seq[Resequenceable], persistentActor: ActorRef, actorInstanceId: Int)
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
@@ -80,7 +80,7 @@ private[persistence] object JournalProtocol {
    *
    * @param persistent successfully written message.
    */
-  case class WriteMessageSuccess(persistent: PersistentRepr)
+  case class WriteMessageSuccess(persistent: PersistentRepr, actorInstanceId: Int)
 
   /**
    * Reply message to a failed [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -89,7 +89,7 @@ private[persistence] object JournalProtocol {
    * @param message message failed to be written.
    * @param cause failure cause.
    */
-  case class WriteMessageFailure(message: PersistentRepr, cause: Throwable)
+  case class WriteMessageFailure(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
 
   /**
    * Request to loop a `message` back to `persistent actor`, without persisting the message. Looping of messages
@@ -98,14 +98,14 @@ private[persistence] object JournalProtocol {
    * @param message message to be looped through the journal.
    * @param persistentActor loop requestor.
    */
-  case class LoopMessage(message: Any, persistentActor: ActorRef)
+  case class LoopMessage(message: Any, persistentActor: ActorRef, actorInstanceId: Int)
 
   /**
    * Reply message to a [[LoopMessage]] request.
    *
    * @param message looped message.
    */
-  case class LoopMessageSuccess(message: Any)
+  case class LoopMessageSuccess(message: Any, actorInstanceId: Int)
 
   /**
    * Request to replay messages to `persistentActor`.
