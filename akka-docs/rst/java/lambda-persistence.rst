@@ -60,10 +60,6 @@ Architecture
   persistent actor. A view itself does not journal new messages, instead, it updates internal state only from a persistent actor's
   replicated message stream.
   
-* *Streams*: Messages written by a persistent actor can be published in compliance with the `Reactive Streams`_ specification.
-  Only those messages that are explicitly requested from downstream persistent actors are actually pulled from a persistent actor's
-  journal.  
-
 * *AbstractPersistentActorAtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
   case of sender and receiver JVM crashes.
 
@@ -80,7 +76,6 @@ Architecture
   development of event sourced applications (see section :ref:`event-sourcing-java-lambda`)
 
 .. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
-.. _Reactive Streams: http://www.reactive-streams.org/
 
 .. _event-sourcing-java-lambda:
 
@@ -334,13 +329,6 @@ The identifier must be defined with the ``viewId`` method.
 
 The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java-lambda` of a view and its
 persistent actor shall be shared (which is what applications usually do not want).
-
-.. _streams-java-lambda:
-
-Streams
-=======
-
-Java API coming soon. See also Scala :ref:`streams` documentation.
 
 .. _snapshots-java-lambda:
 
