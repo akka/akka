@@ -413,7 +413,7 @@ sequence number. It does not store this state itself. You must persist events co
 ``deliver`` and ``confirmDelivery`` invocations from your ``PersistentActor`` so that the state can
 be restored by calling the same methods during the recovery phase of the ``PersistentActor``. Sometimes
 these events can be derived from other business level events, and sometimes you must create separate events.
-During recovery calls to ``delivery`` will not send out the message, but it will be sent later
+During recovery calls to ``deliver`` will not send out the message, but it will be sent later
 if no matching ``confirmDelivery`` was performed.
 
 Support for snapshots is provided by ``getDeliverySnapshot`` and ``setDeliverySnapshot``.
