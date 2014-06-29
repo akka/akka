@@ -108,6 +108,8 @@ Methods returning:
     Any exception that was thrown during this call will be rethrown.
   * Any other type of value will use ``send-request-reply`` semantics, but *will* block to wait for an answer,
     throwing ``java.util.concurrent.TimeoutException`` if there was a timeout or rethrow any exception that was thrown during this call.
+    Note that due to the Java exception and reflection mechanisms, such a ``TimeoutException`` will be wrapped in a ``java.lang.reflect.UndeclaredThrowableException``
+    unless the interface method explicitly declares the ``TimeoutException`` as a thrown checked exception.
 
 Messages and immutability
 -------------------------
@@ -137,6 +139,11 @@ if needed. It will return ``None`` if a timeout occurs.
 
 This will block for as long as the timeout that was set in the ``Props`` of the Typed Actor,
 if needed. It will throw a ``java.util.concurrent.TimeoutException`` if a timeout occurs.
+Note that here, such a ``TimeoutException`` will be wrapped in a
+``java.lang.reflect.UndeclaredThrowableException`` by the Java reflection mechanism,
+because the interface method does not explicitly declare the ``TimeoutException`` as a thrown checked exception.
+To get the ``TimeoutException`` directly, declare ``throws java.util.concurrent.TimeoutException`` at the
+interface method.
 
 Request-reply-with-future message send
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
