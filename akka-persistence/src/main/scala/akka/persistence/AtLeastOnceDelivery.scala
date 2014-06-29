@@ -71,7 +71,7 @@ object AtLeastOnceDelivery {
 }
 
 /**
- * Use this trait with your `PersistentActor` to send messages with at-least-once
+ * Mix-in this trait with your `PersistentActor` to send messages with at-least-once
  * delivery semantics to destinations. It takes care of re-sending messages when they
  * have not been confirmed within a configurable timeout. Use the [[#deliver]] method to
  * send a message to a destination. Call the [[#confirmDelivery]] method when the destination
@@ -90,7 +90,7 @@ object AtLeastOnceDelivery {
  * to the `deliver` and `confirmDelivery` invocations from your `PersistentActor` so that the
  * state can be restored by calling the same methods during the recovery phase of the
  * `PersistentActor`. Sometimes these events can be derived from other business level events,
- * and sometimes you must create separate events. During recovery calls to `delivery`
+ * and sometimes you must create separate events. During recovery calls to `deliver`
  * will not send out the message, but it will be sent later if no matching `confirmDelivery`
  * was performed.
  *
