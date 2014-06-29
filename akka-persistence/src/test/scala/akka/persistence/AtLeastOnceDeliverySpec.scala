@@ -41,7 +41,7 @@ object AtLeastOnceDeliverySpec {
                destinations: Map[String, ActorPath])
     extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
 
-    override def processorId: String = name
+    override def persistenceId: String = name
 
     def updateState(evt: Evt): Unit = evt match {
       case AcceptedReq(payload, destination) ⇒

@@ -58,16 +58,20 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
         throw new UnsupportedOperationException("Persistent command batches not supported")
       case _: PersistentRepr ⇒
         throw new UnsupportedOperationException("Persistent commands not supported")
-      case WriteMessageSuccess(r) ⇒
-        r match {
-          case p: PersistentRepr ⇒
-            withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
-          case _ ⇒ pendingInvocations.peek().handler(r.payload)
+      case WriteMessageSuccess(p, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          onWriteComplete()
         }
-        onWriteComplete()
-      case LoopMessageSuccess(l) ⇒
-        pendingInvocations.peek().handler(l)
-        onWriteComplete()
+      case LoopMessageSuccess(l, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          pendingInvocations.peek().handler(l)
+          onWriteComplete()
+        }
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
       case _ ⇒
@@ -75,7 +79,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
     }
 
     private def doAroundReceive(receive: Receive, message: Any): Unit = {
-      Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message))
+      Eventsourced.super.aroundReceive(receive, LoopMessageSuccess(message, instanceId))
 
       if (pendingStashingPersistInvocations > 0) {
         currentState = persistingEvents
@@ -111,19 +115,25 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
         deleteMessage(p.sequenceNr, permanent = true)
         throw new UnsupportedOperationException("Persistent commands not supported")
 
-      case WriteMessageSuccess(m) ⇒
-        m match {
-          case p: PersistentRepr ⇒ withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
-          case _                 ⇒ pendingInvocations.peek().handler(m.payload)
+      case WriteMessageSuccess(p, id) ⇒
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case we ignore the call to the handler
+        if (id == instanceId) {
+          withCurrentPersistent(p)(p ⇒ pendingInvocations.peek().handler(p.payload))
+          onWriteComplete()
         }
-        onWriteComplete()
 
-      case e @ WriteMessageFailure(p, _) ⇒
+      case e @ WriteMessageFailure(p, _, id) ⇒
         Eventsourced.super.aroundReceive(receive, message) // stops actor by default
-        onWriteComplete()
-      case LoopMessageSuccess(l) ⇒
-        pendingInvocations.peek().handler(l)
-        onWriteComplete()
+        // instanceId mismatch can happen for persistAsync and defer in case of actor restart
+        // while message is in flight, in that case the handler has already been discarded
+        if (id == instanceId)
+          onWriteComplete()
+      case LoopMessageSuccess(l, id) ⇒
+        if (id == instanceId) {
+          pendingInvocations.peek().handler(l)
+          onWriteComplete()
+        }
       case s @ WriteMessagesSuccessful ⇒ Eventsourced.super.aroundReceive(receive, s)
       case f: WriteMessagesFailed      ⇒ Eventsourced.super.aroundReceive(receive, f)
       case other                       ⇒ processorStash.stash()
@@ -164,14 +174,14 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
       receiveRecover(RecoveryCompleted)
   }
 
-  sealed trait PendingHandlerInvocation {
+  private sealed trait PendingHandlerInvocation {
     def evt: Any
     def handler: Any ⇒ Unit
   }
   /** forces processor to stash incoming commands untill all these invocations are handled */
-  final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+  private final case class StashingHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
   /** does not force the processor to stash commands; Originates from either `persistAsync` or `defer` calls */
-  final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
+  private final case class AsyncHandlerInvocation(evt: Any, handler: Any ⇒ Unit) extends PendingHandlerInvocation
 
   /** Used instead of iterating `pendingInvocations` in order to check if safe to revert to processing commands */
   private var pendingStashingPersistInvocations: Long = 0
@@ -199,21 +209,20 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
 
   /**
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
-   * persisted event. It is guaranteed that no new commands will be received by a processor
+   * persisted event. It is guaranteed that no new commands will be received by a persistent actor
    * between a call to `persist` and the execution of its `handler`. This also holds for
    * multiple `persist` calls per received command. Internally, this is achieved by stashing new
    * commands and unstashing them when the `event` has been persisted and handled. The stash used
-   * for that is an internal stash which doesn't interfere with the user stash inherited from
-   * [[Processor]].
+   * for that is an internal stash which doesn't interfere with the inherited user stash.
    *
-   * An event `handler` may close over processor state and modify it. The `sender` of a persisted
+   * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
    * sender within an event `handler`.
    *
-   * Within an event handler, applications usually update processor state using persisted event
+   * Within an event handler, applications usually update persistent actor state using persisted event
    * data, notify listeners and reply to command senders.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted
@@ -241,16 +250,16 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
    * Asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event.
    *
-   * Unlike `persist` the processor will continue to receive incomming commands between the
+   * Unlike `persist` the persistent actor will continue to receive incomming commands between the
    * call to `persist` and executing it's `handler`. This asynchronous, non-stashing, version of
    * of persist should be used when you favor throughput over the "command-2 only processed after
    * command-1 effects' have been applied" guarantee, which is provided by the plain [[persist]] method.
    *
-   * An event `handler` may close over processor state and modify it. The `sender` of a persisted
+   * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
    * sender within an event `handler`.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted
@@ -327,7 +336,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
    *
-   * This handler must not have side-effects other than changing processor state i.e. it
+   * This handler must not have side-effects other than changing persistent actor state i.e. it
    * should not perform actions that may fail, such as interacting with external services,
    * for example.
    *
@@ -342,7 +351,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
    * Command handler. Typically validates commands against current state (and/or by
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
-   * Commands sent to event sourced processors should not be [[Persistent]] messages.
+   * Commands sent to event sourced persistent actors should not be [[Persistent]] messages.
    */
   def receiveCommand: Receive
 
@@ -420,21 +429,20 @@ abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl wi
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
-   * persisted event. It is guaranteed that no new commands will be received by a processor
+   * persisted event. It is guaranteed that no new commands will be received by a persistent actor
    * between a call to `persist` and the execution of its `handler`. This also holds for
    * multiple `persist` calls per received command. Internally, this is achieved by stashing new
    * commands and unstashing them when the `event` has been persisted and handled. The stash used
-   * for that is an internal stash which doesn't interfere with the user stash inherited from
-   * [[UntypedProcessor]].
+   * for that is an internal stash which doesn't interfere with the inherited user stash.
    *
-   * An event `handler` may close over processor state and modify it. The `getSender()` of a persisted
+   * An event `handler` may close over persistent actor state and modify it. The `getSender()` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
    * sender within an event `handler`.
    *
-   * Within an event handler, applications usually update processor state using persisted event
+   * Within an event handler, applications usually update persistent actor state using persisted event
    * data, notify listeners and reply to command senders.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[onReceiveCommand]].
    *
    * @param event event to be persisted.
@@ -458,16 +466,16 @@ abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl wi
    * JAVA API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event.
    *
-   * Unlike `persist` the processor will continue to receive incomming commands between the
+   * Unlike `persist` the persistent actor will continue to receive incomming commands between the
    * call to `persist` and executing it's `handler`. This asynchronous, non-stashing, version of
    * of persist should be used when you favor throughput over the "command-2 only processed after
    * command-1 effects' have been applied" guarantee, which is provided by the plain [[persist]] method.
    *
-   * An event `handler` may close over processor state and modify it. The `sender` of a persisted
+   * An event `handler` may close over persistent actor state and modify it. The `sender` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
    * sender within an event `handler`.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted
@@ -536,7 +544,7 @@ abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl wi
    * has been captured and saved, this handler will receive a [[SnapshotOffer]] message
    * followed by events that are younger than the offered snapshot.
    *
-   * This handler must not have side-effects other than changing processor state i.e. it
+   * This handler must not have side-effects other than changing persistent actor state i.e. it
    * should not perform actions that may fail, such as interacting with external services,
    * for example.
    *
@@ -552,9 +560,9 @@ abstract class UntypedPersistentActor extends UntypedActor with ProcessorImpl wi
    * Java API: command handler. Typically validates commands against current state (and/or by
    * communication with other actors). On successful validation, one or more events are
    * derived from a command and these events are then persisted by calling `persist`.
-   * Commands sent to event sourced processors must not be [[Persistent]] or
+   * Commands sent to event sourced persistent actors must not be [[Persistent]] or
    * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
-   * thrown by the processor.
+   * thrown by the persistent actor.
    */
   @throws(classOf[Exception])
   def onReceiveCommand(msg: Any): Unit
@@ -567,21 +575,20 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
 
   /**
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
-   * persisted event. It is guaranteed that no new commands will be received by a processor
+   * persisted event. It is guaranteed that no new commands will be received by a persistent actor
    * between a call to `persist` and the execution of its `handler`. This also holds for
    * multiple `persist` calls per received command. Internally, this is achieved by stashing new
    * commands and unstashing them when the `event` has been persisted and handled. The stash used
-   * for that is an internal stash which doesn't interfere with the user stash inherited from
-   * [[UntypedProcessor]].
+   * for that is an internal stash which doesn't interfere with the inherited user stash.
    *
-   * An event `handler` may close over processor state and modify it. The `getSender()` of a persisted
+   * An event `handler` may close over persistent actor state and modify it. The `getSender()` of a persisted
    * event is the sender of the corresponding command. This means that one can reply to a command
    * sender within an event `handler`.
    *
-   * Within an event handler, applications usually update processor state using persisted event
+   * Within an event handler, applications usually update persistent actor state using persisted event
    * data, notify listeners and reply to command senders.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted.
@@ -605,11 +612,11 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
    * Java API: asynchronously persists `event`. On successful persistence, `handler` is called with the
    * persisted event.
    *
-   * Unlike `persist` the processor will continue to receive incomming commands between the
+   * Unlike `persist` the persistent actor will continue to receive incomming commands between the
    * call to `persistAsync` and executing it's `handler`. This asynchronous, non-stashing, version of
    * of persist should be used when you favor throughput over the strict ordering guarantees that `persist` guarantees.
    *
-   * If persistence of an event fails, the processor will be stopped. This can be customized by
+   * If persistence of an event fails, the persistent actor will be stopped. This can be customized by
    * handling [[PersistenceFailure]] in [[receiveCommand]].
    *
    * @param event event to be persisted

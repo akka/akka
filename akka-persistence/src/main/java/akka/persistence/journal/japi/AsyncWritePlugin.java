@@ -20,15 +20,19 @@ interface AsyncWritePlugin {
     /**
      * Java API, Plugin API: synchronously writes a batch of delivery confirmations to
      * the journal.
+     * 
+     * @deprecated doAsyncWriteConfirmations will be removed, since Channels will be removed (since 2.3.4)
      */
-    Future<Void> doAsyncWriteConfirmations(Iterable<PersistentConfirmation> confirmations);
+    @Deprecated Future<Void> doAsyncWriteConfirmations(Iterable<PersistentConfirmation> confirmations);
 
     /**
      * Java API, Plugin API: synchronously deletes messages identified by `messageIds`
      * from the journal. If `permanent` is set to `false`, the persistent messages are
      * marked as deleted, otherwise they are permanently deleted.
+     * 
+     * @deprecated doAsyncDeleteMessages will be removed (since 2.3.4)
      */
-    Future<Void> doAsyncDeleteMessages(Iterable<PersistenceId> messageIds, boolean permanent);
+    @Deprecated Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent);
 
     /**
      * Java API, Plugin API: synchronously deletes all persistent messages up to

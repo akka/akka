@@ -39,15 +39,15 @@ trait SnapshotStore extends Actor {
       } to (self, p)
     case evt @ SaveSnapshotSuccess(metadata) ⇒
       saved(metadata)
-      sender() ! evt // sender is processor
+      sender() ! evt // sender is persistentActor
     case evt @ SaveSnapshotFailure(metadata, _) ⇒
       delete(metadata)
-      sender() ! evt // sender is processor
+      sender() ! evt // sender is persistentActor
     case d @ DeleteSnapshot(metadata) ⇒
       delete(metadata)
       if (publish) context.system.eventStream.publish(d)
-    case d @ DeleteSnapshots(processorId, criteria) ⇒
-      delete(processorId, criteria)
+    case d @ DeleteSnapshots(persistenceId, criteria) ⇒
+      delete(persistenceId, criteria)
       if (publish) context.system.eventStream.publish(d)
   }
 
@@ -55,7 +55,7 @@ trait SnapshotStore extends Actor {
   /**
    * Plugin API: asynchronously loads a snapshot.
    *
-   * @param processorId processor id.
+   * @param persistenceId processor id.
    * @param criteria selection criteria for loading.
    */
   def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]]

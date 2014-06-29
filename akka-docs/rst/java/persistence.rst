@@ -65,10 +65,6 @@ Architecture
   persistent actor. A view itself does not journal new messages, instead, it updates internal state only from a persistent actor's
   replicated message stream.
 
-* *Streams*: Messages written by a persistent actor can be published in compliance with the `Reactive Streams`_ specification.
-  Only those messages that are explicitly requested from downstream persistent actors are actually pulled from a persistent actor's
-  journal.
-
 * *UntypedPersistentActorAtLeastOnceDelivery*: To send messages with at-least-once delivery semantics to destinations, also in
   case of sender and receiver JVM crashes.
 
@@ -82,7 +78,6 @@ Architecture
   storage plugin writes to the local filesystem.
 
 .. _Community plugins: http://akka.io/community/
-.. _Reactive Streams: http://www.reactive-streams.org/
 
 .. _event-sourcing-java:
 
@@ -218,10 +213,14 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
   and handle them in the callback.
+  
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``persistAsync`` and the journal has confirmed the write.  
 
 .. _defer-java:
 
-Deferring actions until preceeding persist handlers have executed
+Deferring actions until preceding persist handlers have executed
 -----------------------------------------------------------------
 
 Sometimes when working with ``persistAsync`` you may find that it would be nice to define some actions in terms of
@@ -238,6 +237,10 @@ Notice that the ``sender()`` is **safe** to access in the handler callback, and 
 of the command for which this ``defer`` handler was called.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#defer-caller
+
+.. warning::
+  The callback will not be invoked if the actor is restarted (or stopped) in between the call to
+  ``defer`` and the journal has processed and confirmed all preceding writes.
 
 Batch writes
 ------------
@@ -261,12 +264,13 @@ single command).
 Message deletion
 ----------------
 
-A persistent actor can delete a single message by calling the ``deleteMessage`` method with the sequence number of
-that message as argument. An optional ``permanent`` parameter specifies whether the message shall be permanently
+To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
+persistent actors may call the ``deleteMessages`` method.
+
+An optional ``permanent`` parameter specifies whether the message shall be permanently
 deleted from the journal or only marked as deleted. In both cases, the message won't be replayed. Later extensions
 to Akka persistence will allow to replay messages that have been marked as deleted which can be useful for debugging
-purposes, for example. To delete all messages (journaled by a single persistent actor) up to a specified sequence number,
-persistent actors should call the ``deleteMessages`` method.
+purposes, for example.
 
 .. _persistent-views-java:
 
@@ -331,13 +335,6 @@ The identifier must be defined with the ``viewId`` method.
 
 The ``viewId`` must differ from the referenced ``persistenceId``, unless :ref:`snapshots-java` of a view and its
 persistent actor shall be shared (which is what applications usually do not want).
-
-.. _streams-java:
-
-Streams
-=======
-
-Java API coming soon. See also Scala :ref:`streams` documentation.
 
 .. _snapshots-java:
 
@@ -422,7 +419,7 @@ sequence number. It does not store this state itself. You must persist events co
 ``deliver`` and ``confirmDelivery`` invocations from your ``PersistentActor`` so that the state can
 be restored by calling the same methods during the recovery phase of the ``PersistentActor``. Sometimes
 these events can be derived from other business level events, and sometimes you must create separate events.
-During recovery calls to ``delivery`` will not send out the message, but it will be sent later
+During recovery calls to ``deliver`` will not send out the message, but it will be sent later
 if no matching ``confirmDelivery`` was performed.
 
 Support for snapshots is provided by ``getDeliverySnapshot`` and ``setDeliverySnapshot``.

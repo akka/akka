@@ -43,7 +43,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
   def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Future[Unit] =
     (store ? WriteConfirmations(confirmations)).mapTo[Unit]
 
-  def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit] =
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit] =
     (store ? DeleteMessages(messageIds, permanent)).mapTo[Unit]
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] =
@@ -78,7 +78,7 @@ private[persistence] object AsyncWriteTarget {
   final case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation])
 
   @SerialVersionUID(1L)
-  final case class DeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean)
+  final case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean)
 
   @SerialVersionUID(1L)
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)

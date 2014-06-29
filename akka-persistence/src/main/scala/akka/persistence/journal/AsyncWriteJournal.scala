@@ -28,19 +28,19 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private var resequencerCounter = 1L
 
   def receive = {
-    case WriteMessages(resequenceables, processor) ⇒
+    case WriteMessages(resequenceables, processor, actorInstanceId) ⇒
       val cctr = resequencerCounter
       def resequence(f: PersistentRepr ⇒ Any) = resequenceables.zipWithIndex.foreach {
         case (p: PersistentRepr, i) ⇒ resequencer ! Desequenced(f(p), cctr + i + 1, processor, p.sender)
-        case (r, i)                 ⇒ resequencer ! Desequenced(LoopMessageSuccess(r.payload), cctr + i + 1, processor, r.sender)
+        case (r, i)                 ⇒ resequencer ! Desequenced(LoopMessageSuccess(r.payload, actorInstanceId), cctr + i + 1, processor, r.sender)
       }
       asyncWriteMessages(preparePersistentBatch(resequenceables)) onComplete {
         case Success(_) ⇒
           resequencer ! Desequenced(WriteMessagesSuccessful, cctr, processor, self)
-          resequence(WriteMessageSuccess(_))
+          resequence(WriteMessageSuccess(_, actorInstanceId))
         case Failure(e) ⇒
           resequencer ! Desequenced(WriteMessagesFailed(e), cctr, processor, self)
-          resequence(WriteMessageFailure(_, e))
+          resequence(WriteMessageFailure(_, e, actorInstanceId))
       }
       resequencerCounter += resequenceables.length + 1
     case r @ ReplayMessages(fromSequenceNr, toSequenceNr, max, persistenceId, processor, replayDeleted) ⇒
@@ -80,8 +80,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         case Success(_) ⇒ if (publish) context.system.eventStream.publish(d)
         case Failure(e) ⇒
       }
-    case LoopMessage(message, processor) ⇒
-      resequencer ! Desequenced(LoopMessageSuccess(message), resequencerCounter, processor, sender())
+    case LoopMessage(message, processor, actorInstanceId) ⇒
+      resequencer ! Desequenced(LoopMessageSuccess(message, actorInstanceId), resequencerCounter, processor, sender)
       resequencerCounter += 1
   }
 
@@ -96,6 +96,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   /**
    * Plugin API: asynchronously writes a batch of delivery confirmations to the journal.
    */
+  @deprecated("writeConfirmations will be removed, since Channels will be removed.", since = "2.3.4")
   def asyncWriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation]): Future[Unit]
 
   /**
@@ -103,7 +104,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
    * journal. If `permanent` is set to `false`, the persistent messages are marked as
    * deleted, otherwise they are permanently deleted.
    */
-  def asyncDeleteMessages(messageIds: immutable.Seq[PersistenceId], permanent: Boolean): Future[Unit]
+  @deprecated("asyncDeleteMessages will be removed.", since = "2.3.4")
+  def asyncDeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean): Future[Unit]
 
   /**
    * Plugin API: asynchronously deletes all persistent messages up to `toSequenceNr`

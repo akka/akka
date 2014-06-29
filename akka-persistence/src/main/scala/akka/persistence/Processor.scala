@@ -7,6 +7,7 @@ package akka.persistence
 import akka.AkkaException
 import akka.actor._
 import akka.dispatch._
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * An actor that persists (journals) messages of type [[Persistent]]. Messages of other types are not persisted.
@@ -59,12 +60,22 @@ trait Processor extends ProcessorImpl {
   override def persistenceId: String = processorId
 }
 
+/**
+ * INTERNAL API
+ */
+private[akka] object ProcessorImpl {
+  // ok to wrap around (2*Int.MaxValue restarts will not happen within a journal roundtrip)
+  private val instanceIdCounter = new AtomicInteger
+}
+
 /** INTERNAL API */
 @deprecated("Processor will be removed. Instead extend `akka.persistence.PersistentActor` and use it's `persistAsync(command)(callback)` method to get equivalent semantics.", since = "2.3.4")
 private[akka] trait ProcessorImpl extends Actor with Recovery {
   // TODO: remove Processor in favor of PersistentActor #15230
 
   import JournalProtocol._
+
+  private[persistence] val instanceId: Int = ProcessorImpl.instanceIdCounter.incrementAndGet()
 
   /**
    * Processes the highest stored sequence number response from the journal and then switches
@@ -95,13 +106,12 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
     private var batching = false
 
     def aroundReceive(receive: Receive, message: Any) = message match {
-      case r: Recover                             ⇒ // ignore
-      case ReplayedMessage(p)                     ⇒ processPersistent(receive, p) // can occur after unstash from user stash
-      case WriteMessageSuccess(p: PersistentRepr) ⇒ processPersistent(receive, p)
-      case WriteMessageSuccess(r: Resequenceable) ⇒ process(receive, r)
-      case WriteMessageFailure(p, cause) ⇒
-        process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
-      case LoopMessageSuccess(m) ⇒ process(receive, m)
+      case r: Recover                                ⇒ // ignore
+      case ReplayedMessage(p)                        ⇒ processPersistent(receive, p) // can occur after unstash from user stash
+      case WriteMessageSuccess(p: PersistentRepr, _) ⇒ processPersistent(receive, p)
+      case WriteMessageSuccess(r: Resequenceable, _) ⇒ process(receive, r)
+      case WriteMessageFailure(p, cause, _)          ⇒ process(receive, PersistenceFailure(p.payload, p.sequenceNr, cause))
+      case LoopMessageSuccess(m, _)                  ⇒ process(receive, m)
       case WriteMessagesSuccessful | WriteMessagesFailed(_) ⇒
         if (processorBatch.isEmpty) batching = false else journalBatch()
       case p: PersistentRepr ⇒
@@ -118,7 +128,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
       case m ⇒
         // submit all batched messages before looping this message
         if (processorBatch.isEmpty) batching = false else journalBatch()
-        journal forward LoopMessage(m, self)
+        journal forward LoopMessage(m, self, instanceId)
     }
 
     def addToBatch(p: Resequenceable): Unit = p match {
@@ -135,7 +145,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
       processorBatch.length >= extension.settings.journal.maxMessageBatchSize
 
     def journalBatch(): Unit = {
-      journal ! WriteMessages(processorBatch, self)
+      journal ! WriteMessages(processorBatch, self, instanceId)
       processorBatch = Vector.empty
       batching = true
     }
@@ -205,6 +215,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
    *
    * @param sequenceNr sequence number of the persistent message to be deleted.
    */
+  @deprecated("deleteMessage(sequenceNr) will be removed. Instead, validate before persist, and use deleteMessages for pruning.", since = "2.3.4")
   def deleteMessage(sequenceNr: Long): Unit = {
     deleteMessage(sequenceNr, permanent = false)
   }
@@ -220,8 +231,9 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
    * @param sequenceNr sequence number of the persistent message to be deleted.
    * @param permanent if `false`, the message is marked as deleted, otherwise it is permanently deleted.
    */
+  @deprecated("deleteMessage(sequenceNr) will be removed. Instead, validate before persist, and use deleteMessages for pruning.", since = "2.3.4")
   def deleteMessage(sequenceNr: Long, permanent: Boolean): Unit = {
-    journal ! DeleteMessages(List(PersistenceIdImpl(persistenceId, sequenceNr)), permanent)
+    journal ! DeleteMessages(List(PersistentIdImpl(persistenceId, sequenceNr)), permanent)
   }
 
   /**
@@ -269,10 +281,10 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
       unstashAll(unstashFilterPredicate)
     } finally {
       message match {
-        case Some(WriteMessageSuccess(m)) ⇒ preRestartDefault(reason, Some(m))
-        case Some(LoopMessageSuccess(m))  ⇒ preRestartDefault(reason, Some(m))
-        case Some(ReplayedMessage(m))     ⇒ preRestartDefault(reason, Some(m))
-        case mo                           ⇒ preRestartDefault(reason, None)
+        case Some(WriteMessageSuccess(m, _)) ⇒ preRestartDefault(reason, Some(m))
+        case Some(LoopMessageSuccess(m, _))  ⇒ preRestartDefault(reason, Some(m))
+        case Some(ReplayedMessage(m))        ⇒ preRestartDefault(reason, Some(m))
+        case mo                              ⇒ preRestartDefault(reason, None)
       }
     }
   }
