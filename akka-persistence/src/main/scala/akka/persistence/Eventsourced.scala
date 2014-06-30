@@ -370,6 +370,16 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
   }
 
   /**
+   * INTERNAL API.
+   */
+  override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
+    // flushJournalBatch will send outstanding persistAsync and defer events to the journal
+    // and also prevent those to be unstashed in Processor.aroundPreRestart
+    flushJournalBatch()
+    super.aroundPreRestart(reason, message)
+  }
+
+  /**
    * Calls `super.preRestart` then unstashes all messages from the internal stash.
    */
   override def preRestart(reason: Throwable, message: Option[Any]) {
