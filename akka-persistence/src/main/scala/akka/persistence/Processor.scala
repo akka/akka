@@ -145,8 +145,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
       processorBatch.length >= extension.settings.journal.maxMessageBatchSize
 
     def journalBatch(): Unit = {
-      journal ! WriteMessages(processorBatch, self, instanceId)
-      processorBatch = Vector.empty
+      flushJournalBatch()
       batching = true
     }
   }
@@ -255,6 +254,14 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
    */
   def deleteMessages(toSequenceNr: Long, permanent: Boolean): Unit = {
     journal ! DeleteMessagesTo(persistenceId, toSequenceNr, permanent)
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def flushJournalBatch(): Unit = {
+    journal ! WriteMessages(processorBatch, self, instanceId)
+    processorBatch = Vector.empty
   }
 
   /**
