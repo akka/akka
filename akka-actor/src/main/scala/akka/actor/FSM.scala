@@ -635,13 +635,11 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       nextState.replies.reverse foreach { r ⇒ sender() ! r }
-      if (currentState.stateName != nextState.stateName) {
+      if (currentState.stateName != nextState.stateName || nextState.notifies) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
-        this.nextState = null
-      }
-      if (nextState.notifies) {
         gossip(Transition(self, currentState.stateName, nextState.stateName))
+        this.nextState = null
       }
       currentState = nextState
       val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
