@@ -40,6 +40,7 @@ object FSMTransitionSpec {
     }
     onTransition {
       case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
+      case 1 -> 1 ⇒ target ! ((stateData, nextStateData))
     }
   }
 
@@ -106,6 +107,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         expectMsg((0, 1))
         expectMsg(Transition(fsm, 0, 1))
         fsm ! "tick"
+        expectMsg((1, 1))
         expectMsg(Transition(fsm, 1, 1))
       }
     }
