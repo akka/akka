@@ -9,8 +9,9 @@ import akka.testkit._
 
 //#imports-test-probe
 import scala.concurrent.duration._
-import akka.actor._
 import scala.concurrent.Future
+import akka.actor._
+import akka.testkit.TestProbe
 
 //#imports-test-probe
 
