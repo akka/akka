@@ -328,7 +328,7 @@ private[akka] trait ProcessorImpl extends Actor with Recovery {
     message match {
       case RecoveryCompleted ⇒ // mute
       case RecoveryFailure(cause) ⇒
-        val errorMsg = s"Processor killed after recovery failure (persisten id = [${persistenceId}]). " +
+        val errorMsg = s"Processor killed after recovery failure (persistent id = [${persistenceId}]). " +
           "To avoid killing processors on recovery failure, a processor must handle RecoveryFailure messages. " +
           "RecoveryFailure was caused by: " + cause
         throw new ActorKilledException(errorMsg)

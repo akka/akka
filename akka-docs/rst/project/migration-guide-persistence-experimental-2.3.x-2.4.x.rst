@@ -22,7 +22,7 @@ Replace all classes like::
 
 To extend ``PersistentActor``::
 
-    class NewPersistentProcessor extends PersistentActor {
+    class NewPersistentActor extends PersistentActor {
       def persistenceId = "id"
       /*...*/
     }
