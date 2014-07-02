@@ -409,7 +409,7 @@ private[persistence] trait Eventsourced extends ProcessorImpl {
 /**
  * An event sourced processor.
  */
-@deprecated("EventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
+@deprecated("EventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentActor`", since = "2.3.4")
 trait EventsourcedProcessor extends Processor with Eventsourced {
   // TODO remove Processor #15230
   def receive = receiveCommand
@@ -697,7 +697,7 @@ abstract class AbstractPersistentActor extends AbstractActor with PersistentActo
 /**
  * Java API: an event sourced processor.
  */
-@deprecated("UntypedEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
+@deprecated("UntypedEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentActor`", since = "2.3.4")
 abstract class UntypedEventsourcedProcessor extends UntypedPersistentActor {
   override def persistenceId: String = processorId
 }
@@ -711,7 +711,7 @@ abstract class UntypedEventsourcedProcessor extends UntypedPersistentActor {
  * [[PersistentBatch]] messages. In this case an `UnsupportedOperationException` is
  * thrown by the processor.
  */
-@deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentProcessor`", since = "2.3.4")
+@deprecated("AbstractEventsourcedProcessor will be removed in 2.4.x, instead extend the API equivalent `akka.persistence.PersistentActor`", since = "2.3.4")
 abstract class AbstractEventsourcedProcessor extends AbstractPersistentActor {
   override def persistenceId: String = processorId
 }
