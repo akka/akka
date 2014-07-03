@@ -143,14 +143,15 @@ public class PersistenceDocTest {
           
             @Override
             public void onReceiveRecover(Object message) {
+	      if (message instanceof RecoveryCompleted) {
+	          recoveryCompleted();
+	      }
               // ...
             }
             
             @Override
             public void onReceiveCommand(Object message) throws Exception {
-                if (message instanceof RecoveryCompleted) {
-                    recoveryCompleted();
-                } else if (message instanceof String) {
+                if (message instanceof String) {
                   // ...
                 } else {
                     unhandled(message);

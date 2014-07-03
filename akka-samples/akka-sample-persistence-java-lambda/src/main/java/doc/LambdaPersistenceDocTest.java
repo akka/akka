@@ -146,14 +146,14 @@ public class LambdaPersistenceDocTest {
 
       @Override public PartialFunction<Object, BoxedUnit> receiveRecover() {
         return ReceiveBuilder.
+          match(RecoveryCompleted.class, r -> {
+            recoveryCompleted();
+          }).
           match(String.class, this::handleEvent).build();
       }
 
       @Override public PartialFunction<Object, BoxedUnit> receiveCommand() {
         return ReceiveBuilder.
-          match(RecoveryCompleted.class, r -> {
-            recoveryCompleted();
-          }).
           match(String.class, s -> s.equals("cmd"),
             s -> persist("evt", this::handleEvent)).build();
       }      

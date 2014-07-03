@@ -92,11 +92,11 @@ trait PersistenceDocSpec {
       //#recovery-completed
 
       def receiveRecover: Receive = {
+        case RecoveryCompleted => recoveryCompleted()
         case evt => //...
       }
 
       def receiveCommand: Receive = {
-        case RecoveryCompleted => recoveryCompleted()
         case msg               => //...
       }
 
