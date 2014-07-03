@@ -3,8 +3,7 @@
  */
 package akka.io
 
-import java.net.DatagramSocket
-import java.net.InetSocketAddress
+import java.net.{ DatagramSocket, InetSocketAddress, ProtocolFamily }
 import com.typesafe.config.Config
 import scala.collection.immutable
 import akka.io.Inet.{ SoJavaFactories, SocketOption }
@@ -94,7 +93,8 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    */
   final case class Bind(handler: ActorRef,
                         localAddress: InetSocketAddress,
-                        options: immutable.Traversable[SocketOption] = Nil) extends Command
+                        options: immutable.Traversable[SocketOption] = Nil,
+                        family: Option[ProtocolFamily] = None) extends Command
 
   /**
    * Send this message to the listener actor that previously sent a [[Bound]]
@@ -284,6 +284,11 @@ object UdpMessage {
    * Bind without specifying options.
    */
   def bind(handler: ActorRef, endpoint: InetSocketAddress): Command = Bind(handler, endpoint, Nil)
+  /**
+   * Bind with options and protocol family.
+   */
+  def bind(handler: ActorRef, endpoint: InetSocketAddress, options: JIterable[SocketOption], family: ProtocolFamily): Command =
+    Bind(handler, endpoint, options.asScala.to, Some(family))
 
   /**
    * Send this message to the listener actor that previously sent a [[Udp.Bound]]
