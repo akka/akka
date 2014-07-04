@@ -370,6 +370,29 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
   }
 }
 
+//Discards overflowing messages into DeadLetters
+class BoundedNodeMessageQueue(capacity: Int) extends AbstractBoundedNodeQueue[Envelope](capacity) with MessageQueue with BoundedMessageQueueSemantics {
+
+  final def pushTimeOut: Duration = Duration.Undefined
+
+  final def enqueue(receiver: ActorRef, handle: Envelope): Unit = if (!add(handle))
+    receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(DeadLetter(handle.message, handle.sender, receiver), handle.sender)
+
+  final def dequeue(): Envelope = poll()
+
+  final def numberOfMessages: Int = size()
+
+  final def hasMessages: Boolean = !isEmpty()
+
+  @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+    val envelope = dequeue()
+    if (envelope ne null) {
+      deadLetters.enqueue(owner, envelope)
+      cleanUp(owner, deadLetters)
+    }
+  }
+}
+
 /**
  * INTERNAL API
  */
@@ -574,6 +597,20 @@ final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with P
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = new NodeMessageQueue
+}
+
+/**
+ * SingleConsumerOnlyBoundedMailbox is a high-performance, multiple producer—single consumer, bounded MailboxType,
+ * the only drawback is that you can't have multiple consumers,
+ * which rules out using it with BalancingPool (BalancingDispatcher) for instance.
+ * Noteworthy is that it silently discards overflow.
+ */
+case class SingleConsumerOnlyBoundedMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[NodeMessageQueue] {
+
+  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"))
+
+  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+    new BoundedNodeMessageQueue(capacity)
 }
 
 /**
