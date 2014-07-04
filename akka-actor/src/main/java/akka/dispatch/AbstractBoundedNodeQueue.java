@@ -20,16 +20,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *   (Simplified BSD)
  */
 @SuppressWarnings("serial")
-public abstract class AbstractBoundedNodeQueue<T> {
+public abstract class AbstractBoundedNodeQueue<T> extends AtomicReference<AbstractBoundedNodeQueue.Node<T>> {
     private final int capacity;
 
     @SuppressWarnings("unused")
     private volatile Node<T> _enqDoNotCallMeDirectly;
-
-    //TODO create a class hierarchy that isolates the enq from the deq using padding to minimize false sharing
-
-    @SuppressWarnings("unused")
-    private volatile Node<T> _deqDoNotCallMeDirectly;
 
     protected AbstractBoundedNodeQueue(final int capacity) {
         if (capacity < 0) throw new IllegalArgumentException("AbstractBoundedNodeQueue.capacity must be >= 0");
@@ -53,16 +48,15 @@ public abstract class AbstractBoundedNodeQueue<T> {
     }
 
     private final void setDeq(Node<T> n) {
-        Unsafe.instance.putObjectVolatile(this, deqOffset, n);
+        set(n);
     }
 
-    @SuppressWarnings("unchecked")
     private final Node<T> getDeq() {
-        return (Node<T>)Unsafe.instance.getObjectVolatile(this, deqOffset);
+        return get();
     }
 
-    private final boolean casDeq(Node<T> old, Node<T> nju) {
-        return Unsafe.instance.compareAndSwapObject(this, deqOffset, old, nju);
+    private final Node<T> popDeq(Node<T> nju) {
+        return getAndSet(nju);
     }
 
     @SuppressWarnings("unchecked")
@@ -142,28 +136,27 @@ public abstract class AbstractBoundedNodeQueue<T> {
         final Node<T> n = pollNode();
         return (n != null) ? n.value : null;
     }
-    
-    @SuppressWarnings("unchecked")
+
     public final Node<T> pollNode() {
         for(;;) {
             final Node<T> deq = getDeq();
             final Node<T> next = deq.next();
             if (next != null) {
-                if (casDeq(deq, next)) {
+                final Node<T> wasDeq = popDeq(next);
+                if (wasDeq == deq) {
                     deq.value = next.value;
                     next.value = null;
                     return deq;
-                }
+                } else throw new IllegalStateException("Concurrent consumers detected!");
             } else if (getEnq() == deq) return null; // If we got a null and head meets tail, we are empty
         }
     }
 
-    private final static long enqOffset, deqOffset;
+    private final static long enqOffset;
 
     static {
         try {
           enqOffset = Unsafe.instance.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_enqDoNotCallMeDirectly"));
-          deqOffset = Unsafe.instance.objectFieldOffset(AbstractBoundedNodeQueue.class.getDeclaredField("_deqDoNotCallMeDirectly"));
         } catch(Throwable t){
             throw new ExceptionInInitializerError(t);
         }
