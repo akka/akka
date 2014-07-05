@@ -123,7 +123,7 @@ Akka comes shipped with a number of mailbox implementations:
 
 * SingleConsumerOnlyUnboundedMailbox
 
-  - Backed by a very efficient Multiple Producer Single Consumer queue, cannot be used with BalancingDispatcher
+  - Backed by a very efficient Multiple-Producer Single-Consumer queue, cannot be used with BalancingDispatcher
 
   - Blocking: No
 
@@ -140,6 +140,16 @@ Akka comes shipped with a number of mailbox implementations:
   - Bounded: Yes
 
   - Configuration name: "bounded" or "akka.dispatch.BoundedMailbox"
+
+* NonBlockingBoundedMailbox
+
+  - Backed by a very efficient MultiPle-Producer Multiple-Consumer queue
+
+  - Blocking: No
+
+  - Bounded: Yes
+
+  - Configuration name: "akka.dispatch.NonBlockingBoundedMailbox"
 
 * UnboundedPriorityMailbox
 
