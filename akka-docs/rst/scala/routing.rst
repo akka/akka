@@ -522,8 +522,8 @@ in a ``Broadcast`` message.
 
 .. includecode:: code/docs/routing/RouterDocSpec.scala#broadcastKill
 
-Managagement Messages
----------------------
+Management Messages
+-------------------
 
 * Sending ``akka.routing.GetRoutees`` to a router actor will make it send back its currently used routees
   in a ``akka.routing.Routees`` message.
