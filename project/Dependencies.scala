@@ -70,7 +70,7 @@ object Dependencies {
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
+      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1"            % "test"
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -103,6 +103,8 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
+
+  val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
   val kernel = Seq(Test.scalatest, Test.junit)
 

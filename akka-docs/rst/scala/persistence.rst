@@ -500,6 +500,35 @@ A snapshot store plugin can be activated with the following minimal configuratio
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
+Plugin TCK
+----------
+In order to help developers build correct and high quality storage plugins, we provide an Technology Compatibility Kit (`TCK <http://en.wikipedia.org/wiki/Technology_Compatibility_Kit>`_ for short).
+
+The TCK is usable from Java as well as Scala projects, for Scala you need to include the akka-persistence-tck-experimental dependency::
+
+  "com.typesafe.akka" %% "akka-persistence-tck-experimental" % "2.3.5" % "test"
+
+To include the Journal TCK tests in your test suite simply extend the provided ``JournalSpec``:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocSpec.scala#journal-tck-scala
+
+We also provide a simple benchmarking class ``JournalPerfSpec`` which includes all the tests that ``JournalSpec``
+has, and also performs some longer operations on the Journal while printing it's performance stats. While it is NOT aimed
+to provide a proper benchmarking environment it can be used to get a rough feel about your journals performance in the most
+typical scenarios.
+
+In order to include the ``SnapshotStore`` TCK tests in your test suite simply extend the ``SnapshotStoreSpec``:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocSpec.scala#snapshot-store-tck-scala
+
+In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
+``beforeAll`` and ``afterAll`` methods to hook into the tests lifecycle:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocSpec.scala#journal-tck-before-after-scala
+
+We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
+might have otherwise forgotten to test for when writing a plugin from scratch.
+
 .. _pre-packaged-plugins:
 
 Pre-packaged plugins
