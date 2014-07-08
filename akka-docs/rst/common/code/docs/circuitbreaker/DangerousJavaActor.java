@@ -51,17 +51,15 @@ public class DangerousJavaActor extends UntypedActor {
     if (message instanceof String) {
       String m = (String) message;
       if ("is my middle name".equals(m)) {
-        final Future<String> f = future(
-          new Callable<String>() {
-            public String call() {
-              return dangerousCall();
-            }
-          }, getContext().dispatcher());
-
         pipe(breaker.callWithCircuitBreaker(
           new Callable<Future<String>>() {
             public Future<String> call() throws Exception {
-              return f;
+              return future(
+                      new Callable<String>() {
+                          public String call() {
+                            return dangerousCall();
+                          }
+                        }, getContext().dispatcher());
             }
           }), getContext().dispatcher()).to(getSender());
       }
