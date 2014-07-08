@@ -498,6 +498,40 @@ A snapshot store plugin can be activated with the following minimal configuratio
 The specified plugin ``class`` must have a no-arg constructor. The ``plugin-dispatcher`` is the dispatcher
 used for the plugin actor. If not specified, it defaults to ``akka.persistence.dispatchers.default-plugin-dispatcher``.
 
+Plugin TCK
+----------
+In order to help developers build correct and high quality storage plugins, we provide an Technology Compatibility Kit (`TCK <http://en.wikipedia.org/wiki/Technology_Compatibility_Kit>`_ for short).
+
+The TCK is usable from Java as well as Scala projects, for Java you need to include the akka-persistence-tck-experimental dependency::
+
+  <dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-persistence-tck-experimental_${scala.version}</artifactId>
+    <version>2.3.5</version>
+    <scope>test</scope>
+  </dependency>
+
+To include the Journal TCK tests in your test suite simply extend the provided ``JavaJournalSpec``:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocTest.java#journal-tck-java
+
+We also provide a simple benchmarking class ``JavaJournalPerfSpec`` which includes all the tests that ``JavaJournalSpec``
+has, and also performs some longer operations on the Journal while printing it's performance stats. While it is NOT aimed
+to provide a proper benchmarking environment it can be used to get a rough feel about your journals performance in the most
+typical scenarios.
+
+In order to include the ``SnapshotStore`` TCK tests in your test suite simply extend the ``SnapshotStoreSpec:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocTest.java#snapshot-store-tck-java
+
+In case your plugin requires some setting up (starting a mock database, removing temporary files etc.) you can override the
+``beforeAll`` and ``afterAll`` methods to hook into the tests lifecycle:
+
+.. includecode:: ./code/docs/persistence/PersistencePluginDocTest.java#journal-tck-before-after-java
+
+We *highly recommend* including these specifications in your test suite, as they cover a broad range of cases you
+might have otherwise forgotten to test for when writing a plugin from scratch.
+
 Pre-packaged plugins
 ====================
 
