@@ -216,7 +216,7 @@ trait AtLeastOnceDelivery extends Processor {
   /**
    * Number of messages that have not been confirmed yet.
    */
-  def numberOfUnconfirmed: Int = numUnconfirmed;
+  def numberOfUnconfirmed: Int = numUnconfirmed
 
   private def redeliverOverdue(): Unit = {
     val now = System.nanoTime()
