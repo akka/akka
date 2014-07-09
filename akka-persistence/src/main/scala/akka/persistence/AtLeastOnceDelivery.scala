@@ -184,16 +184,17 @@ trait AtLeastOnceDelivery extends Processor {
    * if [[numberOfUnconfirmed]] is greater than or equal to [[#maxUnconfirmedMessages]].
    */
   def deliver(destination: ActorPath, deliveryIdToMessage: Long ⇒ Any): Unit = {
-    if (unconfirmed.size >= maxUnconfirmedMessages)
+    if (numUnconfirmed >= maxUnconfirmedMessages)
       throw new MaxUnconfirmedMessagesExceededException(
         s"Too many unconfirmed messages, maximum allowed is [$maxUnconfirmedMessages]")
 
     val deliveryId = nextDeliverySequenceNr()
     val now = System.nanoTime()
     val d = Delivery(destination, deliveryIdToMessage(deliveryId), now, attempt = 0)
-    if (recoveryRunning)
+    if (recoveryRunning) {
       unconfirmed = unconfirmed.updated(deliveryId, d)
-    else
+      numUnconfirmed += 1
+    } else
       send(deliveryId, d, now)
   }
 
@@ -206,14 +207,17 @@ trait AtLeastOnceDelivery extends Processor {
   def confirmDelivery(deliveryId: Long): Boolean = {
     if (unconfirmed.contains(deliveryId)) {
       unconfirmed -= deliveryId
+      numUnconfirmed = math.max(numUnconfirmed - 1, 0)
       true
     } else false
   }
 
+  private var numUnconfirmed = 0
+
   /**
    * Number of messages that have not been confirmed yet.
    */
-  def numberOfUnconfirmed: Int = unconfirmed.size
+  def numberOfUnconfirmed: Int = numUnconfirmed
 
   private def redeliverOverdue(): Unit = {
     val now = System.nanoTime()
@@ -234,6 +238,7 @@ trait AtLeastOnceDelivery extends Processor {
   private def send(deliveryId: Long, d: Delivery, timestamp: Long): Unit = {
     context.actorSelection(d.destination) ! d.message
     unconfirmed = unconfirmed.updated(deliveryId, d.copy(timestamp = timestamp, attempt = d.attempt + 1))
+    numUnconfirmed += 1
   }
 
   /**
