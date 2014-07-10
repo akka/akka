@@ -1,4 +1,3 @@
-
 resolvers += Classpaths.typesafeResolver
 
 // these comment markers are for including code into the docs
@@ -18,6 +17,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-pgp" % "0.8.1")
 
 addSbtPlugin("com.typesafe.sbt" % "sbt-s3" % "0.5")
 
-addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.4")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.5")
 
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
