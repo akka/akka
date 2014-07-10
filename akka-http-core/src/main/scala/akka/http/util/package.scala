@@ -15,6 +15,7 @@ import akka.util.ByteString
 import akka.actor.{ ActorRefFactory, ActorContext, ActorSystem }
 import akka.stream.scaladsl.Flow
 import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
+import scala.util.matching.Regex
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -29,6 +30,7 @@ package object util {
   private[http] implicit def enhanceByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
+  private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
 
   private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Producer[T]]) extends AnyVal {
     def headAndTail(materializer: FlowMaterializer): Flow[(T, Producer[T])] =

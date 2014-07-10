@@ -358,7 +358,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(httpCore, stream % "compile;test->test"),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.http ++
+        javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           // FIXME remove this publishArtifact when akka-http-2.3.x is released
           publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http"),
