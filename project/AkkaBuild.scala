@@ -78,11 +78,11 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
       validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev, test in Test in stream, test in Test in httpCore,
-        test in Test in docsDev) map { (_, _, _, _) => }
+        test in Test in http, test in Test in docsDev) map { (_, _, _, _, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
-      docsDev)
+      http, docsDev)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -350,6 +350,24 @@ object AkkaBuild extends Build {
     //  // genjavadoc needs to generate synthetic methods since the java code uses them
     //  scalacOptions += "-P:genjavadoc:suppressSynthetic=false"
     //) else Nil)
+  )
+
+  lazy val http = Project(
+    id = "akka-http-experimental",
+    base = file("akka-http"),
+    dependencies = Seq(httpCore, stream % "compile;test->test"),
+    settings =
+      defaultSettings ++ formatSettings ++ scaladocSettings ++
+        javadocSettings ++ OSGi.http ++
+        Seq(
+          // FIXME remove this publishArtifact when akka-http-2.3.x is released
+          publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http"),
+          libraryDependencies ++= Dependencies.http,
+          // FIXME include mima when akka-http-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http")
+          previousArtifact := None,
+          scalacOptions += "-language:_"
+        )
   )
 
   val macroParadise = Seq(
@@ -1186,6 +1204,8 @@ object AkkaBuild extends Build {
 
     val httpCore = exports(Seq("akka.http.*"))
 
+    val http = exports(Seq("akka.http.*"))
+
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
     val stream = exports(Seq("akka.stream.*", "akka.persistence.stream.*"))
@@ -1357,6 +1377,8 @@ object Dependencies {
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test",
     Test.junit, Test.scalatest)
+
+  val http = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
