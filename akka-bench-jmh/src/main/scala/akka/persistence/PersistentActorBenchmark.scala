@@ -42,7 +42,7 @@ class PersistentActorThroughputBenchmark {
 
     storageLocations.foreach(FileUtils.deleteDirectory)
     actor = system.actorOf(Props(classOf[BaselineActor], data10k.last), "a-1")
-    persist1CommandProcessor = system.actorOf(Props(classOf[Persist1EventPersistentActor], data10k.last), "p-1")
+    persist1CommandProcessor = system.actorOf(Props(classOf[Persist1CommandProcessor], data10k.last), "p-1")
     persist1EventProcessor = system.actorOf(Props(classOf[Persist1EventPersistentActor], data10k.last), "ep-1")
     persistAsync1EventProcessor = system.actorOf(Props(classOf[PersistAsync1EventPersistentActor], data10k.last), "epa-1")
     persistAsync1QuickReplyEventProcessor = system.actorOf(Props(classOf[PersistAsync1EventQuickReplyPersistentActor], data10k.last), "epa-2")
