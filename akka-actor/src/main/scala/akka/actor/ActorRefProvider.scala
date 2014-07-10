@@ -219,7 +219,7 @@ trait ActorRefFactory {
   /**
    * Create new actor as child of this context with the given name, which must
    * not be null, empty or start with “$”. If the given name is already in use,
-   * and `InvalidActorNameException` is thrown.
+   * an `InvalidActorNameException` is thrown.
    *
    * See [[akka.actor.Props]] for details on how to obtain a `Props` object.
    * @throws akka.actor.InvalidActorNameException if the given name is
