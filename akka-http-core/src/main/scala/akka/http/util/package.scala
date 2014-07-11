@@ -15,6 +15,7 @@ import akka.util.ByteString
 import akka.actor.{ ActorRefFactory, ActorContext, ActorSystem }
 import akka.stream.scaladsl.Flow
 import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
+import scala.collection.LinearSeq
 import scala.util.matching.Regex
 
 package object util {
@@ -31,6 +32,10 @@ package object util {
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
+  private[http] implicit def enhanceSeq[T](seq: Seq[T]): EnhancedSeq[T] = seq match {
+    case x: LinearSeq[_]  ⇒ new EnhancedLinearSeq[T](x)
+    case x: IndexedSeq[_] ⇒ new EnhancedIndexedSeq[T](x)
+  }
 
   private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Producer[T]]) extends AnyVal {
     def headAndTail(materializer: FlowMaterializer): Flow[(T, Producer[T])] =

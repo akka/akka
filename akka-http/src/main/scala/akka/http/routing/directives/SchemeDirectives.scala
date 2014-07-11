@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-package akka.http
+package akka.http.routing
+package directives
 
-import akka.shapeless._
+trait SchemeDirectives {
+  import MiscDirectives._
 
-package object routing {
+  /**
+   * Extracts the Uri scheme from the request.
+   */
+  def schemeName: Directive1[String] = SchemeDirectives._schemeName
 
-  type Route = RequestContext ⇒ Unit
-  type RouteGenerator[T] = T ⇒ Route
-  type Directive0 = Directive[HNil]
-  type Directive1[T] = Directive[T :: HNil]
-  type PathMatcher0 = PathMatcher[HNil]
-  type PathMatcher1[T] = PathMatcher[T :: HNil]
+  /**
+   * Rejects all requests whose Uri scheme does not match the given one.
+   */
+  def scheme(schm: String): Directive0 =
+    schemeName.require(_ == schm, SchemeRejection(schm)) & cancelAllRejections(ofType[SchemeRejection])
+}
 
-  def FIXME = ???
+object SchemeDirectives extends SchemeDirectives {
+  import BasicDirectives._
+
+  private val _schemeName: Directive1[String] = extract(_.request.uri.scheme)
 }

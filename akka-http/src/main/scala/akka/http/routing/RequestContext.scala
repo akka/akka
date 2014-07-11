@@ -16,6 +16,8 @@
 
 package akka.http.routing
 
+import akka.http.marshalling.ToResponseMarshaller
+
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
@@ -218,7 +220,8 @@ case class RequestContext(request: HttpRequest, responder: ActorRef, unmatchedPa
     }
   //#
 
-  def complete[T](value: Any): Unit = ???
+  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T] = null): Unit = FIXME
+  //def complete[T](value: Any): Unit = ???
   /**
    * Completes the request with status "200 Ok" and the response entity created by marshalling the given object using
    * the in-scope marshaller for the type.

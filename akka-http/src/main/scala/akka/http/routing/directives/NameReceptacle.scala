@@ -16,9 +16,7 @@
 
 package akka.http.routing.directives
 
-//import spray.httpx.unmarshalling.{ FromStringOptionDeserializer ⇒ FSOD, Deserializer }
-
-trait FSOD[D]
+import akka.http.unmarshalling.{ FromStringOptionDeserializer ⇒ FSOD, Deserializer }
 
 trait ToNameReceptaclePimps {
   implicit def symbol2NR(symbol: Symbol) = new NameReceptacle[String](symbol.name)

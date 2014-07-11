@@ -45,7 +45,7 @@ object NewTypes {
 import scala.util.control.NonFatal
 import akka.actor._
 import akka.io.Tcp
-import spray.util.LoggingContext
+import akka.http.util.LoggingContext
 import akka.http.model._
 import StatusCodes._
 
