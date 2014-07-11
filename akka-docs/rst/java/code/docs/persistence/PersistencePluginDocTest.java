@@ -5,17 +5,27 @@
 package docs.persistence;
 
 //#plugin-imports
-import akka.actor.UntypedActor;
-import scala.concurrent.Future;
+
+import akka.actor.*;
 import akka.japi.Option;
 import akka.japi.Procedure;
 import akka.persistence.*;
-import akka.persistence.journal.japi.*;
-import akka.persistence.snapshot.japi.*;
-//#plugin-imports
-import akka.actor.*;
+import akka.persistence.japi.journal.JavaJournalSpec;
+import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
+import akka.persistence.journal.japi.AsyncWriteJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
+import akka.persistence.snapshot.japi.SnapshotStore;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import org.iq80.leveldb.util.FileUtils;
+import scala.concurrent.Future;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+//#plugin-imports
 
 public class PersistencePluginDocTest {
 
@@ -106,4 +116,68 @@ public class PersistencePluginDocTest {
             return null;
         }
     }
+
+
+    static Object o2 = new Object() {
+        //#journal-tck-java
+        class MyJournalSpecTest extends JavaJournalSpec {
+
+            public MyJournalSpecTest() {
+                super(ConfigFactory.parseString(
+                        "persistence.journal.plugin = " +
+                        "\"akka.persistence.journal.leveldb-shared\""));
+            }
+        }
+        //#journal-tck-java
+    };
+
+    static Object o3 = new Object() {
+        //#snapshot-store-tck-java
+        class MySnapshotStoreTest extends JavaSnapshotStoreSpec {
+
+            public MySnapshotStoreTest() {
+                super(ConfigFactory.parseString(
+                        "akka.persistence.snapshot-store.plugin = " +
+                        "\"akka.persistence.snapshot-store.local\""));
+            }
+        }
+        //#snapshot-store-tck-java
+    };
+
+    static Object o4 = new Object() {
+        //#journal-tck-before-after-java
+        class MyJournalSpecTest extends JavaJournalSpec {
+
+            List<File> storageLocations = new ArrayList<File>();
+
+            public MyJournalSpecTest() {
+                super(ConfigFactory.parseString(
+                        "persistence.journal.plugin = " +
+                        "\"akka.persistence.journal.leveldb-shared\""));
+
+                Config config = system().settings().config();
+                storageLocations.add(new File(
+                    config.getString("akka.persistence.journal.leveldb.dir")));
+                storageLocations.add(new File(
+                    config.getString("akka.persistence.snapshot-store.local.dir")));
+            }
+
+            @Override
+            public void beforeAll() {
+                for (File storageLocation : storageLocations) {
+                    FileUtils.deleteRecursively(storageLocation);
+                }
+                super.beforeAll();
+            }
+
+            @Override
+            public void afterAll() {
+                super.afterAll();
+                for (File storageLocation : storageLocations) {
+                    FileUtils.deleteRecursively(storageLocation);
+                }
+            }
+        }
+        //#journal-tck-before-after-java
+    };
 }

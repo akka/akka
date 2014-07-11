@@ -80,7 +80,7 @@ object AkkaBuild extends Build {
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, persistenceTck, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -303,6 +303,18 @@ object AkkaBuild extends Build {
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
+    )
+  )
+
+  lazy val persistenceTck = Project(
+    id = "akka-persistence-tck-experimental",
+    base = file("akka-persistence-tck"),
+    dependencies = Seq(persistence % "compile;test->test", testkit % "compile->test"),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
+      fork in Test := true,
+      javaOptions in Test := defaultMultiJvmOptions,
+      libraryDependencies ++= Dependencies.persistenceTck,
+      previousArtifact := None
     )
   )
 
@@ -591,7 +603,7 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
-      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi, persistence),
+      remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi, persistence, persistenceTck),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ site.publishSite ++ sphinxPreprocessing ++ cpsPlugin ++ Seq(
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
       sphinxPackages in Sphinx <+= baseDirectory { _ / "_sphinx" / "pygments" },
@@ -1233,7 +1245,7 @@ object Dependencies {
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
       val reactiveStreams = "org.reactivestreams"      % "reactive-streams-tck"         % "0.3"              % "test" // CC0
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
+      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1"            % "test"
     }
   }
 
@@ -1261,6 +1273,8 @@ object Dependencies {
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
     scalaXmlDepencency
+
+  val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
