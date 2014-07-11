@@ -426,8 +426,6 @@ private[camel] trait ActorProducerFixture extends MockitoSugar with BeforeAndAft
     when(exchange.isOutCapable) thenReturn outCapable
   }
 
-  def echoActor = system.actorOf(Props(new Actor {
-    def receive = { case msg ⇒ sender() ! "received " + msg }
-  }), name = "echoActor")
+  def echoActor = system.actorOf(TestActors.echoActorProps, name = "echoActor")
 
 }
