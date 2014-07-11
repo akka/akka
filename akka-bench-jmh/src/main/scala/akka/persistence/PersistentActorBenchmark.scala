@@ -110,9 +110,14 @@ class Persist1EventPersistentActor(respondAfter: Int) extends PersistentActor {
   }
 
 }
-class Persist1CommandProcessor(respondAfter: Int) extends Processor {
-  override def receive = {
+class Persist1CommandProcessor(respondAfter: Int) extends PersistentActor {
+  override def persistenceId: String = self.path.name
+
+  override def receiveCommand = {
     case n: Int => if (n == respondAfter) sender() ! Evt(n)
+  }
+  override def receiveRecover = {
+    case _ => // do nothing
   }
 }
 
