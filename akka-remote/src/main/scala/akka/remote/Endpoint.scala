@@ -775,6 +775,7 @@ private[remote] class EndpointWriter(
     case e: EndpointException ⇒
       publishAndThrow(e, Logging.ErrorLevel)
     case NonFatal(e) ⇒
+      log.error(e, "Failed to write message to the transport")
       publishAndThrow(new EndpointException("Failed to write message to the transport", e), Logging.ErrorLevel)
   }
 
