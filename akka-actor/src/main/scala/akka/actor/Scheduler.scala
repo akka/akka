@@ -65,6 +65,27 @@ trait Scheduler {
     })
 
   /**
+   * Schedules a message to be sent repeatedly with an initial delay and
+   * frequency to all actors specified in the selection.
+   * E.g. if you would like a message to be sent immediately and
+   * thereafter every 500ms you would set delay=Duration.Zero and
+   * interval=Duration(500, TimeUnit.MILLISECONDS)
+   *
+   * Java & Scala API
+   */
+  final def scheduleToAll(
+    initialDelay: FiniteDuration,
+    interval: FiniteDuration,
+    receiver: ActorSelection,
+    message: Any)(implicit executor: ExecutionContext,
+                  sender: ActorRef = Actor.noSender): Cancellable =
+    schedule(initialDelay, interval, new Runnable {
+      def run = {
+        receiver ! message
+      }
+    })
+
+  /**
    * Schedules a function to be run repeatedly with an initial delay and a
    * frequency. E.g. if you would like the function to be run after 2 seconds
    * and thereafter every 100ms you would set delay = Duration(2, TimeUnit.SECONDS)
@@ -100,6 +121,22 @@ trait Scheduler {
   final def scheduleOnce(
     delay: FiniteDuration,
     receiver: ActorRef,
+    message: Any)(implicit executor: ExecutionContext,
+                  sender: ActorRef = Actor.noSender): Cancellable =
+    scheduleOnce(delay, new Runnable {
+      override def run = receiver ! message
+    })
+
+  /**
+   * Schedules a message to be sent once to all actors within a selection
+   * with a delay, i.e. a time period that has to pass
+   * before the message is sent.
+   *
+   * Java & Scala API
+   */
+  final def scheduleOnceToAll(
+    delay: FiniteDuration,
+    receiver: ActorSelection,
     message: Any)(implicit executor: ExecutionContext,
                   sender: ActorRef = Actor.noSender): Cancellable =
     scheduleOnce(delay, new Runnable {
