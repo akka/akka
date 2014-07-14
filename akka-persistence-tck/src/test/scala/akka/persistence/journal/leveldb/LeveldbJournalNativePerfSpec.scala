@@ -1,11 +1,16 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.persistence.journal.leveldb
 
 import com.typesafe.config.ConfigFactory
 
 import akka.persistence.journal.{ JournalPerfSpec, JournalSpec }
 import akka.persistence.PluginCleanup
+import org.scalatest.DoNotDiscover
 
-class LeveldbJournalNativeSpec extends JournalSpec with PluginCleanup {
+@DoNotDiscover // only for validating compilation of `JournalSpec with JournalPerfSpec`
+class LeveldbJournalNativePerfSpec extends JournalSpec with JournalPerfSpec with PluginCleanup {
   lazy val config = ConfigFactory.parseString(
     """
       |akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
