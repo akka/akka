@@ -9,16 +9,22 @@ import akka.actor.TypedActor;
 import akka.actor.*;
 import akka.japi.*;
 import akka.dispatch.Futures;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import java.util.concurrent.TimeUnit;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
+import akka.routing.RoundRobinGroup;
 //#imports
-import java.lang.Exception;
 
 import org.junit.Test;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
+//#imports
 public class TypedActorDocTest {
     Object someReference = null;
     ActorSystem system = null;
@@ -186,6 +192,60 @@ public class TypedActorDocTest {
         );
     //Use "typedActor" as a FooBar
     //#typed-actor-remote
+    } catch (Exception e) {
+      //dun care
+    }
+  }
+
+  //#typed-router-types-1
+  interface HasName {
+    String name();
+  }
+
+  class Named implements HasName {
+    private int id = new Random().nextInt(1024);
+
+    @Override public String name() { return "name-" + id; }
+  }
+  //#typed-router-types
+
+
+  @Test public void typedRouterPattern() {
+    try {
+      //#typed-router
+      // prepare routees
+      TypedActorExtension typed = TypedActor.get(system);
+
+      Named named1 =
+        typed.typedActorOf(new TypedProps<Named>(Named.class));
+
+      Named named2 =
+        typed.typedActorOf(new TypedProps<Named>(Named.class));
+
+      List<Named> routees = new ArrayList<Named>();
+      routees.add(named1);
+      routees.add(named2);
+
+      List<String> routeePaths = new ArrayList<String>();
+      routeePaths.add(typed.getActorRefFor(named1).path().toStringWithoutAddress());
+      routeePaths.add(typed.getActorRefFor(named2).path().toStringWithoutAddress());
+
+      // prepare untyped router
+      ActorRef router = system.actorOf(new RoundRobinGroup(routeePaths).props(), "router");
+
+      // prepare typed proxy, forwarding MethodCall messages to `router`
+      Named typedRouter = typed.typedActorOf(new TypedProps<Named>(Named.class), router);
+
+      System.out.println("actor was: " + typedRouter.name()); // name-243
+      System.out.println("actor was: " + typedRouter.name()); // name-614
+      System.out.println("actor was: " + typedRouter.name()); // name-243
+      System.out.println("actor was: " + typedRouter.name()); // name-614
+
+      //#typed-router
+      typed.poisonPill(named1);
+      typed.poisonPill(named2);
+      typed.poisonPill(typedRouter);
+
     } catch (Exception e) {
       //dun care
     }
