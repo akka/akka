@@ -330,6 +330,7 @@ private[akka] trait Builder[Out] {
 
   def flatten[U](strategy: FlattenStrategy[Out, U]): Thing[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case m: FlattenStrategy.Merge[Out]  ⇒ andThen(MergeAll(m.maxSimultaneousInputs))
     case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
   }
 

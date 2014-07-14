@@ -38,6 +38,7 @@ private[akka] object ActorProcessor {
       case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
+      case ma: MergeAll      ⇒ Props(new MergeAllImpl(settings, ma.maxSimultaneousInputs))
       case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
     }).withDispatcher(settings.dispatcher)
 }
