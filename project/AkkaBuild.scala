@@ -4,23 +4,22 @@
 
 package akka
 
-import sbt._
-import sbt.Keys._
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{ MultiJvm, extraOptions }
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
-import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
-import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
-import java.io.{InputStreamReader, FileInputStream, File}
+import java.io.{FileInputStream, InputStreamReader}
 import java.util.Properties
-import sbtunidoc.Plugin.UnidocKeys.unidoc
-import TestExtras.{ JUnitFileReporting, StatsDMetrics, GraphiteBuildEvents }
-import com.typesafe.sbt.S3Plugin.{ S3, s3Settings }
-import Unidoc.{ scaladocSettings, unidocSettings }
-import Formatting.docFormatSettings
-import MultiNode.multiJvmSettings
+
+import akka.Formatting.docFormatSettings
+import akka.MultiNode.multiJvmSettings
+import akka.TestExtras.{GraphiteBuildEvents, JUnitFileReporting, StatsDMetrics}
+import akka.Unidoc.{scaladocSettings, unidocSettings}
+import com.typesafe.sbt.S3Plugin.{S3, s3Settings}
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{MultiJvm, extraOptions}
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.Sphinx
+import com.typesafe.tools.mima.plugin.MimaKeys.{binaryIssueFilters, previousArtifact, reportBinaryIssues}
+import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
+import sbt.Keys._
+import sbt._
+import sbtunidoc.Plugin.UnidocKeys.unidoc
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -58,7 +57,7 @@ object AkkaBuild extends Build {
       validatePullRequest <<= (unidoc in Compile, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
-      persistence, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, persistenceTck, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -67,7 +66,7 @@ object AkkaBuild extends Build {
     // remove dependencies that we have to build ourselves (Scala STM, ZeroMQ Scala Bindings)
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
-      persistence, kernel, osgi, contrib, multiNodeTestkit)
+      persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit)
   )
 
   lazy val actor = Project(
@@ -127,6 +126,12 @@ object AkkaBuild extends Build {
     id = "akka-persistence-experimental",
     base = file("akka-persistence"),
     dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
+  )
+
+  lazy val persistenceTck = Project(
+    id = "akka-persistence-experimental-tck",
+    base = file("akka-persistence-tck"),
+    dependencies = Seq(persistence % "compile;test->test", testkit % "compile;test->test")
   )
 
   lazy val zeroMQ = Project(
@@ -238,7 +243,7 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, slf4j, agent, zeroMQ, camel, osgi,
-      persistence % "compile;test->test")
+      persistence % "compile;test->test", persistenceTck)
   )
 
   lazy val contrib = Project(
