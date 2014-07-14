@@ -214,3 +214,21 @@ Here's an example on how you can use traits to mix in behavior in your Typed Act
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-actor-supercharge
 
 .. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-actor-supercharge-usage
+
+Typed Router pattern
+--------------------
+
+Sometimes you want to spread messages between multiple actors. The easiest way to achieve this in Akka is to use a :ref:`Router <routing-scala>`,
+which can implement a specific routing logic, such as ``smallest-mailbox`` or ``consistent-hashing`` etc.
+
+Routers are not provided directly for typed actors, but it is really easy to leverage an untyped router and use a typed proxy in front of it.
+To showcase this let's create typed actors that assign themselves some random ``id``, so we know that in fact, the router has sent the message to different actors:
+
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-router-types
+
+In order to round robin among a few instances of such actors, you can simply create a plain untyped router,
+and then facade it with a ``TypedActor`` like shown in the example below. This works because typed actors of course
+communicate using the same mechanisms as normal actors, and methods calls on them get transformed into message sends of ``MethodCall`` messages.
+
+.. includecode:: code/docs/actor/TypedActorDocSpec.scala#typed-router
+
