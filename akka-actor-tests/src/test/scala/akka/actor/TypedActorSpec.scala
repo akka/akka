@@ -3,24 +3,24 @@
  */
 package akka.actor
 
-import language.postfixOps
+import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.{ CountDownLatch, TimeUnit, TimeoutException }
+
+import akka.actor.TypedActor._
+import akka.japi.{ Option ⇒ JOption }
+import akka.pattern.ask
+import akka.routing.RoundRobinGroup
+import akka.serialization.JavaSerializer
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, TimingTest, filterEvents }
+import akka.util.Timeout
 import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
-import akka.testkit.{ EventFilter, filterEvents, AkkaSpec }
-import akka.util.Timeout
-import akka.japi.{ Option ⇒ JOption }
-import akka.testkit.DefaultTimeout
-import akka.dispatch.Dispatchers
-import akka.pattern.ask
-import akka.serialization.JavaSerializer
-import akka.actor.TypedActor._
-import java.util.concurrent.atomic.AtomicReference
-import java.lang.IllegalStateException
-import java.util.concurrent.{ TimeoutException, TimeUnit, CountDownLatch }
-import akka.testkit.TimingTest
+import scala.concurrent.{ Await, Future, Promise }
+import scala.language.postfixOps
+import scala.util.Random
 
 object TypedActorSpec {
 
@@ -113,7 +113,7 @@ object TypedActorSpec {
 
   class Bar extends Foo with Serializable {
 
-    import TypedActor.dispatcher
+    import akka.actor.TypedActor.dispatcher
 
     def pigdog = "Pigdog"
 
@@ -210,7 +210,7 @@ object TypedActorSpec {
 class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
   with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
 
-  import TypedActorSpec._
+  import akka.actor.TypedActorSpec._
 
   def newFooBar: Foo = newFooBar(timeout.duration)
 
@@ -515,4 +515,48 @@ class TypedActorSpec extends AkkaSpec(TypedActorSpec.config)
       latch.await(10, TimeUnit.SECONDS) should be(true)
     }
   }
+}
+
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class TypedActorRouterSpec extends AkkaSpec(TypedActorSpec.config)
+  with BeforeAndAfterEach with BeforeAndAfterAll with DefaultTimeout {
+
+  import akka.actor.TypedActorSpec._
+
+  def newFooBar: Foo = newFooBar(timeout.duration)
+
+  def newFooBar(d: FiniteDuration): Foo =
+    TypedActor(system).typedActorOf(TypedProps[Bar](classOf[Foo], classOf[Bar]).withTimeout(Timeout(d)))
+
+  def mustStop(typedActor: AnyRef) = TypedActor(system).stop(typedActor) should be(true)
+
+  "TypedActor Router" must {
+
+    "work" in {
+      val t1 = newFooBar
+      val t2 = newFooBar
+      val t3 = newFooBar
+      val t4 = newFooBar
+      val routees = List(t1, t2, t3, t4) map { t ⇒ TypedActor(system).getActorRefFor(t).path.toStringWithoutAddress }
+
+      TypedActor(system).isTypedActor(t1) should be(true)
+      TypedActor(system).isTypedActor(t2) should be(true)
+
+      val router = system.actorOf(RoundRobinGroup(routees).props(), "router")
+
+      val typedRouter = TypedActor(system).typedActorOf[Foo, Foo](TypedProps[Foo](), router)
+
+      info("got = " + typedRouter.optionPigdog())
+      info("got = " + typedRouter.optionPigdog())
+      info("got = " + typedRouter.optionPigdog())
+      info("got = " + typedRouter.optionPigdog())
+      info("got = " + typedRouter.optionPigdog())
+
+      mustStop(t1)
+      mustStop(t2)
+      mustStop(t3)
+      mustStop(t4)
+    }
+  }
+
 }

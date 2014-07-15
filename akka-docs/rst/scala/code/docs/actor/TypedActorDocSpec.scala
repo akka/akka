@@ -3,13 +3,14 @@
  */
 package docs.actor
 
-import language.postfixOps
-import scala.concurrent.{ Promise, Future, Await }
-import scala.concurrent.duration._
-import akka.actor.{ ActorContext, TypedActor, TypedProps }
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.Matchers
+import java.lang.String.{ valueOf => println }
+
+import akka.actor.{ ActorContext, ActorRef, TypedActor, TypedProps }
+import akka.routing.RoundRobinGroup
 import akka.testkit._
+
+import scala.concurrent.{ Future, Await }
+import scala.concurrent.duration._
 
 //Mr funny man avoids printing to stdout AND keeping docs alright
 import java.lang.String.{ valueOf => println }
@@ -61,6 +62,19 @@ trait Bar {
 
 class FooBar extends Foo with Bar
 //#typed-actor-supercharge
+
+//#typed-router-types
+trait HasName {
+  def name(): String
+}
+
+class Named extends HasName {
+  import scala.util.Random
+  private val id = Random.nextInt(1024)
+
+  def name(): String = "name-" + id
+}
+//#typed-router-types
 
 class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
@@ -180,5 +194,32 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     TypedActor(system).poisonPill(awesomeFooBar)
     //#typed-actor-supercharge-usage
     Await.result(f, 3 seconds) should be("YES")
+  }
+
+  "typed router pattern" in {
+    //#typed-router
+    def namedActor(): HasName = TypedActor(system).typedActorOf(TypedProps[Named]())
+
+    // prepare routees
+    val routees: List[HasName] = List.fill(5) { namedActor() }
+    val routeePaths = routees map { r =>
+      TypedActor(system).getActorRefFor(r).path.toStringWithoutAddress
+    }
+
+    // prepare untyped router
+    val router: ActorRef = system.actorOf(RoundRobinGroup(routeePaths).props())
+
+    // prepare typed proxy, forwarding MethodCall messages to `router`
+    val typedRouter: HasName =
+      TypedActor(system).typedActorOf(TypedProps[Named](), actorRef = router)
+
+    println("actor was: " + typedRouter.name()) // name-184
+    println("actor was: " + typedRouter.name()) // name-753
+    println("actor was: " + typedRouter.name()) // name-320
+    println("actor was: " + typedRouter.name()) // name-164
+    //#typed-router
+
+    routees foreach { TypedActor(system).poisonPill(_) }
+    TypedActor(system).poisonPill(router)
   }
 }
