@@ -14,7 +14,7 @@ Java Documentation
    java/index-network
    java/index-utilities
    java/howto
-   experimental/index
+   experimental/index-java
    dev/index
    project/index
    additional/index
