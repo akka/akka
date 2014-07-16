@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package akka.http
+package akka.http.testkit
 
-import akka.shapeless._
+import org.scalatest.exceptions.TestFailedException
+import org.scalatest.{ Suite, BeforeAndAfterAll }
 
-package object routing {
+trait ScalatestInterface extends TestFrameworkInterface with BeforeAndAfterAll {
+  this: Suite ⇒
 
-  type Route = RequestContext ⇒ Unit
-  type RouteGenerator[T] = T ⇒ Route
-  type Directive0 = Directive[HNil]
-  type Directive1[T] = Directive[T :: HNil]
-  type PathMatcher0 = PathMatcher[HNil]
-  type PathMatcher1[T] = PathMatcher[T :: HNil]
+  def failTest(msg: String) = throw new TestFailedException(msg, 11)
 
-  def FIXME = throw new AssertionError("Not yet implemented")
+  abstract override protected def afterAll(): Unit = {
+    cleanUp()
+    super.afterAll()
+  }
 }

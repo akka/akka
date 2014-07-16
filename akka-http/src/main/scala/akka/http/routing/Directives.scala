@@ -16,14 +16,14 @@
 
 package akka.http.routing
 
-//import directives._
+import directives._
 
 //# source-quote
 trait Directives extends RouteConcatenation
-/*with AnyParamDirectives
+  with AnyParamDirectives
   with BasicDirectives
   with CacheConditionDirectives
-  with ChunkingDirectives
+  //with ChunkingDirectives
   with CookieDirectives
   with DebuggingDirectives
   with EncodingDirectives
@@ -42,7 +42,7 @@ trait Directives extends RouteConcatenation
   with RespondWithDirectives
   with RouteDirectives
   with SchemeDirectives
-  with SecurityDirectives*/
+  with SecurityDirectives
 
 object Directives extends Directives
 //#

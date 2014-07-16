@@ -14,18 +14,20 @@
  * limitations under the License.
  */
 
-package akka.http
+package akka.http.routing.directives
 
-import akka.shapeless._
+import akka.http.model.HttpResponse
+import akka.http.unmarshalling._
 
-package object routing {
+class BasicDirectivesSpec extends RoutingSpec {
 
-  type Route = RequestContext ⇒ Unit
-  type RouteGenerator[T] = T ⇒ Route
-  type Directive0 = Directive[HNil]
-  type Directive1[T] = Directive[T :: HNil]
-  type PathMatcher0 = PathMatcher[HNil]
-  type PathMatcher1[T] = PathMatcher[T :: HNil]
+  "The 'routeRouteResponse' directive" should {
+    "in its simple String form" in {
+      val addYeah = routeRouteResponse {
+        case HttpResponse(_, _, entity, _) ⇒ complete(entity.asString + "Yeah")
+      }
+      Get() ~> addYeah(complete("abc")) ~> check { responseAs[String] mustEqual "abcYeah" }
+    }
+  }
 
-  def FIXME = throw new AssertionError("Not yet implemented")
 }

@@ -65,5 +65,9 @@ package object util {
       def onNext(element: ByteString) = element :: Nil
       override def onError(cause: Throwable): Unit = log.error(cause, msg)
     }
+
+  private[this] val _identityFunc: Any ⇒ Any = x ⇒ x
+  /** Returns a constant identity function to avoid allocating the closure */
+  def identityFunc[T]: T ⇒ T = _identityFunc.asInstanceOf[T ⇒ T]
 }
 

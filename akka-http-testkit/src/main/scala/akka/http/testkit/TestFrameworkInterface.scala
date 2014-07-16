@@ -14,18 +14,11 @@
  * limitations under the License.
  */
 
-package akka.http
+package akka.http.testkit
 
-import akka.shapeless._
+trait TestFrameworkInterface {
 
-package object routing {
+  def cleanUp()
 
-  type Route = RequestContext ⇒ Unit
-  type RouteGenerator[T] = T ⇒ Route
-  type Directive0 = Directive[HNil]
-  type Directive1[T] = Directive[T :: HNil]
-  type PathMatcher0 = PathMatcher[HNil]
-  type PathMatcher1[T] = PathMatcher[T :: HNil]
-
-  def FIXME = throw new AssertionError("Not yet implemented")
+  def failTest(msg: String): Nothing
 }

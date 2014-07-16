@@ -58,8 +58,10 @@ object ConjunctionMagnet {
 abstract class Directive[L <: HList] { self ⇒
   def happly(f: L ⇒ Route): Route
 
-  def |[R >: L <: HList](that: Directive[R]): Directive[R] = FIXME
-  //recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ::: _) & that)
+  def |[R >: L <: HList](that: Directive[R]): Directive[R] = new Directive[R] {
+    def happly(f: (R) ⇒ Route): Route = FIXME
+    //recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ::: _) & that)
+  }
 
   def &(magnet: ConjunctionMagnet[L]): magnet.Out = magnet(this)
 
@@ -124,7 +126,7 @@ object Directive {
     def happly(inner: HNil ⇒ Route) = inner(HNil)
   }
 
-  implicit def pimpApply[L <: HList](directive: Directive[L])(implicit hac: ApplyConverter[L]): hac.In ⇒ Route = f ⇒ directive.happly(hac(f))
+  implicit def addDirectiveApply[L <: HList](directive: Directive[L])(implicit hac: ApplyConverter[L]): hac.In ⇒ Route = f ⇒ directive.happly(hac(f))
 
   implicit class SingleValueModifiers[T](underlying: Directive1[T]) {
     def map[R](f: T ⇒ R)(implicit hl: HListable[R]): Directive[hl.Out] =

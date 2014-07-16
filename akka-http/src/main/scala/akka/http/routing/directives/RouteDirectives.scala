@@ -17,7 +17,6 @@
 package akka.http.routing
 package directives
 
-//import spray.httpx.marshalling.ToResponseMarshallable
 import akka.http.model._
 import StatusCodes._
 
@@ -48,7 +47,7 @@ trait RouteDirectives {
   /*def complete: (⇒ ToResponseMarshallable) ⇒ StandardRoute = marshallable ⇒ new StandardRoute {
     def apply(ctx: RequestContext): Unit = ctx.complete(marshallable)
   }*/
-  def complete: Any ⇒ StandardRoute = ???
+  def complete: Any ⇒ StandardRoute = _ ⇒ StandardRoute(_ ⇒ FIXME)
 
   /**
    * Bubbles the given error up the response chain, where it is dealt with by the closest `handleExceptions`

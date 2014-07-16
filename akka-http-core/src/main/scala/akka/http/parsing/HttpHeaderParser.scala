@@ -373,7 +373,7 @@ private[parsing] final class HttpHeaderParser private (
 /**
  * INTERNAL API
  */
-private object HttpHeaderParser {
+private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
   object EmptyHeader extends HttpHeader {

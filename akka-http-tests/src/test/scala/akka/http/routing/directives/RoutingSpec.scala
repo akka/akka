@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-package akka.http
+package akka.http.routing.directives
 
-import akka.shapeless._
+import akka.http.routing.{ Route, Directives }
+import org.scalatest.{ ShouldMatchers, MustMatchers, WordSpec, Matchers }
+import akka.http.testkit.ScalatestRouteTest
+import akka.http.model.HttpResponse
 
-package object routing {
+abstract class RoutingSpec extends WordSpec with MustMatchers with Directives with ScalatestRouteTest {
+  val Ok = HttpResponse()
+  val completeOk = complete(Ok)
 
-  type Route = RequestContext ⇒ Unit
-  type RouteGenerator[T] = T ⇒ Route
-  type Directive0 = Directive[HNil]
-  type Directive1[T] = Directive[T :: HNil]
-  type PathMatcher0 = PathMatcher[HNil]
-  type PathMatcher1[T] = PathMatcher[T :: HNil]
+  def echoComplete[T]: T ⇒ Route = { x ⇒ complete(x.toString) }
+  def echoComplete2[T, U]: (T, U) ⇒ Route = { (x, y) ⇒ complete(s"$x $y") }
 
-  def FIXME = throw new AssertionError("Not yet implemented")
+  def sequential = {} // FIXME
 }

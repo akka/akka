@@ -128,16 +128,16 @@ object MiscDirectives extends MiscDirectives {
       headerValuePF { case `Remote-Address`(address) ⇒ address } |
       headerValuePF { case h if h.is("x-real-ip") ⇒ RemoteAddress(h.value) }
 
-  private val _requestEntityEmpty: Directive0 = FIXME
+  private def _requestEntityEmpty: Directive0 = FIXME
   //extract(_.request.entity.isEmpty).flatMap(if (_) pass else reject)
 
-  private val _requestEntityPresent: Directive0 = FIXME
+  private def _requestEntityPresent: Directive0 = FIXME
   //extract(_.request.entity.isEmpty).flatMap(if (_) reject else pass)
 
-  private val _unmatchedPath: Directive1[Uri.Path] =
+  private def _unmatchedPath: Directive1[Uri.Path] =
     extract(_.unmatchedPath)
 
-  private val _rejectEmptyResponse: Directive0 = FIXME
+  private def _rejectEmptyResponse: Directive0 = FIXME
   /*mapRouteResponse {
       case HttpMessagePartWrapper(HttpResponse(_, HttpEntity.Empty, _, _), _) ⇒ Rejected(Nil)
       case x ⇒ x
