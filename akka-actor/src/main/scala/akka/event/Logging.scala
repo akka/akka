@@ -39,7 +39,7 @@ trait LoggingBus extends ActorEventBus {
   /**
    * Query currently set log level. See object Logging for more information.
    */
-  def logLevel = guard.withGuard { _logLevel }
+  def logLevel = _logLevel
 
   /**
    * Change log level: default loggers (i.e. from configuration file) are
