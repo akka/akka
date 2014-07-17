@@ -27,7 +27,7 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
       case x if f.isDefinedAt(x) ⇒ f(x)(this)
     }
 
-  def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext = ???
+  def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext = withHttpResponseMapped(_.mapEntity(f))
 
   def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext =
     withRouteResponseHandling {

@@ -54,26 +54,26 @@ class RespondWithDirectivesSpec extends RoutingSpec {
 
   "The 'respondWithMediaType' directive" should {
 
-    "override the media-type of its inner route response" in pendingUntilFixed {
+    "override the media-type of its inner route response" in {
       Get() ~> {
         respondWithMediaType(`text/html`) {
-          complete(<i>yeah</i>)
+          complete("yeah")
         }
       } ~> check { mediaType mustEqual `text/html` }
     }
 
-    "disable content-negotiation for its inner marshaller" in pendingUntilFixed {
+    "disable content-negotiation for its inner marshaller" in {
       Get() ~> addHeader(Accept(`text/css`)) ~> {
         respondWithMediaType(`text/css`) {
-          complete(<i>yeah</i>)
+          complete("yeah")
         }
       } ~> check { mediaType mustEqual `text/css` }
     }
 
-    "reject an unacceptable request" in pendingUntilFixed {
+    "reject an unacceptable request" in {
       Get() ~> addHeader(Accept(`text/css`)) ~> {
         respondWithMediaType(`text/xml`) {
-          complete(<i>yeah</i>)
+          complete("yeah")
         }
       } ~> check { rejection mustEqual UnacceptedResponseContentTypeRejection(List(ContentType(`text/xml`))) }
     }
