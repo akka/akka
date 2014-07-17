@@ -5,7 +5,6 @@
 package akka.http.rendering
 
 import org.reactivestreams.Publisher
-import scala.collection.immutable
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.event.LoggingAdapter
@@ -19,11 +18,11 @@ import akka.http.util._
  * INTERNAL API
  */
 private object RenderSupport {
-  val DefaultStatusLine = "HTTP/1.1 200 OK\r\n".getAsciiBytes
-  val StatusLineStart = "HTTP/1.1 ".getAsciiBytes
-  val Chunked = "chunked".getAsciiBytes
-  val KeepAlive = "Keep-Alive".getAsciiBytes
-  val Close = "close".getAsciiBytes
+  val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".getAsciiBytes
+  val StatusLineStartBytes = "HTTP/1.1 ".getAsciiBytes
+  val ChunkedBytes = "chunked".getAsciiBytes
+  val KeepAliveBytes = "Keep-Alive".getAsciiBytes
+  val CloseBytes = "close".getAsciiBytes
 
   def CrLf = Rendering.CrLf
 
@@ -36,7 +35,7 @@ private object RenderSupport {
       r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
 
   def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString], materializer: FlowMaterializer,
-                        skipEntity: Boolean = false): immutable.Seq[Publisher[ByteString]] = {
+                        skipEntity: Boolean = false): List[Publisher[ByteString]] = {
     val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
     val messageBytes =
       if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher(materializer)
@@ -46,7 +45,7 @@ private object RenderSupport {
 
   class ChunkTransformer extends Transformer[HttpEntity.ChunkStreamPart, ByteString] {
     var lastChunkSeen = false
-    def onNext(chunk: HttpEntity.ChunkStreamPart): immutable.Seq[ByteString] = {
+    def onNext(chunk: HttpEntity.ChunkStreamPart): List[ByteString] = {
       if (chunk.isLastChunk) lastChunkSeen = true
       renderChunk(chunk) :: Nil
     }
@@ -56,14 +55,14 @@ private object RenderSupport {
 
   class CheckContentLengthTransformer(length: Long) extends Transformer[ByteString, ByteString] {
     var sent = 0L
-    def onNext(elem: ByteString): immutable.Seq[ByteString] = {
+    def onNext(elem: ByteString): List[ByteString] = {
       sent += elem.length
       if (sent > length)
         throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity chunk stream amounts to more bytes")
       elem :: Nil
     }
 
-    override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = {
+    override def onTermination(e: Option[Throwable]): List[ByteString] = {
       if (sent < length)
         throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity chunk stream amounts to ${length - sent} bytes less")
       Nil

@@ -61,6 +61,11 @@ sealed trait HttpEntity extends japi.HttpEntity {
       })
       .toFuture(materializer)
 
+  /**
+   * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
+   */
+  def withContentType(contentType: ContentType): HttpEntity
+
   /** Java API */
   def getDataBytes(materializer: FlowMaterializer): Publisher[ByteString] = dataBytes(materializer)
 
@@ -102,6 +107,7 @@ object HttpEntity {
    * Close-delimited entities are not `Regular` as they exists primarily for backwards compatibility with HTTP/1.0.
    */
   sealed trait Regular extends japi.HttpEntityRegular with HttpEntity {
+    def withContentType(contentType: ContentType): HttpEntity.Regular
     override def isRegular: Boolean = true
   }
 
@@ -120,6 +126,8 @@ object HttpEntity {
 
     override def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Strict] =
       Future.successful(this)
+
+    def withContentType(contentType: ContentType): Strict = copy(contentType = contentType)
   }
 
   /**
@@ -133,6 +141,8 @@ object HttpEntity {
     override def isDefault: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
+
+    def withContentType(contentType: ContentType): Default = copy(contentType = contentType)
   }
 
   /**
@@ -145,6 +155,8 @@ object HttpEntity {
     override def isCloseDelimited: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
+
+    def withContentType(contentType: ContentType): CloseDelimited = copy(contentType = contentType)
   }
 
   /**
@@ -156,6 +168,8 @@ object HttpEntity {
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] =
       Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher(materializer)
+
+    def withContentType(contentType: ContentType): Chunked = copy(contentType = contentType)
 
     /** Java API */
     def getChunks: Publisher[japi.ChunkStreamPart] = chunks.asInstanceOf[Publisher[japi.ChunkStreamPart]]
