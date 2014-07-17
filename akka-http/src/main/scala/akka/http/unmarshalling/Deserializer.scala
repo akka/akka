@@ -20,7 +20,13 @@ trait Deserializer[A, B] extends (A ⇒ Deserialized[B]) { self ⇒
     }
 }
 object Deserializer extends FromStringDeserializers {
-  implicit def trivial: FromStringOptionDeserializer[String] = routing.FIXME
+  implicit def trivial: FromStringOptionDeserializer[String] =
+    new FromStringOptionDeserializer[String] {
+      def apply(v1: Option[String]): Deserialized[String] = v1 match {
+        case Some(s) ⇒ Future.successful(s)
+        case None    ⇒ Future.failed(ContentExpected)
+      }
+    }
 
   implicit def liftFromStringDeserializer[T: FromStringDeserializer]: FromStringOptionDeserializer[T] = routing.FIXME
   implicit def liftFromStringDeserializerConversion[T](f: FromStringDeserializer[T]): FromStringOptionDeserializer[T] = routing.FIXME

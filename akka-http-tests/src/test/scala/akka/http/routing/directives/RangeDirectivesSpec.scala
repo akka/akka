@@ -33,13 +33,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
     def completeWithRangedBytes(length: Byte) = wrs(complete(bytes(length)))
 
-    "return an Accept-Ranges(bytes) header for GET requests" in pendingUntilFixed {
+    "return an Accept-Ranges(bytes) header for GET requests" in {
       Get() ~> { wrs { complete("any") } } ~> check {
         headers must contain(`Accept-Ranges`(RangeUnits.Bytes))
       }
     }
 
-    "not return an Accept-Ranges(bytes) header for non-GET requests" in pendingUntilFixed {
+    "not return an Accept-Ranges(bytes) header for non-GET requests" in {
       Put() ~> { wrs { complete("any") } } ~> check {
         headers must not contain `Accept-Ranges`(RangeUnits.Bytes)
       }
@@ -117,7 +117,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }
 
-    "reject a request with too many requested ranges" in pendingUntilFixed {
+    "reject a request with too many requested ranges" in {
       val ranges = (1 to 20).map(a ⇒ ByteRange.fromOffset(a))
       Get() ~> addHeader(Range(ranges)) ~> completeWithRangedBytes(100) ~> check {
         rejection mustEqual TooManyRangesRejection(10)

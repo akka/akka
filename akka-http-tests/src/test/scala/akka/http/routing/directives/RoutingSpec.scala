@@ -16,12 +16,12 @@
 
 package akka.http.routing.directives
 
-import akka.http.routing.{ Route, Directives }
-import org.scalatest.{ ShouldMatchers, MustMatchers, WordSpec, Matchers }
-import akka.http.testkit.ScalatestRouteTest
-import akka.http.model.HttpResponse
+import _root_.akka.http.routing.{ Route, Directives }
+import org.scalatest._
+import _root_.akka.http.testkit.ScalatestRouteTest
+import _root_.akka.http.model.HttpResponse
 
-abstract class RoutingSpec extends WordSpec with MustMatchers with Directives with ScalatestRouteTest {
+trait GenericRoutingSpec extends MustMatchers with Directives with ScalatestRouteTest { this: Suite ⇒
   val Ok = HttpResponse()
   val completeOk = complete(Ok)
 
@@ -30,3 +30,5 @@ abstract class RoutingSpec extends WordSpec with MustMatchers with Directives wi
 
   def sequential = {} // FIXME
 }
+
+abstract class RoutingSpec extends WordSpec with GenericRoutingSpec

@@ -37,26 +37,26 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
     "return OK for new resources" in pendingUntilFixed {
       Get() ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        routing.FIXME //headers should contain(allOf(responseHeaders))
+        routing.FIXME //headers should contain theSameElementsAs(allOf(responseHeaders))
       }
     }
 
-    "return OK for non-matching resources" in pendingUntilFixed {
+    "return OK for non-matching resources" in {
       Get() ~> `If-None-Match`(EntityTag("old")) ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-Modified-Since`(timestamp - 1000) ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(EntityTag("old")) ~> `If-Modified-Since`(timestamp - 1000) ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
     }
 
-    "ignore If-Modified-Since if If-None-Match is defined" in pendingUntilFixed {
+    "ignore If-Modified-Since if If-None-Match is defined" in {
       Get() ~> `If-None-Match`(tag) ~> `If-Modified-Since`(timestamp - 1000) ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
       }
@@ -65,79 +65,79 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "return PreconditionFailed for matched but unsafe resources" in pendingUntilFixed {
+    "return PreconditionFailed for matched but unsafe resources" in {
       Put() ~> `If-None-Match`(tag) ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual PreconditionFailed
         headers mustEqual Nil
       }
     }
 
-    "return NotModified for matching resources" in pendingUntilFixed {
+    "return NotModified for matching resources" in {
       Get() ~> `If-None-Match`.`*` ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(tag) ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(tag) ~> `If-Modified-Since`(timestamp + 1000) ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(tag.copy(weak = true)) ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(tag, EntityTag("some"), EntityTag("other")) ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
     }
 
-    "return NotModified when only one matching header is set" in pendingUntilFixed {
+    "return NotModified when only one matching header is set" in {
       Get() ~> `If-None-Match`.`*` ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> `If-None-Match`(tag) ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Get() ~> ifModifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual NotModified
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
     }
 
-    "return NotModified for matching weak resources" in pendingUntilFixed {
+    "return NotModified for matching weak resources" in {
       val weakTag = tag.copy(weak = true)
       Get() ~> `If-None-Match`(tag) ~> weak ~> check {
         status mustEqual NotModified
-        headers must contain(List(ETag(weakTag), `Last-Modified`(timestamp)))
+        headers must contain theSameElementsAs (List(ETag(weakTag), `Last-Modified`(timestamp)))
       }
       Get() ~> `If-None-Match`(weakTag) ~> weak ~> check {
         status mustEqual NotModified
-        headers must contain(List(ETag(weakTag), `Last-Modified`(timestamp)))
+        headers must contain theSameElementsAs (List(ETag(weakTag), `Last-Modified`(timestamp)))
       }
     }
 
-    "return normally for matching If-Match/If-Unmodified" in pendingUntilFixed {
+    "return normally for matching If-Match/If-Unmodified" in {
       Put() ~> `If-Match`.`*` ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Put() ~> `If-Match`(tag) ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
       Put() ~> ifUnmodifiedSince ~> taggedAndTimestamped ~> check {
         status mustEqual OK
-        headers must contain(responseHeaders)
+        headers must contain theSameElementsAs (responseHeaders)
       }
     }
 
-    "return PreconditionFailed for non-matching If-Match/If-Unmodified" in pendingUntilFixed {
+    "return PreconditionFailed for non-matching If-Match/If-Unmodified" in {
       Put() ~> `If-Match`(EntityTag("old")) ~> taggedAndTimestamped ~> check {
         status mustEqual PreconditionFailed
         headers mustEqual Nil
@@ -148,7 +148,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "ignore If-Unmodified-Since if If-Match is defined" in pendingUntilFixed {
+    "ignore If-Unmodified-Since if If-Match is defined" in {
       Put() ~> `If-Match`(tag) ~> `If-Unmodified-Since`(timestamp - 1000) ~> taggedAndTimestamped ~> check {
         status mustEqual OK
       }
@@ -157,7 +157,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "not filter out a `Range` header if `If-Range` does match the timestamp" in pendingUntilFixed {
+    "not filter out a `Range` header if `If-Range` does match the timestamp" in {
       Get() ~> `If-Range`(timestamp) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range]()) { echoComplete }
       } ~> check {
@@ -166,7 +166,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "filter out a `Range` header if `If-Range` doesn't match the timestamp" in pendingUntilFixed {
+    "filter out a `Range` header if `If-Range` doesn't match the timestamp" in {
       Get() ~> `If-Range`(timestamp - 1000) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range]()) { echoComplete }
       } ~> check {
@@ -175,7 +175,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "not filter out a `Range` header if `If-Range` does match the ETag" in pendingUntilFixed {
+    "not filter out a `Range` header if `If-Range` does match the ETag" in {
       Get() ~> `If-Range`(tag) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range]()) { echoComplete }
       } ~> check {
@@ -184,7 +184,7 @@ class CacheConditionDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "filter out a `Range` header if `If-Range` doesn't match the ETag" in pendingUntilFixed {
+    "filter out a `Range` header if `If-Range` doesn't match the ETag" in {
       Get() ~> `If-Range`(EntityTag("other")) ~> Range(ByteRange(0, 10)) ~> {
         (conditional(tag, timestamp) & optionalHeaderValueByType[Range]()) { echoComplete }
       } ~> check {

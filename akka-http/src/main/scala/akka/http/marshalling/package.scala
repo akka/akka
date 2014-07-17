@@ -40,11 +40,16 @@ package marshalling {
       new Marshaller[String] {
         def marshal(value: String): Future[HttpEntity.Regular] = Future.successful(HttpEntity(value))
       }
-    implicit def bytesMarshaller: Marshaller[Array[Byte]] = routing.FIXME
-    implicit def xmlMarshaller: Marshaller[scala.xml.NodeSeq] = routing.FIXME
-    implicit def formDataMarshaller: Marshaller[FormData] = routing.FIXME
-    implicit def entityMarshaller: Marshaller[HttpEntity] = routing.FIXME
-    implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = routing.FIXME
+    implicit def bytesMarshaller: Marshaller[Array[Byte]] = FIXME
+    implicit def xmlMarshaller: Marshaller[scala.xml.NodeSeq] = FIXME
+    implicit def formDataMarshaller: Marshaller[FormData] = FIXME
+    implicit def entityMarshaller: Marshaller[HttpEntity] = FIXME
+    implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = FIXME
+
+    def FIXME[T]: Marshaller[T] =
+      new Marshaller[T] {
+        def marshal(value: T): Future[Regular] = routing.FIXME
+      }
   }
 
   trait ToResponseMarshaller[-T] { outer ⇒

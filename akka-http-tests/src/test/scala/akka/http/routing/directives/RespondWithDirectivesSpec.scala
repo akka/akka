@@ -26,12 +26,12 @@ import akka.http.routing._
 class RespondWithDirectivesSpec extends RoutingSpec {
 
   "respondWithStatus" should {
-    "set the given status on successful responses" in pendingUntilFixed {
+    "set the given status on successful responses" in {
       Get() ~> {
         respondWithStatus(Created) { completeOk }
       } ~> check { response mustEqual HttpResponse(Created) }
     }
-    "leave rejections unaffected" in pendingUntilFixed {
+    "leave rejections unaffected" in {
       Get() ~> {
         respondWithStatus(Created) { reject }
       } ~> check { rejections mustEqual Nil }
@@ -40,12 +40,12 @@ class RespondWithDirectivesSpec extends RoutingSpec {
 
   "respondWithHeader" should {
     val customHeader = RawHeader("custom", "custom")
-    "add the given headers to successful responses" in pendingUntilFixed {
+    "add the given headers to successful responses" in {
       Get() ~> {
         respondWithHeader(customHeader) { completeOk }
       } ~> check { response mustEqual HttpResponse(headers = customHeader :: Nil) }
     }
-    "leave rejections unaffected" in pendingUntilFixed {
+    "leave rejections unaffected" in {
       Get() ~> {
         respondWithHeader(customHeader) { reject }
       } ~> check { rejections mustEqual Nil }

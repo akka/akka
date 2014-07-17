@@ -14,11 +14,11 @@ import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 
 private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath: Uri.Path, postProcessing: RouteResult ⇒ RouteResult = identity) extends RequestContext {
-  def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext = ???
+  def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext = copy(request = f(request))
 
   def withRouteResponseMappedPF(f: PartialFunction[RouteResult, RouteResult]): RequestContext = ???
 
-  def withUnmatchedPathMapped(f: Path ⇒ Path): RequestContext = ???
+  def withUnmatchedPathMapped(f: Path ⇒ Path): RequestContext = copy(unmatchedPath = f(unmatchedPath))
 
   def withContentNegotiationDisabled: RequestContext = this // FIXME: actually support this
 
@@ -29,21 +29,25 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
 
   def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext = ???
 
-  def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext = ???
+  def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext =
+    withRouteResponseHandling {
+      case CompleteWith(response) ⇒ CompleteWith(f(response))
+    }
 
-  def withHttpResponseHeadersMapped(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestContext = ???
+  def withHttpResponseHeadersMapped(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestContext =
+    withHttpResponseMapped(_.mapHeaders(f))
 
   def withRouteResponseHandling(f: PartialFunction[RouteResult, RouteResult]): RequestContext =
-    copy(postProcessing = { res ⇒
-      val value = postProcessing(res)
-      if (f.isDefinedAt(value)) f(value) else value
-    })
+    withRouteResponseMapped { res ⇒
+      if (f.isDefinedAt(res)) f(res) else res
+    }
 
   def withUnmatchedPath(path: Path): RequestContext = copy(unmatchedPath = path)
 
   def withExceptionHandling(handler: ExceptionHandler): RequestContext = ???
 
-  def withRouteResponseMapped(f: RouteResult ⇒ RouteResult): RequestContext = ???
+  def withRouteResponseMapped(f: RouteResult ⇒ RouteResult): RequestContext =
+    copy(postProcessing = res ⇒ f(postProcessing(res)))
 
   def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext =
     withRejectionHandling(rejs ⇒ Rejected(f(rejs)))
@@ -61,7 +65,16 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
         .recover { case error ⇒ failWith(error) } // failWith already calls finish
     }
 
-  def redirect(uri: Uri, redirectionType: Redirection): RouteResult = ???
+  def redirect(uri: Uri, redirectionType: Redirection)(implicit ec: ExecutionContext): RouteResult =
+    complete {
+      HttpResponse(
+        status = redirectionType,
+        headers = headers.Location(uri) :: Nil,
+        entity = redirectionType.htmlTemplate match {
+          case ""       ⇒ HttpEntity.Empty
+          case template ⇒ HttpEntity(MediaTypes.`text/html`, template format uri)
+        })
+    }
   def reject(rejection: Rejection): RouteResult = finish(Rejected(rejection :: Nil))
   def reject(rejections: Rejection*): RouteResult = finish(Rejected(rejections.toList))
   def failWith(error: Throwable): RouteResult = finish(RouteException(error))

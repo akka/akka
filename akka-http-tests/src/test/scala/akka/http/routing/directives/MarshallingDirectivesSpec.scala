@@ -120,7 +120,7 @@ class MarshallingDirectivesSpec extends RoutingSpec {
           Seq(ContentType(`application/xhtml+xml`), ContentType(`text/xml`, `UTF-8`)))
       }
     }
-    "convert the response content to an accepted charset" in pendingUntilFixed {
+    "convert the response content to an accepted charset" in {
       Get() ~> addHeader(`Accept-Charset`(`UTF-8`)) ~> {
         produce(instanceOf[String]) { prod ⇒ _ ⇒ prod("Hällö") }
       } ~> check { body mustEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), "Hällö") }

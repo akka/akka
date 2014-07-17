@@ -38,33 +38,33 @@ class DebuggingDirectivesSpec extends RoutingSpec {
   }
 
   "The 'logRequest' directive" should {
-    "produce a proper log message for incoming requests" in pendingUntilFixed {
+    "produce a proper log message for incoming requests" in {
       Get("/hello") ~> logRequest("1") { completeOk } ~> check {
         response mustEqual Ok
-        debugMsg mustEqual "1: HttpRequest(GET,http://example.com/hello,List(),Empty,HTTP/1.1)\n"
+        debugMsg mustEqual "1: HttpRequest(HttpMethod(GET),http://example.com/hello,List(),Strict(none/none,ByteString()),HttpProtocol(HTTP/1.1))\n"
       }
     }
   }
 
   "The 'logResponse' directive" should {
-    "produce a proper log message for outgoing responses" in pendingUntilFixed {
+    "produce a proper log message for outgoing responses" in {
       resetDebugMsg()
       Get("/hello") ~> logResponse("2") { completeOk } ~> check {
         response mustEqual Ok
-        debugMsg mustEqual "2: HttpResponse(200 OK,Empty,List(),HTTP/1.1)\n"
+        debugMsg mustEqual "2: CompleteWith(HttpResponse(200 OK,List(),Strict(none/none,ByteString()),HttpProtocol(HTTP/1.1)))\n"
       }
     }
   }
 
   "The 'logRequestResponse' directive" should {
-    "produce proper log messages for outgoing responses, thereby showing the corresponding request" in pendingUntilFixed {
+    "produce proper log messages for outgoing responses, thereby showing the corresponding request" in {
       resetDebugMsg()
       Get("/hello") ~> logRequestResponse("3") { completeOk } ~> check {
         response mustEqual Ok
         debugMsg mustEqual """|3: Response for
-                        |  Request : HttpRequest(GET,http://example.com/hello,List(),Empty,HTTP/1.1)
-                        |  Response: HttpResponse(200 OK,Empty,List(),HTTP/1.1)
-                        |""".stripMarginWithNewline("\n")
+                              |  Request : HttpRequest(HttpMethod(GET),http://example.com/hello,List(),Strict(none/none,ByteString()),HttpProtocol(HTTP/1.1))
+                              |  Response: CompleteWith(HttpResponse(200 OK,List(),Strict(none/none,ByteString()),HttpProtocol(HTTP/1.1)))
+                              |""".stripMarginWithNewline("\n")
       }
     }
   }

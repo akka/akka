@@ -123,7 +123,7 @@ trait RequestContext {
   /**
    * Completes the request with redirection response of the given type to the given URI.
    */
-  def redirect(uri: Uri, redirectionType: Redirection): RouteResult
+  def redirect(uri: Uri, redirectionType: Redirection)(implicit ec: ExecutionContext): RouteResult
 
   /**
    * Completes the request with a response created by marshalling the given object using

@@ -21,6 +21,8 @@ import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model._
 import StatusCodes._
 
+import scala.concurrent.ExecutionContext
+
 trait RouteDirectives {
 
   /**
@@ -38,7 +40,7 @@ trait RouteDirectives {
   /**
    * Completes the request with redirection response of the given type to the given URI.
    */
-  def redirect(uri: Uri, redirectionType: Redirection): StandardRoute = new StandardRoute {
+  def redirect(uri: Uri, redirectionType: Redirection)(implicit ec: ExecutionContext): StandardRoute = new StandardRoute {
     def apply(ctx: RequestContext): RouteResult = ctx.redirect(uri, redirectionType)
   }
 

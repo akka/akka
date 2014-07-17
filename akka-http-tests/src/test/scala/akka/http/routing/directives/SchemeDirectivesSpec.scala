@@ -20,25 +20,25 @@ import akka.http.routing._
 
 class SchemeDirectivesSpec extends RoutingSpec {
   "the schemeName directive" should {
-    "extract the Uri scheme" in pendingUntilFixed {
+    "extract the Uri scheme" in {
       Put("http://localhost/", "Hello") ~> schemeName { echoComplete } ~> check { responseAs[String] mustEqual "http" }
     }
   }
 
   """the scheme("http") directive""" should {
-    "let requests with an http Uri scheme pass" in pendingUntilFixed {
+    "let requests with an http Uri scheme pass" in {
       Put("http://localhost/", "Hello") ~> scheme("http") { completeOk } ~> check { response mustEqual Ok }
     }
-    "reject requests with an https Uri scheme" in pendingUntilFixed {
+    "reject requests with an https Uri scheme" in {
       Get("https://localhost/") ~> scheme("http") { completeOk } ~> check { rejection mustEqual SchemeRejection("http") }
     }
   }
 
   """the scheme("https") directive""" should {
-    "let requests with an https Uri scheme pass" in pendingUntilFixed {
+    "let requests with an https Uri scheme pass" in {
       Put("https://localhost/", "Hello") ~> scheme("https") { completeOk } ~> check { response mustEqual Ok }
     }
-    "reject requests with an http Uri scheme" in pendingUntilFixed {
+    "reject requests with an http Uri scheme" in {
       Get("http://localhost/") ~> scheme("https") { completeOk } ~> check { rejection mustEqual SchemeRejection("https") }
     }
   }

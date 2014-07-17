@@ -120,7 +120,7 @@ class ParameterDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "The 'parameters' extraction directive" should {
-    "extract the value of given parameters" in pendingUntilFixed {
+    "extract the value of given parameters" in {
       Get("/?name=Parsons&FirstName=Ellen") ~> {
         parameters("name", 'FirstName) { (name, firstName) ⇒
           complete(firstName + name)
@@ -131,14 +131,14 @@ class ParameterDirectivesSpec extends RoutingSpec with Inside {
       Get("/?foo=bar") ~> parameters('foo ?) { echoComplete } ~> check { responseAs[String] mustEqual "Some(bar)" }
       Get("/?foo=bar") ~> parameters('baz ?) { echoComplete } ~> check { responseAs[String] mustEqual "None" }
     }
-    "ignore additional parameters" in pendingUntilFixed {
+    "ignore additional parameters" in {
       Get("/?name=Parsons&FirstName=Ellen&age=29") ~> {
         parameters("name", 'FirstName) { (name, firstName) ⇒
           complete(firstName + name)
         }
       } ~> check { responseAs[String] mustEqual "EllenParsons" }
     }
-    "reject the request with a MissingQueryParamRejection if a required parameters is missing" in pendingUntilFixed {
+    "reject the request with a MissingQueryParamRejection if a required parameters is missing" in {
       Get("/?name=Parsons&sex=female") ~> {
         parameters('name, 'FirstName, 'age) { (name, firstName, age) ⇒
           completeOk
@@ -162,17 +162,17 @@ class ParameterDirectivesSpec extends RoutingSpec with Inside {
   }
 
   "The 'parameter' requirement directive" should {
-    "block requests that do not contain the required parameter" in pendingUntilFixed {
+    "block requests that do not contain the required parameter" in {
       Get("/person?age=19") ~> {
         parameter('nose ! "large") { completeOk }
       } ~> check { handled mustEqual (false) }
     }
-    "block requests that contain the required parameter but with an unmatching value" in pendingUntilFixed {
+    "block requests that contain the required parameter but with an unmatching value" in {
       Get("/person?age=19&nose=small") ~> {
         parameter('nose ! "large") { completeOk }
       } ~> check { handled mustEqual (false) }
     }
-    "let requests pass that contain the required parameter with its required value" in pendingUntilFixed {
+    "let requests pass that contain the required parameter with its required value" in {
       Get("/person?nose=large&eyes=blue") ~> {
         parameter('nose ! "large") { completeOk }
       } ~> check { response mustEqual Ok }

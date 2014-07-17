@@ -96,12 +96,12 @@ trait RangeDirectives {
         case ByteRange.Suffix(length)       ⇒ length > 0
       }
 
-    def applyRanges(ranges: Seq[ByteRange]): Directive0 =
-      FIXME /*mapRequestContext { ctx ⇒
+    def applyRanges(ranges: Seq[ByteRange]): Directive0 = FIXME
+    /*mapRequestContext { ctx ⇒
         ctx.withRouteResponseHandling {
-          case HttpResponse(OK, headers, entity: HttpEntity.Default, protocol) ⇒
-            ranges.filter(satisfiable(entity.data.length)) match {
-              case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, entity.data.length))
+          case CompleteWith(HttpResponse(OK, headers, entity: HttpEntity.Default, protocol)) ⇒ // FIXME: also enable for strict entities
+            ranges.filter(satisfiable(entity.contentLength)) match {
+              case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, entity.contentLength))
               case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, headers))
               case satisfiableRanges     ⇒ ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
             }

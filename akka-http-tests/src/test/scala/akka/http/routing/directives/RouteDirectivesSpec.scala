@@ -16,6 +16,8 @@
 
 package akka.http.routing.directives
 
+import org.scalatest.FreeSpec
+
 import scala.concurrent.{ Future, Promise }
 import akka.http.model._
 import akka.http.util._
@@ -26,16 +28,16 @@ import akka.http.marshalling._
 import akka.actor.ActorRef
 import akka.http.routing._
 
-class RouteDirectivesSpec extends RoutingSpec {
+class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
 
-  "The `complete` directive" should {
-    "by chainable with the `&` operator" in pendingUntilFixed {
+  "The `complete` directive" - {
+    "by chainable with the `&` operator" in {
       Get() ~> (get & complete("yeah")) ~> check { responseAs[String] mustEqual "yeah" }
     }
-    "allow for factoring out a StandardRoute" in pendingUntilFixed {
+    "allow for factoring out a StandardRoute" in {
       Get() ~> (get & complete)("yeah") ~> check { responseAs[String] mustEqual "yeah" }
     }
-    "be lazy in its argument evaluation, independently of application style" in pendingUntilFixed {
+    "be lazy in its argument evaluation, independently of application style" in {
       var i = 0
       Put() ~> {
         get { complete { i += 1; "get" } } ~
@@ -47,16 +49,16 @@ class RouteDirectivesSpec extends RoutingSpec {
         i mustEqual 1
       }
     }
-    "support completion from response futures" in pendingUntilFixed {
-      "simple case without marshaller" in pendingUntilFixed {
+    "support completion from response futures" - {
+      "simple case without marshaller" in {
         Get() ~> {
           get & complete(Promise.successful(HttpResponse(entity = "yup")).future)
         } ~> check { responseAs[String] mustEqual "yup" }
       }
-      "for successful futures and marshalling" in pendingUntilFixed {
+      "for successful futures and marshalling" in {
         Get() ~> complete(Promise.successful("yes").future) ~> check { responseAs[String] mustEqual "yes" }
       }
-      "for failed futures and marshalling" in pendingUntilFixed {
+      "for failed futures and marshalling" in {
         object TestException extends RuntimeException
         Get() ~> complete(Promise.failed[String](TestException).future) ~>
           check {
@@ -126,8 +128,8 @@ class RouteDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the redirect directive" should {
-    "produce proper 'Found' redirections" in pendingUntilFixed {
+  "the redirect directive" - {
+    "produce proper 'Found' redirections" in {
       Get() ~> {
         redirect("/foo", Found)
       } ~> check {
@@ -137,7 +139,8 @@ class RouteDirectivesSpec extends RoutingSpec {
           headers = Location("/foo") :: Nil)
       }
     }
-    "produce proper 'NotModified' redirections" in pendingUntilFixed {
+
+    "produce proper 'NotModified' redirections" in {
       Get() ~> {
         redirect("/foo", NotModified)
       } ~> check { response mustEqual HttpResponse(304, headers = Location("/foo") :: Nil) }

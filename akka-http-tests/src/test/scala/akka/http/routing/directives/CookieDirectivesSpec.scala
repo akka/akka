@@ -27,17 +27,17 @@ class CookieDirectivesSpec extends RoutingSpec {
   val deletedTimeStamp = DateTime.fromIsoDateTimeString("1800-01-01T00:00:00")
 
   "The 'cookie' directive" should {
-    "extract the respectively named cookie" in pendingUntilFixed {
+    "extract the respectively named cookie" in {
       Get() ~> addHeader(Cookie(HttpCookie("fancy", "pants"))) ~> {
         cookie("fancy") { echoComplete }
       } ~> check { responseAs[String] mustEqual "fancy=pants" }
     }
-    "reject the request if the cookie is not present" in pendingUntilFixed {
+    "reject the request if the cookie is not present" in {
       Get() ~> {
         cookie("fancy") { echoComplete }
       } ~> check { rejection mustEqual MissingCookieRejection("fancy") }
     }
-    "properly pass through inner rejections" in pendingUntilFixed {
+    "properly pass through inner rejections" in {
       Get() ~> addHeader(Cookie(HttpCookie("fancy", "pants"))) ~> {
         cookie("fancy") { c ⇒ reject(ValidationRejection("Dont like " + c.content)) }
       } ~> check { rejection mustEqual ValidationRejection("Dont like pants") }
@@ -45,7 +45,7 @@ class CookieDirectivesSpec extends RoutingSpec {
   }
 
   "The 'deleteCookie' directive" should {
-    "add a respective Set-Cookie headers to successful responses" in pendingUntilFixed {
+    "add a respective Set-Cookie headers to successful responses" in {
       Get() ~> {
         deleteCookie("myCookie", "test.com") { completeOk }
       } ~> check {
@@ -55,7 +55,7 @@ class CookieDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "support deleting multiple cookies at a time" in pendingUntilFixed {
+    "support deleting multiple cookies at a time" in {
       Get() ~> {
         deleteCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {
@@ -68,15 +68,15 @@ class CookieDirectivesSpec extends RoutingSpec {
   }
 
   "The 'optionalCookie' directive" should {
-    "produce a `Some(cookie)` extraction if the cookie is present" in pendingUntilFixed {
+    "produce a `Some(cookie)` extraction if the cookie is present" in {
       Get() ~> Cookie(HttpCookie("abc", "123")) ~> {
         optionalCookie("abc") { echoComplete }
       } ~> check { responseAs[String] mustEqual "Some(abc=123)" }
     }
-    "produce a `None` extraction if the cookie is not present" in pendingUntilFixed {
+    "produce a `None` extraction if the cookie is not present" in {
       Get() ~> optionalCookie("abc") { echoComplete } ~> check { responseAs[String] mustEqual "None" }
     }
-    "let rejections from its inner route pass through" in pendingUntilFixed {
+    "let rejections from its inner route pass through" in {
       Get() ~> {
         optionalCookie("test-cookie") { _ ⇒
           validate(false, "ouch") { completeOk }
@@ -86,7 +86,7 @@ class CookieDirectivesSpec extends RoutingSpec {
   }
 
   "The 'setCookie' directive" should {
-    "add a respective Set-Cookie headers to successful responses" in pendingUntilFixed {
+    "add a respective Set-Cookie headers to successful responses" in {
       Get() ~> {
         setCookie(HttpCookie("myCookie", "test.com")) { completeOk }
       } ~> check {
@@ -95,7 +95,7 @@ class CookieDirectivesSpec extends RoutingSpec {
       }
     }
 
-    "support setting multiple cookies at a time" in pendingUntilFixed {
+    "support setting multiple cookies at a time" in {
       Get() ~> {
         setCookie(HttpCookie("myCookie", "test.com"), HttpCookie("myCookie2", "foobar.com")) { completeOk }
       } ~> check {

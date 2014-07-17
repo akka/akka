@@ -26,22 +26,22 @@ import akka.http.routing._
 class MiscDirectivesSpec extends RoutingSpec {
 
   "routes created by the concatenation operator '~'" should {
-    "yield the first sub route if it succeeded" in pendingUntilFixed {
+    "yield the first sub route if it succeeded" in {
       Get() ~> {
         get { complete("first") } ~ get { complete("second") }
       } ~> check { responseAs[String] mustEqual "first" }
     }
-    "yield the second sub route if the first did not succeed" in pendingUntilFixed {
+    "yield the second sub route if the first did not succeed" in {
       Get() ~> {
         post { complete("first") } ~ get { complete("second") }
       } ~> check { responseAs[String] mustEqual "second" }
     }
-    "collect rejections from both sub routes" in pendingUntilFixed {
+    "collect rejections from both sub routes" in {
       Delete() ~> {
         get { completeOk } ~ put { completeOk }
       } ~> check { rejections mustEqual Seq(MethodRejection(GET), MethodRejection(PUT)) }
     }
-    "clear rejections that have already been 'overcome' by previous directives" in pendingUntilFixed {
+    "clear rejections that have already been 'overcome' by previous directives" in {
       Put() ~> {
         put { parameter('yeah) { echoComplete } } ~
           get { completeOk }
@@ -82,17 +82,17 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   "the clientIP directive" should {
-    "extract from a X-Forwarded-For header" in pendingUntilFixed {
+    "extract from a X-Forwarded-For header" in {
       Get() ~> addHeaders(`X-Forwarded-For`("2.3.4.5"), RawHeader("x-real-ip", "1.2.3.4")) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "2.3.4.5" }
     }
-    "extract from a Remote-Address header" in pendingUntilFixed {
+    "extract from a Remote-Address header" in pendingUntilFixed /* it seems Directive.| is broken */ {
       Get() ~> addHeaders(RawHeader("x-real-ip", "1.2.3.4"), `Remote-Address`(RemoteAddress("5.6.7.8"))) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "5.6.7.8" }
     }
-    "extract from a X-Real-IP header" in pendingUntilFixed {
+    "extract from a X-Real-IP header" in {
       Get() ~> addHeader(RawHeader("x-real-ip", "1.2.3.4")) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "1.2.3.4" }
@@ -100,7 +100,7 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   "The `rewriteUnmatchedPath` directive" should {
-    "rewrite the unmatched path" in pendingUntilFixed {
+    "rewrite the unmatched path" in {
       Get("/abc") ~> {
         rewriteUnmatchedPath(_ / "def") {
           path("abc" / "def") { completeOk }
