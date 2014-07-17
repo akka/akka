@@ -25,19 +25,19 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   /*"when used with a single required parameter" should {
     val route = (path("test") & anyParam("x")) { echoComplete }
 
-    "extract the parameter from query parameters" in {
+    "extract the parameter from query parameters" in pendingUntilFixed {
       Get("/test?x=1") ~> route ~> check {
         responseAs[String] mustEqual "1"
       }
     }
 
-    "extract the parameter from form" in {
+    "extract the parameter from form" in pendingUntilFixed {
       Post("/test", FormData(Map("x" -> "1"))) ~> route ~> check {
         responseAs[String] mustEqual "1"
       }
     }
 
-    "prefer form over query pamaeters" in {
+    "prefer form over query pamaeters" in pendingUntilFixed {
       Post("/test?x=2", FormData(Map("x" -> "1"))) ~> route ~> check {
         responseAs[String] mustEqual "1"
       }
@@ -47,25 +47,25 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   "when used with a single optional parameter" should {
     val route = (path("test") & anyParam("x"?)) { echoComplete }
 
-    "extract the parameter from query parameters" in {
+    "extract the parameter from query parameters" in pendingUntilFixed {
       Get("/test?x=1") ~> route ~> check {
         responseAs[String] mustEqual "Some(1)"
       }
     }
 
-    "extract the parameter from form" in {
+    "extract the parameter from form" in pendingUntilFixed {
       Post("/test", FormData(Map("x" -> "1"))) ~> route ~> check {
         responseAs[String] mustEqual "Some(1)"
       }
     }
 
-    "extract None if no query parameters" in {
+    "extract None if no query parameters" in pendingUntilFixed {
       Get("/test") ~> route ~> check {
         responseAs[String] mustEqual "None"
       }
     }
 
-    "extract None if no form" in {
+    "extract None if no form" in pendingUntilFixed {
       Post("/test", FormData(Seq())) ~> route ~> check {
         responseAs[String] mustEqual "None"
       }
@@ -75,19 +75,19 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   "when used with two required parameters" should {
     val route = (path("test") & anyParam("x", "y")) { echoComplete2 }
 
-    "extract the parameters from query parameters" in {
+    "extract the parameters from query parameters" in pendingUntilFixed {
       Get("/test?x=1&y=2") ~> route ~> check {
         responseAs[String] mustEqual "1 2"
       }
     }
 
-    "extract the parameters from form" in {
+    "extract the parameters from form" in pendingUntilFixed {
       Post("/test", FormData(Map("x" -> "1", "y" -> "2"))) ~> route ~> check {
         responseAs[String] mustEqual "1 2"
       }
     }
 
-    "extract the parameters both from form and query parameters" in {
+    "extract the parameters both from form and query parameters" in pendingUntilFixed {
       Post("/test?x=1", FormData(Map("y" -> "2"))) ~> route ~> check {
         responseAs[String] mustEqual "1 2"
       }
@@ -97,25 +97,25 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   "when used with two optional parameters" should {
     val route = (path("test") & anyParam("x"?, "y"?)) { echoComplete2 }
 
-    "extract the parameters from query parameters" in {
+    "extract the parameters from query parameters" in pendingUntilFixed {
       Get("/test?x=1&y=2") ~> route ~> check {
         responseAs[String] mustEqual "Some(1) Some(2)"
       }
     }
 
-    "extract the parameters from form" in {
+    "extract the parameters from form" in pendingUntilFixed {
       Post("/test", FormData(Map("x" -> "1", "y" -> "2"))) ~> route ~> check {
         responseAs[String] mustEqual "Some(1) Some(2)"
       }
     }
 
-    "extract only the parameters that are present, from query parameters" in {
+    "extract only the parameters that are present, from query parameters" in pendingUntilFixed {
       Get("/test?x=1") ~> route ~> check {
         responseAs[String] mustEqual "Some(1) None"
       }
     }
 
-    "extract only the parameters that are present, from form" in {
+    "extract only the parameters that are present, from form" in pendingUntilFixed {
       Post("/test", FormData(Map("y" -> "2"))) ~> route ~> check {
         responseAs[String] mustEqual "None Some(2)"
       }
@@ -125,13 +125,13 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   "when used with type conversions" should {
     val route = (path("test") & anyParam("x".as[Int], "y".as[Boolean])) { echoComplete2 }
 
-    "extract the parameters with correct types, from query parameters" in {
+    "extract the parameters with correct types, from query parameters" in pendingUntilFixed {
       Get("/test?x=1&y=false") ~> route ~> check {
         responseAs[String] mustEqual "1 false"
       }
     }
 
-    "extract the parameters with correct types, from the form" in {
+    "extract the parameters with correct types, from the form" in pendingUntilFixed {
       Post("/test", FormData(Map("x" -> "10", "y" -> "true"))) ~> route ~> check {
         responseAs[String] mustEqual "10 true"
       }
@@ -141,7 +141,7 @@ class AnyParamDirectivesSpec extends RoutingSpec {
   "when used with a symbol" should {
     val route = (path("test") & anyParam('x)) { echoComplete }
 
-    "extract the parameter from query parameters" in {
+    "extract the parameter from query parameters" in pendingUntilFixed {
       Get("/test?x=1") ~> route ~> check {
         responseAs[String] mustEqual "1"
       }

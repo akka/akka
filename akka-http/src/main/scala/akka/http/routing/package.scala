@@ -27,5 +27,5 @@ package object routing {
   type PathMatcher0 = PathMatcher[HNil]
   type PathMatcher1[T] = PathMatcher[T :: HNil]
 
-  def FIXME = throw new AssertionError("Not yet implemented")
+  def FIXME = throw new RuntimeException("Not yet implemented")
 }

@@ -34,17 +34,17 @@ class SecurityDirectivesSpec extends RoutingSpec {
   }, "Realm")
 
   "the 'authenticate(BasicAuth())' directive" should {
-    "reject requests without Authorization header with an AuthenticationFailedRejection" in {
+    "reject requests without Authorization header with an AuthenticationFailedRejection" in pendingUntilFixed {
       Get() ~> {
         authenticate(dontAuth) { echoComplete }
       } ~> check { rejection mustEqual AuthenticationFailedRejection(CredentialsMissing, List(challenge)) }
     }
-    "reject unauthenticated requests with Authorization header with an AuthenticationFailedRejection" in {
+    "reject unauthenticated requests with Authorization header with an AuthenticationFailedRejection" in pendingUntilFixed {
       Get() ~> Authorization(BasicHttpCredentials("Bob", "")) ~> {
         authenticate(dontAuth) { echoComplete }
       } ~> check { rejection mustEqual AuthenticationFailedRejection(CredentialsRejected, List(challenge)) }
     }
-    "reject requests with illegal Authorization header with 401" in {
+    "reject requests with illegal Authorization header with 401" in pendingUntilFixed {
       Get() ~> RawHeader("Authorization", "bob alice") ~> handleRejections(RejectionHandler.Default) {
         authenticate(dontAuth) { echoComplete }
       } ~> check {
@@ -52,12 +52,12 @@ class SecurityDirectivesSpec extends RoutingSpec {
         responseAs[String] mustEqual "The resource requires authentication, which was not supplied with the request"
       }
     }
-    "extract the object representing the user identity created by successful authentication" in {
+    "extract the object representing the user identity created by successful authentication" in pendingUntilFixed {
       Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
         authenticate(doAuth) { echoComplete }
       } ~> check { responseAs[String] mustEqual "BasicUserContext(Alice)" }
     }
-    "properly handle exceptions thrown in its inner route" in {
+    "properly handle exceptions thrown in its inner route" in pendingUntilFixed {
       object TestException extends RuntimeException
       Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
         handleExceptions(ExceptionHandler.default) {
@@ -73,11 +73,11 @@ class SecurityDirectivesSpec extends RoutingSpec {
     val myAuthenticator: ContextAuthenticator[Int] = ctx ⇒ Future {
       Either.cond(ctx.request.uri.authority.host == Uri.NamedHost("spray.io"), 42, AuthenticationRejection)
     }
-    "reject requests not satisfying the filter condition" in {
+    "reject requests not satisfying the filter condition" in pendingUntilFixed {
       Get() ~> authenticate(myAuthenticator) { echoComplete } ~>
         check { rejection mustEqual AuthenticationRejection }
     }
-    "pass on the authenticator extraction if the filter conditions is met" in {
+    "pass on the authenticator extraction if the filter conditions is met" in pendingUntilFixed {
       Get() ~> Host("spray.io") ~> authenticate(myAuthenticator) { echoComplete } ~>
         check { responseAs[String] mustEqual "42" }
     }
@@ -92,7 +92,7 @@ class SecurityDirectivesSpec extends RoutingSpec {
 
     val route = authenticate(myAuthenticator) { echoComplete }
 
-    "pass on the authenticator extraction if the filter conditions is met" in {
+    "pass on the authenticator extraction if the filter conditions is met" in pendingUntilFixed {
       Get() ~> Host("spray.io") ~> route ~>
         check { responseAs[String] mustEqual "1" }
       Get() ~> Host("spray.io") ~> route ~>

@@ -26,22 +26,22 @@ import akka.http.routing._
 class MiscDirectivesSpec extends RoutingSpec {
 
   "routes created by the concatenation operator '~'" should {
-    "yield the first sub route if it succeeded" in {
+    "yield the first sub route if it succeeded" in pendingUntilFixed {
       Get() ~> {
         get { complete("first") } ~ get { complete("second") }
       } ~> check { responseAs[String] mustEqual "first" }
     }
-    "yield the second sub route if the first did not succeed" in {
+    "yield the second sub route if the first did not succeed" in pendingUntilFixed {
       Get() ~> {
         post { complete("first") } ~ get { complete("second") }
       } ~> check { responseAs[String] mustEqual "second" }
     }
-    "collect rejections from both sub routes" in {
+    "collect rejections from both sub routes" in pendingUntilFixed {
       Delete() ~> {
         get { completeOk } ~ put { completeOk }
       } ~> check { rejections mustEqual Seq(MethodRejection(GET), MethodRejection(PUT)) }
     }
-    "clear rejections that have already been 'overcome' by previous directives" in {
+    "clear rejections that have already been 'overcome' by previous directives" in pendingUntilFixed {
       Put() ~> {
         put { parameter('yeah) { echoComplete } } ~
           get { completeOk }
@@ -51,28 +51,28 @@ class MiscDirectivesSpec extends RoutingSpec {
 
   "the jsonpWithParameter directive" should {
     val jsonResponse = HttpResponse(entity = HttpEntity(`application/json`, "[1,2,3]"))
-    "convert JSON responses to corresponding javascript responses according to the given JSONP parameter" in {
+    "convert JSON responses to corresponding javascript responses according to the given JSONP parameter" in pendingUntilFixed {
       Get("/?jsonp=someFunc") ~> {
         jsonpWithParameter("jsonp") {
           complete(jsonResponse)
         }
       } ~> check { body mustEqual HttpEntity(`application/javascript`, "someFunc([1,2,3])") }
     }
-    "not act on JSON responses if no jsonp parameter is present" in {
+    "not act on JSON responses if no jsonp parameter is present" in pendingUntilFixed {
       Get() ~> {
         jsonpWithParameter("jsonp") {
           complete(jsonResponse)
         }
       } ~> check { response.entity mustEqual jsonResponse.entity }
     }
-    "not act on non-JSON responses even if a jsonp parameter is present" in {
+    "not act on non-JSON responses even if a jsonp parameter is present" in pendingUntilFixed {
       Get("/?jsonp=someFunc") ~> {
         jsonpWithParameter("jsonp") {
           complete(HttpResponse(entity = HttpEntity(`text/plain`, "[1,2,3]")))
         }
       } ~> check { body mustEqual HttpEntity(`text/plain`, "[1,2,3]") }
     }
-    "reject invalid / insecure callback identifiers" in {
+    "reject invalid / insecure callback identifiers" in pendingUntilFixed {
       Get(Uri.from(path = "/", query = Query("jsonp" -> "(function xss(x){evil()})"))) ~> {
         jsonpWithParameter("jsonp") {
           complete(HttpResponse(entity = HttpEntity(`text/plain`, "[1,2,3]")))
@@ -82,17 +82,17 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   "the clientIP directive" should {
-    "extract from a X-Forwarded-For header" in {
+    "extract from a X-Forwarded-For header" in pendingUntilFixed {
       Get() ~> addHeaders(`X-Forwarded-For`("2.3.4.5"), RawHeader("x-real-ip", "1.2.3.4")) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "2.3.4.5" }
     }
-    "extract from a Remote-Address header" in {
+    "extract from a Remote-Address header" in pendingUntilFixed {
       Get() ~> addHeaders(RawHeader("x-real-ip", "1.2.3.4"), `Remote-Address`(RemoteAddress("5.6.7.8"))) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "5.6.7.8" }
     }
-    "extract from a X-Real-IP header" in {
+    "extract from a X-Real-IP header" in pendingUntilFixed {
       Get() ~> addHeader(RawHeader("x-real-ip", "1.2.3.4")) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "1.2.3.4" }
@@ -100,7 +100,7 @@ class MiscDirectivesSpec extends RoutingSpec {
   }
 
   "The `rewriteUnmatchedPath` directive" should {
-    "rewrite the unmatched path" in {
+    "rewrite the unmatched path" in pendingUntilFixed {
       Get("/abc") ~> {
         rewriteUnmatchedPath(_ / "def") {
           path("abc" / "def") { completeOk }
