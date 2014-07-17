@@ -359,7 +359,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
               case _ ⇒ Nil
             }
         }
-      }).produceTo(materializer, subscriber)
+      }).produceTo(subscriber, materializer)
 
       val subscription = subscriber.expectSubscription()
       subscription.request(10)

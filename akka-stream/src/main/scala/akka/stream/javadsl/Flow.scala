@@ -366,7 +366,7 @@ abstract class Flow[T] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Unit
+  def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Unit
 
   /**
    * Materialize this flow and return the downstream-most
@@ -388,7 +388,7 @@ abstract class Flow[T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[_ >: T]): Unit
+  def produceTo(subscriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit
 
 }
 
@@ -487,16 +487,16 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def consume(materializer: FlowMaterializer): Unit =
     delegate.consume(materializer)
 
-  override def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Unit =
-    delegate.onComplete(materializer) {
+  override def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Unit =
+    delegate.onComplete({
       case Success(_) ⇒ callback.onComplete(null)
       case Failure(e) ⇒ callback.onComplete(e)
-    }
+    }, materializer)
 
   override def toPublisher(materializer: FlowMaterializer): Publisher[T] =
     delegate.toPublisher(materializer)
 
-  override def produceTo(materializer: FlowMaterializer, subsriber: Subscriber[_ >: T]): Unit =
-    delegate.produceTo(materializer, subsriber)
+  override def produceTo(subsriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit =
+    delegate.produceTo(subsriber, materializer)
 
 }

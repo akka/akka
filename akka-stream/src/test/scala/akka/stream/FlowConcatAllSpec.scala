@@ -44,7 +44,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     "on onError on master stream cancel the current open substream and signal error" in {
       val publisher = StreamTestKit.PublisherProbe[Publisher[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(m, subscriber)
+      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -63,7 +63,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     "on onError on open substream, cancel the master stream and signal error " in {
       val publisher = StreamTestKit.PublisherProbe[Publisher[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(m, subscriber)
+      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -82,7 +82,7 @@ class FlowConcatAllSpec extends AkkaSpec {
     "on cancellation cancel the current open substream and the master stream" in {
       val publisher = StreamTestKit.PublisherProbe[Publisher[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(m, subscriber)
+      Flow(publisher).flatten(FlattenStrategy.concat).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()

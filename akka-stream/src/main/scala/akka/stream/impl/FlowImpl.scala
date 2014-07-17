@@ -49,9 +49,9 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
   }
 
   override def consume(materializer: FlowMaterializer): Unit =
-    produceTo(materializer, new BlackholeSubscriber(materializer.settings.maximumInputBufferSize))
+    produceTo(new BlackholeSubscriber(materializer.settings.maximumInputBufferSize), materializer)
 
-  override def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Unit =
+  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Unit =
     transform(new Transformer[O, Unit] {
       override def onNext(in: O) = Nil
       override def onError(e: Throwable) = {
@@ -66,7 +66,7 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
 
   override def toPublisher(materializer: FlowMaterializer): Publisher[O] = materializer.toPublisher(publisherNode, ops)
 
-  override def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[_ >: O]): Unit =
+  override def produceTo(subscriber: Subscriber[_ >: O], materializer: FlowMaterializer): Unit =
     toPublisher(materializer).subscribe(subscriber.asInstanceOf[Subscriber[O]])
 }
 
@@ -86,13 +86,13 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
-  override def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[Out]): Subscriber[In] =
+  override def produceTo(subscriber: Subscriber[Out], materializer: FlowMaterializer): Subscriber[In] =
     materializer.ductProduceTo(subscriber, ops)
 
   override def consume(materializer: FlowMaterializer): Subscriber[In] =
-    produceTo(materializer, new BlackholeSubscriber(materializer.settings.maximumInputBufferSize))
+    produceTo(new BlackholeSubscriber(materializer.settings.maximumInputBufferSize), materializer)
 
-  override def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Subscriber[In] =
+  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In] =
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = Nil
       override def onError(e: Throwable) = {

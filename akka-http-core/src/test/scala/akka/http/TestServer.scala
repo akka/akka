@@ -39,7 +39,7 @@ object TestServer extends App {
       Flow(connectionStream).foreach {
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Flow(requestPublisher).map(requestHandler).produceTo(materializer, responseSubscriber)
+          Flow(requestPublisher).map(requestHandler).produceTo(responseSubscriber, materializer)
       }.consume(materializer)
   }
 

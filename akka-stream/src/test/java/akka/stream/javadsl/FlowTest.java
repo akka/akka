@@ -355,15 +355,12 @@ public class FlowTest {
   public void mustBeAbleToUseOnCompleteSuccess() {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
-    Flow.create(input).onComplete(materializer, new OnCompleteCallback() {
+    Flow.create(input).onComplete(new OnCompleteCallback() {
       @Override
       public void onComplete(Throwable e) {
-        if (e == null)
-          probe.getRef().tell("done", ActorRef.noSender());
-        else
-          probe.getRef().tell(e, ActorRef.noSender());
+          probe.getRef().tell( (e == null) ? "done" : e, ActorRef.noSender());
       }
-    });
+    }, materializer);
 
     probe.expectMsgEquals("done");
   }
@@ -376,7 +373,7 @@ public class FlowTest {
       public String apply(String arg0) throws Exception {
         throw new RuntimeException("simulated err");
       }
-    }).onComplete(materializer, new OnCompleteCallback() {
+    }).onComplete(new OnCompleteCallback() {
       @Override
       public void onComplete(Throwable e) {
         if (e == null)
@@ -384,7 +381,7 @@ public class FlowTest {
         else
           probe.getRef().tell(e.getMessage(), ActorRef.noSender());
       }
-    });
+    }, materializer);
 
     probe.expectMsgEquals("simulated err");
   }

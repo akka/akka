@@ -47,7 +47,7 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing request stream error"))
-        .produceTo(materializer, tcpConn.outputStream)
+        .produceTo(tcpConn.outputStream, materializer)
 
     val responsePublisher =
       Flow(tcpConn.inputStream)

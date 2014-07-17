@@ -19,7 +19,7 @@ class TickPublisherSpec extends AkkaSpec {
     "produce ticks" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(materializer, c)
+      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectNext("tick-1")
@@ -34,7 +34,7 @@ class TickPublisherSpec extends AkkaSpec {
     "drop ticks when not requested" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(materializer, c)
+      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick-1")
@@ -75,7 +75,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).produceTo(materializer, c)
+      Flow(1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")
@@ -84,7 +84,7 @@ class TickPublisherSpec extends AkkaSpec {
     "be usable with zip for a simple form of rate limiting" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       val rate = Flow(1.second, () ⇒ "tick").toPublisher(materializer)
-      Flow(1 to 100).zip(rate).map { case (n, _) ⇒ n }.produceTo(materializer, c)
+      Flow(1 to 100).zip(rate).map { case (n, _) ⇒ n }.produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(1000)
       c.expectNext(1)
