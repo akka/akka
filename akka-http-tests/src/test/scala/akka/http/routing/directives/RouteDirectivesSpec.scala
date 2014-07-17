@@ -66,7 +66,7 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
             responseAs[String] mustEqual "There was an internal server error."
           }
       }
-      "for futures failed with a RejectionError" in pendingUntilFixed {
+      "for futures failed with a RejectionError" in {
         Get() ~> complete(Promise.failed[String](RejectionError(AuthorizationFailedRejection)).future) ~>
           check {
             rejection mustEqual AuthorizationFailedRejection

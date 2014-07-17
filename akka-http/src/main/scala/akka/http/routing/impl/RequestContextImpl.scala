@@ -62,7 +62,10 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
       implicit val ec = obj.executionContext
       obj.marshal
         .map(res ⇒ finish(CompleteWith(res)))
-        .recover { case error ⇒ failWith(error) } // failWith already calls finish
+        .recover {
+          case RejectionError(rej) ⇒ reject(rej)
+          case error               ⇒ failWith(error)
+        }
     }
 
   def redirect(uri: Uri, redirectionType: Redirection)(implicit ec: ExecutionContext): RouteResult =
@@ -79,7 +82,9 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
   def reject(rejections: Rejection*): RouteResult = finish(Rejected(rejections.toList))
   def failWith(error: Throwable): RouteResult = finish(RouteException(error))
   def deferHandling(future: Future[RouteResult])(implicit ec: ExecutionContext): RouteResult =
-    DeferredResult(future.map(finish).recover { case error ⇒ failWith(error) })
+    DeferredResult(future.map(finish).recover {
+      case error ⇒ failWith(error)
+    })
 
   def finish(result: RouteResult): RouteResult = postProcessing(result)
 }
