@@ -33,6 +33,11 @@ sealed trait HttpEntity extends japi.HttpEntity {
   def contentType: ContentType
 
   /**
+   * Returns a copy of this entity with the contentType replaced.
+   */
+  def withContentType(contentType: ContentType): HttpEntity
+
+  /**
    * A stream of the data of this entity.
    */
   def dataBytes(materializer: FlowMaterializer): Producer[ByteString]
@@ -120,6 +125,8 @@ object HttpEntity {
 
     override def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Strict] =
       Future.successful(this)
+
+    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
   }
 
   /**
@@ -133,6 +140,8 @@ object HttpEntity {
     override def isDefault: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] = data
+
+    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
   }
 
   /**
@@ -145,6 +154,8 @@ object HttpEntity {
     override def isCloseDelimited: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Producer[ByteString] = data
+
+    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
   }
 
   /**
@@ -159,6 +170,8 @@ object HttpEntity {
 
     /** Java API */
     def getChunks: Producer[japi.ChunkStreamPart] = chunks.asInstanceOf[Producer[japi.ChunkStreamPart]]
+
+    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
   }
   object Chunked {
     /**
