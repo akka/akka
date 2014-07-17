@@ -6,9 +6,12 @@ package akka.http.testkit
 
 import akka.http.model.parser.HeaderParser
 import akka.http.parsing.{ ParserSettings, HttpHeaderParser }
+import akka.util.Timeout
 import com.typesafe.config.Config
 
 import scala.collection.immutable
+import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.duration._
 
 import scala.reflect.ClassTag
 
@@ -36,13 +39,12 @@ trait RequestBuilding extends TransformerPipelineSupport {
 
     def apply[T: Marshaller](uri: Uri, content: T): HttpRequest = apply(uri, Some(content))
 
-    def apply[T: Marshaller](uri: Uri, content: Option[T]): HttpRequest =
+    def apply[T](uri: Uri, content: Option[T])(implicit tMarshaller: Marshaller[T], timeout: Timeout = Timeout(1.second)): HttpRequest =
       content match {
         case None ⇒ HttpRequest(method, uri)
-        case Some(value) ⇒ marshalToEntity(value) match {
-          case Right(entity) ⇒ HttpRequest(method, uri, Nil, entity)
-          case Left(error)   ⇒ throw error
-        }
+        case Some(value) ⇒
+          val entity = Await.result(marshalToEntity(value), timeout.duration)
+          HttpRequest(method, uri, Nil, entity)
       }
   }
 

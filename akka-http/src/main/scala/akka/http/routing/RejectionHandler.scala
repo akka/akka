@@ -22,6 +22,8 @@ import headers._
 import directives.RouteDirectives._
 import AuthenticationFailedRejection._
 
+import scala.concurrent.ExecutionContext
+
 trait RejectionHandler extends RejectionHandler.PF
 
 object RejectionHandler {
@@ -33,7 +35,7 @@ object RejectionHandler {
       def apply(rejections: List[Rejection]) = pf(rejections)
     }
 
-  implicit val Default = apply {
+  implicit def Default(implicit ec: ExecutionContext) = apply {
     case Nil ⇒ complete(NotFound, "The requested resource could not be found.")
 
     case AuthenticationFailedRejection(cause, challengeHeaders) :: _ ⇒

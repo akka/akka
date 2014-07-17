@@ -5,7 +5,7 @@
 package akka.http.routing
 package impl
 
-import akka.http.marshalling.ToResponseMarshaller
+import akka.http.marshalling.{ ToResponseMarshallable, ToResponseMarshaller }
 import akka.http.model.StatusCodes.Redirection
 import akka.http.model.Uri.Path
 import akka.http.model._
@@ -22,7 +22,10 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
 
   def withContentNegotiationDisabled: RequestContext = this // FIXME: actually support this
 
-  def withRouteResponseRouting(f: PartialFunction[RouteResult, Route]): RequestContext = ???
+  def withRouteResponseRouting(f: PartialFunction[RouteResult, Route]): RequestContext =
+    withRouteResponseHandling {
+      case x if f.isDefinedAt(x) ⇒ f(x)(this)
+    }
 
   def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext = ???
 
@@ -50,11 +53,12 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
       case Rejected(rejs) ⇒ f(rejs)
     }
 
-  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T]): RouteResult =
-    // FIXME: add content-negotiation
-    marshaller.marshal(obj) match {
-      case Right(res)  ⇒ finish(CompleteWith(res))
-      case Left(error) ⇒ failWith(error)
+  def complete(obj: ToResponseMarshallable): RouteResult =
+    DeferredResult {
+      implicit val ec = obj.executionContext
+      obj.marshal
+        .map(res ⇒ finish(CompleteWith(res)))
+        .recover { case error ⇒ failWith(error) } // failWith already calls finish
     }
 
   def redirect(uri: Uri, redirectionType: Redirection): RouteResult = ???

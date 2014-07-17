@@ -25,6 +25,8 @@ import akka.http.util._
 import akka.http.model._
 import headers._
 
+import scala.concurrent.ExecutionContext
+
 /* format: OFF */
 trait FileAndResourceDirectives {
   import CacheConditionDirectives._
@@ -78,7 +80,7 @@ trait FileAndResourceDirectives {
   private def autoChunked(implicit settings: RoutingSettings, refFactory: ActorRefFactory): Directive0 =
     ???//autoChunk(settings.fileChunkingThresholdSize, settings.fileChunkingChunkSize)
 
-  private def conditionalFor(length: Long, lastModified: Long)(implicit settings: RoutingSettings): Directive0 =
+  private def conditionalFor(length: Long, lastModified: Long)(implicit settings: RoutingSettings, ec: ExecutionContext): Directive0 =
     if (settings.fileGetConditional) {
       val tag = java.lang.Long.toHexString(lastModified ^ java.lang.Long.reverse(length))
       val lastModifiedDateTime = DateTime(math.min(lastModified, System.currentTimeMillis))
@@ -169,7 +171,7 @@ trait FileAndResourceDirectives {
    */
   def listDirectoryContents(directories: String*)
                            (implicit renderer: Marshaller[DirectoryListing], refFactory: ActorRefFactory,
-                            log: LoggingContext): Route =
+                            log: LoggingContext, ec: ExecutionContext): Route =
     (get & detach()) {
       unmatchedPath { path ⇒
         requestUri { fullUri ⇒
@@ -197,7 +199,7 @@ trait FileAndResourceDirectives {
    */
   def getFromBrowseableDirectory(directory: String)
                                 (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
-                                 resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext): Route =
+                                 resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext): Route =
     getFromBrowseableDirectories(directory)
 
   /**
@@ -206,7 +208,7 @@ trait FileAndResourceDirectives {
    */
   def getFromBrowseableDirectories(directories: String*)
                                   (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
-                                   resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext): Route = {
+                                   resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext): Route = {
     import RouteConcatenation._
     directories.map(getFromDirectory).reduceLeft(_ ~ _) ~ listDirectoryContents(directories: _*)
   }

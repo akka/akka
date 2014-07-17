@@ -16,7 +16,7 @@
 
 package akka.http.routing
 
-import akka.http.marshalling.ToResponseMarshaller
+import akka.http.marshalling.{ ToResponseMarshallable, ToResponseMarshaller }
 
 import scala.collection.GenTraversableOnce
 import scala.collection.immutable
@@ -129,7 +129,7 @@ trait RequestContext {
    * Completes the request with a response created by marshalling the given object using
    * the in-scope marshaller for the type.
    */
-  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T]): RouteResult
+  def complete(obj: ToResponseMarshallable): RouteResult
 
   def deferHandling(future: Future[RouteResult])(implicit ec: ExecutionContext): RouteResult
 

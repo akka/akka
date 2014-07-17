@@ -16,6 +16,7 @@
 
 package akka.http.routing
 
+import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 import akka.http.util.LoggingContext
 import akka.http.model._
@@ -32,7 +33,7 @@ object ExceptionHandler {
       def apply(error: Throwable) = pf(error)
     }
 
-  implicit def default(implicit settings: RoutingSettings, log: LoggingContext): ExceptionHandler =
+  implicit def default(implicit settings: RoutingSettings, log: LoggingContext, ec: ExecutionContext): ExceptionHandler =
     apply {
       case e: IllegalRequestException ⇒ ctx ⇒
         log.warning("Illegal request {}\n\t{}\n\tCompleting with '{}' response",

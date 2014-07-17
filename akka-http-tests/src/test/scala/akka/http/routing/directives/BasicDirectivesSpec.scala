@@ -23,9 +23,9 @@ import akka.http.unmarshalling._
 class BasicDirectivesSpec extends RoutingSpec {
 
   "The 'routeRouteResponse' directive" should {
-    "in its simple String form" in pendingUntilFixed {
+    "in its simple String form" in {
       val addYeah = routeRouteResponse {
-        case CompleteWith(HttpResponse(_, _, entity, _)) ⇒ complete(entity.asString + "Yeah")
+        case CompleteWith(HttpResponse(_, _, entity, _)) ⇒ complete(entity.asString.map(_ + "Yeah"))
       }
       Get() ~> addYeah(complete("abc")) ~> check { responseAs[String] mustEqual "abcYeah" }
     }

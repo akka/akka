@@ -24,6 +24,8 @@ import HttpMethods._
 import StatusCodes._
 import EntityTag._
 
+import scala.concurrent.ExecutionContext
+
 trait CacheConditionDirectives {
   import BasicDirectives._
 
@@ -38,13 +40,14 @@ trait CacheConditionDirectives {
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(eTag: EntityTag, lastModified: DateTime): Directive0 =
+  def conditional(magnet: ConditionalMagnet): Directive0 =
     mapInnerRoute { route ⇒
       ctx ⇒ {
+        import ctx.request._
+        import magnet._
+
         def ctxWithResponseHeaders =
           ctx.withHttpResponseMapped(_.withDefaultHeaders(List(ETag(eTag), `Last-Modified`(lastModified))))
-
-        import ctx.request._
 
         // TODO: also handle Cache-Control and Vary
         def complete304() = ctxWithResponseHeaders.complete(HttpResponse(NotModified))
@@ -98,3 +101,11 @@ trait CacheConditionDirectives {
 }
 
 object CacheConditionDirectives extends CacheConditionDirectives
+
+case class ConditionalMagnet(eTag: EntityTag, lastModified: DateTime, _ec: ExecutionContext) {
+  implicit def ec: ExecutionContext = _ec
+}
+object ConditionalMagnet {
+  implicit def create(eTagAndLastModified: (EntityTag, DateTime))(implicit ec: ExecutionContext): ConditionalMagnet =
+    ConditionalMagnet(eTagAndLastModified._1, eTagAndLastModified._2, ec)
+}

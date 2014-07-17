@@ -21,6 +21,8 @@ import akka.shapeless._
 import akka.http.marshalling._
 import akka.http.unmarshalling._
 
+import scala.concurrent.ExecutionContext
+
 trait MarshallingDirectives {
   import BasicDirectives._
   import MiscDirectives._
@@ -48,8 +50,8 @@ trait MarshallingDirectives {
    * Uses the marshaller for the given type to produce a completion function that is passed to its inner route.
    * You can use it do decouple marshaller resolution from request completion.
    */
-  def produce[T](marshaller: ToResponseMarshaller[T]): Directive[(T ⇒ RouteResult) :: HNil] =
-    extract { ctx ⇒ (value: T) ⇒ ctx.complete(value)(marshaller) } & cancelAllRejections(ofType[UnacceptedResponseContentTypeRejection])
+  def produce[T](magnet: ProduceMagnet[T]): Directive[(T ⇒ RouteResult) :: HNil] =
+    extract { ctx ⇒ (value: T) ⇒ ctx.complete(ToResponseMarshallable.isMarshallable(value)(magnet.marshaller, magnet.ec)) } & cancelAllRejections(ofType[UnacceptedResponseContentTypeRejection])
 
   /**
    * Returns the in-scope Marshaller for the given type.
@@ -60,8 +62,14 @@ trait MarshallingDirectives {
    * Completes the request using the given function. The input to the function is produced with the in-scope
    * entity unmarshaller and the result value of the function is marshalled with the in-scope marshaller.
    */
-  def handleWith[A, B](f: A ⇒ B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B]): Route =
+  def handleWith[A, B](f: A ⇒ B)(implicit um: FromRequestUnmarshaller[A], m: ToResponseMarshaller[B], ec: ExecutionContext): Route =
     entity(um) { a ⇒ RouteDirectives.complete(f(a)) }
 }
 
 object MarshallingDirectives extends MarshallingDirectives
+
+case class ProduceMagnet[T](marshaller: ToResponseMarshaller[T], ec: ExecutionContext)
+object ProduceMagnet {
+  implicit def create[T](marshaller: ToResponseMarshaller[T])(implicit ec: ExecutionContext): ProduceMagnet[T] =
+    ProduceMagnet[T](marshaller, ec)
+}
