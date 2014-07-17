@@ -36,7 +36,7 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
       if (f.isDefinedAt(value)) f(value) else value
     })
 
-  def withUnmatchedPath(path: Path): RequestContext = ???
+  def withUnmatchedPath(path: Path): RequestContext = copy(unmatchedPath = path)
 
   def withExceptionHandling(handler: ExceptionHandler): RequestContext = ???
 

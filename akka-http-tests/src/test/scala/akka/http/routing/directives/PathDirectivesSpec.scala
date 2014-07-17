@@ -24,8 +24,7 @@ class PathDirectivesSpec extends RoutingSpec {
     capture ⇒ ctx ⇒ ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
 
   implicit class WithIn(str: String) {
-    def in(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in (f(str))
-    def inPendingUntilFixed(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in pendingUntilFixed(f(str))
+    def in(f: String ⇒ Unit) = convertToWordSpecStringWrapper(str) in f(str)
     def in(body: ⇒ Unit) = convertToWordSpecStringWrapper(str) in body
   }
 
@@ -42,209 +41,209 @@ class PathDirectivesSpec extends RoutingSpec {
 
   """path("foo")""" should {
     val test = testFor(path("foo") { echoUnmatchedPath })
-    "reject [/bar]" inPendingUntilFixed (test())
-    "reject [/foobar]" inPendingUntilFixed test()
-    "reject [/foo/bar]" inPendingUntilFixed test()
-    "accept [/foo] and clear the unmatchedPath" inPendingUntilFixed test("")
-    "reject [/foo/]" inPendingUntilFixed test()
+    "reject [/bar]" in test()
+    "reject [/foobar]" in test()
+    "reject [/foo/bar]" in test()
+    "accept [/foo] and clear the unmatchedPath" in test("")
+    "reject [/foo/]" in test()
   }
   """path("foo" /)""" should {
     val test = testFor(path("foo" /) { echoUnmatchedPath })
-    "reject [/foo]" inPendingUntilFixed test()
-    "accept [/foo/] and clear the unmatchedPath" inPendingUntilFixed test("")
+    "reject [/foo]" in test()
+    "accept [/foo/] and clear the unmatchedPath" in test("")
   }
   """path("")""" should {
     val test = testFor(path("") { echoUnmatchedPath })
-    "reject [/foo]" inPendingUntilFixed test()
-    "accept [/] and clear the unmatchedPath" inPendingUntilFixed test("")
+    "reject [/foo]" in test()
+    "accept [/] and clear the unmatchedPath" in test("")
   }
 
   """pathPrefix("foo")""" should {
     val test = testFor(pathPrefix("foo") { echoUnmatchedPath })
-    "reject [/bar]" inPendingUntilFixed test()
-    "accept [/foobar]" inPendingUntilFixed test("bar")
-    "accept [/foo/bar]" inPendingUntilFixed test("/bar")
-    "accept [/foo] and clear the unmatchedPath" inPendingUntilFixed test("")
-    "accept [/foo/] and clear the unmatchedPath" inPendingUntilFixed test("/")
+    "reject [/bar]" in test()
+    "accept [/foobar]" in test("bar")
+    "accept [/foo/bar]" in test("/bar")
+    "accept [/foo] and clear the unmatchedPath" in test("")
+    "accept [/foo/] and clear the unmatchedPath" in test("/")
   }
 
   """pathPrefix("foo" / "bar")""" should {
     val test = testFor(pathPrefix("foo" / "bar") { echoUnmatchedPath })
-    "reject [/bar]" inPendingUntilFixed test()
-    "accept [/foo/bar]" inPendingUntilFixed test("")
-    "accept [/foo/bar/baz]" inPendingUntilFixed test("/baz")
+    "reject [/bar]" in test()
+    "accept [/foo/bar]" in test("")
+    "accept [/foo/bar/baz]" in test("/baz")
   }
 
   """pathPrefix("ab[cd]+".r)""" should {
     val test = testFor(pathPrefix("ab[cd]+".r) { echoCaptureAndUnmatchedPath })
-    "reject [/bar]" inPendingUntilFixed test()
-    "reject [/ab/cd]" inPendingUntilFixed test()
-    "reject [/abcdef]" inPendingUntilFixed test("abcd:ef")
-    "reject [/abcdd/ef]" inPendingUntilFixed test("abcdd:/ef")
+    "reject [/bar]" in test()
+    "reject [/ab/cd]" in test()
+    "reject [/abcdef]" in test("abcd:ef")
+    "reject [/abcdd/ef]" in test("abcdd:/ef")
   }
 
   """pathPrefix("ab(cd)".r)""" should {
     val test = testFor(pathPrefix("ab(cd)+".r) { echoCaptureAndUnmatchedPath })
-    "reject [/bar]" inPendingUntilFixed test()
-    "reject [/ab/cd]" inPendingUntilFixed test()
-    "reject [/abcdef]" inPendingUntilFixed test("cd:ef")
-    "reject [/abcde/fg]" inPendingUntilFixed test("cd:e/fg")
+    "reject [/bar]" in test()
+    "reject [/ab/cd]" in test()
+    "reject [/abcdef]" in test("cd:ef")
+    "reject [/abcde/fg]" in test("cd:e/fg")
   }
 
   "pathPrefix(regex)" should {
-    "fail when the regex contains more than one group" in pendingUntilFixed {
+    "fail when the regex contains more than one group" in {
       an[IllegalArgumentException] must be thrownBy path("a(b+)(c+)".r) { echoCaptureAndUnmatchedPath }
     }
   }
 
   "pathPrefix(IntNumber)" should {
     val test = testFor(pathPrefix(IntNumber) { echoCaptureAndUnmatchedPath })
-    "accept [/23]" inPendingUntilFixed test("23:")
-    "accept [/12345yes]" inPendingUntilFixed test("12345:yes")
-    "reject [/]" inPendingUntilFixed test()
-    "reject [/abc]" inPendingUntilFixed test()
-    "reject [/2147483648]" inPendingUntilFixed test() // > Int.MaxValue
+    "accept [/23]" in test("23:")
+    "accept [/12345yes]" in test("12345:yes")
+    "reject [/]" in test()
+    "reject [/abc]" in test()
+    "reject [/2147483648]" in test() // > Int.MaxValue
   }
 
   "pathPrefix(JavaUUID)" should {
     val test = testFor(pathPrefix(JavaUUID) { echoCaptureAndUnmatchedPath })
-    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" inPendingUntilFixed test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
-    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" inPendingUntilFixed test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
-    "reject [/]" inPendingUntilFixed test()
-    "reject [/abc]" inPendingUntilFixed test()
+    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389d]" in test("bdea8652-f26c-40ca-8157-0b96a2a8389d:")
+    "accept [/bdea8652-f26c-40ca-8157-0b96a2a8389dyes]" in test("bdea8652-f26c-40ca-8157-0b96a2a8389d:yes")
+    "reject [/]" in test()
+    "reject [/abc]" in test()
   }
 
   "pathPrefix(Map(\"red\" -> 1, \"green\" -> 2, \"blue\" -> 3))" should {
     val test = testFor(pathPrefix(Map("red" -> 1, "green" -> 2, "blue" -> 3)) { echoCaptureAndUnmatchedPath })
-    "accept [/green]" inPendingUntilFixed test("2:")
-    "accept [/redsea]" inPendingUntilFixed test("1:sea")
-    "reject [/black]" inPendingUntilFixed test()
+    "accept [/green]" in test("2:")
+    "accept [/redsea]" in test("1:sea")
+    "reject [/black]" in test()
   }
 
   "pathPrefix(Segment)" should {
     val test = testFor(pathPrefix(Segment) { echoCaptureAndUnmatchedPath })
-    "accept [/abc]" inPendingUntilFixed test("abc:")
-    "accept [/abc/]" inPendingUntilFixed test("abc:/")
-    "accept [/abc/def]" inPendingUntilFixed test("abc:/def")
-    "reject [/]" inPendingUntilFixed test()
+    "accept [/abc]" in test("abc:")
+    "accept [/abc/]" in test("abc:/")
+    "accept [/abc/def]" in test("abc:/def")
+    "reject [/]" in test()
   }
 
   "pathPrefix(Segments)" should {
     val test = testFor(pathPrefix(Segments) { echoCaptureAndUnmatchedPath })
-    "accept [/]" inPendingUntilFixed test("List():")
-    "accept [/a/b/c]" inPendingUntilFixed test("List(a, b, c):")
-    "accept [/a/b/c/]" inPendingUntilFixed test("List(a, b, c):/")
+    "accept [/]" in test("List():")
+    "accept [/a/b/c]" in test("List(a, b, c):")
+    "accept [/a/b/c/]" in test("List(a, b, c):/")
   }
 
   """pathPrefix(separateOnSlashes("a/b"))""" should {
     val test = testFor(pathPrefix(separateOnSlashes("a/b")) { echoUnmatchedPath })
-    "accept [/a/b]" inPendingUntilFixed test("")
-    "accept [/a/b/]" inPendingUntilFixed test("/")
-    "accept [/a/c]" inPendingUntilFixed test()
+    "accept [/a/b]" in test("")
+    "accept [/a/b/]" in test("/")
+    "accept [/a/c]" in test()
   }
   """pathPrefix(separateOnSlashes("abc"))""" should {
     val test = testFor(pathPrefix(separateOnSlashes("abc")) { echoUnmatchedPath })
-    "accept [/abc]" inPendingUntilFixed test("")
-    "accept [/abcdef]" inPendingUntilFixed test("def")
-    "accept [/ab]" inPendingUntilFixed test()
+    "accept [/abc]" in test("")
+    "accept [/abcdef]" in test("def")
+    "accept [/ab]" in test()
   }
 
   """pathPrefixTest("a" / Segment ~ Slash)""" should {
     val test = testFor(pathPrefixTest("a" / Segment ~ Slash) { echoCaptureAndUnmatchedPath })
-    "accept [/a/bc/]" inPendingUntilFixed test("bc:/a/bc/")
-    "accept [/a/bc]" inPendingUntilFixed test()
-    "accept [/a/]" inPendingUntilFixed test()
+    "accept [/a/bc/]" in test("bc:/a/bc/")
+    "accept [/a/bc]" in test()
+    "accept [/a/]" in test()
   }
 
   """pathSuffix("edit" / Segment)""" should {
     val test = testFor(pathSuffix("edit" / Segment) { echoCaptureAndUnmatchedPath })
-    "accept [/orders/123/edit]" inPendingUntilFixed test("123:/orders/")
-    "accept [/orders/123/ed]" inPendingUntilFixed test()
-    "accept [/edit]" inPendingUntilFixed test()
+    "accept [/orders/123/edit]" in test("123:/orders/")
+    "accept [/orders/123/ed]" in test()
+    "accept [/edit]" in test()
   }
 
   """pathSuffix("foo" / "bar" ~ "baz")""" should {
     val test = testFor(pathSuffix("foo" / "bar" ~ "baz") { echoUnmatchedPath })
-    "accept [/orders/barbaz/foo]" inPendingUntilFixed test("/orders/")
-    "accept [/orders/bazbar/foo]" inPendingUntilFixed test()
+    "accept [/orders/barbaz/foo]" in test("/orders/")
+    "accept [/orders/bazbar/foo]" in test()
   }
 
   "pathSuffixTest(Slash)" should {
     val test = testFor(pathSuffixTest(Slash) { echoUnmatchedPath })
-    "accept [/]" inPendingUntilFixed test("/")
-    "accept [/foo/]" inPendingUntilFixed test("/foo/")
-    "accept [/foo]" inPendingUntilFixed test()
+    "accept [/]" in test("/")
+    "accept [/foo/]" in test("/foo/")
+    "accept [/foo]" in test()
   }
 
-  """pathPrefix("foo" | "bar")""" in pendingUntilFixed {
+  """pathPrefix("foo" | "bar")""" should {
     val test = testFor(pathPrefix("foo" | "bar") { echoUnmatchedPath })
-    "accept [/foo]" inPendingUntilFixed test("")
-    "accept [/foops]" inPendingUntilFixed test("ps")
-    "accept [/bar]" inPendingUntilFixed test("")
-    "reject [/baz]" inPendingUntilFixed test()
+    "accept [/foo]" in test("")
+    "accept [/foops]" in test("ps")
+    "accept [/bar]" in test("")
+    "reject [/baz]" in test()
   }
 
-  """pathSuffix(!"foo")""" in pendingUntilFixed {
+  """pathSuffix(!"foo")""" should {
     val test = testFor(pathSuffix(!"foo") { echoUnmatchedPath })
-    "accept [/bar]" inPendingUntilFixed test("/bar")
-    "reject [/foo]" inPendingUntilFixed test()
+    "accept [/bar]" in test("/bar")
+    "reject [/foo]" in test()
   }
 
-  "pathPrefix(IntNumber?)" in pendingUntilFixed {
+  "pathPrefix(IntNumber?)" should {
     val test = testFor(pathPrefix(IntNumber?) { echoCaptureAndUnmatchedPath })
-    "accept [/12]" inPendingUntilFixed test("Some(12):")
-    "accept [/12a]" inPendingUntilFixed test("Some(12):a")
-    "accept [/foo]" inPendingUntilFixed test("None:foo")
+    "accept [/12]" in test("Some(12):")
+    "accept [/12a]" in test("Some(12):a")
+    "accept [/foo]" in test("None:foo")
   }
 
-  """pathPrefix("foo"?)""" in pendingUntilFixed {
+  """pathPrefix("foo"?)""" should {
     val test = testFor(pathPrefix("foo"?) { echoUnmatchedPath })
-    "accept [/foo]" inPendingUntilFixed test("")
-    "accept [/fool]" inPendingUntilFixed test("l")
-    "accept [/bar]" inPendingUntilFixed test("bar")
+    "accept [/foo]" in test("")
+    "accept [/fool]" in test("l")
+    "accept [/bar]" in test("bar")
   }
 
-  """pathPrefix("foo") & pathEnd""" in pendingUntilFixed {
+  """pathPrefix("foo") & pathEnd""" should {
     val test = testFor((pathPrefix("foo") & pathEnd) { echoUnmatchedPath })
-    "reject [/foobar]" inPendingUntilFixed test()
-    "reject [/foo/bar]" inPendingUntilFixed test()
-    "accept [/foo] and clear the unmatchedPath" inPendingUntilFixed test("")
-    "reject [/foo/]" inPendingUntilFixed test()
+    "reject [/foobar]" in test()
+    "reject [/foo/bar]" in test()
+    "accept [/foo] and clear the unmatchedPath" in test("")
+    "reject [/foo/]" in test()
   }
 
-  """pathPrefix("foo") & pathEndOrSingleSlash""" in pendingUntilFixed {
+  """pathPrefix("foo") & pathEndOrSingleSlash""" should {
     val test = testFor((pathPrefix("foo") & pathEndOrSingleSlash) { echoUnmatchedPath })
-    "reject [/foobar]" inPendingUntilFixed test()
-    "reject [/foo/bar]" inPendingUntilFixed test()
-    "accept [/foo] and clear the unmatchedPath" inPendingUntilFixed test("")
-    "accept [/foo/] and clear the unmatchedPath" inPendingUntilFixed test("")
+    "reject [/foobar]" in test()
+    "reject [/foo/bar]" in test()
+    "accept [/foo] and clear the unmatchedPath" in test("")
+    "accept [/foo/] and clear the unmatchedPath" in test("")
   }
 
-  """pathPrefix(IntNumber.repeat(separator = "|"))""" in pendingUntilFixed {
+  """pathPrefix(IntNumber.repeat(separator = "|"))""" should {
     val test = testFor(pathPrefix(IntNumber.repeat(separator = "|")) { echoCaptureAndUnmatchedPath })
-    "accept [/1|2|3rest]" inPendingUntilFixed test("List(1, 2, 3):rest")
-    "accept [/rest]" inPendingUntilFixed test("List():rest")
+    "accept [/1|2|3rest]" in test("List(1, 2, 3):rest")
+    "accept [/rest]" in test("List():rest")
   }
 
   "PathMatchers" should {
     import akka.shapeless._
-    "support the hmap modifier" in pendingUntilFixed {
+    {
       val test = testFor(path(Rest.hmap { case s :: HNil ⇒ s.split('-').toList :: HNil }) { echoComplete })
-      "accept [/yes-no]" inPendingUntilFixed test("List(yes, no)")
+      "support the hmap modifier in accept [/yes-no]" in test("List(yes, no)")
     }
-    "support the map modifier" in pendingUntilFixed {
+    {
       val test = testFor(path(Rest.map(_.split('-').toList)) { echoComplete })
-      "accept [/yes-no]" inPendingUntilFixed test("List(yes, no)")
+      "support the map modifier in accept [/yes-no]" in test("List(yes, no)")
     }
-    "support the hflatMap modifier" in pendingUntilFixed {
+    {
       val test = testFor(path(Rest.hflatMap { case s :: HNil ⇒ Some(s).filter("yes" ==).map(_ :: HNil) }) { echoComplete })
-      "accept [/yes]" inPendingUntilFixed test("yes")
-      "reject [/blub]" inPendingUntilFixed test()
+      "support the hflatMap modifier in accept [/yes]" in test("yes")
+      "support the hflatMap modifier in reject [/blub]" in test()
     }
-    "support the flatMap modifier" in pendingUntilFixed {
+    {
       val test = testFor(path(Rest.flatMap(s ⇒ Some(s).filter("yes" ==))) { echoComplete })
-      "accept [/yes]" inPendingUntilFixed test("yes")
-      "reject [/blub]" inPendingUntilFixed test()
+      "support the flatMap modifier in accept [/yes]" in test("yes")
+      "support the flatMap modifier reject [/blub]" in test()
     }
   }
 }
