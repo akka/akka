@@ -34,7 +34,7 @@ trait ExecutionDirectives {
         def handleError = handler andThen (_(ctx.withContentNegotiationDisabled))
         try inner {
           ctx withRouteResponseHandling {
-            case Status.Failure(error) if handler isDefinedAt error ⇒ handleError(error)
+            case RouteException(error) if handler isDefinedAt error ⇒ handleError(error)
           }
         }
         catch handleError
@@ -85,8 +85,7 @@ trait ExecutionDirectives {
   def detach(dm: DetachMagnet): Directive0 = {
     import dm._
     mapInnerRoute { inner ⇒
-      ctx ⇒
-        Future(inner(ctx)).onFailure { case e ⇒ ctx.failWith(e) }
+      ctx ⇒ ctx.deferHandling(Future(inner(ctx)))
     }
   }
 }

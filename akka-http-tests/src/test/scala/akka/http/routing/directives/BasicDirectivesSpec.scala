@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 
-package akka.http.routing.directives
+package akka.http.routing
+package directives
 
 import akka.http.model.HttpResponse
 import akka.http.unmarshalling._
@@ -24,7 +25,7 @@ class BasicDirectivesSpec extends RoutingSpec {
   "The 'routeRouteResponse' directive" should {
     "in its simple String form" in pendingUntilFixed {
       val addYeah = routeRouteResponse {
-        case HttpResponse(_, _, entity, _) ⇒ complete(entity.asString + "Yeah")
+        case CompleteWith(HttpResponse(_, _, entity, _)) ⇒ complete(entity.asString + "Yeah")
       }
       Get() ~> addYeah(complete("abc")) ~> check { responseAs[String] mustEqual "abcYeah" }
     }

@@ -31,14 +31,14 @@ trait RouteDirectives {
    * Rejects the request with the given rejections.
    */
   def reject(rejections: Rejection*): StandardRoute = new StandardRoute {
-    def apply(ctx: RequestContext): Unit = ctx.reject(rejections: _*)
+    def apply(ctx: RequestContext): RouteResult = ctx.reject(rejections: _*)
   }
 
   /**
    * Completes the request with redirection response of the given type to the given URI.
    */
   def redirect(uri: Uri, redirectionType: Redirection): StandardRoute = new StandardRoute {
-    def apply(ctx: RequestContext): Unit = ctx.redirect(uri, redirectionType)
+    def apply(ctx: RequestContext): RouteResult = ctx.redirect(uri, redirectionType)
   }
 
   /**
@@ -54,12 +54,12 @@ trait RouteDirectives {
    * directive and its ExceptionHandler.
    */
   def failWith(error: Throwable): StandardRoute = new StandardRoute {
-    def apply(ctx: RequestContext): Unit = ctx.failWith(error)
+    def apply(ctx: RequestContext): RouteResult = ctx.failWith(error)
   }
 }
 
 object RouteDirectives extends RouteDirectives {
   private val _reject: StandardRoute = new StandardRoute {
-    def apply(ctx: RequestContext): Unit = ctx.reject()
+    def apply(ctx: RequestContext): RouteResult = ctx.reject()
   }
 }

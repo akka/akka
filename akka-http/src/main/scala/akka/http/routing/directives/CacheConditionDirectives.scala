@@ -90,7 +90,9 @@ trait CacheConditionDirectives {
               case _ ⇒ step6()
             }
           else step6()
-        def step6() = route(ctxWithResponseHeaders)
+        def step6(): RouteResult = route(ctxWithResponseHeaders)
+
+        step1()
       }
     }
 }

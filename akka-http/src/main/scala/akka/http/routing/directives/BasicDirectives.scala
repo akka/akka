@@ -33,13 +33,13 @@ trait BasicDirectives {
   def mapRequest(f: HttpRequest ⇒ HttpRequest): Directive0 =
     mapRequestContext(_.withRequestMapped(f))
 
-  def routeRouteResponse(f: PartialFunction[Any, Route]): Directive0 =
+  def routeRouteResponse(f: PartialFunction[RouteResult, Route]): Directive0 =
     mapRequestContext(_.withRouteResponseRouting(f))
 
-  def mapRouteResponse(f: Any ⇒ Any): Directive0 =
+  def mapRouteResponse(f: RouteResult ⇒ RouteResult): Directive0 =
     mapRequestContext(_.withRouteResponseMapped(f))
 
-  def mapRouteResponsePF(f: PartialFunction[Any, Any]): Directive0 =
+  def mapRouteResponsePF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
     mapRequestContext(_.withRouteResponseMappedPF(f))
 
   def mapRejections(f: List[Rejection] ⇒ List[Rejection]): Directive0 =

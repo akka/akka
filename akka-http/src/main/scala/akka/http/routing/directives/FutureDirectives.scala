@@ -18,7 +18,7 @@ package akka.http.routing
 package directives
 
 import akka.shapeless._
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Promise, ExecutionContext, Future }
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.http.marshalling.ToResponseMarshaller
@@ -59,9 +59,10 @@ object OnCompleteFutureMagnet {
   implicit def apply[T](future: ⇒ Future[T])(implicit ec: ExecutionContext) =
     new OnCompleteFutureMagnet[T] {
       def happly(f: (Try[T] :: HNil) ⇒ Route): Route = ctx ⇒
-        future.onComplete { t ⇒
-          try f(t :: HNil)(ctx)
-          catch { case NonFatal(error) ⇒ ctx.failWith(error) }
+        ctx.deferHandling {
+          future
+            .map(t ⇒ f(Success(t) :: HNil)(ctx))
+            .recover { case error ⇒ f(Failure(error) :: HNil)(ctx) }
         }
     }
 }
@@ -76,12 +77,8 @@ object OnSuccessFutureMagnet {
     new Directive[hl.Out] with OnSuccessFutureMagnet {
       type Out = hl.Out
       def get = this
-      def happly(f: Out ⇒ Route) = ctx ⇒ future.onComplete {
-        case Success(t) ⇒
-          try f(hl(t))(ctx)
-          catch { case NonFatal(error) ⇒ ctx.failWith(error) }
-        case Failure(error) ⇒ ctx.failWith(error)
-      }
+      def happly(f: Out ⇒ Route) = ctx ⇒
+        ctx.deferHandling(future.map(t ⇒ f(hl(t))(ctx)))
     }
 }
 
@@ -90,11 +87,11 @@ trait OnFailureFutureMagnet extends Directive1[Throwable]
 object OnFailureFutureMagnet {
   implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T], ec: ExecutionContext) =
     new OnFailureFutureMagnet {
-      def happly(f: (Throwable :: HNil) ⇒ Route) = ctx ⇒ future.onComplete {
-        case Success(t) ⇒ ctx.complete(t)
-        case Failure(error) ⇒
-          try f(error :: HNil)(ctx)
-          catch { case NonFatal(err) ⇒ ctx.failWith(err) }
-      }
+      def happly(f: (Throwable :: HNil) ⇒ Route) = ctx ⇒
+        ctx.deferHandling {
+          future
+            .map(ctx.complete)
+            .recover { case error ⇒ f(error :: HNil)(ctx) }
+        }
     }
 }

@@ -20,7 +20,7 @@ import akka.shapeless._
 
 package object routing {
 
-  type Route = RequestContext ⇒ Unit
+  type Route = RequestContext ⇒ RouteResult
   type RouteGenerator[T] = T ⇒ Route
   type Directive0 = Directive[HNil]
   type Directive1[T] = Directive[T :: HNil]

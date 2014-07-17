@@ -47,7 +47,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction {
    */
   def rawPathPrefix[L <: HList](pm: PathMatcher[L]): Directive[L] =
     extract(ctx ⇒ pm(ctx.unmatchedPath)).flatMap {
-      case Matched(rest, values) ⇒ hprovide(values) & mapRequestContext(_.copy(unmatchedPath = rest))
+      case Matched(rest, values) ⇒ hprovide(values) & mapRequestContext(_.withUnmatchedPath(rest))
       case Unmatched             ⇒ reject
     }
 
@@ -77,7 +77,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction {
    */
   def pathSuffix[L <: HList](pm: PathMatcher[L]): Directive[L] =
     extract(ctx ⇒ pm(ctx.unmatchedPath.reverse)).flatMap {
-      case Matched(rest, values) ⇒ hprovide(values) & mapRequestContext(_.copy(unmatchedPath = rest.reverse))
+      case Matched(rest, values) ⇒ hprovide(values) & mapRequestContext(_.withUnmatchedPath(rest.reverse))
       case Unmatched             ⇒ reject
     }
 
