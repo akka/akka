@@ -6,10 +6,18 @@ package akka.http.unmarshalling
 
 import akka.http.routing
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 trait DeserializationError extends Exception
 
-trait Deserializer[A, B] extends (A ⇒ Deserialized[B]) {
-  def withDefaultValue(defaultValue: B): Deserializer[A, B]
+trait Deserializer[A, B] extends (A ⇒ Deserialized[B]) { self ⇒
+  def withDefaultValue(defaultValue: B)(implicit ec: ExecutionContext): Deserializer[A, B] =
+    new Deserializer[A, B] {
+      def apply(value: A) = self(value).recoverWith {
+        case ContentExpected ⇒ Future.successful(defaultValue)
+        case error           ⇒ Future.failed(error)
+      }
+    }
 }
 object Deserializer extends FromStringDeserializers {
   implicit def trivial: FromStringOptionDeserializer[String] = routing.FIXME

@@ -17,10 +17,13 @@
 package akka.http.testkit
 
 import akka.http.routing.impl.RequestContextImpl
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
 import scala.collection.immutable
 
 import com.typesafe.config.{ ConfigFactory, Config }
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import org.scalatest.Suite
@@ -54,6 +57,7 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
   }
   implicit val system = createActorSystem()
   implicit def executor = system.dispatcher
+  implicit val materializer = FlowMaterializer(MaterializerSettings(), Some(actorSystemNameFrom(getClass) + "flow"))
 
   def cleanUp(): Unit = { system.shutdown() }
 
@@ -70,10 +74,19 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
   def response: HttpResponse = result.response
   def entity: HttpEntity = response.entity
   @deprecated("Use `responseAs` instead.", "1.0/1.1/1.2-RC1")
-  def entityAs[T: Unmarshaller: ClassTag]: T = entity.as[T].fold(error ⇒ failTest("Could not unmarshal response " +
-    s"to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $error\n\nResponse was: $response"), identityFunc)
-  def responseAs[T: FromResponseUnmarshaller: ClassTag]: T = response.as[T].fold(error ⇒ failTest("Could not unmarshal response " +
-    s"to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $error\n\nResponse was: $response"), identityFunc)
+  def entityAs[T: Unmarshaller: ClassTag]: T =
+    Await.result(
+      entity.as[T]
+        .recoverWith {
+          case error ⇒ failTest(s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $error\n\nResponse was: $response")
+        }, 1.second)
+  def responseAs[T: FromResponseUnmarshaller: ClassTag]: T =
+    Await.result(
+      response.as[T].recoverWith {
+        case error ⇒ failTest("Could not unmarshal response " +
+          s"to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $error\n\nResponse was: $response")
+      }, 1.second)
+
   def body: HttpEntity = entity // FIXME: .toOption getOrElse failTest("Response has no body")
   def contentType: ContentType = body.contentType
   def mediaType: MediaType = contentType.mediaType

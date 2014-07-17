@@ -45,9 +45,6 @@ trait BasicDirectives {
   def mapRejections(f: List[Rejection] ⇒ List[Rejection]): Directive0 =
     mapRequestContext(_.withRejectionsMapped(f))
 
-  /*def mapHttpResponsePart(f: HttpResponsePart ⇒ HttpResponsePart): Directive0 =
-    mapRequestContext(_.withHttpResponsePartMapped(f))*/
-
   def mapHttpResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
     mapRequestContext(_.withHttpResponseMapped(f))
 

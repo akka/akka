@@ -26,17 +26,17 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
   "The headerValuePF directive" should {
     lazy val myHeaderValue = headerValuePF { case Connection(tokens) ⇒ tokens.head }
 
-    "extract the respective header value if a matching request header is present" in pendingUntilFixed {
+    "extract the respective header value if a matching request header is present" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> myHeaderValue { echoComplete } ~> check {
         responseAs[String] mustEqual "close"
       }
     }
 
-    "reject with an empty rejection set if no matching request header is present" in pendingUntilFixed {
+    "reject with an empty rejection set if no matching request header is present" in {
       Get("/abc") ~> myHeaderValue { echoComplete } ~> check { rejections mustEqual Nil }
     }
 
-    "reject with a MalformedHeaderRejection if the extract function throws an exception" in pendingUntilFixed {
+    "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> {
         (headerValuePF { case _ ⇒ sys.error("Naah!") }) { echoComplete }
       } ~> check {
@@ -50,13 +50,13 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       headerValueByType[Origin]() { origin ⇒
         complete(s"The first origin was ${origin.origins.head}")
       }
-    "extract a header if the type is matching" in pendingUntilFixed {
+    "extract a header if the type is matching" in {
       val originHeader = Origin(HttpOrigin("http://localhost:8080"))
       Get("abc") ~> originHeader ~> route ~> check {
         responseAs[String] mustEqual "The first origin was http://localhost:8080"
       }
     }
-    "reject a request if no header of the given type is present" in pendingUntilFixed {
+    "reject a request if no header of the given type is present" in {
       Get("abc") ~> route ~> check {
         inside(rejection) {
           case MissingHeaderRejection("Origin") ⇒
@@ -71,17 +71,17 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
       case _                  ⇒ None
     }
 
-    "extract the respective header value if a matching request header is present" in pendingUntilFixed {
+    "extract the respective header value if a matching request header is present" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> myHeaderValue { echoComplete } ~> check {
         responseAs[String] mustEqual "Some(close)"
       }
     }
 
-    "extract None if no matching request header is present" in pendingUntilFixed {
+    "extract None if no matching request header is present" in {
       Get("/abc") ~> myHeaderValue { echoComplete } ~> check { responseAs[String] mustEqual "None" }
     }
 
-    "reject with a MalformedHeaderRejection if the extract function throws an exception" in pendingUntilFixed {
+    "reject with a MalformedHeaderRejection if the extract function throws an exception" in {
       Get("/abc") ~> addHeader(Connection("close")) ~> {
         val myHeaderValue = optionalHeaderValue { case _ ⇒ sys.error("Naaah!") }
         myHeaderValue { echoComplete }
@@ -97,13 +97,13 @@ class HeaderDirectivesSpec extends RoutingSpec with Inside {
         case Some(origin) ⇒ complete(s"The first origin was ${origin.origins.head}")
         case None         ⇒ complete("No Origin header found.")
       }
-    "extract Some(header) if the type is matching" in pendingUntilFixed {
+    "extract Some(header) if the type is matching" in {
       val originHeader = Origin(HttpOrigin("http://localhost:8080"))
       Get("abc") ~> originHeader ~> route ~> check {
         responseAs[String] mustEqual "The first origin was http://localhost:8080"
       }
     }
-    "extract None if no header of the given type is present" in pendingUntilFixed {
+    "extract None if no header of the given type is present" in {
       Get("abc") ~> route ~> check {
         responseAs[String] mustEqual "No Origin header found."
       }

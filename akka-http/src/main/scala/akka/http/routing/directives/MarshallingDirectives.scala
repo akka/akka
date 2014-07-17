@@ -31,13 +31,13 @@ trait MarshallingDirectives {
    * If there is a problem with unmarshalling the request is rejected with the [[spray.routing.Rejection]]
    * produced by the unmarshaller.
    */
-  def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] =
-    extract(_.request.as(um)).flatMap[T :: HNil] {
+  def entity[T](um: FromRequestUnmarshaller[T]): Directive1[T] = FIXME
+  /*extract(_.request.as(um)).flatMap[T :: HNil] {
       case Right(value)                            ⇒ provide(value)
       case Left(ContentExpected)                   ⇒ reject(RequestEntityExpectedRejection)
       case Left(UnsupportedContentType(supported)) ⇒ reject(UnsupportedRequestContentTypeRejection(supported))
       case Left(MalformedContent(errorMsg, cause)) ⇒ reject(MalformedRequestContentRejection(errorMsg, cause))
-    } & cancelAllRejections(ofTypes(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection]))
+    } & cancelAllRejections(ofTypes(RequestEntityExpectedRejection.getClass, classOf[UnsupportedRequestContentTypeRejection]))*/
 
   /**
    * Returns the in-scope FromRequestUnmarshaller for the given type.

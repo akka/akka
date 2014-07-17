@@ -16,7 +16,7 @@
 
 package akka.http.routing
 
-import scala.util.{ Failure, Success }
+import scala.util.{ Try, Failure, Success }
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.shapeless._
 //import spray.httpx.unmarshalling.MalformedContent
@@ -138,5 +138,16 @@ object Directive {
 
     def filter(predicate: T ⇒ Boolean, rejections: Rejection*): Directive1[T] =
       underlying.hfilter({ case value :: HNil ⇒ predicate(value) }, rejections: _*)
+  }
+
+  implicit class SingleFutureOnComplete[T](underlying: Directive1[Future[T]]) {
+    def afterCompletion(implicit ec: ExecutionContext): Directive1[Try[T]] =
+      new Directive1[Try[T]] {
+        def happly(inner: Try[T] :: HNil ⇒ Route): Route =
+          underlying { future ⇒
+            val res: Future[Route] = future.map(t ⇒ inner(Success(t) :: HNil)).recover { case error ⇒ inner(Failure(error) :: HNil) }
+            ctx ⇒ ctx.deferHandling(res.map(_.apply(ctx)))
+          }
+      }
   }
 }
