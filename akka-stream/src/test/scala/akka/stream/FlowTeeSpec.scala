@@ -9,7 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FlowTeeSpec extends AkkaSpec {
+class FlowBroadcastSpec extends AkkaSpec {
 
   val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
@@ -18,13 +18,13 @@ class FlowTeeSpec extends AkkaSpec {
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher"))
 
-  "A Tee" must {
+  "A broadcast" must {
 
-    "tee to other subscriber" in {
+    "broadcast to other subscriber" in {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
-        tee(c2).
+        broadcast(c2).
         toPublisher(materializer)
       p.subscribe(c1)
       val sub1 = c1.expectSubscription()
@@ -49,7 +49,7 @@ class FlowTeeSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
-        tee(c2).
+        broadcast(c2).
         toPublisher(materializer)
       p.subscribe(c1)
       val sub1 = c1.expectSubscription()
@@ -66,7 +66,7 @@ class FlowTeeSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
-        tee(c1).
+        broadcast(c1).
         toPublisher(materializer)
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()

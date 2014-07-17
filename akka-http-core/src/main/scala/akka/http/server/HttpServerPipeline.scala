@@ -44,7 +44,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .transform(rootParser.copyWith(warnOnIllegalHeader))
         .splitWhen(_.isInstanceOf[MessageStart])
         .headAndTail(materializer)
-        .tee(applicationBypassSubscriber)
+        .broadcast(applicationBypassSubscriber)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)

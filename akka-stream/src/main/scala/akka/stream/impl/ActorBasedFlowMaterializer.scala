@@ -51,8 +51,8 @@ private[akka] object Ast {
   case class Concat(next: Publisher[Any]) extends AstNode {
     override def name = "concat"
   }
-  case class Tee(other: Subscriber[Any]) extends AstNode {
-    override def name = "tee"
+  case class Broadcast(other: Subscriber[Any]) extends AstNode {
+    override def name = "broadcast"
   }
   case class PrefixAndTail(n: Int) extends AstNode {
     override def name = "prefixAndTail"
