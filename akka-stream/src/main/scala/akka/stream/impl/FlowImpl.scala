@@ -313,7 +313,7 @@ private[akka] trait Builder[Out] {
 
   def groupBy[K](f: (Out) ⇒ K): Thing[(K, Publisher[Out])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
-  def tee(other: Subscriber[_ >: Out]): Thing[Out] = andThen(Tee(other.asInstanceOf[Subscriber[Any]]))
+  def broadcast(other: Subscriber[_ >: Out]): Thing[Out] = andThen(Broadcast(other.asInstanceOf[Subscriber[Any]]))
 
   def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Thing[S] =
     andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
