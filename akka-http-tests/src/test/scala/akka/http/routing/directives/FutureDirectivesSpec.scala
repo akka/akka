@@ -31,7 +31,7 @@ class FutureDirectivesSpec extends RoutingSpec {
   }
 
   "The `onComplete` directive" should {
-    "properly unwrap a Future in the success case" in pendingUntilFixed {
+    "properly unwrap a Future in the success case" in {
       var i = 0
       def nextNumber() = { i += 1; i }
       val route = onComplete(Future.successful(nextNumber())) { echoComplete }
@@ -42,43 +42,43 @@ class FutureDirectivesSpec extends RoutingSpec {
         responseAs[String] mustEqual "Success(2)"
       }
     }
-    "properly unwrap a Future in the failure case" in pendingUntilFixed {
+    "properly unwrap a Future in the failure case" in {
       Get() ~> onComplete(Future.failed[String](new RuntimeException("no"))) { echoComplete } ~> check {
         responseAs[String] mustEqual "Failure(java.lang.RuntimeException: no)"
       }
     }
-    "correct catch exception in the success case" in pendingUntilFixed {
+    "correct catch exception in the success case" in {
       Get() ~> onComplete(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.InternalServerError
-        responseAs[String] mustEqual "Oops. spray.routing.FutureDirectivesSpec$TestException: EX when Success(ok)"
+        responseAs[String] mustEqual "Oops. akka.http.routing.directives.FutureDirectivesSpec$TestException: EX when Success(ok)"
       }
     }
-    "correct catch exception in the failure case" in pendingUntilFixed {
+    "correct catch exception in the failure case" in {
       Get() ~> onComplete(Future.failed[String](new RuntimeException("no"))) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.InternalServerError
-        responseAs[String] mustEqual "Oops. spray.routing.FutureDirectivesSpec$TestException: EX when Failure(java.lang.RuntimeException: no)"
+        responseAs[String] mustEqual "Oops. akka.http.routing.directives.FutureDirectivesSpec$TestException: EX when Failure(java.lang.RuntimeException: no)"
       }
     }
   }
 
   "The `onSuccess` directive" should {
-    "properly unwrap a Future in the success case" in pendingUntilFixed {
+    "properly unwrap a Future in the success case" in {
       Get() ~> onSuccess(Future.successful("yes")) { echoComplete } ~> check {
         responseAs[String] mustEqual "yes"
       }
     }
-    "throw an exception in the failure case" in pendingUntilFixed {
+    "throw an exception in the failure case" in {
       Get() ~> onSuccess(Future.failed(TestException)) { echoComplete } ~> check {
         status mustEqual StatusCodes.InternalServerError
       }
     }
-    "correct catch exception in the success case" in pendingUntilFixed {
+    "correct catch exception in the success case" in {
       Get() ~> onSuccess(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.InternalServerError
-        responseAs[String] mustEqual "Oops. spray.routing.FutureDirectivesSpec$TestException: EX when ok"
+        responseAs[String] mustEqual "Oops. akka.http.routing.directives.FutureDirectivesSpec$TestException: EX when ok"
       }
     }
-    "correct catch exception in the failure case" in pendingUntilFixed {
+    "correct catch exception in the failure case" in {
       Get() ~> onSuccess(Future.failed(TestException)) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.InternalServerError
         responseAs[String] mustEqual "There was an internal server error."
@@ -87,26 +87,26 @@ class FutureDirectivesSpec extends RoutingSpec {
   }
 
   "The `onFailure` directive" should {
-    "properly unwrap a Future in the success case" in pendingUntilFixed {
+    "properly unwrap a Future in the success case" in {
       Get() ~> onFailure(Future.successful("yes")) { echoComplete } ~> check {
         responseAs[String] mustEqual "yes"
       }
     }
-    "throw an exception in the failure case" in pendingUntilFixed {
+    "throw an exception in the failure case" in {
       Get() ~> onFailure(Future.failed[String](TestException)) { echoComplete } ~> check {
-        responseAs[String] mustEqual "spray.routing.FutureDirectivesSpec$TestException$: XXX"
+        responseAs[String] mustEqual "akka.http.routing.directives.FutureDirectivesSpec$TestException$: XXX"
       }
     }
-    "correct catch exception in the success case" in pendingUntilFixed {
+    "correct catch exception in the success case" in {
       Get() ~> onFailure(Future.successful("ok")) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.OK
         responseAs[String] mustEqual "ok"
       }
     }
-    "correct catch exception in the failure case" in pendingUntilFixed {
+    "correct catch exception in the failure case" in {
       Get() ~> onFailure(Future.failed[String](TestException)) { throwTestException("EX when ") } ~> check {
         status mustEqual StatusCodes.InternalServerError
-        responseAs[String] mustEqual "Oops. spray.routing.FutureDirectivesSpec$TestException: EX when spray.routing.FutureDirectivesSpec$TestException$: XXX"
+        responseAs[String] mustEqual "Oops. akka.http.routing.directives.FutureDirectivesSpec$TestException: EX when akka.http.routing.directives.FutureDirectivesSpec$TestException$: XXX"
       }
     }
   }

@@ -26,6 +26,9 @@ import akka.testkit._
 import akka.http.routing.{ RouteResult ⇒ RoutingRouteResult, _ }
 import akka.http.model._
 
+import scala.concurrent.{ ExecutionContext, Await }
+import scala.util.{ Success, Failure }
+
 trait RouteResultComponent {
 
   def failTest(msg: String): Nothing
@@ -42,7 +45,7 @@ trait RouteResultComponent {
     private[this] val latch = new CountDownLatch(1)
     private[this] var virginal = true
 
-    private[testkit] def handleResult(result: RoutingRouteResult): Unit = result match {
+    private[testkit] def handleResult(result: RoutingRouteResult)(implicit ec: ExecutionContext): Unit = result match {
       case CompleteWith(resp: HttpResponse) ⇒
         saveResult(Right(resp))
         latch.countDown()
@@ -51,6 +54,11 @@ trait RouteResultComponent {
         latch.countDown()
       case RouteException(error) ⇒
         sys.error("Route produced exception: " + error)
+      case DeferredResult(result) ⇒
+        result.onComplete {
+          case Success(r)  ⇒ handleResult(r)
+          case Failure(ex) ⇒ handleResult(RouteException(ex))
+        }
     }
     /*private[testkit] val handler = new UnregisteredActorRef(actorRefFactory) {
       def handle(message: Any)(implicit sender: ActorRef) {

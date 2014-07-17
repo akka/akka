@@ -61,7 +61,12 @@ object OnCompleteFutureMagnet {
       def happly(f: (Try[T] :: HNil) ⇒ Route): Route = ctx ⇒
         ctx.deferHandling {
           future
-            .map(t ⇒ f(Success(t) :: HNil)(ctx))
+            .map { t ⇒
+              try f(Success(t) :: HNil)(ctx)
+              catch {
+                case NonFatal(e) ⇒ ctx.failWith(e)
+              }
+            }
             .recover { case error ⇒ f(Failure(error) :: HNil)(ctx) }
         }
     }
@@ -87,11 +92,12 @@ trait OnFailureFutureMagnet extends Directive1[Throwable]
 object OnFailureFutureMagnet {
   implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T], ec: ExecutionContext) =
     new OnFailureFutureMagnet {
-      def happly(f: (Throwable :: HNil) ⇒ Route) = ctx ⇒
+      def happly(f: (Throwable :: HNil) ⇒ Route) = ctx ⇒ {
         ctx.deferHandling {
           future
-            .map(ctx.complete)
+            .map(ctx.complete(_))
             .recover { case error ⇒ f(error :: HNil)(ctx) }
         }
+      }
     }
 }

@@ -4,6 +4,8 @@
 
 package akka.http
 
+import scala.collection.immutable
+
 import model._
 
 package object marshalling {
@@ -17,10 +19,22 @@ package object marshalling {
 
 package marshalling {
 
-  import scala.concurrent.Future
+  import akka.http.model.HttpEntity.Regular
 
-  trait Marshaller[-T] {
+  import scala.concurrent.Future
+  import scala.util.control.NonFatal
+
+  trait Marshaller[-T] { outer ⇒
     def marshal(value: T): Either[Throwable, HttpEntity.Regular]
+
+    def compose[U](f: U ⇒ T): Marshaller[U] =
+      new Marshaller[U] {
+        def marshal(value: U): Either[Throwable, Regular] =
+          try outer.marshal(f(value))
+          catch {
+            case NonFatal(ex) ⇒ Left(ex)
+          }
+      }
   }
   object Marshaller {
     implicit def stringMarshaller: Marshaller[String] =
@@ -34,10 +48,24 @@ package marshalling {
     implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = routing.FIXME
   }
 
-  trait ToResponseMarshaller[-T] {
+  trait ToResponseMarshaller[-T] { outer ⇒
     def marshal(value: T): Either[Throwable, HttpResponse]
+
+    def compose[U](f: U ⇒ T): ToResponseMarshaller[U] =
+      new ToResponseMarshaller[U] {
+        def marshal(value: U): Either[Throwable, HttpResponse] =
+          try outer.marshal(f(value))
+          catch {
+            case NonFatal(ex) ⇒ Left(ex)
+          }
+      }
   }
   object ToResponseMarshaller {
+    def apply[T](f: T ⇒ HttpResponse): ToResponseMarshaller[T] =
+      new ToResponseMarshaller[T] {
+        def marshal(value: T): Either[Throwable, HttpResponse] = Right(f(value))
+      }
+
     implicit def fromMarshaller[T: Marshaller]: ToResponseMarshaller[T] =
       new ToResponseMarshaller[T] {
         def marshal(value: T): Either[Throwable, HttpResponse] =
@@ -52,12 +80,21 @@ package marshalling {
       }
 
     implicit def fromStatusCode: ToResponseMarshaller[StatusCode] =
-      new ToResponseMarshaller[StatusCode] {
-        def marshal(value: StatusCode): Either[Throwable, HttpResponse] = Right(HttpResponse(status = value))
+      ToResponseMarshaller[StatusCode](s ⇒ HttpResponse(status = s, entity = s.defaultMessage))
+
+    implicit def fromStatusCodeAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T]): ToResponseMarshaller[(S, T)] =
+      fromStatusCodeAndHeadersAndT.compose {
+        case (s, t) ⇒ (sConv(s), Nil, t)
       }
-    implicit def fromStatusCodeAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T]): ToResponseMarshaller[(S, T)] = routing.FIXME
-    implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T]): ToResponseMarshaller[(S, Seq[HttpHeader], T)] = routing.FIXME
-    implicit def fromStatusCodeAndHeadersAndT[T](implicit tMarshaller: Marshaller[T]): ToResponseMarshaller[(StatusCode, Seq[HttpHeader], T)] = routing.FIXME
+    implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T]): ToResponseMarshaller[(S, Seq[HttpHeader], T)] =
+      fromStatusCodeAndHeadersAndT.compose {
+        case (s, hs, t) ⇒ (sConv(s), hs, t)
+      }
+    implicit def fromStatusCodeAndHeadersAndT[T](implicit tMarshaller: Marshaller[T]): ToResponseMarshaller[(StatusCode, Seq[HttpHeader], T)] =
+      new ToResponseMarshaller[(StatusCode, Seq[HttpHeader], T)] {
+        def marshal(value: (StatusCode, Seq[HttpHeader], T)): Either[Throwable, HttpResponse] =
+          tMarshaller.marshal(value._3).right.map(t ⇒ HttpResponse(value._1, value._2.toList, t))
+      }
 
     implicit def optionMarshaller[T: ToResponseMarshaller]: ToResponseMarshaller[Option[T]] = routing.FIXME
     implicit def futureMarshaller[T: ToResponseMarshaller]: ToResponseMarshaller[Future[T]] = routing.FIXME

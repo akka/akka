@@ -36,6 +36,7 @@ case class Rejected(rejections: List[Rejection]) extends RouteResult {
   def map(f: Rejection ⇒ Rejection) = Rejected(rejections.map(f))
   def flatMap(f: Rejection ⇒ GenTraversableOnce[Rejection]) = Rejected(rejections.flatMap(f))
 }
+case class DeferredResult(result: Future[RouteResult]) extends RouteResult
 
 /**
  * Immutable object encapsulating the context of an [[spray.http.HttpRequest]]
@@ -128,9 +129,9 @@ trait RequestContext {
    * Completes the request with a response created by marshalling the given object using
    * the in-scope marshaller for the type.
    */
-  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T] = null): RouteResult
+  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T]): RouteResult
 
-  def deferHandling(future: Future[RouteResult]): RouteResult
+  def deferHandling(future: Future[RouteResult])(implicit ec: ExecutionContext): RouteResult
 
   /**
    * Bubbles the given error up the response chain where it is dealt with by the closest `handleExceptions`

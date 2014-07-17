@@ -11,7 +11,7 @@ import akka.http.model.Uri.Path
 import akka.http.model._
 
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath: Uri.Path, postProcessing: RouteResult ⇒ RouteResult = identity) extends RequestContext {
   def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext = ???
@@ -60,8 +60,9 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
   def redirect(uri: Uri, redirectionType: Redirection): RouteResult = ???
   def reject(rejection: Rejection): RouteResult = finish(Rejected(rejection :: Nil))
   def reject(rejections: Rejection*): RouteResult = finish(Rejected(rejections.toList))
-  def failWith(error: Throwable): RouteResult = ???
-  def deferHandling(future: Future[RouteResult]): RouteResult = ???
+  def failWith(error: Throwable): RouteResult = finish(RouteException(error))
+  def deferHandling(future: Future[RouteResult])(implicit ec: ExecutionContext): RouteResult =
+    DeferredResult(future.map(finish).recover { case error ⇒ failWith(error) })
 
   def finish(result: RouteResult): RouteResult = postProcessing(result)
 }
