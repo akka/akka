@@ -327,8 +327,15 @@ External actors may be registered to be notified of state transitions by
 sending a message :class:`SubscribeTransitionCallBack(actorRef)`. The named
 actor will be sent a :class:`CurrentState(self, stateName)` message immediately
 and will receive :class:`Transition(actorRef, oldState, newState)` messages
-whenever a new state is reached. External monitors may be unregistered by
-sending :class:`UnsubscribeTransitionCallBack(actorRef)` to the FSM actor.
+whenever a new state is reached.
+
+Each time ``goto(state)`` is used monitor actor is notified about transition.
+When ``goto(A)`` is invoked when the actor is already in state ``A``, the monitoring actor
+will be notified about a transition ``A -> A``. If you want to prevent sending ``Transision``,
+you can use ``stay()``.
+
+External monitors may be unregistered by sending 
+:class:`UnsubscribeTransitionCallBack(actorRef)` to the ``FSM`` actor.
 
 Stopping a listener without unregistering will not remove the listener from the
 subscription list; use :class:`UnsubscribeTransitionCallback` before stopping

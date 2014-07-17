@@ -123,7 +123,14 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil) {
+  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil)(private[akka] val notifies: Boolean = true) {
+
+    /**
+     * Copy object and update values if needed.
+     */
+    private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Option[FiniteDuration] = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies): State[S, D] = {
+      State(stateName, stateData, timeout, stopReason, replies)(notifies)
+    }
 
     /**
      * Modify state transition descriptor to include a state timeout for the
@@ -160,7 +167,12 @@ object FSM {
     private[akka] def withStopReason(reason: Reason): State[S, D] = {
       copy(stopReason = Some(reason))
     }
+
+    private[akka] def withNotification(notifies: Boolean): State[S, D] = {
+      copy(notifies = notifies)
+    }
   }
+
   /**
    * All messages sent to the [[akka.actor.FSM]] will be wrapped inside an
    * `Event`, which allows pattern matching to extract both state and data.
@@ -179,7 +191,6 @@ object FSM {
  * Finite State Machine actor trait. Use as follows:
  *
  * <pre>
- *   object A {
  *     trait State
  *     case class One extends State
  *     case class Two extends State
@@ -312,7 +323,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
   final def startWith(stateName: S, stateData: D, timeout: Timeout = None): Unit =
-    currentState = FSM.State(stateName, stateData, timeout)
+    currentState = FSM.State(stateName, stateData, timeout)()
 
   /**
    * Produce transition to other state. Return this from a state function in
@@ -321,7 +332,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param nextStateName state designator for the next state
    * @return state transition descriptor
    */
-  final def goto(nextStateName: S): State = FSM.State(nextStateName, currentState.stateData)
+  final def goto(nextStateName: S): State = FSM.State(nextStateName, currentState.stateData)()
 
   /**
    * Produce "empty" transition descriptor. Return this from a state function
@@ -329,7 +340,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    *
    * @return descriptor for staying in current state
    */
-  final def stay(): State = goto(currentState.stateName) // cannot directly use currentState because of the timeout field
+  final def stay(): State = goto(currentState.stateName).withNotification(false) // cannot directly use currentState because of the timeout field
 
   /**
    * Produce change descriptor to stop this FSM actor with reason "Normal".
@@ -624,7 +635,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
       terminate(stay withStopReason Failure("Next state %s does not exist".format(nextState.stateName)))
     } else {
       nextState.replies.reverse foreach { r ⇒ sender() ! r }
-      if (currentState.stateName != nextState.stateName) {
+      if (currentState.stateName != nextState.stateName || nextState.notifies) {
         this.nextState = nextState
         handleTransition(currentState.stateName, nextState.stateName)
         gossip(Transition(self, currentState.stateName, nextState.stateName))

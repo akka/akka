@@ -38,6 +38,15 @@ If you have been creating EventStreams manually, you now have to provide an acto
 Please note that this change affects you only if you have implemented your own busses, Akka's own ``context.eventStream``
 is still there and does not require any attention from you concerning this change.
 
+FSM notifies on same state trasisions
+====================================
+``FSM`` notifies their subscribers about state transitions. In ``2.3.x`` when an Actor is in state ``A`` and ``goto(A)`` is invoked, 
+no notification will be sent.
+
+In ``2.4.x`` FSMs sent notifiaction about transitions which are done using ``goto()``. 
+
+When ``stay()`` is used notification is *not* sent to subscribers.
+
 Removed Deprecated Features
 ===========================
 
