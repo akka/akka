@@ -32,9 +32,9 @@ trait LoggingBus extends ActorEventBus {
 
   import Logging._
 
-  private val guard = new ReentrantGuard //Switch to ReentrantReadWrite
+  private val guard = new ReentrantGuard
   private var loggers = Seq.empty[ActorRef]
-  private var _logLevel: LogLevel = _
+  @volatile private var _logLevel: LogLevel = _
 
   /**
    * Query currently set log level. See object Logging for more information.
@@ -52,16 +52,17 @@ trait LoggingBus extends ActorEventBus {
    * subscriptions!
    */
   def setLogLevel(level: LogLevel): Unit = guard.withGuard {
+    val logLvl = _logLevel // saves (2 * AllLogLevel.size - 1) volatile reads (because of the loops below)
     for {
       l ← AllLogLevels
       // subscribe if previously ignored and now requested
-      if l > _logLevel && l <= level
+      if l > logLvl && l <= level
       log ← loggers
     } subscribe(log, classFor(l))
     for {
       l ← AllLogLevels
       // unsubscribe if previously registered and now ignored
-      if l <= _logLevel && l > level
+      if l <= logLvl && l > level
       log ← loggers
     } unsubscribe(log, classFor(l))
     _logLevel = level
