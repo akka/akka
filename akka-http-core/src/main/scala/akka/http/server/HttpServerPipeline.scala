@@ -59,7 +59,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing response stream error"))
-        .produceTo(materializer, tcpConn.outputStream)
+        .produceTo(tcpConn.outputStream, materializer)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
   }
