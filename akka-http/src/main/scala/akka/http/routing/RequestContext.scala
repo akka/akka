@@ -32,6 +32,10 @@ import MediaTypes._
 sealed trait RouteResult
 case class CompleteWith(response: HttpResponse) extends RouteResult
 case class RouteException(exception: Throwable) extends RouteResult
+case class Rejected(rejections: List[Rejection]) extends RouteResult {
+  def map(f: Rejection ⇒ Rejection) = Rejected(rejections.map(f))
+  def flatMap(f: Rejection ⇒ GenTraversableOnce[Rejection]) = Rejected(rejections.flatMap(f))
+}
 
 /**
  * Immutable object encapsulating the context of an [[spray.http.HttpRequest]]
@@ -81,28 +85,6 @@ trait RequestContext {
    */
   def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext
 
-  /*
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withHttpResponsePartMapped(f: HttpResponsePart ⇒ HttpResponsePart) =
-    withRouteResponseMapped {
-      case x: HttpResponsePart                 ⇒ f(x)
-      case Confirmed(x: HttpResponsePart, ack) ⇒ Confirmed(f(x), ack)
-      case x                                   ⇒ x
-    }
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withHttpResponsePartMultiplied(f: HttpResponsePart ⇒ Seq[HttpResponsePart]) =
-    withRouteResponseMultiplied {
-      case x: HttpResponsePart ⇒ f(x)
-      case Confirmed(x: HttpResponsePart, ack) ⇒
-        val parts = f(x)
-        parts.updated(parts.size - 1, Confirmed(parts.last, ack))
-    }*/
-
   /**
    * Returns a copy of this context with the given response transformation function chained into the response chain.
    */
@@ -142,29 +124,13 @@ trait RequestContext {
    */
   def redirect(uri: Uri, redirectionType: Redirection): RouteResult
 
-  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T] = null): RouteResult = FIXME
-
-  def deferHandling(future: Future[RouteResult]): RouteResult
-  //def complete[T](value: Any): Unit = ???
   /**
-   * Completes the request with status "200 Ok" and the response entity created by marshalling the given object using
+   * Completes the request with a response created by marshalling the given object using
    * the in-scope marshaller for the type.
    */
-  /*def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T]): Unit = {
-    val ctx = new ToResponseMarshallingContext {
-      def tryAccept(contentTypes: Seq[ContentType]) = request.acceptableContentType(contentTypes)
-      def rejectMarshalling(onlyTo: Seq[ContentType]): Unit = reject(UnacceptedResponseContentTypeRejection(onlyTo))
-      def marshalTo(response: HttpResponse): Unit = responder ! response
-      def handleError(error: Throwable): Unit = failWith(error)
-      def startChunkedMessage(response: HttpResponse, sentAck: Option[Any])(implicit sender: ActorRef) = {
-        val chunkStart = ChunkedResponseStart(response)
-        val wrapper = if (sentAck.isEmpty) chunkStart else Confirmed(chunkStart, sentAck.get)
-        responder.tell(wrapper, sender)
-        responder
-      }
-    }
-    marshaller(obj, ctx)
-  }*/
+  def complete[T](obj: T)(implicit marshaller: ToResponseMarshaller[T] = null): RouteResult
+
+  def deferHandling(future: Future[RouteResult]): RouteResult
 
   /**
    * Bubbles the given error up the response chain where it is dealt with by the closest `handleExceptions`
@@ -172,9 +138,4 @@ trait RequestContext {
    * wrapped rejection is unpacked and "executed".
    */
   def failWith(error: Throwable): RouteResult
-}
-
-case class Rejected(rejections: List[Rejection]) {
-  def map(f: Rejection ⇒ Rejection) = Rejected(rejections.map(f))
-  def flatMap(f: Rejection ⇒ GenTraversableOnce[Rejection]) = Rejected(rejections.flatMap(f))
 }

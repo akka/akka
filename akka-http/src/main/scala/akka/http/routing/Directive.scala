@@ -58,10 +58,8 @@ object ConjunctionMagnet {
 abstract class Directive[L <: HList] { self ⇒
   def happly(f: L ⇒ Route): Route
 
-  def |[R >: L <: HList](that: Directive[R]): Directive[R] = new Directive[R] {
-    def happly(f: (R) ⇒ Route): Route = FIXME
-    //recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ::: _) & that)
-  }
+  def |[R >: L <: HList](that: Directive[R]): Directive[R] =
+    recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ::: _) & that)
 
   def &(magnet: ConjunctionMagnet[L]): magnet.Out = magnet(this)
 

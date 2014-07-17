@@ -16,6 +16,8 @@
 
 package akka.http.testkit
 
+import akka.http.routing.impl.RequestContextImpl
+
 import scala.collection.immutable
 
 import com.typesafe.config.{ ConfigFactory, Config }
@@ -24,7 +26,7 @@ import scala.reflect.ClassTag
 import org.scalatest.Suite
 import akka.actor.ActorSystem
 import akka.http.routing.directives.ExecutionDirectives
-import akka.http.routing._
+import akka.http.routing.{ RouteResult ⇒ RoutingRouteResult, _ }
 import akka.http.unmarshalling._
 import akka.http.model._
 import akka.http.util._
@@ -120,9 +122,25 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
     }
     implicit def injectIntoRoute(implicit timeout: RouteTestTimeout, settings: RoutingSettings,
                                  log: LoggingContext, eh: ExceptionHandler, defaultHostInfo: DefaultHostInfo) =
-      new TildeArrow[RequestContext, Unit] {
+      new TildeArrow[RequestContext, RoutingRouteResult] {
         type Out = RouteResult
-        def apply(request: HttpRequest, route: Route) = FIXME /*{
+
+        def apply(request: HttpRequest, route: Route): Out = {
+          val routeResult = new RouteResult(timeout.duration)
+          val effectiveRequest =
+            request.withEffectiveUri(
+              securedConnection = defaultHostInfo.securedConnection,
+              defaultHostHeader = defaultHostInfo.host)
+          val res =
+            ExecutionDirectives.handleExceptions(eh orElse ExceptionHandler.default)(route) {
+              new RequestContextImpl(
+                request = effectiveRequest,
+                unmatchedPath = effectiveRequest.uri.path)
+            }
+          routeResult.handleResult(res)
+          routeResult
+        }
+        /*{
           val routeResult = new RouteResult(timeout.duration)
           val effectiveRequest =
             request.withEffectiveUri(

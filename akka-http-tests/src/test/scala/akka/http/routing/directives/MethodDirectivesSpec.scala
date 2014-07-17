@@ -24,19 +24,19 @@ class MethodDirectivesSpec extends RoutingSpec {
   "get | put" should {
     lazy val getOrPut = (get | put) { completeOk }
 
-    "block POST requests" in pendingUntilFixed {
+    "block POST requests" in {
       Post() ~> getOrPut ~> check { handled mustEqual false }
     }
-    "let GET requests pass" in pendingUntilFixed {
+    "let GET requests pass" in {
       Get() ~> getOrPut ~> check { response mustEqual Ok }
     }
-    "let PUT requests pass" in pendingUntilFixed {
+    "let PUT requests pass" in {
       Put() ~> getOrPut ~> check { response mustEqual Ok }
     }
   }
 
   "two failed `get` directives" should {
-    "only result in a single Rejection" in pendingUntilFixed {
+    "only result in a single Rejection" in {
       Put() ~> {
         get { completeOk } ~
           get { completeOk }
@@ -67,41 +67,40 @@ class MethodDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "MethodRejections" should {
-    "be cancelled by a successful match" in pendingUntilFixed {
-      "if the match happens after the rejection" in pendingUntilFixed {
-        Put() ~> {
-          get { completeOk } ~
-            put { reject(RequestEntityExpectedRejection) }
-        } ~> check {
-          rejections mustEqual List(RequestEntityExpectedRejection)
-        }
-      }
-      "if the match happens after the rejection (example 2)" in pendingUntilFixed {
-        Put() ~> {
-          (get & complete)(Ok) ~
-            (put & reject(RequestEntityExpectedRejection))
-        } ~> check {
-          rejections mustEqual List(RequestEntityExpectedRejection)
-        }
-      }
-      "if the match happens before the rejection" in pendingUntilFixed {
-        Put() ~> {
-          put { reject(RequestEntityExpectedRejection) } ~
-            get { completeOk }
-        } ~> check {
-          rejections mustEqual List(RequestEntityExpectedRejection)
-        }
-      }
-      "if the match happens before the rejection (example 2)" in pendingUntilFixed {
-        Put() ~> {
-          (put & reject(RequestEntityExpectedRejection)) ~
-            (get & complete)(Ok)
-        } ~> check {
-          rejections mustEqual List(RequestEntityExpectedRejection)
-        }
+  "MethodRejections under a successful match" should {
+    "be cancelled if the match happens after the rejection" in {
+      Put() ~> {
+        get { completeOk } ~
+          put { reject(RequestEntityExpectedRejection) }
+      } ~> check {
+        rejections mustEqual List(RequestEntityExpectedRejection)
       }
     }
+    "be cancelled if the match happens after the rejection (example 2)" in {
+      Put() ~> {
+        (get & complete)(Ok) ~
+          (put & reject(RequestEntityExpectedRejection))
+      } ~> check {
+        rejections mustEqual List(RequestEntityExpectedRejection)
+      }
+    }
+    "be cancelled if the match happens before the rejection" in {
+      Put() ~> {
+        put { reject(RequestEntityExpectedRejection) } ~
+          get { completeOk }
+      } ~> check {
+        rejections mustEqual List(RequestEntityExpectedRejection)
+      }
+    }
+    "be cancelled if the match happens before the rejection (example 2)" in {
+      Put() ~> {
+        (put & reject(RequestEntityExpectedRejection)) ~
+          (get & complete)(Ok)
+      } ~> check {
+        rejections mustEqual List(RequestEntityExpectedRejection)
+      }
+    }
+
   }
 
 }

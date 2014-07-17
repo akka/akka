@@ -13,7 +13,7 @@ import scala.collection.immutable
 import scala.reflect.ClassTag
 
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.marshalling.Marshaller
+import akka.http.marshalling._
 import akka.http.model._
 import HttpMethods._
 import akka.http.encoding._
@@ -36,20 +36,14 @@ trait RequestBuilding extends TransformerPipelineSupport {
 
     def apply[T: Marshaller](uri: Uri, content: T): HttpRequest = apply(uri, Some(content))
 
-    def apply[T: Marshaller](uri: Uri, content: Option[T]): HttpRequest = routing.FIXME /*{
-      val ctx = new CollectingMarshallingContext {
-        override def startChunkedMessage(entity: HttpEntity, ack: Option[Any],
-                                         headers: Seq[HttpHeader])(implicit sender: ActorRef) =
-          sys.error("RequestBuilding with marshallers producing chunked requests is not supported")
-      }
+    def apply[T: Marshaller](uri: Uri, content: Option[T]): HttpRequest =
       content match {
         case None ⇒ HttpRequest(method, uri)
-        case Some(value) ⇒ marshalToEntityAndHeaders(value, ctx) match {
-          case Right((entity, headers)) ⇒ HttpRequest(method, uri, headers.toList, entity)
-          case Left(error) ⇒ throw error
+        case Some(value) ⇒ marshalToEntity(value) match {
+          case Right(entity) ⇒ HttpRequest(method, uri, Nil, entity)
+          case Left(error)   ⇒ throw error
         }
       }
-    }*/
   }
 
   val Get = new RequestBuilder(GET)

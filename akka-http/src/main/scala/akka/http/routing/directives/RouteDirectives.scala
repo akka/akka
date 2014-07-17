@@ -17,6 +17,7 @@
 package akka.http.routing
 package directives
 
+import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model._
 import StatusCodes._
 
@@ -44,10 +45,9 @@ trait RouteDirectives {
   /**
    * Completes the request using the given arguments.
    */
-  /*def complete: (⇒ ToResponseMarshallable) ⇒ StandardRoute = marshallable ⇒ new StandardRoute {
-    def apply(ctx: RequestContext): Unit = ctx.complete(marshallable)
-  }*/
-  def complete: Any ⇒ StandardRoute = _ ⇒ StandardRoute(_ ⇒ FIXME)
+  def complete: (⇒ ToResponseMarshallable) ⇒ StandardRoute = marshallable ⇒ new StandardRoute {
+    def apply(ctx: RequestContext): RouteResult = ctx.complete(marshallable)
+  }
 
   /**
    * Bubbles the given error up the response chain, where it is dealt with by the closest `handleExceptions`

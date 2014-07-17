@@ -23,7 +23,7 @@ import concurrent.duration._
 import scala.collection.mutable.ListBuffer
 import akka.actor.{ ActorSystem, Status, ActorRefFactory, ActorRef }
 import akka.testkit._
-import akka.http.routing.{ RejectionHandler, Rejected, Rejection }
+import akka.http.routing.{ RouteResult ⇒ RoutingRouteResult, _ }
 import akka.http.model._
 
 trait RouteResultComponent {
@@ -42,6 +42,16 @@ trait RouteResultComponent {
     private[this] val latch = new CountDownLatch(1)
     private[this] var virginal = true
 
+    private[testkit] def handleResult(result: RoutingRouteResult): Unit = result match {
+      case CompleteWith(resp: HttpResponse) ⇒
+        saveResult(Right(resp))
+        latch.countDown()
+      case Rejected(rejections) ⇒
+        saveResult(Left(rejections))
+        latch.countDown()
+      case RouteException(error) ⇒
+        sys.error("Route produced exception: " + error)
+    }
     /*private[testkit] val handler = new UnregisteredActorRef(actorRefFactory) {
       def handle(message: Any)(implicit sender: ActorRef) {
         def verifiedSender =
