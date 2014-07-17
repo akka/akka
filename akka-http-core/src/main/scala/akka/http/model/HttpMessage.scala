@@ -135,11 +135,18 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   def isResponse = false
 
   /**
-   * Returns a copy of this requests with the URI resolved according to the logic defined at
+   * Resolve this request's URI according to the logic defined at
    * http://tools.ietf.org/html/rfc7230#section-5.5
    */
   def effectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): Uri =
     HttpRequest.effectiveUri(uri, headers, securedConnection, defaultHostHeader)
+
+  /**
+   * Returns a copy of this requests with the URI resolved according to the logic defined at
+   * http://tools.ietf.org/html/rfc7230#section-5.5
+   */
+  def withEffectiveUri(securedConnection: Boolean, defaultHostHeader: Host = Host.empty): HttpRequest =
+    copy(uri = effectiveUri(securedConnection, defaultHostHeader))
 
   /**
    * The media-ranges accepted by the client according to the `Accept` request header.
