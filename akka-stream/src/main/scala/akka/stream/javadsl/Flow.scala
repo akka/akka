@@ -67,13 +67,13 @@ object Flow {
 
   /**
    * Elements are produced from the tick `Callable` periodically with the specified interval.
-   * The tick element will be delivered to downstream subscribers that has requested any elements.
-   * If a subscriber has not requested any elements at the point in time when the tick
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def create[T](interval: FiniteDuration, tick: Callable[T]): Flow[T] =
-    new FlowAdapter(SFlow.apply(interval, () ⇒ tick.call()))
+  def create[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[T]): Flow[T] =
+    new FlowAdapter(SFlow.apply(initialDelay, interval, () ⇒ tick.call()))
 
 }
 

@@ -493,11 +493,12 @@ public class FlowTest {
         return "tick-" + (count++);
       }
     };
-    Flow.create(FiniteDuration.create(1, TimeUnit.SECONDS), tick).foreach(new Procedure<String>() {
-      public void apply(String elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
+      Flow.create(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick).foreach(new Procedure<String>() {
+        public void apply(String elem) {
+            probe.getRef().tell(elem, ActorRef.noSender());
       }
     }, materializer);
+    probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick-1");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick-2");
