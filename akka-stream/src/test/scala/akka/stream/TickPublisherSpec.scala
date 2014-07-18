@@ -19,9 +19,10 @@ class TickPublisherSpec extends AkkaSpec {
     "produce ticks" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
+      Flow(1.second, 500.millis, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(3)
+      c.expectNoMsg(600.millis)
       c.expectNext("tick-1")
       c.expectNoMsg(200.millis)
       c.expectNext("tick-2")
@@ -34,7 +35,7 @@ class TickPublisherSpec extends AkkaSpec {
     "drop ticks when not requested" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
+      Flow(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick-1")
@@ -51,7 +52,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "produce ticks with multiple subscribers" in {
       val tickGen = Iterator from 1
-      val p = Flow(1.second, () ⇒ "tick-" + tickGen.next()).toPublisher(materializer)
+      val p = Flow(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).toPublisher(materializer)
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
       p.subscribe(c1)
@@ -75,7 +76,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Flow(1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).produceTo(c, materializer)
+      Flow(1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")
@@ -83,7 +84,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "be usable with zip for a simple form of rate limiting" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
-      val rate = Flow(1.second, () ⇒ "tick").toPublisher(materializer)
+      val rate = Flow(1.second, 1.second, () ⇒ "tick").toPublisher(materializer)
       Flow(1 to 100).zip(rate).map { case (n, _) ⇒ n }.produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(1000)
