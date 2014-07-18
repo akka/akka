@@ -23,6 +23,7 @@ import akka.stream.scaladsl.Flow
 private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOutput <: ParserOutput](val settings: ParserSettings,
                                                                                                      val headerParser: HttpHeaderParser)
   extends Transformer[ByteString, Output] {
+  import settings._
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
 
@@ -100,10 +101,10 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       case h: `Transfer-Encoding` ⇒
         parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), hh)
 
-      case h if headerCount < settings.maxHeaderCount ⇒
+      case h if headerCount < maxHeaderCount ⇒
         parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, hh || h.isInstanceOf[Host])
 
-      case _ ⇒ fail(s"HTTP message contains more than the configured limit of ${settings.maxHeaderCount} headers")
+      case _ ⇒ fail(s"HTTP message contains more than the configured limit of $maxHeaderCount headers")
     }
   }
 
@@ -144,9 +145,9 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
           emit(ParserOutput.EntityChunk(lastChunk))
           if (isLastMessage) terminate()
           else startNewMessage(input, lineEnd)
-        case header if headerCount < settings.maxHeaderCount ⇒
+        case header if headerCount < maxHeaderCount ⇒
           parseTrailer(extension, lineEnd, header :: headers, headerCount + 1)
-        case _ ⇒ fail(s"Chunk trailer contains more than the configured limit of ${settings.maxHeaderCount} headers")
+        case _ ⇒ fail(s"Chunk trailer contains more than the configured limit of $maxHeaderCount headers")
       }
     }
 
@@ -165,24 +166,24 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       } else parseTrailer(extension, cursor)
 
     @tailrec def parseChunkExtensions(chunkSize: Int, cursor: Int)(startIx: Int = cursor): StateResult =
-      if (cursor - startIx <= settings.maxChunkExtLength) {
+      if (cursor - startIx <= maxChunkExtLength) {
         def extension = asciiString(input, startIx, cursor)
         byteChar(input, cursor) match {
           case '\r' if byteChar(input, cursor + 1) == '\n' ⇒ parseChunkBody(chunkSize, extension, cursor + 2)
           case '\n' ⇒ parseChunkBody(chunkSize, extension, cursor + 1)
           case _ ⇒ parseChunkExtensions(chunkSize, cursor + 1)(startIx)
         }
-      } else fail(s"HTTP chunk extension length exceeds configured limit of ${settings.maxChunkExtLength} characters")
+      } else fail(s"HTTP chunk extension length exceeds configured limit of $maxChunkExtLength characters")
 
     @tailrec def parseSize(cursor: Int, size: Long): StateResult =
-      if (size <= settings.maxChunkSize) {
+      if (size <= maxChunkSize) {
         byteChar(input, cursor) match {
           case c if CharacterClasses.HEXDIG(c) ⇒ parseSize(cursor + 1, size * 16 + CharUtils.hexValue(c))
           case ';' if cursor > offset ⇒ parseChunkExtensions(size.toInt, cursor + 1)()
           case '\r' if cursor > offset && byteChar(input, cursor + 1) == '\n' ⇒ parseChunkBody(size.toInt, "", cursor + 2)
           case c ⇒ fail(s"Illegal character '${escape(c)}' in chunk start")
         }
-      } else fail(s"HTTP chunk size exceeds the configured limit of ${settings.maxChunkSize} bytes")
+      } else fail(s"HTTP chunk size exceeds the configured limit of $maxChunkSize bytes")
 
     try parseSize(offset, 0)
     catch {
