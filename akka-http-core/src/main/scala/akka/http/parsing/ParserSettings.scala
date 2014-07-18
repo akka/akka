@@ -20,7 +20,7 @@ final case class ParserSettings(
   maxChunkSize: Int,
   uriParsingMode: Uri.ParsingMode,
   illegalHeaderWarnings: Boolean,
-  headerValueCacheLimits: Map[String, Int]) {
+  headerValueCacheLimits: Map[String, Int]) extends HttpHeaderParser.Settings {
 
   require(maxUriLength > 0, "max-uri-length must be > 0")
   require(maxResponseReasonLength > 0, "max-response-reason-length must be > 0")
@@ -33,7 +33,7 @@ final case class ParserSettings(
 
   val defaultHeaderValueCacheLimit: Int = headerValueCacheLimits("default")
 
-  def headerValueCacheLimit(headerName: String) =
+  def headerValueCacheLimit(headerName: String): Int =
     headerValueCacheLimits.getOrElse(headerName, defaultHeaderValueCacheLimit)
 }
 
