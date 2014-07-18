@@ -12,7 +12,7 @@ import MediaTypes._
 
 case class Marshallers[-A, B](marshallers: immutable.Seq[Marshaller[A, B]]) {
   require(marshallers.nonEmpty, "marshallers must be non-empty")
-  def map[BB](f: B ⇒ BB)(implicit ec: ExecutionContext): Marshallers[A, BB] =
+  def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshallers[A, C] =
     Marshallers(marshallers map (_ map f))
 }
 
@@ -43,14 +43,14 @@ sealed abstract class SingleMarshallerMarshallers {
 sealed trait Marshaller[-A, B] { outer ⇒
   def apply(value: A): Future[Marshalling[B]]
 
-  def map[BB](f: B ⇒ BB)(implicit ec: ExecutionContext): Marshaller[A, BB] =
-    Marshaller[A, BB](value ⇒ outer(value) map (_ map f))
+  def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshaller[A, C] =
+    Marshaller[A, C](value ⇒ outer(value) map (_ map f))
 
   /**
-   * Reuses this Marshaller's logic to produce a new Marshaller from another type `AA` which overrides
+   * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
    * the produced media-type with another one.
    */
-  def wrap[AA](mediaType: MediaType)(f: AA ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[B]): Marshaller[AA, B] =
+  def wrap[C](mediaType: MediaType)(f: C ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[B]): Marshaller[C, B] =
     Marshaller { value ⇒
       import Marshalling._
       outer(f(value)) map {
@@ -60,7 +60,7 @@ sealed trait Marshaller[-A, B] { outer ⇒
       }
     }
 
-  def compose[AA](f: AA ⇒ A): Marshaller[AA, B] = Marshaller { value ⇒ outer(f(value)) }
+  def compose[C](f: C ⇒ A): Marshaller[C, B] = Marshaller { value ⇒ outer(f(value)) }
 }
 
 object Marshaller
@@ -95,17 +95,17 @@ object Marshalling {
   /**
    * A Marshalling to a specific MediaType and charset.
    */
-  case class WithFixedCharset[A](mediaType: MediaType,
-                                 charset: HttpCharset,
-                                 marshal: () ⇒ A) extends Marshalling[A] {
+  final case class WithFixedCharset[A](mediaType: MediaType,
+                                       charset: HttpCharset,
+                                       marshal: () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithFixedCharset[B] = copy(marshal = () ⇒ f(marshal()))
   }
 
   /**
    * A Marshalling to a specific MediaType and a potentially flexible charset.
    */
-  case class WithOpenCharset[A](mediaType: MediaType,
-                                marshal: HttpCharset ⇒ A) extends Marshalling[A] {
+  final case class WithOpenCharset[A](mediaType: MediaType,
+                                      marshal: HttpCharset ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): WithOpenCharset[B] = copy(marshal = cs ⇒ f(marshal(cs)))
   }
 
@@ -113,7 +113,7 @@ object Marshalling {
    * A Marshalling to an unknown MediaType and charset.
    * Circumvents content negotiation.
    */
-  case class Opaque[A](marshal: () ⇒ A) extends Marshalling[A] {
+  final case class Opaque[A](marshal: () ⇒ A) extends Marshalling[A] {
     def map[B](f: A ⇒ B): Opaque[B] = copy(marshal = () ⇒ f(marshal()))
   }
 }

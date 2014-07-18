@@ -48,7 +48,7 @@ trait MultipartMarshallers {
   implicit def multipartFormDataMarshaller(implicit mcm: ToEntityMarshaller[MultipartContent],
                                            ec: ExecutionContext): ToEntityMarshaller[MultipartFormData] =
     Marshaller { value ⇒
-      mcm(MultipartContent(value.fields: _*)) map {
+      mcm(MultipartContent(value.parts)) map {
         case Marshalling.WithOpenCharset(mt, marshal) ⇒
           val mediaType = `multipart/form-data` withBoundary mt.params("boundary")
           Marshalling.WithOpenCharset(mediaType, cs ⇒ MediaTypeOverrider.forRegularEntity(marshal(cs), mediaType))

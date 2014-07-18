@@ -33,7 +33,7 @@ class Marshal[A](val value: A) {
   /**
    * Marshals `value` to an `HttpResponse` for the given `HttpRequest` with full content-negotiation.
    */
-  def asResponseFor(request: HttpRequest)(implicit m: ToResponseMarshallers[A], ec: ExecutionContext): Future[HttpResponse] = {
+  def toResponseFor(request: HttpRequest)(implicit m: ToResponseMarshallers[A], ec: ExecutionContext): Future[HttpResponse] = {
     import Marshal._
     val mediaRanges = request.acceptedMediaRanges // cache for performance
     val charsetRanges = request.acceptedCharsetRanges // cache for performance
