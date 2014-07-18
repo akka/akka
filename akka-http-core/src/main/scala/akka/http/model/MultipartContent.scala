@@ -42,6 +42,33 @@ object MultipartByteRanges {
 }
 
 /**
+ * Model for `multipart/form-data` content as defined in RFC 2388.
+ * All parts must contain a Content-Disposition header with a type form-data
+ * and a name parameter that is unique.
+ */
+final case class MultipartFormData(parts: Producer[BodyPart]) extends MultipartParts {
+  // def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
+}
+
+object MultipartFormData {
+  val Empty = MultipartFormData()
+
+  def apply(parts: BodyPart*): MultipartFormData = apply(SynchronousProducerFromIterable[BodyPart](parts.toList))
+
+  def apply(fields: Map[String, BodyPart]): MultipartFormData = apply {
+    fields.map {
+      case (key, value) ⇒ value.copy(headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> key)) +: value.headers)
+    }(collection.breakOut): _*
+  }
+}
+
+final case class FormFile(name: Option[String], entity: HttpEntity.Default)
+
+object FormFile {
+  def apply(name: String, entity: HttpEntity.Default): FormFile = apply(Some(name), entity)
+}
+
+/**
  * Model for one part of a multipart message.
  */
 final case class BodyPart(entity: HttpEntity, headers: immutable.Seq[HttpHeader] = Nil) {

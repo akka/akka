@@ -52,7 +52,7 @@ private[http] trait LazyValueBytesRenderable extends Renderable {
   // that a synchronization overhead or even @volatile reads
   private[this] var _valueBytes: Array[Byte] = _
   private def valueBytes =
-    if (_valueBytes != null) _valueBytes else { _valueBytes = value.getAsciiBytes; _valueBytes }
+    if (_valueBytes != null) _valueBytes else { _valueBytes = value.asciiBytes; _valueBytes }
 
   def value: String
   def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
@@ -66,7 +66,7 @@ private[http] trait LazyValueBytesRenderable extends Renderable {
  * Useful for common predefined singleton values.
  */
 private[http] trait SingletonValueRenderable extends Product with Renderable {
-  private[this] val valueBytes = value.getAsciiBytes
+  private[this] val valueBytes = value.asciiBytes
   def value = productPrefix
   def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
 }

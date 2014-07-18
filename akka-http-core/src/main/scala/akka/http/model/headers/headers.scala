@@ -22,7 +22,7 @@ import ProtectedHeaderCreation.enable
 sealed abstract class ModeledCompanion extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
   val lowercaseName = name.toLowerCase
-  private[this] val nameBytes = name.getAsciiBytes
+  private[this] val nameBytes = name.asciiBytes
   def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
 }
 

@@ -66,13 +66,24 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
   /**
    * Returns the ASCII encoded bytes of this string. Truncates characters to 8-bit byte value.
    */
-  def getAsciiBytes: Array[Byte] = {
-    @tailrec def bytes(array: Array[Byte] = new Array[Byte](underlying.length), ix: Int = 0): Array[Byte] =
+  def asciiBytes: Array[Byte] = {
+    val array = new Array[Byte](underlying.length)
+    getAsciiBytes(array, 0)
+    array
+  }
+
+  /**
+   * Copies the ASCII encoded bytes of this string into the given byte array starting at the `offset` index.
+   * Truncates characters to 8-bit byte value.
+   * If the array does not have enough space for the whole string only the portion that fits is copied.
+   */
+  def getAsciiBytes(array: Array[Byte], offset: Int): Unit = {
+    @tailrec def rec(ix: Int): Unit =
       if (ix < array.length) {
-        array(ix) = underlying.charAt(ix).asInstanceOf[Byte]
-        bytes(array, ix + 1)
-      } else array
-    bytes()
+        array(ix) = underlying.charAt(ix - offset).asInstanceOf[Byte]
+        rec(ix + 1)
+      }
+    rec(offset)
   }
 
   /**
@@ -86,7 +97,7 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
    * @see [[http://rdist.root.org/2009/05/28/timing-attack-in-google-keyczar-library/]]
    * @see [[http://emerose.com/timing-attacks-explained]]
    */
-  def secure_==(other: String): Boolean = getAsciiBytes secure_== other.getAsciiBytes
+  def secure_==(other: String): Boolean = asciiBytes secure_== other.asciiBytes
 
   /**
    * Determines whether the underlying String starts with the given character.

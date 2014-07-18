@@ -18,11 +18,11 @@ import akka.http.util._
  * INTERNAL API
  */
 private object RenderSupport {
-  val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".getAsciiBytes
-  val StatusLineStartBytes = "HTTP/1.1 ".getAsciiBytes
-  val ChunkedBytes = "chunked".getAsciiBytes
-  val KeepAliveBytes = "Keep-Alive".getAsciiBytes
-  val CloseBytes = "close".getAsciiBytes
+  val DefaultStatusLineBytes = "HTTP/1.1 200 OK\r\n".asciiBytes
+  val StatusLineStartBytes = "HTTP/1.1 ".asciiBytes
+  val ChunkedBytes = "chunked".asciiBytes
+  val KeepAliveBytes = "Keep-Alive".asciiBytes
+  val CloseBytes = "close".asciiBytes
 
   def CrLf = Rendering.CrLf
 
