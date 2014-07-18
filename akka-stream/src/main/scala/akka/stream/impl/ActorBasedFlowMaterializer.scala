@@ -111,9 +111,9 @@ private[akka] object Ast {
             name = s"$flowName-0-future"), Some(future))
       }
   }
-  final case class TickPublisherNode[I](interval: FiniteDuration, tick: () ⇒ I) extends PublisherNode[I] {
+  final case class TickPublisherNode[I](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ I) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      ActorPublisher[I](materializer.context.actorOf(TickPublisher.props(interval, tick, materializer.settings),
+      ActorPublisher[I](materializer.context.actorOf(TickPublisher.props(initialDelay, interval, tick, materializer.settings),
         name = s"$flowName-0-tick"))
   }
 }
