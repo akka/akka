@@ -132,7 +132,7 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
         case ct @ ContentType(mt, Some(cs)) ⇒ Marshaller.withFixedCharset(mt, cs)((s: String) ⇒ HttpEntity(ct, s))
         case ContentType(mt, None)          ⇒ Marshaller.withOpenCharset(mt)((s: String, cs) ⇒ HttpEntity(ContentType(mt, cs), s))
       }
-      Marshal("foo").asResponseFor(request)
+      Marshal("foo").toResponseFor(request)
         .map(response ⇒ Some(response.entity.contentType))
         .recover { case _: UnacceptableResponseContentTypeException ⇒ None }
         .await
