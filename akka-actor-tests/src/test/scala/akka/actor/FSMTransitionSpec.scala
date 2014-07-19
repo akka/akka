@@ -32,13 +32,15 @@ object FSMTransitionSpec {
   class OtherFSM(target: ActorRef) extends Actor with FSM[Int, Int] {
     startWith(0, 0)
     when(0) {
-      case Event("tick", _) ⇒ goto(1) using (1)
+      case Event("tick", _) ⇒ goto(1) using 1
+      case Event("stay", _) ⇒ stay()
     }
     when(1) {
-      case _ ⇒ stay
+      case _ ⇒ goto(1)
     }
     onTransition {
       case 0 -> 1 ⇒ target ! ((stateData, nextStateData))
+      case 1 -> 1 ⇒ target ! ((stateData, nextStateData))
     }
   }
 
@@ -78,7 +80,7 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         expectMsg(FSM.CurrentState(fsm, 0))
         akka.pattern.gracefulStop(forward, 5 seconds)
         fsm ! "tick"
-        expectNoMsg
+        expectNoMsg()
       }
     }
   }
@@ -90,6 +92,36 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
       within(1 second) {
         fsm ! "tick"
         expectMsg((0, 1))
+      }
+    }
+
+    "trigger transition event when goto() the same state" in {
+      import FSM.Transition
+      val forward = system.actorOf(Props(new Forwarder(testActor)))
+      val fsm = system.actorOf(Props(new OtherFSM(testActor)))
+
+      within(1 second) {
+        fsm ! FSM.SubscribeTransitionCallBack(forward)
+        expectMsg(FSM.CurrentState(fsm, 0))
+        fsm ! "tick"
+        expectMsg((0, 1))
+        expectMsg(Transition(fsm, 0, 1))
+        fsm ! "tick"
+        expectMsg((1, 1))
+        expectMsg(Transition(fsm, 1, 1))
+      }
+    }
+
+    "not trigger transition event on stay()" in {
+      import FSM.Transition
+      val forward = system.actorOf(Props(new Forwarder(testActor)))
+      val fsm = system.actorOf(Props(new OtherFSM(testActor)))
+
+      within(1 second) {
+        fsm ! FSM.SubscribeTransitionCallBack(forward)
+        expectMsg(FSM.CurrentState(fsm, 0))
+        fsm ! "stay"
+        expectNoMsg()
       }
     }
 
@@ -105,11 +137,11 @@ class FSMTransitionSpec extends AkkaSpec with ImplicitSender {
         when(1) {
           case Event("test", _) ⇒
             try {
-              sender() ! s"failed: ${nextStateData}"
+              sender() ! s"failed: $nextStateData"
             } catch {
               case _: IllegalStateException ⇒ sender() ! "ok"
             }
-            stay
+            stay()
         }
       }))
       fsmref ! "switch"
