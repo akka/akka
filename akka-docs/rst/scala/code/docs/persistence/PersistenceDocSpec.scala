@@ -4,8 +4,9 @@
 
 package docs.persistence
 
-import akka.actor.{ Actor, ActorSystem, Props }
+import akka.actor.{Actor, ActorSystem, Props}
 import akka.persistence._
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -28,7 +29,7 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     //#definition
-    import akka.persistence.{ PersistenceFailure, Persistent, Processor }
+    import akka.persistence.{PersistenceFailure, Persistent, Processor}
 
     class MyProcessor extends Processor {
       def receive = {
@@ -93,11 +94,11 @@ trait PersistenceDocSpec {
 
       def receiveRecover: Receive = {
         case RecoveryCompleted => recoveryCompleted()
-        case evt => //...
+        case evt               => //...
       }
 
       def receiveCommand: Receive = {
-        case msg               => //...
+        case msg => //...
       }
 
       def recoveryCompleted(): Unit = {
@@ -134,7 +135,7 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     //#at-least-once-example
-    import akka.actor.{ Actor, ActorPath, Props }
+    import akka.actor.{Actor, ActorPath}
     import akka.persistence.AtLeastOnceDelivery
 
     case class Msg(deliveryId: Long, s: String)
@@ -176,8 +177,8 @@ trait PersistenceDocSpec {
 
   new AnyRef {
     //#channel-example
-    import akka.actor.{ Actor, Props }
-    import akka.persistence.{ Channel, Deliver, Persistent, Processor }
+    import akka.actor.{Actor, Props}
+    import akka.persistence.{Channel, Deliver, Persistent, Processor}
 
     class MyProcessor extends Processor {
       val destination = context.actorOf(Props[MyDestination])
@@ -251,7 +252,7 @@ trait PersistenceDocSpec {
   new AnyRef {
     //#fsm-example
     import akka.actor.FSM
-    import akka.persistence.{ Persistent, Processor }
+    import akka.persistence.{Persistent, Processor}
 
     class PersistentDoor extends Processor with FSM[String, Int] {
       startWith("closed", 0)

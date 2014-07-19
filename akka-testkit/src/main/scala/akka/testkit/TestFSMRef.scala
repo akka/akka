@@ -62,7 +62,7 @@ class TestFSMRef[S, D, T <: Actor](
    * and stop handling.
    */
   def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: FiniteDuration = null, stopReason: Option[FSM.Reason] = None) {
-    fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason))
+    fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason)())
   }
 
   /**
