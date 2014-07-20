@@ -4,11 +4,12 @@
 
 package akka.http.unmarshalling
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.model.ContentTypeRange
 
-trait Unmarshaller[A, B] extends (A ⇒ Future[Unmarshalling[B]]) {
+trait Unmarshaller[-A, B] extends (A ⇒ Future[Unmarshalling[B]]) {
 
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Unmarshaller[A, C] =
     mapUnmarshalling(_ map f)
@@ -16,10 +17,10 @@ trait Unmarshaller[A, B] extends (A ⇒ Future[Unmarshalling[B]]) {
   def flatMap[C](f: B ⇒ Unmarshalling[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
     mapUnmarshalling(_ flatMap f)
 
-  def mapWithInput[C](f: (A, B) ⇒ C)(implicit ec: ExecutionContext): Unmarshaller[A, C] =
+  def mapWithInput[C](f: (A @uncheckedVariance, B) ⇒ C)(implicit ec: ExecutionContext): Unmarshaller[A, C] =
     Unmarshaller { a ⇒ this(a) map (_ map (f(a, _))) }
 
-  def flatMapWithInput[C](f: (A, B) ⇒ Unmarshalling[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
+  def flatMapWithInput[C](f: (A @uncheckedVariance, B) ⇒ Unmarshalling[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
     Unmarshaller { a ⇒ this(a) map (_ flatMap (f(a, _))) }
 
   def mapUnmarshalling[C](f: Unmarshalling[B] ⇒ Unmarshalling[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
@@ -31,8 +32,8 @@ trait Unmarshaller[A, B] extends (A ⇒ Future[Unmarshalling[B]]) {
 
 object Unmarshaller
   extends GenericUnmarshallers
-  with PredefinedFromEntityUnmarshallers
-  with UnmarshallerLifting {
+  with PredefinedFromEntityUnmarshallers {
+  //with UnmarshallerLifting {
 
   def apply[A, B](f: A ⇒ Future[Unmarshalling[B]]): Unmarshaller[A, B] =
     new Unmarshaller[A, B] { def apply(a: A) = f(a) }

@@ -5,10 +5,9 @@
 package akka.http
 
 import scala.collection.immutable.ListMap
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, FreeSpec }
-import akka.util.Timeout
 import akka.actor.ActorSystem
 import akka.http.marshalling.{ ToEntityMarshallers, MultipartMarshallers }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
@@ -153,14 +152,10 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   override def afterAll() = system.shutdown()
 
   def marshal[T: ToEntityMarshallers](value: T): HttpEntity.Strict =
-    Marshal(value).to[HttpEntity].await.toStrict(1.second, materializer).await
+    Await.result(Await.result(Marshal(value).to[HttpEntity], 1.second).toStrict(1.second, materializer), 1.second)
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)
   }
   override protected val multipartBoundaryRandom = new FixedRandom // fix for stable value
-
-  implicit class PimpedFuture[T](underlying: Future[T]) {
-    def await(implicit timeout: Timeout = 1.second): T = Await.result(underlying, timeout.duration)
-  }
 }
