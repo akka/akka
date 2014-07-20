@@ -63,6 +63,6 @@ private class BoyerMoore(needle: Array[Byte]) {
         else rec(i - 1, j - 1)
       } else rec(i + math.max(offsetTable(nl1 - j), charTable(byte)), nl1)
     }
-    rec(nl1, nl1)
+    rec(offset + nl1, nl1)
   }
 }

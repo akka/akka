@@ -132,17 +132,13 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
         case ct @ ContentType(mt, Some(cs)) ⇒ Marshaller.withFixedCharset(mt, cs)((s: String) ⇒ HttpEntity(ct, s))
         case ContentType(mt, None)          ⇒ Marshaller.withOpenCharset(mt)((s: String, cs) ⇒ HttpEntity(ContentType(mt, cs), s))
       }
-      Marshal("foo").toResponseFor(request)
-        .map(response ⇒ Some(response.entity.contentType))
-        .recover { case _: UnacceptableResponseContentTypeException ⇒ None }
-        .await
+      Await.result(
+        Marshal("foo").toResponseFor(request)
+          .map(response ⇒ Some(response.entity.contentType))
+          .recover { case _: UnacceptableResponseContentTypeException ⇒ None }, 1.second)
     }
   }
 
   def reject = equal(None)
   def select(mediaType: MediaType, charset: HttpCharset) = equal(Some(ContentType(mediaType, charset)))
-
-  implicit class PimpedFuture[T](underlying: Future[T]) {
-    def await(implicit timeout: Timeout = 1.second): T = Await.result(underlying, timeout.duration)
-  }
 }
