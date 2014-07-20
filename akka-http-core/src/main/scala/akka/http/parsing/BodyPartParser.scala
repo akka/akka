@@ -44,7 +44,12 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   needle(2) = '-'.toByte
   needle(3) = '-'.toByte
   boundary.getAsciiBytes(needle, 4)
+
+  // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
+  // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
+  // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
   private[this] val boyerMoore = new BoyerMoore(needle)
+
   private[this] val headerParser = HttpHeaderParser.unprimed(settings, warnOnIllegalHeader)
   private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary
