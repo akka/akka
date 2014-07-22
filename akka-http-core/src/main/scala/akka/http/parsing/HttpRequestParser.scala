@@ -125,7 +125,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
           else if (contentLength == 0) {
             emitRequestStart(emptyEntity(cth))
             startNewMessage(input, bodyStart)
-          } else if (contentLength < input.size - bodyStart) {
+          } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
             startNewMessage(input, bodyStart + cl)
