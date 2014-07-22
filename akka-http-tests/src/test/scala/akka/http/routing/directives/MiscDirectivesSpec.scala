@@ -87,7 +87,7 @@ class MiscDirectivesSpec extends RoutingSpec {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "2.3.4.5" }
     }
-    "extract from a Remote-Address header" in pendingUntilFixed /* it seems Directive.| is broken */ {
+    "extract from a Remote-Address header" in {
       Get() ~> addHeaders(RawHeader("x-real-ip", "1.2.3.4"), `Remote-Address`(RemoteAddress("5.6.7.8"))) ~> {
         clientIP { echoComplete }
       } ~> check { responseAs[String] mustEqual "5.6.7.8" }

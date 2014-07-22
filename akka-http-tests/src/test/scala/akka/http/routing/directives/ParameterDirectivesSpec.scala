@@ -177,7 +177,7 @@ class ParameterDirectivesSpec extends RoutingSpec with Inside {
         parameter('nose ! "large") { completeOk }
       } ~> check { response mustEqual Ok }
     }
-    "be useable for method tunneling" in pendingUntilFixed {
+    "be useable for method tunneling" in {
       val route = {
         (post | parameter('method ! "post")) { complete("POST") } ~
           get { complete("GET") }

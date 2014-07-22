@@ -16,21 +16,19 @@ import scala.concurrent.{ ExecutionContext, Future }
 private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath: Uri.Path, postProcessing: RouteResult ⇒ RouteResult = identity) extends RequestContext {
   def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext = copy(request = f(request))
 
-  def withRouteResponseMappedPF(f: PartialFunction[RouteResult, RouteResult]): RequestContext = ???
-
   def withUnmatchedPathMapped(f: Path ⇒ Path): RequestContext = copy(unmatchedPath = f(unmatchedPath))
 
   def withContentNegotiationDisabled: RequestContext = this // FIXME: actually support this
 
   def withRouteResponseRouting(f: PartialFunction[RouteResult, Route]): RequestContext =
-    withRouteResponseHandling {
+    withRouteResponseMappedPF {
       case x if f.isDefinedAt(x) ⇒ f(x)(this)
     }
 
   def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext = withHttpResponseMapped(_.mapEntity(f))
 
   def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext =
-    withRouteResponseHandling {
+    withRouteResponseMappedPF {
       case CompleteWith(response) ⇒ CompleteWith(f(response))
     }
 
@@ -38,9 +36,9 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
     withHttpResponseMapped(_.mapHeaders(f))
 
   def withRouteResponseHandling(f: PartialFunction[RouteResult, RouteResult]): RequestContext =
-    withRouteResponseMapped { res ⇒
-      if (f.isDefinedAt(res)) f(res) else res
-    }
+    copy(postProcessing = { res ⇒
+      if (f.isDefinedAt(res)) f(res) else postProcessing(res)
+    })
 
   def withUnmatchedPath(path: Path): RequestContext = copy(unmatchedPath = path)
 
@@ -49,8 +47,15 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
   def withRouteResponseMapped(f: RouteResult ⇒ RouteResult): RequestContext =
     copy(postProcessing = res ⇒ f(postProcessing(res)))
 
+  def withRouteResponseMappedPF(f: PartialFunction[RouteResult, RouteResult]): RequestContext =
+    withRouteResponseMapped { res ⇒
+      if (f.isDefinedAt(res)) f(res) else res
+    }
+
   def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext =
-    withRejectionHandling(rejs ⇒ Rejected(f(rejs)))
+    withRouteResponseMappedPF {
+      case Rejected(rejs) ⇒ Rejected(f(rejs))
+    }
 
   def withRejectionHandling(f: List[Rejection] ⇒ RouteResult): RequestContext =
     withRouteResponseHandling {
