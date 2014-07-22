@@ -127,6 +127,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       } else {
         val offset = bodyStart + remainingBodyBytes.toInt
         emit(ParserOutput.EntityPart(input.slice(bodyStart, offset)))
+        emit(ParserOutput.MessageEnd)
         if (isLastMessage) terminate()
         else startNewMessage(input, offset)
       }
@@ -142,6 +143,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
           val lastChunk =
             if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
           emit(ParserOutput.EntityChunk(lastChunk))
+          emit(ParserOutput.MessageEnd)
           if (isLastMessage) terminate()
           else startNewMessage(input, lineEnd)
         case header if headerCount < settings.maxHeaderCount ⇒
