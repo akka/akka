@@ -10,7 +10,7 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
-import akka.stream.actor.ActorConsumer.WatermarkRequestStrategy
+import akka.stream.actor.ActorSubscriber.WatermarkRequestStrategy
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
@@ -19,10 +19,10 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent.Mute
 import akka.testkit.TestProbe
 
-object ActorProducerSpec {
+object ActorPublisherSpec {
 
-  def testProducerProps(probe: ActorRef): Props =
-    Props(new TestProducer(probe)).withDispatcher("akka.test.stream-dispatcher")
+  def testPublisherProps(probe: ActorRef): Props =
+    Props(new TestPublisher(probe)).withDispatcher("akka.test.stream-dispatcher")
 
   case class TotalDemand(elements: Long)
   case class Produce(elem: String)
@@ -30,8 +30,8 @@ object ActorProducerSpec {
   case object Boom
   case object Complete
 
-  class TestProducer(probe: ActorRef) extends ActorProducer[String] {
-    import ActorProducer._
+  class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
+    import ActorPublisher._
 
     def receive = {
       case Request(element) ⇒ probe ! TotalDemand(totalDemand)
@@ -44,9 +44,9 @@ object ActorProducerSpec {
 
   def senderProps: Props = Props[Sender].withDispatcher("akka.test.stream-dispatcher")
 
-  class Sender extends ActorProducer[Int] {
-    import ActorProducer.Cancel
-    import ActorProducer.Request
+  class Sender extends ActorPublisher[Int] {
+    import ActorPublisher.Cancel
+    import ActorPublisher.Request
 
     var buf = Vector.empty[Int]
 
@@ -75,8 +75,8 @@ object ActorProducerSpec {
   def receiverProps(probe: ActorRef): Props =
     Props(new Receiver(probe)).withDispatcher("akka.test.stream-dispatcher")
 
-  class Receiver(probe: ActorRef) extends ActorConsumer {
-    import ActorConsumer._
+  class Receiver(probe: ActorRef) extends ActorSubscriber {
+    import ActorSubscriber._
 
     override val requestStrategy = WatermarkRequestStrategy(10)
 
@@ -89,36 +89,36 @@ object ActorProducerSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorProducerSpec extends AkkaSpec with ImplicitSender {
-  import ActorProducerSpec._
-  import ActorProducer._
+class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
+  import ActorPublisherSpec._
+  import ActorPublisher._
 
   system.eventStream.publish(Mute(EventFilter[IllegalStateException]()))
 
-  "An ActorProducer" must {
+  "An ActorPublisher" must {
 
     "accumulate demand" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val p = ActorProducer[String](ref)
-      val c = StreamTestKit.consumerProbe[String]
-      p.produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val p = ActorPublisher[String](ref)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(c)
       val sub = c.expectSubscription
-      sub.requestMore(2)
+      sub.request(2)
       probe.expectMsg(TotalDemand(2))
-      sub.requestMore(3)
+      sub.request(3)
       probe.expectMsg(TotalDemand(5))
       sub.cancel()
     }
 
     "allow onNext up to requested elements, but not more" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val p = ActorProducer[String](ref)
-      val c = StreamTestKit.consumerProbe[String]
-      p.produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val p = ActorPublisher[String](ref)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(c)
       val sub = c.expectSubscription
-      sub.requestMore(2)
+      sub.request(2)
       ref ! Produce("elem-1")
       ref ! Produce("elem-2")
       ref ! Produce("elem-3")
@@ -130,9 +130,9 @@ class ActorProducerSpec extends AkkaSpec with ImplicitSender {
 
     "signal error" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
       ref ! Err("wrong")
       c.expectSubscription
       c.expectError.getMessage should be("wrong")
@@ -140,21 +140,21 @@ class ActorProducerSpec extends AkkaSpec with ImplicitSender {
 
     "signal error before subscribe" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
+      val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Err("early err")
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
       c.expectError.getMessage should be("early err")
     }
 
     "drop onNext elements after cancel" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val p = ActorProducer[String](ref)
-      val c = StreamTestKit.consumerProbe[String]
-      p.produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val p = ActorPublisher[String](ref)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(c)
       val sub = c.expectSubscription
-      sub.requestMore(2)
+      sub.request(2)
       ref ! Produce("elem-1")
       sub.cancel()
       ref ! Produce("elem-2")
@@ -165,30 +165,30 @@ class ActorProducerSpec extends AkkaSpec with ImplicitSender {
 
     "remember requested after restart" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val p = ActorProducer[String](ref)
-      val c = StreamTestKit.consumerProbe[String]
-      p.produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val p = ActorPublisher[String](ref)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(c)
       val sub = c.expectSubscription
-      sub.requestMore(3)
+      sub.request(3)
       probe.expectMsg(TotalDemand(3))
       ref ! Produce("elem-1")
       ref ! Boom
       ref ! Produce("elem-2")
       c.expectNext("elem-1")
       c.expectNext("elem-2")
-      sub.requestMore(5)
+      sub.request(5)
       probe.expectMsg(TotalDemand(6))
       sub.cancel()
     }
 
     "signal onComplete" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
       val sub = c.expectSubscription
-      sub.requestMore(3)
+      sub.request(3)
       ref ! Produce("elem-1")
       ref ! Complete
       c.expectNext("elem-1")
@@ -197,42 +197,42 @@ class ActorProducerSpec extends AkkaSpec with ImplicitSender {
 
     "signal immediate onComplete" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
+      val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Complete
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
       c.expectComplete
     }
 
     "only allow one subscriber" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
-      val sub = c.expectSubscription
-      val c2 = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c2)
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
+      c.expectSubscription
+      val c2 = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c2)
       c2.expectError.getClass should be(classOf[IllegalStateException])
     }
 
     "signal onCompete when actor is stopped" in {
       val probe = TestProbe()
-      val ref = system.actorOf(testProducerProps(probe.ref))
-      val c = StreamTestKit.consumerProbe[String]
-      ActorProducer[String](ref).produceTo(c)
-      val sub = c.expectSubscription
+      val ref = system.actorOf(testPublisherProps(probe.ref))
+      val c = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(c)
+      c.expectSubscription
       ref ! PoisonPill
       c.expectComplete
     }
 
-    "work together with Flow and ActorConsumer" in {
+    "work together with Flow and ActorSubscriber" in {
       val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
       val probe = TestProbe()
       val snd = system.actorOf(senderProps)
       val rcv = system.actorOf(receiverProps(probe.ref))
-      Flow(ActorProducer[Int](snd)).collect {
+      Flow(ActorPublisher[Int](snd)).collect {
         case n if n % 2 == 0 ⇒ "elem-" + n
-      }.produceTo(materializer, ActorConsumer(rcv))
+      }.produceTo(materializer, ActorSubscriber(rcv))
 
       (1 to 3) foreach { snd ! _ }
       probe.expectMsg("elem-2")

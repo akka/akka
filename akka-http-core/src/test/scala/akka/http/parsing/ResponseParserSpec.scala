@@ -9,9 +9,9 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ Tag, BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.stream.scaladsl.Flow
-import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.{ FlattenStrategy, MaterializerSettings, FlowMaterializer }
 import akka.util.ByteString
 import akka.actor.ActorSystem
@@ -117,7 +117,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "response start" in new Test {
         Seq(start, "rest") should generalMultiParseTo(
-          Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, producer()))),
+          Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher()))),
           Left("Illegal character 'r' in chunk start"))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -136,7 +136,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |0123456789""",
           """ABCDEF
             |dead""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, producer(
+            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher(
               HttpEntity.Chunk(ByteString("abc")),
               HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
               HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
@@ -149,7 +149,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           """0
             |
             |""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, producer(HttpEntity.LastChunk)))))
+            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher(HttpEntity.LastChunk)))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -162,7 +162,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |
             |HT""") should generalMultiParseTo(
             Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`,
-              producer(HttpEntity.LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+              publisher(HttpEntity.LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
@@ -227,7 +227,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
                     case Right(response) ⇒ compactEntity(response.entity).map(x ⇒ Right(response.withEntity(x)))
                     case Left(error)     ⇒ Future.successful(Left(error.info.formatPretty))
                   }
-                }.toProducer(materializer)
+                }.toPublisher(materializer)
               }
               .flatten(FlattenStrategy.concat)
               .grouped(1000).toFuture(materializer)
@@ -246,15 +246,15 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         case _                     ⇒ entity.toStrict(250.millis, materializer)
       }
 
-    private def compactEntityChunks(data: Producer[ChunkStreamPart]): Future[Producer[ChunkStreamPart]] =
+    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
       Flow(data).grouped(1000).toFuture(materializer)
-        .map(producer(_: _*))
+        .map(publisher(_: _*))
         .recover {
-          case _: NoSuchElementException ⇒ producer[ChunkStreamPart]()
+          case _: NoSuchElementException ⇒ publisher[ChunkStreamPart]()
         }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
 
-    def producer[T](elems: T*): Producer[T] = SynchronousProducerFromIterable(elems.toList)
+    def publisher[T](elems: T*): Publisher[T] = SynchronousPublisherFromIterable(elems.toList)
   }
 }

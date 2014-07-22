@@ -4,7 +4,7 @@
 package akka.stream.io
 
 import akka.util.ByteString
-import org.reactivestreams.api.{ Processor, Producer, Consumer }
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 import java.net.InetSocketAddress
 import akka.actor._
 import scala.collection._
@@ -26,19 +26,19 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
   case class OutgoingTcpConnection(remoteAddress: InetSocketAddress,
                                    localAddress: InetSocketAddress,
                                    processor: Processor[ByteString, ByteString]) {
-    def outputStream: Consumer[ByteString] = processor
-    def inputStream: Producer[ByteString] = processor
+    def outputStream: Subscriber[ByteString] = processor
+    def inputStream: Publisher[ByteString] = processor
   }
 
   case class TcpServerBinding(localAddress: InetSocketAddress,
-                              connectionStream: Producer[IncomingTcpConnection])
+                              connectionStream: Publisher[IncomingTcpConnection])
 
   case class IncomingTcpConnection(remoteAddress: InetSocketAddress,
-                                   inputStream: Producer[ByteString],
-                                   outputStream: Consumer[ByteString]) {
+                                   inputStream: Publisher[ByteString],
+                                   outputStream: Subscriber[ByteString]) {
     def handleWith(processor: Processor[ByteString, ByteString]): Unit = {
-      processor.produceTo(outputStream)
-      inputStream.produceTo(processor)
+      processor.subscribe(outputStream)
+      inputStream.subscribe(processor)
     }
   }
 
@@ -220,14 +220,14 @@ private[akka] class StreamTcpManager extends Actor {
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         requester = sender(),
         settings), name = encName("client", remoteAddress))
-      processorActor ! ExposedProcessor(new ActorProcessor[ByteString, ByteString](processorActor))
+      processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
     case StreamTcp.Bind(settings, localAddress, backlog, options, idleTimeout) ⇒
       val publisherActor = context.actorOf(TcpListenStreamActor.props(
         Tcp.Bind(context.system.deadLetters, localAddress, backlog, options, pullMode = true),
         requester = sender(),
         settings), name = encName("server", localAddress))
-      publisherActor ! ExposedPublisher(new ActorPublisher(publisherActor))
+      publisherActor ! ExposedPublisher(ActorPublisher[Any](publisherActor))
   }
 }
 

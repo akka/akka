@@ -4,12 +4,12 @@
 
 package akka.http.rendering
 
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.collection.immutable
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowMaterializer, Transformer }
 import akka.http.model._
@@ -35,11 +35,11 @@ private object RenderSupport {
     if (entity.contentType != ContentTypes.NoContentType)
       r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Producer[ByteString], materializer: FlowMaterializer,
-                        skipEntity: Boolean = false): immutable.Seq[Producer[ByteString]] = {
-    val messageStart = SynchronousProducerFromIterable(r.get :: Nil)
+  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString], materializer: FlowMaterializer,
+                        skipEntity: Boolean = false): immutable.Seq[Publisher[ByteString]] = {
+    val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
     val messageBytes =
-      if (!skipEntity) Flow(messageStart).concat(entityBytes).toProducer(materializer)
+      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher(materializer)
       else messageStart
     messageBytes :: Nil
   }

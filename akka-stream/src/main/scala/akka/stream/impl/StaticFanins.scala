@@ -4,13 +4,13 @@
 package akka.stream.impl
 
 import akka.stream.MaterializerSettings
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.concurrent.forkjoin.ThreadLocalRandom
 
 /**
  * INTERNAL API
  */
-private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[Any])
+private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Publisher[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   val runningPhase = TransferPhase(
@@ -29,7 +29,7 @@ private[akka] class MergeImpl(_settings: MaterializerSettings, _other: Producer[
 /**
  * INTERNAL API
  */
-private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Producer[Any])
+private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Publisher[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   val runningPhase = TransferPhase(primaryInputs.NeedsInput && secondaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
@@ -43,7 +43,7 @@ private[akka] class ZipImpl(_settings: MaterializerSettings, _other: Producer[An
 /**
  * INTERNAL API
  */
-private[akka] class ConcatImpl(_settings: MaterializerSettings, _other: Producer[Any])
+private[akka] class ConcatImpl(_settings: MaterializerSettings, _other: Publisher[Any])
   extends TwoStreamInputProcessor(_settings, _other) {
 
   val processingPrimary = TransferPhase(primaryInputs.NeedsInputOrComplete && primaryOutputs.NeedsDemand) { () ⇒

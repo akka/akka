@@ -3,39 +3,33 @@
  */
 package akka.stream.impl
 
-import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
-import org.reactivestreams.spi.Subscriber
-import org.reactivestreams.spi.Subscription
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.SupervisorStrategy
+import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
 import akka.stream.MaterializerSettings
+import org.reactivestreams.{ Subscriber, Subscription }
+
+import scala.collection.mutable
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
-import akka.actor.Cancellable
 
 /**
  * INTERNAL API
  */
-private[akka] object TickProducer {
+private[akka] object TickPublisher {
   def props(interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings): Props =
-    Props(new TickProducer(interval, tick, settings)).withDispatcher(settings.dispatcher)
+    Props(new TickPublisher(interval, tick, settings)).withDispatcher(settings.dispatcher)
 
-  object TickProducerSubscription {
+  object TickPublisherSubscription {
     case class Cancel(subscriber: Subscriber[Any])
     case class RequestMore(elements: Int, subscriber: Subscriber[Any])
   }
 
-  class TickProducerSubscription(ref: ActorRef, subscriber: Subscriber[Any])
-    extends Subscription {
-    import TickProducerSubscription._
+  class TickPublisherSubscription(ref: ActorRef, subscriber: Subscriber[Any]) extends Subscription {
+    import akka.stream.impl.TickPublisher.TickPublisherSubscription._
     def cancel(): Unit = ref ! Cancel(subscriber)
-    def requestMore(elements: Int): Unit =
+    def request(elements: Int): Unit =
       if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
       else ref ! RequestMore(elements, subscriber)
-    override def toString = "TickProducerSubscription"
+    override def toString = "TickPublisherSubscription"
   }
 
   private case object Tick
@@ -48,9 +42,9 @@ private[akka] object TickProducer {
  * Each subscriber will receive the tick element if it has requested any elements,
  * otherwise the tick element is dropped for that subscriber.
  */
-private[akka] class TickProducer(interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings) extends Actor with SoftShutdown {
-  import TickProducer._
-  import TickProducer.TickProducerSubscription._
+private[akka] class TickPublisher(interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings) extends Actor with SoftShutdown {
+  import akka.stream.impl.TickPublisher.TickPublisherSubscription._
+  import akka.stream.impl.TickPublisher._
 
   var exposedPublisher: ActorPublisher[Any] = _
   val demand = mutable.Map.empty[Subscriber[Any], Long]
@@ -100,8 +94,7 @@ private[akka] class TickProducer(interval: FiniteDuration, tick: () ⇒ Any, set
         case Some(d) ⇒ demand(subscriber) = d + elements
         case None    ⇒ // canceled
       }
-    case Cancel ⇒
-      softShutdown()
+    case Cancel(subscriber) ⇒ unregisterSubscriber(subscriber)
 
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
@@ -112,7 +105,7 @@ private[akka] class TickProducer(interval: FiniteDuration, tick: () ⇒ Any, set
     if (demand.contains(subscriber))
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     else {
-      val subscription = new TickProducerSubscription(self, subscriber)
+      val subscription = new TickPublisherSubscription(self, subscriber)
       demand(subscriber) = 0
       subscriber.onSubscribe(subscription)
     }

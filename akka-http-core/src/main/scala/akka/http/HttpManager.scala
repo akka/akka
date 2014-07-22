@@ -65,7 +65,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, materializer, log)
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)
-            .toProducer(materializer)
+            .toPublisher(materializer)
           commander ! Http.ServerBinding(localAddress, httpConnectionStream)
 
         case Failure(error) ⇒

@@ -48,7 +48,7 @@ object OverflowStrategy {
   def dropBuffer: OverflowStrategy = DropBuffer
 
   /**
-   * If the buffer is full when a new element is available this strategy backpressures the upstream producer until
+   * If the buffer is full when a new element is available this strategy backpressures the upstream publisher until
    * space becomes available in the buffer.
    */
   def backpressure: OverflowStrategy = Backpressure

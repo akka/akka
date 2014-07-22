@@ -6,7 +6,7 @@ package akka.stream
 import scala.util.control.NoStackTrace
 
 /**
- * This exception must be thrown from a callback-based stream producer to
+ * This exception must be thrown from a callback-based stream publisher to
  * signal the end of stream (if the produced stream is not infinite). This is used for example in
  * [[akka.stream.scaladsl.Flow#apply]] (the variant which takes a closure).
  */

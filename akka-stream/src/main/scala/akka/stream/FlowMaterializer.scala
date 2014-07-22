@@ -7,9 +7,8 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.ActorRefFactory
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast
-import org.reactivestreams.api.Producer
+import org.reactivestreams.{ Publisher, Subscriber }
 import scala.concurrent.duration._
-import org.reactivestreams.api.Consumer
 import akka.actor.Deploy
 
 object FlowMaterializer {
@@ -42,7 +41,7 @@ object FlowMaterializer {
 /**
  * A FlowMaterializer takes the list of transformations comprising a
  * [[akka.stream.scaladsl.Flow]] and materializes them in the form of
- * [[org.reactivestreams.api.Processor]] instances. How transformation
+ * [[org.reactivestreams.Processor]] instances. How transformation
  * steps are split up into asynchronous regions is implementation
  * dependent.
  */
@@ -58,17 +57,17 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * INTERNAL API
    * ops are stored in reverse order
    */
-  private[akka] def toProducer[I, O](producerNode: Ast.ProducerNode[I], ops: List[Ast.AstNode]): Producer[O]
+  private[akka] def toPublisher[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Publisher[O]
 
   /**
    * INTERNAL API
    */
-  private[akka] def ductProduceTo[In, Out](consumer: Consumer[Out], ops: List[Ast.AstNode]): Consumer[In]
+  private[akka] def ductProduceTo[In, Out](subscriber: Subscriber[Out], ops: List[Ast.AstNode]): Subscriber[In]
 
   /**
    * INTERNAL API
    */
-  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Consumer[In], Producer[Out])
+  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Subscriber[In], Publisher[Out])
 
 }
 

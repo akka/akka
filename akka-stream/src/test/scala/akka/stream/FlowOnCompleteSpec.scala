@@ -30,10 +30,10 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback on normal completion" in {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       proc.sendNext(42)
       onCompleteProbe.expectNoMsg(100.millis)
       proc.sendComplete()
@@ -42,10 +42,10 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       val ex = new RuntimeException("ex") with NoStackTrace
       proc.sendError(ex)
       onCompleteProbe.expectMsg(Failure(ex))
@@ -54,10 +54,10 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback for an empty stream" in {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       Flow(p).onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       proc.sendComplete()
       onCompleteProbe.expectMsg(Success(()))
       onCompleteProbe.expectNoMsg(100.millis)
@@ -65,7 +65,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
     "invoke callback after transform and foreach steps " in {
       val onCompleteProbe = TestProbe()
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       Flow(p).map { x ⇒
         onCompleteProbe.ref ! ("map-" + x)
         x
@@ -73,7 +73,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
       }.onComplete(materializer) { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       proc.sendNext(42)
       proc.sendComplete()
       onCompleteProbe.expectMsg("map-42")

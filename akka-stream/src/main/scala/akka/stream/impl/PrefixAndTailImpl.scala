@@ -38,7 +38,7 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
   }
 
   def emitEmptyTail(): Unit = {
-    primaryOutputs.enqueueOutputElement((taken, EmptyProducer))
+    primaryOutputs.enqueueOutputElement((taken, EmptyPublisher))
     nextPhase(completedPhase)
   }
 

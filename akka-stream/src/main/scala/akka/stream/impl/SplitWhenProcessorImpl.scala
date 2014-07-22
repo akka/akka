@@ -3,11 +3,8 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Props, ActorRef }
-import org.reactivestreams.spi.Subscription
-import akka.stream.impl._
+import akka.actor.ActorRef
 import akka.stream.MaterializerSettings
-import akka.actor.Terminated
 
 /**
  * INTERNAL API

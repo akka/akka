@@ -21,38 +21,38 @@ class FlowConflateSpec extends AkkaSpec {
   "Conflate" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(producer).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, consumer)
+      Flow(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
-        sub.requestMore(1)
-        autoProducer.sendNext(i)
-        consumer.expectNext(i)
+        sub.request(1)
+        autoPublisher.sendNext(i)
+        subscriber.expectNext(i)
       }
 
       sub.cancel()
     }
 
     "conflate elements while downstream is silent" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(producer).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, consumer)
+      Flow(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
-        autoProducer.sendNext(i)
+        autoPublisher.sendNext(i)
       }
-      consumer.expectNoMsg(1.second)
-      sub.requestMore(1)
-      consumer.expectNext(5050)
+      subscriber.expectNoMsg(1.second)
+      sub.request(1)
+      subscriber.expectNext(5050)
       sub.cancel()
     }
 
@@ -66,31 +66,31 @@ class FlowConflateSpec extends AkkaSpec {
       Await.result(future, 10.seconds) should be(500500)
     }
 
-    "backpressure consumer when upstream is slower" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+    "backpressure subscriber when upstream is slower" in {
+      val oublisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(producer).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, consumer)
+      Flow(oublisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(oublisher)
+      val sub = subscriber.expectSubscription()
 
-      sub.requestMore(1)
-      autoProducer.sendNext(1)
-      consumer.expectNext(1)
+      sub.request(1)
+      autoPublisher.sendNext(1)
+      subscriber.expectNext(1)
 
-      sub.requestMore(1)
-      consumer.expectNoMsg(1.second)
-      autoProducer.sendNext(2)
-      consumer.expectNext(2)
+      sub.request(1)
+      subscriber.expectNoMsg(1.second)
+      autoPublisher.sendNext(2)
+      subscriber.expectNext(2)
 
-      autoProducer.sendNext(3)
-      autoProducer.sendNext(4)
-      sub.requestMore(1)
-      consumer.expectNext(7)
+      autoPublisher.sendNext(3)
+      autoPublisher.sendNext(4)
+      sub.request(1)
+      subscriber.expectNext(7)
 
-      sub.requestMore(1)
-      consumer.expectNoMsg(1.second)
+      sub.request(1)
+      subscriber.expectNoMsg(1.second)
       sub.cancel()
 
     }

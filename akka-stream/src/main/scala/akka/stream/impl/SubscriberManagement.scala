@@ -4,8 +4,7 @@
 package akka.stream.impl
 
 import scala.annotation.tailrec
-import org.reactivestreams.api
-import org.reactivestreams.spi
+import org.reactivestreams.{ Subscriber, Subscription }
 import SubscriberManagement.ShutDown
 import ResizableMultiReaderRingBuffer.NothingToReadException
 
@@ -15,19 +14,19 @@ import ResizableMultiReaderRingBuffer.NothingToReadException
 private[akka] object SubscriberManagement {
 
   sealed trait EndOfStream {
-    def apply[T](subscriber: spi.Subscriber[T]): Unit
+    def apply[T](subscriber: Subscriber[T]): Unit
   }
 
   object NotReached extends EndOfStream {
-    def apply[T](subscriber: spi.Subscriber[T]): Unit = throw new IllegalStateException("Called apply on NotReached")
+    def apply[T](subscriber: Subscriber[T]): Unit = throw new IllegalStateException("Called apply on NotReached")
   }
 
   object Completed extends EndOfStream {
-    def apply[T](subscriber: spi.Subscriber[T]): Unit = subscriber.onComplete()
+    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onComplete()
   }
 
   case class ErrorCompleted(cause: Throwable) extends EndOfStream {
-    def apply[T](subscriber: spi.Subscriber[T]): Unit = subscriber.onError(cause)
+    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
   }
 
   val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down spi.Publisher"))
@@ -36,8 +35,8 @@ private[akka] object SubscriberManagement {
 /**
  * INTERNAL API
  */
-private[akka] trait SubscriptionWithCursor[T] extends spi.Subscription with ResizableMultiReaderRingBuffer.Cursor {
-  def subscriber: spi.Subscriber[T]
+private[akka] trait SubscriptionWithCursor[T] extends Subscription with ResizableMultiReaderRingBuffer.Cursor {
+  def subscriber: Subscriber[T]
 
   def dispatch(element: T): Unit = subscriber.onNext(element)
 
@@ -77,7 +76,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Use to register a subscriber
    */
-  protected def createSubscription(subscriber: spi.Subscriber[T]): S
+  protected def createSubscription(subscriber: Subscriber[T]): S
 
   private[this] val buffer = new ResizableMultiReaderRingBuffer[T](initialBufferSize, maxBufferSize, this)
 
@@ -199,7 +198,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Register a new subscriber.
    */
-  protected def registerSubscriber(subscriber: spi.Subscriber[T]): Unit = endOfStream match {
+  protected def registerSubscriber(subscriber: Subscriber[T]): Unit = endOfStream match {
     case NotReached if subscriptions.exists(_.subscriber eq subscriber) ⇒
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     case NotReached ⇒

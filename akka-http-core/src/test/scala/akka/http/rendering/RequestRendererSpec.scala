@@ -17,7 +17,7 @@ import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.scaladsl.Flow
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
-import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.impl.SynchronousPublisherFromIterable
 import HttpEntity._
 import HttpMethods._
 
@@ -106,7 +106,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     "proper render a chunked" - {
 
       "PUT request with empty chunk stream and custom Content-Type" in new TestSetup() {
-        HttpRequest(PUT, "/abc/xyz").withEntity(Chunked(ContentTypes.`text/plain`, producer())) should renderTo {
+        HttpRequest(PUT, "/abc/xyz").withEntity(Chunked(ContentTypes.`text/plain`, publisher())) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |Host: test.com:8080
             |User-Agent: spray-can/1.0.0
@@ -119,7 +119,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
       "POST request with body" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz")
-          .withEntity(Chunked(ContentTypes.`text/plain`, producer("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
+          .withEntity(Chunked(ContentTypes.`text/plain`, publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
             """POST /abc/xyz HTTP/1.1
               |Host: test.com:8080
               |User-Agent: spray-can/1.0.0
@@ -189,11 +189,11 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
-        val byteStringProducer :: Nil = renderer.onNext(RequestRenderingContext(request, serverAddress))
-        val future = Flow(byteStringProducer).grouped(1000).toFuture(materializer).map(_.reduceLeft(_ ++ _).utf8String)
+        val byteStringPublisher :: Nil = renderer.onNext(RequestRenderingContext(request, serverAddress))
+        val future = Flow(byteStringPublisher).grouped(1000).toFuture(materializer).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)
       }
   }
 
-  def producer[T](elems: T*) = SynchronousProducerFromIterable(elems.toList)
+  def publisher[T](elems: T*) = SynchronousPublisherFromIterable(elems.toList)
 }

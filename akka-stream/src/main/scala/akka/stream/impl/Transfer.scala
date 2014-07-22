@@ -3,8 +3,6 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.spi.{ Subscriber, Subscription }
-import java.util.Arrays
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorRefFactory }
 

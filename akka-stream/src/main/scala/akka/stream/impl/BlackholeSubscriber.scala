@@ -3,22 +3,18 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.api.Consumer
-import org.reactivestreams.spi.Subscription
-import org.reactivestreams.spi.Subscriber
+import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API
  */
 
-private[akka] class BlackholeConsumer[T](highWatermark: Int) extends Consumer[T] with Subscriber[T] {
+private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscriber[T] {
 
   private val lowWatermark = Math.max(1, highWatermark / 2)
   private var requested = 0
 
   private var subscription: Subscription = _
-
-  override def getSubscriber: Subscriber[T] = this
 
   override def onSubscribe(sub: Subscription): Unit = {
     subscription = sub
@@ -37,7 +33,7 @@ private[akka] class BlackholeConsumer[T](highWatermark: Int) extends Consumer[T]
   private def requestMore(): Unit =
     if (requested < lowWatermark) {
       val amount = highWatermark - requested
-      subscription.requestMore(amount)
+      subscription.request(amount)
       requested += amount
     }
 

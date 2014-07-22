@@ -6,8 +6,6 @@ package akka.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.{ AkkaSpec, ChainSetup, StreamTestKit }
 import akka.testkit._
-import org.reactivestreams.api.Producer
-import org.scalatest.FreeSpecLike
 import com.typesafe.config.ConfigFactory
 import akka.stream.scaladsl.Flow
 
@@ -31,21 +29,21 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     for ((name, op) ← List("identity" -> identity, "identity2" -> identity2); n ← List(1, 2, 4)) {
       s"requests initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.copy(initialInputBufferSize = n)) {
-          upstream.expectRequestMore(upstreamSubscription, settings.initialInputBufferSize)
+          upstream.expectRequest(upstreamSubscription, settings.initialInputBufferSize)
         }
       }
     }
 
     "requests more elements from upstream when downstream requests more elements" in {
       new ChainSetup(identity, settings) {
-        upstream.expectRequestMore(upstreamSubscription, settings.initialInputBufferSize)
-        downstreamSubscription.requestMore(1)
+        upstream.expectRequest(upstreamSubscription, settings.initialInputBufferSize)
+        downstreamSubscription.request(1)
         upstream.expectNoMsg(100.millis)
-        downstreamSubscription.requestMore(2)
+        downstreamSubscription.request(2)
         upstream.expectNoMsg(100.millis)
         upstreamSubscription.sendNext("a")
         downstream.expectNext("a")
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstream.expectNoMsg(100.millis)
         upstreamSubscription.sendNext("b")
         upstreamSubscription.sendNext("c")
@@ -57,7 +55,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "deliver events when publisher sends elements and then completes" in {
       new ChainSetup(identity, settings) {
-        downstreamSubscription.requestMore(1)
+        downstreamSubscription.request(1)
         upstreamSubscription.sendNext("test")
         upstreamSubscription.sendComplete()
         downstream.expectNext("test")
@@ -84,12 +82,12 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "single subscriber cancels subscription while receiving data" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1)) {
-        downstreamSubscription.requestMore(5)
-        upstreamSubscription.expectRequestMore(1)
+        downstreamSubscription.request(5)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("test")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("test2")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         downstream.expectNext("test")
         downstream.expectNext("test2")
         downstreamSubscription.cancel()
@@ -102,62 +100,62 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   }
 
   "A Flow with multiple subscribers (FanOutBox)" must {
-    "adapt speed to the currently slowest consumer" in {
+    "adapt speed to the currently slowest subscriber" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
-        downstreamSubscription.requestMore(5)
-        upstream.expectRequestMore(upstreamSubscription, 1) // because initialInputBufferSize=1
+        downstreamSubscription.request(5)
+        upstream.expectRequest(upstreamSubscription, 1) // because initialInputBufferSize=1
 
         upstreamSubscription.sendNext("firstElement")
         downstream.expectNext("firstElement")
 
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("element2")
 
         downstream.expectNoMsg(1.second)
-        downstream2Subscription.requestMore(1)
+        downstream2Subscription.request(1)
         downstream2.expectNext("firstElement")
 
         downstream.expectNext("element2")
 
-        downstream2Subscription.requestMore(1)
+        downstream2Subscription.request(1)
         downstream2.expectNext("element2")
       }
     }
 
-    "support slow consumer with fan-out 2" in {
+    "support slow subscriber with fan-out 2" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, initialFanOutBufferSize = 2, maxFanOutBufferSize = 2)) {
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
-        downstreamSubscription.requestMore(5)
+        downstreamSubscription.request(5)
 
-        upstream.expectRequestMore(upstreamSubscription, 1) // because initialInputBufferSize=1
+        upstream.expectRequest(upstreamSubscription, 1) // because initialInputBufferSize=1
         upstreamSubscription.sendNext("element1")
         downstream.expectNext("element1")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element2")
         downstream.expectNext("element2")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element3")
         // downstream2 has not requested anything, fan-out buffer 2
         downstream.expectNoMsg(100.millis.dilated)
 
-        downstream2Subscription.requestMore(2)
+        downstream2Subscription.request(2)
         downstream.expectNext("element3")
         downstream2.expectNext("element1")
         downstream2.expectNext("element2")
         downstream2.expectNoMsg(100.millis.dilated)
 
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element4")
         downstream.expectNext("element4")
 
-        downstream2Subscription.requestMore(2)
+        downstream2Subscription.request(2)
         downstream2.expectNext("element3")
         downstream2.expectNext("element4")
 
@@ -169,20 +167,20 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "incoming subscriber while elements were requested before" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
-        downstreamSubscription.requestMore(5)
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        downstreamSubscription.request(5)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("a1")
         downstream.expectNext("a1")
 
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("a2")
         downstream.expectNext("a2")
 
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
 
         // link now while an upstream element is already requested
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
         // situation here:
@@ -193,35 +191,35 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstream.expectNext("a3")
         downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
-        downstream2Subscription.requestMore(1)
+        downstream2Subscription.request(1)
         downstream2.expectNext("a3")
 
         // d1 now has 2 outstanding
         // d2 now has 0 outstanding
         // buffer should be empty so we should be requesting one new element
 
-        upstream.expectRequestMore(upstreamSubscription, 1) // because of buffer size 1
+        upstream.expectRequest(upstreamSubscription, 1) // because of buffer size 1
       }
     }
 
     "blocking subscriber cancels subscription" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
-        downstreamSubscription.requestMore(5)
-        upstreamSubscription.expectRequestMore(1)
+        downstreamSubscription.request(5)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("firstElement")
         downstream.expectNext("firstElement")
 
-        downstream2Subscription.requestMore(1)
+        downstream2Subscription.request(1)
         downstream2.expectNext("firstElement")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element2")
 
         downstream.expectNext("element2")
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         upstreamSubscription.sendNext("element3")
         downstream2.expectNoMsg(100.millis.dilated)
 
@@ -229,7 +227,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         upstream.expectNoMsg(100.millis.dilated)
         // should unblock fanoutbox
         downstream2Subscription.cancel()
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         downstream.expectNext("element3")
         upstreamSubscription.sendNext("element4")
         downstream.expectNext("element4")
@@ -241,22 +239,22 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "after initial upstream was completed future subscribers' onComplete should be called instead of onSubscribed" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
         // don't link it just yet
 
-        downstreamSubscription.requestMore(5)
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        downstreamSubscription.request(5)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("a1")
         downstream.expectNext("a1")
 
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
         upstreamSubscription.sendNext("a2")
         downstream.expectNext("a2")
 
-        upstream.expectRequestMore(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, 1)
 
         // link now while an upstream element is already requested
-        producer.produceTo(downstream2)
+        publisher.subscribe(downstream2)
         val downstream2Subscription = downstream2.expectSubscription()
 
         upstreamSubscription.sendNext("a3")
@@ -266,44 +264,44 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
         downstream2.expectNoMsg(100.millis.dilated) // as nothing was requested yet, fanOutBox needs to cache element in this case
 
-        downstream2Subscription.requestMore(1)
+        downstream2Subscription.request(1)
         downstream2.expectNext("a3")
         downstream2.expectComplete()
 
         // FIXME when adding a sleep before the following link this will fail with IllegalStateExc shut-down
         // what is the expected shutdown behavior? Is the title of this test wrong?
-        //        val downstream3 = StreamTestKit.consumerProbe[Any]()
-        //        producer.produceTo(downstream3)
+        //        val downstream3 = StreamTestKit.SubscriberProbe[Any]()
+        //        publisher.subscribe(downstream3)
         //        downstream3.expectComplete()
       }
     }
 
     "after initial upstream reported an error future subscribers' onError should be called instead of onSubscribed" in {
       new ChainSetup[Int, String](_.map(_ ⇒ throw TestException), settings.copy(initialInputBufferSize = 1, maxFanOutBufferSize = 1)) {
-        downstreamSubscription.requestMore(1)
-        upstreamSubscription.expectRequestMore(1)
+        downstreamSubscription.request(1)
+        upstreamSubscription.expectRequest(1)
 
         EventFilter[TestException.type](occurrences = 1) intercept {
           upstreamSubscription.sendNext(5)
-          upstreamSubscription.expectRequestMore(1)
+          upstreamSubscription.expectRequest(1)
           upstreamSubscription.expectCancellation()
           downstream.expectError(TestException)
         }
 
-        val downstream2 = StreamTestKit.consumerProbe[String]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[String]()
+        publisher.subscribe(downstream2)
         downstream2.expectError() should be(TestException)
       }
     }
 
     "when all subscriptions were cancelled future subscribers' onError should be called" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1)) {
-        upstreamSubscription.expectRequestMore(1)
+        upstreamSubscription.expectRequest(1)
         downstreamSubscription.cancel()
         upstreamSubscription.expectCancellation()
 
-        val downstream2 = StreamTestKit.consumerProbe[Any]()
-        producer.produceTo(downstream2)
+        val downstream2 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream2)
         // IllegalStateException shut down
         downstream2.expectError().isInstanceOf[IllegalStateException] should be(true)
       }

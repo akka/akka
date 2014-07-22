@@ -4,8 +4,8 @@
 
 package akka.http.model.japi;
 
-import org.reactivestreams.api.Consumer;
-import org.reactivestreams.api.Producer;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Publisher;
 
 import java.net.InetSocketAddress;
 
@@ -21,10 +21,10 @@ public interface IncomingConnection {
     /**
      * A stream of requests coming in from the peer.
      */
-    Producer<HttpRequest> getRequestProducer();
+    Publisher<HttpRequest> getRequestPublisher();
 
     /**
-     * A consumer of HttpResponses to be sent to the peer.
+     * A subscriber of HttpResponses to be sent to the peer.
      */
-    Consumer<HttpResponse> getResponseConsumer();
+    Subscriber<HttpResponse> getResponseSubscriber();
 }

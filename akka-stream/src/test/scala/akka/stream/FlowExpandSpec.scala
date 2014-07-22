@@ -21,45 +21,45 @@ class FlowExpandSpec extends AkkaSpec {
   "Expand" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Flow(producer).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, consumer)
+      Flow(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
 
       for (i ← 1 to 100) {
         // Order is important here: If the request comes first it will be extrapolated!
-        autoProducer.sendNext(i)
-        sub.requestMore(1)
-        consumer.expectNext(i)
+        autoPublisher.sendNext(i)
+        sub.request(1)
+        subscriber.expectNext(i)
       }
 
       sub.cancel()
     }
 
     "expand elements while upstream is silent" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Flow(producer).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, consumer)
+      Flow(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
 
-      autoProducer.sendNext(42)
+      autoPublisher.sendNext(42)
 
       for (i ← 1 to 100) {
-        sub.requestMore(1)
-        consumer.expectNext(42)
+        sub.request(1)
+        subscriber.expectNext(42)
       }
 
-      autoProducer.sendNext(-42)
-      sub.requestMore(1)
-      consumer.expectNext(-42)
+      autoPublisher.sendNext(-42)
+      sub.request(1)
+      subscriber.expectNext(-42)
 
       sub.cancel()
     }
@@ -74,44 +74,44 @@ class FlowExpandSpec extends AkkaSpec {
       Await.result(future, 10.seconds) should be(Set.empty[Int] ++ (1 to 100))
     }
 
-    "backpressure producer when consumer is slower" in {
-      val producer = StreamTestKit.producerProbe[Int]
-      val consumer = StreamTestKit.consumerProbe[Int]
+    "backpressure publisher when subscriber is slower" in {
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(producer).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, consumer)
+      Flow(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).produceTo(materializer, subscriber)
 
-      val autoProducer = new StreamTestKit.AutoProducer(producer)
-      val sub = consumer.expectSubscription()
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
 
-      autoProducer.sendNext(1)
-      sub.requestMore(1)
-      consumer.expectNext(1)
-      sub.requestMore(1)
-      consumer.expectNext(1)
+      autoPublisher.sendNext(1)
+      sub.request(1)
+      subscriber.expectNext(1)
+      sub.request(1)
+      subscriber.expectNext(1)
 
-      var pending = autoProducer.pendingRequests
+      var pending = autoPublisher.pendingRequests
       // Deplete pending requests coming from input buffer
       while (pending > 0) {
-        autoProducer.subscription.sendNext(2)
+        autoPublisher.subscription.sendNext(2)
         pending -= 1
       }
 
       // The above sends are absorbed in the input buffer, and will result in two one-sized batch requests
-      pending += autoProducer.subscription.expectRequestMore()
-      pending += autoProducer.subscription.expectRequestMore()
+      pending += autoPublisher.subscription.expectRequest()
+      pending += autoPublisher.subscription.expectRequest()
       while (pending > 0) {
-        autoProducer.subscription.sendNext(2)
+        autoPublisher.subscription.sendNext(2)
         pending -= 1
       }
 
-      producer.expectNoMsg(1.second)
+      publisher.expectNoMsg(1.second)
 
-      sub.requestMore(2)
-      consumer.expectNext(2)
-      consumer.expectNext(2)
+      sub.request(2)
+      subscriber.expectNext(2)
+      subscriber.expectNext(2)
 
       // Now production is resumed
-      autoProducer.subscription.expectRequestMore()
+      autoPublisher.subscription.expectRequest()
 
     }
   }

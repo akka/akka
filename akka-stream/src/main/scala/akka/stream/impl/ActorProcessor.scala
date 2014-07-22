@@ -3,17 +3,11 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.api.Processor
-import org.reactivestreams.spi.Subscriber
+import org.reactivestreams.{ Publisher, Subscriber, Subscription, Processor }
 import akka.actor._
 import akka.stream.MaterializerSettings
-import akka.event.LoggingReceive
+import akka.stream.actor.ActorSubscriber.{ OnSubscribe, OnNext, OnComplete, OnError }
 import java.util.Arrays
-import scala.util.control.NonFatal
-import org.reactivestreams.api.Consumer
-import akka.stream.actor.ActorSubscriber
-import akka.stream.actor.ActorConsumer.{ OnNext, OnError, OnComplete, OnSubscribe }
-import org.reactivestreams.spi.Subscription
 import akka.stream.TimerTransformer
 
 /**
@@ -40,13 +34,23 @@ private[akka] object ActorProcessor {
       case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
       case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
     }).withDispatcher(settings.dispatcher)
+
+  def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
+    val p = new ActorProcessor[I, O](impl)
+    impl ! ExposedPublisher(p.asInstanceOf[ActorPublisher[Any]])
+    p
+  }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorProcessor[I, O]( final val impl: ActorRef) extends Processor[I, O] with Consumer[I] with ActorProducerLike[O] {
-  override val getSubscriber: Subscriber[I] = new ActorSubscriber[I](impl)
+private[akka] class ActorProcessor[I, O] private (impl: ActorRef) extends ActorPublisher[O](impl, None)
+  with Processor[I, O] {
+  override def onSubscribe(s: Subscription): Unit = impl ! OnSubscribe(s)
+  override def onError(t: Throwable): Unit = impl ! OnError(t)
+  override def onComplete(): Unit = impl ! OnComplete
+  override def onNext(t: I): Unit = impl ! OnNext(t)
 }
 
 /**
@@ -74,7 +78,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
 
     batchRemaining -= 1
     if (batchRemaining == 0 && !upstreamCompleted) {
-      upstream.requestMore(requestBatchSize)
+      upstream.request(requestBatchSize)
       batchRemaining = requestBatchSize
     }
 
@@ -120,7 +124,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
     assert(subscription != null)
     upstream = subscription
     // Prefetch
-    upstream.requestMore(inputBuffer.length)
+    upstream.request(inputBuffer.length)
     subreceive.become(upstreamRunning)
   }
 

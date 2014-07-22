@@ -12,7 +12,7 @@ import akka.stream.impl.ActorProcessor
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
-import org.reactivestreams.api.Processor
+import org.reactivestreams.Processor
 import akka.actor.{ Props, ActorRef, Actor }
 import scala.collection.immutable.Queue
 import scala.concurrent.{ Future, Await }
@@ -149,15 +149,15 @@ class TcpFlowSpec extends AkkaSpec {
   }
 
   class TcpReadProbe(tcpProcessor: Processor[ByteString, ByteString]) {
-    val consumerProbe = StreamTestKit.consumerProbe[ByteString]()
-    tcpProcessor.produceTo(consumerProbe)
-    val tcpReadSubscription = consumerProbe.expectSubscription()
+    val subscriberProbe = StreamTestKit.SubscriberProbe[ByteString]()
+    tcpProcessor.subscribe(subscriberProbe)
+    val tcpReadSubscription = subscriberProbe.expectSubscription()
 
     def read(count: Int): ByteString = {
       var result = ByteString.empty
       while (result.size < count) {
-        tcpReadSubscription.requestMore(1)
-        result ++= consumerProbe.expectNext()
+        tcpReadSubscription.request(1)
+        result ++= subscriberProbe.expectNext()
       }
       result
     }
@@ -166,13 +166,13 @@ class TcpFlowSpec extends AkkaSpec {
   }
 
   class TcpWriteProbe(tcpProcessor: Processor[ByteString, ByteString]) {
-    val producerProbe = StreamTestKit.producerProbe[ByteString]()
-    producerProbe.produceTo(tcpProcessor)
-    val tcpWriteSubscription = producerProbe.expectSubscription()
+    val publisherProbe = StreamTestKit.PublisherProbe[ByteString]()
+    publisherProbe.subscribe(tcpProcessor)
+    val tcpWriteSubscription = publisherProbe.expectSubscription()
     var demand = 0
 
     def write(bytes: ByteString): Unit = {
-      if (demand == 0) demand += tcpWriteSubscription.expectRequestMore()
+      if (demand == 0) demand += tcpWriteSubscription.expectRequest()
       tcpWriteSubscription.sendNext(bytes)
       demand -= 1
     }
@@ -203,7 +203,7 @@ class TcpFlowSpec extends AkkaSpec {
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): Future[Unit] =
     Flow(bind(serverAddress).connectionStream).foreach { conn ⇒
-      conn.inputStream.produceTo(conn.outputStream)
+      conn.inputStream.subscribe(conn.outputStream)
     }.toFuture(materializer)
 
   "Outgoing TCP stream" must {
@@ -241,7 +241,7 @@ class TcpFlowSpec extends AkkaSpec {
       serverConnection.read(256)
       Flow(tcpProcessor).consume(materializer)
 
-      Flow(testInput).toProducer(materializer).produceTo(tcpProcessor)
+      Flow(testInput).toPublisher(materializer).subscribe(tcpProcessor)
       serverConnection.waitRead() should be(expectedOutput)
 
     }
@@ -275,7 +275,7 @@ class TcpFlowSpec extends AkkaSpec {
       serverConnection.write(testData)
       tcpReadProbe.read(5) should be(testData)
       serverConnection.confirmedClose()
-      tcpReadProbe.consumerProbe.expectComplete()
+      tcpReadProbe.subscriberProbe.expectComplete()
     }
 
     "stop reading when the input stream is cancelled" in {
@@ -289,7 +289,7 @@ class TcpFlowSpec extends AkkaSpec {
       tcpReadProbe.close()
       // FIXME: expect PeerClosed on server
       serverConnection.write(testData)
-      tcpReadProbe.consumerProbe.expectNoMsg(1.second)
+      tcpReadProbe.subscriberProbe.expectNoMsg(1.second)
       serverConnection.read(5)
       tcpWriteProbe.write(testData)
       serverConnection.waitRead() should be(testData)
@@ -308,7 +308,7 @@ class TcpFlowSpec extends AkkaSpec {
       // there should be a chitchat and non-chitchat version
 
       serverConnection.confirmedClose()
-      tcpReadProbe.consumerProbe.expectComplete()
+      tcpReadProbe.subscriberProbe.expectComplete()
 
       serverConnection.read(5)
       tcpWriteProbe.write(testData)
@@ -328,7 +328,7 @@ class TcpFlowSpec extends AkkaSpec {
       val tcpReadProbe = new TcpReadProbe(tcpProcessor)
 
       serverConnection.abort()
-      tcpReadProbe.consumerProbe.expectError()
+      tcpReadProbe.subscriberProbe.expectError()
       tcpWriteProbe.tcpWriteSubscription.expectCancellation()
     }
 
@@ -349,7 +349,7 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toProducer(materializer).produceTo(conn.outputStream)
+      Flow(testInput).toPublisher(materializer).subscribe(conn.outputStream)
       val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
@@ -368,9 +368,9 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toProducer(materializer).produceTo(conn1.outputStream)
-      conn1.inputStream.produceTo(conn2.outputStream)
-      conn2.inputStream.produceTo(conn3.outputStream)
+      Flow(testInput).toPublisher(materializer).subscribe(conn1.outputStream)
+      conn1.inputStream.subscribe(conn2.outputStream)
+      conn2.inputStream.subscribe(conn3.outputStream)
       val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)

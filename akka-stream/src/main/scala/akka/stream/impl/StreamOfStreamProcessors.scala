@@ -5,9 +5,8 @@ package akka.stream.impl
 
 import akka.stream.MaterializerSettings
 import akka.actor.{ Actor, Terminated, ActorRef }
-import org.reactivestreams.spi.{ Subscriber, Subscription }
-import org.reactivestreams.api.Producer
-import akka.stream.actor.ActorConsumer.{ OnNext, OnError, OnComplete, OnSubscribe }
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.stream.actor.ActorSubscriber.{ OnNext, OnError, OnComplete, OnSubscribe }
 
 /**
  * INTERNAL API
@@ -17,7 +16,7 @@ private[akka] object MultiStreamOutputProcessor {
   case class SubstreamCancel(substream: ActorRef)
 
   class SubstreamSubscription(val parent: ActorRef, val substream: ActorRef) extends Subscription {
-    override def requestMore(elements: Int): Unit =
+    override def request(elements: Int): Unit =
       if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
       else parent ! SubstreamRequestMore(substream, elements)
     override def cancel(): Unit = parent ! SubstreamCancel(substream)
@@ -44,7 +43,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
     val substream = context.watch(context.actorOf(
       IdentityProcessorImpl.props(settings)
         .withDispatcher(context.props.dispatcher)))
-    val processor = new ActorProcessor[AnyRef, AnyRef](substream)
+    val processor = ActorProcessor[AnyRef, AnyRef](substream)
 
     override def isClosed: Boolean = completed
     override def complete(): Unit = {
@@ -135,7 +134,7 @@ private[akka] object TwoStreamInputProcessor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSettings, val other: Producer[Any])
+private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSettings, val other: Publisher[Any])
   extends ActorProcessorImpl(_settings) {
   import TwoStreamInputProcessor._
 
@@ -162,7 +161,7 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
 
   override def receive = secondaryInputs.subreceive orElse primaryInputs.subreceive orElse primaryOutputs.subreceive
 
-  other.getPublisher.subscribe(new OtherActorSubscriber(self))
+  other.subscribe(new OtherActorSubscriber(self))
 
   override def shutdownHooks(): Unit = {
     secondaryInputs.cancel()
@@ -224,10 +223,10 @@ private[akka] abstract class MultiStreamInputProcessor(_settings: MaterializerSe
 
   }
 
-  def createSubstreamInputs(p: Producer[Any]): SubstreamInputs = {
+  def createSubstreamInputs(p: Publisher[Any]): SubstreamInputs = {
     val key = SubstreamKey(nextId)
     val inputs = new SubstreamInputs(key)
-    p.getPublisher.subscribe(new SubstreamSubscriber(self, key))
+    p.subscribe(new SubstreamSubscriber(self, key))
     substreamInputs(key) = inputs
     nextId += 1
     inputs

@@ -6,7 +6,7 @@ package akka.stream
 import scala.concurrent.duration._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.AkkaSpec
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.stream.scaladsl.Flow
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -19,12 +19,12 @@ class FlowSplitWhenSpec extends AkkaSpec {
     maxFanOutBufferSize = 2,
     dispatcher = "akka.test.stream-dispatcher"))
 
-  case class StreamPuppet(p: Producer[Int]) {
-    val probe = StreamTestKit.consumerProbe[Int]
-    p.produceTo(probe)
+  case class StreamPuppet(p: Publisher[Int]) {
+    val probe = StreamTestKit.SubscriberProbe[Int]()
+    p.subscribe(probe)
     val subscription = probe.expectSubscription()
 
-    def requestMore(demand: Int): Unit = subscription.requestMore(demand)
+    def request(demand: Int): Unit = subscription.request(demand)
     def expectNext(elem: Int): Unit = probe.expectNext(elem)
     def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
     def expectComplete(): Unit = probe.expectComplete()
@@ -32,20 +32,20 @@ class FlowSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
-    val source = Flow((1 to elementCount).iterator).toProducer(materializer)
-    val groupStream = Flow(source).splitWhen(_ == splitWhen).toProducer(materializer)
-    val masterConsumer = StreamTestKit.consumerProbe[Producer[Int]]
+    val source = Flow((1 to elementCount).iterator).toPublisher(materializer)
+    val groupStream = Flow(source).splitWhen(_ == splitWhen).toPublisher(materializer)
+    val masterSubscriber = StreamTestKit.SubscriberProbe[Publisher[Int]]()
 
-    groupStream.produceTo(masterConsumer)
-    val masterSubscription = masterConsumer.expectSubscription()
+    groupStream.subscribe(masterSubscriber)
+    val masterSubscription = masterSubscriber.expectSubscription()
 
-    def getSubproducer(): Producer[Int] = {
-      masterSubscription.requestMore(1)
-      expectSubproducer()
+    def getSubPublisher(): Publisher[Int] = {
+      masterSubscription.request(1)
+      expectSubPublisher()
     }
 
-    def expectSubproducer(): Producer[Int] = {
-      val substream = masterConsumer.expectNext()
+    def expectSubPublisher(): Publisher[Int] = {
+      val substream = masterSubscriber.expectNext()
       substream
     }
 
@@ -54,46 +54,46 @@ class FlowSplitWhenSpec extends AkkaSpec {
   "splitWhen" must {
 
     "work in the happy case" in new SubstreamsSupport(elementCount = 4) {
-      val s1 = StreamPuppet(getSubproducer())
-      masterConsumer.expectNoMsg(100.millis)
+      val s1 = StreamPuppet(getSubPublisher())
+      masterSubscriber.expectNoMsg(100.millis)
 
-      s1.requestMore(2)
+      s1.request(2)
       s1.expectNext(1)
       s1.expectNext(2)
       s1.expectComplete()
 
-      val s2 = StreamPuppet(getSubproducer())
-      masterConsumer.expectComplete()
+      val s2 = StreamPuppet(getSubPublisher())
+      masterSubscriber.expectComplete()
 
-      s2.requestMore(1)
+      s2.request(1)
       s2.expectNext(3)
       s2.expectNoMsg(100.millis)
 
-      s2.requestMore(1)
+      s2.request(1)
       s2.expectNext(4)
       s2.expectComplete()
 
     }
 
     "support cancelling substreams" in new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
-      val s1 = StreamPuppet(getSubproducer())
+      val s1 = StreamPuppet(getSubPublisher())
       s1.cancel()
-      val s2 = StreamPuppet(getSubproducer())
+      val s2 = StreamPuppet(getSubPublisher())
 
-      s2.requestMore(4)
+      s2.request(4)
       s2.expectNext(5)
       s2.expectNext(6)
       s2.expectNext(7)
       s2.expectNext(8)
       s2.expectComplete()
 
-      masterConsumer.expectComplete()
+      masterSubscriber.expectComplete()
     }
 
     "support cancelling the master stream" in new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
-      val s1 = StreamPuppet(getSubproducer())
+      val s1 = StreamPuppet(getSubPublisher())
       masterSubscription.cancel()
-      s1.requestMore(4)
+      s1.request(4)
       s1.expectNext(1)
       s1.expectNext(2)
       s1.expectNext(3)

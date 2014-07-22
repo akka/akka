@@ -4,9 +4,7 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
-import org.reactivestreams.api.Consumer
-import org.reactivestreams.spi.Subscriber
-import org.reactivestreams.spi.Subscription
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -15,19 +13,19 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 
-object ActorConsumer {
+object ActorSubscriber {
 
   /**
-   * Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.api.Consumer]]
-   * to a [[org.reactivestreams.api.Producer]] or [[akka.stream.Flow]].
+   * Attach a [[ActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
+   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.Flow]].
    */
-  def apply[T](ref: ActorRef): Consumer[T] = ActorConsumerImpl(ref)
+  def apply[T](ref: ActorRef): Subscriber[T] = new ActorSubscriberImpl(ref)
 
   /**
-   * Java API: Attach a [[ActorConsumer]] actor as a [[org.reactivestreams.api.Consumer]]
-   * to a [[org.reactivestreams.api.Producer]] or [[akka.stream.Flow]].
+   * Java API: Attach a [[ActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
+   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.Flow]].
    */
-  def create[T](ref: ActorRef): Consumer[T] = apply(ref)
+  def create[T](ref: ActorRef): Subscriber[T] = apply(ref)
 
   @SerialVersionUID(1L) case class OnNext(element: Any)
   @SerialVersionUID(1L) case object OnComplete
@@ -39,11 +37,11 @@ object ActorConsumer {
   @SerialVersionUID(1L) private[akka] case class OnSubscribe(subscription: Subscription)
 
   /**
-   * An [[ActorConsumer]] defines a `RequestStrategy` to control the stream back pressure.
+   * An [[ActorSubscriber]] defines a `RequestStrategy` to control the stream back pressure.
    */
   trait RequestStrategy {
     /**
-     * Invoked by the [[ActorConsumer]] after each incoming message to
+     * Invoked by the [[ActorSubscriber]] after each incoming message to
      * determine how many more elements to request from the stream.
      *
      * @param remainingRequested current remaining number of elements that
@@ -65,7 +63,7 @@ object ActorConsumer {
 
   /**
    * When request is only controlled with manual calls to
-   * [[ActorConsumer#request]].
+   * [[ActorSubscriber#request]].
    */
   case object ZeroRequestStrategy extends RequestStrategy {
     def requestDemand(remainingRequested: Int): Int = 0
@@ -122,30 +120,30 @@ object ActorConsumer {
 
 /**
  * Extend/mixin this trait in your [[akka.actor.Actor]] to make it a
- * stream consumer with full control of stream back pressure. It will receive
- * [[ActorConsumer.OnNext]], [[ActorConsumer.OnComplete]] and [[ActorConsumer.OnError]]
+ * stream subscriber with full control of stream back pressure. It will receive
+ * [[ActorSubscriber.OnNext]], [[ActorSubscriber.OnComplete]] and [[ActorSubscriber.OnError]]
  * messages from the stream. It can also receive other, non-stream messages, in
  * the same way as any actor.
  *
- * Attach the actor as a [[org.reactivestreams.api.Consumer]] to the stream with
- * [[ActorConsumer#apply]].
+ * Attach the actor as a [[org.reactivestreams.Subscriber]] to the stream with
+ * [[ActorSubscriber#apply]].
  *
  * Subclass must define the [[RequestStrategy]] to control stream back pressure.
- * After each incoming message the `ActorConsumer` will automatically invoke
+ * After each incoming message the `ActorSubscriber` will automatically invoke
  * the [[RequestStrategy#requestDemand]] and propagate the returned demand to the stream.
- * The provided [[ActorConsumer.WatermarkRequestStrategy]] is a good strategy if the actor
+ * The provided [[ActorSubscriber.WatermarkRequestStrategy]] is a good strategy if the actor
  * performs work itself.
- * The provided [[ActorConsumer.MaxInFlightRequestStrategy]] is useful if messages are
+ * The provided [[ActorSubscriber.MaxInFlightRequestStrategy]] is useful if messages are
  * queued internally or delegated to other actors.
  * You can also implement a custom [[RequestStrategy]] or call [[#request]] manually
- * together with [[ActorConsumer.ZeroRequestStrategy]] or some other strategy. In that case
+ * together with [[ActorSubscriber.ZeroRequestStrategy]] or some other strategy. In that case
  * you must also call [[#request]] when the actor is started or when it is ready, otherwise
  * it will not receive any elements.
  */
-trait ActorConsumer extends Actor {
-  import ActorConsumer._
+trait ActorSubscriber extends Actor {
+  import ActorSubscriber._
 
-  private val state = ActorConsumerState(context.system)
+  private val state = ActorSubscriberState(context.system)
   private var subscription: Option[Subscription] = None
   private var requested = 0L
   private var canceled = false
@@ -165,7 +163,7 @@ trait ActorConsumer extends Actor {
         if (canceled)
           sub.cancel()
         else if (requested != 0)
-          sub.requestMore(remainingRequested)
+          sub.request(remainingRequested)
       } else
         sub.cancel()
     case _: OnError ⇒
@@ -194,7 +192,7 @@ trait ActorConsumer extends Actor {
 
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
-    state.set(self, ActorConsumerState.State(subscription, requested, canceled))
+    state.set(self, ActorSubscriberState.State(subscription, requested, canceled))
     super.aroundPreRestart(reason, message)
   }
 
@@ -210,7 +208,7 @@ trait ActorConsumer extends Actor {
   protected def request(elements: Int): Unit =
     if (elements > 0 && !canceled) {
       // if we don't have a subscription yet, it will be requested when it arrives
-      subscription.foreach(_.requestMore(elements))
+      subscription.foreach(_.request(elements))
       requested += elements
     }
 
@@ -233,31 +231,24 @@ trait ActorConsumer extends Actor {
 /**
  * INTERNAL API
  */
-private[akka] case class ActorConsumerImpl[T](ref: ActorRef) extends Consumer[T] {
-  override val getSubscriber: Subscriber[T] = new ActorSubscriber[T](ref)
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final class ActorSubscriber[T](val impl: ActorRef) extends Subscriber[T] {
-  override def onError(cause: Throwable): Unit = impl ! ActorConsumer.OnError(cause)
-  override def onComplete(): Unit = impl ! ActorConsumer.OnComplete
-  override def onNext(element: T): Unit = impl ! ActorConsumer.OnNext(element)
-  override def onSubscribe(subscription: Subscription): Unit = impl ! ActorConsumer.OnSubscribe(subscription)
+private[akka] final class ActorSubscriberImpl[T](val impl: ActorRef) extends Subscriber[T] {
+  override def onError(cause: Throwable): Unit = impl ! ActorSubscriber.OnError(cause)
+  override def onComplete(): Unit = impl ! ActorSubscriber.OnComplete
+  override def onNext(element: T): Unit = impl ! ActorSubscriber.OnNext(element)
+  override def onSubscribe(subscription: Subscription): Unit = impl ! ActorSubscriber.OnSubscribe(subscription)
 }
 
 /**
  * INTERNAL API
  * Some state must survive restarts.
  */
-private[akka] object ActorConsumerState extends ExtensionId[ActorConsumerState] with ExtensionIdProvider {
-  override def get(system: ActorSystem): ActorConsumerState = super.get(system)
+private[akka] object ActorSubscriberState extends ExtensionId[ActorSubscriberState] with ExtensionIdProvider {
+  override def get(system: ActorSystem): ActorSubscriberState = super.get(system)
 
-  override def lookup = ActorConsumerState
+  override def lookup = ActorSubscriberState
 
-  override def createExtension(system: ExtendedActorSystem): ActorConsumerState =
-    new ActorConsumerState
+  override def createExtension(system: ExtendedActorSystem): ActorSubscriberState =
+    new ActorSubscriberState
 
   case class State(subscription: Option[Subscription], requested: Long, canceled: Boolean)
 
@@ -266,8 +257,8 @@ private[akka] object ActorConsumerState extends ExtensionId[ActorConsumerState] 
 /**
  * INTERNAL API
  */
-private[akka] class ActorConsumerState extends Extension {
-  import ActorConsumerState.State
+private[akka] class ActorSubscriberState extends Extension {
+  import ActorSubscriberState.State
   private val state = new ConcurrentHashMap[ActorRef, State]
 
   def get(ref: ActorRef): Option[State] = Option(state.get(ref))
