@@ -6,6 +6,7 @@ package akka.http
 
 import java.net.Socket
 import java.io.{ InputStreamReader, BufferedReader, OutputStreamWriter, BufferedWriter }
+import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.annotation.tailrec
 import scala.concurrent.duration._
@@ -15,8 +16,8 @@ import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 import akka.io.IO
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.testkit.{ ProducerProbe, ConsumerProbe, StreamTestKit }
-import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.testkit.StreamTestKit
+import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.scaladsl.Flow
 import akka.http.server.ServerSettings
 import akka.http.client.ClientConnectionSettings
@@ -48,8 +49,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       localAddress.getHostName shouldEqual hostname
       localAddress.getPort shouldEqual port
 
-      val c = StreamTestKit.consumerProbe[Http.IncomingConnection]
-      connectionStream.produceTo(c)
+      val c = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      connectionStream.subscribe(c)
       val sub = c.expectSubscription()
 
       sub.cancel()
@@ -64,14 +65,14 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       clientOutSub.sendNext(HttpRequest(uri = "/abc") -> 'abcContext)
 
       val serverInSub = serverIn.expectSubscription()
-      serverInSub.requestMore(1)
+      serverInSub.request(1)
       serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.sendNext(HttpResponse(entity = "yeah"))
 
       val clientInSub = clientIn.expectSubscription()
-      clientInSub.requestMore(1)
+      clientInSub.request(1)
       val (response, 'abcContext) = clientIn.expectNext()
       toStrict(response.entity) shouldEqual HttpEntity("yeah")
     }
@@ -82,13 +83,13 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val chunks = List(Chunk("abc"), Chunk("defg"), Chunk("hijkl"), LastChunk)
       val chunkedContentType: ContentType = MediaTypes.`application/base64`
-      val chunkedEntity = HttpEntity.Chunked(chunkedContentType, SynchronousProducerFromIterable(chunks))
+      val chunkedEntity = HttpEntity.Chunked(chunkedContentType, SynchronousPublisherFromIterable(chunks))
 
       val clientOutSub = clientOut.expectSubscription()
       clientOutSub.sendNext(HttpRequest(POST, "/chunked", List(Accept(MediaRanges.`*/*`)), chunkedEntity) -> 12345678)
 
       val serverInSub = serverIn.expectSubscription()
-      serverInSub.requestMore(1)
+      serverInSub.request(1)
       private val HttpRequest(POST, uri, List(`User-Agent`(_), Host(_, _), Accept(Vector(MediaRanges.`*/*`))),
         Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
       uri shouldEqual Uri(s"http://$hostname:$port/chunked")
@@ -98,7 +99,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
 
       val clientInSub = clientIn.expectSubscription()
-      clientInSub.requestMore(1)
+      clientInSub.request(1)
       val (HttpResponse(StatusCodes.PartialContent, List(Date(_), Server(_), RawHeader("Age", "42")),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`), 12345678) = clientIn.expectNext()
       Await.result(Flow(chunkStream2).grouped(1000).toFuture(materializer), 100.millis) shouldEqual chunks
@@ -114,37 +115,37 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     def configOverrides = ""
 
     // automatically bind a server
-    val connectionStream: ConsumerProbe[Http.IncomingConnection] = {
+    val connectionStream: SubscriberProbe[Http.IncomingConnection] = {
       val commander = TestProbe()
       val settings = configOverrides.toOption.map(ServerSettings.apply)
       commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings, materializerSettings = materializerSettings))
-      val probe = StreamTestKit.consumerProbe[Http.IncomingConnection]
-      commander.expectMsgType[Http.ServerBinding].connectionStream.produceTo(probe)
+      val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
+      commander.expectMsgType[Http.ServerBinding].connectionStream.subscribe(probe)
       probe
     }
     val connectionStreamSub = connectionStream.expectSubscription()
 
-    def openNewClientConnection[T](settings: Option[ClientConnectionSettings] = None): (ProducerProbe[(HttpRequest, T)], ConsumerProbe[(HttpResponse, T)]) = {
+    def openNewClientConnection[T](settings: Option[ClientConnectionSettings] = None): (PublisherProbe[(HttpRequest, T)], SubscriberProbe[(HttpResponse, T)]) = {
       val commander = TestProbe()
       commander.send(IO(Http), Http.Connect(hostname, port, settings = settings, materializerSettings = materializerSettings))
       val connection = commander.expectMsgType[Http.OutgoingConnection]
       connection.remoteAddress.getPort shouldEqual port
       connection.remoteAddress.getHostName shouldEqual hostname
-      val requestProducerProbe = StreamTestKit.producerProbe[(HttpRequest, T)]
-      val responseConsumerProbe = StreamTestKit.consumerProbe[(HttpResponse, T)]
-      requestProducerProbe.produceTo(connection.processor[T])
-      connection.processor[T].produceTo(responseConsumerProbe)
-      requestProducerProbe -> responseConsumerProbe
+      val requestPublisherProbe = StreamTestKit.PublisherProbe[(HttpRequest, T)]()
+      val responseSubscriberProbe = StreamTestKit.SubscriberProbe[(HttpResponse, T)]()
+      requestPublisherProbe.subscribe(connection.processor[T])
+      connection.processor[T].subscribe(responseSubscriberProbe)
+      requestPublisherProbe -> responseSubscriberProbe
     }
 
-    def acceptConnection(): (ConsumerProbe[HttpRequest], ProducerProbe[HttpResponse]) = {
-      connectionStreamSub.requestMore(1)
-      val Http.IncomingConnection(_, requestProducer, responseConsumer) = connectionStream.expectNext()
-      val requestConsumerProbe = StreamTestKit.consumerProbe[HttpRequest]
-      val responseProducerProbe = StreamTestKit.producerProbe[HttpResponse]
-      requestProducer.produceTo(requestConsumerProbe)
-      responseProducerProbe.produceTo(responseConsumer)
-      requestConsumerProbe -> responseProducerProbe
+    def acceptConnection(): (SubscriberProbe[HttpRequest], PublisherProbe[HttpResponse]) = {
+      connectionStreamSub.request(1)
+      val Http.IncomingConnection(_, requestPublisher, responseSubscriber) = connectionStream.expectNext()
+      val requestSubscriberProbe = StreamTestKit.SubscriberProbe[HttpRequest]()
+      val responsePublisherProbe = StreamTestKit.PublisherProbe[HttpResponse]()
+      requestPublisher.subscribe(requestSubscriberProbe)
+      responsePublisherProbe.subscribe(responseSubscriber)
+      requestSubscriberProbe -> responsePublisherProbe
     }
 
     def openClientSocket() = new Socket(hostname, port)

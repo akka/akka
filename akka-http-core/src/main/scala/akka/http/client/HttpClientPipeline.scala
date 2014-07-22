@@ -37,19 +37,19 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
   def apply(tcpConn: StreamTcp.OutgoingTcpConnection): Http.OutgoingConnection = {
     val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
 
-    val (contextBypassConsumer, contextBypassProducer) =
+    val (contextBypassSubscriber, contextBypassPublisher) =
       Duct[(HttpRequest, Any)].map(_._2).build(materializer)
 
-    val requestConsumer =
+    val requestSubscriber =
       Duct[(HttpRequest, Any)]
-        .tee(contextBypassConsumer)
+        .tee(contextBypassSubscriber)
         .map(requestMethodByPass)
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing request stream error"))
         .produceTo(materializer, tcpConn.outputStream)
 
-    val responseProducer =
+    val responsePublisher =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
         .splitWhen(_.isInstanceOf[MessageStart])
@@ -58,10 +58,10 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
           case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
             HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
         }
-        .zip(contextBypassProducer)
-        .toProducer(materializer)
+        .zip(contextBypassPublisher)
+        .toPublisher(materializer)
 
-    val processor = HttpClientProcessor(requestConsumer.getSubscriber, responseProducer.getPublisher)
+    val processor = HttpClientProcessor(requestSubscriber, responsePublisher)
     Http.OutgoingConnection(tcpConn.remoteAddress, tcpConn.localAddress, processor)
   }
 

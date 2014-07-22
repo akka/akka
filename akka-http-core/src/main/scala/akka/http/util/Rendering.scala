@@ -4,7 +4,8 @@
 
 package akka.http.util
 
-import java.text.DecimalFormat
+import java.text.{ DecimalFormatSymbols, DecimalFormat }
+import java.util.Locale
 import scala.annotation.tailrec
 import scala.collection.{ immutable, LinearSeq }
 import akka.parboiled2.{ CharPredicate, CharUtils }
@@ -202,7 +203,7 @@ private[http] trait Rendering {
 }
 
 private[http] object Rendering {
-  val floatFormat = new DecimalFormat("0.0##")
+  val floatFormat = new DecimalFormat("0.0##", DecimalFormatSymbols.getInstance(Locale.ROOT))
   val `\"` = CharPredicate('\\', '"')
 
   case object `, ` extends SingletonValueRenderable // default separator

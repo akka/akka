@@ -10,7 +10,7 @@ import akka.stream.impl._
 import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
-import org.reactivestreams.api.Processor
+import org.reactivestreams.Processor
 
 /**
  * INTERNAL API

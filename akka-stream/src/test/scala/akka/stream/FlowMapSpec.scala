@@ -28,14 +28,14 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      val probe = StreamTestKit.consumerProbe[Int]
+      val probe = StreamTestKit.SubscriberProbe[Int]()
       Flow(List(1).iterator).
         map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).
-        toProducer(gen).produceTo(probe)
+        toPublisher(gen).subscribe(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {
-        subscription.requestMore(Int.MaxValue)
+        subscription.request(Int.MaxValue)
       }
 
       probe.expectNext(6)

@@ -5,8 +5,7 @@
 package akka.http.client
 
 import akka.http.model.{ HttpResponse, HttpRequest }
-import org.reactivestreams.spi.{ Publisher, Subscriber }
-import org.reactivestreams.api.{ Consumer, Processor }
+import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }
 
 /**
  * A `HttpClientProcessor` models an HTTP client as a stream processor that provides
@@ -19,8 +18,11 @@ object HttpClientProcessor {
   def apply[T](requestSubscriber: Subscriber[(HttpRequest, T)],
                responsePublisher: Publisher[(HttpResponse, T)]): HttpClientProcessor[T] =
     new HttpClientProcessor[T] {
-      def getSubscriber = requestSubscriber
-      def getPublisher = responsePublisher
-      def produceTo(consumer: Consumer[(HttpResponse, T)]): Unit = responsePublisher.subscribe(consumer.getSubscriber)
+      override def subscribe(s: Subscriber[(HttpResponse, T)]): Unit = responsePublisher.subscribe(s)
+
+      override def onError(t: Throwable): Unit = requestSubscriber.onError(t)
+      override def onSubscribe(s: Subscription): Unit = requestSubscriber.onSubscribe(s)
+      override def onComplete(): Unit = requestSubscriber.onComplete()
+      override def onNext(t: (HttpRequest, T)): Unit = requestSubscriber.onNext(t)
     }
 }

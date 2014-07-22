@@ -5,14 +5,14 @@
 package akka.http.rendering
 
 import java.net.InetSocketAddress
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowMaterializer, Transformer }
-import akka.stream.impl.SynchronousProducerFromIterable
+import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.http.model._
 import akka.http.util._
 import RenderSupport._
@@ -28,9 +28,9 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
 
-  final class HttpRequestRenderer extends Transformer[RequestRenderingContext, Producer[ByteString]] {
+  final class HttpRequestRenderer extends Transformer[RequestRenderingContext, Publisher[ByteString]] {
 
-    def onNext(ctx: RequestRenderingContext): immutable.Seq[Producer[ByteString]] = {
+    def onNext(ctx: RequestRenderingContext): immutable.Seq[Publisher[ByteString]] = {
       val r = new ByteStringRendering(requestHeaderSizeHint)
       import ctx.request._
 
@@ -97,21 +97,21 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
         r ~~ CrLf
       }
 
-      def completeRequestRendering(): immutable.Seq[Producer[ByteString]] =
+      def completeRequestRendering(): immutable.Seq[Publisher[ByteString]] =
         entity match {
           case HttpEntity.Strict(contentType, data) ⇒
             renderContentLength(data.length)
-            SynchronousProducerFromIterable(r.get :: data :: Nil) :: Nil
+            SynchronousPublisherFromIterable(r.get :: data :: Nil) :: Nil
 
           case HttpEntity.Default(contentType, contentLength, data) ⇒
             renderContentLength(contentLength)
             renderByteStrings(r,
-              Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toProducer(materializer),
+              Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher(materializer),
               materializer)
 
           case HttpEntity.Chunked(contentType, chunks) ⇒
             r ~~ `Transfer-Encoding` ~~ Chunked ~~ CrLf ~~ CrLf
-            renderByteStrings(r, Flow(chunks).transform(new ChunkTransformer).toProducer(materializer), materializer)
+            renderByteStrings(r, Flow(chunks).transform(new ChunkTransformer).toPublisher(materializer), materializer)
         }
 
       renderRequestLine()
@@ -119,7 +119,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
       renderEntityContentType(r, entity)
       if (entity.isKnownEmpty) {
         renderContentLength(0)
-        SynchronousProducerFromIterable(r.get :: Nil) :: Nil
+        SynchronousPublisherFromIterable(r.get :: Nil) :: Nil
       } else completeRequestRendering()
     }
   }

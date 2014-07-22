@@ -3,27 +3,21 @@
  */
 package akka.stream.impl
 
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import org.reactivestreams.spi.Subscriber
-import org.reactivestreams.spi.Subscription
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Status
-import akka.actor.SupervisorStrategy
+import akka.actor.{ Actor, ActorRef, Props, Status, SupervisorStrategy }
 import akka.pattern.pipe
 import akka.stream.MaterializerSettings
+import org.reactivestreams.{ Subscriber, Subscription }
+
+import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
  */
-private[akka] object FutureProducer {
+private[akka] object FuturePublisher {
   def props(future: Future[Any], settings: MaterializerSettings): Props =
-    Props(new FutureProducer(future, settings)).withDispatcher(settings.dispatcher)
+    Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher)
 
   object FutureSubscription {
     case class Cancel(subscription: FutureSubscription)
@@ -31,9 +25,9 @@ private[akka] object FutureProducer {
   }
 
   class FutureSubscription(ref: ActorRef) extends Subscription {
-    import FutureSubscription._
+    import akka.stream.impl.FuturePublisher.FutureSubscription._
     def cancel(): Unit = ref ! Cancel(this)
-    def requestMore(elements: Int): Unit =
+    def request(elements: Int): Unit =
       if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
       else ref ! RequestMore(this)
     override def toString = "FutureSubscription"
@@ -43,10 +37,9 @@ private[akka] object FutureProducer {
 /**
  * INTERNAL API
  */
-private[akka] class FutureProducer(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
-  import FutureProducer.FutureSubscription
-  import FutureProducer.FutureSubscription.Cancel
-  import FutureProducer.FutureSubscription.RequestMore
+private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
+  import akka.stream.impl.FuturePublisher.FutureSubscription
+  import akka.stream.impl.FuturePublisher.FutureSubscription.{ Cancel, RequestMore }
 
   var exposedPublisher: ActorPublisher[Any] = _
   var subscribers = Map.empty[Subscriber[Any], FutureSubscription]

@@ -40,7 +40,7 @@ public abstract class JavaTestServer {
                     public void apply(IncomingConnection conn) throws Exception {
                         System.out.println("New incoming connection from " + conn.remoteAddress());
 
-                        Flow.create(conn.getRequestProducer())
+                        Flow.create(conn.getRequestPublisher())
                                 .map(new Function<HttpRequest, HttpResponse>() {
                                     @Override
                                     public HttpResponse apply(HttpRequest request) throws Exception {
@@ -48,7 +48,7 @@ public abstract class JavaTestServer {
                                         return JavaApiTestCases.handleRequest(request);
                                     }
                                 })
-                                .produceTo(materializer, conn.getResponseConsumer());
+                                .produceTo(materializer, conn.getResponseSubscriber());
                     }
                 }).consume(materializer);
             }

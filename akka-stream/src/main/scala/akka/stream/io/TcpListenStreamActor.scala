@@ -3,15 +3,15 @@
  */
 package akka.stream.io
 
-import scala.util.control.NoStackTrace
 import akka.actor._
-import akka.stream.impl._
-import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
-import akka.util.ByteString
-import org.reactivestreams.api.{ Consumer, Producer }
-import org.reactivestreams.spi.Publisher
+import akka.io.{ IO, Tcp }
 import akka.stream.MaterializerSettings
+import akka.stream.impl._
+import akka.util.ByteString
+import org.reactivestreams.Publisher
+
+import scala.util.control.NoStackTrace
 
 /**
  * INTERNAL API
@@ -22,12 +22,6 @@ private[akka] object TcpListenStreamActor {
   def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props =
     Props(new TcpListenStreamActor(bindCmd, requester, settings)).withDispatcher(settings.dispatcher)
 
-  case class ConnectionProducer(getPublisher: Publisher[StreamTcp.IncomingTcpConnection])
-    extends Producer[StreamTcp.IncomingTcpConnection] {
-
-    def produceTo(consumer: Consumer[StreamTcp.IncomingTcpConnection]): Unit =
-      getPublisher.subscribe(consumer.getSubscriber)
-  }
 }
 
 /**
@@ -35,7 +29,7 @@ private[akka] object TcpListenStreamActor {
  */
 private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, val settings: MaterializerSettings) extends Actor
   with Pump {
-  import TcpListenStreamActor._
+  import akka.stream.io.TcpListenStreamActor._
   import context.system
 
   object primaryOutputs extends FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
@@ -72,7 +66,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         listener ! ResumeAccepting(1)
         requester ! StreamTcp.TcpServerBinding(
           localAddress,
-          ConnectionProducer(primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]]))
+          primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]])
         subreceive.become(running)
       case f: CommandFailed ⇒
         val ex = new TcpListenStreamException("Bind failed")
@@ -112,7 +106,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
-    val processor = new ActorProcessor[ByteString, ByteString](tcpStreamActor)
+    val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
     primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
   }
 

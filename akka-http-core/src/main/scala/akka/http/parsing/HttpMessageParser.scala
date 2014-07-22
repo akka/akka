@@ -14,7 +14,7 @@ import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._
 import HttpProtocols._
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.stream.scaladsl.Flow
 
 /**
@@ -236,14 +236,14 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
   def defaultEntity(cth: Option[`Content-Type`], contentLength: Long,
-                    materializer: FlowMaterializer)(entityParts: Producer[_ <: ParserOutput]): HttpEntity.Regular = {
-    val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toProducer(materializer)
+                    materializer: FlowMaterializer)(entityParts: Publisher[_ <: ParserOutput]): HttpEntity.Regular = {
+    val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher(materializer)
     HttpEntity.Default(contentType(cth), contentLength, data)
   }
 
   def chunkedEntity(cth: Option[`Content-Type`],
-                    materializer: FlowMaterializer)(entityChunks: Producer[_ <: ParserOutput]): HttpEntity.Regular = {
-    val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toProducer(materializer)
+                    materializer: FlowMaterializer)(entityChunks: Publisher[_ <: ParserOutput]): HttpEntity.Regular = {
+    val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher(materializer)
     HttpEntity.Chunked(contentType(cth), chunks)
   }
 }

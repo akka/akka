@@ -33,13 +33,13 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
         maxFanOutBufferSize = 1,
         dispatcher = "akka.test.stream-dispatcher"))
 
-      val probe = StreamTestKit.consumerProbe[Int]
+      val probe = StreamTestKit.SubscriberProbe[Int]()
       Flow(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).
-        toProducer(materializer).produceTo(probe)
+        toPublisher(materializer).subscribe(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {
-        subscription.requestMore(Int.MaxValue)
+        subscription.request(Int.MaxValue)
       }
 
       probe.expectNext(1)

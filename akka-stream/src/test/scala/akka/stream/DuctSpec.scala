@@ -4,8 +4,7 @@
 package akka.stream
 
 import scala.concurrent.duration._
-import org.reactivestreams.api.Consumer
-import org.reactivestreams.api.Producer
+import org.reactivestreams.{ Publisher, Subscriber }
 import akka.stream.scaladsl.Duct
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
@@ -20,36 +19,36 @@ class DuctSpec extends AkkaSpec {
 
   "A Duct" must {
 
-    "materialize into Producer/Consumer" in {
+    "materialize into Publisher/Subscriber" in {
       val duct: Duct[String, String] = Duct[String]
-      val (ductIn: Consumer[String], ductOut: Producer[String]) = duct.build(materializer)
+      val (ductIn: Subscriber[String], ductOut: Publisher[String]) = duct.build(materializer)
 
-      val c1 = StreamTestKit.consumerProbe[String]
-      ductOut.produceTo(c1)
+      val c1 = StreamTestKit.SubscriberProbe[String]()
+      ductOut.subscribe(c1)
 
-      val source: Producer[String] = Flow(List("1", "2", "3")).toProducer(materializer)
-      source.produceTo(ductIn)
+      val source: Publisher[String] = Flow(List("1", "2", "3")).toPublisher(materializer)
+      source.subscribe(ductIn)
 
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNext("1")
       c1.expectNext("2")
       c1.expectNext("3")
       c1.expectComplete
     }
 
-    "materialize into Producer/Consumer and transformation processor" in {
+    "materialize into Publisher/Subscriber and transformation processor" in {
       val duct: Duct[Int, String] = Duct[Int].map((i: Int) ⇒ i.toString)
-      val (ductIn: Consumer[Int], ductOut: Producer[String]) = duct.build(materializer)
+      val (ductIn: Subscriber[Int], ductOut: Publisher[String]) = duct.build(materializer)
 
-      val c1 = StreamTestKit.consumerProbe[String]
-      ductOut.produceTo(c1)
+      val c1 = StreamTestKit.SubscriberProbe[String]()
+      ductOut.subscribe(c1)
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Producer[Int] = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(ductIn)
+      val source: Publisher[Int] = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(ductIn)
 
       c1.expectNext("1")
       c1.expectNext("2")
@@ -57,18 +56,18 @@ class DuctSpec extends AkkaSpec {
       c1.expectComplete
     }
 
-    "materialize into Producer/Consumer and multiple transformation processors" in {
+    "materialize into Publisher/Subscriber and multiple transformation processors" in {
       val duct = Duct[Int].map(_.toString).map("elem-" + _)
       val (ductIn, ductOut) = duct.build(materializer)
 
-      val c1 = StreamTestKit.consumerProbe[String]
-      ductOut.produceTo(c1)
+      val c1 = StreamTestKit.SubscriberProbe[String]()
+      ductOut.subscribe(c1)
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Producer[Int] = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(ductIn)
+      val source: Publisher[Int] = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(ductIn)
 
       c1.expectNext("elem-1")
       c1.expectNext("elem-2")
@@ -76,15 +75,15 @@ class DuctSpec extends AkkaSpec {
       c1.expectComplete
     }
 
-    "produceTo Consumer" in {
+    "subscribe Subscriber" in {
       val duct: Duct[String, String] = Duct[String]
-      val c1 = StreamTestKit.consumerProbe[String]
-      val c2: Consumer[String] = duct.produceTo(materializer, c1)
-      val source: Producer[String] = Flow(List("1", "2", "3")).toProducer(materializer)
-      source.produceTo(c2)
+      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c2: Subscriber[String] = duct.produceTo(materializer, c1)
+      val source: Publisher[String] = Flow(List("1", "2", "3")).toPublisher(materializer)
+      source.subscribe(c2)
 
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNext("1")
       c1.expectNext("2")
       c1.expectNext("3")
@@ -95,8 +94,8 @@ class DuctSpec extends AkkaSpec {
       val duct = Duct[Int].map(i ⇒ { testActor ! i.toString; i.toString })
       val c = duct.consume(materializer)
 
-      val source = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(c)
+      val source = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(c)
 
       expectMsg("1")
       expectMsg("2")
@@ -107,25 +106,25 @@ class DuctSpec extends AkkaSpec {
       val duct = Duct[Int].map(_.toString).map("elem-" + _).foreach(testActor ! _)
       val c = duct.consume(materializer)
 
-      val source = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(c)
+      val source = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(c)
 
       expectMsg("elem-1")
       expectMsg("elem-2")
       expectMsg("elem-3")
     }
 
-    "perform transformation operation and produceTo Consumer" in {
+    "perform transformation operation and subscribe Subscriber" in {
       val duct = Duct[Int].map(_.toString)
-      val c1 = StreamTestKit.consumerProbe[String]
-      val c2: Consumer[Int] = duct.produceTo(materializer, c1)
+      val c1 = StreamTestKit.SubscriberProbe[String]()
+      val c2: Subscriber[Int] = duct.produceTo(materializer, c1)
 
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Producer[Int] = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(c2)
+      val source: Publisher[Int] = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(c2)
 
       c1.expectNext("1")
       c1.expectNext("2")
@@ -133,17 +132,17 @@ class DuctSpec extends AkkaSpec {
       c1.expectComplete
     }
 
-    "perform multiple transformation operations and produceTo Consumer" in {
+    "perform multiple transformation operations and subscribe Subscriber" in {
       val duct = Duct[Int].map(_.toString).map("elem-" + _)
-      val c1 = StreamTestKit.consumerProbe[String]
+      val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = duct.produceTo(materializer, c1)
 
       val sub1 = c1.expectSubscription
-      sub1.requestMore(3)
+      sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val source: Producer[Int] = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(c2)
+      val source: Publisher[Int] = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(c2)
 
       c1.expectNext("elem-1")
       c1.expectNext("elem-2")
@@ -158,8 +157,8 @@ class DuctSpec extends AkkaSpec {
         case Failure(e) ⇒ testActor ! e
       }
 
-      val source = Flow(List(1, 2, 3)).toProducer(materializer)
-      source.produceTo(c)
+      val source = Flow(List(1, 2, 3)).toPublisher(materializer)
+      source.subscribe(c)
 
       expectMsg("1")
       expectMsg("2")
@@ -168,12 +167,12 @@ class DuctSpec extends AkkaSpec {
     }
 
     "be appendable to a Flow" in {
-      val c = StreamTestKit.consumerProbe[String]
+      val c = StreamTestKit.SubscriberProbe[String]()
       val duct = Duct[Int].map(_ + 10).map(_.toString)
       Flow(List(1, 2, 3)).map(_ * 2).append(duct).map((s: String) ⇒ "elem-" + s).produceTo(materializer, c)
 
       val sub = c.expectSubscription
-      sub.requestMore(3)
+      sub.request(3)
       c.expectNext("elem-12")
       c.expectNext("elem-14")
       c.expectNext("elem-16")
@@ -181,18 +180,18 @@ class DuctSpec extends AkkaSpec {
     }
 
     "be appendable to a Duct" in {
-      val c = StreamTestKit.consumerProbe[String]
+      val c = StreamTestKit.SubscriberProbe[String]()
       val duct1 = Duct[String].map(Integer.parseInt)
-      val ductInConsumer = Duct[Int]
+      val ductInSubscriber = Duct[Int]
         .map { i ⇒ (i * 2).toString }
         .append(duct1)
         .map { i ⇒ "elem-" + (i + 10) }
         .produceTo(materializer, c)
 
-      Flow(List(1, 2, 3)).produceTo(materializer, ductInConsumer)
+      Flow(List(1, 2, 3)).produceTo(materializer, ductInSubscriber)
 
       val sub = c.expectSubscription
-      sub.requestMore(3)
+      sub.request(3)
       c.expectNext("elem-12")
       c.expectNext("elem-14")
       c.expectNext("elem-16")
