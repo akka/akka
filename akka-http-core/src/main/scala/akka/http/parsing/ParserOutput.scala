@@ -37,6 +37,8 @@ private[http] object ParserOutput {
     createEntity: Publisher[ResponseOutput] ⇒ HttpEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
 
+  case object MessageEnd extends MessageOutput
+
   final case class EntityPart(data: ByteString) extends MessageOutput
 
   final case class EntityChunk(chunk: HttpEntity.ChunkStreamPart) extends MessageOutput
