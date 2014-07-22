@@ -7,7 +7,7 @@ package akka.http.model.japi;
 import akka.http.model.HttpEntity$;
 import akka.stream.FlowMaterializer;
 import akka.util.ByteString;
-import org.reactivestreams.api.Producer;
+import org.reactivestreams.Publisher;
 
 import java.io.File;
 
@@ -68,7 +68,7 @@ public abstract class HttpEntity {
     /**
      * Returns a stream of data bytes this entity consists of.
      */
-    public abstract Producer<ByteString> getDataBytes(FlowMaterializer materializer);
+    public abstract Publisher<ByteString> getDataBytes(FlowMaterializer materializer);
 
     public static HttpEntityStrict create(String string) {
         return HttpEntity$.MODULE$.apply(string);
@@ -91,18 +91,18 @@ public abstract class HttpEntity {
     public static HttpEntityRegular create(ContentType contentType, File file) {
         return (HttpEntityRegular) HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, file);
     }
-    public static HttpEntityDefault create(ContentType contentType, long contentLength, Producer<ByteString> data) {
+    public static HttpEntityDefault create(ContentType contentType, long contentLength, Publisher<ByteString> data) {
         return new akka.http.model.HttpEntity.Default((akka.http.model.ContentType) contentType, contentLength, data);
     }
-    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Producer<ByteString> data) {
+    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Publisher<ByteString> data) {
         return new akka.http.model.HttpEntity.CloseDelimited((akka.http.model.ContentType) contentType, data);
     }
-    public static HttpEntityChunked createChunked(ContentType contentType, Producer<ChunkStreamPart> chunks) {
+    public static HttpEntityChunked createChunked(ContentType contentType, Publisher<ChunkStreamPart> chunks) {
         return new akka.http.model.HttpEntity.Chunked(
                 (akka.http.model.ContentType) contentType,
-                Util.<ChunkStreamPart, akka.http.model.HttpEntity.ChunkStreamPart>upcastProducer(chunks));
+                Util.<ChunkStreamPart, akka.http.model.HttpEntity.ChunkStreamPart>upcastPublisher(chunks));
     }
-    public static HttpEntityChunked createChunked(ContentType contentType, Producer<ByteString> data, FlowMaterializer materializer) {
+    public static HttpEntityChunked createChunked(ContentType contentType, Publisher<ByteString> data, FlowMaterializer materializer) {
         return akka.http.model.HttpEntity.Chunked$.MODULE$.apply(
                 (akka.http.model.ContentType) contentType,
                 data, materializer);

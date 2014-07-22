@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.MaterializerSettings
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.stream.impl.MultiStreamInputProcessor.SubstreamKey
 
 /**
@@ -13,8 +13,8 @@ import akka.stream.impl.MultiStreamInputProcessor.SubstreamKey
 private[akka] class ConcatAllImpl(_settings: MaterializerSettings) extends MultiStreamInputProcessor(_settings) {
 
   val takeNextSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
-    val producer = primaryInputs.dequeueInputElement().asInstanceOf[Producer[Any]]
-    val inputs = createSubstreamInputs(producer)
+    val publisher = primaryInputs.dequeueInputElement().asInstanceOf[Publisher[Any]]
+    val inputs = createSubstreamInputs(publisher)
     nextPhase(streamSubstream(inputs))
   }
 

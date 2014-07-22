@@ -4,64 +4,23 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
+import akka.stream.{ MaterializerSettings, Stop }
+import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import org.reactivestreams.api.{ Consumer, Producer }
-import org.reactivestreams.spi.{ Publisher, Subscriber }
-import akka.actor.ActorRef
-import akka.stream.MaterializerSettings
-import akka.actor.ActorLogging
-import akka.actor.Actor
 import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
-import akka.actor.Props
-import scala.util.control.NoStackTrace
-import akka.stream.Stop
-import akka.actor.Terminated
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
  */
-private[akka] trait ActorProducerLike[T] extends Producer[T] {
-  def impl: ActorRef
-  override val getPublisher: Publisher[T] = {
-    val a = new ActorPublisher[T](impl)
-    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-    impl ! ExposedPublisher(a.asInstanceOf[ActorPublisher[Any]])
-    a
-  }
-
-  def produceTo(consumer: Consumer[T]): Unit =
-    getPublisher.subscribe(consumer.getSubscriber)
-}
-
-/**
- * INTERNAL API
- * If equalityValue is defined it is used for equals and hashCode, otherwise default reference equality.
- */
-private[akka] class ActorProducer[T]( final val impl: ActorRef, val equalityValue: Option[AnyRef] = None) extends ActorProducerLike[T] {
-  override def equals(o: Any): Boolean = (equalityValue, o) match {
-    case (Some(v), ActorProducer(_, Some(otherValue))) ⇒ v.equals(otherValue)
-    case _ ⇒ super.equals(o)
-  }
-
-  override def hashCode: Int = equalityValue match {
-    case Some(v) ⇒ v.hashCode
-    case None    ⇒ super.hashCode
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] object ActorProducer {
+private[akka] object SimpleCallbackPublisher {
   def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
-    Props(new ActorProducerImpl(f, settings)).withDispatcher(settings.dispatcher)
+    Props(new SimpleCallbackPublisherImpl(f, settings)).withDispatcher(settings.dispatcher)
 
-  def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
-    case other: ActorProducer[_] ⇒ Some((other.impl, other.equalityValue))
-    case _                       ⇒ None
-  }
 }
 
 /**
@@ -70,12 +29,27 @@ private[akka] object ActorProducer {
 private[akka] object ActorPublisher {
   class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down spi.Publisher") with NoStackTrace
   val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
+
+  def apply[T](impl: ActorRef, equalityValue: Option[AnyRef] = None): ActorPublisher[T] = {
+    val a = new ActorPublisher[T](impl, equalityValue)
+    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
+    impl ! ExposedPublisher(a.asInstanceOf[ActorPublisher[Any]])
+    a
+  }
+
+  def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
+    case other: ActorPublisher[_] ⇒ Some((other.impl, other.equalityValue))
+    case _                        ⇒ None
+  }
 }
 
 /**
  * INTERNAL API
+ *
+ * When you instantiate this class, or its subclasses, you MUST send an ExposedPublisher message to the wrapped
+ * ActorRef! If you don't need to subclass, prefer the apply() method on the companion object which takes care of this.
  */
-private[akka] final class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
+private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Option[AnyRef]) extends Publisher[T] {
 
   // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
   // The actor will call takePendingSubscribers to remove it from the list when it has received the 
@@ -121,13 +95,23 @@ private[akka] final class ActorPublisher[T](val impl: ActorRef) extends Publishe
       case Some(e) ⇒ subscriber.onError(e)
       case None    ⇒ subscriber.onComplete()
     }
+
+  override def equals(o: Any): Boolean = (equalityValue, o) match {
+    case (Some(v), ActorPublisher(_, Some(otherValue))) ⇒ v.equals(otherValue)
+    case _ ⇒ super.equals(o)
+  }
+
+  override def hashCode: Int = equalityValue match {
+    case Some(v) ⇒ v.hashCode
+    case None    ⇒ super.hashCode
+  }
 }
 
 /**
  * INTERNAL API
  */
 private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[T]) extends SubscriptionWithCursor[T] {
-  override def requestMore(elements: Int): Unit =
+  override def request(elements: Int): Unit =
     if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
     else impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
@@ -154,21 +138,21 @@ private[akka] trait SoftShutdown { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private[akka] object ActorProducerImpl {
+private[akka] object SimpleCallbackPublisherImpl {
   case object Generate
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorProducerImpl[T](f: () ⇒ T, settings: MaterializerSettings)
+private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[T]
   with SoftShutdown {
 
-  import ActorProducerImpl._
-  import ActorBasedFlowMaterializer._
+  import akka.stream.impl.ActorBasedFlowMaterializer._
+  import akka.stream.impl.SimpleCallbackPublisherImpl._
 
   type S = ActorSubscription[T]
   var pub: ActorPublisher[T] = _

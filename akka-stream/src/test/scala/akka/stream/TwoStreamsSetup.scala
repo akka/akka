@@ -3,13 +3,11 @@
  */
 package akka.stream
 
-import scala.util.control.NoStackTrace
-import org.reactivestreams.api.{ Consumer, Producer }
-import org.reactivestreams.spi.{ Subscriber, Publisher, Subscription }
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.OnSubscribe
-import akka.stream.testkit.OnError
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import org.reactivestreams.Publisher
+
+import scala.util.control.NoStackTrace
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
@@ -26,66 +24,60 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   type Outputs
 
-  def operationUnderTest(in1: Flow[Int], in2: Producer[Int]): Flow[Outputs]
+  def operationUnderTest(in1: Flow[Int], in2: Publisher[Int]): Flow[Outputs]
 
   def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
-    val consumer = StreamTestKit.consumerProbe[Outputs]
-    operationUnderTest(Flow(producerFromPublisher(p1)), producerFromPublisher(p2)).toProducer(materializer).produceTo(consumer)
-    consumer
+    val subscriber = StreamTestKit.SubscriberProbe[Outputs]()
+    operationUnderTest(Flow(p1), p2).toPublisher(materializer).subscribe(subscriber)
+    subscriber
   }
 
-  def producerFromPublisher[T](publisher: Publisher[T]): Producer[T] = new Producer[T] {
-    private val pub = publisher
-    override def produceTo(consumer: Consumer[T]): Unit = pub.subscribe(consumer.getSubscriber)
-    override def getPublisher: Publisher[T] = pub
-  }
+  def failedPublisher[T]: Publisher[T] = StreamTestKit.errorPublisher[T](TestException)
 
-  def failedPublisher[T]: Publisher[T] = StreamTestKit.errorProducer[T](TestException).getPublisher
+  def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyProducer[T].getPublisher
+  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Flow(elems).toPublisher(materializer)
 
-  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Flow(elems).toProducer(materializer).getPublisher
+  def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 
-  def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorProducer[T](TestException).getPublisher
-
-  def soonToCompletePublisher[T]: Publisher[T] = StreamTestKit.lazyEmptyProducer[T].getPublisher
+  def soonToCompletePublisher[T]: Publisher[T] = StreamTestKit.lazyEmptyPublisher[T]
 
   def commonTests() = {
-    "work with two immediately completed producers" in {
-      val consumer = setup(completedPublisher, completedPublisher)
-      consumer.expectCompletedOrSubscriptionFollowedByComplete()
+    "work with two immediately completed publishers" in {
+      val subscriber = setup(completedPublisher, completedPublisher)
+      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
-    "work with two delayed completed producers" in {
-      val consumer = setup(soonToCompletePublisher, soonToCompletePublisher)
-      consumer.expectCompletedOrSubscriptionFollowedByComplete()
+    "work with two delayed completed publishers" in {
+      val subscriber = setup(soonToCompletePublisher, soonToCompletePublisher)
+      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
-    "work with one immediately completed and one delayed completed producer" in {
-      val consumer = setup(completedPublisher, soonToCompletePublisher)
-      consumer.expectCompletedOrSubscriptionFollowedByComplete()
+    "work with one immediately completed and one delayed completed publisher" in {
+      val subscriber = setup(completedPublisher, soonToCompletePublisher)
+      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
-    "work with two immediately failed producers" in {
-      val consumer = setup(failedPublisher, failedPublisher)
-      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
+    "work with two immediately failed publishers" in {
+      val subscriber = setup(failedPublisher, failedPublisher)
+      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
-    "work with two delayed failed producers" in {
-      val consumer = setup(soonToFailPublisher, soonToFailPublisher)
-      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
+    "work with two delayed failed publishers" in {
+      val subscriber = setup(soonToFailPublisher, soonToFailPublisher)
+      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     // Warning: The two test cases below are somewhat implementation specific and might fail if the implementation
     // is changed. They are here to be an early warning though.
-    "work with one immediately failed and one delayed failed producer (case 1)" in {
-      val consumer = setup(soonToFailPublisher, failedPublisher)
-      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
+    "work with one immediately failed and one delayed failed publisher (case 1)" in {
+      val subscriber = setup(soonToFailPublisher, failedPublisher)
+      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
-    "work with one immediately failed and one delayed failed producer (case 2)" in {
-      val consumer = setup(failedPublisher, soonToFailPublisher)
-      consumer.expectErrorOrSubscriptionFollowedByError(TestException)
+    "work with one immediately failed and one delayed failed publisher (case 2)" in {
+      val subscriber = setup(failedPublisher, soonToFailPublisher)
+      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
     }
   }
 

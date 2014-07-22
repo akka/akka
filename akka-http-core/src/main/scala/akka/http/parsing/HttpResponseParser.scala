@@ -4,7 +4,7 @@
 
 package akka.http.parsing
 
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import akka.http.model.parser.CharacterClasses
 import akka.stream.FlowMaterializer
@@ -75,7 +75,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Producer[ParserOutput.ResponseOutput] ⇒ HttpEntity) =
+    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ HttpEntity) =
       emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
@@ -99,7 +99,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toProducer(materializer)
+              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher(materializer)
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             parseToCloseBody(input, bodyStart)

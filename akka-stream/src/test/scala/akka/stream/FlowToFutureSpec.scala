@@ -24,20 +24,20 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
   "A Flow with toFuture" must {
 
     "yield the first value" in {
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       val f = Flow(p).toFuture(materializer)
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       proc.sendNext(42)
       Await.result(f, 100.millis) should be(42)
       proc.expectCancellation()
     }
 
     "yield the first error" in {
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       val f = Flow(p).toFuture(materializer)
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       val ex = new RuntimeException("ex")
       proc.sendError(ex)
       Await.ready(f, 100.millis)
@@ -45,10 +45,10 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
     }
 
     "yield NoSuchElementExcption for empty stream" in {
-      val p = StreamTestKit.producerProbe[Int]
+      val p = StreamTestKit.PublisherProbe[Int]()
       val f = Flow(p).toFuture(materializer)
       val proc = p.expectSubscription
-      proc.expectRequestMore()
+      proc.expectRequest()
       proc.sendComplete()
       Await.ready(f, 100.millis)
       f.value.get match {
