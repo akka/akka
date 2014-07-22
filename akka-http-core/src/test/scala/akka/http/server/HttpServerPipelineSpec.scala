@@ -89,7 +89,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       }
     })
 
-    "deliver the request entity as it comes in strictly for an immediately completed Strict entity" in pendingUntilFixed(new TestSetup { // broken because of #15686
+    "deliver the request entity as it comes in strictly for an immediately completed Strict entity" in new TestSetup {
       send("""POST /strict HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -102,7 +102,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
           uri = "http://example.com/strict",
           headers = List(Host("example.com")),
           entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("abcdefghijkl")))
-    })
+    }
     "deliver the request entity as it comes in for a Default entity" in new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
@@ -146,7 +146,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       }
     }
 
-    "deliver the second message properly after a Strict entity" in pendingUntilFixed(new TestSetup { // broken because of #15686
+    "deliver the second message properly after a Strict entity" in new TestSetup {
       send("""POST /strict HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -172,8 +172,8 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
           uri = "http://example.com/next-strict",
           headers = List(Host("example.com")),
           entity = HttpEntity.Strict(ContentTypes.`application/octet-stream`, ByteString("mnopqrstuvwx")))
-    })
-    "deliver the second message properly after a Default entity" in pendingUntilFixed(new TestSetup { // broken because of #15686
+    }
+    "deliver the second message properly after a Default entity" in new TestSetup {
       send("""POST / HTTP/1.1
              |Host: example.com
              |Content-Length: 12
@@ -206,8 +206,8 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual (ByteString("abcde"))
       }
-    })
-    "deliver the second message properly after a Chunked entity" in pendingUntilFixed(new TestSetup { // broken because of #15686
+    }
+    "deliver the second message properly after a Chunked entity" in new TestSetup {
       send("""POST /chunked HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -243,7 +243,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Strict(_, data), _) ⇒
           data shouldEqual (ByteString("abcde"))
       }
-    })
+    }
 
     "close the request entity stream when the entity is complete for a Default entity" in new TestSetup {
       send("""POST / HTTP/1.1
