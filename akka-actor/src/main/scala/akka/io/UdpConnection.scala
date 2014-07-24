@@ -35,7 +35,7 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
     val socket = datagramChannel.socket
-    options.foreach(_.beforeDatagramBind(socket))
+    options.foreach(_.beforeBind(datagramChannel))
     try {
       localAddress foreach socket.bind
       datagramChannel.connect(remoteAddress)
@@ -53,6 +53,7 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
 
   def receive = {
     case registration: ChannelRegistration ⇒
+      options.foreach(_.afterConnect(channel))
       commander ! Connected
       context.become(connected(registration), discardOld = true)
   }

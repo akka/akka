@@ -4,17 +4,19 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.nio.channels.DatagramChannel
 import akka.testkit.{ TestProbe, ImplicitSender, AkkaSpec }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.io.Udp._
+import akka.io.Inet._
 import akka.TestUtils._
 
 class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.serialize-creators = on""") with ImplicitSender {
 
-  val addresses = temporaryServerAddresses(3, udp = true)
+  val addresses = temporaryServerAddresses(5, udp = true)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
@@ -73,6 +75,40 @@ class UdpIntegrationSpec extends AkkaSpec("""
         else checkSendingToClient()
       }
     }
+
+    "call SocketOption.beforeBind method before bind." in {
+      val commander = TestProbe()
+      val assertOption = AssertBeforeBind()
+      commander.send(IO(Udp), Bind(testActor, addresses(3), options = List(assertOption)))
+      commander.expectMsg(Bound(addresses(3)))
+      assert(assertOption.beforeCalled === 1)
+    }
+
+    "call SocketOption.afterConnect method after binding." in {
+      val commander = TestProbe()
+      val assertOption = AssertAfterConnect()
+      commander.send(IO(Udp), Bind(testActor, addresses(4), options = List(assertOption)))
+      commander.expectMsg(Bound(addresses(4)))
+      assert(assertOption.afterCalled === 1)
+    }
   }
 
+}
+
+private case class AssertBeforeBind() extends SocketOption {
+  var beforeCalled = 0
+
+  override def beforeBind(c: DatagramChannel) = {
+    assert(!c.socket.isBound)
+    beforeCalled += 1
+  }
+}
+
+private case class AssertAfterConnect() extends SocketOption {
+  var afterCalled = 0
+
+  override def afterConnect(c: DatagramChannel) = {
+    assert(c.socket.isBound)
+    afterCalled += 1
+  }
 }
