@@ -43,12 +43,16 @@ package marshalling {
     implicit def bytesMarshaller: Marshaller[Array[Byte]] = FIXME
     implicit def xmlMarshaller: Marshaller[scala.xml.NodeSeq] = FIXME
     implicit def formDataMarshaller: Marshaller[FormData] = FIXME
-    implicit def entityMarshaller: Marshaller[HttpEntity] = FIXME
+    implicit def entityMarshaller: Marshaller[HttpEntity.Regular] =
+      new Marshaller[HttpEntity.Regular] {
+        def marshal(value: HttpEntity.Regular): Future[HttpEntity.Regular] = Future.successful(value)
+      }
     implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = FIXME
 
     def FIXME[T]: Marshaller[T] =
       new Marshaller[T] {
-        def marshal(value: T): Future[Regular] = routing.FIXME
+        val excp = new RuntimeException("Not yet implemented")
+        def marshal(value: T): Future[Regular] = throw new RuntimeException("Not yet implemented", excp)
       }
   }
 
