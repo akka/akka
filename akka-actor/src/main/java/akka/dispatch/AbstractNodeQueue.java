@@ -29,12 +29,16 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
      */
     @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
-        for(;;) {
-          final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
-          final Node<T> next = tail.next();
-          if (next != null || get() == tail)
-            return next;
+        final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
+        Node<T> next = tail.next();
+        if (next == null && get() != tail) {
+            // if tail != head this is not going to change until consumer makes progress
+            // we can avoid reading the head and just spin on next until it shows the f**k up
+            do {
+                next = tail.next();
+            } while (next == null);
         }
+        return next;
     }
 
     public final T peek() {
