@@ -9,7 +9,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.actor.{ ActorRefFactory, ActorContext, ActorSystem }
@@ -30,10 +30,10 @@ package object util {
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
 
-  private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Producer[T]]) extends AnyVal {
-    def headAndTail(materializer: FlowMaterializer): Flow[(T, Producer[T])] =
+  private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
+    def headAndTail(materializer: FlowMaterializer): Flow[(T, Publisher[T])] =
       underlying.map { p ⇒
-        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toProducer(materializer)
+        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toPublisher(materializer)
       }.flatten(FlattenStrategy.Concat())
   }
 

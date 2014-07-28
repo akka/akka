@@ -25,7 +25,7 @@ abstract class Transformer[-T, +U] {
 
   /**
    * Invoked after handing off the elements produced from one input element to the
-   * downstream consumers to determine whether to end stream processing at this point;
+   * downstream subscribers to determine whether to end stream processing at this point;
    * in that case the upstream subscription is canceled.
    */
   def isComplete: Boolean = false

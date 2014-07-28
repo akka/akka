@@ -10,7 +10,7 @@ import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
-import akka.stream.actor.ActorConsumer.RequestStrategy
+import akka.stream.actor.ActorSubscriber.RequestStrategy
 import akka.actor.Actor
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
@@ -18,13 +18,13 @@ import akka.routing.RoundRobinRoutingLogic
 import akka.testkit.ImplicitSender
 import scala.util.control.NoStackTrace
 
-object ActorConsumerSpec {
+object ActorSubscriberSpec {
 
-  def manualConsumerProps(probe: ActorRef): Props =
-    Props(new ManualConsumer(probe)).withDispatcher("akka.test.stream-dispatcher")
+  def manualSubscriberProps(probe: ActorRef): Props =
+    Props(new ManualSubscriber(probe)).withDispatcher("akka.test.stream-dispatcher")
 
-  class ManualConsumer(probe: ActorRef) extends ActorConsumer {
-    import ActorConsumer._
+  class ManualSubscriber(probe: ActorRef) extends ActorSubscriber {
+    import ActorSubscriber._
 
     override val requestStrategy = ZeroRequestStrategy
 
@@ -38,11 +38,11 @@ object ActorConsumerSpec {
     }
   }
 
-  def requestStrategyConsumerProps(probe: ActorRef, strat: RequestStrategy): Props =
-    Props(new RequestStrategyConsumer(probe, strat)).withDispatcher("akka.test.stream-dispatcher")
+  def requestStrategySubscriberProps(probe: ActorRef, strat: RequestStrategy): Props =
+    Props(new RequestStrategySubscriber(probe, strat)).withDispatcher("akka.test.stream-dispatcher")
 
-  class RequestStrategyConsumer(probe: ActorRef, strat: RequestStrategy) extends ActorConsumer {
-    import ActorConsumer._
+  class RequestStrategySubscriber(probe: ActorRef, strat: RequestStrategy) extends ActorSubscriber {
+    import ActorSubscriber._
 
     override val requestStrategy = strat
 
@@ -60,8 +60,8 @@ object ActorConsumerSpec {
   def streamerProps: Props =
     Props(new Streamer).withDispatcher("akka.test.stream-dispatcher")
 
-  class Streamer extends ActorConsumer {
-    import ActorConsumer._
+  class Streamer extends ActorSubscriber {
+    import ActorSubscriber._
     var queue = Map.empty[Int, ActorRef]
 
     val router = {
@@ -96,17 +96,17 @@ object ActorConsumerSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ActorConsumerSpec extends AkkaSpec with ImplicitSender {
-  import ActorConsumerSpec._
-  import ActorConsumer._
+class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
+  import ActorSubscriberSpec._
+  import ActorSubscriber._
 
   val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
-  "An ActorConsumer" must {
+  "An ActorSubscriber" must {
 
     "receive requested elements" in {
-      val ref = system.actorOf(manualConsumerProps(testActor))
-      Flow(List(1, 2, 3)).produceTo(materializer, ActorConsumer(ref))
+      val ref = system.actorOf(manualSubscriberProps(testActor))
+      Flow(List(1, 2, 3)).produceTo(materializer, ActorSubscriber(ref))
       expectNoMsg(200.millis)
       ref ! "ready" // requesting 2
       expectMsg(OnNext(1))
@@ -118,16 +118,16 @@ class ActorConsumerSpec extends AkkaSpec with ImplicitSender {
     }
 
     "signal error" in {
-      val ref = system.actorOf(manualConsumerProps(testActor))
+      val ref = system.actorOf(manualSubscriberProps(testActor))
       val e = new RuntimeException("simulated") with NoStackTrace
-      Flow(() ⇒ throw e).produceTo(materializer, ActorConsumer(ref))
+      Flow(() ⇒ throw e).produceTo(materializer, ActorSubscriber(ref))
       ref ! "ready"
       expectMsg(OnError(e))
     }
 
     "remember requested after restart" in {
-      val ref = system.actorOf(manualConsumerProps(testActor))
-      Flow(1 to 7).produceTo(materializer, ActorConsumer(ref))
+      val ref = system.actorOf(manualSubscriberProps(testActor))
+      Flow(1 to 7).produceTo(materializer, ActorSubscriber(ref))
       ref ! "ready"
       expectMsg(OnNext(1))
       expectMsg(OnNext(2))
@@ -144,8 +144,8 @@ class ActorConsumerSpec extends AkkaSpec with ImplicitSender {
     }
 
     "not deliver more after cancel" in {
-      val ref = system.actorOf(manualConsumerProps(testActor))
-      Flow(1 to 5).produceTo(materializer, ActorConsumer(ref))
+      val ref = system.actorOf(manualSubscriberProps(testActor))
+      Flow(1 to 5).produceTo(materializer, ActorSubscriber(ref))
       ref ! "ready"
       expectMsg(OnNext(1))
       expectMsg(OnNext(2))
@@ -154,15 +154,15 @@ class ActorConsumerSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work with OneByOneRequestStrategy" in {
-      val ref = system.actorOf(requestStrategyConsumerProps(testActor, OneByOneRequestStrategy))
-      Flow(1 to 17).produceTo(materializer, ActorConsumer(ref))
+      val ref = system.actorOf(requestStrategySubscriberProps(testActor, OneByOneRequestStrategy))
+      Flow(1 to 17).produceTo(materializer, ActorSubscriber(ref))
       for (n ← 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
 
     "work with WatermarkRequestStrategy" in {
-      val ref = system.actorOf(requestStrategyConsumerProps(testActor, WatermarkRequestStrategy(highWatermark = 10)))
-      Flow(1 to 17).produceTo(materializer, ActorConsumer(ref))
+      val ref = system.actorOf(requestStrategySubscriberProps(testActor, WatermarkRequestStrategy(highWatermark = 10)))
+      Flow(1 to 17).produceTo(materializer, ActorSubscriber(ref))
       for (n ← 1 to 17) expectMsg(OnNext(n))
       expectMsg(OnComplete)
     }
@@ -170,7 +170,7 @@ class ActorConsumerSpec extends AkkaSpec with ImplicitSender {
     "suport custom max in flight request strategy with child workers" in {
       val ref = system.actorOf(streamerProps)
       val N = 117
-      Flow(1 to N).map(Msg(_, testActor)).produceTo(materializer, ActorConsumer(ref))
+      Flow(1 to N).map(Msg(_, testActor)).produceTo(materializer, ActorSubscriber(ref))
       receiveN(N).toSet should be((1 to N).map(Done(_)).toSet)
     }
 

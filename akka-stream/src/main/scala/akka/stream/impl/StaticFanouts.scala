@@ -3,16 +3,13 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.api.Producer
 import akka.stream.MaterializerSettings
-import org.reactivestreams.api.Consumer
-import org.reactivestreams.spi.Subscriber
-import org.reactivestreams.spi.Subscription
+import org.reactivestreams.{ Subscriber, Subscription, Publisher }
 
 /**
  * INTERNAL API
  */
-private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any])
+private[akka] class TeeImpl(_settings: MaterializerSettings, other: Subscriber[Any])
   extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
@@ -20,7 +17,7 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Consumer[Any
 
     override def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
       if (!secondarySubscribed) {
-        super.registerSubscriber(other.getSubscriber)
+        super.registerSubscriber(other)
         secondarySubscribed = true
       }
       super.registerSubscriber(subscriber)

@@ -4,7 +4,7 @@
 
 package akka.http.model.japi;
 
-import org.reactivestreams.api.Producer;
+import org.reactivestreams.Publisher;
 
 import java.net.InetSocketAddress;
 
@@ -20,8 +20,8 @@ public interface ServerBinding {
 
     /**
      * The stream of incoming connections. The binding is solved and the listening
-     * socket closed as soon as all consumer of this streams have cancelled their
+     * socket closed as soon as all subscriber of this streams have cancelled their
      * subscription.
      */
-    Producer<IncomingConnection> getConnectionStream();
+    Publisher<IncomingConnection> getConnectionStream();
 }

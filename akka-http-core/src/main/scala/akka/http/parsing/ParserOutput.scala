@@ -4,7 +4,7 @@
 
 package akka.http.parsing
 
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.http.model._
 import akka.util.ByteString
 
@@ -27,14 +27,14 @@ private[http] object ParserOutput {
     uri: Uri,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Producer[RequestOutput] ⇒ HttpEntity.Regular,
+    createEntity: Publisher[RequestOutput] ⇒ HttpEntity.Regular,
     closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Producer[ResponseOutput] ⇒ HttpEntity,
+    createEntity: Publisher[ResponseOutput] ⇒ HttpEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
 
   final case class EntityPart(data: ByteString) extends MessageOutput

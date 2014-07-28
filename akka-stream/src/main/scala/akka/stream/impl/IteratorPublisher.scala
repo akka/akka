@@ -10,13 +10,13 @@ import akka.stream.Stop
 /**
  * INTERNAL API
  */
-private[akka] object IteratorProducer {
+private[akka] object IteratorPublisher {
   def props(iterator: Iterator[Any], settings: MaterializerSettings): Props = {
     def f(): Any = {
       if (!iterator.hasNext) throw Stop
       iterator.next()
     }
-    ActorProducer.props(settings, f)
+    SimpleCallbackPublisher.props(settings, f)
   }
 
 }

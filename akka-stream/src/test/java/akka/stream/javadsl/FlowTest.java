@@ -14,7 +14,7 @@ import akka.stream.OverflowStrategy;
 import org.junit.ClassRule;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import org.reactivestreams.api.Producer;
+import org.reactivestreams.Publisher;
 import scala.Option;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
@@ -213,8 +213,8 @@ public class FlowTest {
       public String apply(String elem) {
         return elem.substring(0, 1);
       }
-    }).foreach(new Procedure<Pair<String, Producer<String>>>() {
-      public void apply(final Pair<String, Producer<String>> pair) {
+    }).foreach(new Procedure<Pair<String, Publisher<String>>>() {
+      public void apply(final Pair<String, Publisher<String>> pair) {
         Flow.create(pair.second()).foreach(new Procedure<String>() {
           public void apply(String elem) {
             probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
@@ -246,9 +246,9 @@ public class FlowTest {
       public boolean test(String elem) {
         return elem.equals("\n");
       }
-    }).foreach(new Procedure<Producer<String>>() {
-      public void apply(Producer<String> subProducer) {
-        Flow.create(subProducer).filter(new Predicate<String>() {
+    }).foreach(new Procedure<Publisher<String>>() {
+      public void apply(Publisher<String> subPublisher) {
+        Flow.create(subPublisher).filter(new Predicate<String>() {
           public boolean test(String elem) {
             return !elem.equals("\n");
           }
@@ -280,7 +280,7 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final java.lang.Iterable<String> input2 = Arrays.asList("D", "E", "F");
-    Flow.create(input1).merge(Flow.create(input2).toProducer(materializer)).foreach(new Procedure<String>() {
+    Flow.create(input1).merge(Flow.create(input2).toPublisher(materializer)).foreach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -295,7 +295,7 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final java.lang.Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
-    Flow.create(input1).zip(Flow.create(input2).toProducer(materializer))
+    Flow.create(input1).zip(Flow.create(input2).toPublisher(materializer))
         .foreach(new Procedure<Pair<String, Integer>>() {
           public void apply(Pair<String, Integer> elem) {
             probe.getRef().tell(elem, ActorRef.noSender());
@@ -314,7 +314,7 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final java.lang.Iterable<String> input2 = Arrays.asList("D", "E", "F");
-    Flow.create(input1).concat(Flow.create(input2).toProducer(materializer)).foreach(new Procedure<String>() {
+    Flow.create(input1).concat(Flow.create(input2).toPublisher(materializer)).foreach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -402,8 +402,8 @@ public class FlowTest {
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
-    Future<Pair<List<Integer>, Producer<Integer>>> future = Flow.create(input).prefixAndTail(3).toFuture(materializer);
-    Pair<List<Integer>, Producer<Integer>> result =
+    Future<Pair<List<Integer>, Publisher<Integer>>> future = Flow.create(input).prefixAndTail(3).toFuture(materializer);
+    Pair<List<Integer>, Publisher<Integer>> result =
       Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
@@ -419,9 +419,9 @@ public class FlowTest {
       final java.lang.Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
       final java.lang.Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-      final List<Producer<Integer>> mainInputs = Arrays.asList(
-              Flow.create(input1).toProducer(materializer),
-              Flow.create(input2).toProducer(materializer)
+      final List<Publisher<Integer>> mainInputs = Arrays.asList(
+              Flow.create(input1).toPublisher(materializer),
+              Flow.create(input2).toPublisher(materializer)
       );
 
       Future<List<Integer>> future =

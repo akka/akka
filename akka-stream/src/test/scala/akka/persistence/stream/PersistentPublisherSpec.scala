@@ -24,7 +24,7 @@ object PersistentPublisherSpec {
   }
 }
 
-class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "ViewProducerSpec", serialization = "off")) with PersistenceSpec {
+class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "ViewPublisherSpec", serialization = "off")) with PersistenceSpec {
   import PersistentPublisherSpec._
 
   val numMessages = 10
@@ -65,7 +65,7 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     super.afterEach()
   }
 
-  "A view producer" must {
+  "A view publisher" must {
     "pull existing messages from a processor's journal" in {
       val streamProbe = TestProbe()
 
@@ -108,28 +108,28 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     }
   }
 
-  "A view producer" can {
-    "have several consumers" in {
+  "A view publisher" can {
+    "have several subscribers" in {
       val streamProbe1 = TestProbe()
       val streamProbe2 = TestProbe()
 
-      val producer = PersistentFlow.fromProcessor(processorId(1), publisherSettings).toProducer(materializer)
+      val publisher = PersistentFlow.fromProcessor(processorId(1), publisherSettings).toPublisher(materializer)
 
-      Flow(producer).foreach {
+      Flow(publisher).foreach {
         case Persistent(payload, sequenceNr) ⇒ streamProbe1.ref ! s"${payload}-${sequenceNr}"
       }.consume(materializer)
 
-      // let consumer consume all existing messages
+      // let subscriber consume all existing messages
       1 to numMessages foreach { i ⇒
         streamProbe1.expectMsg(s"a-${i}")
       }
 
-      // subscribe another consumer
-      Flow(producer).foreach {
+      // subscribe another subscriber
+      Flow(publisher).foreach {
         case Persistent(payload, sequenceNr) ⇒ streamProbe2.ref ! s"${payload}-${sequenceNr}"
       }.consume(materializer)
 
-      // produce new messages and let both consumers handle them
+      // produce new messages and let both subscribers handle them
       1 to 2 foreach { i ⇒
         processor1 ! Persistent("a")
         streamProbe1.expectMsg(s"a-${numMessages + i}")
@@ -138,18 +138,18 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     }
   }
 
-  "A consumer" can {
-    "consume from several view producers" in {
+  "A subscriber" can {
+    "consume from several view publishers" in {
       val streamProbe1 = TestProbe()
       val streamProbe2 = TestProbe()
 
       val fromSequenceNr1 = 7L
       val fromSequenceNr2 = 3L
 
-      val producer1 = PersistentFlow.fromProcessor(processorId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr1)).toProducer(materializer)
-      val producer2 = PersistentFlow.fromProcessor(processorId(2), publisherSettings.copy(fromSequenceNr = fromSequenceNr2)).toProducer(materializer)
+      val publisher1 = PersistentFlow.fromProcessor(processorId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr1)).toPublisher(materializer)
+      val publisher2 = PersistentFlow.fromProcessor(processorId(2), publisherSettings.copy(fromSequenceNr = fromSequenceNr2)).toPublisher(materializer)
 
-      Flow(producer1).merge(producer2).foreach {
+      Flow(publisher1).merge(publisher2).foreach {
         case Persistent(payload: String, sequenceNr) if (payload.startsWith("a")) ⇒ streamProbe1.ref ! s"${payload}-${sequenceNr}"
         case Persistent(payload: String, sequenceNr) if (payload.startsWith("b")) ⇒ streamProbe2.ref ! s"${payload}-${sequenceNr}"
       }.consume(materializer)

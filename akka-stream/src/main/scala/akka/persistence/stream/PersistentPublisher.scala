@@ -6,20 +6,17 @@ package akka.persistence.stream
 import scala.util.control.NonFatal
 import scala.concurrent.duration._
 
-import org.reactivestreams.api.Producer
-import org.reactivestreams.spi.Subscriber
+import org.reactivestreams.{ Publisher, Subscriber }
 
 import akka.actor._
 import akka.persistence._
 import akka.stream._
 import akka.stream.impl._
-import akka.stream.impl.Ast.ProducerNode
+import akka.stream.impl.Ast.PublisherNode
 import akka.stream.scaladsl.Flow
 
 // ------------------------------------------------------------------------------------------------
 // FIXME: move this file to akka-persistence-experimental once going back to project dependencies
-// NOTE: "producer" has been changed to "publisher" wherever possible, covering the upcoming
-//       changes in reactive-streams.
 // ------------------------------------------------------------------------------------------------
 
 object PersistentFlow {
@@ -73,9 +70,9 @@ private object PersistentPublisher {
     Props(classOf[PersistentPublisherImpl], processorId, publisherSettings, settings).withDispatcher(settings.dispatcher)
 }
 
-private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends ProducerNode[Persistent] {
-  def createProducer(materializer: ActorBasedFlowMaterializer, flowName: String): Producer[Persistent] =
-    new ActorProducer(materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Persistent] {
+  def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Persistent] =
+    ActorPublisher[Persistent](materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
       name = s"$flowName-0-persistentPublisher"))
 }
 

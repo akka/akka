@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.spi.Subscription
+import org.reactivestreams.Subscription
 
 /**
  * INTERNAL API
