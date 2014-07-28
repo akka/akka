@@ -24,7 +24,7 @@ class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\na
     "generate the right level of descendants" in {
       val f = Flow(() ⇒ {
         testActor ! self
-        Flow(List(1)).map(x ⇒ { testActor ! self; x }).toProducer(materializer)
+        Flow(List(1)).map(x ⇒ { testActor ! self; x }).toPublisher(materializer)
       }).take(3).foreach(x ⇒ {
         testActor ! self
         Flow(x).foreach(_ ⇒ testActor ! self).consume(materializer)

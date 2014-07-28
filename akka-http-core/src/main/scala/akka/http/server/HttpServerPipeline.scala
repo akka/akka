@@ -4,7 +4,7 @@
 
 package akka.http.server
 
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
 import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
@@ -34,34 +34,34 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
     settings.responseHeaderSizeHint, materializer, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    val (applicationBypassConsumer, applicationBypassProducer) =
-      Duct[(RequestOutput, Producer[RequestOutput])]
+    val (applicationBypassSubscriber, applicationBypassPublisher) =
+      Duct[(RequestOutput, Publisher[RequestOutput])]
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
         .build(materializer)
 
-    val requestProducer =
+    val requestPublisher =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
         .splitWhen(_.isInstanceOf[MessageStart])
         .headAndTail(materializer)
-        .tee(applicationBypassConsumer)
+        .tee(applicationBypassSubscriber)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
             HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
         }
-        .toProducer(materializer)
+        .toPublisher(materializer)
 
-    val responseConsumer =
+    val responseSubscriber =
       Duct[HttpResponse]
-        .merge(applicationBypassProducer)
+        .merge(applicationBypassPublisher)
         .transform(applyApplicationBypass)
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing response stream error"))
         .produceTo(materializer, tcpConn.outputStream)
 
-    Http.IncomingConnection(tcpConn.remoteAddress, requestProducer, responseConsumer)
+    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
   }
 
   /**
