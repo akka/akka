@@ -33,7 +33,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         Node<T> next = tail.next();
         if (next == null && get() != tail) {
             // if tail != head this is not going to change until consumer makes progress
-            // we can avoid reading the head and just spin on next until it shows the f**k up
+            // we can avoid reading the head and just spin on next until it shows up
             do {
                 next = tail.next();
             } while (next == null);
