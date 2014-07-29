@@ -37,9 +37,9 @@ object TestServer extends App {
   bindingFuture foreach {
     case Http.ServerBinding(localAddress, connectionStream) ⇒
       Flow(connectionStream).foreach {
-        case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
+        case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Flow(requestProducer).map(requestHandler).produceTo(materializer, responseConsumer)
+          Flow(requestPublisher).map(requestHandler).produceTo(materializer, responseSubscriber)
       }.consume(materializer)
   }
 
