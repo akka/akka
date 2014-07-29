@@ -218,6 +218,41 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       probeA.expectNoMsg(1.second)
     }
 
+    "re-send replayed deliveries with an 'initially in-order' strategy, before delivering fresh messages" in {
+      val probeA = TestProbe()
+      val dst = system.actorOf(destinationProps(probeA.ref))
+      val destinations = Map("A" -> system.actorOf(unreliableProps(2, dst)).path)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      snd ! Req("a-1")
+      expectMsg(ReqAck)
+      probeA.expectMsg(Action(1, "a-1"))
+
+      snd ! Req("a-2")
+      expectMsg(ReqAck)
+      // a-2 was lost
+
+      snd ! Req("a-3")
+      expectMsg(ReqAck)
+      probeA.expectMsg(Action(3, "a-3"))
+
+      snd ! Req("a-4")
+      expectMsg(ReqAck)
+      // a-4 was lost
+
+      // trigger restart
+      snd ! Boom
+      snd ! Req("a-5")
+      expectMsg(ReqAck)
+
+      // and then re-delivered
+      probeA.expectMsg(Action(2, "a-2")) // re-delivered
+      // a-4 was re-delivered but lost
+      probeA.expectMsg(Action(5, "a-5")) // re-delivered
+      probeA.expectMsg(Action(4, "a-4")) // re-delivered, 3rd time
+
+      probeA.expectNoMsg(1.second)
+    }
+
     "restore state from snapshot" in {
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
@@ -307,8 +342,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
 
 class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(
   // TODO disable debug logging once happy with stability of this test
-  ConfigFactory.parseString("""akka.logLevel = DEBUG""") withFallback PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec")
-)
+  ConfigFactory.parseString("""akka.logLevel = DEBUG""") withFallback PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class InmemAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))
