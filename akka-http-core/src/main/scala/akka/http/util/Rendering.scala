@@ -6,7 +6,7 @@ package akka.http.util
 
 import java.nio.CharBuffer
 import java.nio.charset.Charset
-import java.text.{DecimalFormatSymbols, DecimalFormat}
+import java.text.{ DecimalFormatSymbols, DecimalFormat }
 import java.util.Locale
 import scala.annotation.tailrec
 import scala.collection.{ immutable, LinearSeq }

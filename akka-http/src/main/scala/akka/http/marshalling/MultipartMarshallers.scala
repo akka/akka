@@ -40,7 +40,7 @@ trait MultipartMarshallers {
     Marshaller.withOpenCharset(mediaTypeWithBoundary) { (value, charset) ⇒
       val log = actorSystem(refFactory).log
       val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, fm, log)
-      val chunks = Flow(value.parts).transform(bodyPartRenderer).flatten(FlattenStrategy.concat).toProducer(fm)
+      val chunks = Flow(value.parts).transform(bodyPartRenderer).flatten(FlattenStrategy.concat).toPublisher(fm)
       HttpEntity.Chunked(ContentType(mediaTypeWithBoundary), chunks)
     }
   }

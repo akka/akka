@@ -5,7 +5,7 @@
 package akka.http.parsing
 
 import akka.event.LoggingAdapter
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
@@ -141,7 +141,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
                   emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                     (headers, ct, bytes) ⇒
                       emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.CloseDelimited(ct,
-                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toProducer(materializer))))
+                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher(materializer))))
                       emit(bytes)
                   },
                   emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
@@ -214,7 +214,7 @@ private[http] object BodyPartParser {
   val boundaryCharNoSpace = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=?"
 
   sealed trait Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Producer[Output] ⇒ HttpEntity) extends Output
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Publisher[Output] ⇒ HttpEntity) extends Output
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends Output
 
