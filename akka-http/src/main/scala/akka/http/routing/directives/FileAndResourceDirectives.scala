@@ -17,7 +17,10 @@
 package akka.http.routing
 package directives
 
-import java.io.File
+import java.io.{ FileInputStream, File }
+import akka.http.routing.util.StreamUtils
+import akka.stream.FlowMaterializer
+
 import scala.annotation.tailrec
 import akka.actor.ActorRefFactory
 import akka.http.marshalling.Marshaller
@@ -44,7 +47,7 @@ trait FileAndResourceDirectives {
    * some other thread !). If the file cannot be found or read the request is rejected.
    */
   def getFromFile(fileName: String)
-                 (implicit settings: RoutingSettings, resolver: ContentTypeResolver, refFactory: ActorRefFactory): Route =
+                 (implicit settings: RoutingSettings, resolver: ContentTypeResolver, refFactory: ActorRefFactory, materializer: FlowMaterializer): Route =
     getFromFile(new File(fileName))
 
   /**
@@ -53,7 +56,7 @@ trait FileAndResourceDirectives {
    * some other thread !). If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File)
-                 (implicit settings: RoutingSettings, resolver: ContentTypeResolver, refFactory: ActorRefFactory): Route =
+                 (implicit settings: RoutingSettings, resolver: ContentTypeResolver, refFactory: ActorRefFactory, materializer: FlowMaterializer): Route =
     getFromFile(file, resolver(file.getName))
 
   /**
@@ -62,23 +65,19 @@ trait FileAndResourceDirectives {
    * some other thread !). If the file cannot be found or read the request is rejected.
    */
   def getFromFile(file: File, contentType: ContentType)
-                 (implicit settings: RoutingSettings, refFactory: ActorRefFactory): Route = FIXME
-    /*get {
+                 (implicit settings: RoutingSettings, refFactory: ActorRefFactory, materializer: FlowMaterializer): Route =
+    get {
       detach() {
         if (file.isFile && file.canRead) {
-          autoChunked.apply {
+            implicit val ec = refFactory.dispatcher
             conditionalFor(file.length, file.lastModified).apply {
               withRangeSupport() {
-                complete(HttpEntity(contentType, HttpData(file)))
+                complete(HttpEntity.Default(contentType, file.length, StreamUtils.fromInputStream(new FileInputStream(file), materializer)))
               }
             }
-          }
         } else reject
       }
-    }*/
-
-  private def autoChunked(implicit settings: RoutingSettings, refFactory: ActorRefFactory): Directive0 =
-    ???//autoChunk(settings.fileChunkingThresholdSize, settings.fileChunkingChunkSize)
+    }
 
   private def conditionalFor(length: Long, lastModified: Long)(implicit settings: RoutingSettings, ec: ExecutionContext): Directive0 =
     if (settings.fileGetConditional) {
@@ -100,7 +99,7 @@ trait FileAndResourceDirectives {
    * If the file cannot be found or read the Route rejects the request.
    */
   def getFromResource(resourceName: String)
-                     (implicit resolver: ContentTypeResolver, refFactory: ActorRefFactory): Route =
+                     (implicit resolver: ContentTypeResolver, refFactory: ActorRefFactory, ec: ExecutionContext, materializer: FlowMaterializer): Route =
     getFromResource(resourceName, resolver(resourceName))
 
   /**
@@ -110,10 +109,9 @@ trait FileAndResourceDirectives {
    * If the file cannot be found or read the Route rejects the request.
    */
   def getFromResource(resourceName: String, contentType: ContentType)
-                     (implicit refFactory: ActorRefFactory): Route = FIXME
-    /*if (!resourceName.endsWith("/"))
+                     (implicit refFactory: ActorRefFactory, ec: ExecutionContext, materializer: FlowMaterializer): Route =
+    if (!resourceName.endsWith("/"))
       get {
-        detach() {
           val theClassLoader = actorSystem(refFactory).dynamicAccess.classLoader
           theClassLoader.getResource(resourceName) match {
             case null ⇒ reject
@@ -127,21 +125,13 @@ trait FileAndResourceDirectives {
                   len -> lm
                 } finally { conn.getInputStream.close() }
               }
-              implicit val bufferMarshaller = BasicMarshallers.byteArrayMarshaller(contentType)
-              autoChunked.apply { // TODO: add implicit RoutingSettings to method and use here
                 conditionalFor(length, lastModified).apply {
                   withRangeSupport() {
                     complete {
-                      // readAllBytes closes the InputStream when done, which ends up closing the JAR file
-                      // if caching has been disabled on the connection
-                      val is = url.openStream()
-                      try { FileUtils.readAllBytes(is) }
-                      finally { is.close() }
+                      HttpEntity.Default(contentType, length, StreamUtils.fromInputStream(url.openStream(), materializer))
                     }
-                  }
                 }
               }
-          }
         }
       }
     else reject // don't serve the content of resource "directories"*/
@@ -155,7 +145,7 @@ trait FileAndResourceDirectives {
    */
   def getFromDirectory(directoryName: String)
                       (implicit settings: RoutingSettings, resolver: ContentTypeResolver,
-                       refFactory: ActorRefFactory, log: LoggingContext): Route = {
+                       refFactory: ActorRefFactory, log: LoggingContext, materializer: FlowMaterializer): Route = {
     val base = withTrailingSlash(directoryName)
     unmatchedPath { path ⇒
       fileSystemPath(base, path) match {
@@ -199,7 +189,7 @@ trait FileAndResourceDirectives {
    */
   def getFromBrowseableDirectory(directory: String)
                                 (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
-                                 resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext): Route =
+                                 resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext, materializer: FlowMaterializer): Route =
     getFromBrowseableDirectories(directory)
 
   /**
@@ -208,7 +198,7 @@ trait FileAndResourceDirectives {
    */
   def getFromBrowseableDirectories(directories: String*)
                                   (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
-                                   resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext): Route = {
+                                   resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext, materializer: FlowMaterializer): Route = {
     import RouteConcatenation._
     directories.map(getFromDirectory).reduceLeft(_ ~ _) ~ listDirectoryContents(directories: _*)
   }
@@ -218,7 +208,7 @@ trait FileAndResourceDirectives {
    * "resource directory".
    */
   def getFromResourceDirectory(directoryName: String)
-                              (implicit resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext): Route = {
+                              (implicit resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext, materializer: FlowMaterializer): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
     unmatchedPath { path ⇒
       fileSystemPath(base, path, separator = '/') match {
@@ -298,8 +288,8 @@ object DirectoryListing {
       |</html>
       |""".stripMarginWithNewline("\n") split '$'
 
-  implicit def DefaultMarshaller(implicit settings: RoutingSettings): Marshaller[DirectoryListing] = FIXME
-  /*Marshaller.delegate[DirectoryListing, String](MediaTypes.`text/html`) { listing ⇒
+  implicit def DefaultMarshaller(implicit settings: RoutingSettings): Marshaller[DirectoryListing] =
+    Marshaller.delegate[DirectoryListing, String](MediaTypes.`text/html`) { listing ⇒
       val DirectoryListing(path, isRoot, files) = listing
       val filesAndNames = files.map(file ⇒ file -> file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {
@@ -332,5 +322,5 @@ object DirectoryListing {
       sb.append(html(3))
       if (settings.renderVanityFooter) sb.append(html(4)).append(DateTime.now.toIsoLikeDateTimeString).append(html(5))
       sb.append(html(6)).toString
-    }*/
+    }
 }

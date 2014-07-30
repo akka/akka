@@ -16,9 +16,12 @@
 
 package akka.http.routing.directives
 
-import java.io.File
+import java.io.{ FileOutputStream, File }
 import akka.http.routing.RoutingSettings
-import org.scalatest.{ Inside, Inspectors }
+import org.scalatest.matchers.Matcher
+import org.scalatest.{ Tag, Inside, Inspectors }
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.Properties
 import akka.http.model._
 import akka.http.util._
@@ -37,34 +40,34 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       |}""".stripMargin
 
   "getFromFile" should {
-    "reject non-GET requests" in pendingUntilFixed {
+    "reject non-GET requests" in {
       Put() ~> getFromFile("some") ~> check { handled mustEqual (false) }
     }
-    "reject requests to non-existing files" in pendingUntilFixed {
+    "reject requests to non-existing files" in {
       Get() ~> getFromFile("nonExistentFile") ~> check { handled mustEqual (false) }
     }
-    "reject requests to directories" in pendingUntilFixed {
+    "reject requests to directories" in {
       Get() ~> getFromFile(Properties.javaHome) ~> check { handled mustEqual (false) }
     }
-    "return the file content with the MediaType matching the file extension" in pendingUntilFixed {
+    "return the file content with the MediaType matching the file extension" in {
       val file = File.createTempFile("sprayTest", ".PDF")
       try {
         writeAllText("This is PDF", file)
         Get() ~> getFromFile(file.getPath) ~> check {
           mediaType mustEqual `application/pdf`
           definedCharset mustEqual None
-          body.asString mustEqual "This is PDF"
+          responseAs[String] mustEqual "This is PDF"
           headers must contain(`Last-Modified`(DateTime(file.lastModified)))
         }
       } finally file.delete
     }
-    "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in pendingUntilFixed {
+    "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
       val file = File.createTempFile("sprayTest", null)
       try {
         writeAllText("Some content", file)
         Get() ~> getFromFile(file) ~> check {
           mediaType mustEqual `application/octet-stream`
-          body.asString mustEqual "Some content"
+          responseAs[String] mustEqual "Some content"
         }
       } finally file.delete
     }
@@ -74,7 +77,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
-          body.asString mustEqual "ABCDEFGHIJK"
+          responseAs[String] mustEqual "ABCDEFGHIJK"
           status mustEqual StatusCodes.PartialContent
           headers must contain(`Content-Range`(ContentRange(0, 10, 26)))
         }
@@ -107,7 +110,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         Get() ~> getFromFile(file) ~> check {
           mediaType mustEqual `text/xml`
           definedCharset mustEqual Some(`UTF-8`)
-          body.asString mustEqual "<this co"
+          responseAs[String] mustEqual "<this co"
           headers must contain(`Last-Modified`(DateTime(file.lastModified)))
           chunks.map(_.data.asString).mkString("|") mustEqual "uld be X|ML if it| were fo|rmatted |correctl|y>"
         }
@@ -116,19 +119,18 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
   }
 
   "getFromResource" should {
-    "reject non-GET requests" in pendingUntilFixed {
+    "reject non-GET requests" in {
       Put() ~> getFromResource("some") ~> check { handled mustEqual (false) }
     }
-    "reject requests to non-existing resources" in pendingUntilFixed {
+    "reject requests to non-existing resources" in {
       Get() ~> getFromResource("nonExistingResource") ~> check { handled mustEqual (false) }
     }
-    "return the resource content with the MediaType matching the file extension" in pending /*{
+    "return the resource content with the MediaType matching the file extension" in {
       val route = getFromResource("sample.html")
 
       def runCheck =
         Get() ~> route ~> check {
           mediaType mustEqual `text/html`
-          body.asString mustEqual "<p>Lorem"
           forAtLeast(1, headers) { h ⇒
             inside(h) {
               case `Last-Modified`(dt) ⇒
@@ -136,34 +138,32 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
                 dt.clicks must be < System.currentTimeMillis()
             }
           }
-          chunks.map(_.data.asString).mkString mustEqual " ipsum!</p>"
+          responseAs[String] mustEqual "<p>Lorem ipsum!</p>"
         }
 
       runCheck
       runCheck // additional test to check that no internal state is kept
-    }*/
-    "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in pendingUntilFixed {
+    }
+    "return the file content with MediaType 'application/octet-stream' on unknown file extensions" in {
       Get() ~> getFromResource("sample.xyz") ~> check {
         mediaType mustEqual `application/octet-stream`
-        body.asString mustEqual "XyZ"
+        responseAs[String] mustEqual "XyZ"
       }
     }
   }
 
   "getFromResourceDirectory" should {
-    "reject requests to non-existing resources" in pendingUntilFixed {
+    "reject requests to non-existing resources" in {
       Get("not/found") ~> getFromResourceDirectory("subDirectory") ~> check { handled mustEqual (false) }
     }
-    "return the resource content with the MediaType matching the file extension" in pendingUntilFixed {
-      val verify = check {
-        mediaType mustEqual `application/pdf`
-        body.asString mustEqual "123"
-      }
-      "example 1" in pendingUntilFixed { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory") ~> verify }
-      "example 2" in pendingUntilFixed { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory/") ~> verify }
-      "example 3" in pendingUntilFixed { Get("subDirectory/empty.pdf") ~> getFromResourceDirectory("") ~> verify }
+    val verify = check {
+      mediaType mustEqual `application/pdf`
+      responseAs[String] mustEqual "123"
     }
-    "reject requests to directory resources" in pendingUntilFixed {
+    "return the resource content with the MediaType matching the file extension - example 1" in { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory") ~> verify }
+    "return the resource content with the MediaType matching the file extension - example 2" in { Get("empty.pdf") ~> getFromResourceDirectory("subDirectory/") ~> verify }
+    "return the resource content with the MediaType matching the file extension - example 3" in { Get("subDirectory/empty.pdf") ~> getFromResourceDirectory("") ~> verify }
+    "reject requests to directory resources" in {
       Get() ~> getFromResourceDirectory("subDirectory") ~> check { handled mustEqual (false) }
     }
   }
@@ -174,7 +174,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
     implicit val settings = RoutingSettings.default.copy(renderVanityFooter = false)
 
-    "properly render a simple directory" in pendingUntilFixed {
+    "properly render a simple directory" taggedAs (Only) in {
       Get() ~> listDirectoryContents(base + "/someDir") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -194,7 +194,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render a sub directory" in pendingUntilFixed {
+    "properly render a sub directory" in {
       Get("/sub/") ~> listDirectoryContents(base + "/someDir") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -213,7 +213,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render the union of several directories" in pendingUntilFixed {
+    "properly render the union of several directories" in {
       Get() ~> listDirectoryContents(base + "/someDir", base + "/subDirectory") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -235,7 +235,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render an empty sub directory with vanity footer" in pendingUntilFixed {
+    "properly render an empty sub directory with vanity footer" in {
       val settings = 0 // shadow implicit
       Get("/emptySub/") ~> listDirectoryContents(base + "/subDirectory") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
@@ -257,7 +257,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render an empty top-level directory" in pendingUntilFixed {
+    "properly render an empty top-level directory" in {
       Get() ~> listDirectoryContents(base + "/subDirectory/emptySub") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -275,7 +275,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render a simple directory with a path prefix" in pendingUntilFixed {
+    "properly render a simple directory with a path prefix" in {
       Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -295,7 +295,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render a sub directory with a path prefix" in pendingUntilFixed {
+    "properly render a sub directory with a path prefix" in {
       Get("/files/sub/") ~> pathPrefix("files")(listDirectoryContents(base + "/someDir")) ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -314,7 +314,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "properly render an empty top-level directory with a path prefix" in pendingUntilFixed {
+    "properly render an empty top-level directory with a path prefix" in {
       Get("/files/") ~> pathPrefix("files")(listDirectoryContents(base + "/subDirectory/emptySub")) ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
@@ -332,12 +332,23 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
         }
       }
     }
-    "reject requests to file resources" in pendingUntilFixed {
+    "reject requests to file resources" in {
       Get() ~> listDirectoryContents(base + "subDirectory/empty.pdf") ~> check { handled mustEqual (false) }
     }
   }
 
   def prep(s: String) = s.stripMarginWithNewline("\n")
 
-  def writeAllText(text: String, file: File): Unit = akka.http.routing.FIXME
+  def writeAllText(text: String, file: File): Unit = {
+    val fos = new FileOutputStream(file)
+    try {
+      fos.write(text.getBytes("UTF-8"))
+    } finally fos.close()
+  }
+
+  def evaluateTo[T](t: T, atMost: Duration = 100.millis)(implicit ec: ExecutionContext): Matcher[Future[T]] =
+    be(t).compose[Future[T]] { fut ⇒
+      import scala.concurrent.Await
+      Await.result(fut, atMost)
+    }
 }

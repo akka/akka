@@ -23,6 +23,24 @@ package object unmarshalling {
     def withDefault(default: T): FormFieldConverter[T]
   }
 
+  def unmarshalUnsafe[T: Unmarshaller](entity: HttpEntity): T = routing.FIXME
+
+  implicit class RequestAddAs(req: HttpRequest) {
+    def as[T](implicit um: FromRequestUnmarshaller[T]): Deserialized[T] = um(req)
+  }
+  implicit class ResponseAddAs(res: HttpResponse) {
+    def as[T](implicit um: FromResponseUnmarshaller[T]): Deserialized[T] = um(res)
+  }
+  implicit class EntityAddAs(ent: HttpEntity) {
+    def as[T](implicit um: Unmarshaller[T]): Deserialized[T] = um(ent)
+    def asString(implicit mat: FlowMaterializer, ec: ExecutionContext): Future[String] = as[String]
+
+    def collectedDataBytes(implicit mat: FlowMaterializer): Future[ByteString] =
+      Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture(mat)
+  }
+}
+
+package unmarshalling {
   case class MalformedContent(errorMessage: String, cause: Option[Throwable] = None) extends DeserializationError
 
   object MalformedContent {
@@ -38,7 +56,10 @@ package object unmarshalling {
       }
 
     implicit def stringUnmarshaller(implicit mat: FlowMaterializer, ec: ExecutionContext): Unmarshaller[String] =
-      Unmarshaller.delegate[Array[Byte], String](ContentTypeRange.`*`)(bs ⇒ new String(bs, "UTF-8"))
+      Unmarshaller.delegate[Array[Byte], String](ContentTypeRange.`*`) { bs ⇒
+        println(s"Trying to convert $bs of length ${bs.length}")
+        new String(bs, "UTF-8")
+      }
 
     implicit def byteRangesUnmarshaller: Unmarshaller[MultipartByteRanges] = routing.FIXME
     implicit def xmlUnmarshaller: Unmarshaller[scala.xml.NodeSeq] = routing.FIXME
@@ -72,21 +93,5 @@ package object unmarshalling {
       new FromResponseUnmarshaller[T] {
         def apply(v1: HttpResponse): Deserialized[T] = implicitly[Unmarshaller[T]].apply(v1.entity)
       }
-  }
-
-  def unmarshalUnsafe[T: Unmarshaller](entity: HttpEntity): T = routing.FIXME
-
-  implicit class RequestAddAs(req: HttpRequest) {
-    def as[T](implicit um: FromRequestUnmarshaller[T]): Deserialized[T] = um(req)
-  }
-  implicit class ResponseAddAs(res: HttpResponse) {
-    def as[T](implicit um: FromResponseUnmarshaller[T]): Deserialized[T] = um(res)
-  }
-  implicit class EntityAddAs(ent: HttpEntity) {
-    def as[T](implicit um: Unmarshaller[T]): Deserialized[T] = um(ent)
-    def asString(implicit mat: FlowMaterializer, ec: ExecutionContext): Future[String] = as[String]
-
-    def collectedDataBytes(implicit mat: FlowMaterializer): Future[ByteString] =
-      Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture(mat)
   }
 }

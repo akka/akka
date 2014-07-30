@@ -49,6 +49,11 @@ package marshalling {
       }
     implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = FIXME
 
+    def delegate[T, U](contentTypes: ContentType*)(f: T ⇒ U)(implicit uMarshaller: Marshaller[U]): Marshaller[T] =
+      new Marshaller[T] {
+        def marshal(value: T): Future[Regular] = uMarshaller.marshal(f(value))
+      }
+
     def FIXME[T]: Marshaller[T] =
       new Marshaller[T] {
         val excp = new RuntimeException("Not yet implemented")

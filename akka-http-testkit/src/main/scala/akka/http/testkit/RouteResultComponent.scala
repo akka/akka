@@ -17,17 +17,23 @@
 package akka.http.testkit
 
 import java.util.concurrent.CountDownLatch
-import akka.http.model.HttpEntity.ChunkStreamPart
 
-import concurrent.duration._
-import scala.collection.mutable.ListBuffer
-import akka.actor.{ ActorSystem, Status, ActorRefFactory, ActorRef }
+import scala.concurrent.duration._
+
+import scala.concurrent.ExecutionContext
+import scala.util.{ Success, Failure }
+
+import akka.actor.{ ActorSystem, ActorRefFactory }
+
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
+import akka.http.routing.util.StreamUtils._
+
 import akka.testkit._
+
+import akka.http.model.HttpEntity.ChunkStreamPart
 import akka.http.routing.{ RouteResult ⇒ RoutingRouteResult, _ }
 import akka.http.model._
-
-import scala.concurrent.{ ExecutionContext, Await }
-import scala.util.{ Success, Failure }
 
 trait RouteResultComponent {
 
@@ -36,12 +42,9 @@ trait RouteResultComponent {
   /**
    * A receptacle for the response, rejections and potentially generated response chunks created by a route.
    */
-  class RouteResult(timeout: FiniteDuration)(implicit actorRefFactory: ActorRefFactory) {
+  class RouteResult(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit actorRefFactory: ActorRefFactory) {
     private[this] var _response: Option[HttpResponse] = None
     private[this] var _rejections: Option[List[Rejection]] = None
-    private[this] val _chunks = ListBuffer.empty[ChunkStreamPart]
-    private[this] var _closingExtension = ""
-    private[this] var _trailer: List[HttpHeader] = Nil
     private[this] val latch = new CountDownLatch(1)
     private[this] var virginal = true
 
@@ -60,33 +63,6 @@ trait RouteResultComponent {
           case Failure(ex) ⇒ handleResult(RouteException(ex))
         }
     }
-    /*private[testkit] val handler = new UnregisteredActorRef(actorRefFactory) {
-      def handle(message: Any)(implicit sender: ActorRef) {
-        def verifiedSender =
-          if (sender != null) sender else sys.error("Received message " + message + " from unknown sender (null)")
-        message match {
-          case HttpMessagePartWrapper(x: HttpResponse, _) ⇒
-            saveResult(Right(x))
-            latch.countDown()
-          case Rejected(rejections) ⇒
-            saveResult(Left(rejections))
-            latch.countDown()
-          case HttpMessagePartWrapper(ChunkedResponseStart(x), ack) ⇒
-            saveResult(Right(x))
-            ack.foreach(verifiedSender.tell(_, this))
-          case HttpMessagePartWrapper(x: MessageChunk, ack) ⇒
-            synchronized { _chunks += x }
-            ack.foreach(verifiedSender.tell(_, this))
-          case HttpMessagePartWrapper(ChunkedMessageEnd(extension, trailer), _) ⇒
-            synchronized { _closingExtension = extension; _trailer = trailer }
-            latch.countDown()
-          case Status.Failure(error) ⇒
-            sys.error("Route produced exception: " + error)
-          case x ⇒
-            sys.error("Received invalid route response: " + x)
-        }
-      }
-    }*/
 
     private[testkit] def awaitResult: this.type = {
       latch.await(timeout.toMillis, MILLISECONDS)
@@ -108,7 +84,7 @@ trait RouteResultComponent {
       failTest("Request was neither completed nor rejected within " + timeout)
 
     def handled: Boolean = synchronized { _response.isDefined }
-    def response: HttpResponse = synchronized {
+    def retrieveResponse: HttpResponse = synchronized {
       _response.getOrElse {
         _rejections.foreach {
           RejectionHandler.applyTransformations(_) match {
@@ -125,9 +101,35 @@ trait RouteResultComponent {
         failNotCompletedNotRejected()
       }
     }
-    def chunks: List[ChunkStreamPart] = synchronized { _chunks.toList }
-    def closingExtension = synchronized { _closingExtension }
-    def trailer = synchronized { _trailer }
+
+    def response: HttpResponse = retrieveResponse.copy(entity = entity)
+
+    private[this] lazy val entityRecreator: () ⇒ HttpEntity =
+      retrieveResponse.entity match {
+        case s: HttpEntity.Strict ⇒ () ⇒ s
+        case HttpEntity.Default(tpe, length, data) ⇒
+          val dataChunks = awaitAllElements(data, materializer)
+
+          () ⇒ HttpEntity.Default(tpe, length, Flow(dataChunks).toPublisher(materializer))
+
+          case HttpEntity.CloseDelimited(tpe, data) ⇒
+          val dataChunks = awaitAllElements(data, materializer)
+
+          () ⇒ HttpEntity.CloseDelimited(tpe, Flow(dataChunks).toPublisher(materializer))
+
+          case HttpEntity.Chunked(tpe, chunks) ⇒
+          val dataChunks = awaitAllElements(chunks, materializer)
+
+          () ⇒ HttpEntity.Chunked(tpe, Flow(dataChunks).toPublisher(materializer))
+      }
+    /** Returns an entity from which you can everytime start to read anew */
+    def entity: HttpEntity = entityRecreator()
+
+    lazy val chunks: List[ChunkStreamPart] =
+      entity match {
+        case HttpEntity.Chunked(_, chunks) ⇒ awaitAllElements[ChunkStreamPart](chunks, materializer).toList
+        case _                             ⇒ Nil
+      }
 
     def ~>[T](f: RouteResult ⇒ T): T = f(this)
   }

@@ -17,13 +17,19 @@
 package akka.http.routing
 package directives
 
+import akka.stream.FlowMaterializer
+
 import scala.collection.immutable
+
+import akka.http.routing.util.StreamUtils._
 
 import akka.shapeless.HNil
 import akka.http.marshalling.Marshaller
 import akka.http.model._
 import StatusCodes._
 import headers._
+
+import scala.concurrent.ExecutionContext
 
 trait RangeDirectives {
   import BasicDirectives._
@@ -48,10 +54,10 @@ trait RangeDirectives {
 
     class IndexRange(val start: Long, val end: Long) {
       def length = end - start
-      def apply(entity: HttpEntity.Default) = FIXME // HttpEntity(entity.contentType, entity.data.slice(start, length))
+      def apply(entity: HttpEntity.Default) = HttpEntity.Default(entity.contentType, length, entity.data.slice(start, length, implicitly[FlowMaterializer]))
       def distance(other: IndexRange) = mergedEnd(other) - mergedStart(other) - (length + other.length)
       def mergeWith(other: IndexRange) = new IndexRange(mergedStart(other), mergedEnd(other))
-      def contentRangeHeader(entity: HttpEntity.Default) = FIXME // `Content-Range`(ContentRange(start, end - 1, entity.data.length))
+      def contentRangeHeader(entity: HttpEntity.Default) = `Content-Range`(ContentRange(start, end - 1, entity.contentLength))
       private def mergedStart(other: IndexRange) = math.min(start, other.start)
       private def mergedEnd(other: IndexRange) = math.max(end, other.end)
     }
@@ -84,10 +90,10 @@ trait RangeDirectives {
       MultipartByteRanges(bodyParts)
     }*/
 
-    def rangeResponse(range: ByteRange, entity: HttpEntity.Default /* FIXME for other entity type */ , headers: immutable.Seq[HttpHeader]) = FIXME /*{
+    def rangeResponse(range: ByteRange, entity: HttpEntity.Default /* FIXME for other entity type */ , headers: immutable.Seq[HttpHeader]) = {
       val aiRange = indexRange(entity.contentLength)(range)
-      HttpResponse(PartialContent, aiRange(entity), aiRange.contentRangeHeader(entity) +: headers)
-    }*/
+      HttpResponse(PartialContent, aiRange.contentRangeHeader(entity) +: headers, aiRange(entity))
+    }
 
     def satisfiable(entityLength: Long)(range: ByteRange): Boolean =
       range match {
@@ -96,17 +102,20 @@ trait RangeDirectives {
         case ByteRange.Suffix(length)       ⇒ length > 0
       }
 
-    def applyRanges(ranges: Seq[ByteRange]): Directive0 = FIXME
-    /*mapRequestContext { ctx ⇒
+    def applyRanges(ranges: Seq[ByteRange]): Directive0 =
+      mapRequestContext { ctx ⇒
         ctx.withRouteResponseHandling {
           case CompleteWith(HttpResponse(OK, headers, entity: HttpEntity.Default, protocol)) ⇒ // FIXME: also enable for strict entities
             ranges.filter(satisfiable(entity.contentLength)) match {
               case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, entity.contentLength))
               case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, headers))
-              case satisfiableRanges     ⇒ ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
+              case satisfiableRanges ⇒
+                // multipart marshaller is still missing
+                // ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
+                FIXME
             }
         }
-      }*/
+      }
 
     def rangeHeaderOfGetRequests(ctx: RequestContext): Option[Range] =
       if (ctx.request.method == HttpMethods.GET) ctx.request.header[Range] else None
@@ -124,11 +133,11 @@ object RangeDirectives extends RangeDirectives {
   private val respondWithAcceptByteRangesHeader: Directive0 =
     RespondWithDirectives.respondWithHeader(`Accept-Ranges`(RangeUnits.Bytes))
 
-  class WithRangeSupportMagnet(val rangeCountLimit: Int, val rangeCoalescingThreshold: Long)(implicit m: Marshaller[MultipartByteRanges])
+  class WithRangeSupportMagnet(val rangeCountLimit: Int, val rangeCoalescingThreshold: Long)(implicit val marshaller: Marshaller[MultipartByteRanges], val executionContext: ExecutionContext, val materializer: FlowMaterializer)
   object WithRangeSupportMagnet {
-    implicit def fromSettings(u: Unit)(implicit settings: RoutingSettings, m: Marshaller[MultipartByteRanges]) =
+    implicit def fromSettings(u: Unit)(implicit settings: RoutingSettings, m: Marshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
       new WithRangeSupportMagnet(settings.rangeCountLimit, settings.rangeCoalescingThreshold)
-    implicit def fromCountLimitAndCoalescingThreshold(t: (Int, Long))(implicit m: Marshaller[MultipartByteRanges]) =
+    implicit def fromCountLimitAndCoalescingThreshold(t: (Int, Long))(implicit m: Marshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
       new WithRangeSupportMagnet(t._1, t._2)
   }
 }

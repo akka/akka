@@ -12,7 +12,7 @@ import com.typesafe.config.Config
 import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.actor.{ ActorRefFactory, ActorContext, ActorSystem }
+import akka.actor._
 import akka.stream.scaladsl.Flow
 import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
 import scala.collection.LinearSeq
@@ -21,11 +21,11 @@ import scala.util.matching.Regex
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
 
-  private[http] def actorSystem(implicit refFactory: ActorRefFactory): ActorSystem =
+  private[http] def actorSystem(implicit refFactory: ActorRefFactory): ExtendedActorSystem =
     refFactory match {
-      case x: ActorContext ⇒ actorSystem(x.system)
-      case x: ActorSystem  ⇒ x
-      case _               ⇒ throw new IllegalStateException
+      case x: ActorContext        ⇒ actorSystem(x.system)
+      case x: ExtendedActorSystem ⇒ x
+      case _                      ⇒ throw new IllegalStateException
     }
 
   private[http] implicit def enhanceByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)

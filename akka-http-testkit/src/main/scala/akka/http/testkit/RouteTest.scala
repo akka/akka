@@ -17,7 +17,10 @@
 package akka.http.testkit
 
 import akka.http.routing.impl.RequestContextImpl
+import akka.stream.scaladsl.Flow
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.util.ByteString
+import org.reactivestreams.Publisher
 
 import scala.collection.immutable
 
@@ -72,14 +75,9 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
   private def result = { assertInCheck(); dynRR.value }
   def handled: Boolean = result.handled
   def response: HttpResponse = result.response
-  def entity: HttpEntity = response.entity
-  @deprecated("Use `responseAs` instead.", "1.0/1.1/1.2-RC1")
-  def entityAs[T: Unmarshaller: ClassTag]: T =
-    Await.result(
-      entity.as[T]
-        .recoverWith {
-          case error ⇒ failTest(s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $error\n\nResponse was: $response")
-        }, 1.second)
+  def entity: HttpEntity = result.entity
+  def chunks: List[ChunkStreamPart] = result.chunks
+
   def responseAs[T: FromResponseUnmarshaller: ClassTag]: T =
     Await.result(
       response.as[T].recoverWith {
@@ -96,9 +94,16 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
   def header[T <: HttpHeader: ClassTag]: Option[T] = response.header[T]
   def header(name: String): Option[HttpHeader] = response.headers.find(_.is(name.toLowerCase))
   def status: StatusCode = response.status
-  def chunks: immutable.Seq[ChunkStreamPart] = result.chunks
-  def closingExtension: String = result.closingExtension
-  def trailer: List[HttpHeader] = result.trailer
+
+  def closingExtension: String = chunks.lastOption match {
+    case Some(HttpEntity.LastChunk(extension, _)) ⇒ extension
+    case _                                        ⇒ ""
+  }
+  def trailer: immutable.Seq[HttpHeader] = chunks.lastOption match {
+    case Some(HttpEntity.LastChunk(_, trailer)) ⇒ trailer
+    case _                                      ⇒ Nil
+  }
+
   def rejections: List[Rejection] = RejectionHandler.applyTransformations(result.rejections)
   def rejection: Rejection = {
     val r = rejections
@@ -139,7 +144,7 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
         type Out = RouteResult
 
         def apply(request: HttpRequest, route: Route): Out = {
-          val routeResult = new RouteResult(timeout.duration)
+          val routeResult = new RouteResult(timeout.duration, materializer)
           val effectiveRequest =
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,
@@ -153,20 +158,6 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
           routeResult.handleResult(res)
           routeResult
         }
-        /*{
-          val routeResult = new RouteResult(timeout.duration)
-          val effectiveRequest =
-            request.withEffectiveUri(
-              securedConnection = defaultHostInfo.securedConnection,
-              defaultHostHeader = defaultHostInfo.host)
-          ExecutionDirectives.handleExceptions(eh orElse ExceptionHandler.default)(route) {
-            RequestContext(
-              request = effectiveRequest,
-              responder = routeResult.handler,
-              unmatchedPath = effectiveRequest.uri.path)
-          }
-          routeResult
-        }*/
       }
   }
 }
