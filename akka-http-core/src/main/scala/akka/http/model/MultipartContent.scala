@@ -46,14 +46,14 @@ object MultipartByteRanges {
  * All parts must contain a Content-Disposition header with a type form-data
  * and a name parameter that is unique.
  */
-final case class MultipartFormData(parts: Producer[BodyPart]) extends MultipartParts {
+final case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts {
   // def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
 }
 
 object MultipartFormData {
   val Empty = MultipartFormData()
 
-  def apply(parts: BodyPart*): MultipartFormData = apply(SynchronousProducerFromIterable[BodyPart](parts.toList))
+  def apply(parts: BodyPart*): MultipartFormData = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
 
   def apply(fields: Map[String, BodyPart]): MultipartFormData = apply {
     fields.map {
