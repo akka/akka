@@ -181,7 +181,7 @@ object HttpEntity {
      */
     def apply(contentType: ContentType, chunks: Publisher[ByteString], materializer: FlowMaterializer): Chunked =
       Chunked(contentType, Flow(chunks).collect[ChunkStreamPart] {
-        case b: ByteString if b.nonEmpty => Chunk(b)
+        case b: ByteString if b.nonEmpty ⇒ Chunk(b)
       }.toPublisher(materializer))
   }
 
