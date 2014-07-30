@@ -38,7 +38,8 @@ final case class MultipartByteRanges(parts: Publisher[BodyPart]) extends Multipa
 object MultipartByteRanges {
   val Empty = MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](Nil))
 
-  def apply(parts: BodyPart*): MultipartByteRanges = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+  def apply(parts: BodyPart*): MultipartByteRanges =
+    if (parts.isEmpty) Empty else MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](parts.toList))
 }
 
 /**

@@ -127,7 +127,8 @@ object HttpEntity {
     override def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Strict] =
       Future.successful(this)
 
-    def withContentType(contentType: ContentType): Strict = copy(contentType = contentType)
+    def withContentType(contentType: ContentType): Strict =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -142,7 +143,8 @@ object HttpEntity {
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
 
-    def withContentType(contentType: ContentType): Default = copy(contentType = contentType)
+    def withContentType(contentType: ContentType): Default =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -156,7 +158,8 @@ object HttpEntity {
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
 
-    def withContentType(contentType: ContentType): CloseDelimited = copy(contentType = contentType)
+    def withContentType(contentType: ContentType): CloseDelimited =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -169,7 +172,8 @@ object HttpEntity {
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] =
       Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher(materializer)
 
-    def withContentType(contentType: ContentType): Chunked = copy(contentType = contentType)
+    def withContentType(contentType: ContentType): Chunked =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /** Java API */
     def getChunks: Publisher[japi.ChunkStreamPart] = chunks.asInstanceOf[Publisher[japi.ChunkStreamPart]]
