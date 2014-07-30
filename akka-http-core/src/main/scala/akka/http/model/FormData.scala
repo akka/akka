@@ -13,5 +13,6 @@ final case class FormData(fields: Uri.Query) {
 
 object FormData {
   val Empty = FormData(Uri.Query.Empty)
-  def apply(fields: Map[String, String]): FormData = this(Uri.Query(fields))
+  def apply(fields: Map[String, String]): FormData =
+    if (fields.isEmpty) Empty else FormData(Uri.Query(fields))
 }
