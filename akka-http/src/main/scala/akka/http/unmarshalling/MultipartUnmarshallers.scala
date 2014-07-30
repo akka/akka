@@ -46,6 +46,7 @@ trait MultipartUnmarshallers {
                 .collect {
                   case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
                     BodyPart(createEntity(entityParts), headers)
+                  case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
                 }.toPublisher(fm)
               Unmarshalling.Success(create(bodyParts))
           }

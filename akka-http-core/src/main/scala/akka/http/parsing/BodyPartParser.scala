@@ -7,7 +7,6 @@ package akka.http.parsing
 import akka.event.LoggingAdapter
 import org.reactivestreams.Publisher
 import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.collection.mutable.ListBuffer
 import akka.parboiled2.CharPredicate
 import akka.stream.scaladsl.Flow
@@ -50,7 +49,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
   private[this] val boyerMoore = new BoyerMoore(needle)
 
-  private[this] val headerParser = HttpHeaderParser.unprimed(settings, warnOnIllegalHeader)
+  private[this] val headerParser = HttpHeaderParser(settings, warnOnIllegalHeader) // TODO: prevent re-priming header parser from scratch
   private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary
   private[this] var terminated = false
@@ -60,7 +59,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   def warnOnIllegalHeader(errorInfo: ErrorInfo): Unit =
     if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
-  def onNext(input: ByteString): immutable.Seq[Output] = {
+  def onNext(input: ByteString): List[Output] = {
     result.clear()
     try state(input)
     catch {
@@ -71,6 +70,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   }
 
   def tryParseInitialBoundary(input: ByteString): StateResult = {
+    // we don't use boyerMoore here because we are looking for the boundary *without* a preceding CRLF
     try {
       @tailrec def rec(ix: Int): StateResult =
         if (ix < needle.length) {
