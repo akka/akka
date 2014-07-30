@@ -4,7 +4,7 @@
 
 package akka.http.unmarshalling
 
-import org.reactivestreams.api.Producer
+import org.reactivestreams.Publisher
 import scala.concurrent.Future
 import akka.actor.ActorRefFactory
 import akka.http.parsing.BodyPartParser
@@ -31,8 +31,8 @@ trait MultipartUnmarshallers {
     multipartPartsUnmarshaller[MultipartByteRanges](`multipart/byteranges`,
       ContentTypes.`text/plain` withCharset defaultCharset)(MultipartByteRanges(_))
 
-  def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: Producer[BodyPart] ⇒ T)(implicit fm: FlowMaterializer,
-                                                                                                                                               refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
+  def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: Publisher[BodyPart] ⇒ T)(implicit fm: FlowMaterializer,
+                                                                                                                                                refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
     Unmarshaller { entity ⇒
       Future.successful {
         if (mediaRange matches entity.contentType.mediaType) {
@@ -46,7 +46,7 @@ trait MultipartUnmarshallers {
                 .collect {
                   case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
                     BodyPart(createEntity(entityParts), headers)
-                }.toProducer(fm)
+                }.toPublisher(fm)
               Unmarshalling.Success(create(bodyParts))
           }
         } else Unmarshalling.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
@@ -60,7 +60,7 @@ trait MultipartUnmarshallers {
                                                             refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
     multipartPartsUnmarshaller(`multipart/form-data`, ContentTypes.`application/octet-stream`) { bodyParts ⇒
       def verify(part: BodyPart): BodyPart = part // TODO
-      val parts = if (strict) Flow(bodyParts).map(verify).toProducer(fm) else bodyParts
+      val parts = if (strict) Flow(bodyParts).map(verify).toPublisher(fm) else bodyParts
       MultipartFormData(parts)
     }
 }
