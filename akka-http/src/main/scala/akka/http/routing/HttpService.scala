@@ -16,110 +16,55 @@
 
 package akka.http.routing
 
-import akka.shapeless.HList
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
 
-import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
-import akka.http.model.{ HttpRequest, HttpResponse, Uri }
+import akka.http.Http
 
-object NewTypes {
-  trait HttpService {
-    def handle(request: HttpRequest): Future[HttpResponse]
-  }
+import akka.http.model.{ HttpRequest, HttpResponse }
 
-  sealed trait RouteResult
-  case class Complete(response: HttpResponse) extends RouteResult
-  case class Reject(rejections: immutable.Seq[Rejection]) extends RouteResult
-
-  case class RequestContext(request: HttpRequest, unmatchedPath: Uri.Path)
-
-  trait Route {
-    def apply(ctx: RequestContext): Future[RouteResult]
-  }
-
-  type Directive[L <: HList] = L ⇒ Route
-}
-
-/*
 import scala.util.control.NonFatal
-import akka.actor._
-import akka.io.Tcp
-import akka.http.util.LoggingContext
-import akka.http.model._
-import StatusCodes._
 
-trait HttpServiceBase extends Directives {
-
-  /**
-   * Supplies the actor behavior for executing the given route.
-   */
-  def runRoute(route: Route)(implicit eh: ExceptionHandler, rh: RejectionHandler, ac: ActorContext,
-                             rs: RoutingSettings, log: LoggingContext): Actor.Receive = {
-    val sealedExceptionHandler = eh orElse ExceptionHandler.default
-    val sealedRoute = sealRoute(route)(sealedExceptionHandler, rh)
-    def runSealedRoute(ctx: RequestContext): Unit =
-      try sealedRoute(ctx)
-      catch {
-        case NonFatal(e) ⇒
-          val errorRoute = sealedExceptionHandler(e)
-          errorRoute(ctx)
+object HttpService {
+  def handleConnections(serverConn: Future[Http.ServerBinding], materializer: FlowMaterializer)(route: Route)(implicit eh: ExceptionHandler, rh: RejectionHandler, rs: RoutingSettings, ec: ExecutionContext): Unit =
+    runServerWithHandler(serverConn, materializer) { request ⇒
+      def handleResult(result: RouteResult): Future[HttpResponse] = result match {
+        case CompleteWith(response)     ⇒ Future.successful(response)
+        case DeferredResult(lateResult) ⇒ lateResult.flatMap(handleResult)
+        case _                          ⇒ throw new IllegalStateException("Sealed route shouldn't generate anything else than completed results")
       }
+      import Directives._
+      def sealRoute(route: Route): Route =
+        (handleExceptions(eh) & handleRejections(sealRejectionHandler(rh)))(route)
+      def sealRejectionHandler(rh: RejectionHandler): RejectionHandler =
+        rh orElse RejectionHandler.Default orElse handleUnhandledRejections
 
-    {
-      case request: HttpRequest ⇒
-        val ctx = RequestContext(request, ac.sender(), request.uri.path).withDefaultSender(ac.self)
-        runSealedRoute(ctx)
-
-      case ctx: RequestContext ⇒ runSealedRoute(ctx)
-
-      case Tcp.Connected(_, _) ⇒
-        // by default we register ourselves as the handler for a new connection
-        ac.sender() ! Tcp.Register(ac.self)
-
-      case x: Tcp.ConnectionClosed        ⇒ onConnectionClosed(x)
-
-      case Timedout(request: HttpRequest) ⇒ runRoute(timeoutRoute)(eh, rh, ac, rs, log)(request)
+      val sealedExceptionHandler = eh orElse ExceptionHandler.default
+      val sealedRoute = sealRoute(route)
+      val ctx = impl.RequestContextImpl(request, request.uri.path)
+      val result =
+        try sealedRoute(ctx)
+        catch {
+          case NonFatal(e) ⇒
+            val errorRoute = sealedExceptionHandler(e)
+            errorRoute(ctx)
+        }
+      handleResult(result)
     }
-  }
-
-  /**
-   * Called by the `runRoute` behavior when a `ConnectionClosed` event is received.
-   * Override with custom logic if required (by default the method does nothing).
-   */
-  def onConnectionClosed(ev: Tcp.ConnectionClosed): Unit = ()
-
-  /**
-   * "Seals" a route by wrapping it with exception handling and rejection conversion.
-   */
-  def sealRoute(route: Route)(implicit eh: ExceptionHandler, rh: RejectionHandler): Route =
-    (handleExceptions(eh) & handleRejections(sealRejectionHandler(rh)))(route)
-
-  def sealRejectionHandler(rh: RejectionHandler): RejectionHandler =
-    rh orElse RejectionHandler.Default orElse handleUnhandledRejections
 
   def handleUnhandledRejections: RejectionHandler.PF = {
     case x :: _ ⇒ sys.error("Unhandled rejection: " + x)
   }
 
-  //# timeout-route
-  def timeoutRoute: Route = complete(
-    InternalServerError,
-    "The server was not able to produce a timely response to your request.")
-  //#
+  def runServerWithHandler(serverConn: Future[Http.ServerBinding], materializer: FlowMaterializer)(requestHandler: HttpRequest ⇒ Future[HttpResponse])(implicit ec: ExecutionContext): Unit =
+    serverConn.foreach {
+      case Http.ServerBinding(localAddress, connectionStream) ⇒
+        Flow(connectionStream).foreach {
+          case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
+            println("Accepted new connection from " + remoteAddress)
+            Flow(requestProducer).mapFuture(requestHandler).produceTo(materializer, responseConsumer)
+        }.consume(materializer)
+    }
 }
-
-object HttpService extends HttpServiceBase
-
-trait HttpService extends HttpServiceBase {
-  /**
-   * An ActorRefFactory needs to be supplied by the class mixing us in
-   * (mostly either the service actor or the service test)
-   */
-  implicit def actorRefFactory: ActorRefFactory
-}
-
-abstract class HttpServiceActor extends Actor with HttpService {
-  def actorRefFactory = context
-}
-*/
