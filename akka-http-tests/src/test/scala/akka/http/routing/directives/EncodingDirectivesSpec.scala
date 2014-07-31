@@ -138,7 +138,7 @@ class EncodingDirectivesSpec extends RoutingSpec {
         response must haveNoContentEncoding
       }
     }
-    "leave responses with an already set Content-Encoding header unchanged" in pendingUntilFixed {
+    "leave responses with an already set Content-Encoding header unchanged" in {
       Post() ~> `Accept-Encoding`(gzip) ~> {
         encodeResponse(Gzip) {
           respondWithHeader(`Content-Encoding`(identity)) { yeah }

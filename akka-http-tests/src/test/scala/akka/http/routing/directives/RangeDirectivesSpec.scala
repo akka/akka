@@ -65,13 +65,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }
 
-    "return a partial response for a ranged request with a overlapping suffix range" in pendingUntilFixed {
+    "return a partial response for a ranged request with a overlapping suffix range" in {
       Get() ~> addHeader(Range(ByteRange.suffix(100))) ~> completeWithRangedBytes(10) ~> check {
         responseAs[Array[Byte]] mustEqual bytes(10)
       }
     }
 
-    "be transparent to non-GET requests" in pendingUntilFixed {
+    "be transparent to non-GET requests" in {
       Post() ~> addHeader(Range(ByteRange(1, 2))) ~> completeWithRangedBytes(5) ~> check {
         responseAs[Array[Byte]] mustEqual bytes(5)
       }

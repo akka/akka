@@ -47,7 +47,7 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
   def withExceptionHandling(handler: ExceptionHandler): RequestContext = ???
 
   def withRouteResponseMapped(f: RouteResult ⇒ RouteResult): RequestContext =
-    copy(postProcessing = res ⇒ f(postProcessing(res)))
+    copy(postProcessing = res ⇒ postProcessing(f(res)))
 
   def withRouteResponseMappedPF(f: PartialFunction[RouteResult, RouteResult]): RequestContext =
     withRouteResponseMapped { res ⇒
