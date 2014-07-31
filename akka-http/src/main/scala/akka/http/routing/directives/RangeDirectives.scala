@@ -54,10 +54,10 @@ trait RangeDirectives {
 
     class IndexRange(val start: Long, val end: Long) {
       def length = end - start
-      def apply(entity: HttpEntity.Default) = HttpEntity.Default(entity.contentType, length, entity.data.slice(start, length, implicitly[FlowMaterializer]))
+      def apply(entity: HttpEntity) = entity.sliceData(start, end, materializer)
       def distance(other: IndexRange) = mergedEnd(other) - mergedStart(other) - (length + other.length)
       def mergeWith(other: IndexRange) = new IndexRange(mergedStart(other), mergedEnd(other))
-      def contentRangeHeader(entity: HttpEntity.Default) = `Content-Range`(ContentRange(start, end - 1, entity.contentLength))
+      def contentRangeHeader(entityLength: Long) = `Content-Range`(ContentRange(start, end - 1, entityLength))
       private def mergedStart(other: IndexRange) = math.min(start, other.start)
       private def mergedEnd(other: IndexRange) = math.max(end, other.end)
     }
@@ -90,9 +90,9 @@ trait RangeDirectives {
       MultipartByteRanges(bodyParts)
     }*/
 
-    def rangeResponse(range: ByteRange, entity: HttpEntity.Default /* FIXME for other entity type */ , headers: immutable.Seq[HttpHeader]) = {
-      val aiRange = indexRange(entity.contentLength)(range)
-      HttpResponse(PartialContent, aiRange.contentRangeHeader(entity) +: headers, aiRange(entity))
+    def rangeResponse(range: ByteRange, entity: HttpEntity, length: Long, headers: immutable.Seq[HttpHeader]) = {
+      val aiRange = indexRange(length)(range)
+      HttpResponse(PartialContent, aiRange.contentRangeHeader(length) +: headers, aiRange(entity))
     }
 
     def satisfiable(entityLength: Long)(range: ByteRange): Boolean =
@@ -101,18 +101,29 @@ trait RangeDirectives {
         case ByteRange.FromOffset(firstPos) ⇒ firstPos < entityLength
         case ByteRange.Suffix(length)       ⇒ length > 0
       }
+    def entityLength(entity: HttpEntity): Option[Long] = entity match {
+      case HttpEntity.Strict(_, data)       ⇒ Some(data.length)
+      case HttpEntity.Default(_, length, _) ⇒ Some(length)
+      case _                                ⇒ None
+    }
 
     def applyRanges(ranges: Seq[ByteRange]): Directive0 =
       mapRequestContext { ctx ⇒
         ctx.withRouteResponseHandling {
-          case CompleteWith(HttpResponse(OK, headers, entity: HttpEntity.Default, protocol)) ⇒ // FIXME: also enable for strict entities
-            ranges.filter(satisfiable(entity.contentLength)) match {
-              case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, entity.contentLength))
-              case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, headers))
-              case satisfiableRanges ⇒
-                // multipart marshaller is still missing
-                // ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
-                FIXME
+          case CompleteWith(HttpResponse(OK, headers, entity, protocol)) ⇒
+            entityLength(entity) match {
+              case Some(length) ⇒
+                ranges.filter(satisfiable(length)) match {
+                  case Nil                   ⇒ ctx.reject(UnsatisfiableRangeRejection(ranges, length))
+                  case Seq(satisfiableRange) ⇒ ctx.complete(rangeResponse(satisfiableRange, entity, length, headers))
+                  case satisfiableRanges ⇒
+                    // multipart marshaller is still missing
+                    // ctx.complete(PartialContent, headers, multipartRanges(satisfiableRanges, entity))
+                    FIXME
+                }
+              case None ⇒
+                // Ranges not supported for Chunked or CloseDelimited responses
+                ctx.reject(UnsatisfiableRangeRejection(ranges, -1)) // FIXME: provide better error
             }
         }
       }

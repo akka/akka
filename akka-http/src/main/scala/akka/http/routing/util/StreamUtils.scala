@@ -47,13 +47,63 @@ private[http] object StreamUtils {
   def awaitAllElements[T](data: Publisher[T], materializer: FlowMaterializer): immutable.Seq[T] =
     Await.result(Flow(data).fold(Vector.empty[T])(_ :+ _).toFuture(materializer), 1.second)
 
-  implicit class ByteStringPublisherEnhancements(underlying: Publisher[ByteString]) {
-    def slice(start: Long, length: Long, materializer: FlowMaterializer): Publisher[ByteString] = akka.http.routing.FIXME
-    /*Flow(underlying).transform(new Transformer[ByteString, ByteString] {
-        var nextIndex = 0
+  implicit class HttpEntityEnhancements(entity: HttpEntity) {
+    def sliceData(start: Long, length: Long, materializer: FlowMaterializer): HttpEntity = entity match {
+      case HttpEntity.Strict(tpe, data) ⇒
+        // should be checked before
+        assert(start >= 0 && start <= Int.MaxValue)
+        assert(length >= 0 && length <= Int.MaxValue)
+        HttpEntity.Strict(tpe, data.slice(start.toInt, length.toInt))
+      case HttpEntity.Default(tpe, _, data) ⇒
+        HttpEntity.Default(tpe, length, data.slice(start, length, materializer))
+    }
+  }
 
-        def onNext(element: ByteString): immutable.Seq[U] = ???
-      }).toPublisher(materializer)*/
+  implicit class ByteStringPublisherEnhancements(underlying: Publisher[ByteString]) {
+    def slice(start: Long, length: Long, materializer: FlowMaterializer): Publisher[ByteString] =
+      Flow(underlying).transform(new Transformer[ByteString, ByteString] {
+        type State = Transformer[ByteString, ByteString]
+
+        def skipping = new State {
+          var toSkip = start
+          def onNext(element: ByteString): immutable.Seq[ByteString] =
+            if (element.length < toSkip) {
+              // keep skipping
+              toSkip -= element.length
+              Nil
+            } else {
+              // toSkip <= element.length <= Int.MaxValue
+              val data = element.drop(toSkip.toInt)
+              val remaining = length - data.size
+              become {
+                if (remaining > 0) taking(remaining)
+                else finishing
+              }
+              data :: Nil
+            }
+        }
+        def taking(initiallyRemaining: Long) = new State {
+          var remaining: Long = initiallyRemaining
+          def onNext(element: ByteString): immutable.Seq[ByteString] = {
+            val data = element.take(math.min(remaining, Int.MaxValue).toInt)
+            remaining -= data.size
+            if (remaining <= 0) become(finishing)
+            data :: Nil
+          }
+        }
+        def finishing = new State {
+          override def isComplete: Boolean = true
+          def onNext(element: ByteString): immutable.Seq[ByteString] =
+            throw new IllegalStateException("onNext called on complete stream")
+        }
+
+        var currentState: State = skipping
+        def become(state: State): Unit = currentState = state
+
+        override def isComplete: Boolean = currentState.isComplete
+        def onNext(element: ByteString): immutable.Seq[ByteString] = currentState.onNext(element)
+        override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = currentState.onTermination(e)
+      }).toPublisher(materializer)
   }
 
   /**
@@ -69,7 +119,7 @@ private[http] object StreamUtils {
       new Transformer[ByteString, T] {
         def onNext(element: ByteString): immutable.Seq[T] = postProcessing(f(element)) :: Nil
 
-        override def onTermination(e: Option[scala.Throwable]): immutable.Seq[T] =
+        override def onTermination(e: Option[Throwable]): immutable.Seq[T] =
           if (e.isEmpty) {
             val last = finish()
             if (last.nonEmpty) postProcessing(last) :: Nil

@@ -45,7 +45,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }
 
-    "return a Content-Range header for a ranged request with a single range" in pendingUntilFixed {
+    "return a Content-Range header for a ranged request with a single range" in {
       Get() ~> addHeader(Range(ByteRange(0, 1))) ~> completeWithRangedBytes(10) ~> check {
         headers must contain(`Content-Range`(ContentRange(0, 1, 10)))
         status mustEqual PartialContent
@@ -53,13 +53,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }
 
-    "return a partial response for a ranged request with a single range with undefined lastBytePosition" in pendingUntilFixed {
+    "return a partial response for a ranged request with a single range with undefined lastBytePosition" in {
       Get() ~> addHeader(Range(ByteRange.fromOffset(5))) ~> completeWithRangedBytes(10) ~> check {
         responseAs[Array[Byte]] mustEqual Array[Byte](5, 6, 7, 8, 9)
       }
     }
 
-    "return a partial response for a ranged request with a single suffix range" in pendingUntilFixed {
+    "return a partial response for a ranged request with a single suffix range" in {
       Get() ~> addHeader(Range(ByteRange.suffix(1))) ~> completeWithRangedBytes(10) ~> check {
         responseAs[Array[Byte]] mustEqual Array[Byte](9)
       }
@@ -84,13 +84,13 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }*/
 
-    "reject an unsatisfiable single range" in pendingUntilFixed {
+    "reject an unsatisfiable single range" in {
       Get() ~> addHeader(Range(ByteRange(100, 200))) ~> completeWithRangedBytes(10) ~> check {
         rejection mustEqual UnsatisfiableRangeRejection(Seq(ByteRange(100, 200)), 10)
       }
     }
 
-    "reject an unsatisfiable single suffix range with length 0" in pendingUntilFixed {
+    "reject an unsatisfiable single suffix range with length 0" in {
       Get() ~> addHeader(Range(ByteRange.suffix(0))) ~> completeWithRangedBytes(42) ~> check {
         rejection mustEqual UnsatisfiableRangeRejection(Seq(ByteRange.suffix(0)), 42)
       }
