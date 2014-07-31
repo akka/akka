@@ -57,40 +57,34 @@ private[http] object StreamUtils {
   }
 
   /**
-   * Returns a copy of this entity the ByteString chunks of this entity mapped by the given function `f`.
+   * Returns a copy of the given entity with the ByteString chunks of this entity mapped by the given function `f`.
    * After the last chunked has been mapped by `f`, the `finish` method is called and its result is added
    * to the data stream.
    *
    * FIXME: should we move this into HttpEntity?
    * FIXME: add tests
    */
-  def mapEntityDataBytes(entity: HttpEntity, f: ByteString ⇒ ByteString, finish: () ⇒ ByteString, materializer: FlowMaterializer): HttpEntity =
+  def mapEntityDataBytes(entity: HttpEntity, f: ByteString ⇒ ByteString, finish: () ⇒ ByteString, materializer: FlowMaterializer): HttpEntity = {
+    def transformer[T](postProcessing: ByteString ⇒ T): Transformer[ByteString, T] =
+      new Transformer[ByteString, T] {
+        def onNext(element: ByteString): immutable.Seq[T] = postProcessing(f(element)) :: Nil
+
+        override def onTermination(e: Option[scala.Throwable]): immutable.Seq[T] =
+          if (e.isEmpty) {
+            val last = finish()
+            if (last.nonEmpty) postProcessing(last) :: Nil
+            else Nil
+          } else super.onTermination(e)
+      }
+
     entity match {
       case HttpEntity.Strict(tpe, data) ⇒ HttpEntity.Strict(tpe, f(data) ++ finish())
       case HttpEntity.Default(tpe, length, data) ⇒
-        val chunks =
-          Flow(data).transform(new Transformer[ByteString, ChunkStreamPart] {
-            def onNext(element: ByteString): immutable.Seq[ChunkStreamPart] = Chunk(f(element)) :: Nil
-            override def onTermination(e: Option[scala.Throwable]): immutable.Seq[ChunkStreamPart] =
-              if (e.isEmpty) {
-                val last = finish()
-                if (last.nonEmpty) Chunk(last) :: Nil
-                else Nil
-              } else super.onTermination(e)
-          }).toPublisher(materializer)
+        val chunks = Flow(data).transform(transformer(Chunk(_): ChunkStreamPart)).toPublisher(materializer)
 
         HttpEntity.Chunked(tpe, chunks)
       case HttpEntity.CloseDelimited(tpe, data) ⇒
-        val newData =
-          Flow(data).transform(new Transformer[ByteString, ByteString] {
-            def onNext(element: ByteString): immutable.Seq[ByteString] = f(element) :: Nil
-            override def onTermination(e: Option[scala.Throwable]): immutable.Seq[ByteString] =
-              if (e.isEmpty) {
-                val last = finish()
-                if (last.nonEmpty) last :: Nil
-                else Nil
-              } else super.onTermination(e)
-          }).toPublisher(materializer)
+        val newData = Flow(data).transform(transformer(identity)).toPublisher(materializer)
 
         HttpEntity.CloseDelimited(tpe, newData)
       case HttpEntity.Chunked(tpe, chunks) ⇒
@@ -104,6 +98,7 @@ private[http] object StreamUtils {
                 sentLastChunk = true
                 Chunk(finish()) :: l :: Nil
             }
+
             override def onTermination(e: Option[scala.Throwable]): immutable.Seq[ChunkStreamPart] =
               if (e.isEmpty && !sentLastChunk) {
                 val last = finish()
@@ -114,4 +109,5 @@ private[http] object StreamUtils {
 
         HttpEntity.Chunked(tpe, newChunks)
     }
+  }
 }
