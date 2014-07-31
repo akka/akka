@@ -17,7 +17,9 @@
 package akka.http.encoding
 
 import akka.http.model._
+import akka.http.routing.util.StreamUtils
 import akka.stream.FlowMaterializer
+import akka.util.ByteString
 import headers.HttpEncoding
 
 trait Decoder {
@@ -30,7 +32,14 @@ trait Decoder {
         entity = decodeEntity(message.entity, materializer))
     else message.message
 
-  def decodeEntity(entity: HttpEntity, materializer: FlowMaterializer): HttpEntity = throw new IllegalStateException()
+  def decodeEntity(entity: HttpEntity, materializer: FlowMaterializer): HttpEntity = {
+    val decompressor = newDecompressor
+
+    def decodeChunk(bytes: ByteString): ByteString = ByteString(decompressor.decompress(bytes.toArray))
+    def finish(): ByteString = ByteString.empty
+
+    StreamUtils.mapEntityDataBytes(entity, decodeChunk, finish, materializer)
+  }
 
   def newDecompressor: Decompressor
 }
