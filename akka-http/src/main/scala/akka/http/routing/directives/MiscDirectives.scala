@@ -128,8 +128,8 @@ object MiscDirectives extends MiscDirectives {
       headerValuePF { case `Remote-Address`(address) ⇒ address } |
       headerValuePF { case h if h.is("x-real-ip") ⇒ RemoteAddress(h.value) }
 
-  private def _requestEntityEmpty: Directive0 = FIXME
-  //extract(_.request.entity.isEmpty).flatMap(if (_) pass else reject)
+  private def _requestEntityEmpty: Directive0 =
+    extract(_.request.entity.isKnownEmpty).flatMap(if (_) pass else reject)
 
   private def _requestEntityPresent: Directive0 = FIXME
   //extract(_.request.entity.isEmpty).flatMap(if (_) reject else pass)

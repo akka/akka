@@ -17,11 +17,16 @@
 package akka.http.routing
 package directives
 
+import scala.collection.immutable
+
 import akka.http.util._
 import akka.http.model._
+import akka.stream.FlowMaterializer
 import headers.HttpEncoding
 import akka.http.encoding._
 import akka.actor.ActorRefFactory
+
+import scala.util._
 
 trait EncodingDirectives {
   import BasicDirectives._
@@ -33,30 +38,12 @@ trait EncodingDirectives {
   /**
    * Wraps its inner Route with encoding support using the given Encoder.
    */
-  def encodeResponse(magnet: EncodeResponseMagnet): Directive0 = FIXME /*{
+  def encodeResponse(magnet: EncodeResponseMagnet): Directive0 = {
     import magnet._
-    def applyEncoder = mapRequestContext { ctx ⇒
-      @volatile var compressor: Compressor = null
-      ctx.withHttpResponsePartMultiplied {
-        case response: HttpResponse ⇒ encoder.encode(response) :: Nil
-        case x @ ChunkedResponseStart(response) ⇒ encoder.startEncoding(response) match {
-          case Some((compressedResponse, c)) ⇒
-            compressor = c
-            ChunkedResponseStart(compressedResponse) :: Nil
-          case None ⇒ x :: Nil
-        }
-        case MessageChunk(data, exts) if compressor != null ⇒
-          MessageChunk(HttpData(compressor.compress(data.toByteArray).flush()), exts) :: Nil
-        case x: ChunkedMessageEnd if compressor != null ⇒
-          val body = compressor.finish()
-          if (body.length > 0) MessageChunk(body) :: x :: Nil else x :: Nil
-        case x ⇒ x :: Nil
-      }
-    }
     responseEncodingAccepted(encoder.encoding) &
-      applyEncoder &
+      mapHttpResponse(encoder.encode(_, magnet.materializer)) &
       cancelAllRejections(ofType[UnacceptedResponseEncodingRejection])
-  }*/
+  }
 
   /**
    * Rejects the request with an UnacceptedResponseEncodingRejection
@@ -91,19 +78,20 @@ trait EncodingDirectives {
   /**
    * Wraps its inner Route with decoding support using the given Decoder.
    */
-  def decodeRequest(decoder: Decoder): Directive0 = FIXME /*{
+  def decodeRequest(magnet: DecodeRequestMagnet): Directive0 = {
+    import magnet._
     def applyDecoder = mapInnerRoute { inner ⇒
       ctx ⇒
-        tryToEither(decoder.decode(ctx.request)) match {
-          case Right(decodedRequest) ⇒ inner(ctx.copy(request = decodedRequest))
-          case Left(error)           ⇒ ctx.reject(CorruptRequestEncodingRejection(error.getMessage.nullAsEmpty))
+        Try(decoder.decode(ctx.request, magnet.materializer)) match {
+          case Success(decodedRequest) ⇒ inner(ctx.withRequest(decodedRequest))
+          case Failure(error)          ⇒ ctx.reject(CorruptRequestEncodingRejection(error.getMessage.nullAsEmpty))
         }
     }
     requestEntityEmpty | (
       requestEncodedWith(decoder.encoding) &
       applyDecoder &
       cancelAllRejections(ofTypes(classOf[UnsupportedRequestEncodingRejection], classOf[CorruptRequestEncodingRejection])))
-  }*/
+  }
 
   /**
    * Rejects the request with an UnsupportedRequestEncodingRejection if its encoding doesn't match the given one.
@@ -118,42 +106,63 @@ trait EncodingDirectives {
    * Decompresses the incoming request if it is GZip or Deflate encoded.
    * Uncompressed requests are passed on to the inner route unchanged.
    */
-  def decompressRequest(): Directive0 = decompressRequest(Gzip, Deflate, NoEncoding)
+  def decompressRequest(magnet: RefFactoryMagnet): Directive0 = {
+    import magnet.materializer
+    decompressRequest(Gzip, Deflate, NoEncoding)
+  }
 
   /**
    * Decompresses the incoming request if it is encoded with one of the given
    * encoders. If the request encoding doesn't match one of the given encoders
    * the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */
-  def decompressRequest(first: Decoder, more: Decoder*): Directive0 =
+  def decompressRequest(magnet: DecompressRequestMagnet): Directive0 = {
+    import magnet._
     if (more.isEmpty) decodeRequest(first)
     else more.foldLeft(decodeRequest(first)) { (r, decoder) ⇒ r | decodeRequest(decoder) }
+  }
 }
 
 object EncodingDirectives extends EncodingDirectives
 
 class EncodeResponseMagnet(val encoder: Encoder, val autoChunkThreshold: Long = 128 * 1024,
-                           val autoChunkSize: Int = 128 * 1024)(implicit val refFactory: ActorRefFactory)
+                           val autoChunkSize: Int = 128 * 1024)(implicit val refFactory: ActorRefFactory, val materializer: FlowMaterializer)
 object EncodeResponseMagnet {
-  implicit def fromEncoder(encoder: Encoder)(implicit factory: ActorRefFactory): EncodeResponseMagnet = // # EncodeResponseMagnet
+  implicit def fromEncoder(encoder: Encoder)(implicit factory: ActorRefFactory, materializer: FlowMaterializer): EncodeResponseMagnet = // # EncodeResponseMagnet
     new EncodeResponseMagnet(encoder)
-  implicit def fromEncoderThresholdAndChunkSize(t: (Encoder, Long, Int))(implicit factory: ActorRefFactory): EncodeResponseMagnet = // # EncodeResponseMagnet
+  implicit def fromEncoderThresholdAndChunkSize(t: (Encoder, Long, Int))(implicit factory: ActorRefFactory, materializer: FlowMaterializer): EncodeResponseMagnet = // # EncodeResponseMagnet
     new EncodeResponseMagnet(t._1, t._2, t._3)
 }
 
-class CompressResponseMagnet(val encoders: List[Encoder])(implicit val refFactory: ActorRefFactory)
+class CompressResponseMagnet(val encoders: List[Encoder])(implicit val refFactory: ActorRefFactory, val materializer: FlowMaterializer)
 object CompressResponseMagnet {
-  implicit def fromUnit(u: Unit)(implicit refFactory: ActorRefFactory): CompressResponseMagnet =
+  implicit def fromUnit(u: Unit)(implicit refFactory: ActorRefFactory, materializer: FlowMaterializer): CompressResponseMagnet =
     new CompressResponseMagnet(Gzip :: Deflate :: NoEncoding :: Nil)
-  implicit def fromEncoders1(e: Encoder)(implicit refFactory: ActorRefFactory): CompressResponseMagnet =
+  implicit def fromEncoders1(e: Encoder)(implicit refFactory: ActorRefFactory, materializer: FlowMaterializer): CompressResponseMagnet =
     new CompressResponseMagnet(e :: Nil)
-  implicit def fromEncoders2(t: (Encoder, Encoder))(implicit refFactory: ActorRefFactory): CompressResponseMagnet =
+  implicit def fromEncoders2(t: (Encoder, Encoder))(implicit refFactory: ActorRefFactory, materializer: FlowMaterializer): CompressResponseMagnet =
     new CompressResponseMagnet(t._1 :: t._2 :: Nil)
-  implicit def fromEncoders3(t: (Encoder, Encoder, Encoder))(implicit refFactory: ActorRefFactory): CompressResponseMagnet =
+  implicit def fromEncoders3(t: (Encoder, Encoder, Encoder))(implicit refFactory: ActorRefFactory, materializer: FlowMaterializer): CompressResponseMagnet =
     new CompressResponseMagnet(t._1 :: t._2 :: t._3 :: Nil)
 }
 
-class RefFactoryMagnet(implicit val refFactory: ActorRefFactory)
+class RefFactoryMagnet(implicit val refFactory: ActorRefFactory, val materializer: FlowMaterializer)
 object RefFactoryMagnet {
-  implicit def fromUnit(u: Unit)(implicit refFactory: ActorRefFactory): RefFactoryMagnet = new RefFactoryMagnet
+  implicit def fromUnit(u: Unit)(implicit refFactory: ActorRefFactory, materializer: FlowMaterializer): RefFactoryMagnet = new RefFactoryMagnet
+}
+
+class DecodeRequestMagnet(val decoder: Decoder)(implicit val materializer: FlowMaterializer)
+object DecodeRequestMagnet {
+  implicit def fromDecoder(decoder: Decoder)(implicit materializer: FlowMaterializer): DecodeRequestMagnet =
+    new DecodeRequestMagnet(decoder)
+}
+
+class DecompressRequestMagnet(val first: Decoder, val more: immutable.Seq[Decoder])(implicit val materializer: FlowMaterializer)
+object DecompressRequestMagnet {
+  implicit def fromDecoders1(decoder: Decoder)(implicit materializer: FlowMaterializer): DecompressRequestMagnet =
+    new DecompressRequestMagnet(decoder, Nil)
+  implicit def fromDecoders2(decoders: (Decoder, Decoder))(implicit materializer: FlowMaterializer): DecompressRequestMagnet =
+    new DecompressRequestMagnet(decoders._1, List(decoders._2))
+  implicit def fromDecoders3(decoders: (Decoder, Decoder, Decoder))(implicit materializer: FlowMaterializer): DecompressRequestMagnet =
+    new DecompressRequestMagnet(decoders._1, List(decoders._2, decoders._3))
 }

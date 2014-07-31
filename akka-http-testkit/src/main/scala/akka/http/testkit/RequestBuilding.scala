@@ -6,6 +6,7 @@ package akka.http.testkit
 
 import akka.http.model.parser.HeaderParser
 import akka.http.parsing.{ ParserSettings, HttpHeaderParser }
+import akka.stream.FlowMaterializer
 import akka.util.Timeout
 import com.typesafe.config.Config
 
@@ -56,7 +57,7 @@ trait RequestBuilding extends TransformerPipelineSupport {
   val Options = new RequestBuilder(OPTIONS)
   val Head = new RequestBuilder(HEAD)
 
-  def encode(encoder: Encoder): RequestTransformer = encoder.encode(_)
+  def encode(encoder: Encoder, flow: FlowMaterializer): RequestTransformer = encoder.encode(_, flow)
 
   def addHeader(header: HttpHeader): RequestTransformer = _.mapHeaders(header +: _)
 

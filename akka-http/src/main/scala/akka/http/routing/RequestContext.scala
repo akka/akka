@@ -52,6 +52,11 @@ trait RequestContext {
   def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext
 
   /**
+   * Returns a copy of this context with the new HttpRequest.
+   */
+  def withRequest(req: HttpRequest): RequestContext
+
+  /**
    * Returns a copy of this context with the unmatchedPath transformed by the given function.
    */
   def withUnmatchedPathMapped(f: Uri.Path ⇒ Uri.Path): RequestContext

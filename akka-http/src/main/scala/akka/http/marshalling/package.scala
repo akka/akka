@@ -36,11 +36,13 @@ package marshalling {
       }
   }
   object Marshaller {
-    implicit def stringMarshaller: Marshaller[String] =
-      new Marshaller[String] {
-        def marshal(value: String): Future[HttpEntity.Regular] = Future.successful(HttpEntity(value))
+    def apply[T](f: T ⇒ Future[Regular]): Marshaller[T] =
+      new Marshaller[T] {
+        def marshal(value: T): Future[Regular] = f(value)
       }
-    implicit def bytesMarshaller: Marshaller[Array[Byte]] = FIXME
+
+    implicit def stringMarshaller: Marshaller[String] = Marshaller(value ⇒ Future.successful(HttpEntity(value)))
+    implicit def bytesMarshaller: Marshaller[Array[Byte]] = Marshaller(value ⇒ Future.successful(HttpEntity(value)))
     implicit def xmlMarshaller: Marshaller[scala.xml.NodeSeq] = FIXME
     implicit def formDataMarshaller: Marshaller[FormData] = FIXME
     implicit def entityMarshaller: Marshaller[HttpEntity.Regular] =

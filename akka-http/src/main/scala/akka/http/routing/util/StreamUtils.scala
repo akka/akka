@@ -6,6 +6,8 @@ package akka.http.routing.util
 
 import java.io.InputStream
 
+import akka.http.model.HttpEntity
+
 import scala.collection.immutable
 
 import scala.concurrent.Await
@@ -52,4 +54,16 @@ private[http] object StreamUtils {
         def onNext(element: ByteString): immutable.Seq[U] = ???
       }).toPublisher(materializer)*/
   }
+
+  /**
+   * Returns a copy of this entity the ByteString chunks of this entity mapped by the given function `f`.
+   * After the last chunked has been mapped by `f`, the `finish` method is called and its result is added
+   * to the data stream.
+   *
+   * FIXME: should we move this into HttpEntity?
+   */
+  def mapEntityDataBytes(entity: HttpEntity, f: ByteString ⇒ ByteString, finish: () ⇒ ByteString, materializer: FlowMaterializer): HttpEntity =
+    ??? /*entity match {
+    case HttpEntity.Strict(tpe, data) ⇒ HttpEntity.Strict(tpe, f(data) ++ finish())
+  }*/
 }

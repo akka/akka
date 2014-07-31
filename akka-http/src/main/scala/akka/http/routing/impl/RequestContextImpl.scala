@@ -16,6 +16,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath: Uri.Path, postProcessing: RouteResult ⇒ RouteResult = identity) extends RequestContext {
   def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext = copy(request = f(request))
 
+  def withRequest(req: HttpRequest): RequestContext = copy(request = req)
+
   def withUnmatchedPathMapped(f: Path ⇒ Path): RequestContext = copy(unmatchedPath = f(unmatchedPath))
 
   def withContentNegotiationDisabled: RequestContext = this // FIXME: actually support this

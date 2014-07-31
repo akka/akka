@@ -20,6 +20,7 @@ import scala.util.matching.Regex
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
+  private[http] val EmptyByteArray = Array.empty[Byte]
 
   private[http] def actorSystem(implicit refFactory: ActorRefFactory): ExtendedActorSystem =
     refFactory match {

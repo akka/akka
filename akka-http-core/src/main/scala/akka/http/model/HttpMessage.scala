@@ -19,6 +19,7 @@ import akka.util.ByteString
  */
 sealed trait HttpMessage extends japi.HttpMessage {
   type Self <: HttpMessage
+  def message: Self
 
   def isRequest: Boolean
   def isResponse: Boolean
@@ -130,6 +131,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
+  def message = this
 
   def isRequest = true
   def isResponse = false
@@ -326,6 +328,7 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
                               entity: HttpEntity = HttpEntity.Empty,
                               protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpResponse with HttpMessage {
   type Self = HttpResponse
+  def message = this
 
   def isRequest = false
   def isResponse = true
