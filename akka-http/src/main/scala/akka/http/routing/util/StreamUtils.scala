@@ -72,14 +72,9 @@ private[http] object StreamUtils {
               toSkip -= element.length
               Nil
             } else {
+              become(taking(length))
               // toSkip <= element.length <= Int.MaxValue
-              val data = element.drop(toSkip.toInt)
-              val remaining = length - data.size
-              become {
-                if (remaining > 0) taking(remaining)
-                else finishing
-              }
-              data :: Nil
+              currentState.onNext(element.drop(toSkip.toInt))
             }
         }
         def taking(initiallyRemaining: Long) = new State {
@@ -97,7 +92,7 @@ private[http] object StreamUtils {
             throw new IllegalStateException("onNext called on complete stream")
         }
 
-        var currentState: State = skipping
+        var currentState: State = if (start > 0) skipping else taking(length)
         def become(state: State): Unit = currentState = state
 
         override def isComplete: Boolean = currentState.isComplete

@@ -72,14 +72,14 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
       } finally file.delete
     }
 
-    "return a single range from a file" in pendingUntilFixed {
+    "return a single range from a file" in {
       val file = File.createTempFile("partialTest", null)
       try {
         writeAllText("ABCDEFGHIJKLMNOPQRSTUVWXYZ", file)
         Get() ~> addHeader(Range(ByteRange(0, 10))) ~> getFromFile(file) ~> check {
-          responseAs[String] mustEqual "ABCDEFGHIJK"
           status mustEqual StatusCodes.PartialContent
           headers must contain(`Content-Range`(ContentRange(0, 10, 26)))
+          responseAs[String] mustEqual "ABCDEFGHIJK"
         }
       } finally file.delete
     }
@@ -174,7 +174,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
     def eraseDateTime(s: String) = s.replaceAll("""\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d""", "xxxx-xx-xx xx:xx:xx")
     implicit val settings = RoutingSettings.default.copy(renderVanityFooter = false)
 
-    "properly render a simple directory" taggedAs (Only) in {
+    "properly render a simple directory" in {
       Get() ~> listDirectoryContents(base + "/someDir") ~> check {
         eraseDateTime(responseAs[String]) mustEqual prep {
           """<html>
