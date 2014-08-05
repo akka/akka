@@ -5,10 +5,14 @@
 package akka.http.model
 
 import java.io.File
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
 import org.reactivestreams.Publisher
 import akka.stream.impl.SynchronousPublisherFromIterable
 import scala.collection.immutable
 import headers._
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait MultipartParts {
   def parts: Publisher[BodyPart]
@@ -47,8 +51,26 @@ object MultipartByteRanges {
  * All parts must contain a Content-Disposition header with a type form-data
  * and a name parameter that is unique.
  */
-final case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts {
-  // def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
+case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts {
+  /**
+   * Turns this instance into its strict specialization using the given `maxFieldCount` as the field number cut-off
+   * hint.
+   */
+  def toStrict(materializer: FlowMaterializer, maxFieldCount: Int = 1000)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
+    Flow(parts).grouped(maxFieldCount).toFuture(materializer).map(new StrictMultipartFormData(_))
+}
+
+/**
+ * A specialized `MultipartFormData` that allows full random access to its parts.
+ */
+class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends MultipartFormData(SynchronousPublisherFromIterable(fields)) {
+  /**
+   * Returns the BodyPart with the given name, if found.
+   */
+  def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
+
+  override def toStrict(materializer: FlowMaterializer, maxFieldCount: Int)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
+    Future.successful(this)
 }
 
 object MultipartFormData {

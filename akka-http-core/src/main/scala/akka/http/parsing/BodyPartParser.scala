@@ -37,12 +37,15 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
 
-  private[this] val needle = new Array[Byte](boundary.length + 4)
-  needle(0) = '\r'.toByte
-  needle(1) = '\n'.toByte
-  needle(2) = '-'.toByte
-  needle(3) = '-'.toByte
-  boundary.getAsciiBytes(needle, 4)
+  private[this] val needle: Array[Byte] = {
+    val array = new Array[Byte](boundary.length + 4)
+    array(0) = '\r'.toByte
+    array(1) = '\n'.toByte
+    array(2) = '-'.toByte
+    array(3) = '-'.toByte
+    boundary.getAsciiBytes(array, 4)
+    array
+  }
 
   // we use the Boyer-Moore string search algorithm for finding the boundaries in the multipart entity,
   // TODO: evaluate whether an upgrade to the more efficient FJS is worth the implementation cost
@@ -64,13 +67,14 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     try state(input)
     catch {
       case e: ParsingException    ⇒ fail(e.info)
-      case NotEnoughDataException ⇒ throw new IllegalStateException // we are missing a try/catch{continue} wrapper somewhere
+      case NotEnoughDataException ⇒ throw new IllegalStateException(NotEnoughDataException) // we are missing a try/catch{continue} wrapper somewhere
     }
     result.toList
   }
 
   def tryParseInitialBoundary(input: ByteString): StateResult = {
-    // we don't use boyerMoore here because we are looking for the boundary *without* a preceding CRLF
+    // we don't use boyerMoore here because we are testing for the boundary *without* a
+    // preceding CRLF and at a known location (the very beginning of the entity)
     try {
       @tailrec def rec(ix: Int): StateResult =
         if (ix < needle.length) {
