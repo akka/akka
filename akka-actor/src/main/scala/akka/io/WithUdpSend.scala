@@ -3,10 +3,13 @@
  */
 package akka.io
 
+import java.net.InetSocketAddress
 import java.nio.channels.{ SelectionKey, DatagramChannel }
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
+
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -39,7 +42,26 @@ private[io] trait WithUdpSend {
     case send: Send ⇒
       pendingSend = send
       pendingCommander = sender()
-      doSend(registration)
+      if (send.target.isUnresolved) {
+        Dns.resolve(send.target.getHostName)(context.system, self) match {
+          case Some(r) ⇒
+            try {
+              pendingSend = pendingSend.copy(target = new InetSocketAddress(r.addr, pendingSend.target.getPort))
+              doSend(registration)
+            } catch {
+              case NonFatal(e) ⇒
+                sender() ! CommandFailed(send)
+                log.debug("Failure while sending UDP datagram to remote address [{}]: {}",
+                  send.target, e)
+                retriedSend = false
+                pendingSend = null
+                pendingCommander = null
+            }
+          case None ⇒
+        }
+      } else {
+        doSend(registration)
+      }
 
     case ChannelWritable ⇒ if (hasWritePending) doSend(registration)
   }

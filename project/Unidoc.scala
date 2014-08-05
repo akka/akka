@@ -58,10 +58,12 @@ object Unidoc {
         val hasDiagram = files exists { f =>
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
-            !(name.compare("index.html") == 0) && !(name.compare("package.html") == 0)) {
-            val source = scala.io.Source.fromFile(f)("utf-8")
-            val hd = source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
-            source.close()
+            !name.equals("index.html") && !name.equals("package.html")) {
+            val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
+            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            catch {
+              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
+            } finally source.close()
             hd
           }
           else false

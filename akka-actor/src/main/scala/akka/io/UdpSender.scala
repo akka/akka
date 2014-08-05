@@ -23,9 +23,7 @@ private[io] class UdpSender(val udp: UdpExt,
   val channel = {
     val datagramChannel = DatagramChannel.open
     datagramChannel.configureBlocking(false)
-    val socket = datagramChannel.socket
-
-    options foreach { _.beforeDatagramBind(socket) }
+    options foreach { _.beforeBind(datagramChannel) }
 
     datagramChannel
   }
@@ -33,6 +31,7 @@ private[io] class UdpSender(val udp: UdpExt,
 
   def receive: Receive = {
     case registration: ChannelRegistration ⇒
+      options.foreach(_.afterConnect(channel))
       commander ! SimpleSenderReady
       context.become(sendHandlers(registration))
   }

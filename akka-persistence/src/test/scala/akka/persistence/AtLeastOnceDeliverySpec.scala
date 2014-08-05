@@ -3,14 +3,13 @@
  */
 package akka.persistence
 
+import akka.actor._
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedWarning }
+import akka.testkit._
+import com.typesafe.config._
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import com.typesafe.config._
-import akka.actor._
-import akka.testkit._
-import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
-import akka.persistence.AtLeastOnceDelivery.UnconfirmedWarning
-import akka.persistence.AtLeastOnceDelivery.UnconfirmedWarning
 
 object AtLeastOnceDeliverySpec {
 
@@ -43,10 +42,16 @@ object AtLeastOnceDeliverySpec {
 
     override def persistenceId: String = name
 
+    // simplistic confirmation mechanism, to tell the requester that a snapshot succeeded
+    var lastSnapshotAskedForBy: Option[ActorRef] = None
+
     def updateState(evt: Evt): Unit = evt match {
       case AcceptedReq(payload, destination) ⇒
+        log.debug(s"deliver(destination, deliveryId ⇒ Action(deliveryId, $payload)), recovery: " + recoveryRunning)
         deliver(destination, deliveryId ⇒ Action(deliveryId, payload))
+
       case ReqDone(id) ⇒
+        log.debug(s"confirmDelivery($id), recovery: " + recoveryRunning)
         confirmDelivery(id)
     }
 
@@ -77,21 +82,30 @@ object AtLeastOnceDeliverySpec {
             persist(ReqDone(id)) { evt ⇒ updateState(evt) }
 
       case Boom ⇒
+        log.debug("Boom!")
         throw new RuntimeException("boom") with NoStackTrace
 
       case SaveSnap ⇒
+        log.debug("Save snapshot!")
+        lastSnapshotAskedForBy = Some(sender())
         saveSnapshot(Snap(getDeliverySnapshot))
 
+      case success: SaveSnapshotSuccess ⇒
+        log.debug("Snapshot success!")
+        lastSnapshotAskedForBy.map(_ ! success)
+
       case w: UnconfirmedWarning ⇒
+        log.debug("Sender got unconfirmed warning {}", w)
         testActor ! w
 
     }
 
     def receiveRecover: Receive = {
-      case evt: Evt ⇒ updateState(evt)
+      case evt: Evt ⇒
+        updateState(evt)
+
       case SnapshotOffer(_, Snap(deliverySnapshot)) ⇒
         setDeliverySnapshot(deliverySnapshot)
-
     }
   }
 
@@ -134,7 +148,7 @@ object AtLeastOnceDeliverySpec {
 }
 
 abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
-  import AtLeastOnceDeliverySpec._
+  import akka.persistence.AtLeastOnceDeliverySpec._
 
   "AtLeastOnceDelivery" must {
     "deliver messages in order when nothing is lost" in {
@@ -208,7 +222,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
       val destinations = Map("A" -> system.actorOf(unreliableProps(3, dst)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 1000.millis, 5, async = false, destinations), name)
       snd ! Req("a-1")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a-1"))
@@ -224,6 +238,9 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       expectMsg(ReqAck)
       // a-3 was lost
       probeA.expectMsg(Action(4, "a-4"))
+
+      // after snapshot succeeded
+      expectMsgType[SaveSnapshotSuccess]
 
       // trigger restart
       snd ! Boom
@@ -288,6 +305,10 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
   }
 }
 
-class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec"))
+class LeveldbAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(
+  // TODO disable debug logging once happy with stability of this test
+  ConfigFactory.parseString("""akka.logLevel = DEBUG""") withFallback PersistenceSpec.config("leveldb", "AtLeastOnceDeliverySpec")
+)
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class InmemAtLeastOnceDeliverySpec extends AtLeastOnceDeliverySpec(PersistenceSpec.config("inmem", "AtLeastOnceDeliverySpec"))

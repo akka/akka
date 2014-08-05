@@ -61,6 +61,8 @@ import akka.routing.ScatterGatherFirstCompletedGroup;
 import akka.routing.ScatterGatherFirstCompletedPool;
 import akka.routing.BalancingPool;
 import akka.routing.SmallestMailboxPool;
+import akka.routing.TailChoppingGroup;
+import akka.routing.TailChoppingPool;
 
 //#imports2
 
@@ -275,39 +277,66 @@ public class RouterDocTest {
         "router20");
     //#scatter-gather-group-2  
 
-    //#consistent-hashing-pool-1
+    //#tail-chopping-pool-1
     ActorRef router21 =
+      getContext().actorOf(FromConfig.getInstance().props(
+        Props.create(Worker.class)), "router21");
+    //#tail-chopping-pool-1
+
+    //#tail-chopping-pool-2
+    FiniteDuration within3 = FiniteDuration.create(10, TimeUnit.SECONDS);
+    FiniteDuration interval = FiniteDuration.create(20, TimeUnit.MILLISECONDS);
+    ActorRef router22 =
+      getContext().actorOf(new TailChoppingPool(5, within3, interval).props(
+        Props.create(Worker.class)), "router22");
+    //#tail-chopping-pool-2
+
+    //#tail-chopping-group-1
+    ActorRef router23 =
+      getContext().actorOf(FromConfig.getInstance().props(), "router23");
+    //#tail-chopping-group-1
+
+    //#tail-chopping-group-2
+    FiniteDuration within4 = FiniteDuration.create(10, TimeUnit.SECONDS);
+    FiniteDuration interval2 = FiniteDuration.create(20, TimeUnit.MILLISECONDS);
+    ActorRef router24 =
+      getContext().actorOf(new TailChoppingGroup(paths, within4, interval2).props(),
+        "router24");
+    //#tail-chopping-group-2
+
+    //#consistent-hashing-pool-1
+    ActorRef router25 =
       getContext().actorOf(FromConfig.getInstance().props(Props.create(Worker.class)),
-        "router21");
+        "router25");
     //#consistent-hashing-pool-1
 
     //#consistent-hashing-pool-2
-    ActorRef router22 =
+    ActorRef router26 =
       getContext().actorOf(new ConsistentHashingPool(5).props(
-        Props.create(Worker.class)), "router22");
+        Props.create(Worker.class)), "router26");
     //#consistent-hashing-pool-2
 
     //#consistent-hashing-group-1
-    ActorRef router23 =
-      getContext().actorOf(FromConfig.getInstance().props(), "router23");
+    ActorRef router27 =
+      getContext().actorOf(FromConfig.getInstance().props(), "router27");
     //#consistent-hashing-group-1
 
     //#consistent-hashing-group-2
-    ActorRef router24 =
-      getContext().actorOf(new ConsistentHashingGroup(paths).props(), "router24");
+    ActorRef router28 =
+      getContext().actorOf(new ConsistentHashingGroup(paths).props(), "router28");
     //#consistent-hashing-group-2  
 
     //#resize-pool-1
-    ActorRef router25 =
+    ActorRef router29 =
       getContext().actorOf(FromConfig.getInstance().props(
-        Props.create(Worker.class)), "router25");
+        Props.create(Worker.class)), "router29");
     //#resize-pool-1
 
     //#resize-pool-2
     DefaultResizer resizer = new DefaultResizer(2, 15);
-    ActorRef router26 =
+    ActorRef router30 =
       getContext().actorOf(new RoundRobinPool(5).withResizer(resizer).props(
-        Props.create(Worker.class)), "router26");
+        Props.create(Worker.class)), "router30");
     //#resize-pool-2  
       
     public void onReceive(Object msg) {}

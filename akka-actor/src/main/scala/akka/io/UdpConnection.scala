@@ -3,6 +3,7 @@
  */
 package akka.io
 
+import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
@@ -31,28 +32,42 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
   def writePending = pendingSend ne null
 
   context.watch(handler) // sign death pact
-  val channel = {
-    val datagramChannel = DatagramChannel.open
-    datagramChannel.configureBlocking(false)
-    val socket = datagramChannel.socket
-    options.foreach(_.beforeDatagramBind(socket))
-    try {
-      localAddress foreach socket.bind
-      datagramChannel.connect(remoteAddress)
-    } catch {
-      case NonFatal(e) ⇒
-        log.debug("Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
-          remoteAddress, localAddress.getOrElse("undefined"), e)
-        commander ! CommandFailed(connect)
-        context.stop(self)
+  var channel: DatagramChannel = null
+
+  if (remoteAddress.isUnresolved) {
+    Dns.resolve(remoteAddress.getHostName)(context.system, self) match {
+      case Some(r) ⇒
+        doConnect(new InetSocketAddress(r.addr, remoteAddress.getPort))
+      case None ⇒
+        context.become(resolving(), discardOld = true)
     }
-    datagramChannel
+  } else {
+    doConnect(remoteAddress)
   }
-  channelRegistry.register(channel, OP_READ)
-  log.debug("Successfully connected to [{}]", remoteAddress)
+
+  def resolving(): Receive = {
+    case r: Dns.Resolved ⇒
+      reportConnectFailure {
+        doConnect(new InetSocketAddress(r.addr, remoteAddress.getPort))
+      }
+  }
+
+  def doConnect(address: InetSocketAddress): Unit = {
+    reportConnectFailure {
+      channel = DatagramChannel.open
+      channel.configureBlocking(false)
+      val socket = channel.socket
+      options.foreach(_.beforeBind(channel))
+      localAddress foreach socket.bind
+      channel.connect(remoteAddress)
+      channelRegistry.register(channel, OP_READ)
+    }
+    log.debug("Successfully connected to [{}]", remoteAddress)
+  }
 
   def receive = {
     case registration: ChannelRegistration ⇒
+      options.foreach(_.afterConnect(channel))
       commander ! Connected
       context.become(connected(registration), discardOld = true)
   }
@@ -129,4 +144,16 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
         case NonFatal(e) ⇒ log.debug("Error closing DatagramChannel: {}", e)
       }
     }
+
+  private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
+    try {
+      thunk
+    } catch {
+      case NonFatal(e) ⇒
+        log.debug("Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
+          remoteAddress, localAddress.getOrElse("undefined"), e)
+        commander ! CommandFailed(connect)
+        context.stop(self)
+    }
+  }
 }

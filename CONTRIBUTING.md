@@ -122,7 +122,7 @@ Follow these guidelines when creating public commits and writing commit messages
    
    It is **not ok** to only list the ticket number, type "minor fix" or similar. In order to help with automatic filtering of the commit history (generating ChangeLogs, writing the migration guide, code archaeology) we use the following encoding:
    * the first character is either '!' (for breaking API changes), '+' (for non-breaking API additions) or '=' (for API-neutral commits)
-   * then follows a comma-separated list of module abbreviations, formed by using the first three letters of the module name (the “akka-” prefix being stripped off), e.g. `act`, `clu`, `doc`; it is intentional that `akka-actor-tests` receives the same abbreviation as `akka-actor`
+   * then follows a comma-separated list of module abbreviations, formed by using the first three letters of the module name (the “akka-” prefix being stripped off), e.g. `act`, `clu`, `doc`; it is intentional that `akka-actor-tests` receives the same abbreviation as `akka-actor`. For commits modifying the project itself (sbt files or anything in `project/`) please use `pro`.
    * then follows a space character, a hash sign '#' and the ticket number
    * the rest of the line (usually there are 64 characters left) makes up the textual summary
    

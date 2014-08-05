@@ -179,7 +179,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
                       options: immutable.Traversable[SocketOption]): Unit = {
     // Turn off Nagle's algorithm by default
     channel.socket.setTcpNoDelay(true)
-    options.foreach(_.afterConnect(channel.socket))
+    options.foreach(_.afterConnect(channel))
 
     commander ! Connected(
       channel.socket.getRemoteSocketAddress.asInstanceOf[InetSocketAddress],
@@ -213,7 +213,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           if (readBytes > 0) info.handler ! Received(ByteString(buffer))
 
           readBytes match {
-            case `maxBufferSpace` ⇒ innerRead(buffer, remainingLimit - maxBufferSpace)
+            case `maxBufferSpace` ⇒ if (pullMode) MoreDataWaiting else innerRead(buffer, remainingLimit - maxBufferSpace)
             case x if x >= 0      ⇒ AllRead
             case -1               ⇒ EndOfStream
             case _ ⇒
