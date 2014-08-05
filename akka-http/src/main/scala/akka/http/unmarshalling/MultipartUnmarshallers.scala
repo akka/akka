@@ -56,14 +56,30 @@ trait MultipartUnmarshallers {
 
   implicit def defaultMultipartFormDataUnmarshaller(implicit fm: FlowMaterializer,
                                                     refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
-    multipartFormDataUnmarshaller(strict = true)
-  def multipartFormDataUnmarshaller(strict: Boolean = true)(implicit fm: FlowMaterializer,
-                                                            refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
+    multipartFormDataUnmarshaller(verifyIntegrity = true)
+  def multipartFormDataUnmarshaller(verifyIntegrity: Boolean = true)(implicit fm: FlowMaterializer,
+                                                                     refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
     multipartPartsUnmarshaller(`multipart/form-data`, ContentTypes.`application/octet-stream`) { bodyParts ⇒
       def verify(part: BodyPart): BodyPart = part // TODO
-      val parts = if (strict) Flow(bodyParts).map(verify).toPublisher(fm) else bodyParts
+      val parts = if (verifyIntegrity) Flow(bodyParts).map(verify).toPublisher(fm) else bodyParts
       MultipartFormData(parts)
     }
+
+  implicit def defaultStrictMultipartFormDataUnmarshaller(implicit fm: FlowMaterializer,
+                                                          refFactory: ActorRefFactory): FromEntityUnmarshaller[StrictMultipartFormData] =
+    strictMultipartFormDataUnmarshaller(verifyIntegrity = true)
+  def strictMultipartFormDataUnmarshaller(verifyIntegrity: Boolean = true)(implicit fm: FlowMaterializer,
+                                                                           refFactory: ActorRefFactory): FromEntityUnmarshaller[StrictMultipartFormData] = {
+    implicit val ec = actorSystem(refFactory).dispatcher
+    val m = multipartFormDataUnmarshaller(verifyIntegrity)
+    Unmarshaller {
+      m(_) flatMap {
+        case Unmarshalling.Success(mfd) ⇒ mfd.toStrict(fm).map(Unmarshalling.Success.apply)
+        case e: Unmarshalling.Failure   ⇒ Future.successful(e)
+      }
+    }
+  }
+
 }
 
 object MultipartUnmarshallers extends MultipartUnmarshallers

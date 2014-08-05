@@ -4,7 +4,8 @@
 
 package akka.http.marshalling
 
-import java.util.Random
+import scala.concurrent.ExecutionContext
+import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
 import akka.stream.{ FlattenStrategy, FlowMaterializer }
@@ -14,10 +15,8 @@ import akka.http.util.actorSystem
 import akka.http.model._
 import MediaTypes._
 
-import scala.concurrent.ExecutionContext
-
 trait MultipartMarshallers {
-  protected val multipartBoundaryRandom = new Random
+  protected val multipartBoundaryRandom: java.util.Random = ThreadLocalRandom.current()
 
   /**
    * Creates a new random 144-bit number and base64 encodes it (using a custom "safe" alphabet, yielding 24 characters).

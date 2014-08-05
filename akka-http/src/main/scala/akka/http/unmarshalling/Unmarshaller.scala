@@ -42,6 +42,7 @@ object Unmarshaller
 sealed trait Unmarshalling[+A] {
   def isSuccess: Boolean
   def isFailure: Boolean
+  def value: A
   def map[B](f: A ⇒ B): Unmarshalling[B]
   def flatMap[B](f: A ⇒ Unmarshalling[B]): Unmarshalling[B]
   def recover[AA >: A](f: PartialFunction[Unmarshalling.Failure, AA]): Unmarshalling[AA]
@@ -59,6 +60,7 @@ object Unmarshalling {
   sealed abstract class Failure extends Unmarshalling[Nothing] {
     def isSuccess = false
     def isFailure = true
+    def value = sys.error("Expected Unmarshalling.Success but got " + this)
     def map[B](f: Nothing ⇒ B) = this
     def flatMap[B](f: Nothing ⇒ Unmarshalling[B]) = this
     def recover[AA >: Nothing](f: PartialFunction[Unmarshalling.Failure, AA]) =
