@@ -4,6 +4,7 @@
 
 package akka.http
 
+import scala.xml.NodeSeq
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await }
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
@@ -30,9 +31,9 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     "charArrayUnmarshaller should unmarshal `text/plain` content in UTF-8 to char arrays" in {
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
     }
-    //    "nodeSeqUnmarshaller should unmarshal `text/xml` content in UTF-8 to NodeSeqs" in {
-    //      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].map(_.map(_.text)) shouldEqual "Hällö"
-    //    }
+    "nodeSeqUnmarshaller should unmarshal `text/xml` content in UTF-8 to NodeSeqs" in {
+      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].map(_.map(_.text)) should evaluateTo("Hällö")
+    }
   }
 
   "The MultipartUnmarshallers." - {
@@ -116,26 +117,31 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |
             |test@there.com
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[MultipartFormData] should haveFormData(
-          "email" -> BodyPart(
-            HttpEntity(ContentTypes.`application/octet-stream`, "test@there.com"), "email"))
+          "email" -> BodyPart(HttpEntity(ContentTypes.`application/octet-stream`, "test@there.com"), "email"))
       }
-      //      "with a file" in {
-      //        HttpEntity(`multipart/form-data` withBoundary "XYZABC",
-      //          """|--XYZABC
-      //            |Content-Disposition: form-data; name="email"
-      //            |
-      //            |test@there.com
-      //            |--XYZABC
-      //            |Content-Disposition: form-data; name="userfile"; filename="test.dat"
-      //            |Content-Type: application/octet-stream
-      //            |Content-Transfer-Encoding: binary
-      //            |
-      //            |filecontent
-      //            |--XYZABC--""".stripMargin).as[MultipartFormData].get.fields.map {
-      //          case part @ BodyPart(entity, _) ⇒
-      //            part.name.get + ": " + entity.as[String].get + part.filename.map(",filename: " + _).getOrElse("")
-      //        }.mkString("|") === "email: test@there.com|userfile: filecontent,filename: test.dat"
-      //      }
+      "with a file" in {
+        Unmarshal(HttpEntity(`multipart/form-data` withBoundary "XYZABC",
+          """--XYZABC
+            |Content-Disposition: form-data; name="email"
+            |
+            |test@there.com
+            |--XYZABC
+            |Content-Disposition: form-data; name="userfile"; filename="test.dat"
+            |Content-Type: application/pdf
+            |Content-Transfer-Encoding: binary
+            |
+            |filecontent
+            |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[StrictMultipartFormData] should haveFormData(
+          "email" -> BodyPart(
+            HttpEntity(ContentTypes.`application/octet-stream`, "test@there.com"),
+            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")))),
+          "userfile" -> BodyPart(
+            HttpEntity(MediaTypes.`application/pdf`, "filecontent"),
+            List(RawHeader("Content-Transfer-Encoding", "binary"),
+              `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "userfile", "filename" -> "test.dat")))))
+      }
+      // TODO: reactivate after multipart/form-data unmarshalling integrity verification is implemented
+      //
       //      "reject illegal multipart content" in {
       //        val Left(MalformedContent(msg, _)) = HttpEntity(`multipart/form-data` withBoundary "XYZABC", "--noboundary--").as[MultipartFormData]
       //        msg === "Missing start boundary"
