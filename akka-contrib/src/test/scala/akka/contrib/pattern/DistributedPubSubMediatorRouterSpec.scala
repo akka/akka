@@ -11,7 +11,7 @@ case class WrappedMessage(msg: String) extends RouterEnvelope {
 
 case class UnwrappedMessage(msg: String)
 
-object DistributedPubSubMediatorSpec {
+object DistributedPubSubMediatorRouterSpec {
   def config(routingLogic: String) = s"""
     akka.loglevel = INFO
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
@@ -20,7 +20,7 @@ object DistributedPubSubMediatorSpec {
   """
 }
 
-trait DistributedPubSubMediatorSpec { this: WordSpecLike with TestKit with ImplicitSender ⇒
+trait DistributedPubSubMediatorRouterSpec { this: WordSpecLike with TestKit with ImplicitSender ⇒
   def nonUnwrappingPubSub(mediator: ActorRef, testActor: ActorRef, msg: Any) {
 
     val path = testActor.path.toStringWithoutAddress
@@ -82,8 +82,8 @@ trait DistributedPubSubMediatorSpec { this: WordSpecLike with TestKit with Impli
 }
 
 class DistributedPubSubMediatorWithRandomRouterSpec
-  extends AkkaSpec(DistributedPubSubMediatorSpec.config("random"))
-  with DistributedPubSubMediatorSpec with DefaultTimeout with ImplicitSender {
+  extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("random"))
+  with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
 
   val mediator = DistributedPubSubExtension(system).mediator
 
@@ -99,8 +99,8 @@ class DistributedPubSubMediatorWithRandomRouterSpec
 }
 
 class DistributedPubSubMediatorWithHashRouterSpec
-  extends AkkaSpec(DistributedPubSubMediatorSpec.config("consistent-hashing"))
-  with DistributedPubSubMediatorSpec with DefaultTimeout with ImplicitSender {
+  extends AkkaSpec(DistributedPubSubMediatorRouterSpec.config("consistent-hashing"))
+  with DistributedPubSubMediatorRouterSpec with DefaultTimeout with ImplicitSender {
 
   "DistributedPubSubMediator with Consistent Hash router" must {
     "not be allowed" when {
