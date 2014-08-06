@@ -26,8 +26,13 @@ package object parsing {
   /**
    * INTERNAL API
    */
-  private[http] def byteChar(input: ByteString, ix: Int): Char =
-    if (ix < input.length) input(ix).toChar else throw NotEnoughDataException
+  private[http] def byteChar(input: ByteString, ix: Int): Char = byteAt(input, ix).toChar
+
+  /**
+   * INTERNAL API
+   */
+  private[http] def byteAt(input: ByteString, ix: Int): Byte =
+    if (ix < input.length) input(ix) else throw NotEnoughDataException
 
   /**
    * INTERNAL API
