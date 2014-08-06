@@ -5,10 +5,14 @@
 package akka.http.model
 
 import java.io.File
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
 import org.reactivestreams.Publisher
 import akka.stream.impl.SynchronousPublisherFromIterable
 import scala.collection.immutable
 import headers._
+
+import scala.concurrent.{ ExecutionContext, Future }
 
 trait MultipartParts {
   def parts: Publisher[BodyPart]
@@ -38,7 +42,53 @@ final case class MultipartByteRanges(parts: Publisher[BodyPart]) extends Multipa
 object MultipartByteRanges {
   val Empty = MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](Nil))
 
-  def apply(parts: BodyPart*): MultipartByteRanges = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+  def apply(parts: BodyPart*): MultipartByteRanges =
+    if (parts.isEmpty) Empty else MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+}
+
+/**
+ * Model for `multipart/form-data` content as defined in RFC 2388.
+ * All parts must contain a Content-Disposition header with a type form-data
+ * and a name parameter that is unique.
+ */
+case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts {
+  /**
+   * Turns this instance into its strict specialization using the given `maxFieldCount` as the field number cut-off
+   * hint.
+   */
+  def toStrict(materializer: FlowMaterializer, maxFieldCount: Int = 1000)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
+    Flow(parts).grouped(maxFieldCount).toFuture(materializer).map(new StrictMultipartFormData(_))
+}
+
+/**
+ * A specialized `MultipartFormData` that allows full random access to its parts.
+ */
+class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends MultipartFormData(SynchronousPublisherFromIterable(fields)) {
+  /**
+   * Returns the BodyPart with the given name, if found.
+   */
+  def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
+
+  override def toStrict(materializer: FlowMaterializer, maxFieldCount: Int)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
+    Future.successful(this)
+}
+
+object MultipartFormData {
+  val Empty = MultipartFormData()
+
+  def apply(parts: BodyPart*): MultipartFormData = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+
+  def apply(fields: Map[String, BodyPart]): MultipartFormData = apply {
+    fields.map {
+      case (key, value) ⇒ value.copy(headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> key)) +: value.headers)
+    }(collection.breakOut): _*
+  }
+}
+
+final case class FormFile(name: Option[String], entity: HttpEntity.Default)
+
+object FormFile {
+  def apply(name: String, entity: HttpEntity.Default): FormFile = apply(Some(name), entity)
 }
 
 /**

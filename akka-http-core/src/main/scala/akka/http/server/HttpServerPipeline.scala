@@ -15,7 +15,6 @@ import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.parsing.ParserOutput._
 import akka.http.Http
 import akka.http.util._
-import akka.http.model.headers.Host
 
 /**
  * INTERNAL API
