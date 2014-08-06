@@ -171,7 +171,7 @@ Lifecycle and Failure Recovery Model
    :align: center
    :width: 620
 
-Each link with  link with a remote system can be in one of the four states as illustrated above. Before any communication
+Each link with a remote system can be in one of the four states as illustrated above. Before any communication
 happens with a remote system at a given ``Address`` the state of the association is ``Idle``. The first time a message
 is attempted to be sent to the remote system or an inbound connection is accepted the state of the link transitions to
 ``Active`` denoting that the two systems has messages to send or receive and no failures were encountered so far.
