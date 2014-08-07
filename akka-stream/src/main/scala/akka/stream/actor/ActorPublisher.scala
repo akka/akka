@@ -230,7 +230,7 @@ trait ActorPublisher[T] extends Actor {
 
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
-    if (isActive) subscriber.onComplete()
+    if (lifecycleState == Active) subscriber.onComplete()
     super.aroundPostStop()
   }
 
