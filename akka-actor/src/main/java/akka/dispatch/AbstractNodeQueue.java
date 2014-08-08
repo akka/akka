@@ -24,7 +24,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
        set(n);
     }
 
-    /*
+    /**
+     * Use this method only from the consumer thread!
+     * 
      * !!! There is a copy of this code in pollNode() !!!
      */
     @SuppressWarnings("unchecked")
@@ -40,7 +42,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         }
         return next;
     }
-
+    /**
+     * Use this method only from the consumer thread!
+     */
     public final T peek() {
         final Node<T> n = peekNode();
         return (n != null) ? n.value : null;
@@ -67,7 +71,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         return count;
     }
 
-    /*
+    /**
+     * Use this method only from the consumer thread!
+     * 
      * !!! There is a copy of this code in pollNode() !!!
      */
     public final T poll() {
@@ -81,6 +87,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         }
     }
     
+    /**
+     * Use this method only from the consumer thread!
+     */
     @SuppressWarnings("unchecked")
     public final Node<T> pollNode() {
       Node<T> tail;
