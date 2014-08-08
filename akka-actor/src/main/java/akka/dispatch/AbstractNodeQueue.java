@@ -57,12 +57,12 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     }
 
     public final boolean isEmpty() {
-        return peek() == null;
+        return Unsafe.instance.getObjectVolatile(this, tailOffset)) == get();
     }
 
     public final int count() {
         int count = 0;
-        for(Node<T> n = peekNode();n != null; n = n.next())
+        for(Node<T> n = peekNode();n != null && count < Integer.MAX_VALUE; n = n.next())
           ++count;
         return count;
     }
