@@ -39,6 +39,7 @@ The Current List of Modules
    distributed-pub-sub
    cluster-client
    aggregator
+   receive-pipeline
 
 Suggested Way of Using these Contributions
 ------------------------------------------
