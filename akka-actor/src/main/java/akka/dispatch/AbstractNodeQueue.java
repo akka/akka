@@ -61,7 +61,7 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     }
 
     public final boolean isEmpty() {
-        return Unsafe.instance.getObjectVolatile(this, tailOffset)) == get();
+        return Unsafe.instance.getObjectVolatile(this, tailOffset) == get();
     }
 
     public final int count() {
