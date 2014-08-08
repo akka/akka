@@ -3,6 +3,7 @@
  */
 package akka.stream
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import org.reactivestreams.{ Publisher, Subscriber }
 import akka.stream.scaladsl.Duct
@@ -12,8 +13,14 @@ import akka.stream.testkit.StreamTestKit
 import scala.util.Success
 import scala.util.Failure
 
+object DuctSpec {
+  class Fruit
+  class Apple extends Fruit
+}
+
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DuctSpec extends AkkaSpec {
+  import DuctSpec._
 
   val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
@@ -195,6 +202,15 @@ class DuctSpec extends AkkaSpec {
       c.expectNext("elem-14")
       c.expectNext("elem-16")
       c.expectComplete
+    }
+
+    "be covariant" in {
+      val d1: Duct[String, Publisher[Fruit]] = Duct[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
+      val d2: Duct[String, (Boolean, Publisher[Fruit])] = Duct[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
+      val d3: Duct[String, (immutable.Seq[Apple], Publisher[Fruit])] = Duct[String].map(_ ⇒ new Apple).prefixAndTail(1)
+      val s1: Subscriber[Fruit] = null
+      val s2: Subscriber[String] = Duct[String].map(_ ⇒ new Apple).produceTo(s1, materializer)
+      val t: Tuple2[Subscriber[String], Publisher[Fruit]] = Duct[String].map(_ ⇒ new Apple).build(materializer)
     }
 
   }
