@@ -57,7 +57,7 @@ object ActorRef {
  * {{{
  * import static akka.pattern.Patterns.ask;
  *
- * public class ExampleActor Extends UntypedActor {
+ * public class ExampleActor extends UntypedActor {
  *   // this child will be destroyed and re-created upon restart by default
  *   final ActorRef other = getContext().actorOf(Props.create(OtherActor.class), "childName");
  *
