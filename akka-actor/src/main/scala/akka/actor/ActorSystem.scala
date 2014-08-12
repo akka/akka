@@ -177,6 +177,7 @@ object ActorSystem {
     final val LogLevel: String = getString("akka.loglevel")
     final val StdoutLogLevel: String = getString("akka.stdout-loglevel")
     final val Loggers: immutable.Seq[String] = immutableSeq(getStringList("akka.loggers"))
+    final val LoggingFilter: String = getString("akka.logging-filter")
     final val LoggerStartTimeout: Timeout = Timeout(config.getMillisDuration("akka.logger-startup-timeout"))
     final val LogConfigOnStart: Boolean = config.getBoolean("akka.log-config-on-start")
     final val LogDeadLetters: Int = config.getString("akka.log-dead-letters").toLowerCase match {
@@ -484,11 +485,18 @@ abstract class ExtendedActorSystem extends ActorSystem {
   def dynamicAccess: DynamicAccess
 
   /**
+   * Filter of log events that is used by the LoggingAdapter before
+   * publishing log events to the eventStream
+   */
+  def logFilter: LoggingFilter
+
+  /**
    * For debugging: traverse actor hierarchy and make string representation.
    * Careful, this may OOM on large actor systems, and it is only meant for
    * helping debugging in case something already went terminally wrong.
    */
   private[akka] def printTree: String
+
 }
 
 private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
@@ -570,7 +578,12 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
   val eventStream = new EventStream(this, DebugEventStream)
   eventStream.startStdoutLogger(settings)
 
-  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass)
+  val logFilter: LoggingFilter = {
+    val arguments = Vector(classOf[Settings] -> settings, classOf[EventStream] -> eventStream)
+    dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
+  }
+
+  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass, logFilter)
 
   val scheduler: Scheduler = createScheduler()
 
