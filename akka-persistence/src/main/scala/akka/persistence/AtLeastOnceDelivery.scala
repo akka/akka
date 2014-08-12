@@ -3,6 +3,8 @@
  */
 package akka.persistence
 
+import akka.persistence.JournalProtocol.ReplayMessagesSuccess
+
 import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.collection.immutable
@@ -189,8 +191,9 @@ trait AtLeastOnceDelivery extends Processor {
         s"Too many unconfirmed messages, maximum allowed is [$maxUnconfirmedMessages]")
 
     val deliveryId = nextDeliverySequenceNr()
-    val now = System.nanoTime()
+    val now = if (recoveryRunning) { System.nanoTime() - redeliverInterval.toNanos } else System.nanoTime()
     val d = Delivery(destination, deliveryIdToMessage(deliveryId), now, attempt = 0)
+
     if (recoveryRunning)
       unconfirmed = unconfirmed.updated(deliveryId, d)
     else
@@ -219,14 +222,17 @@ trait AtLeastOnceDelivery extends Processor {
     val now = System.nanoTime()
     val deadline = now - redeliverInterval.toNanos
     var warnings = Vector.empty[UnconfirmedDelivery]
+
     unconfirmed foreach {
       case (deliveryId, delivery) ⇒
         if (delivery.timestamp <= deadline) {
           send(deliveryId, delivery, now)
+
           if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
             warnings :+= UnconfirmedDelivery(deliveryId, delivery.destination, delivery.message)
         }
     }
+
     if (warnings.nonEmpty)
       self ! UnconfirmedWarning(warnings)
   }
@@ -283,8 +289,15 @@ trait AtLeastOnceDelivery extends Processor {
    */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
     message match {
-      case RedeliveryTick ⇒ redeliverOverdue()
-      case _              ⇒ super.aroundReceive(receive, message)
+      case ReplayMessagesSuccess ⇒
+        redeliverOverdue()
+        super.aroundReceive(receive, message)
+
+      case RedeliveryTick ⇒
+        redeliverOverdue()
+
+      case x ⇒
+        super.aroundReceive(receive, message)
     }
 }
 
