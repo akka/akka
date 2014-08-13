@@ -117,8 +117,12 @@ Discussion: Message Ordering
 ----------------------------
 
 The rule more specifically is that *for a given pair of actors, messages sent
-from the first to the second will not be received out-of-order.* This is
-illustrated in the following:
+directly from the first to the second will not be received out-of-order.* The
+word *directly* emphasizes that this guarantee only applies when sending with
+the `tell` operator to the final destination, not when employing mediators or
+other message dissemination features (unless stated otherwise).
+
+The guarantee is illustrated in the following:
 
   Actor ``A1`` sends messages ``M1``, ``M2``, ``M3`` to ``A2``
 
