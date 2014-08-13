@@ -118,7 +118,8 @@ Channels
 **Akka Persistence:** ``AtLeastOnceDelivery``
 
 - ``AtLeastOnceDelivery`` trait is mixed in to a ``PersistentActor``
-- Does not prevent redundant delivery of messages to a destination
+- Does not prevent redundant delivery of messages to a destination entirely, but won't re-send messages whose delivery
+  is confirmed during recovery.
 - Is not associated with a single destination. A destination can be specified with each ``deliver`` request and is
   referred to by an actor path. A destination path is resolved to the current destination incarnation during delivery
   (via ``actorSelection``).
