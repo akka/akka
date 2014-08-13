@@ -220,5 +220,5 @@ class ActorCreationPerfSpec extends AkkaSpec("akka.actor.serialize-messages = of
 
   override def afterTermination() = shutdownMetrics()
 
-  override def expectedTestDuration = 3 minutes
+  override def expectedTestDuration = 5 minutes
 }
