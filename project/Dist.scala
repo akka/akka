@@ -32,7 +32,8 @@ object Dist {
     distSources <<= (distDependencies, distLibJars,  distSrcJars, distDocJars, Unidoc.sunidoc, generate in Sphinx in docsProject) map DistSources,
     distDirectory <<= crossTarget / "dist",
     distUnzipped <<= distDirectory / "unzipped",
-    distFile <<= (distDirectory, version) { (dir, v) => dir / ("akka-" + v + ".zip") },
+    distFile <<= (distDirectory, version, scalaBinaryVersion) { (dir, v, sbv) => 
+      dir / ("akka_" + sbv + "-" + v + ".zip") },
     dist <<= distTask
   )
 
