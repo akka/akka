@@ -19,7 +19,7 @@ private class BoyerMoore(needle: Array[Byte]) {
     val table = Array.fill(256)(needle.length)
     @tailrec def rec(i: Int): Unit =
       if (i < nl1) {
-        table(needle(i)) = nl1 - i
+        table(needle(i) & 0xff) = nl1 - i
         rec(i + 1)
       }
     rec(0)
@@ -61,7 +61,7 @@ private class BoyerMoore(needle: Array[Byte]) {
       if (needle(j) == byte) {
         if (j == 0) i // found
         else rec(i - 1, j - 1)
-      } else rec(i + math.max(offsetTable(nl1 - j), charTable(byte)), nl1)
+      } else rec(i + math.max(offsetTable(nl1 - j), charTable(byte & 0xff)), nl1)
     }
     rec(offset + nl1, nl1)
   }
