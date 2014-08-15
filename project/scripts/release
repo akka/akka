@@ -197,6 +197,15 @@ function get_current_version {
   echo ${result%$code0}
 }
 
+# get the scalaBinaryVersion from sbt
+# a little messy as the ansi escape codes are included
+function get_scala_binary_version {
+  local result=$(sbt scalaBinaryVersion | tail -1 | cut -f2)
+  # remove ansi escape code from end
+  local code0=$(echo -e "\033[0m")
+  echo ${result%$code0}
+}
+
 # store the current git branch for cleaning up
 declare -r initial_branch=$(get_current_branch)
 
@@ -264,6 +273,10 @@ else
   echolog "Publishing to ${publish_path}"
 fi
 
+echolog "Getting scalaBinaryVersion from sbt..."
+declare -r scala_binary_version=$(get_scala_binary_version)
+echolog "scalaBinaryVersion is ${scala_binary_version}"
+
 [[ $run_tests ]] && echolog "All tests will be run"
 
 # try ssh'ing to the release server
@@ -299,7 +312,7 @@ else
 fi
 try sbt $RELEASE_OPT build-release
 echolog "Creating gzipped tar download..."
-try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka-${version}.tgz akka-${version}
+try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka_${scala_binary_version}-${version}.tgz akka-${version}
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
@@ -358,7 +371,7 @@ fi
 echolog "Pushing ${release_dir} to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Command:"
-  echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w ${release_dir}/ ${publish_path}/"
+  echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
   echodry "  sbt upload-release"
 else
   important rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/
