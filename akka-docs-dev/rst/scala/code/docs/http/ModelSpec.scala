@@ -10,7 +10,6 @@ import akka.util.ByteString
 import akka.http.model.headers.{ GenericHttpCredentials, BasicHttpCredentials }
 import org.scalatest.MustMatchers
 
-
 class ModelSpec extends AkkaSpec {
   "construct request" in {
     //#construct-request

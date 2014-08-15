@@ -281,7 +281,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[Out] @uncheckedVariance): Subscriber[In]
+  def produceTo(subscriber: Subscriber[Out] @uncheckedVariance, materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -303,7 +303,7 @@ trait Duct[In, +Out] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(materializer: FlowMaterializer)(callback: Try[Unit] ⇒ Unit): Subscriber[In]
+  def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Materialize this `Duct` into a `Subscriber` representing the input side of the `Duct`
