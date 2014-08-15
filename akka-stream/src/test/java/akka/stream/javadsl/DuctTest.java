@@ -96,7 +96,7 @@ public class DuctTest {
       }
     }).consume(materializer);
 
-    Subscriber<String> inSubscriber = Duct.create(String.class).produceTo(materializer, subscriber);
+    Subscriber<String> inSubscriber = Duct.create(String.class).produceTo(subscriber, materializer);
 
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
 
@@ -160,7 +160,7 @@ public class DuctTest {
       }
     }).consume(materializer);
 
-    Flow.create(Arrays.asList(1, 2, 3)).produceTo(materializer, ductInSubscriber);
+    Flow.create(Arrays.asList(1, 2, 3)).produceTo(ductInSubscriber, materializer);
 
     probe.expectMsgEquals("elem-12");
     probe.expectMsgEquals("elem-14");
@@ -175,7 +175,7 @@ public class DuctTest {
       public String apply(Integer elem) {
         return elem.toString();
       }
-    }).onComplete(materializer, new OnCompleteCallback() {
+    }).onComplete(new OnCompleteCallback() {
       @Override
       public void onComplete(Throwable e) {
         if (e == null)
@@ -183,7 +183,7 @@ public class DuctTest {
         else
           probe.getRef().tell(e, ActorRef.noSender());
       }
-    });
+    }, materializer);
 
     Publisher<Integer> publisher = Flow.create(Arrays.asList(1, 2, 3)).toPublisher(materializer);
     publisher.subscribe(inSubscriber);
@@ -204,7 +204,7 @@ public class DuctTest {
     }).consume(materializer);
 
     final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
-    Flow.create(input).produceTo(materializer, c);
+    Flow.create(input).produceTo(c, materializer);
     probe.expectMsgEquals("A");
     probe.expectMsgEquals("B");
     probe.expectMsgEquals("C");

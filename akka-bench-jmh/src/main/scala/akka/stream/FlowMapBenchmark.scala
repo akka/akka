@@ -82,7 +82,7 @@ class FlowMapBenchmark {
     val lock = new Lock() // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    flow.onComplete(materializer) { _ => lock.release() }
+    flow.onComplete({ _ => lock.release() }, materializer)
 
     lock.acquire()
   }

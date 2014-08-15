@@ -25,7 +25,7 @@ class FlowMapFutureSpec extends AkkaSpec {
     "produce future elements" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Flow(1 to 3).mapFuture(n ⇒ Future(n)).produceTo(materializer, c)
+      val p = Flow(1 to 3).mapFuture(n ⇒ Future(n)).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)
@@ -42,7 +42,7 @@ class FlowMapFutureSpec extends AkkaSpec {
       val p = Flow(1 to 50).mapFuture(n ⇒ Future {
         Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
         n
-      }).produceTo(materializer, c)
+      }).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n ← 1 to 50) c.expectNext(n)
@@ -56,7 +56,7 @@ class FlowMapFutureSpec extends AkkaSpec {
       val p = Flow(1 to 20).mapFuture(n ⇒ Future {
         probe.ref ! n
         n
-      }).produceTo(materializer, c)
+      }).produceTo(c, materializer)
       val sub = c.expectSubscription()
       // nothing before requested
       probe.expectNoMsg(500.millis)
@@ -84,7 +84,7 @@ class FlowMapFutureSpec extends AkkaSpec {
           Await.ready(latch, 10.seconds)
           n
         }
-      }).produceTo(materializer, c)
+      }).produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -103,7 +103,7 @@ class FlowMapFutureSpec extends AkkaSpec {
             n
           }
         }).
-        produceTo(materializer, c)
+        produceTo(c, materializer)
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")
