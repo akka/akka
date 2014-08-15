@@ -131,14 +131,6 @@ trait Flow[+T] {
   def collect[U](pf: PartialFunction[T, U]): Flow[U]
 
   /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Flow` needs to be materialized (e.g. using [[#consume]]) to initiate its
-   * execution.
-   */
-  def foreach(c: T ⇒ Unit): Flow[Unit]
-
-  /**
    * Invoke the given function for every received element, giving it its previous
    * output (or the given “zero” value) and the element as input. The returned stream
    * will receive the return value of the final function evaluation when the input
@@ -391,6 +383,18 @@ trait Flow[+T] {
    * broken down into individual processing steps.
    */
   def produceTo(subscriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit
+
+  /**
+   * Invoke the given procedure for each received element. Returns a [[scala.concurrent.Future]]
+   * that will be completed with `Success` when reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: T ⇒ Unit, materializer: FlowMaterializer): Future[Unit]
 
 }
 
