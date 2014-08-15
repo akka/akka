@@ -22,7 +22,6 @@ import akka.util.Collections.EmptyImmutableSeq
  * INTERNAL API
  */
 private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]) extends Flow[O] with Builder[O] {
-  import FlowImpl._
   import Ast._
 
   type Thing[T] = Flow[T]
@@ -68,6 +67,9 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
 
   override def produceTo(subscriber: Subscriber[_ >: O], materializer: FlowMaterializer): Unit =
     toPublisher(materializer).subscribe(subscriber.asInstanceOf[Subscriber[O]])
+
+  override def foreach(c: O ⇒ Unit, materializer: FlowMaterializer): Future[Unit] =
+    foreachTransform(c).toFuture(materializer)
 }
 
 /**
@@ -108,6 +110,15 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override def build(materializer: FlowMaterializer): (Subscriber[In], Publisher[Out]) =
     materializer.ductBuild(ops)
 
+  override def foreach(c: Out ⇒ Unit, materializer: FlowMaterializer): (Subscriber[In], Future[Unit]) = {
+    val p = Promise[Unit]()
+    val s = foreachTransform(c).onComplete({
+      case Success(_) ⇒ p.success(())
+      case Failure(e) ⇒ p.failure(e)
+    }, materializer)
+    (s, p.future)
+  }
+
 }
 
 /**
@@ -116,7 +127,6 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
 private[akka] object Builder {
   val SuccessUnit = Success[Unit](())
   private val ListOfUnit = List(())
-
   private case object TakeWithinTimerKey
   private case object DropWithinTimerKey
   private case object GroupedWithinTimerKey
@@ -164,7 +174,7 @@ private[akka] trait Builder[Out] {
       override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
     })
 
-  def foreach(c: Out ⇒ Unit): Thing[Unit] =
+  def foreachTransform(c: Out ⇒ Unit): Thing[Unit] =
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = { c(in); Nil }
       override def onTermination(e: Option[Throwable]) = ListOfUnit

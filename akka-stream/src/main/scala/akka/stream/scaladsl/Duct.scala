@@ -64,15 +64,6 @@ trait Duct[In, +Out] {
   def collect[U](pf: PartialFunction[Out, U]): Duct[In, U]
 
   /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Duct` needs to be materialized (e.g. using [[#consume]] and attaching the
-   * the `Subscriber` representing the input side of the `Duct` to an upstream
-   * `Publisher`) to initiate its execution.
-   */
-  def foreach(c: Out ⇒ Unit): Duct[In, Unit]
-
-  /**
    * Invoke the given function for every received element, giving it its previous
    * output (or the given “zero” value) and the element as input. The returned stream
    * will receive the return value of the final function evaluation when the input
@@ -318,6 +309,24 @@ trait Duct[In, +Out] {
    * broken down into individual processing steps.
    */
   def build(materializer: FlowMaterializer): (Subscriber[In], Publisher[Out] @uncheckedVariance)
+
+  /**
+   * Invoke the given procedure for each received element.
+   * Returns a tuple of a `Subscriber` and a `Future`.
+   *
+   * The returned `Subscriber` represents the input side of the `Duct` and can
+   * later be connected to an upstream `Publisher`.
+   *
+   * The returned [[scala.concurrent.Future]] will be completed with `Success` when
+   * reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: Out ⇒ Unit, materializer: FlowMaterializer): (Subscriber[In], Future[Unit])
 
   /**
    * INTERNAL API

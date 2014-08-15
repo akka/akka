@@ -36,11 +36,11 @@ object TestServer extends App {
   val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
   bindingFuture foreach {
     case Http.ServerBinding(localAddress, connectionStream) ⇒
-      Flow(connectionStream).foreach {
+      Flow(connectionStream).foreach({
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
           Flow(requestPublisher).map(requestHandler).produceTo(responseSubscriber, materializer)
-      }.consume(materializer)
+      }, materializer)
   }
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")

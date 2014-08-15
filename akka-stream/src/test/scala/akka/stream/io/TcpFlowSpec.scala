@@ -202,9 +202,9 @@ class TcpFlowSpec extends AkkaSpec {
   }
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): Future[Unit] =
-    Flow(bind(serverAddress).connectionStream).foreach { conn ⇒
+    Flow(bind(serverAddress).connectionStream).foreach({ conn ⇒
       conn.inputStream.subscribe(conn.outputStream)
-    }.toFuture(materializer)
+    }, materializer)
 
   "Outgoing TCP stream" must {
 

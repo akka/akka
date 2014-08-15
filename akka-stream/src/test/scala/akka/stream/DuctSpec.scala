@@ -103,11 +103,10 @@ class DuctSpec extends AkkaSpec {
     }
 
     "perform multiple transformation operations" in {
-      val duct = Duct[Int].map(_.toString).map("elem-" + _).foreach(testActor ! _)
-      val c = duct.consume(materializer)
+      val (in, fut) = Duct[Int].map(_.toString).map("elem-" + _).foreach(testActor ! _, materializer)
 
       val source = Flow(List(1, 2, 3)).toPublisher(materializer)
-      source.subscribe(c)
+      source.subscribe(in)
 
       expectMsg("elem-1")
       expectMsg("elem-2")
