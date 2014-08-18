@@ -4,7 +4,8 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import org.reactivestreams.{ Subscriber, Subscription }
+import akka.actor.AbstractActor
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -12,136 +13,159 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import akka.actor.UntypedActor
 
 object ActorSubscriber {
 
   /**
    * Attach a [[ActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
-   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.Flow]].
+   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.scaladsl.Flow]].
    */
   def apply[T](ref: ActorRef): Subscriber[T] = new ActorSubscriberImpl(ref)
-
-  /**
-   * Java API: Attach a [[ActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
-   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.Flow]].
-   */
-  def create[T](ref: ActorRef): Subscriber[T] = apply(ref)
-
-  @SerialVersionUID(1L) case class OnNext(element: Any)
-  @SerialVersionUID(1L) case object OnComplete
-  @SerialVersionUID(1L) case class OnError(cause: Throwable)
 
   /**
    * INTERNAL API
    */
   @SerialVersionUID(1L) private[akka] case class OnSubscribe(subscription: Subscription)
 
-  /**
-   * An [[ActorSubscriber]] defines a `RequestStrategy` to control the stream back pressure.
-   */
-  trait RequestStrategy {
-    /**
-     * Invoked by the [[ActorSubscriber]] after each incoming message to
-     * determine how many more elements to request from the stream.
-     *
-     * @param remainingRequested current remaining number of elements that
-     *   have been requested from upstream but not received yet
-     * @return demand of more elements from the stream, returning 0 means that no
-     *   more elements will be requested
-     */
-    def requestDemand(remainingRequested: Int): Int
-  }
+}
+
+sealed abstract class ActorSubscriberMessage
+
+object ActorSubscriberMessage {
+  @SerialVersionUID(1L) case class OnNext(element: Any) extends ActorSubscriberMessage
+  @SerialVersionUID(1L) case class OnError(cause: Throwable) extends ActorSubscriberMessage
+  @SerialVersionUID(1L) case object OnComplete extends ActorSubscriberMessage
 
   /**
-   * Requests one more element when `remainingRequested` is 0, i.e.
-   * max one element in flight.
+   * Java API: get the singleton instance of the `OnComplete` message
    */
-  case object OneByOneRequestStrategy extends RequestStrategy {
-    def requestDemand(remainingRequested: Int): Int =
-      if (remainingRequested == 0) 1 else 0
-  }
+  def onCompleteInstance = OnComplete
+}
+
+/**
+ * An [[ActorSubscriber]] defines a `RequestStrategy` to control the stream back pressure.
+ */
+trait RequestStrategy {
+  /**
+   * Invoked by the [[ActorSubscriber]] after each incoming message to
+   * determine how many more elements to request from the stream.
+   *
+   * @param remainingRequested current remaining number of elements that
+   *   have been requested from upstream but not received yet
+   * @return demand of more elements from the stream, returning 0 means that no
+   *   more elements will be requested for now
+   */
+  def requestDemand(remainingRequested: Int): Int
+}
+
+/**
+ * Requests one more element when `remainingRequested` is 0, i.e.
+ * max one element in flight.
+ */
+case object OneByOneRequestStrategy extends RequestStrategy {
+  def requestDemand(remainingRequested: Int): Int =
+    if (remainingRequested == 0) 1 else 0
 
   /**
-   * When request is only controlled with manual calls to
-   * [[ActorSubscriber#request]].
+   * Java API: get the singleton instance
    */
-  case object ZeroRequestStrategy extends RequestStrategy {
-    def requestDemand(remainingRequested: Int): Int = 0
-  }
+  def getInstance = this
+}
 
-  object WatermarkRequestStrategy {
-    /**
-     * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
-     * the specifed `highWatermark`.
-     */
-    def apply(highWatermark: Int): WatermarkRequestStrategy =
-      WatermarkRequestStrategy(highWatermark, lowWatermark = math.max(1, highWatermark / 2))
-  }
+/**
+ * When request is only controlled with manual calls to
+ * [[ActorSubscriber#request]].
+ */
+case object ZeroRequestStrategy extends RequestStrategy {
+  def requestDemand(remainingRequested: Int): Int = 0
 
   /**
-   * Requests up to the `highWatermark` when the `remainingRequested` is
-   * below the `lowWatermark`. This a good strategy when the actor performs work itself.
+   * Java API: get the singleton instance
    */
-  case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) extends RequestStrategy {
-    def requestDemand(remainingRequested: Int): Int =
-      if (remainingRequested < lowWatermark)
-        highWatermark - remainingRequested
-      else 0
-  }
+  def getInstance = this
+}
+
+object WatermarkRequestStrategy {
+  /**
+   * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+   * the specifed `highWatermark`.
+   */
+  def apply(highWatermark: Int): WatermarkRequestStrategy = new WatermarkRequestStrategy(highWatermark)
+}
+
+/**
+ * Requests up to the `highWatermark` when the `remainingRequested` is
+ * below the `lowWatermark`. This a good strategy when the actor performs work itself.
+ */
+case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) extends RequestStrategy {
 
   /**
-   * Requests up to the `max` and also takes the number of messages
-   * that have been queued internally or delegated to other actors into account.
-   * Concrete subclass must implement [[#inFlightInternally]].
-   * It will request elements in minimum batches of the defined [[#batchSize]].
+   * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+   * the specifed `highWatermark`.
    */
-  abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
+  def this(highWatermark: Int) = this(highWatermark, lowWatermark = math.max(1, highWatermark / 2))
 
-    /**
-     * Concrete subclass must implement this method to define how many
-     * messages that are currently in progress or queued.
-     */
-    def inFlightInternally: Int
+  def requestDemand(remainingRequested: Int): Int =
+    if (remainingRequested < lowWatermark)
+      highWatermark - remainingRequested
+    else 0
+}
 
-    /**
-     * Elements will be requested in minimum batches of this size.
-     * Default is 5. Subclass may override to define the batch size.
-     */
-    def batchSize: Int = 5
+/**
+ * Requests up to the `max` and also takes the number of messages
+ * that have been queued internally or delegated to other actors into account.
+ * Concrete subclass must implement [[#inFlightInternally]].
+ * It will request elements in minimum batches of the defined [[#batchSize]].
+ */
+abstract class MaxInFlightRequestStrategy(max: Int) extends RequestStrategy {
 
-    override def requestDemand(remainingRequested: Int): Int = {
-      val batch = math.min(batchSize, max)
-      if ((remainingRequested + inFlightInternally) <= (max - batch))
-        math.max(0, max - remainingRequested - inFlightInternally)
-      else 0
-    }
+  /**
+   * Concrete subclass must implement this method to define how many
+   * messages that are currently in progress or queued.
+   */
+  def inFlightInternally: Int
+
+  /**
+   * Elements will be requested in minimum batches of this size.
+   * Default is 5. Subclass may override to define the batch size.
+   */
+  def batchSize: Int = 5
+
+  override def requestDemand(remainingRequested: Int): Int = {
+    val batch = math.min(batchSize, max)
+    if ((remainingRequested + inFlightInternally) <= (max - batch))
+      math.max(0, max - remainingRequested - inFlightInternally)
+    else 0
   }
 }
 
 /**
  * Extend/mixin this trait in your [[akka.actor.Actor]] to make it a
  * stream subscriber with full control of stream back pressure. It will receive
- * [[ActorSubscriber.OnNext]], [[ActorSubscriber.OnComplete]] and [[ActorSubscriber.OnError]]
+ * [[ActorSubscriberMessage.OnNext]], [[ActorSubscriberMessage.OnComplete]] and [[ActorSubscriberMessage.OnError]]
  * messages from the stream. It can also receive other, non-stream messages, in
  * the same way as any actor.
  *
  * Attach the actor as a [[org.reactivestreams.Subscriber]] to the stream with
- * [[ActorSubscriber#apply]].
+ * Scala API [[ActorSubscriber#apply]], or Java API [[UntypedActorSubscriber#create]] or
+ * Java API compatible with lambda expressions [[AbstractActorSubscriber#create]].
  *
  * Subclass must define the [[RequestStrategy]] to control stream back pressure.
  * After each incoming message the `ActorSubscriber` will automatically invoke
  * the [[RequestStrategy#requestDemand]] and propagate the returned demand to the stream.
- * The provided [[ActorSubscriber.WatermarkRequestStrategy]] is a good strategy if the actor
+ * The provided [[WatermarkRequestStrategy]] is a good strategy if the actor
  * performs work itself.
- * The provided [[ActorSubscriber.MaxInFlightRequestStrategy]] is useful if messages are
+ * The provided [[MaxInFlightRequestStrategy]] is useful if messages are
  * queued internally or delegated to other actors.
  * You can also implement a custom [[RequestStrategy]] or call [[#request]] manually
- * together with [[ActorSubscriber.ZeroRequestStrategy]] or some other strategy. In that case
+ * together with [[ZeroRequestStrategy]] or some other strategy. In that case
  * you must also call [[#request]] when the actor is started or when it is ready, otherwise
  * it will not receive any elements.
  */
 trait ActorSubscriber extends Actor {
   import ActorSubscriber._
+  import ActorSubscriberMessage._
 
   private val state = ActorSubscriberState(context.system)
   private var subscription: Option[Subscription] = None
@@ -150,6 +174,9 @@ trait ActorSubscriber extends Actor {
 
   protected def requestStrategy: RequestStrategy
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case _: OnNext ⇒
       requested -= 1
@@ -173,11 +200,17 @@ trait ActorSubscriber extends Actor {
       request(requestStrategy.requestDemand(remainingRequested))
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPreStart(): Unit = {
     super.aroundPreStart()
     request(requestStrategy.requestDemand(remainingRequested))
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
       // restore previous state 
@@ -190,12 +223,18 @@ trait ActorSubscriber extends Actor {
     request(requestStrategy.requestDemand(remainingRequested))
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
     state.set(self, ActorSubscriberState.State(subscription, requested, canceled))
     super.aroundPreRestart(reason, message)
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
     if (!canceled) subscription.foreach(_.cancel())
@@ -232,9 +271,10 @@ trait ActorSubscriber extends Actor {
  * INTERNAL API
  */
 private[akka] final class ActorSubscriberImpl[T](val impl: ActorRef) extends Subscriber[T] {
-  override def onError(cause: Throwable): Unit = impl ! ActorSubscriber.OnError(cause)
-  override def onComplete(): Unit = impl ! ActorSubscriber.OnComplete
-  override def onNext(element: T): Unit = impl ! ActorSubscriber.OnNext(element)
+  import ActorSubscriberMessage._
+  override def onError(cause: Throwable): Unit = impl ! OnError(cause)
+  override def onComplete(): Unit = impl ! OnComplete
+  override def onNext(element: T): Unit = impl ! OnNext(element)
   override def onSubscribe(subscription: Subscription): Unit = impl ! ActorSubscriber.OnSubscribe(subscription)
 }
 
@@ -267,3 +307,38 @@ private[akka] class ActorSubscriberState extends Extension {
 
   def remove(ref: ActorRef): Unit = state.remove(ref)
 }
+
+/**
+ * Java API
+ */
+object UntypedActorSubscriber {
+  /**
+   * Java API: Attach a [[UntypedActorSubscriber]] actor as a [[org.reactivestreams.Subscriber]]
+   * to a [[org.reactivestreams.Publisher]] or [[akka.stream.javadsl.Flow]].
+   */
+  def create[T](ref: ActorRef): Subscriber[T] = ActorSubscriber.apply(ref)
+}
+
+/**
+ * Java API
+ * @see [[akka.stream.actor.ActorSubscriber]]
+ */
+abstract class UntypedActorSubscriber extends UntypedActor with ActorSubscriber
+
+/**
+ * Java API compatible with lambda expressions
+ */
+object AbstractActorSubscriber {
+  /**
+   * Java API compatible with lambda expressions: Attach a [[AbstractActorSubscriber]] actor
+   * as a [[org.reactivestreams.Subscriber]] o a [[org.reactivestreams.Publisher]] or
+   * [[akka.stream.javadsl.Flow]].
+   */
+  def create[T](ref: ActorRef): Subscriber[T] = ActorSubscriber.apply(ref)
+}
+
+/**
+ * Java API compatible with lambda expressions
+ * @see [[akka.stream.actor.ActorSubscriber]]
+ */
+abstract class AbstractActorSubscriber extends AbstractActor with ActorSubscriber

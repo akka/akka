@@ -6,7 +6,8 @@ package akka.stream.impl
 import org.reactivestreams.{ Publisher, Subscriber, Subscription, Processor }
 import akka.actor._
 import akka.stream.MaterializerSettings
-import akka.stream.actor.ActorSubscriber.{ OnSubscribe, OnNext, OnComplete, OnError }
+import akka.stream.actor.ActorSubscriber.OnSubscribe
+import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
 import java.util.Arrays
 import akka.stream.TimerTransformer
 
