@@ -10,7 +10,6 @@ import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
-import akka.stream.actor.ActorSubscriber.RequestStrategy
 import akka.actor.Actor
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
@@ -24,7 +23,7 @@ object ActorSubscriberSpec {
     Props(new ManualSubscriber(probe)).withDispatcher("akka.test.stream-dispatcher")
 
   class ManualSubscriber(probe: ActorRef) extends ActorSubscriber {
-    import ActorSubscriber._
+    import ActorSubscriberMessage._
 
     override val requestStrategy = ZeroRequestStrategy
 
@@ -42,7 +41,7 @@ object ActorSubscriberSpec {
     Props(new RequestStrategySubscriber(probe, strat)).withDispatcher("akka.test.stream-dispatcher")
 
   class RequestStrategySubscriber(probe: ActorRef, strat: RequestStrategy) extends ActorSubscriber {
-    import ActorSubscriber._
+    import ActorSubscriberMessage._
 
     override val requestStrategy = strat
 
@@ -61,7 +60,7 @@ object ActorSubscriberSpec {
     Props(new Streamer).withDispatcher("akka.test.stream-dispatcher")
 
   class Streamer extends ActorSubscriber {
-    import ActorSubscriber._
+    import ActorSubscriberMessage._
     var queue = Map.empty[Int, ActorRef]
 
     val router = {
@@ -98,7 +97,7 @@ object ActorSubscriberSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
   import ActorSubscriberSpec._
-  import ActorSubscriber._
+  import ActorSubscriberMessage._
 
   implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 

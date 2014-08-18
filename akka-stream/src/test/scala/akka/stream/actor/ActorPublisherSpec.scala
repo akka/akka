@@ -10,7 +10,6 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
-import akka.stream.actor.ActorSubscriber.WatermarkRequestStrategy
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
@@ -32,6 +31,7 @@ object ActorPublisherSpec {
 
   class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
     import ActorPublisher._
+    import ActorPublisherMessage._
 
     def receive = {
       case Request(element) ⇒ probe ! TotalDemand(totalDemand)
@@ -45,8 +45,7 @@ object ActorPublisherSpec {
   def senderProps: Props = Props[Sender].withDispatcher("akka.test.stream-dispatcher")
 
   class Sender extends ActorPublisher[Int] {
-    import ActorPublisher.Cancel
-    import ActorPublisher.Request
+    import ActorPublisherMessage._
 
     var buf = Vector.empty[Int]
 
@@ -76,7 +75,7 @@ object ActorPublisherSpec {
     Props(new Receiver(probe)).withDispatcher("akka.test.stream-dispatcher")
 
   class Receiver(probe: ActorRef) extends ActorSubscriber {
-    import ActorSubscriber._
+    import ActorSubscriberMessage._
 
     override val requestStrategy = WatermarkRequestStrategy(10)
 

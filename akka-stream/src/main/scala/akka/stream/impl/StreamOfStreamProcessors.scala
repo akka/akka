@@ -6,7 +6,8 @@ package akka.stream.impl
 import akka.stream.MaterializerSettings
 import akka.actor.{ Actor, Terminated, ActorRef }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-import akka.stream.actor.ActorSubscriber.{ OnNext, OnError, OnComplete, OnSubscribe }
+import akka.stream.actor.ActorSubscriber.OnSubscribe
+import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.actor.Stash
 
 /**

@@ -5,6 +5,7 @@ package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.actor.AbstractActor
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -12,28 +13,16 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import akka.actor.UntypedActor
 
 object ActorPublisher {
 
   /**
    * Create a [[org.reactivestreams.Publisher]] backed by a [[ActorPublisher]] actor. It can be
    * attached to a [[org.reactivestreams.Subscriber]] or be used as an input source for a
-   * [[akka.stream.Flow]].
+   * [[akka.stream.scaladsl.Flow]].
    */
   def apply[T](ref: ActorRef): Publisher[T] = ActorPublisherImpl(ref)
-
-  /**
-   * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber requests
-   * more elements.
-   * @param n number of requested elements
-   */
-  @SerialVersionUID(1L) case class Request(n: Int)
-
-  /**
-   * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
-   * subscription.
-   */
-  @SerialVersionUID(1L) case object Cancel
 
   /**
    * INTERNAL API
@@ -50,14 +39,40 @@ object ActorPublisher {
   }
 }
 
+sealed abstract class ActorPublisherMessage
+
+object ActorPublisherMessage {
+  /**
+   * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber requests
+   * more elements.
+   * @param n number of requested elements
+   */
+  @SerialVersionUID(1L) case class Request(n: Int) extends ActorPublisherMessage
+
+  /**
+   * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
+   * subscription.
+   */
+  @SerialVersionUID(1L) case object Cancel extends ActorPublisherMessage
+
+  /**
+   * Java API: get the singleton instance of the `Cancel` message
+   */
+  def cancelInstance = Cancel
+
+}
+
 /**
  * Extend/mixin this trait in your [[akka.actor.Actor]] to make it a
  * stream publisher that keeps track of the subscription life cycle and
  * requested elements.
  *
- * Create a [[org.reactivestreams.Publisher]] backed by this actor with [[ActorPublisher#apply]].
+ * Create a [[org.reactivestreams.Publisher]] backed by this actor with Scala API [[ActorPublisher#apply]],
+ * or Java API [[UntypedActorPublisher#create]] or Java API compatible with lambda expressions
+ * [[AbstractActorPublisher#create]].
+ *
  * It can be attached to a [[org.reactivestreams.Subscriber]] or be used as an input source for a
- * [[akka.stream.Flow]]. You can only attach one subscriber to this publisher.
+ * [[akka.stream.scaladsl.Flow]]. You can only attach one subscriber to this publisher.
  *
  * The life cycle state of the subscription is tracked with the following boolean members:
  * [[#isActive]], [[#isCompleted]], [[#isErrorEmitted]], and [[#isCanceled]].
@@ -86,6 +101,7 @@ object ActorPublisher {
 trait ActorPublisher[T] extends Actor {
   import ActorPublisher._
   import ActorPublisher.Internal._
+  import ActorPublisherMessage._
 
   private val state = ActorPublisherState(context.system)
   private var subscriber: Subscriber[Any] = _
@@ -99,7 +115,7 @@ trait ActorPublisher[T] extends Actor {
    * allowed to call [[#onNext]] in this state when [[#totalDemand]]
    * is greater than zero.
    */
-  final def isActive = lifecycleState == Active || lifecycleState == PreSubscriber
+  final def isActive: Boolean = lifecycleState == Active || lifecycleState == PreSubscriber
 
   /**
    * Total number of requested elements from the stream subscriber.
@@ -186,6 +202,9 @@ trait ActorPublisher[T] extends Actor {
     case Canceled ⇒ // drop
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case Request(n) ⇒
       demand += n
@@ -212,12 +231,18 @@ trait ActorPublisher[T] extends Actor {
       super.aroundReceive(receive, msg)
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     // some state must survive restart
     state.set(self, ActorPublisherState.State(Option(subscriber), demand, lifecycleState))
     super.aroundPreRestart(reason, message)
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
       // restore previous state 
@@ -229,6 +254,9 @@ trait ActorPublisher[T] extends Actor {
     super.aroundPostRestart(reason)
   }
 
+  /**
+   * INTERNAL API
+   */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
     if (lifecycleState == Active) subscriber.onComplete()
@@ -253,6 +281,8 @@ private[akka] case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[
  */
 private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscription {
   import ActorPublisher._
+  import ActorPublisherMessage._
+
   override def request(n: Int): Unit =
     if (n <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
     else ref ! Request(n)
@@ -290,3 +320,39 @@ private[akka] class ActorPublisherState extends Extension {
 
   def remove(ref: ActorRef): Unit = state.remove(ref)
 }
+
+/**
+ * Java API
+ */
+object UntypedActorPublisher {
+  /**
+   * Java API: Create a [[org.reactivestreams.Publisher]] backed by a [[UntypedActorPublisher]] actor. It can be
+   * attached to a [[org.reactivestreams.Subscriber]] or be used as an input source for a
+   * [[akka.stream.javadsl.Flow]].
+   */
+  def create[T](ref: ActorRef): Publisher[T] = ActorPublisher.apply(ref)
+}
+
+/**
+ * Java API
+ * @see [[akka.stream.actor.ActorPublisher]]
+ */
+abstract class UntypedActorPublisher[T] extends UntypedActor with ActorPublisher[T]
+
+/**
+ * Java API compatible with lambda expressions
+ */
+object AbstractActorPublisher {
+  /**
+   * Java API compatible with lambda expressions: Create a [[org.reactivestreams.Publisher]]
+   * backed by a [[AbstractActorPublisher]] actor. It can be attached to a [[org.reactivestreams.Subscriber]]
+   * or be used as an input source for a [[akka.stream.javadsl.Flow]].
+   */
+  def create[T](ref: ActorRef): Publisher[T] = ActorPublisher.apply(ref)
+}
+
+/**
+ * Java API compatible with lambda expressions
+ * @see [[akka.stream.actor.ActorPublisher]]
+ */
+abstract class AbstractActorPublisher[T] extends AbstractActor with ActorPublisher[T]
