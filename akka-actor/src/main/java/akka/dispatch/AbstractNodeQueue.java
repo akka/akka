@@ -25,18 +25,26 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     }
 
     /*
+     * Use this method only from the consumer thread!
+     * 
      * !!! There is a copy of this code in pollNode() !!!
      */
     @SuppressWarnings("unchecked")
     protected final Node<T> peekNode() {
-        for(;;) {
-          final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
-          final Node<T> next = tail.next();
-          if (next != null || get() == tail)
-            return next;
+        final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
+        Node<T> next = tail.next();
+        if (next == null && get() != tail) {
+            // if tail != head this is not going to change until consumer makes progress
+            // we can avoid reading the head and just spin on next until it shows up
+            do {
+                next = tail.next();
+            } while (next == null);
         }
+        return next;
     }
-
+    /*
+     * Use this method only from the consumer thread!
+     */
     public final T peek() {
         final Node<T> n = peekNode();
         return (n != null) ? n.value : null;
@@ -53,17 +61,19 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     }
 
     public final boolean isEmpty() {
-        return peek() == null;
+        return Unsafe.instance.getObjectVolatile(this, tailOffset) == get();
     }
 
     public final int count() {
         int count = 0;
-        for(Node<T> n = peekNode();n != null; n = n.next())
+        for(Node<T> n = peekNode();n != null && count < Integer.MAX_VALUE; n = n.next())
           ++count;
         return count;
     }
 
     /*
+     * Use this method only from the consumer thread!
+     * 
      * !!! There is a copy of this code in pollNode() !!!
      */
     public final T poll() {
@@ -77,6 +87,9 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
         }
     }
     
+    /*
+     * Use this method only from the consumer thread!
+     */
     @SuppressWarnings("unchecked")
     public final Node<T> pollNode() {
       Node<T> tail;
