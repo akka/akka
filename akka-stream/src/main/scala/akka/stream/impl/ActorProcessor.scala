@@ -114,7 +114,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
     assert(subscription != null)
     upstream = subscription
     // Prefetch
-    if (inputBuffer.length > 1) upstream.request(inputBuffer.length - 1) // One element is requested by the lazy wrapper
+    upstream.request(inputBuffer.length)
     subreceive.become(upstreamRunning)
   }
 

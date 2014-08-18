@@ -96,7 +96,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * more demand was signaled from a given subscriber
    */
-  protected def moreRequested(subscription: S, elements: Int): Unit =
+  protected def moreRequested(subscription: S, elements: Long): Unit =
     if (subscription.active) {
 
       // returns Long.MinValue if the subscription is to be terminated
@@ -110,7 +110,9 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         } else if (eos ne NotReached) Long.MinValue
         else requested
 
-      val demand = subscription.requested + elements
+      val current: Long = subscription.requested
+      val total = current + elements
+      val demand = if (elements == Long.MaxValue || (total < current)) Long.MaxValue else total
       if (demand > 0) {
         endOfStream match {
           case eos @ (NotReached | Completed) ⇒

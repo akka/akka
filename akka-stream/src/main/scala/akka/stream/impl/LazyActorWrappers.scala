@@ -31,7 +31,7 @@ private[akka] object LazyActorPublisher {
 
   case object Dormant extends PublisherState[Nothing]
   final case class Signaled(messages: List[SubscriberMessage], upstreamSubscription: Subscription) extends PublisherState[Nothing]
-  final case class Subscribed[T](subscriptions: immutable.Map[LazySubscription[T], Int], messages: List[SubscriberMessage], first: Boolean, awakening: Boolean, upstreamSubscription: Subscription) extends PublisherState[T]
+  final case class Subscribed[T](subscriptions: immutable.Map[LazySubscription[T], Long], messages: List[SubscriberMessage], first: Boolean, awakening: Boolean, upstreamSubscription: Subscription) extends PublisherState[T]
   final case class Awake[T](impl: ActorRef, pendingSubscribers: List[Subscriber[T]]) extends PublisherState[T]
   case object Terminated extends PublisherState[Nothing]
 
@@ -77,11 +77,15 @@ private[akka] trait LazyPublisherLike[T] extends Publisher[T] with LazyElement {
   protected def createSubscription(subscriber: Subscriber[T]): LazySubscription[T] = new LazySubscription[T](this, subscriber)
 
   @tailrec
-  final protected def doRequest(subscription: LazySubscription[T], elements: Int): Unit = state.get match {
-    case Awake(impl, _) ⇒ impl ! RequestMore(subscription.asInstanceOf[LazySubscription[Any]], elements)
+  final protected def doRequest(subscription: LazySubscription[T], elements: Long): Unit = state.get match {
+    case Awake(impl, _) ⇒
+      impl ! RequestMore(subscription.asInstanceOf[LazySubscription[Any]], elements)
     case s @ Subscribed(subscriptions, _, first, _, _) ⇒
+      val current: Long = subscriptions.getOrElse(subscription, 0)
+      val total = current + elements
+      val demand = if (elements == Long.MaxValue || (total < current)) Long.MaxValue else total
       if (state.compareAndSet(s, s.copy(
-        subscriptions = subscriptions + (subscription -> (subscriptions.getOrElse(subscription, 0) + elements)),
+        subscriptions = subscriptions + (subscription -> demand),
         first = false))) {
         if (first) onFirstDownstreamRequest()
       } else doRequest(subscription, elements)
@@ -143,7 +147,7 @@ private[akka] trait LazyPublisherLike[T] extends Publisher[T] with LazyElement {
   protected def wakeUp(): Unit =
     materializer ! StreamSupervisor.Materialize(props, this)
 
-  def takeEarlySubscribers(impl: ActorRef): immutable.Map[LazySubscription[T], Int] = {
+  def takeEarlySubscribers(impl: ActorRef): immutable.Map[LazySubscription[T], Long] = {
     state.getAndSet(Awake(impl, Nil)) match {
       case Subscribed(subscriptions, messages, _, awakening, upsub) if awakening ⇒
         afterSetBackingActor(impl, messages, upsub)

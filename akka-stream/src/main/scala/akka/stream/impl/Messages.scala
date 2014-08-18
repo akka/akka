@@ -13,7 +13,7 @@ private[akka] case object SubscribePending
 /**
  * INTERNAL API
  */
-private[akka] case class RequestMore(subscription: LazySubscription[Any], demand: Int)
+private[akka] case class RequestMore(subscription: LazySubscription[Any], demand: Long)
 
 /**
  * INTERNAL API

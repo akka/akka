@@ -49,7 +49,7 @@ private[akka] class IterablePublisherWorker(iterator: Iterator[Any], maxPush: In
 
   def receive = {
     case ExposedPublisher(publisher) ⇒
-      val subscribers: Map[LazySubscription[Any], Int] = publisher.takeEarlySubscribers(self)
+      val subscribers: Map[LazySubscription[Any], Long] = publisher.takeEarlySubscribers(self)
       assert(subscribers.size == 1, "A new IterablePublisherWorker must be created for each individual subscriber, but this was shared.")
       subscribers foreach {
         case (subscription, d) ⇒
