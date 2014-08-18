@@ -25,8 +25,9 @@ object ActorPublisher {
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber requests
    * more elements.
+   * @param n number of requested elements
    */
-  @SerialVersionUID(1L) case class Request(elements: Int)
+  @SerialVersionUID(1L) case class Request(n: Int)
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
@@ -186,8 +187,8 @@ trait ActorPublisher[T] extends Actor {
   }
 
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
-    case Request(elements) ⇒
-      demand += elements
+    case Request(n) ⇒
+      demand += n
       super.aroundReceive(receive, msg)
 
     case Subscribe(sub) ⇒
@@ -252,9 +253,9 @@ private[akka] case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[
  */
 private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscription {
   import ActorPublisher._
-  override def request(elements: Int): Unit =
-    if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
-    else ref ! Request(elements)
+  override def request(n: Int): Unit =
+    if (n <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+    else ref ! Request(n)
   override def cancel(): Unit = ref ! Cancel
 }
 
