@@ -72,8 +72,8 @@ private object PersistentPublisher {
 
 private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Persistent] {
   def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Persistent] =
-    ActorPublisher[Persistent](materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
-      name = s"$flowName-0-persistentPublisher"))
+    LazyActorPublisher[Persistent](PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+      name = s"$flowName-0-persistentPublisher", equalityValue = None, materializer.supervisor)
 }
 
 private class PersistentPublisherImpl(processorId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
@@ -85,17 +85,17 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
   import ActorBasedFlowMaterializer._
   import PersistentPublisherBuffer._
 
-  type S = ActorSubscription[Persistent]
+  type S = LazySubscription[Persistent]
 
   private val buffer = context.actorOf(Props(classOf[PersistentPublisherBuffer], processorId, publisherSettings, self).
     withDispatcher(context.props.dispatcher), "publisherBuffer")
 
-  private var pub: ActorPublisher[Persistent] = _
-  private var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
+  private var pub: LazyActorPublisher[Persistent] = _
+  private var shutdownReason: Option[Throwable] = LazyActorPublisher.NormalShutdownReason
 
   final def receive = {
     case ExposedPublisher(pub) ⇒
-      this.pub = pub.asInstanceOf[ActorPublisher[Persistent]]
+      this.pub = pub.asInstanceOf[LazyActorPublisher[Persistent]]
       context.become(waitingForSubscribers)
   }
 
@@ -130,8 +130,8 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
   override def maxBufferSize =
     materializerSettings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[Persistent]): ActorSubscription[Persistent] =
-    new ActorSubscription(self, subscriber)
+  override def createSubscription(subscriber: Subscriber[Persistent]): LazySubscription[Persistent] =
+    new LazySubscription(this.pub, subscriber)
 
   override def cancelUpstream(): Unit = {
     if (pub ne null) pub.shutdown(shutdownReason)

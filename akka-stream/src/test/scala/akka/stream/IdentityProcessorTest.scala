@@ -7,7 +7,6 @@ import org.scalatest.testng.TestNGSuiteLike
 // FIXME: new TCK needed
 //import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment, IdentityProcessorVerification }
 import akka.actor.{ ActorSystem, Props }
-import akka.stream.impl.ActorProcessor
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.Ast
 import akka.testkit.{ TestEvent, EventFilter }

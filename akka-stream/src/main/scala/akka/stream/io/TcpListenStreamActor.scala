@@ -101,12 +101,20 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
 
   }
 
-  override def receive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive
+  private val materialize: Receive = {
+    case StreamSupervisor.Materialize(props, wrapper) ⇒
+      val impl = context.actorOf(props)
+      wrapper match {
+        case pub: LazyPublisherLike[Any] ⇒ impl ! ExposedPublisher(pub)
+      }
+  }
+
+  override def receive: Actor.Receive = materialize orElse primaryOutputs.subreceive orElse incomingConnections.subreceive
 
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
-    val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
-    val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
+    val processor = LazyActorProcessor[ByteString, ByteString](TcpStreamActor.inboundProps(connection, settings),
+      name = "", materializer = self)
     primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
   }
 

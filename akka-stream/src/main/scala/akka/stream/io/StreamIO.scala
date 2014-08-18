@@ -11,7 +11,7 @@ import scala.collection._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
-import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
+import akka.stream.impl._
 import akka.stream.MaterializerSettings
 import akka.io.IO
 import java.net.URLEncoder
@@ -216,18 +216,23 @@ private[akka] class StreamTcpManager extends Actor {
         case x: FiniteDuration ⇒ Some(x)
         case _                 ⇒ None
       }
-      val processorActor = context.actorOf(TcpStreamActor.outboundProps(
+      val processorActor = LazyActorProcessor(TcpStreamActor.outboundProps(
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         requester = sender(),
-        settings), name = encName("client", remoteAddress))
-      processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
+        settings), name = encName("client", remoteAddress), materializer = self)
 
     case StreamTcp.Bind(settings, localAddress, backlog, options, idleTimeout) ⇒
-      val publisherActor = context.actorOf(TcpListenStreamActor.props(
+      val publisherActor = LazyActorPublisher(TcpListenStreamActor.props(
         Tcp.Bind(context.system.deadLetters, localAddress, backlog, options, pullMode = true),
         requester = sender(),
-        settings), name = encName("server", localAddress))
-      publisherActor ! ExposedPublisher(ActorPublisher[Any](publisherActor))
+        settings), name = encName("server", localAddress), materializer = self)
+
+    case StreamSupervisor.Materialize(props, wrapper) ⇒
+      val impl = context.actorOf(props, wrapper.name)
+      wrapper match {
+        case pub: LazyActorPublisher[Any]                     ⇒ impl ! ExposedPublisher(pub)
+        case proc: LazyActorProcessor[ByteString, ByteString] ⇒ impl ! ExposedProcessor(proc)
+      }
   }
 }
 

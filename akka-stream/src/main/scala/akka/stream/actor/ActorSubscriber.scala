@@ -27,9 +27,10 @@ object ActorSubscriber {
    */
   def create[T](ref: ActorRef): Subscriber[T] = apply(ref)
 
-  @SerialVersionUID(1L) case class OnNext(element: Any)
-  @SerialVersionUID(1L) case object OnComplete
-  @SerialVersionUID(1L) case class OnError(cause: Throwable)
+  sealed trait SubscriberMessage
+  @SerialVersionUID(1L) case class OnNext(element: Any) extends SubscriberMessage
+  @SerialVersionUID(1L) case object OnComplete extends SubscriberMessage
+  @SerialVersionUID(1L) case class OnError(cause: Throwable) extends SubscriberMessage
 
   /**
    * INTERNAL API

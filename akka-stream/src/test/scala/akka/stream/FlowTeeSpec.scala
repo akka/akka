@@ -69,9 +69,9 @@ class FlowTeeSpec extends AkkaSpec {
         tee(c1).
         toPublisher(materializer)
       p.subscribe(c2)
+      val sub2 = c2.expectSubscription()
       val sub1 = c1.expectSubscription()
       sub1.cancel()
-      val sub2 = c2.expectSubscription()
       sub2.request(3)
       c2.expectNext(1)
       c2.expectNext(2)

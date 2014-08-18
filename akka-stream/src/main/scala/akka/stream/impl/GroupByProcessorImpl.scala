@@ -57,7 +57,8 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
   nextPhase(waitFirst)
 
   override def invalidateSubstream(substream: ActorRef): Unit = {
-    if ((pendingSubstreamOutputs ne null) && substream == pendingSubstreamOutputs.substream) {
+    val key = childToKey(substream)
+    if ((pendingSubstreamOutputs ne null) && key == pendingSubstreamOutputs.key) {
       pendingSubstreamOutputs = null
       nextPhase(waitNext)
     }
