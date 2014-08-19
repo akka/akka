@@ -38,8 +38,15 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
       val subscribers = exposedPublisher.takeEarlySubscribers(self)
 
       subscribers foreach {
-        case (subscription, demand) ⇒ registerSubscriber(subscription.subscriber, demand)
+        case (subscription, demand) ⇒
+          registerSubscriber(subscription.subscriber, subscription)
+          if (demand > 0) {
+            self ! RequestMore(subscription, demand)
+          }
       }
+
+      implicit val ec = context.dispatcher
+      future.onComplete(res ⇒ self ! res)
 
       context.become(active)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
@@ -47,7 +54,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
 
   def active: Receive = {
     case SubscribePending ⇒
-      exposedPublisher.takePendingSubscribers() foreach { sub ⇒ registerSubscriber(sub, initialDemand = 0) }
+      exposedPublisher.takePendingSubscribers() foreach { sub ⇒ registerSubscriber(sub) }
     case RequestMore(subscription, demand) ⇒
       if (subscriptions.contains(subscription)) {
         subscriptionsReadyForPush += subscription
@@ -58,7 +65,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
     case Status.Failure(ex) ⇒
       futureValue = Some(Failure(ex))
       pushToAll()
-    case value ⇒
+    case Success(value) ⇒
       futureValue = Some(Success(value))
       pushToAll()
   }
@@ -76,12 +83,21 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
     case None ⇒ // not completed yet
   }
 
-  def registerSubscriber(subscriber: Subscriber[Any], initialDemand: Long): Unit = {
+  def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
+    val subscription = new LazySubscription(exposedPublisher, subscriber)
+    registerSubscriber(subscriber, subscription)
+    subscriber.onSubscribe(subscription)
+  }
+
+  /**
+   * Register an existing subscriber
+   */
+  protected def registerSubscriber(subscriber: Subscriber[Any], existingSubscription: LazySubscription[Any]): Unit = {
     if (subscribers.contains(subscriber))
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     else {
-      //      subscribers = subscribers.updated(subscriber, subscriber.subscription)
-      //      subscriptions = subscriptions.updated(subscription, subscriber)
+      subscribers = subscribers.updated(subscriber, existingSubscription)
+      subscriptions = subscriptions.updated(existingSubscription, subscriber)
     }
   }
 
