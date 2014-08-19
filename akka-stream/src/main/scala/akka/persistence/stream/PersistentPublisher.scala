@@ -96,7 +96,16 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
   final def receive = {
     case ExposedPublisher(pub) ⇒
       this.pub = pub.asInstanceOf[LazyActorPublisher[Persistent]]
-      context.become(waitingForSubscribers)
+      val earlySubscriptions = pub.takeEarlySubscribers(self)
+      earlySubscriptions foreach {
+        case (lazySubscription, _) ⇒
+          registerSubscriber(lazySubscription.subscriber.asInstanceOf[Subscriber[Persistent]], lazySubscription.asInstanceOf[S])
+      }
+      earlySubscriptions foreach {
+        case (lazySubscription, demand) ⇒ moreRequested(lazySubscription.asInstanceOf[S], demand)
+      }
+
+      context.become(active)
   }
 
   final def waitingForSubscribers: Receive = {
