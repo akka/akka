@@ -47,12 +47,14 @@ class FlowConflateSpec extends AkkaSpec {
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
 
+      sub.request(1)
       for (i ← 1 to 100) {
         autoPublisher.sendNext(i)
       }
+      subscriber.expectNext(1)
       subscriber.expectNoMsg(1.second)
       sub.request(1)
-      subscriber.expectNext(5050)
+      subscriber.expectNext(5049)
       sub.cancel()
     }
 

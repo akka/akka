@@ -13,16 +13,6 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Subscriber[A
   extends ActorProcessorImpl(_settings) {
 
   override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
-    var secondarySubscribed = false
-
-    override def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
-      if (!secondarySubscribed) {
-        super.registerSubscriber(other)
-        secondarySubscribed = true
-      }
-      super.registerSubscriber(subscriber)
-    }
-
     override def afterShutdown(): Unit = {
       primaryOutputsShutdown = true
       shutdownHooks()
@@ -37,4 +27,3 @@ private[akka] class TeeImpl(_settings: MaterializerSettings, other: Subscriber[A
   nextPhase(running)
 
 }
-

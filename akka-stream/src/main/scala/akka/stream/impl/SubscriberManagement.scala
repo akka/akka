@@ -96,7 +96,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * more demand was signaled from a given subscriber
    */
-  protected def moreRequested(subscription: S, elements: Int): Unit =
+  protected def moreRequested(subscription: S, elements: Long): Unit =
     if (subscription.active) {
 
       // returns Long.MinValue if the subscription is to be terminated
@@ -110,18 +110,22 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
         } else if (eos ne NotReached) Long.MinValue
         else requested
 
-      endOfStream match {
-        case eos @ (NotReached | Completed) ⇒
-          val demand = subscription.requested + elements
-          dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
-            case Long.MinValue ⇒
-              eos(subscription.subscriber)
-              unregisterSubscriptionInternal(subscription)
-            case x ⇒
-              subscription.requested = x
-              requestFromUpstreamIfRequired()
-          }
-        case ErrorCompleted(_) ⇒ // ignore, the spi.Subscriber might not have seen our error event yet
+      val current: Long = subscription.requested
+      val total = current + elements
+      val demand = if (elements == Long.MaxValue || (total < current)) Long.MaxValue else total
+      if (demand > 0) {
+        endOfStream match {
+          case eos @ (NotReached | Completed) ⇒
+            dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
+              case Long.MinValue ⇒
+                eos(subscription.subscriber)
+                unregisterSubscriptionInternal(subscription)
+              case x ⇒
+                subscription.requested = x
+                requestFromUpstreamIfRequired()
+            }
+          case ErrorCompleted(_) ⇒ // ignore, the spi.Subscriber might not have seen our error event yet
+        }
       }
     }
 
@@ -211,6 +215,22 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
       subscriptions ::= newSubscription
       buffer.initCursor(newSubscription)
       subscriber.onSubscribe(newSubscription)
+    case eos ⇒
+      eos(subscriber)
+  }
+
+  /**
+   * Register an existing subscriber
+   */
+  protected def registerSubscriber(subscriber: Subscriber[T], existingSubscription: S): Unit = endOfStream match {
+    case NotReached if subscriptions.exists(_.subscriber eq subscriber) ⇒
+      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+    case NotReached ⇒
+      subscriptions ::= existingSubscription
+      buffer.initCursor(existingSubscription)
+    case Completed if buffer.nonEmpty ⇒
+      subscriptions ::= existingSubscription
+      buffer.initCursor(existingSubscription)
     case eos ⇒
       eos(subscriber)
   }

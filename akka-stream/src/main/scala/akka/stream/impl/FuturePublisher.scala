@@ -3,13 +3,12 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Props, Status, SupervisorStrategy }
+import akka.actor.{ Actor, Props, Status, SupervisorStrategy }
 import akka.pattern.pipe
 import akka.stream.MaterializerSettings
-import org.reactivestreams.{ Subscriber, Subscription }
+import org.reactivestreams.Subscriber
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success, Try }
 
 /**
@@ -18,59 +17,46 @@ import scala.util.{ Failure, Success, Try }
 private[akka] object FuturePublisher {
   def props(future: Future[Any], settings: MaterializerSettings): Props =
     Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher)
-
-  object FutureSubscription {
-    case class Cancel(subscription: FutureSubscription)
-    case class RequestMore(subscription: FutureSubscription)
-  }
-
-  class FutureSubscription(ref: ActorRef) extends Subscription {
-    import akka.stream.impl.FuturePublisher.FutureSubscription._
-    def cancel(): Unit = ref ! Cancel(this)
-    def request(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
-      else ref ! RequestMore(this)
-    override def toString = "FutureSubscription"
-  }
 }
 
 /**
  * INTERNAL API
  */
 private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
-  import akka.stream.impl.FuturePublisher.FutureSubscription
-  import akka.stream.impl.FuturePublisher.FutureSubscription.{ Cancel, RequestMore }
 
-  var exposedPublisher: ActorPublisher[Any] = _
-  var subscribers = Map.empty[Subscriber[Any], FutureSubscription]
-  var subscriptions = Map.empty[FutureSubscription, Subscriber[Any]]
-  var subscriptionsReadyForPush = Set.empty[FutureSubscription]
+  var exposedPublisher: LazyPublisherLike[Any] = _
+  var subscribers = Map.empty[Subscriber[Any], LazySubscription[Any]]
+  var subscriptions = Map.empty[LazySubscription[Any], Subscriber[Any]]
+  var subscriptionsReadyForPush = Set.empty[LazySubscription[Any]]
   var futureValue: Option[Try[Any]] = future.value
-  var shutdownReason = ActorPublisher.NormalShutdownReason
+  var shutdownReason = LazyActorPublisher.NormalShutdownReason
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
-      context.become(waitingForFirstSubscriber)
-    case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
-  }
+      val subscribers = exposedPublisher.takeEarlySubscribers(self)
 
-  def waitingForFirstSubscriber: Receive = {
-    case SubscribePending ⇒
-      exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
+      subscribers foreach {
+        case (subscription, demand) ⇒
+          registerSubscriber(subscription.subscriber, subscription)
+          if (demand > 0) {
+            self ! RequestMore(subscription, demand)
+          }
+      }
+
       import context.dispatcher
       future.pipeTo(self)
+
       context.become(active)
+    case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
   }
 
   def active: Receive = {
     case SubscribePending ⇒
-      exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-    case RequestMore(subscription) ⇒
+      exposedPublisher.takePendingSubscribers() foreach { sub ⇒ registerSubscriber(sub) }
+    case RequestMore(subscription, demand) ⇒
       if (subscriptions.contains(subscription)) {
         subscriptionsReadyForPush += subscription
         push(subscriptions(subscription))
@@ -99,13 +85,20 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
   }
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
+    val subscription = new LazySubscription(exposedPublisher, subscriber)
+    registerSubscriber(subscriber, subscription)
+    subscriber.onSubscribe(subscription)
+  }
+
+  /**
+   * Register an existing subscriber
+   */
+  protected def registerSubscriber(subscriber: Subscriber[Any], existingSubscription: LazySubscription[Any]): Unit = {
     if (subscribers.contains(subscriber))
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     else {
-      val subscription = new FutureSubscription(self)
-      subscribers = subscribers.updated(subscriber, subscription)
-      subscriptions = subscriptions.updated(subscription, subscriber)
-      subscriber.onSubscribe(subscription)
+      subscribers = subscribers.updated(subscriber, existingSubscription)
+      subscriptions = subscriptions.updated(existingSubscription, subscriber)
     }
   }
 

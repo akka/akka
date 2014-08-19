@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.stream.impl.LazyActorPublisher.OtherSubscribers
 import org.reactivestreams.{ Publisher, Subscriber, Subscription, Processor }
 import akka.actor._
 import akka.stream.MaterializerSettings
@@ -13,7 +14,8 @@ import akka.stream.TimerTransformer
 /**
  * INTERNAL API
  */
-private[akka] object ActorProcessor {
+// FIXME: Move this to materializer file, or even better, an AST file
+private[akka] object ProcessorForAst {
 
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
@@ -35,22 +37,10 @@ private[akka] object ActorProcessor {
       case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
     }).withDispatcher(settings.dispatcher)
 
-  def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
-    val p = new ActorProcessor[I, O](impl)
-    impl ! ExposedPublisher(p.asInstanceOf[ActorPublisher[Any]])
-    p
+  def extraArguments(op: AstNode): Any = op match {
+    case t: Tee ⇒ OtherSubscribers(List(t.other))
+    case _      ⇒ null
   }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ActorProcessor[I, O] private (impl: ActorRef) extends ActorPublisher[O](impl, None)
-  with Processor[I, O] {
-  override def onSubscribe(s: Subscription): Unit = impl ! OnSubscribe(s)
-  override def onError(t: Throwable): Unit = impl ! OnError(t)
-  override def onComplete(): Unit = impl ! OnComplete
-  override def onNext(t: I): Unit = impl ! OnNext(t)
 }
 
 /**
@@ -163,10 +153,10 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   extends DefaultOutputTransferStates
   with SubscriberManagement[Any] {
 
-  override type S = ActorSubscription[Any]
+  override type S = LazySubscription[Any]
+  protected var exposedPublisher: LazyPublisherLike[Any] = _
   override def createSubscription(subscriber: Subscriber[Any]): S =
-    new ActorSubscription(self, subscriber)
-  protected var exposedPublisher: ActorPublisher[Any] = _
+    new LazySubscription(exposedPublisher, subscriber)
 
   private var downstreamBufferSpace = 0
   private var downstreamCompleted = false
@@ -217,7 +207,16 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 
   protected def waitingExposedPublisher: Actor.Receive = {
     case ExposedPublisher(publisher) ⇒
-      exposedPublisher = publisher
+      exposedPublisher = publisher.asInstanceOf[LazyPublisherLike[Any]]
+      val earlySubscriptions = exposedPublisher.takeEarlySubscribers(self)
+
+      earlySubscriptions foreach {
+        case (lazySubscription, _) ⇒ registerSubscriber(lazySubscription.subscriber, lazySubscription)
+      }
+      earlySubscriptions foreach {
+        case (lazySubscription, demand) ⇒ moreRequested(lazySubscription, demand)
+      }
+
       subreceive.become(downstreamRunning)
     case other ⇒
       throw new IllegalStateException(s"The first message must be ExposedPublisher but was [$other]")
@@ -227,10 +226,10 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      moreRequested(subscription.asInstanceOf[ActorSubscription[Any]], elements)
+      moreRequested(subscription.asInstanceOf[LazySubscription[Any]], elements)
       pump.pump()
     case Cancel(subscription) ⇒
-      unregisterSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
+      unregisterSubscription(subscription.asInstanceOf[LazySubscription[Any]])
       pump.pump()
   }
 

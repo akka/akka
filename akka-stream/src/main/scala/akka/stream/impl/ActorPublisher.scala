@@ -19,118 +19,22 @@ import scala.util.control.{ NoStackTrace, NonFatal }
  */
 private[akka] object SimpleCallbackPublisher {
   def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
-    Props(new SimpleCallbackPublisherImpl(f, settings)).withDispatcher(settings.dispatcher)
+    Props(new SimpleCallbackPublisher(f, settings)).withDispatcher(settings.dispatcher)
 
-}
+  case object Generate
 
-/**
- * INTERNAL API
- */
-private[akka] object ActorPublisher {
-  class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down spi.Publisher") with NoStackTrace
-  val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
-
-  def apply[T](impl: ActorRef, equalityValue: Option[AnyRef] = None): ActorPublisher[T] = {
-    val a = new ActorPublisher[T](impl, equalityValue)
-    // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
-    impl ! ExposedPublisher(a.asInstanceOf[ActorPublisher[Any]])
-    a
-  }
-
-  def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
-    case other: ActorPublisher[_] ⇒ Some((other.impl, other.equalityValue))
-    case _                        ⇒ None
-  }
-}
-
-/**
- * INTERNAL API
- *
- * When you instantiate this class, or its subclasses, you MUST send an ExposedPublisher message to the wrapped
- * ActorRef! If you don't need to subclass, prefer the apply() method on the companion object which takes care of this.
- */
-private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Option[AnyRef]) extends Publisher[T] {
-
-  // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
-  // The actor will call takePendingSubscribers to remove it from the list when it has received the 
-  // SubscribePending message. The AtomicReference is set to null by the shutdown method, which is
-  // called by the actor from postStop. Pending (unregistered) subscription attempts are denied by
-  // the shutdown method. Subscription attempts after shutdown can be denied immediately.
-  private val pendingSubscribers = new AtomicReference[immutable.Seq[Subscriber[T]]](Nil)
-
-  override def subscribe(subscriber: Subscriber[T]): Unit = {
-    @tailrec def doSubscribe(subscriber: Subscriber[T]): Unit = {
-      val current = pendingSubscribers.get
-      if (current eq null)
-        reportSubscribeError(subscriber)
-      else {
-        if (pendingSubscribers.compareAndSet(current, subscriber +: current))
-          impl ! SubscribePending
-        else
-          doSubscribe(subscriber) // CAS retry
-      }
-    }
-
-    doSubscribe(subscriber)
-  }
-
-  def takePendingSubscribers(): immutable.Seq[Subscriber[T]] = {
-    val pending = pendingSubscribers.getAndSet(Nil)
-    assert(pending ne null, "takePendingSubscribers must not be called after shutdown")
-    pending.reverse
-  }
-
-  def shutdown(reason: Option[Throwable]): Unit = {
-    shutdownReason = reason
-    pendingSubscribers.getAndSet(null) match {
-      case null    ⇒ // already called earlier
-      case pending ⇒ pending foreach reportSubscribeError
-    }
-  }
-
-  @volatile private var shutdownReason: Option[Throwable] = None
-
-  private def reportSubscribeError(subscriber: Subscriber[T]): Unit =
-    shutdownReason match {
-      case Some(e) ⇒ subscriber.onError(e)
-      case None    ⇒ subscriber.onComplete()
-    }
-
-  override def equals(o: Any): Boolean = (equalityValue, o) match {
-    case (Some(v), ActorPublisher(_, Some(otherValue))) ⇒ v.equals(otherValue)
-    case _ ⇒ super.equals(o)
-  }
-
-  override def hashCode: Int = equalityValue match {
-    case Some(v) ⇒ v.hashCode
-    case None    ⇒ super.hashCode
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[T]) extends SubscriptionWithCursor[T] {
-  override def request(elements: Int): Unit =
-    if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
-    else impl ! RequestMore(this, elements)
-  override def cancel(): Unit = impl ! Cancel(this)
 }
 
 /**
  * INTERNAL API
  */
 private[akka] trait SoftShutdown { this: Actor ⇒
+
+  var substreamCount: Int = 0
+
   def softShutdown(): Unit = {
-    val children = context.children
-    if (children.isEmpty) {
+    if (substreamCount == 0) {
       context.stop(self)
-    } else {
-      context.children foreach context.watch
-      context.become {
-        case Terminated(_) ⇒ if (context.children.isEmpty) context.stop(self)
-        case _             ⇒ // ignore all the rest, we’re practically dead
-      }
     }
   }
 }
@@ -138,39 +42,34 @@ private[akka] trait SoftShutdown { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private[akka] object SimpleCallbackPublisherImpl {
-  case object Generate
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: MaterializerSettings)
+private[akka] class SimpleCallbackPublisher[T](f: () ⇒ T, settings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[T]
   with SoftShutdown {
 
-  import akka.stream.impl.ActorBasedFlowMaterializer._
-  import akka.stream.impl.SimpleCallbackPublisherImpl._
+  import akka.stream.impl.SimpleCallbackPublisher._
 
-  type S = ActorSubscription[T]
-  var pub: ActorPublisher[T] = _
-  var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
+  type S = LazySubscription[T]
+  var pub: LazyPublisherLike[T] = _
+  var shutdownReason: Option[Throwable] = LazyActorPublisher.NormalShutdownReason
 
   context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
 
   final def receive = {
-    case ExposedPublisher(pub) ⇒
-      this.pub = pub.asInstanceOf[ActorPublisher[T]]
-      context.become(waitingForSubscribers)
-  }
+    case ExposedPublisher(publisher) ⇒
+      this.pub = publisher.asInstanceOf[LazyPublisherLike[T]]
+      val earlySubscriptions = pub.takeEarlySubscribers(self)
+      earlySubscriptions foreach {
+        case (lazySubscription, _) ⇒
+          registerSubscriber(lazySubscription.subscriber.asInstanceOf[Subscriber[T]], lazySubscription.asInstanceOf[S])
+      }
+      earlySubscriptions foreach {
+        case (lazySubscription, demand) ⇒ moreRequested(lazySubscription.asInstanceOf[S], demand)
+      }
 
-  final def waitingForSubscribers: Receive = {
-    case SubscribePending ⇒
-      pub.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
       context.become(active)
+      generate()
   }
 
   final def active: Receive = {
@@ -194,7 +93,7 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
     if (demand > 0) {
       try {
         demand -= 1
-        pushToDownstream(withCtx(context)(f()))
+        pushToDownstream(f())
         if (demand > 0) self ! Generate
       } catch {
         case Stop        ⇒ { completeDownstream(); shutdownReason = None }
@@ -206,8 +105,8 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   override def initialBufferSize = settings.initialFanOutBufferSize
   override def maxBufferSize = settings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[T]): ActorSubscription[T] =
-    new ActorSubscription(self, subscriber)
+  override def createSubscription(subscriber: Subscriber[T]): LazySubscription[T] =
+    new LazySubscription(pub, subscriber)
 
   override def requestFromUpstream(elements: Int): Unit = demand += elements
 

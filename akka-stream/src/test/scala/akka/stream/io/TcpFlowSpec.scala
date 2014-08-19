@@ -8,7 +8,6 @@ import akka.io.{ Tcp, IO }
 import java.nio.channels.ServerSocketChannel
 import java.net.InetSocketAddress
 import akka.stream.MaterializerSettings
-import akka.stream.impl.ActorProcessor
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }

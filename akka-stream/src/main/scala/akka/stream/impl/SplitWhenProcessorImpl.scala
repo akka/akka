@@ -50,7 +50,8 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
   nextPhase(waitFirst)
 
   override def invalidateSubstream(substream: ActorRef): Unit = {
-    if ((currentSubstream ne null) && substream == currentSubstream.substream) nextPhase(ignoreUntilNewSubstream)
+    val key = childToKey(substream)
+    if ((currentSubstream ne null) && key == currentSubstream.key) nextPhase(ignoreUntilNewSubstream)
     super.invalidateSubstream(substream)
   }
 

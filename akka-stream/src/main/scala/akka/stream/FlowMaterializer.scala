@@ -4,12 +4,10 @@
 package akka.stream
 
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorRefFactory
-import akka.stream.impl.ActorBasedFlowMaterializer
-import akka.stream.impl.Ast
+import akka.actor.{ ActorContext, ExtendedActorSystem, ActorRefFactory, Deploy }
+import akka.stream.impl.{ FlowNameCounter, StreamSupervisor, ActorBasedFlowMaterializer, Ast }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.concurrent.duration._
-import akka.actor.Deploy
 
 object FlowMaterializer {
 
@@ -24,8 +22,22 @@ object FlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(settings: MaterializerSettings, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): FlowMaterializer =
-    new ActorBasedFlowMaterializer(settings, context, namePrefix.getOrElse("flow"))
+  def apply(settings: MaterializerSettings, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): FlowMaterializer = {
+    val system = context match {
+      case s: ExtendedActorSystem ⇒ s
+      case c: ActorContext        ⇒ c.system
+      case null                   ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
+      case _ ⇒ throw new IllegalArgumentException(s"ActorRefFactory context must be a ActorSystem or ActorContext, " +
+        "got [${_contex.getClass.getName}]")
+    }
+
+    new ActorBasedFlowMaterializer(
+      settings,
+      context.actorOf(StreamSupervisor.props(settings).withDispatcher(settings.dispatcher)),
+      FlowNameCounter(system).counter,
+      namePrefix.getOrElse("flow"))
+
+  }
 
   /**
    * Java API: Creates a FlowMaterializer which will execute every step of a transformation

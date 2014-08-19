@@ -51,9 +51,11 @@ class FlowBufferSpec extends AkkaSpec {
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
+      sub.request(1) // need one request to initialize things
 
       // Fill up buffer
-      for (i ← 1 to 100) autoPublisher.sendNext(i)
+      for (i ← 0 to 100) autoPublisher.sendNext(i)
+      subscriber.expectNext(0)
 
       // drain
       for (i ← 1 to 100) {
@@ -71,9 +73,11 @@ class FlowBufferSpec extends AkkaSpec {
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
+      sub.request(1) // need one request to initialize things
 
       // Fill up buffer
-      for (i ← 1 to 200) autoPublisher.sendNext(i)
+      for (i ← 0 to 200) autoPublisher.sendNext(i)
+      subscriber.expectNext(0)
 
       // drain
       for (i ← 101 to 200) {
@@ -99,9 +103,11 @@ class FlowBufferSpec extends AkkaSpec {
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
+      sub.request(1) // need one request to initialize things
 
       // Fill up buffer
-      for (i ← 1 to 200) autoPublisher.sendNext(i)
+      for (i ← 0 to 200) autoPublisher.sendNext(i)
+      subscriber.expectNext(0)
 
       // drain
       for (i ← 1 to 99) {
@@ -130,9 +136,11 @@ class FlowBufferSpec extends AkkaSpec {
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
+      sub.request(1) // need one request to initialize things
 
       // Fill up buffer
-      for (i ← 1 to 150) autoPublisher.sendNext(i)
+      for (i ← 0 to 150) autoPublisher.sendNext(i)
+      subscriber.expectNext(0)
 
       // drain
       for (i ← 101 to 150) {
@@ -161,9 +169,11 @@ class FlowBufferSpec extends AkkaSpec {
 
         val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
         val sub = subscriber.expectSubscription()
+        sub.request(1) // need one request to initialize things
 
         // Fill up buffer
-        for (i ← 1 to 200) autoPublisher.sendNext(i)
+        for (i ← 0 to 200) autoPublisher.sendNext(i)
+        subscriber.expectNext(0)
 
         sub.request(1)
         subscriber.expectNext(200)
