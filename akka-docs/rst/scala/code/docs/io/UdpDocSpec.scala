@@ -53,7 +53,7 @@ object ScalaUdpDocSpec {
 
     def ready(socket: ActorRef): Receive = {
       case Udp.Received(data, remote) =>
-        val processed = // parse data etc., e.g. using PipelineStage
+        val processed = // parse data, etc.
           //#listener
           data.utf8String
         //#listener

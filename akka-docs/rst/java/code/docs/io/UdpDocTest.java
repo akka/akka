@@ -96,7 +96,7 @@ public class UdpDocTest {
             // echo server example: send back the data
             socket.tell(UdpMessage.send(r.data(), r.sender()), getSelf());
             // or do some processing and forward it on
-            final Object processed = // parse data etc., e.g. using PipelineStage
+            final Object processed = // parse data, etc.
                 //#listener
                 r.data().utf8String();
             //#listener
