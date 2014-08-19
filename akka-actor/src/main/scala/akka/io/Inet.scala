@@ -9,7 +9,7 @@ object Inet {
 
   /**
    * SocketOption is a package of data (from the user) and associated
-   * behavior (how to apply that to a socket).
+   * behavior (how to apply that to a channel).
    */
   trait SocketOption {
 
@@ -45,6 +45,26 @@ object Inet {
      * the slave socket for servers).
      */
     def afterConnect(c: SocketChannel): Unit = ()
+  }
+
+  /**
+   * DatagramChannel creation behavior.
+   */
+  class DatagramChannelCreator extends SocketOption {
+
+    /**
+     * Open and return new DatagramChannel.
+     *
+     * [[scala.throws]] is needed because [[DatagramChannel.open]] method
+     * can throw an exception.
+     */
+    @throws(classOf[Exception])
+    def create(): DatagramChannel = DatagramChannel.open()
+  }
+
+  object DatagramChannelCreator {
+    val default = new DatagramChannelCreator()
+    def apply() = default
   }
 
   object SO {
@@ -165,4 +185,43 @@ object Inet {
     def trafficClass(tc: Int) = TrafficClass(tc)
   }
 
+  /**
+   * Java API: AbstractSocketOption is a package of data (from the user) and associated
+   * behavior (how to apply that to a channel).
+   */
+  abstract class AbstractSocketOption extends SocketOption {
+
+    /**
+     * Action to be taken for this option before bind() is called
+     */
+    override def beforeBind(ds: DatagramChannel): Unit = ()
+
+    /**
+     * Action to be taken for this option before bind() is called
+     */
+    override def beforeBind(ss: ServerSocketChannel): Unit = ()
+
+    /**
+     * Action to be taken for this option before bind() is called
+     */
+    override def beforeBind(s: SocketChannel): Unit = ()
+
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    override def afterConnect(c: DatagramChannel): Unit = ()
+
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    override def afterConnect(c: ServerSocketChannel): Unit = ()
+
+    /**
+     * Action to be taken for this option after connect returned (i.e. on
+     * the slave socket for servers).
+     */
+    override def afterConnect(c: SocketChannel): Unit = ()
+  }
 }

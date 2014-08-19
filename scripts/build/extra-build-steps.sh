@@ -3,6 +3,8 @@
 # defaults
 declare -r default_java_home="/usr/local/share/java/jdk6"
 declare -r default_java8_home="/usr/local/share/java/jdk8"
+declare -r default_sbt_jar="/usr/share/sbt-launcher-packaging/bin/sbt-launch.jar"
+declare -r default_ivy_home="~/.ivy2"
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -64,6 +66,16 @@ function mvncleantest {
   try mvn clean test "mvn execution in $2 failed"
 }
 
+# run sbt clean test using the specified java home in the specified directory
+function sbtcleantest {
+  tmp="$script_dir/../../$2"
+  try cd  "$tmp" "can't step into project directory: $tmp"
+  orig_path="$PATH"
+  export PATH="$1/bin:$PATH"
+  try java -jar $sbt_jar -Dsbt.ivy.home=$ivy_home clean test "sbt execution in $2 failed"
+  export PATH="$orig_path"
+}
+
 # initialize variables with defaults and override from environment
 declare java_home="$default_java_home"
 if [ $AKKA_BUILD_JAVA_HOME ]; then
@@ -73,6 +85,16 @@ fi
 declare java8_home="$default_java8_home"
 if [ $AKKA_BUILD_JAVA8_HOME ]; then
   java8_home="$AKKA_BUILD_JAVA8_HOME"
+fi
+
+declare sbt_jar="$default_sbt_jar"
+if [ $AKKA_BUILD_SBT_JAR ]; then
+  sbt_jar="$AKKA_BUILD_SBT_JAR"
+fi
+
+declare ivy_home="$default_ivy_home"
+if [ $AKKA_BUILD_IVY_HOME ]; then
+  ivy_home="$AKKA_BUILD_IVY_HOME"
 fi
 
 # process options and set flags
@@ -110,3 +132,5 @@ try cd  "$tmp" "can't step into project directory: $tmp"
 export JAVA_HOME="$java8_home"
 try mvn clean compile exec:java -Dexec.mainClass="akka.Main" -Dexec.args="sample.hello.HelloWorld" "mvn execution in $sample_dir failed"
 try mvn exec:java -Dexec.mainClass="sample.hello.Main2" "mvn execution in $sample_dir failed"
+
+sbtcleantest "$java8_home" "akka-samples/akka-docs-udp-multicast"

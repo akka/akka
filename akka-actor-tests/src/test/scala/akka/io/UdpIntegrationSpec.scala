@@ -16,7 +16,7 @@ class UdpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.serialize-creators = on""") with ImplicitSender {
 
-  val addresses = temporaryServerAddresses(5, udp = true)
+  val addresses = temporaryServerAddresses(6, udp = true)
 
   def bindUdp(address: InetSocketAddress, handler: ActorRef): ActorRef = {
     val commander = TestProbe()
@@ -91,6 +91,14 @@ class UdpIntegrationSpec extends AkkaSpec("""
       commander.expectMsg(Bound(addresses(4)))
       assert(assertOption.afterCalled === 1)
     }
+
+    "call DatagramChannelCreator.create method when opening channel" in {
+      val commander = TestProbe()
+      val assertOption = AssertOpenDatagramChannel()
+      commander.send(IO(Udp), Bind(testActor, addresses(5), options = List(assertOption)))
+      commander.expectMsg(Bound(addresses(5)))
+      assert(assertOption.openCalled === 1)
+    }
   }
 
 }
@@ -110,5 +118,14 @@ private case class AssertAfterConnect() extends SocketOption {
   override def afterConnect(c: DatagramChannel) = {
     assert(c.socket.isBound)
     afterCalled += 1
+  }
+}
+
+private case class AssertOpenDatagramChannel() extends DatagramChannelCreator {
+  var openCalled = 0
+
+  override def create() = {
+    openCalled += 1
+    super.create()
   }
 }
