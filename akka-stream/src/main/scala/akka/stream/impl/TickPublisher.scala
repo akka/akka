@@ -41,10 +41,12 @@ private[akka] class TickPublisher(interval: FiniteDuration, tick: () ⇒ Any, se
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      val subscribers = exposedPublisher.takeEarlySubscribers(self)
-      subscribers foreach {
+      exposedPublisher.takeEarlySubscribers(self) foreach {
         case (subscription, demand) ⇒ registerSubscriber(subscription.subscriber, demand)
       }
+
+      import context.dispatcher
+      tickTask = Some(context.system.scheduler.schedule(interval, interval, self, Tick))
 
       context.become(active)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
