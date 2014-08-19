@@ -4,6 +4,7 @@
 package akka.stream.impl
 
 import akka.actor.{ Actor, Props, Status, SupervisorStrategy }
+import akka.pattern.pipe
 import akka.stream.MaterializerSettings
 import org.reactivestreams.Subscriber
 
@@ -45,8 +46,8 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
           }
       }
 
-      implicit val ec = context.dispatcher
-      future.onComplete(res ⇒ self ! res)
+      import context.dispatcher
+      future.pipeTo(self)
 
       context.become(active)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
@@ -65,7 +66,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
     case Status.Failure(ex) ⇒
       futureValue = Some(Failure(ex))
       pushToAll()
-    case Success(value) ⇒
+    case value ⇒
       futureValue = Some(Success(value))
       pushToAll()
   }
