@@ -51,9 +51,10 @@ Which turns out to be useful in many systems where same-state transitions actual
 
 In case you do *not* want to trigger a state transition event when effectively performing an ``X->X`` transition, use ``stay()`` instead.
 
-SocketOption's method signature changed to access channel
-=========================================================
-Server Socket Methods have been changed to take a channel instead of a socket.  The channel's socket can be retrieved by calling ``channel.socket``.  This allows for accessing new NIO features in Java 7.
+More control over Channel properties in Akka-IO
+===============================================
+Method signatures for ``SocketOption`` have been changed to take a channel instead of a socket. The channel's socket
+can be retrieved by calling ``channel.socket``. This allows for accessing new NIO features in Java 7.
 
 ========================================  =====================================
                  2.3                                      2.4
@@ -65,6 +66,9 @@ Server Socket Methods have been changed to take a channel instead of a socket.  
 \                                         ``afterConnect(ServerSocketChannel)``
 ``afterConnect(Socket)``                  ``afterConnect(SocketChannel)``
 ========================================  =====================================
+
+A new class ``DatagramChannelCreator`` which extends ``SocketOption`` has been added. ``DatagramChannelCreator`` can be used for
+custom ``DatagramChannel`` creation logic. This allows for opening IPv6 multicast datagram channels.
 
 Removed Deprecated Features
 ===========================
