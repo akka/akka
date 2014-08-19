@@ -41,7 +41,11 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
     val requestPublisher =
       Flow(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
-        .splitWhen(_.isInstanceOf[MessageStart])
+        // this will create extra single element `[MessageEnd]` substreams, that will
+        // be filtered out by the above `collect` for the applicationBypass and the
+        // below `collect` for the actual request handling
+        // TODO: replace by better combinator, maybe `splitAfter(_ == MessageEnd)`?
+        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .headAndTail(materializer)
         .tee(applicationBypassSubscriber)
         .collect {
