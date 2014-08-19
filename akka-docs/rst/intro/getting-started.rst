@@ -77,7 +77,7 @@ Using a snapshot version
 The Akka nightly snapshots are published to http://repo.akka.io/snapshots/ and are
 versioned with both ``SNAPSHOT`` and timestamps. You can choose a timestamped
 version to work with and can decide when to update to a newer version. The Akka
-snapshots repository is also proxied through http://repo.typesafe.com/typesafe/snapshots/
+snapshots repository is also proxied through https://repo.typesafe.com/typesafe/snapshots/
 which includes proxies for several other repositories that Akka modules depend on.
 
 .. warning::
@@ -106,12 +106,12 @@ Maven repositories
 
 For Akka version 2.1-M2 and onwards:
 
-`Maven Central <http://repo1.maven.org/maven2/>`_
+`Maven Central <https://repo1.maven.org/maven2/>`_
 
 For previous Akka versions:
 
 `Akka Repo <http://repo.akka.io/releases/>`_
-`Typesafe Repo <http://repo.typesafe.com/typesafe/releases/>`_
+`Typesafe Repo <https://repo.typesafe.com/typesafe/releases/>`_
 
 Using Akka with Maven
 ---------------------
@@ -153,7 +153,7 @@ Using Akka with SBT
 -------------------
 
 The simplest way to get started with Akka and SBT is to check out the
-`Akka/SBT template <http://www.typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
+`Akka/SBT template <https://www.typesafe.com/resources/getting-started/typesafe-stack/downloading-installing.html#template-projects-for-scala-akka-and-play>`_
 project.
 
 Summary of the essential parts for using Akka with SBT:
@@ -190,8 +190,8 @@ For snapshot versions, the snapshot repository needs to be added as well:
 Using Akka with Gradle
 ----------------------
 
-Requires at least `Gradle <http://gradle.org>`_ 1.4
-Uses the `Scala plugin <http://gradle.org/docs/current/userguide/scala_plugin.html>`_
+Requires at least `Gradle <https://gradle.org>`_ 1.4
+Uses the `Scala plugin <http://www.gradle.org/docs/current/userguide/scala_plugin.html>`_
 
 .. parsed-literal::
 
@@ -255,18 +255,18 @@ Do not use -optimize Scala compiler flag
 Build from sources
 ------------------
 
-Akka uses Git and is hosted at `Github <http://github.com>`_.
+Akka uses Git and is hosted at `Github <https://github.com>`_.
 
-* Akka: clone the Akka repository from `<http://github.com/akka/akka>`_
+* Akka: clone the Akka repository from `<https://github.com/akka/akka>`_
 
 Continue reading the page on :ref:`building-akka`
 
 Need help?
 ----------
 
-If you have questions you can get help on the `Akka Mailing List <http://groups.google.com/group/akka-user>`_.
+If you have questions you can get help on the `Akka Mailing List <https://groups.google.com/group/akka-user>`_.
 
-You can also ask for `commercial support <http://www.typesafe.com>`_.
+You can also ask for `commercial support <https://www.typesafe.com>`_.
 
 Thanks for being a part of the Akka community.
 

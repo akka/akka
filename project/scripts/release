@@ -31,7 +31,7 @@
 #        shell> gpg --list-keys
 #        pub    2048/<your key id> ...
 #      You can verify the existence of your key here, if you don't trust your tool:
-#        http://sks-keyservers.net/i/#extract
+#        https://sks-keyservers.net/i/#extract
 #
 # 2) You must have publishing rights to oss.sonatype.org
 #
