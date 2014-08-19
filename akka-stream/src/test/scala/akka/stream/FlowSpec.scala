@@ -30,7 +30,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       s"requests initial elements from upstream ($name, $n)" in {
         new ChainSetup(op, settings.copy(initialInputBufferSize = n)) {
           downstreamSubscription.request(1)
-          upstream.expectRequest(upstreamSubscription, 1)
+          upstream.expectRequest(upstreamSubscription, n)
         }
       }
     }
@@ -38,7 +38,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "requests more elements from upstream when downstream requests more elements" in {
       new ChainSetup(identity, settings) {
         downstreamSubscription.request(1)
-        upstream.expectRequest(upstreamSubscription, 1)
+        upstream.expectRequest(upstreamSubscription, settings.initialInputBufferSize)
         downstreamSubscription.request(1)
         upstream.expectNoMsg(100.millis)
         downstreamSubscription.request(2)
@@ -298,6 +298,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "when all subscriptions were cancelled future subscribers' onError should be called" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1)) {
+        downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
         downstreamSubscription.cancel()
         upstreamSubscription.expectCancellation()

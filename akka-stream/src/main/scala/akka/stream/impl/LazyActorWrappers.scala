@@ -192,8 +192,8 @@ private[akka] trait LazyPublisherLike[T] extends Publisher[T] with LazyElement {
   def shutdown(reason: Option[Throwable]): Unit = {
     state.getAndSet(Terminated) match {
       case Awake(_, pendingSubscribers) ⇒
-        val refuseReason = reason.getOrElse(new IllegalStateException("Cannot subscribe after terminated"))
-        pendingSubscribers.foreach(_.onError(refuseReason))
+        shutdownReason = reason
+        pendingSubscribers foreach reportSubscribeError
       case _ ⇒ // Nothing to do? // FIXME: waking up?
     }
   }
