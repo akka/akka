@@ -70,6 +70,14 @@ can be retrieved by calling ``channel.socket``. This allows for accessing new NI
 A new class ``DatagramChannelCreator`` which extends ``SocketOption`` has been added. ``DatagramChannelCreator`` can be used for
 custom ``DatagramChannel`` creation logic. This allows for opening IPv6 multicast datagram channels.
 
+Cluster Sharding Entry Path Change
+==================================
+Previously in ``2.3.x`` entries were direct children of the local ``ShardRegion``. In examples the ``persistenceId`` of entries
+included ``self.path.parent.name`` to include the cluster type name.
+
+In ``2.4.x`` entries are now children of a ``Shard``, which in turn is a child of the local ``ShardRegion``. To include the shard
+type in the ``persistenceId`` it is now accessed by ``self.path.parent.parent.name`` from each entry.
+
 Removed Deprecated Features
 ===========================
 
@@ -91,7 +99,7 @@ The following, previously deprecated, features have been removed:
   in the way that was introduced in Akka 2.3.
 
 * Timeout constructor without unit
- 
+
 * JavaLoggingEventHandler, replaced by JavaLogger
 
 * UntypedActorFactory
@@ -103,7 +111,7 @@ Slf4j logging filter
 
 If you use ``Slf4jLogger`` you should add the following configuration::
 
-    akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter" 
+    akka.logging-filter = "akka.event.slf4j.Slf4jLoggingFilter"
 
 It will filter the log events using the backend configuration (e.g. logback.xml) before
 they are published to the event bus.

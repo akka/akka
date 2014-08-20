@@ -4,13 +4,12 @@
 package akka.contrib.pattern
 
 import java.io.File
+import akka.contrib.pattern.ShardRegion.Passivate
+
 import scala.concurrent.duration._
 import org.apache.commons.io.FileUtils
 import com.typesafe.config.ConfigFactory
-import akka.actor.Actor
-import akka.actor.ActorIdentity
-import akka.actor.Identify
-import akka.actor.Props
+import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.persistence.Persistence
@@ -44,6 +43,7 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
     }
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
     akka.contrib.cluster.sharding.coordinator-failure-backoff = 3s
+    akka.contrib.cluster.sharding.shard-failure-backoff = 3s
     """))
 
   testTransport(on = true)
@@ -111,6 +111,7 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
     ClusterSharding(system).start(
       typeName = "Entity",
       entryProps = Some(Props[Entity]),
+      rememberEntries = true,
       idExtractor = idExtractor,
       shardResolver = shardResolver)
   }
@@ -143,10 +144,13 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
       runOn(first) {
         region ! Add("10", 1)
         region ! Add("20", 2)
+        region ! Add("21", 3)
         region ! Get("10")
         expectMsg(Value("10", 1))
         region ! Get("20")
         expectMsg(Value("20", 2))
+        region ! Get("21")
+        expectMsg(Value("21", 3))
       }
 
       enterBarrier("after-2")
@@ -160,9 +164,29 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
       enterBarrier("journal-blackholed")
 
       runOn(first) {
+        region ! Get("21")
+        expectMsg(Value("21", 3))
+        val entry21 = lastSender
+        val shard2 = system.actorSelection(entry21.path.parent)
+
+        //Test the ShardCoordinator allocating shards during a journal failure
         region ! Add("30", 3)
+
+        //Test the Shard starting entries and persisting during a journal failure
+        region ! Add("11", 1)
+
+        //Test the Shard passivate works during a journal failure
+        shard2.tell(Passivate(PoisonPill), entry21)
+        region ! Add("21", 1)
+
+        region ! Get("21")
+        expectMsg(Value("21", 1))
+
         region ! Get("30")
         expectMsg(Value("30", 3))
+
+        region ! Get("11")
+        expectMsg(Value("11", 1))
       }
 
       runOn(controller) {
@@ -175,8 +199,11 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
         region ! Add("10", 1)
         region ! Add("20", 2)
         region ! Add("30", 3)
+        region ! Add("11", 4)
         region ! Get("10")
         expectMsg(Value("10", 2))
+        region ! Get("11")
+        expectMsg(Value("11", 5))
         region ! Get("20")
         expectMsg(Value("20", 4))
         region ! Get("30")
