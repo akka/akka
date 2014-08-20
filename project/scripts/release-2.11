@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+#
+# Additional release script for Akka 2.3.x for Scala 2.11.
+# It will publish to maven central (Sonatype) and create distribution
+# and upload to S3.
+#
+# This script is supposed to be run after a normal release for Scala 2.10
+# and after amending the build for Scala 2.11.
+# It will not perform any git commands, i.e. you must manually 
+# commit the changes for Scala 2.11 and create and push tag.
+# You should also clean the working directory with git clean -fxd
+# before running this script. 
+#
+
+# settings
+declare -r release_dir="target/release"
+declare -r unzipped_dir="target/dist/unzipped"
+
+# flags
+unset dry_run
+
+# get the source location for this script; handles symlinks
+function get_script_path {
+  local source="${BASH_SOURCE[0]}"
+  while [ -h "${source}" ] ; do
+    source="$(readlink "${source}")";
+  done
+  echo ${source}
+}
+
+# path, name, and dir for this script
+declare -r script_path=$(get_script_path)
+declare -r script_name=$(basename "${script_path}")
+declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
+
+# print usage info
+function usage {
+  cat <<EOM
+Usage: ${script_name} [options] VERSION
+  -h | --help            Print this usage message
+  -n | --dry-run         Build everything but do not push the release
+EOM
+}
+
+# echo a log message
+function echolog {
+  echo "[${script_name}] $@"
+}
+
+# echo an error message
+function echoerr {
+  echo "[${script_name}] $@" 1>&2
+}
+
+# echo a dry run log message
+function echodry {
+  echolog "(dry run) $@"
+}
+
+# fail the script with an error message
+function fail {
+  echoerr "$@"
+  exit 1
+}
+
+# process options and set flags
+while true; do
+  case "$1" in
+    -h | --help ) usage; exit 1 ;;
+    -n | --dry-run) dry_run=true; shift ;;
+    * ) break ;;
+  esac
+done
+
+if [ $# != "1" ]; then
+  usage
+  fail "A release version must be specified"
+fi
+
+declare -r version=$1
+
+[[ `java -version 2>&1 | grep "java version" | cut -d ' ' -f3 | cut -d '.' -f2` -eq 6 ]] || fail "Java version is not 1.6"
+
+# check for an sbt command
+type -P sbt &> /dev/null || fail "sbt command not found"
+
+# check for an rsync command
+#type -P rsync &> /dev/null || fail "rsync command not found"
+
+# check for a tar command
+type -P tar &> /dev/null || fail "tar command not found"
+
+# get the current git branch
+function get_current_branch {
+  local ref=$(git symbolic-ref HEAD 2> /dev/null)
+  local branch=${ref#refs/heads/}
+  echo "${branch}"
+}
+
+# get the scalaBinaryVersion from sbt
+# a little messy as the ansi escape codes are included
+function get_scala_binary_version {
+  local result=$(sbt scalaBinaryVersion | tail -1 | cut -f2)
+  # remove ansi escape code from end
+  local code0=$(echo -e "\033[0m")
+  echo ${result%$code0}
+}
+
+# try to run a cleanup command - these shouldn't actually fail
+function safely {
+  "$@" || fail "Failed to clean up release - please check current state"
+}
+
+# clean up and fail the script with an error message
+function bail_out {
+  echoerr "Bailing out!"
+  fail "$@"
+}
+
+# bail out for signals
+function signal_bail_out {
+  echoerr "Interrupted by signal"
+  bail_out "Received signal to stop release"
+}
+
+# bail out on signals
+trap signal_bail_out SIGHUP SIGINT SIGTERM
+
+# try to run a command or otherwise bail out
+function try {
+  "$@" || bail_out "Failed to create release"
+}
+
+echolog "Creating release ${version} ..."
+
+echolog "Getting scalaBinaryVersion from sbt..."
+declare -r scala_binary_version=$(get_scala_binary_version)
+echolog "scalaBinaryVersion is ${scala_binary_version}"
+
+# build the release
+echolog "Building the release..."
+if [ ! $dry_run ]; then
+  RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
+else
+  RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
+fi
+try sbt $RELEASE_OPT build-release
+echolog "Creating gzipped tar download..."
+try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka_${scala_binary_version}-${version}.tgz akka-${version}
+echolog "Successfully created local release"
+
+# don't upload samples again
+try rm ${release_dir}/downloads/akka-sample-*.zip
+
+# upload dist to s3
+echolog "Uploading dist to S3 ..."
+if [ $dry_run ]; then
+  echodry "Not actually uploading to S3. Command:"
+  echodry "  sbt upload-release"
+else
+  try sbt upload-release
+fi
+
+
