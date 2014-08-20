@@ -370,6 +370,31 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
   }
 }
 
+//Discards overflowing messages into DeadLetters
+class BoundedNodeMessageQueue(capacity: Int) extends AbstractBoundedNodeQueue[Envelope](capacity)
+with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
+  final def pushTimeOut: Duration = Duration.Undefined
+
+  final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
+    if (!add(handle))
+      receiver.asInstanceOf[InternalActorRef].provider.deadLetters.tell(
+        DeadLetter(handle.message, handle.sender, receiver), handle.sender)
+
+  final def dequeue(): Envelope = poll()
+
+  final def numberOfMessages: Int = size()
+
+  final def hasMessages: Boolean = !isEmpty()
+
+  @tailrec final def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
+    val envelope = dequeue()
+    if (envelope ne null) {
+      deadLetters.enqueue(owner, envelope)
+      cleanUp(owner, deadLetters)
+    }
+  }
+}
+
 /**
  * INTERNAL API
  */
@@ -574,6 +599,22 @@ final case class SingleConsumerOnlyUnboundedMailbox() extends MailboxType with P
   def this(settings: ActorSystem.Settings, config: Config) = this()
 
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = new NodeMessageQueue
+}
+
+/**
+ * NonBlockingBoundedMailbox is a high-performance, multiple producer—multiple consumer, bounded MailboxType,
+ * Noteworthy is that it discards overflow as DeadLetters.
+ *
+ * NOTE: NonBlockingBoundedMailbox does not use `mailbox-push-timeout-time` as it is non-blocking.
+ */
+case class NonBlockingBoundedMailbox(val capacity: Int) extends MailboxType with ProducesMessageQueue[BoundedNodeMessageQueue] {
+
+  def this(settings: ActorSystem.Settings, config: Config) = this(config.getInt("mailbox-capacity"))
+
+  if (capacity < 0) throw new IllegalArgumentException("The capacity for NonBlockingBoundedMailbox can not be negative")
+
+  final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue =
+    new BoundedNodeMessageQueue(capacity)
 }
 
 /**
