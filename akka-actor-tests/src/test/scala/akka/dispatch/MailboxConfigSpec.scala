@@ -43,6 +43,7 @@ abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAn
 
     "create a bounded mailbox with 10 capacity and with push timeout" in {
       val config = BoundedMailbox(10, 10 milliseconds)
+      config.capacity should be(10)
       val q = factory(config)
       ensureInitialMailboxState(config, q)
 
@@ -240,8 +241,8 @@ class SingleConsumerOnlyMailboxSpec extends MailboxSpec {
   lazy val name = "The single-consumer-only mailbox implementation"
   override def maxConsumers = 1
   def factory = {
-    case u: UnboundedMailbox ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
-    case b: BoundedMailbox   ⇒ pending; null
+    case u: UnboundedMailbox             ⇒ SingleConsumerOnlyUnboundedMailbox().create(None, None)
+    case b @ BoundedMailbox(capacity, _) ⇒ NonBlockingBoundedMailbox(capacity).create(None, None)
   }
 }
 
@@ -249,37 +250,51 @@ object SingleConsumerOnlyMailboxVerificationSpec {
   case object Ping
   val mailboxConf = ConfigFactory.parseString("""
       akka.actor.serialize-messages = off
-      test-dispatcher {
+      test-unbounded-dispatcher {
       mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+      throughput = 1
+      }
+      test-bounded-dispatcher {
+      mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
+      mailbox-capacity = 1
       throughput = 1
       }""")
 }
 
 class SingleConsumerOnlyMailboxVerificationSpec extends AkkaSpec(SingleConsumerOnlyMailboxVerificationSpec.mailboxConf) {
   import SingleConsumerOnlyMailboxVerificationSpec.Ping
+
+  def pathologicalPingPong(dispatcherId: String): Unit = {
+    val total = 2000000
+    val runner = system.actorOf(Props(new Actor {
+      val a, b = context.watch(
+        context.actorOf(Props(new Actor {
+          var n = total / 2
+          def receive = {
+            case Ping ⇒
+              n -= 1
+              sender() ! Ping
+              if (n == 0)
+                context stop self
+          }
+        }).withDispatcher(dispatcherId)))
+      def receive = {
+        case Ping                  ⇒ a.tell(Ping, b)
+        case Terminated(`a` | `b`) ⇒ if (context.children.isEmpty) context stop self
+      }
+    }))
+    watch(runner)
+    runner ! Ping
+    expectTerminated(runner)
+  }
+
   "A SingleConsumerOnlyMailbox" should {
-    "support pathological ping-ponging" in within(30.seconds) {
-      val total = 2000000
-      val runner = system.actorOf(Props(new Actor {
-        val a, b = context.watch(
-          context.actorOf(Props(new Actor {
-            var n = total / 2
-            def receive = {
-              case Ping ⇒
-                n -= 1
-                sender() ! Ping
-                if (n == 0)
-                  context stop self
-            }
-          }).withDispatcher("test-dispatcher")))
-        def receive = {
-          case Ping                  ⇒ a.tell(Ping, b)
-          case Terminated(`a` | `b`) ⇒ if (context.children.isEmpty) context stop self
-        }
-      }))
-      watch(runner)
-      runner ! Ping
-      expectTerminated(runner)
+    "support pathological ping-ponging for the unbounded case" in within(30.seconds) {
+      pathologicalPingPong("test-unbounded-dispatcher")
+    }
+
+    "support pathological ping-ponging for the bounded case" in within(30.seconds) {
+      pathologicalPingPong("test-bounded-dispatcher")
     }
   }
 }

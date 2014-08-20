@@ -131,6 +131,16 @@ Akka comes shipped with a number of mailbox implementations:
 
   - Configuration name: "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
 
+* NonBlockingBoundedMailbox
+
+  - Backed by a very efficient MultiPle-Producer Multiple-Consumer queue
+
+  - Blocking: No
+
+  - Bounded: Yes
+
+  - Configuration name: "akka.dispatch.NonBlockingBoundedMailbox"
+
 * BoundedMailbox
 
   - Backed by a ``java.util.concurrent.LinkedBlockingQueue``
