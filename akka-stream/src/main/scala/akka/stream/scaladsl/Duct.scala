@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.util.Try
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -149,7 +148,7 @@ trait Duct[In, +Out] {
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
-  def prefixAndTail(n: Int): Duct[In, (immutable.Seq[Out], Publisher[Out @uncheckedVariance])]
+  def prefixAndTail[U >: Out](n: Int): Duct[In, (immutable.Seq[Out], Publisher[U])]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -162,7 +161,7 @@ trait Duct[In, +Out] {
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K](f: Out ⇒ K): Duct[In, (K, Publisher[Out @uncheckedVariance])]
+  def groupBy[K, U >: Out](f: Out ⇒ K): Duct[In, (K, Publisher[U])]
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -177,7 +176,7 @@ trait Duct[In, +Out] {
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen(p: Out ⇒ Boolean): Duct[In, Publisher[Out @uncheckedVariance]]
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Duct[In, Publisher[U]]
 
   /**
    * Merge this stream with the one emitted by the given publisher, taking
@@ -272,7 +271,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(subscriber: Subscriber[Out] @uncheckedVariance, materializer: FlowMaterializer): Subscriber[In]
+  def produceTo[U >: Out](subscriber: Subscriber[U], materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -308,7 +307,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def build(materializer: FlowMaterializer): (Subscriber[In], Publisher[Out] @uncheckedVariance)
+  def build[U >: Out](materializer: FlowMaterializer): (Subscriber[In], Publisher[U])
 
   /**
    * Invoke the given procedure for each received element.
