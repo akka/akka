@@ -120,6 +120,10 @@ private[persistence] class LocalSnapshotStore extends SnapshotStore with ActorLo
   }
 
   private class SnapshotFilenameFilter(persistenceId: String) extends FilenameFilter {
-    def accept(dir: File, name: String): Boolean = name.startsWith(s"snapshot-${URLEncoder.encode(persistenceId, "UTF-8")}")
+    def accept(dir: File, name: String): Boolean =
+      name match {
+        case FilenamePattern(pid, snr, tms) ⇒ pid.equals(URLEncoder.encode(persistenceId))
+        case _                              ⇒ false
+      }
   }
 }
