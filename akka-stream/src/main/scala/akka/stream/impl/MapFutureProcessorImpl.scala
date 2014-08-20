@@ -51,7 +51,7 @@ private[akka] class MapFutureProcessorImpl(_settings: MaterializerSettings, f: A
   // keep future results arriving too early in a buffer sorted by seqNo
   var orderedBuffer = TreeSet.empty[FutureElement]
 
-  override def receive = futureReceive orElse super.receive
+  override def activeReceive = futureReceive orElse super.activeReceive
 
   def drainBuffer(): List[Any] = {
 

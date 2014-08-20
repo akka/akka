@@ -28,7 +28,7 @@ private[akka] object TcpListenStreamActor {
  * INTERNAL API
  */
 private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, val settings: MaterializerSettings) extends Actor
-  with Pump {
+  with Pump with Stash {
   import akka.stream.io.TcpListenStreamActor._
   import context.system
 
@@ -101,7 +101,16 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
 
   }
 
-  override def receive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive
+  final override def receive = {
+    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
+    case ep: ExposedPublisher ⇒
+      primaryOutputs.subreceive(ep)
+      context become activeReceive
+      unstashAll()
+    case _ ⇒ stash()
+  }
+
+  def activeReceive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive
 
   def runningPhase = TransferPhase(primaryOutputs.NeedsDemand && incomingConnections.NeedsInput) { () ⇒
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
