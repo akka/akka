@@ -27,8 +27,8 @@ class ProcessorHierarchySpec extends AkkaSpec("akka.actor.debug.lifecycle=off\na
         Flow(List(1)).map(x ⇒ { testActor ! self; x }).toPublisher(materializer)
       }).take(3).foreach(x ⇒ {
         testActor ! self
-        Flow(x).foreach(_ ⇒ testActor ! self).consume(materializer)
-      }).toFuture(materializer)
+        Flow(x).foreach(_ ⇒ testActor ! self, materializer)
+      }, materializer)
       Await.result(f, 3.seconds)
       val refs = receiveWhile(idle = 250.millis) {
         case r: ActorRef ⇒ r

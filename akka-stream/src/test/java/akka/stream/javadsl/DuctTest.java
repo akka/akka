@@ -37,28 +37,30 @@ public class DuctTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final String[] lookup = { "a", "b", "c", "d", "e", "f" };
 
-    Subscriber<Integer> inputSubscriber = Duct.create(Integer.class).drop(2).take(3).map(new Function<Integer, String>() {
-      public String apply(Integer elem) {
-        return lookup[elem];
-      }
-    }).filter(new Predicate<String>() {
-      public boolean test(String elem) {
-        return !elem.equals("c");
-      }
-    }).grouped(2).mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
-      public java.util.List<String> apply(java.util.List<String> elem) {
-        return elem;
-      }
-    }).fold("", new Function2<String, String, String>() {
-      public String apply(String acc, String elem) {
-        return acc + elem;
-      }
-    }).foreach(new Procedure<String>() {
-      public void apply(String elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
-      }
-    }).consume(materializer);
+    Pair<Subscriber<Integer>, Future<Void>> foreachPair = Duct.create(Integer.class).drop(2).take(3)
+        .map(new Function<Integer, String>() {
+          public String apply(Integer elem) {
+            return lookup[elem];
+          }
+        }).filter(new Predicate<String>() {
+          public boolean test(String elem) {
+            return !elem.equals("c");
+          }
+        }).grouped(2).mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
+          public java.util.List<String> apply(java.util.List<String> elem) {
+            return elem;
+          }
+        }).fold("", new Function2<String, String, String>() {
+          public String apply(String acc, String elem) {
+            return acc + elem;
+          }
+        }).foreach(new Procedure<String>() {
+          public void apply(String elem) {
+            probe.getRef().tell(elem, ActorRef.noSender());
+          }
+        }, materializer);
 
+    Subscriber<Integer> inputSubscriber = foreachPair.first();
     final java.util.Iterator<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5).iterator();
     Publisher<Integer> publisher = Flow.create(input).toPublisher(materializer);
 
@@ -76,7 +78,7 @@ public class DuctTest {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
-    }).consume(materializer);
+    }, materializer);
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));
 
     Publisher<String> publisher = Flow.create(Arrays.asList("a", "b", "c")).toPublisher(materializer);
@@ -94,7 +96,7 @@ public class DuctTest {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
-    }).consume(materializer);
+    }, materializer).first();
 
     Subscriber<String> inSubscriber = Duct.create(String.class).produceTo(subscriber, materializer);
 
@@ -111,13 +113,9 @@ public class DuctTest {
   public void mustBeAppendableToFlow() {
     final JavaTestKit probe = new JavaTestKit(system);
 
-    Duct<String, Void> duct = Duct.create(String.class).map(new Function<String, String>() {
+    Duct<String, String> duct = Duct.create(String.class).map(new Function<String, String>() {
       public String apply(String elem) {
         return elem.toLowerCase();
-      }
-    }).foreach(new Procedure<String>() {
-      public void apply(String elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
       }
     });
 
@@ -129,7 +127,11 @@ public class DuctTest {
       }
     });
 
-    flow.append(duct).consume(materializer);
+    flow.append(duct).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
 
     probe.expectMsgEquals("a");
     probe.expectMsgEquals("b");
@@ -158,7 +160,7 @@ public class DuctTest {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
-    }).consume(materializer);
+    }, materializer).first();
 
     Flow.create(Arrays.asList(1, 2, 3)).produceTo(ductInSubscriber, materializer);
 
@@ -201,7 +203,7 @@ public class DuctTest {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
-    }).consume(materializer);
+    }, materializer).first();
 
     final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
     Flow.create(input).produceTo(c, materializer);

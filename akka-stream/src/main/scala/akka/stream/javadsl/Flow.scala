@@ -19,6 +19,7 @@ import akka.japi.Util.immutableSeq
 import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import scala.concurrent.duration.FiniteDuration
+import akka.dispatch.ExecutionContexts
 
 /**
  * Java API
@@ -135,14 +136,6 @@ abstract class Flow[T] {
    * Use [[akka.japi.pf.PFBuilder]] to construct the `PartialFunction`.
    */
   def collect[U](pf: PartialFunction[T, U]): Flow[U]
-
-  /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the flow needs to be materialized (e.g. using [[#consume]]) to initiate its
-   * execution.
-   */
-  def foreach(c: Procedure[T]): Flow[Void]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -390,6 +383,18 @@ abstract class Flow[T] {
    */
   def produceTo(subscriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit
 
+  /**
+   * Invoke the given procedure for each received element. Returns a [[scala.concurrent.Future]]
+   * that will be completed with `Success` when reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: Procedure[T], materializer: FlowMaterializer): Future[Void]
+
 }
 
 /**
@@ -415,9 +420,6 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def filter(p: Predicate[T]): Flow[T] = new FlowAdapter(delegate.filter(p.test))
 
   override def collect[U](pf: PartialFunction[T, U]): Flow[U] = new FlowAdapter(delegate.collect(pf))
-
-  override def foreach(c: Procedure[T]): Flow[Void] =
-    new FlowAdapter(delegate.foreach(c.apply).map(_ ⇒ null)) // FIXME optimize to one step
 
   override def fold[U](zero: U, f: Function2[U, T, U]): Flow[U] =
     new FlowAdapter(delegate.fold(zero) { case (a, b) ⇒ f.apply(a, b) })
@@ -498,5 +500,10 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def produceTo(subsriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit =
     delegate.produceTo(subsriber, materializer)
+
+  override def foreach(c: Procedure[T], materializer: FlowMaterializer): Future[Void] = {
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    delegate.foreach(elem ⇒ c.apply(elem), materializer).map(_ ⇒ null).mapTo[Void]
+  }
 
 }
