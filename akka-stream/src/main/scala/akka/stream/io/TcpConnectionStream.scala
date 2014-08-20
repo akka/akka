@@ -11,6 +11,7 @@ import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
 import org.reactivestreams.Processor
+import akka.actor.Stash
 
 /**
  * INTERNAL API
@@ -28,7 +29,7 @@ private[akka] object TcpStreamActor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor {
+private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor with Stash {
 
   import TcpStreamActor._
 
@@ -166,7 +167,16 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     override protected def pumpContext: ActorRefFactory = context
   }
 
-  override def receive =
+  final override def receive = {
+    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
+    case ep: ExposedPublisher ⇒
+      primaryOutputs.subreceive(ep)
+      context become activeReceive
+      unstashAll()
+    case _ ⇒ stash()
+  }
+
+  def activeReceive =
     primaryInputs.subreceive orElse primaryOutputs.subreceive orElse tcpInputs.subreceive orElse tcpOutputs.subreceive
 
   readPump.nextPhase(readPump.running)
@@ -205,7 +215,7 @@ private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requeste
 
   val initSteps = new SubReceive(waitingExposedProcessor)
 
-  override def receive = initSteps orElse super.receive
+  override def activeReceive = initSteps orElse super.activeReceive
 
   def waitingExposedProcessor: Receive = {
     case StreamTcpManager.ExposedProcessor(processor) ⇒
