@@ -7,6 +7,7 @@ import akka.stream.MaterializerSettings
 import akka.actor.{ Actor, Terminated, ActorRef }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.stream.actor.ActorSubscriber.{ OnNext, OnError, OnComplete, OnSubscribe }
+import akka.actor.Stash
 
 /**
  * INTERNAL API
@@ -111,7 +112,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
 
   }
 
-  override def receive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse substreamManagement
+  override def activeReceive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse substreamManagement
 }
 
 /**
@@ -159,7 +160,8 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: MaterializerSett
     }
   }
 
-  override def receive = secondaryInputs.subreceive orElse primaryInputs.subreceive orElse primaryOutputs.subreceive
+  override def activeReceive: Receive =
+    secondaryInputs.subreceive orElse primaryInputs.subreceive orElse primaryOutputs.subreceive
 
   other.subscribe(new OtherActorSubscriber(self))
 
@@ -248,5 +250,5 @@ private[akka] abstract class MultiStreamInputProcessor(_settings: MaterializerSe
     super.shutdownHooks()
   }
 
-  override def receive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse substreamManagement
+  override def activeReceive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse substreamManagement
 }
