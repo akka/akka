@@ -378,10 +378,6 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def transform[U](transformer: Transformer[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.transform(transformer))
 
-  /**
-   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
-   * and a stream representing the remaining elements.
-   */
   override def prefixAndTail(n: Int): Duct[In, Pair[java.util.List[T], Publisher[T]]] =
     new DuctAdapter(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ Pair(taken.asJava, tail) })
 
