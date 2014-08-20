@@ -69,9 +69,9 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     "pull existing messages from a processor's journal" in {
       val streamProbe = TestProbe()
 
-      PersistentFlow.fromProcessor(processorId(1), publisherSettings).foreach {
+      PersistentFlow.fromProcessor(processorId(1), publisherSettings).foreach({
         case Persistent(payload, sequenceNr) ⇒ streamProbe.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       1 to numMessages foreach { i ⇒
         streamProbe.expectMsg(s"a-${i}")
@@ -80,9 +80,9 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     "pull existing messages and new from a processor's journal" in {
       val streamProbe = TestProbe()
 
-      PersistentFlow.fromProcessor(processorId(1), publisherSettings).foreach {
+      PersistentFlow.fromProcessor(processorId(1), publisherSettings).foreach({
         case Persistent(payload, sequenceNr) ⇒ streamProbe.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       1 to numMessages foreach { i ⇒
         streamProbe.expectMsg(s"a-${i}")
@@ -98,9 +98,9 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       val streamProbe = TestProbe()
       val fromSequenceNr = 5L
 
-      PersistentFlow.fromProcessor(processorId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr)).foreach {
+      PersistentFlow.fromProcessor(processorId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr)).foreach({
         case Persistent(payload, sequenceNr) ⇒ streamProbe.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       fromSequenceNr to numMessages foreach { i ⇒
         streamProbe.expectMsg(s"a-${i}")
@@ -115,9 +115,9 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
 
       val publisher = PersistentFlow.fromProcessor(processorId(1), publisherSettings).toPublisher(materializer)
 
-      Flow(publisher).foreach {
+      Flow(publisher).foreach({
         case Persistent(payload, sequenceNr) ⇒ streamProbe1.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       // let subscriber consume all existing messages
       1 to numMessages foreach { i ⇒
@@ -125,9 +125,9 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       }
 
       // subscribe another subscriber
-      Flow(publisher).foreach {
+      Flow(publisher).foreach({
         case Persistent(payload, sequenceNr) ⇒ streamProbe2.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       // produce new messages and let both subscribers handle them
       1 to 2 foreach { i ⇒
@@ -149,10 +149,10 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       val publisher1 = PersistentFlow.fromProcessor(processorId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr1)).toPublisher(materializer)
       val publisher2 = PersistentFlow.fromProcessor(processorId(2), publisherSettings.copy(fromSequenceNr = fromSequenceNr2)).toPublisher(materializer)
 
-      Flow(publisher1).merge(publisher2).foreach {
+      Flow(publisher1).merge(publisher2).foreach({
         case Persistent(payload: String, sequenceNr) if (payload.startsWith("a")) ⇒ streamProbe1.ref ! s"${payload}-${sequenceNr}"
         case Persistent(payload: String, sequenceNr) if (payload.startsWith("b")) ⇒ streamProbe2.ref ! s"${payload}-${sequenceNr}"
-      }.consume(materializer)
+      }, materializer)
 
       1 to numMessages foreach { i ⇒
         if (i >= fromSequenceNr1) streamProbe1.expectMsg(s"a-${i}")

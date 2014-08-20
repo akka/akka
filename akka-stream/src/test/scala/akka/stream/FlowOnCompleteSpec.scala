@@ -66,12 +66,13 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback after transform and foreach steps " in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
+      import system.dispatcher // for the Future.onComplete
       Flow(p).map { x ⇒
         onCompleteProbe.ref ! ("map-" + x)
         x
-      }.foreach {
+      }.foreach({
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
-      }.onComplete({ onCompleteProbe.ref ! _ }, materializer)
+      }, materializer).onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)

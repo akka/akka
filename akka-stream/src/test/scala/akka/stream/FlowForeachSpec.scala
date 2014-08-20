@@ -6,28 +6,44 @@ package akka.stream
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
+import akka.stream.scaladsl.Flow
+import akka.stream.testkit.StreamTestKit
+import scala.util.control.NoStackTrace
 
-class FlowForeachSpec extends AkkaSpec with ScriptedTest {
+class FlowForeachSpec extends AkkaSpec {
 
-  val settings = MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 16,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16,
-    dispatcher = "akka.test.stream-dispatcher")
+  val mat = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  import system.dispatcher
 
   "A Foreach" must {
 
-    "foreach" in {
-      var count = 0
-      def script = {
-        count = 0
-        Script((1 to 50).toSeq -> Seq(()))
+    "call the procedure for each element" in {
+      Flow(1 to 3).foreach(testActor ! _, mat).onSuccess {
+        case _ ⇒ testActor ! "done"
       }
-      (1 to 50) foreach { _ ⇒
-        runScript(script, settings)(_.foreach(x ⇒ count += x))
-        count should be(25 * 51)
+      expectMsg(1)
+      expectMsg(2)
+      expectMsg(3)
+      expectMsg("done")
+    }
+
+    "complete the future for an empty stream" in {
+      Flow(Nil).foreach(testActor ! _, mat).onSuccess {
+        case _ ⇒ testActor ! "done"
       }
+      expectMsg("done")
+    }
+
+    "yield the first error" in {
+      val p = StreamTestKit.PublisherProbe[Int]()
+      Flow(p).foreach(testActor ! _, mat).onFailure {
+        case ex ⇒ testActor ! ex
+      }
+      val proc = p.expectSubscription
+      proc.expectRequest()
+      val ex = new RuntimeException("ex") with NoStackTrace
+      proc.sendError(ex)
+      expectMsg(ex)
     }
 
   }

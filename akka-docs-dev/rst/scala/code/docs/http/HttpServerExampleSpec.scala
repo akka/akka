@@ -32,12 +32,12 @@ class HttpServerExampleSpec
     val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
     bindingFuture foreach {
       case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Flow(connectionStream).foreach {
+        Flow(connectionStream).foreach({
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
 
           // handle connection here
-        }.consume(materializer)
+        }, materializer)
     }
     //#bind-example
   }
@@ -74,12 +74,12 @@ class HttpServerExampleSpec
     // ...
     bindingFuture foreach {
       case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Flow(connectionStream).foreach {
+        Flow(connectionStream).foreach({
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
 
             Flow(requestProducer).map(requestHandler).produceTo(responseConsumer, materializer)
-        }.consume(materializer)
+        }, materializer)
     }
     //#full-server-example
   }
