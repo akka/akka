@@ -63,7 +63,7 @@ public class ClusterShardingTest {
     //#counter-extractor
 
     //#counter-start
-    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", Props.create(Counter.class),
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", Props.create(Counter.class), false,
               messageExtractor);
     //#counter-start
 
@@ -111,12 +111,12 @@ public class ClusterShardingTest {
     }
 
     int count = 0;
-    
-    // getSelf().path().parent().name() is the type name (utf-8 URL-encoded) 
+
+    // getSelf().path().parent().parent().name() is the type name (utf-8 URL-encoded)
     // getSelf().path().name() is the entry identifier (utf-8 URL-encoded)
     @Override
     public String persistenceId() {
-      return getSelf().path().parent().name() + "-" + getSelf().path().name();
+      return getSelf().path().parent().parent().name() + "-" + getSelf().path().name();
     }
 
     @Override
