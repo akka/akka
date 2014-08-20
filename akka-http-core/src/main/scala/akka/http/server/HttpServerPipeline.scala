@@ -47,7 +47,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         // TODO: replace by better combinator, maybe `splitAfter(_ == MessageEnd)`?
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .headAndTail(materializer)
-        .tee(applicationBypassSubscriber)
+        .broadcast(applicationBypassSubscriber)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)

@@ -215,7 +215,7 @@ trait Duct[In, +Out] {
    * not shutdown until the subscriptions for `other` and at least
    * one downstream subscriber have been established.
    */
-  def tee(other: Subscriber[_ >: Out]): Duct[In, Out]
+  def broadcast(other: Subscriber[_ >: Out]): Duct[In, Out]
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
