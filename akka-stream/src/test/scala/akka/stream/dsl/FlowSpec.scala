@@ -15,83 +15,73 @@ class FlowSpec extends WordSpec with Matchers {
 
   "OpenFlow" should {
     "go through all states" in {
-      val f = From[Int]
+      val f: OpenFlow[Int, Int] = From[Int]
         .withInput(intSeq)
         .withOutput(FutureOut())
         .withoutInput
         .withoutOutput
     }
     "should not run" in {
-      val open = From[Int]
+      val open: OpenFlow[Int, Int] = From[Int]
       "open.run" shouldNot compile
     }
     "accept IterableIn" in {
-      val f = From[Int].withInput(intSeq)
+      val f: OpenOutputFlow[Int, Int] = From[Int].withInput(intSeq)
     }
     "accept FutureIn" in {
-      val f = From[Int].withInput(intFut)
+      val f: OpenOutputFlow[Int, Int] = From[Int].withInput(intFut)
     }
     "append OpenFlow" in {
-      val open1 = From[Int].map(_.toString)
-      val open2 = From[String].map(_.hashCode)
-      val open3 = open1.append(open2)
+      val open1: OpenFlow[Int, String] = From[Int].map(_.toString)
+      val open2: OpenFlow[String, Int] = From[String].map(_.hashCode)
+      val open3: OpenFlow[Int, Int] = open1.append(open2)
       "open3.run" shouldNot compile
 
-      val closedInput = open3.withInput(intSeq)
+      val closedInput: OpenOutputFlow[Int, Int] = open3.withInput(intSeq)
       "closedInput.run" shouldNot compile
 
-      val closedOutput = open3.ToFuture
+      val closedOutput: OpenInputFlow[Int, Int] = open3.withOutput(FutureOut())
       "closedOutput.run" shouldNot compile
 
-      closedInput.ToFuture.run
+      closedInput.withOutput(FutureOut()).run
       closedOutput.withInput(intSeq).run
     }
     "prepend OpenFlow" in {
-      val open1 = From[Int].map(_.toString)
-      val open2 = From[String].map(_.hashCode)
-      val open3 = open1.prepend(open2)
+      val open1: OpenFlow[Int, String] = From[Int].map(_.toString)
+      val open2: OpenFlow[String, Int] = From[String].map(_.hashCode)
+      val open3: OpenFlow[String, String] = open1.prepend(open2)
       "open3.run" shouldNot compile
 
-      val closedInput = open3.withInput(strSeq)
+      val closedInput: OpenOutputFlow[String, String] = open3.withInput(strSeq)
       "closedInput.run" shouldNot compile
 
-      val closedOutput = open3.ToFuture
+      val closedOutput: OpenInputFlow[String, String] = open3.withOutput(FutureOut())
       "closedOutput.run" shouldNot compile
 
-      closedInput.ToFuture.run
+      closedInput.withOutput(FutureOut()).run
       closedOutput.withInput(strSeq).run
     }
     "append OpenInputFlow" in {
-      val open = From[Int].map(_.toString)
-      val closed = From[String].map(_.hashCode).ToFuture
-      val appended = open.appendClosed(closed)
+      val open: OpenFlow[Int, String] = From[Int].map(_.toString)
+      val closedOutput: OpenInputFlow[String, Int] = From[String].map(_.hashCode).withOutput(FutureOut())
+      val appended: OpenInputFlow[Int, Int] = open.append(closedOutput)
       "appended.run" shouldNot compile
       "appended.toFuture" shouldNot compile
       appended.withInput(intSeq).run
     }
     "prepend OpenOutputFlow" in {
-      val open = From[Int].map(_.toString)
-      val closed = From[String].map(_.hashCode).withInput(strSeq)
-      val appended = open.prependClosed(closed)
-      "appended.run" shouldNot compile
-      "appended.withInput(strSeq)" shouldNot compile
-      appended.ToFuture.run
-    }
-    "groupBy" in {
-      val grouped = From(Seq(1, 2, 3)).map(_ * 2).groupBy((o: Int) ⇒ o % 3)
-
-      val closedInner = grouped.map {
-        case (key, openFlow) ⇒ (key, openFlow.ToFuture)
-      }
-
-      // both of these compile, even if `grouped` has inner flows unclosed
-      grouped.ToFuture.run
-      closedInner.ToFuture.run
+      val open: OpenFlow[Int, String] = From[Int].map(_.toString)
+      val closedInput: OpenOutputFlow[String, Int] = From[String].map(_.hashCode).withInput(strSeq)
+      val prepended: OpenOutputFlow[String, String] = open.prepend(closedInput)
+      "prepended.run" shouldNot compile
+      "prepended.withInput(strSeq)" shouldNot compile
+      prepended.withOutput(FutureOut()).run
     }
   }
 
   "OpenInputFlow" should {
-    val openInput = From[Int].map(_.toString).ToFuture
+    val openInput: OpenInputFlow[Int, String] =
+      From[Int].map(_.toString).withOutput(FutureOut())
     "accept Input" in {
       openInput.withInput(intSeq)
     }
@@ -110,9 +100,10 @@ class FlowSpec extends WordSpec with Matchers {
   }
 
   "OpenOutputFlow" should {
-    val openOutput = From(Seq(1, 2, 3)).map(_.toString)
+    val openOutput: OpenOutputFlow[Int, String] =
+      From(Seq(1, 2, 3)).map(_.toString)
     "accept Output" in {
-      openOutput.ToFuture
+      openOutput.withOutput(FutureOut())
     }
     "drop Input" in {
       openOutput.withoutInput
@@ -129,7 +120,8 @@ class FlowSpec extends WordSpec with Matchers {
   }
 
   "ClosedFlow" should {
-    val closed = From(Seq(1, 2, 3)).map(_.toString).ToFuture
+    val closed: ClosedFlow[Int, String] =
+      From(Seq(1, 2, 3)).map(_.toString).withOutput(FutureOut())
     "run" in {
       closed.run
     }
