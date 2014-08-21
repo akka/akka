@@ -15,8 +15,8 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] object TickPublisher {
-  def props(interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings): Props =
-    Props(new TickPublisher(interval, tick, settings)).withDispatcher(settings.dispatcher)
+  def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings): Props =
+    Props(new TickPublisher(initialDelay, interval, tick, settings)).withDispatcher(settings.dispatcher)
 
   object TickPublisherSubscription {
     case class Cancel(subscriber: Subscriber[Any])
@@ -42,7 +42,7 @@ private[akka] object TickPublisher {
  * Each subscriber will receive the tick element if it has requested any elements,
  * otherwise the tick element is dropped for that subscriber.
  */
-private[akka] class TickPublisher(interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings) extends Actor with SoftShutdown {
+private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
 
@@ -66,7 +66,7 @@ private[akka] class TickPublisher(interval: FiniteDuration, tick: () ⇒ Any, se
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
       context.setReceiveTimeout(Duration.Undefined)
       import context.dispatcher
-      tickTask = Some(context.system.scheduler.schedule(interval, interval, self, Tick))
+      tickTask = Some(context.system.scheduler.schedule(initialDelay, interval, self, Tick))
       context.become(active)
   }
 
