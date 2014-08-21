@@ -18,7 +18,7 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher")
 
-  val gen = FlowMaterializer(settings)
+  implicit val materializer = FlowMaterializer(settings)
 
   "A Map" must {
 
@@ -31,7 +31,7 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
       val probe = StreamTestKit.SubscriberProbe[Int]()
       Flow(List(1).iterator).
         map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).
-        toPublisher(gen).subscribe(probe)
+        toPublisher().subscribe(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {

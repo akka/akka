@@ -27,7 +27,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher")
-  val mat = FlowMaterializer(settings)
+  implicit val mat = FlowMaterializer(settings)
 
   val identity: Flow[Any] ⇒ Flow[Any] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any] ⇒ Flow[Any] = in ⇒ identity(in)
@@ -321,7 +321,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "be covariant" in {
       val f1: Flow[Fruit] = Flow(() ⇒ new Apple)
-      val p1: Publisher[Fruit] = Flow(() ⇒ new Apple).toPublisher(mat)
+      val p1: Publisher[Fruit] = Flow(() ⇒ new Apple).toPublisher()
       val f2: Flow[Publisher[Fruit]] = Flow(() ⇒ new Apple).splitWhen(_ ⇒ true)
       val f3: Flow[(Boolean, Publisher[Fruit])] = Flow(() ⇒ new Apple).groupBy(_ ⇒ true)
       val f4: Flow[(immutable.Seq[Apple], Publisher[Fruit])] = Flow(() ⇒ new Apple).prefixAndTail(1)
