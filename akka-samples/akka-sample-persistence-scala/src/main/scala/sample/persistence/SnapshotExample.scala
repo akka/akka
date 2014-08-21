@@ -35,5 +35,5 @@ object SnapshotExample extends App {
   processor ! "print"
 
   Thread.sleep(1000)
-  system.shutdown()
+  system.terminate()
 }

@@ -82,7 +82,7 @@ abstract class ActorSystemActivator extends BundleActivator {
    */
   def stop(context: BundleContext): Unit = {
     registration foreach (_.unregister())
-    system foreach (_.shutdown())
+    system foreach (_.terminate())
   }
 
   /**

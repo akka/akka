@@ -621,7 +621,7 @@ actors does not respond (i.e. processing a message for extended periods of time
 and therefore not receiving the stop command), this whole process will be
 stuck.
 
-Upon :meth:`ActorSystem.shutdown()`, the system guardian actors will be
+Upon :meth:`ActorSystem.terminate()`, the system guardian actors will be
 stopped, and the aforementioned process will ensure proper termination of the
 whole system.
 

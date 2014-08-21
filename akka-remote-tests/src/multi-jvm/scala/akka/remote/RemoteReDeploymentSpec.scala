@@ -10,6 +10,7 @@ import akka.actor.Props
 import akka.remote.transport.ThrottlerTransportAdapter.Direction._
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.ActorLogging
 import akka.remote.testconductor.TestConductor
@@ -124,7 +125,7 @@ abstract class RemoteReDeploymentMultiJvmSpec extends MultiNodeSpec(RemoteReDepl
       var sys: ActorSystem = null
 
       runOn(second) {
-        system.awaitTermination(30.seconds)
+        Await.ready(system.whenTerminated, 30.seconds)
         expectNoMsg(sleepAfterKill)
         sys = startNewSystem()
       }

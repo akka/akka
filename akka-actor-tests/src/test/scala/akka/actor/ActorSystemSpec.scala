@@ -195,7 +195,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         }
       }
 
-      system2.shutdown()
+      system2.terminate()
       Await.ready(latch, 5 seconds)
 
       val expected = (for (i ← 1 to count) yield i).reverse
@@ -213,23 +213,28 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         callbackWasRun = true
       }
       import system.dispatcher
-      system2.scheduler.scheduleOnce(200.millis.dilated) { system2.shutdown() }
+      system2.scheduler.scheduleOnce(200.millis.dilated) { system2.terminate() }
 
       system2.awaitTermination(5 seconds)
+      Await.ready(system2.whenTerminated, 5 seconds)
       callbackWasRun should be(true)
     }
 
     "return isTerminated status correctly" in {
       val system = ActorSystem()
       system.isTerminated should be(false)
-      system.shutdown()
+      val wt = system.whenTerminated
+      wt.isCompleted should be(false)
+      val f = system.terminate()
+      Await.ready(wt, 10 seconds)
+      Await.ready(f, 10 seconds)
       system.awaitTermination(10 seconds)
       system.isTerminated should be(true)
     }
 
     "throw RejectedExecutionException when shutdown" in {
       val system2 = ActorSystem("AwaitTermination", AkkaSpec.testConf)
-      system2.shutdown()
+      Await.ready(system2.terminate(), 10 seconds)
       system2.awaitTermination(10 seconds)
 
       intercept[RejectedExecutionException] {
@@ -252,10 +257,10 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliable deny creation of actors while shutting down" in {
       val system = ActorSystem()
       import system.dispatcher
-      system.scheduler.scheduleOnce(200 millis) { system.shutdown() }
+      system.scheduler.scheduleOnce(200 millis) { system.terminate() }
       var failing = false
       var created = Vector.empty[ActorRef]
-      while (!system.isTerminated) {
+      while (!system.whenTerminated.isCompleted) {
         try {
           val t = system.actorOf(Props[ActorSystemSpec.Terminater])
           failing should not be true // because once failing => always failing (it’s due to shutdown)
@@ -278,7 +283,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       implicit val system = ActorSystem("Stop", AkkaSpec.testConf)
       EventFilter[ActorKilledException]() intercept {
         system.actorSelection("/user") ! Kill
-        awaitCond(system.isTerminated)
+        Await.ready(system.whenTerminated, Duration.Inf)
       }
     }
 
@@ -313,7 +318,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       }))
       EventFilter[Exception]("hello") intercept {
         a ! "die"
-        awaitCond(system.isTerminated)
+        Await.ready(system.whenTerminated, Duration.Inf)
       }
     }
 

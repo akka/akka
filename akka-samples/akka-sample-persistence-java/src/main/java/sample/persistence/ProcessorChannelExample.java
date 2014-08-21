@@ -46,6 +46,6 @@ public class ProcessorChannelExample {
         processor.tell(Persistent.create("b"), null);
 
         Thread.sleep(1000);
-        system.shutdown();
+        system.terminate();
     }
 }

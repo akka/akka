@@ -115,6 +115,6 @@ public class EventsourcedExample {
         processor.tell("print", null);
 
         Thread.sleep(1000);
-        system.shutdown();
+        system.terminate();
     }
 }

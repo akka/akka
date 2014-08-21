@@ -19,6 +19,7 @@ import DurableMailboxSpecActorFactory.{ MailboxTestActor, AccumulatorActor }
 import akka.actor.{ RepointableRef, Props, ActorSystem, ActorRefWithCell, ActorRef, ActorCell, Actor }
 import akka.dispatch.Mailbox
 import akka.testkit.TestKit
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 @deprecated("durable mailboxes are superseded by akka-persistence", "2.3")
@@ -84,7 +85,7 @@ abstract class DurableMailboxSpec(system: ActorSystem, val backendName: String)
 
   final override def afterAll {
     TestKit.shutdownActorSystem(system)
-    try system.awaitTermination(5 seconds) catch {
+    try Await.ready(system.whenTerminated, 5 seconds) catch {
       case _: TimeoutException ⇒ system.log.warning("Failed to stop [{}] within 5 seconds", system.name)
     }
     afterTermination()

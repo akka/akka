@@ -13,7 +13,7 @@ class ImplicitSenderSpec
 
   implicit lazy val system = ActorSystem("AkkaCustomSpec")
 
-  override def afterAll = system.shutdown
+  override def afterAll = system.terminate
 
   "An ImplicitSender" should {
     "have testActor as its self" in {

@@ -33,7 +33,7 @@ object Main {
         val app = system.actorOf(Props(appClass), "app")
         val terminator = system.actorOf(Props(classOf[Terminator], app), "app-terminator")
       } catch {
-        case NonFatal(e) ⇒ system.shutdown(); throw e
+        case NonFatal(e) ⇒ system.terminate(); throw e
       }
     }
   }
@@ -43,7 +43,7 @@ object Main {
     def receive = {
       case Terminated(_) ⇒
         log.info("application supervisor has terminated, shutting down")
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 
