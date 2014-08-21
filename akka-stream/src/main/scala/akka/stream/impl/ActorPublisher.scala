@@ -194,7 +194,7 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
     if (demand > 0) {
       try {
         demand -= 1
-        pushToDownstream(withCtx(context)(f()))
+        pushToDownstream(f())
         if (demand > 0) self ! Generate
       } catch {
         case Stop        ⇒ { completeDownstream(); shutdownReason = None }
