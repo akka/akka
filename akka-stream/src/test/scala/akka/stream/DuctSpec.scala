@@ -208,7 +208,7 @@ class DuctSpec extends AkkaSpec {
       val d1: Duct[String, Publisher[Fruit]] = Duct[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
       val d2: Duct[String, (Boolean, Publisher[Fruit])] = Duct[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
       val d3: Duct[String, (immutable.Seq[Apple], Publisher[Fruit])] = Duct[String].map(_ ⇒ new Apple).prefixAndTail(1)
-      val s1: Subscriber[Fruit] = null
+      val s1: Subscriber[Fruit] = StreamTestKit.SubscriberProbe[Fruit]()
       val s2: Subscriber[String] = Duct[String].map(_ ⇒ new Apple).produceTo(s1, materializer)
       val t: Tuple2[Subscriber[String], Publisher[Fruit]] = Duct[String].map(_ ⇒ new Apple).build(materializer)
     }
