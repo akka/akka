@@ -98,6 +98,9 @@ object Flow {
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
+ *
+ * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * inside an [[akka.actor.Actor]].
  */
 trait Flow[+T] {
 
@@ -340,7 +343,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toFuture(materializer: FlowMaterializer): Future[T]
+  def toFuture()(implicit materializer: FlowMaterializer): Future[T]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -349,7 +352,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def consume(materializer: FlowMaterializer): Unit
+  def consume()(implicit materializer: FlowMaterializer): Unit
 
   /**
    * When this flow is completed, either through an error or normal
@@ -358,7 +361,7 @@ trait Flow[+T] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Unit
+  def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Unit
 
   /**
    * Materialize this flow and return the downstream-most
@@ -370,7 +373,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toPublisher[U >: T](materializer: FlowMaterializer): Publisher[U]
+  def toPublisher[U >: T]()(implicit materializer: FlowMaterializer): Publisher[U]
 
   /**
    * Attaches a subscriber to this stream.
@@ -380,7 +383,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(subscriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit
+  def produceTo(subscriber: Subscriber[_ >: T])(implicit materializer: FlowMaterializer): Unit
 
   /**
    * Invoke the given procedure for each received element. Returns a [[scala.concurrent.Future]]
@@ -392,7 +395,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def foreach(c: T ⇒ Unit, materializer: FlowMaterializer): Future[Unit]
+  def foreach(c: T ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit]
 
 }
 

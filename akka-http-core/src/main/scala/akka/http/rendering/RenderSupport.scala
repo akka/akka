@@ -38,7 +38,7 @@ private object RenderSupport {
                         skipEntity: Boolean = false): List[Publisher[ByteString]] = {
     val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
     val messageBytes =
-      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher(materializer)
+      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()(materializer)
       else messageStart
     messageBytes :: Nil
   }

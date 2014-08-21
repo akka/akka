@@ -61,11 +61,11 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
       tcpServerBindingFuture onComplete {
         case Success(StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
           log.info("Bound to {}", endpoint)
-          val materializer = FlowMaterializer(materializerSettings)
+          implicit val materializer = FlowMaterializer(materializerSettings)
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, materializer, log)
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)
-            .toPublisher(materializer)
+            .toPublisher()
           commander ! Http.ServerBinding(localAddress, httpConnectionStream)
 
         case Failure(error) ⇒

@@ -12,13 +12,13 @@ import scala.util.control.NoStackTrace
 
 class FlowForeachSpec extends AkkaSpec {
 
-  val mat = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val mat = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
   import system.dispatcher
 
   "A Foreach" must {
 
     "call the procedure for each element" in {
-      Flow(1 to 3).foreach(testActor ! _, mat).onSuccess {
+      Flow(1 to 3).foreach(testActor ! _).onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg(1)
@@ -28,7 +28,7 @@ class FlowForeachSpec extends AkkaSpec {
     }
 
     "complete the future for an empty stream" in {
-      Flow(Nil).foreach(testActor ! _, mat).onSuccess {
+      Flow(Nil).foreach(testActor ! _).onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg("done")
@@ -36,7 +36,7 @@ class FlowForeachSpec extends AkkaSpec {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      Flow(p).foreach(testActor ! _, mat).onFailure {
+      Flow(p).foreach(testActor ! _).onFailure {
         case ex ⇒ testActor ! ex
       }
       val proc = p.expectSubscription

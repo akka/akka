@@ -36,7 +36,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
     val (applicationBypassSubscriber, applicationBypassPublisher) =
       Duct[(RequestOutput, Publisher[RequestOutput])]
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .build(materializer)
+        .build()(materializer)
 
     val requestPublisher =
       Flow(tcpConn.inputStream)
@@ -53,7 +53,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
             HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
         }
-        .toPublisher(materializer)
+        .toPublisher()(materializer)
 
     val responseSubscriber =
       Duct[HttpResponse]
@@ -62,7 +62,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing response stream error"))
-        .produceTo(tcpConn.outputStream, materializer)
+        .produceTo(tcpConn.outputStream)(materializer)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
   }

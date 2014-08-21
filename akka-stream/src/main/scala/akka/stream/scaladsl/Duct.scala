@@ -33,6 +33,8 @@ object Duct {
  * methods on it and then attach the `Subscriber` representing the input side of the `Duct` to an
  * upstream `Publisher`.
  *
+ * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * inside an [[akka.actor.Actor]].
  */
 trait Duct[In, +Out] {
   /**
@@ -271,7 +273,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo[U >: Out](subscriber: Subscriber[U], materializer: FlowMaterializer): Subscriber[In]
+  def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -283,7 +285,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def consume(materializer: FlowMaterializer): Subscriber[In]
+  def consume()(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * When this flow is completed, either through an error or normal
@@ -293,7 +295,7 @@ trait Duct[In, +Out] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In]
+  def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Materialize this `Duct` into a `Subscriber` representing the input side of the `Duct`
@@ -307,7 +309,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def build[U >: Out](materializer: FlowMaterializer): (Subscriber[In], Publisher[U])
+  def build[U >: Out]()(implicit materializer: FlowMaterializer): (Subscriber[In], Publisher[U])
 
   /**
    * Invoke the given procedure for each received element.
@@ -325,7 +327,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def foreach(c: Out ⇒ Unit, materializer: FlowMaterializer): (Subscriber[In], Future[Unit])
+  def foreach(c: Out ⇒ Unit)(implicit materializer: FlowMaterializer): (Subscriber[In], Future[Unit])
 
   /**
    * INTERNAL API

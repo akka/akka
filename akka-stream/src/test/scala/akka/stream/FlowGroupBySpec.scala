@@ -12,7 +12,7 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowGroupBySpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
@@ -33,8 +33,8 @@ class FlowGroupBySpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(groupCount: Int = 2, elementCount: Int = 6) {
-    val source = Flow((1 to elementCount).iterator).toPublisher(materializer)
-    val groupStream = Flow(source).groupBy(_ % groupCount).toPublisher(materializer)
+    val source = Flow((1 to elementCount).iterator).toPublisher()
+    val groupStream = Flow(source).groupBy(_ % groupCount).toPublisher()
     val masterSubscriber = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
 
     groupStream.subscribe(masterSubscriber)
@@ -108,7 +108,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     "accept cancellation of master stream when not consumed anything" in {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
-      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher(materializer)
+      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
       publisher.subscribe(subscriber)
 
@@ -157,8 +157,8 @@ class FlowGroupBySpec extends AkkaSpec {
     }
 
     "work with fanout on master stream" in {
-      val source = Flow((1 to 4).iterator).toPublisher(materializer)
-      val groupStream = Flow(source).groupBy(_ % 2).toPublisher(materializer)
+      val source = Flow((1 to 4).iterator).toPublisher()
+      val groupStream = Flow(source).groupBy(_ % 2).toPublisher()
       val masterSubscriber1 = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
       val masterSubscriber2 = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
 
@@ -200,7 +200,7 @@ class FlowGroupBySpec extends AkkaSpec {
     }
 
     "work with empty input stream" in {
-      val publisher = Flow(List.empty[Int]).groupBy(_ % 2).toPublisher(materializer)
+      val publisher = Flow(List.empty[Int]).groupBy(_ % 2).toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
       publisher.subscribe(subscriber)
 
@@ -209,7 +209,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     "abort on onError from upstream" in {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
-      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher(materializer)
+      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
       publisher.subscribe(subscriber)
 
@@ -226,7 +226,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     "abort on onError from upstream when substreams are running" in {
       val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
-      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher(materializer)
+      val publisher = Flow(publisherProbeProbe).groupBy(_ % 2).toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
       publisher.subscribe(subscriber)
 

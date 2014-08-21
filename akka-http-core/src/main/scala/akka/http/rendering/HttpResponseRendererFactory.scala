@@ -132,7 +132,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             r ~~ `Content-Length` ~~ contentLength ~~ CrLf ~~ CrLf
-            byteStrings(Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher(materializer))
+            byteStrings(Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer))
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = true)
@@ -142,14 +142,14 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
           case HttpEntity.Chunked(contentType, chunks) ⇒
             if (ctx.requestProtocol == `HTTP/1.0`)
-              completeResponseRendering(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toPublisher(materializer)))
+              completeResponseRendering(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toPublisher()(materializer)))
             else {
               renderHeaders(headers.toList)
               renderEntityContentType(r, entity)
               if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
                 r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
               r ~~ CrLf
-              byteStrings(Flow(chunks).transform(new ChunkTransformer).toPublisher(materializer))
+              byteStrings(Flow(chunks).transform(new ChunkTransformer).toPublisher()(materializer))
             }
         }
 

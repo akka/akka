@@ -57,7 +57,7 @@ case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts 
    * hint.
    */
   def toStrict(materializer: FlowMaterializer, maxFieldCount: Int = 1000)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
-    Flow(parts).grouped(maxFieldCount).toFuture(materializer).map(new StrictMultipartFormData(_))
+    Flow(parts).grouped(maxFieldCount).toFuture()(materializer).map(new StrictMultipartFormData(_))
 }
 
 /**

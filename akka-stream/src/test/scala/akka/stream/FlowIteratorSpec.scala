@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Flow
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIteratorSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 4,
@@ -23,7 +23,7 @@ class FlowIteratorSpec extends AkkaSpec {
 
   "A Flow based on an iterator" must {
     "produce elements" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -37,7 +37,7 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "complete empty" in {
-      val p = Flow(List.empty[Int].iterator).toPublisher(materializer)
+      val p = Flow(List.empty[Int].iterator).toPublisher()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectComplete()
@@ -49,7 +49,7 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with multiple subscribers" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -73,7 +73,7 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -96,7 +96,7 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with one transformation step" in {
-      val p = Flow(List(1, 2, 3).iterator).map(_ * 2).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).map(_ * 2).toPublisher()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -108,7 +108,7 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with two transformation steps" in {
-      val p = Flow(List(1, 2, 3, 4).iterator).filter(_ % 2 == 0).map(_ * 2).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3, 4).iterator).filter(_ % 2 == 0).map(_ * 2).toPublisher()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -120,7 +120,7 @@ class FlowIteratorSpec extends AkkaSpec {
 
     "allow cancel before receiving all elements" in {
       val count = 100000
-      val p = Flow((1 to count).iterator).toPublisher(materializer)
+      val p = Flow((1 to count).iterator).toPublisher()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
