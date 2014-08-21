@@ -95,7 +95,7 @@ private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], setting
     if (subscribers(subscriber))
       subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
     else {
-      val iterator = withCtx(context)(iterable.iterator)
+      val iterator = iterable.iterator
       val worker = context.watch(context.actorOf(IterablePublisherWorker.props(iterator, subscriber,
         settings.maximumInputBufferSize).withDispatcher(context.props.dispatcher)))
       val subscription = new BasicActorSubscription(worker)
@@ -155,7 +155,7 @@ private[akka] class IterablePublisherWorker(iterator: Iterator[Any], subscriber:
     @tailrec def doPush(n: Int): Unit =
       if (demand > 0) {
         demand -= 1
-        val hasNext = withCtx(context) {
+        val hasNext = {
           subscriber.onNext(iterator.next())
           iterator.hasNext
         }
