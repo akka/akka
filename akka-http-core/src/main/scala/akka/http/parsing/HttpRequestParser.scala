@@ -23,6 +23,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                                       rawRequestUriHeader: Boolean,
                                       materializer: FlowMaterializer)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
   extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
+  import settings._
 
   private[this] var method: HttpMethod = _
   private[this] var uri: Uri = _
@@ -84,19 +85,19 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
 
   def parseRequestTarget(input: ByteString, cursor: Int): Int = {
     val uriStart = cursor
-    val uriEndLimit = cursor + settings.maxUriLength
+    val uriEndLimit = cursor + maxUriLength
 
     @tailrec def findUriEnd(ix: Int = cursor): Int =
       if (ix == input.length) throw NotEnoughDataException
       else if (CharacterClasses.WSPCRLF(input(ix).toChar)) ix
       else if (ix < uriEndLimit) findUriEnd(ix + 1)
       else throw new ParsingException(RequestUriTooLong,
-        s"URI length exceeds the configured limit of ${settings.maxUriLength} characters")
+        s"URI length exceeds the configured limit of $maxUriLength characters")
 
     val uriEnd = findUriEnd()
     try {
       uriBytes = input.iterator.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
-      uri = Uri.parseHttpRequestTarget(uriBytes, mode = settings.uriParsingMode)
+      uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode)
     } catch {
       case e: IllegalUriException ⇒ throw new ParsingException(BadRequest, e.info)
     }
@@ -119,13 +120,13 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             case Some(`Content-Length`(len)) ⇒ len
             case None                        ⇒ 0
           }
-          if (contentLength > settings.maxContentLength)
+          if (contentLength > maxContentLength)
             fail(RequestEntityTooLarge,
-              s"Request Content-Length $contentLength exceeds the configured limit of $settings.maxContentLength")
+              s"Request Content-Length $contentLength exceeds the configured limit of $maxContentLength")
           else if (contentLength == 0) {
             emitRequestStart(emptyEntity(cth))
             startNewMessage(input, bodyStart)
-          } else if (contentLength < input.size - bodyStart) {
+          } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
             startNewMessage(input, bodyStart + cl)

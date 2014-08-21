@@ -24,7 +24,7 @@ import scala.collection.immutable
 import akka.http.routing.util.StreamUtils._
 
 import akka.shapeless.HNil
-import akka.http.marshalling.Marshaller
+import akka.http.marshalling.ToEntityMarshaller
 import akka.http.model._
 import StatusCodes._
 import headers._
@@ -144,11 +144,11 @@ object RangeDirectives extends RangeDirectives {
   private val respondWithAcceptByteRangesHeader: Directive0 =
     RespondWithDirectives.respondWithHeader(`Accept-Ranges`(RangeUnits.Bytes))
 
-  class WithRangeSupportMagnet(val rangeCountLimit: Int, val rangeCoalescingThreshold: Long)(implicit val marshaller: Marshaller[MultipartByteRanges], val executionContext: ExecutionContext, val materializer: FlowMaterializer)
+  class WithRangeSupportMagnet(val rangeCountLimit: Int, val rangeCoalescingThreshold: Long)(implicit val marshaller: ToEntityMarshaller[MultipartByteRanges], val executionContext: ExecutionContext, val materializer: FlowMaterializer)
   object WithRangeSupportMagnet {
-    implicit def fromSettings(u: Unit)(implicit settings: RoutingSettings, m: Marshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
+    implicit def fromSettings(u: Unit)(implicit settings: RoutingSettings, m: ToEntityMarshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
       new WithRangeSupportMagnet(settings.rangeCountLimit, settings.rangeCoalescingThreshold)
-    implicit def fromCountLimitAndCoalescingThreshold(t: (Int, Long))(implicit m: Marshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
+    implicit def fromCountLimitAndCoalescingThreshold(t: (Int, Long))(implicit m: ToEntityMarshaller[MultipartByteRanges], ec: ExecutionContext, materializer: FlowMaterializer) =
       new WithRangeSupportMagnet(t._1, t._2)
   }
 }

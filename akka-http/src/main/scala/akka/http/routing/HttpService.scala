@@ -64,7 +64,7 @@ object HttpService {
         Flow(connectionStream).foreach {
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
-            Flow(requestProducer).mapFuture(requestHandler).produceTo(materializer, responseConsumer)
+            Flow(requestProducer).mapFuture(requestHandler).produceTo(responseConsumer, materializer)
         }.consume(materializer)
     }
 }

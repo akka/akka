@@ -5,8 +5,6 @@
 package akka.http
 
 import language.implicitConversions
-import java.net.InetSocketAddress
-import java.nio.channels.ServerSocketChannel
 import java.nio.charset.Charset
 import com.typesafe.config.Config
 import org.reactivestreams.Publisher

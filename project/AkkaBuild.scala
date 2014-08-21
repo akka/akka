@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "0.4-SNAPSHOT"
+  val streamAndHttpVersion = "0.6-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -330,7 +330,7 @@ object AkkaBuild extends Build {
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
       publishArtifact in packageSite := false
     ),
-    aggregate = Seq(parsing, stream, httpCore, docsDev)
+    aggregate = Seq(parsing, stream, http, httpCore, docsDev)
   )
 
   lazy val httpCore = Project(
@@ -360,8 +360,7 @@ object AkkaBuild extends Build {
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
-          // FIXME remove this publishArtifact when akka-http-2.3.x is released
-          publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http"),
+          version := streamAndHttpVersion,  
           libraryDependencies ++= Dependencies.http,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
@@ -1116,10 +1115,12 @@ object AkkaBuild extends Build {
         val hasDiagram = files exists { f =>
           val name = f.getName
           if (name.endsWith(".html") && !name.startsWith("index-") &&
-            !(name.compare("index.html") == 0) && !(name.compare("package.html") == 0)) {
-            val source = scala.io.Source.fromFile(f)
-            val hd = source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
-            source.close()
+            !name.equals("index.html") && !name.equals("package.html")) {
+            val source = scala.io.Source.fromFile(f)(scala.io.Codec.UTF8)
+            val hd = try source.getLines().exists(_.contains("<div class=\"toggleContainer block diagram-container\" id=\"inheritance-diagram-container\">"))
+            catch {
+              case e: Exception => throw new IllegalStateException("Scaladoc verification failed for file '"+f+"'", e)
+            } finally source.close()
             hd
           }
           else false
@@ -1319,6 +1320,7 @@ object Dependencies {
     // mirrored in OSGi sample
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
+    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1" // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
@@ -1366,7 +1368,7 @@ object Dependencies {
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test"
+      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test" // Scala License
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -1380,7 +1382,8 @@ object Dependencies {
 
   import Compile._
 
-  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
+  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(scalaXml))
+  val scalaXmlTestDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
 
   val actor = Seq(config)
 
@@ -1390,7 +1393,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlTestDepencency
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1401,14 +1404,14 @@ object Dependencies {
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
   val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
-    scalaXmlDepencency
+    scalaXmlTestDepencency
 
   val httpCore = Seq(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % "2.3.3" % "test",
     Test.junit, Test.scalatest)
 
-  val http = Seq(Test.junit, Test.scalatest)
+  val http = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
 
   val httpTestkit = Seq(
     "com.typesafe.akka" %% "akka-testkit" % "2.3.3",

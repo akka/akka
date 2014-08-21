@@ -152,8 +152,8 @@ class RouteDirectivesSpec extends FreeSpec with GenericRoutingSpec {
     //import spray.json.DefaultJsonProtocol._
     //import spray.httpx.SprayJsonSupport._
 
-    val jsonMarshaller: Marshaller[Data] = FIXME // jsonFormat2(Data.apply)
-    val xmlMarshaller: Marshaller[Data] = FIXME
+    val jsonMarshaller: ToEntityMarshaller[Data] = FIXME // jsonFormat2(Data.apply)
+    val xmlMarshaller: ToEntityMarshaller[Data] = FIXME
     /*Marshaller.delegate[Data, xml.NodeSeq](MediaTypes.`text/xml`) { (data: Data) ⇒
         <data><name>{ data.name }</name><age>{ data.age }</age></data>
       }*/

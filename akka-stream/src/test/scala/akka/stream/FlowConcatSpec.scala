@@ -95,7 +95,7 @@ class FlowConcatSpec extends TwoStreamsSetup {
       val promise = Promise[Int]()
       val flow = Flow(List(1, 2, 3)).concat(Flow(promise.future).toPublisher(materializer))
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      flow.produceTo(materializer, subscriber)
+      flow.produceTo(subscriber, materializer)
       val subscription = subscriber.expectSubscription()
       subscription.request(4)
       subscriber.expectNext(1)

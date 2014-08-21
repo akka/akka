@@ -22,29 +22,29 @@ import akka.http.model._
 import HttpMethods._
 import akka.http.encoding._
 import akka.http.model.headers.{ HttpCredentials, RawHeader }
-import akka.http.routing
+import akka.http.{ Marshal, routing }
 
 trait RequestBuilding extends TransformerPipelineSupport {
   type RequestTransformer = HttpRequest ⇒ HttpRequest
 
   class RequestBuilder(val method: HttpMethod) {
-    def apply(): HttpRequest = apply("/")
+    def apply()(implicit ec: ExecutionContext): HttpRequest = apply("/")
 
-    def apply(uri: String): HttpRequest = apply[String](uri, None)
+    def apply(uri: String)(implicit ec: ExecutionContext): HttpRequest = apply[String](uri, None)
 
-    def apply[T: Marshaller](uri: String, content: T): HttpRequest = apply(uri, Some(content))
+    def apply[T](uri: String, content: T)(implicit tMarshaller: ToEntityMarshallers[T], ec: ExecutionContext): HttpRequest = apply(uri, Some(content))
 
-    def apply[T: Marshaller](uri: String, content: Option[T]): HttpRequest = apply(Uri(uri), content)
+    def apply[T](uri: String, content: Option[T])(implicit tMarshaller: ToEntityMarshallers[T], ec: ExecutionContext): HttpRequest = apply(Uri(uri), content)
 
-    def apply(uri: Uri): HttpRequest = apply[String](uri, None)
+    def apply(uri: Uri)(implicit ec: ExecutionContext): HttpRequest = apply[String](uri, None)
 
-    def apply[T: Marshaller](uri: Uri, content: T): HttpRequest = apply(uri, Some(content))
+    def apply[T](uri: Uri, content: T)(implicit tMarshaller: ToEntityMarshallers[T], ec: ExecutionContext): HttpRequest = apply(uri, Some(content))
 
-    def apply[T](uri: Uri, content: Option[T])(implicit tMarshaller: Marshaller[T], timeout: Timeout = Timeout(1.second)): HttpRequest =
+    def apply[T](uri: Uri, content: Option[T])(implicit tMarshaller: ToEntityMarshallers[T], timeout: Timeout = Timeout(1.second), ec: ExecutionContext): HttpRequest =
       content match {
         case None ⇒ HttpRequest(method, uri)
         case Some(value) ⇒
-          val entity = Await.result(marshalToEntity(value), timeout.duration)
+          val entity = Await.result(Marshal(value).to[HttpEntity.Regular], timeout.duration)
           HttpRequest(method, uri, Nil, entity)
       }
   }

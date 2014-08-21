@@ -33,11 +33,6 @@ sealed trait HttpEntity extends japi.HttpEntity {
   def contentType: ContentType
 
   /**
-   * Returns a copy of this entity with the contentType replaced.
-   */
-  def withContentType(contentType: ContentType): HttpEntity
-
-  /**
    * A stream of the data of this entity.
    */
   def dataBytes(materializer: FlowMaterializer): Publisher[ByteString]
@@ -65,6 +60,11 @@ sealed trait HttpEntity extends japi.HttpEntity {
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       })
       .toFuture(materializer)
+
+  /**
+   * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
+   */
+  def withContentType(contentType: ContentType): HttpEntity
 
   /** Java API */
   def getDataBytes(materializer: FlowMaterializer): Publisher[ByteString] = dataBytes(materializer)
@@ -107,6 +107,7 @@ object HttpEntity {
    * Close-delimited entities are not `Regular` as they exists primarily for backwards compatibility with HTTP/1.0.
    */
   sealed trait Regular extends japi.HttpEntityRegular with HttpEntity {
+    def withContentType(contentType: ContentType): HttpEntity.Regular
     override def isRegular: Boolean = true
   }
 
@@ -121,11 +122,13 @@ object HttpEntity {
   final case class Strict(contentType: ContentType, data: ByteString) extends japi.HttpEntityStrict with Regular {
     def isKnownEmpty: Boolean = data.isEmpty
 
-    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Strict] =
       Future.successful(this)
+
+    def withContentType(contentType: ContentType): Strict =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -138,8 +141,10 @@ object HttpEntity {
     def isKnownEmpty = false
     override def isDefault: Boolean = true
 
-    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
+
+    def withContentType(contentType: ContentType): Default =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -152,7 +157,9 @@ object HttpEntity {
     override def isCloseDelimited: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
-    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
+
+    def withContentType(contentType: ContentType): CloseDelimited =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
@@ -162,10 +169,11 @@ object HttpEntity {
     def isKnownEmpty = chunks eq EmptyPublisher
     override def isChunked: Boolean = true
 
-    def withContentType(contentType: ContentType): HttpEntity = copy(contentType = contentType)
-
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] =
       Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher(materializer)
+
+    def withContentType(contentType: ContentType): Chunked =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /** Java API */
     def getChunks: Publisher[japi.ChunkStreamPart] = chunks.asInstanceOf[Publisher[japi.ChunkStreamPart]]

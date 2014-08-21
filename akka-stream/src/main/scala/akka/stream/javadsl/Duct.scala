@@ -287,7 +287,7 @@ abstract class Duct[In, Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[Out]): Subscriber[In]
+  def produceTo(subscriber: Subscriber[Out], materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -309,7 +309,7 @@ abstract class Duct[In, Out] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Subscriber[In]
+  def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Materialize this `Duct` into a `Subscriber` representing the input side of the `Duct`
@@ -414,17 +414,18 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def append[U](duct: Duct[_ >: T, U]): Duct[In, U] =
     new DuctAdapter(delegate.appendJava(duct))
 
-  override def produceTo(materializer: FlowMaterializer, subscriber: Subscriber[T]): Subscriber[In] =
-    delegate.produceTo(materializer, subscriber)
+  override def produceTo(subscriber: Subscriber[T], materializer: FlowMaterializer): Subscriber[In] =
+    delegate.produceTo(subscriber, materializer)
 
   override def consume(materializer: FlowMaterializer): Subscriber[In] =
     delegate.consume(materializer)
 
-  override def onComplete(materializer: FlowMaterializer)(callback: OnCompleteCallback): Subscriber[In] =
-    delegate.onComplete(materializer) {
+  override def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Subscriber[In] =
+    delegate.onComplete({
+
       case Success(_) ⇒ callback.onComplete(null)
       case Failure(e) ⇒ callback.onComplete(e)
-    }
+    }, materializer)
 
   override def build(materializer: FlowMaterializer): Pair[Subscriber[In], Publisher[T]] = {
     val (in, out) = delegate.build(materializer)

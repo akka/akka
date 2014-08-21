@@ -29,12 +29,12 @@ import HttpCharsets._
 
 class MarshallingDirectivesSpec extends RoutingSpec {
 
-  implicit def IntUnmarshaller: Unmarshaller[Int] = FIXME
+  implicit def IntUnmarshaller: FromEntityUnmarshaller[Int] = FIXME
   /*Unmarshaller[Int](ContentTypeRange(`text/xml`, HttpCharsets.getForKey("iso-8859-2").get), `text/html`, `application/xhtml+xml`) {
       case HttpEntity.NonEmpty(_, data) ⇒ XML.load(new ByteArrayInputStream(data.toByteArray)).text.toInt
     }*/
 
-  implicit def IntMarshaller: Marshaller[Int] = FIXME
+  implicit def IntMarshaller: ToEntityMarshaller[Int] = FIXME
   //Marshaller.delegate[Int, NodeSeq](`application/xhtml+xml`, ContentType(`text/xml`, `UTF-8`))(i ⇒ <int>{ i }</int>)
 
   "The 'entityAs' directive" should {
@@ -84,13 +84,13 @@ class MarshallingDirectivesSpec extends RoutingSpec {
       case class Person(name: String)
       //import spray.json.DefaultJsonProtocol._
       //import spray.httpx.SprayJsonSupport._
-      val jsonUnmarshaller: Unmarshaller[Person] = FIXME //jsonFormat1(Person)
-      val xmlUnmarshaller: Unmarshaller[Person] = FIXME
+      val jsonUnmarshaller: FromEntityUnmarshaller[Person] = FIXME //jsonFormat1(Person)
+      val xmlUnmarshaller: FromEntityUnmarshaller[Person] = FIXME
       /*Unmarshaller.delegate[NodeSeq, Person](`text/xml`) { seq ⇒
         Person(seq.text)
       }*/
 
-      implicit val unmarshaller: Unmarshaller[Person] = FIXME //Unmarshaller.oneOf[Person](jsonUnmarshaller, xmlUnmarshaller)
+      implicit val unmarshaller: FromEntityUnmarshaller[Person] = FIXME //Unmarshaller.oneOf[Person](jsonUnmarshaller, xmlUnmarshaller)
 
       val route = entity(as[Person]) { echoComplete }
 

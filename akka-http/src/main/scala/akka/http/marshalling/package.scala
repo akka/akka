@@ -1,138 +1,19 @@
-/*
- * CopyFuture.successful (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http
 
 import scala.collection.immutable
-import akka.http.model.HttpEntity.Regular
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.control.NonFatal
-
-import model._
+import akka.http.model._
 
 package object marshalling {
-  def marshalUnsafe[T: Marshaller](value: T): HttpEntity = routing.FIXME
+  type ToEntityMarshaller[T] = Marshaller[T, HttpEntity.Regular]
+  type ToHeadersAndEntityMarshaller[T] = Marshaller[T, (immutable.Seq[HttpHeader], HttpEntity.Regular)]
+  type ToResponseMarshaller[T] = Marshaller[T, HttpResponse]
+  type ToRequestMarshaller[T] = Marshaller[T, HttpRequest]
 
-  def marshaller[T](implicit m: Marshaller[T]): Marshaller[T] = m
-
-  def marshalToEntity[T](value: T)(implicit tMarshaller: Marshaller[T]): Future[HttpEntity.Regular] =
-    tMarshaller.marshal(value)
-}
-
-package marshalling {
-
-  trait Marshaller[-T] { outer ⇒
-    def marshal(value: T): Future[HttpEntity.Regular]
-
-    def compose[U](f: U ⇒ T): Marshaller[U] =
-      new Marshaller[U] {
-        def marshal(value: U): Future[Regular] =
-          try outer.marshal(f(value))
-          catch {
-            case NonFatal(ex) ⇒ Future.failed(ex)
-          }
-      }
-  }
-  object Marshaller {
-    def apply[T](f: T ⇒ Future[Regular]): Marshaller[T] =
-      new Marshaller[T] {
-        def marshal(value: T): Future[Regular] = f(value)
-      }
-
-    implicit def stringMarshaller: Marshaller[String] = Marshaller(value ⇒ Future.successful(HttpEntity(value)))
-    implicit def bytesMarshaller: Marshaller[Array[Byte]] = Marshaller(value ⇒ Future.successful(HttpEntity(value)))
-    implicit def xmlMarshaller: Marshaller[scala.xml.NodeSeq] = FIXME
-    implicit def formDataMarshaller: Marshaller[FormData] = FIXME
-    implicit def entityMarshaller: Marshaller[HttpEntity.Regular] =
-      new Marshaller[HttpEntity.Regular] {
-        def marshal(value: HttpEntity.Regular): Future[HttpEntity.Regular] = Future.successful(value)
-      }
-    implicit def multipartByteRangesMarshaller: Marshaller[MultipartByteRanges] = FIXME
-
-    def delegate[T, U](contentTypes: ContentType*)(f: T ⇒ U)(implicit uMarshaller: Marshaller[U]): Marshaller[T] =
-      new Marshaller[T] {
-        def marshal(value: T): Future[Regular] = uMarshaller.marshal(f(value))
-      }
-
-    def FIXME[T]: Marshaller[T] =
-      new Marshaller[T] {
-        val excp = new RuntimeException("Not yet implemented")
-        def marshal(value: T): Future[Regular] = throw new RuntimeException("Not yet implemented", excp)
-      }
-  }
-
-  trait ToResponseMarshaller[-T] { outer ⇒
-    def marshal(value: T): Future[HttpResponse]
-
-    def compose[U](f: U ⇒ T): ToResponseMarshaller[U] =
-      new ToResponseMarshaller[U] {
-        def marshal(value: U): Future[HttpResponse] =
-          try outer.marshal(f(value))
-          catch {
-            case NonFatal(ex) ⇒ Future.failed(ex)
-          }
-      }
-  }
-  object ToResponseMarshaller {
-    def apply[T](f: T ⇒ HttpResponse): ToResponseMarshaller[T] =
-      new ToResponseMarshaller[T] {
-        def marshal(value: T): Future[HttpResponse] = Future.successful(f(value))
-      }
-
-    implicit def fromMarshaller[T](implicit tMarshaller: Marshaller[T], ec: ExecutionContext): ToResponseMarshaller[T] =
-      new ToResponseMarshaller[T] {
-        def marshal(value: T): Future[HttpResponse] =
-          tMarshaller.marshal(value).map { entity ⇒
-            HttpResponse(entity = entity)
-          }
-      }
-
-    implicit def responseMarshaller: ToResponseMarshaller[HttpResponse] =
-      new ToResponseMarshaller[HttpResponse] {
-        def marshal(value: HttpResponse): Future[HttpResponse] = Future.successful(value)
-      }
-
-    implicit def fromStatusCode(implicit ec: ExecutionContext): ToResponseMarshaller[StatusCode] =
-      ToResponseMarshaller[StatusCode](s ⇒ HttpResponse(status = s, entity = s.defaultMessage))
-
-    implicit def fromStatusCodeAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T], ec: ExecutionContext): ToResponseMarshaller[(S, T)] =
-      fromStatusCodeAndHeadersAndT.compose {
-        case (s, t) ⇒ (sConv(s), Nil, t)
-      }
-    implicit def fromStatusCodeConvertibleAndHeadersAndT[S, T](implicit sConv: S ⇒ StatusCode, tMarshaller: Marshaller[T], ec: ExecutionContext): ToResponseMarshaller[(S, Seq[HttpHeader], T)] =
-      fromStatusCodeAndHeadersAndT.compose {
-        case (s, hs, t) ⇒ (sConv(s), hs, t)
-      }
-    implicit def fromStatusCodeAndHeadersAndT[T](implicit tMarshaller: Marshaller[T], ec: ExecutionContext): ToResponseMarshaller[(StatusCode, Seq[HttpHeader], T)] =
-      new ToResponseMarshaller[(StatusCode, Seq[HttpHeader], T)] {
-        def marshal(value: (StatusCode, Seq[HttpHeader], T)): Future[HttpResponse] =
-          tMarshaller.marshal(value._3).map(t ⇒ HttpResponse(value._1, value._2.toList, t))
-      }
-
-    implicit def optionMarshaller[T: ToResponseMarshaller]: ToResponseMarshaller[Option[T]] = routing.FIXME
-    implicit def futureMarshaller[T](implicit tMarshaller: ToResponseMarshaller[T], ec: ExecutionContext): ToResponseMarshaller[Future[T]] =
-      new ToResponseMarshaller[Future[T]] {
-        def marshal(value: Future[T]): Future[HttpResponse] = value.flatMap(tMarshaller.marshal)
-      }
-  }
-
-  /** Something that can later be marshalled into a response */
-  trait ToResponseMarshallable {
-    def marshal: Future[HttpResponse]
-    def executionContext: ExecutionContext
-  }
-  object ToResponseMarshallable {
-    implicit def isMarshallable[T](value: T)(implicit marshaller: ToResponseMarshaller[T], ec: ExecutionContext): ToResponseMarshallable =
-      new ToResponseMarshallable {
-        def marshal: Future[HttpResponse] = marshaller.marshal(value)
-        def executionContext: ExecutionContext = ec
-      }
-    implicit def marshallableIsMarshallable: ToResponseMarshaller[ToResponseMarshallable] =
-      new ToResponseMarshaller[ToResponseMarshallable] {
-        def marshal(value: ToResponseMarshallable): Future[HttpResponse] = value.marshal
-
-      }
-  }
+  type ToEntityMarshallers[T] = Marshallers[T, HttpEntity.Regular]
+  type ToResponseMarshallers[T] = Marshallers[T, HttpResponse]
+  type ToRequestMarshallers[T] = Marshallers[T, HttpRequest]
 }

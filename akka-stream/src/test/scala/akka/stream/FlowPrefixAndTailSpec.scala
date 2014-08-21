@@ -49,7 +49,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val (takes, tail) = Await.result(Flow((1 to 10).iterator).prefixAndTail(10).toFuture(m), 3.seconds)
       takes should be(1 to 10)
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(tail).produceTo(m, subscriber)
+      Flow(tail).produceTo(subscriber, m)
       subscriber.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
@@ -57,7 +57,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(Seq[Int], Publisher[Int])]()
 
-      Flow(publisher).prefixAndTail(3).produceTo(m, subscriber)
+      Flow(publisher).prefixAndTail(3).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -75,7 +75,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(Seq[Int], Publisher[Int])]()
 
-      Flow(publisher).prefixAndTail(1).produceTo(m, subscriber)
+      Flow(publisher).prefixAndTail(1).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -90,7 +90,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       subscriber.expectComplete()
 
       val substreamSubscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(tail).produceTo(m, substreamSubscriber)
+      Flow(tail).produceTo(substreamSubscriber, m)
       substreamSubscriber.expectSubscription()
 
       upstream.sendError(testException)
@@ -102,7 +102,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(Seq[Int], Publisher[Int])]()
 
-      Flow(publisher).prefixAndTail(3).produceTo(m, subscriber)
+      Flow(publisher).prefixAndTail(3).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -120,7 +120,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[(Seq[Int], Publisher[Int])]()
 
-      Flow(publisher).prefixAndTail(1).produceTo(m, subscriber)
+      Flow(publisher).prefixAndTail(1).produceTo(subscriber, m)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -135,7 +135,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       subscriber.expectComplete()
 
       val substreamSubscriber = StreamTestKit.SubscriberProbe[Int]()
-      Flow(tail).produceTo(m, substreamSubscriber)
+      Flow(tail).produceTo(substreamSubscriber, m)
       substreamSubscriber.expectSubscription().cancel()
 
       upstream.expectCancellation()

@@ -143,10 +143,10 @@ object ParamDefMagnet2 extends LowLevelParamDefMagnet2 {
   private def extractParameter[A, B](f: A ⇒ Directive1[B]) = ParamDefMagnetAux[A, Directive1[B]](f)
   private def filter[T](paramName: String, fsod: FSOD[T])(implicit ec: ExecutionContext): Directive1[T] =
     extract(ctx ⇒ fsod(ctx.request.uri.query.get(paramName))).afterCompletion.flatMap {
-      case Success(x)                              ⇒ provide(x)
-      case Failure(ContentExpected)                ⇒ reject(MissingQueryParamRejection(paramName))
-      case Failure(MalformedContent(error, cause)) ⇒ reject(MalformedQueryParamRejection(paramName, error, cause))
-      case Failure(x: UnsupportedContentType)      ⇒ throw new IllegalStateException(x.toString)
+      case Success(x)                                    ⇒ provide(x)
+      case Failure(DeserializationError.ContentExpected) ⇒ reject(MissingQueryParamRejection(paramName))
+      case Failure(MalformedContent(error, cause))       ⇒ reject(MalformedQueryParamRejection(paramName, error, cause))
+      case Failure(x: UnsupportedContentType)            ⇒ throw new IllegalStateException(x.toString)
     }
   implicit def forString(implicit fsod: FSOD[String], ec: ExecutionContext) = extractParameter[String, String] { string ⇒
     filter(string, fsod)

@@ -58,7 +58,7 @@ import akka.http.model.parser.CharacterClasses._
  * cannot hold more then 255 items, so this array has a fixed size of 255.
  */
 private[parsing] final class HttpHeaderParser private (
-  val settings: ParserSettings,
+  val settings: HttpHeaderParser.Settings,
   warnOnIllegalHeader: ErrorInfo ⇒ Unit,
   private[this] var nodes: Array[Char] = new Array(512), // initial size, can grow as needed
   private[this] var nodeCount: Int = 0,
@@ -141,7 +141,7 @@ private[parsing] final class HttpHeaderParser private (
     val colonIx = scanHeaderNameAndReturnIndexOfColon(input, lineStart, lineStart + maxHeaderNameLength)(cursor)
     val headerName = asciiString(input, lineStart, colonIx)
     try {
-      val valueParser = new RawHeaderValueParser(headerName, maxHeaderValueLength, settings.headerValueCacheLimit(headerName))
+      val valueParser = new RawHeaderValueParser(headerName, maxHeaderValueLength, headerValueCacheLimit(headerName))
       insert(input, valueParser)(cursor, colonIx + 1, nodeIx, colonIx)
       parseHeaderLine(input, lineStart)(cursor, nodeIx)
     } catch {
@@ -376,6 +376,13 @@ private[parsing] final class HttpHeaderParser private (
 private[http] object HttpHeaderParser {
   import SpecializedHeaderValueParsers._
 
+  trait Settings {
+    def maxHeaderNameLength: Int
+    def maxHeaderValueLength: Int
+    def maxHeaderCount: Int
+    def headerValueCacheLimit(headerName: String): Int
+  }
+
   object EmptyHeader extends HttpHeader {
     def name = ""
     def lowercaseName = ""
@@ -397,10 +404,10 @@ private[http] object HttpHeaderParser {
 
   private val defaultIllegalHeaderWarning: ErrorInfo ⇒ Unit = info ⇒ throw new IllegalHeaderException(info)
 
-  def apply(settings: ParserSettings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+  def apply(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
     prime(unprimed(settings, warnOnIllegalHeader))
 
-  def unprimed(settings: ParserSettings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+  def unprimed(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
     new HttpHeaderParser(settings, warnOnIllegalHeader)
 
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {

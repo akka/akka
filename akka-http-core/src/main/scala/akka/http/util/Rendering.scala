@@ -4,6 +4,8 @@
 
 package akka.http.util
 
+import java.nio.CharBuffer
+import java.nio.charset.Charset
 import java.text.{ DecimalFormatSymbols, DecimalFormat }
 import java.util.Locale
 import scala.annotation.tailrec
@@ -50,7 +52,7 @@ private[http] trait LazyValueBytesRenderable extends Renderable {
   // that a synchronization overhead or even @volatile reads
   private[this] var _valueBytes: Array[Byte] = _
   private def valueBytes =
-    if (_valueBytes != null) _valueBytes else { _valueBytes = value.getAsciiBytes; _valueBytes }
+    if (_valueBytes != null) _valueBytes else { _valueBytes = value.asciiBytes; _valueBytes }
 
   def value: String
   def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
@@ -64,7 +66,7 @@ private[http] trait LazyValueBytesRenderable extends Renderable {
  * Useful for common predefined singleton values.
  */
 private[http] trait SingletonValueRenderable extends Product with Renderable {
-  private[this] val valueBytes = value.getAsciiBytes
+  private[this] val valueBytes = value.asciiBytes
   def value = productPrefix
   def render[R <: Rendering](r: R): r.type = r ~~ valueBytes
 }
@@ -301,5 +303,54 @@ private[http] class ByteStringRendering(sizeHint: Int) extends Rendering {
   def ~~(bytes: ByteString): this.type = {
     if (bytes.length > 0) builder ++= bytes
     this
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+private[http] class CustomCharsetByteStringRendering(nioCharset: Charset, sizeHint: Int) extends Rendering {
+  private[this] val charBuffer = CharBuffer.allocate(64)
+  private[this] val builder = new ByteStringBuilder
+  builder.sizeHint(sizeHint)
+
+  def get: ByteString = {
+    flushCharBuffer()
+    builder.result()
+  }
+
+  def ~~(char: Char): this.type = {
+    if (!charBuffer.hasRemaining) flushCharBuffer()
+    charBuffer.put(char)
+    this
+  }
+
+  def ~~(bytes: Array[Byte]): this.type = {
+    if (bytes.length > 0) {
+      flushCharBuffer()
+      builder.putByteArrayUnsafe(bytes)
+    }
+    this
+  }
+
+  def ~~(bytes: ByteString): this.type = {
+    if (bytes.length > 0) {
+      flushCharBuffer()
+      builder ++= bytes
+    }
+    this
+  }
+
+  private def flushCharBuffer(): Unit = {
+    charBuffer.flip()
+    if (charBuffer.hasRemaining) {
+      val byteBuffer = nioCharset.encode(charBuffer)
+      // TODO: optimize by adding another `putByteArrayUnsafe` overload taking an byte array slice
+      // and thus enabling `builder.putByteArrayUnsafe(byteBuffer.array(), 0, byteBuffer.remaining())`
+      val bytes = new Array[Byte](byteBuffer.remaining())
+      byteBuffer.get(bytes)
+      builder.putByteArrayUnsafe(bytes)
+    }
+    charBuffer.clear()
   }
 }

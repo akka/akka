@@ -23,7 +23,7 @@ import akka.stream.FlowMaterializer
 
 import scala.annotation.tailrec
 import akka.actor.ActorRefFactory
-import akka.http.marshalling.Marshaller
+import akka.http.marshalling.{ Marshaller, ToEntityMarshaller }
 import akka.http.util._
 import akka.http.model._
 import headers._
@@ -160,7 +160,7 @@ trait FileAndResourceDirectives {
    * The actual rendering of the directory contents is performed by the in-scope `Marshaller[DirectoryListing]`.
    */
   def listDirectoryContents(directories: String*)
-                           (implicit renderer: Marshaller[DirectoryListing], refFactory: ActorRefFactory,
+                           (implicit renderer: ToEntityMarshaller[DirectoryListing], refFactory: ActorRefFactory,
                             log: LoggingContext, ec: ExecutionContext): Route =
     (get & detach()) {
       unmatchedPath { path ⇒
@@ -188,7 +188,7 @@ trait FileAndResourceDirectives {
    * Same as `getFromBrowseableDirectories` with only one directory.
    */
   def getFromBrowseableDirectory(directory: String)
-                                (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
+                                (implicit renderer: ToEntityMarshaller[DirectoryListing], settings: RoutingSettings,
                                  resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext, materializer: FlowMaterializer): Route =
     getFromBrowseableDirectories(directory)
 
@@ -197,7 +197,7 @@ trait FileAndResourceDirectives {
    * served as browsable listings.
    */
   def getFromBrowseableDirectories(directories: String*)
-                                  (implicit renderer: Marshaller[DirectoryListing], settings: RoutingSettings,
+                                  (implicit renderer: ToEntityMarshaller[DirectoryListing], settings: RoutingSettings,
                                    resolver: ContentTypeResolver, refFactory: ActorRefFactory, log: LoggingContext, ec: ExecutionContext, materializer: FlowMaterializer): Route = {
     import RouteConcatenation._
     directories.map(getFromDirectory).reduceLeft(_ ~ _) ~ listDirectoryContents(directories: _*)
@@ -288,8 +288,8 @@ object DirectoryListing {
       |</html>
       |""".stripMarginWithNewline("\n") split '$'
 
-  implicit def DefaultMarshaller(implicit settings: RoutingSettings): Marshaller[DirectoryListing] =
-    Marshaller.delegate[DirectoryListing, String](MediaTypes.`text/html`) { listing ⇒
+  implicit def DefaultMarshaller(implicit settings: RoutingSettings, ec: ExecutionContext): ToEntityMarshaller[DirectoryListing] =
+    Marshaller.StringMarshaller.wrap(MediaTypes.`text/html`) { listing ⇒
       val DirectoryListing(path, isRoot, files) = listing
       val filesAndNames = files.map(file ⇒ file -> file.getName).sortBy(_._2)
       val deduped = filesAndNames.zipWithIndex.flatMap {

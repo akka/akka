@@ -5,10 +5,11 @@
 package akka.http.routing
 package impl
 
-import akka.http.marshalling.{ ToResponseMarshallable, ToResponseMarshaller }
+import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model.StatusCodes.Redirection
 import akka.http.model.Uri.Path
 import akka.http.model._
+import akka.http.model.headers.Accept
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
@@ -20,7 +21,7 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
 
   def withUnmatchedPathMapped(f: Path ⇒ Path): RequestContext = copy(unmatchedPath = f(unmatchedPath))
 
-  def withContentNegotiationDisabled: RequestContext = this // FIXME: actually support this
+  def withContentNegotiationDisabled: RequestContext = copy(request = request.withHeaders(request.headers filterNot (_.isInstanceOf[Accept])))
 
   def withRouteResponseRouting(f: PartialFunction[RouteResult, Route]): RequestContext =
     withRouteResponseMappedPF {
@@ -67,7 +68,7 @@ private[http] case class RequestContextImpl(request: HttpRequest, unmatchedPath:
   def complete(obj: ToResponseMarshallable): RouteResult =
     DeferredResult {
       implicit val ec = obj.executionContext
-      obj.marshal
+      obj.marshalFor(request)
         .map(res ⇒ finish(CompleteWith(res)))
         .recover {
           case RejectionError(rej) ⇒ reject(rej)
