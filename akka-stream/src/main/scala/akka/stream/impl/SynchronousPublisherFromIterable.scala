@@ -19,31 +19,31 @@ private[akka] object SynchronousPublisherFromIterable {
 
   private class IteratorSubscription[T](subscriber: Subscriber[T], iterator: Iterator[T]) extends Subscription {
     var done = false
-    var demand = 0
+    var pendingDemand = 0L
     var pushing = false
 
     override def cancel(): Unit =
       done = true
 
-    override def request(elements: Int): Unit = {
+    override def request(elements: Long): Unit = {
       @tailrec def pushNext(): Unit = {
         if (!done)
           if (iterator.isEmpty) {
             done = true
             subscriber.onComplete()
-          } else if (demand != 0) {
-            demand -= 1
+          } else if (pendingDemand != 0) {
+            pendingDemand -= 1
             subscriber.onNext(iterator.next())
             pushNext()
           }
       }
 
       if (pushing)
-        demand += elements // reentrant call to requestMore from onNext
+        pendingDemand += elements // reentrant call to requestMore from onNext
       else {
         try {
           pushing = true
-          demand = elements
+          pendingDemand = elements
           pushNext()
         } catch {
           case NonFatal(e) ⇒
@@ -73,7 +73,7 @@ private[akka] class SynchronousPublisherFromIterable[T](private val iterable: im
 
   import akka.stream.impl.SynchronousPublisherFromIterable.IteratorSubscription
 
-  override def subscribe(subscriber: Subscriber[T]): Unit =
+  override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
     subscriber.onSubscribe(new IteratorSubscription(subscriber, iterable.iterator))
 
   override def equals(o: Any): Boolean = o match {

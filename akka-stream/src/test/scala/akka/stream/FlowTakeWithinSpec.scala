@@ -24,16 +24,16 @@ class FlowTakeWithinSpec extends AkkaSpec {
       val cSub = c.expectSubscription()
       cSub.request(100)
       val demand1 = pSub.expectRequest()
-      (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand1.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
       val demand2 = pSub.expectRequest()
-      (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand2.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
       val demand3 = pSub.expectRequest()
-      val sentN = demand1 + demand2
+      val sentN = demand1.toInt + demand2.toInt
       (1 to sentN) foreach { n ⇒ c.expectNext(n) }
       within(2.seconds) {
         c.expectComplete()
       }
-      (1 to demand3) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      (1 to demand3.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
       c.expectNoMsg(200.millis)
     }
 
