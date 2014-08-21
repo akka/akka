@@ -16,34 +16,23 @@
 
 package akka.http.routing
 
-import akka.http.marshalling.{ ToResponseMarshallable, ToResponseMarshaller }
-
-import scala.collection.GenTraversableOnce
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
-import akka.actor.{ Status, ActorRef }
-//import spray.httpx.marshalling._
+
+import akka.http.marshalling.ToResponseMarshallable
+
 import akka.http.model._
 import StatusCodes._
-import headers._
-import MediaTypes._
-
-sealed trait RouteResult
-case class CompleteWith(response: HttpResponse) extends RouteResult
-case class RouteException(exception: Throwable) extends RouteResult
-case class Rejected(rejections: List[Rejection]) extends RouteResult {
-  def map(f: Rejection ⇒ Rejection) = Rejected(rejections.map(f))
-  def flatMap(f: Rejection ⇒ GenTraversableOnce[Rejection]) = Rejected(rejections.flatMap(f))
-}
-case class DeferredResult(result: Future[RouteResult]) extends RouteResult
 
 /**
  * Immutable object encapsulating the context of an [[spray.http.HttpRequest]]
  * as it flows through a ''spray'' Route structure.
  */
 trait RequestContext {
+  /** The request this context represents */
   val request: HttpRequest
+
+  /** The unmatched path of this context */
   val unmatchedPath: Uri.Path
 
   /**
@@ -111,8 +100,15 @@ trait RequestContext {
    */
   def withContentNegotiationDisabled: RequestContext
 
+  /**
+   * Returns a copy of this context where the given ExceptionHandler is registered to handle all
+   * exceptions.
+   */
   def withExceptionHandling(handler: ExceptionHandler): RequestContext
 
+  /**
+   * Returns a copy of this context with the unmatched path updated to the given one.
+   */
   def withUnmatchedPath(path: Uri.Path): RequestContext
 
   /**
@@ -136,6 +132,9 @@ trait RequestContext {
    */
   def complete(obj: ToResponseMarshallable): RouteResult
 
+  /**
+   * Return a result that represents deferred handling of the given one.
+   */
   def deferHandling(future: Future[RouteResult])(implicit ec: ExecutionContext): RouteResult
 
   /**
