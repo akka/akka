@@ -59,7 +59,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       })
-      .toFuture(materializer)
+      .toFuture()(materializer)
 
   /**
    * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
@@ -170,7 +170,7 @@ object HttpEntity {
     override def isChunked: Boolean = true
 
     def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] =
-      Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher(materializer)
+      Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher()(materializer)
 
     def withContentType(contentType: ContentType): Chunked =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -186,7 +186,7 @@ object HttpEntity {
     def apply(contentType: ContentType, chunks: Publisher[ByteString], materializer: FlowMaterializer): Chunked =
       Chunked(contentType, Flow(chunks).collect[ChunkStreamPart] {
         case b: ByteString if b.nonEmpty ⇒ Chunk(b)
-      }.toPublisher(materializer))
+      }.toPublisher()(materializer))
   }
 
   /**

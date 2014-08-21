@@ -14,7 +14,7 @@ import akka.stream.scaladsl.Flow
 
 class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -25,7 +25,7 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first value" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Flow(p).toFuture(materializer)
+      val f = Flow(p).toFuture()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -35,7 +35,7 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Flow(p).toFuture(materializer)
+      val f = Flow(p).toFuture()
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex")
@@ -46,7 +46,7 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield NoSuchElementExcption for empty stream" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Flow(p).toFuture(materializer)
+      val f = Flow(p).toFuture()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()

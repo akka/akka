@@ -17,7 +17,7 @@ import scala.concurrent.Await
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowMapFutureSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow with mapFuture" must {
@@ -25,7 +25,7 @@ class FlowMapFutureSpec extends AkkaSpec {
     "produce future elements" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Flow(1 to 3).mapFuture(n ⇒ Future(n)).produceTo(c, materializer)
+      val p = Flow(1 to 3).mapFuture(n ⇒ Future(n)).produceTo(c)
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)
@@ -42,7 +42,7 @@ class FlowMapFutureSpec extends AkkaSpec {
       val p = Flow(1 to 50).mapFuture(n ⇒ Future {
         Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
         n
-      }).produceTo(c, materializer)
+      }).produceTo(c)
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n ← 1 to 50) c.expectNext(n)
@@ -56,7 +56,7 @@ class FlowMapFutureSpec extends AkkaSpec {
       val p = Flow(1 to 20).mapFuture(n ⇒ Future {
         probe.ref ! n
         n
-      }).produceTo(c, materializer)
+      }).produceTo(c)
       val sub = c.expectSubscription()
       // nothing before requested
       probe.expectNoMsg(500.millis)
@@ -84,7 +84,7 @@ class FlowMapFutureSpec extends AkkaSpec {
           Await.ready(latch, 10.seconds)
           n
         }
-      }).produceTo(c, materializer)
+      }).produceTo(c)
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -103,7 +103,7 @@ class FlowMapFutureSpec extends AkkaSpec {
             n
           }
         }).
-        produceTo(c, materializer)
+        produceTo(c)
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")

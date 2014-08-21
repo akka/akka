@@ -26,7 +26,7 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      val materializer = FlowMaterializer(MaterializerSettings(
+      implicit val materializer = FlowMaterializer(MaterializerSettings(
         initialInputBufferSize = 1,
         maximumInputBufferSize = 1,
         initialFanOutBufferSize = 1,
@@ -35,7 +35,7 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
       Flow(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).
-        toPublisher(materializer).subscribe(probe)
+        toPublisher().subscribe(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {
