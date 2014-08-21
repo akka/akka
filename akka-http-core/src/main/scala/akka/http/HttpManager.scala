@@ -69,7 +69,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
           commander ! Http.ServerBinding(localAddress, httpConnectionStream)
 
         case Failure(error) ⇒
-          log.warning("Bind to {} failed due to ", endpoint, error)
+          log.warning("Bind to {} failed due to {}", endpoint, error)
           commander ! Status.Failure(Http.BindFailedException)
 
         case x ⇒ throw new IllegalStateException("Unexpected response to `Bind` from StreamTcp: " + x)
