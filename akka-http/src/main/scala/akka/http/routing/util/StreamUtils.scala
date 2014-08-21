@@ -5,6 +5,7 @@
 package akka.http.routing.util
 
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 import akka.http.model.HttpEntity
 import akka.http.model.HttpEntity.{ LastChunk, Chunk, ChunkStreamPart }
@@ -28,7 +29,8 @@ import org.reactivestreams.Publisher
  * functionality.
  */
 private[http] object StreamUtils {
-  def fromInputStream(inputStream: InputStream, materializer: FlowMaterializer, defaultChunkSize: Int = 65536): Publisher[ByteString] = {
+  val nameCounter = new AtomicInteger
+  def fromInputStream(inputStream: InputStream, defaultChunkSize: Int = 65536)(implicit materializer: FlowMaterializer): Publisher[ByteString] = {
     def props: Props = {
       def f(): ByteString = {
         val chunk = new Array[Byte](defaultChunkSize)
@@ -41,26 +43,26 @@ private[http] object StreamUtils {
       SimpleCallbackPublisher.props(materializer.settings, f)
     }
 
-    ActorPublisher[ByteString](materializer.asInstanceOf[ActorBasedFlowMaterializer].context.actorOf(props))
+    ActorPublisher[ByteString](materializer.asInstanceOf[ActorBasedFlowMaterializer].actorOf(props, "fromInputStream-" + nameCounter.incrementAndGet()))
   }
 
-  def awaitAllElements[T](data: Publisher[T], materializer: FlowMaterializer): immutable.Seq[T] =
-    Await.result(Flow(data).fold(Vector.empty[T])(_ :+ _).toFuture(materializer), 1.second)
+  def awaitAllElements[T](data: Publisher[T])(implicit materializer: FlowMaterializer): immutable.Seq[T] =
+    Await.result(Flow(data).fold(Vector.empty[T])(_ :+ _).toFuture(), 1.second)
 
   implicit class HttpEntityEnhancements(entity: HttpEntity) {
-    def sliceData(start: Long, length: Long, materializer: FlowMaterializer): HttpEntity = entity match {
+    def sliceData(start: Long, length: Long)(implicit materializer: FlowMaterializer): HttpEntity = entity match {
       case HttpEntity.Strict(tpe, data) ⇒
         // should be checked before
         assert(start >= 0 && start <= Int.MaxValue)
         assert(length >= 0 && length <= Int.MaxValue)
         HttpEntity.Strict(tpe, data.slice(start.toInt, length.toInt))
       case HttpEntity.Default(tpe, _, data) ⇒
-        HttpEntity.Default(tpe, length, data.slice(start, length, materializer))
+        HttpEntity.Default(tpe, length, data.slice(start, length))
     }
   }
 
   implicit class ByteStringPublisherEnhancements(underlying: Publisher[ByteString]) {
-    def slice(start: Long, length: Long, materializer: FlowMaterializer): Publisher[ByteString] =
+    def slice(start: Long, length: Long)(implicit materializer: FlowMaterializer): Publisher[ByteString] =
       Flow(underlying).transform(new Transformer[ByteString, ByteString] {
         type State = Transformer[ByteString, ByteString]
 
@@ -98,7 +100,7 @@ private[http] object StreamUtils {
         override def isComplete: Boolean = currentState.isComplete
         def onNext(element: ByteString): immutable.Seq[ByteString] = currentState.onNext(element)
         override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = currentState.onTermination(e)
-      }).toPublisher(materializer)
+      }).toPublisher()
   }
 
   /**
@@ -109,7 +111,7 @@ private[http] object StreamUtils {
    * FIXME: should we move this into HttpEntity?
    * FIXME: add tests
    */
-  def mapEntityDataBytes(entity: HttpEntity, f: ByteString ⇒ ByteString, finish: () ⇒ ByteString, materializer: FlowMaterializer): HttpEntity = {
+  def mapEntityDataBytes(entity: HttpEntity, f: ByteString ⇒ ByteString, finish: () ⇒ ByteString)(implicit materializer: FlowMaterializer): HttpEntity = {
     def transformer[T](postProcessing: ByteString ⇒ T): Transformer[ByteString, T] =
       new Transformer[ByteString, T] {
         def onNext(element: ByteString): immutable.Seq[T] = postProcessing(f(element)) :: Nil
@@ -125,11 +127,11 @@ private[http] object StreamUtils {
     entity match {
       case HttpEntity.Strict(tpe, data) ⇒ HttpEntity.Strict(tpe, f(data) ++ finish())
       case HttpEntity.Default(tpe, length, data) ⇒
-        val chunks = Flow(data).transform(transformer(Chunk(_): ChunkStreamPart)).toPublisher(materializer)
+        val chunks = Flow(data).transform(transformer(Chunk(_): ChunkStreamPart)).toPublisher()
 
         HttpEntity.Chunked(tpe, chunks)
       case HttpEntity.CloseDelimited(tpe, data) ⇒
-        val newData = Flow(data).transform(transformer(identity)).toPublisher(materializer)
+        val newData = Flow(data).transform(transformer(identity)).toPublisher()
 
         HttpEntity.CloseDelimited(tpe, newData)
       case HttpEntity.Chunked(tpe, chunks) ⇒
@@ -150,7 +152,7 @@ private[http] object StreamUtils {
                 if (last.nonEmpty) Chunk(last) :: Nil
                 else Nil
               } else super.onTermination(e)
-          }).toPublisher(materializer)
+          }).toPublisher()
 
         HttpEntity.Chunked(tpe, newChunks)
     }

@@ -72,7 +72,7 @@ private object PersistentPublisher {
 
 private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Persistent] {
   def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Persistent] =
-    ActorPublisher[Persistent](materializer.context.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+    ActorPublisher[Persistent](materializer.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
       name = s"$flowName-0-persistentPublisher"))
 }
 

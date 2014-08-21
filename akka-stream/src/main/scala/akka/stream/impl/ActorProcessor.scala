@@ -26,7 +26,7 @@ private[akka] object ActorProcessor {
       case m: Merge          ⇒ Props(new MergeImpl(settings, m.other))
       case z: Zip            ⇒ Props(new ZipImpl(settings, z.other))
       case c: Concat         ⇒ Props(new ConcatImpl(settings, c.next))
-      case t: Tee            ⇒ Props(new TeeImpl(settings, t.other))
+      case b: Broadcast      ⇒ Props(new BroadcastImpl(settings, b.other))
       case cf: Conflate      ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
       case ex: Expand        ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
       case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
@@ -243,7 +243,8 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   extends Actor
   with ActorLogging
   with SoftShutdown
-  with Pump {
+  with Pump
+  with Stash {
 
   // FIXME: make pump a member
   protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
@@ -258,7 +259,19 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
       }
     }
 
-  override def receive = primaryInputs.subreceive orElse primaryOutputs.subreceive
+  /**
+   * Subclass may override [[#activeReceive]]
+   */
+  final override def receive = {
+    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
+    case ep: ExposedPublisher ⇒
+      primaryOutputs.subreceive(ep)
+      context become activeReceive
+      unstashAll()
+    case _ ⇒ stash()
+  }
+
+  def activeReceive: Receive = primaryInputs.subreceive orElse primaryOutputs.subreceive
 
   protected def onError(e: Throwable): Unit = fail(e)
 

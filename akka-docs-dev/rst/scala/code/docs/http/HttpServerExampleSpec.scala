@@ -26,18 +26,18 @@ class HttpServerExampleSpec
 
     implicit val system = ActorSystem()
     import system.dispatcher
-    val materializer = FlowMaterializer(MaterializerSettings())
+    implicit val materializer = FlowMaterializer(MaterializerSettings())
     implicit val askTimeout: Timeout = 500.millis
 
     val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
     bindingFuture foreach {
       case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Flow(connectionStream).foreach {
+        Flow(connectionStream).foreach({
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
 
           // handle connection here
-        }.consume(materializer)
+        })
     }
     //#bind-example
   }
@@ -52,7 +52,7 @@ class HttpServerExampleSpec
 
     implicit val system = ActorSystem()
     import system.dispatcher
-    val materializer = FlowMaterializer(MaterializerSettings())
+    implicit val materializer = FlowMaterializer(MaterializerSettings())
     implicit val askTimeout: Timeout = 500.millis
 
     val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
@@ -74,12 +74,12 @@ class HttpServerExampleSpec
     // ...
     bindingFuture foreach {
       case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Flow(connectionStream).foreach {
+        Flow(connectionStream).foreach({
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
 
-            Flow(requestProducer).map(requestHandler).produceTo(responseConsumer, materializer)
-        }.consume(materializer)
+            Flow(requestProducer).map(requestHandler).produceTo(responseConsumer)
+        })
     }
     //#full-server-example
   }

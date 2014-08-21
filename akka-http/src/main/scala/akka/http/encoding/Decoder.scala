@@ -38,7 +38,7 @@ trait Decoder {
     def decodeChunk(bytes: ByteString): ByteString = ByteString(decompressor.decompress(bytes.toArray))
     def finish(): ByteString = ByteString.empty
 
-    StreamUtils.mapEntityDataBytes(entity, decodeChunk, finish, materializer)
+    StreamUtils.mapEntityDataBytes(entity, decodeChunk, finish)(materializer)
   }
 
   def newDecompressor: Decompressor

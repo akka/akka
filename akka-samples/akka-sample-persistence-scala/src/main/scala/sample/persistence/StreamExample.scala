@@ -30,18 +30,18 @@ object StreamExample extends App {
   val p1 = system.actorOf(Props(classOf[ExampleProcessor], "p1"))
   val p2 = system.actorOf(Props(classOf[ExampleProcessor], "p2"))
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer(MaterializerSettings())
 
   // 1 view-backed producer and 2 consumers:
-  val producer1: Publisher[Persistent] = PersistentFlow.fromProcessor("p1").toPublisher(materializer)
-  Flow(producer1).foreach { p => println(s"consumer-1: ${p.payload}") }.consume(materializer)
-  Flow(producer1).foreach { p => println(s"consumer-2: ${p.payload}") }.consume(materializer)
+  val producer1: Publisher[Persistent] = PersistentFlow.fromProcessor("p1").toPublisher()
+  Flow(producer1).foreach(p => println(s"consumer-1: ${p.payload}"))
+  Flow(producer1).foreach(p => println(s"consumer-2: ${p.payload}"))
 
   // 2 view-backed producers (merged) and 1 consumer:
   // This is an example how message/event streams from multiple processors can be merged into a single stream.
-  val producer2: Publisher[Persistent] = PersistentFlow.fromProcessor("p1").toPublisher(materializer)
-  val merged: Publisher[Persistent] = PersistentFlow.fromProcessor("p2").merge(producer2).toPublisher(materializer)
-  Flow(merged).foreach { p => println(s"consumer-3: ${p.payload}") }.consume(materializer)
+  val producer2: Publisher[Persistent] = PersistentFlow.fromProcessor("p1").toPublisher()
+  val merged: Publisher[Persistent] = PersistentFlow.fromProcessor("p2").merge(producer2).toPublisher()
+  Flow(merged).foreach(p => println(s"consumer-3: ${p.payload}"))
 
   while (true) {
     p1 ! Persistent("a-" + System.currentTimeMillis())

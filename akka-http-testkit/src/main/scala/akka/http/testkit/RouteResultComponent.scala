@@ -42,7 +42,7 @@ trait RouteResultComponent {
   /**
    * A receptacle for the response, rejections and potentially generated response chunks created by a route.
    */
-  class RouteResult(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit actorRefFactory: ActorRefFactory) {
+  class RouteResult(timeout: FiniteDuration)(implicit actorRefFactory: ActorRefFactory, materializer: FlowMaterializer) {
     private[this] var _response: Option[HttpResponse] = None
     private[this] var _rejections: Option[List[Rejection]] = None
     private[this] val latch = new CountDownLatch(1)
@@ -108,26 +108,26 @@ trait RouteResultComponent {
       retrieveResponse.entity match {
         case s: HttpEntity.Strict ⇒ () ⇒ s
         case HttpEntity.Default(tpe, length, data) ⇒
-          val dataChunks = awaitAllElements(data, materializer)
+          val dataChunks = awaitAllElements(data)
 
-          () ⇒ HttpEntity.Default(tpe, length, Flow(dataChunks).toPublisher(materializer))
+          () ⇒ HttpEntity.Default(tpe, length, Flow(dataChunks).toPublisher())
 
           case HttpEntity.CloseDelimited(tpe, data) ⇒
-          val dataChunks = awaitAllElements(data, materializer)
+          val dataChunks = awaitAllElements(data)
 
-          () ⇒ HttpEntity.CloseDelimited(tpe, Flow(dataChunks).toPublisher(materializer))
+          () ⇒ HttpEntity.CloseDelimited(tpe, Flow(dataChunks).toPublisher())
 
           case HttpEntity.Chunked(tpe, chunks) ⇒
-          val dataChunks = awaitAllElements(chunks, materializer)
+          val dataChunks = awaitAllElements(chunks)
 
-          () ⇒ HttpEntity.Chunked(tpe, Flow(dataChunks).toPublisher(materializer))
+          () ⇒ HttpEntity.Chunked(tpe, Flow(dataChunks).toPublisher())
       }
     /** Returns an entity from which you can everytime start to read anew */
     def entity: HttpEntity = entityRecreator()
 
     lazy val chunks: List[ChunkStreamPart] =
       entity match {
-        case HttpEntity.Chunked(_, chunks) ⇒ awaitAllElements[ChunkStreamPart](chunks, materializer).toList
+        case HttpEntity.Chunked(_, chunks) ⇒ awaitAllElements[ChunkStreamPart](chunks).toList
         case _                             ⇒ Nil
       }
 

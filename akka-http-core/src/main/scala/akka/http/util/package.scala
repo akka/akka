@@ -39,7 +39,7 @@ package object util {
   private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
     def headAndTail(materializer: FlowMaterializer): Flow[(T, Publisher[T])] =
       underlying.map { p ⇒
-        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toPublisher(materializer)
+        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toPublisher()(materializer)
       }.flatten(FlattenStrategy.Concat())
   }
 

@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
@@ -63,13 +62,12 @@ object Flow {
 
   /**
    * Elements are produced from the tick closure periodically with the specified interval.
-   * The tick element will be delivered to downstream subscribers that has requested any elements.
-   * If a subscriber has not requested any elements at the point in time when the tick
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def apply[T](interval: FiniteDuration, tick: () ⇒ T): Flow[T] = FlowImpl(TickPublisherNode(interval, tick), Nil)
-
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Flow[T] = FlowImpl(TickPublisherNode(initialDelay, interval, tick), Nil)
 }
 
 /**
@@ -100,6 +98,9 @@ object Flow {
  * by those methods that materialize the Flow into a series of
  * [[org.reactivestreams.Processor]] instances. The returned reactive stream
  * is fully started and active.
+ *
+ * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * inside an [[akka.actor.Actor]].
  */
 trait Flow[+T] {
 
@@ -129,14 +130,6 @@ trait Flow[+T] {
    * Non-matching elements are filtered out.
    */
   def collect[U](pf: PartialFunction[T, U]): Flow[U]
-
-  /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Flow` needs to be materialized (e.g. using [[#consume]]) to initiate its
-   * execution.
-   */
-  def foreach(c: T ⇒ Unit): Flow[Unit]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -226,7 +219,7 @@ trait Flow[+T] {
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
-  def prefixAndTail(n: Int): Flow[(immutable.Seq[T], Publisher[T @uncheckedVariance])]
+  def prefixAndTail[U >: T](n: Int): Flow[(immutable.Seq[T], Publisher[U])]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -239,7 +232,7 @@ trait Flow[+T] {
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K](f: T ⇒ K): Flow[(K, Publisher[T @uncheckedVariance])]
+  def groupBy[K, U >: T](f: T ⇒ K): Flow[(K, Publisher[U])]
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -254,7 +247,7 @@ trait Flow[+T] {
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen(p: T ⇒ Boolean): Flow[Publisher[T @uncheckedVariance]]
+  def splitWhen[U >: T](p: T ⇒ Boolean): Flow[Publisher[U]]
 
   /**
    * Merge this stream with the one emitted by the given publisher, taking
@@ -283,7 +276,7 @@ trait Flow[+T] {
    * not shutdown until the subscriptions for `other` and at least
    * one downstream subscriber have been established.
    */
-  def tee(other: Subscriber[_ >: T]): Flow[T]
+  def broadcast(other: Subscriber[_ >: T]): Flow[T]
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
@@ -350,7 +343,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toFuture(materializer: FlowMaterializer): Future[T]
+  def toFuture()(implicit materializer: FlowMaterializer): Future[T]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -359,7 +352,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def consume(materializer: FlowMaterializer): Unit
+  def consume()(implicit materializer: FlowMaterializer): Unit
 
   /**
    * When this flow is completed, either through an error or normal
@@ -368,7 +361,7 @@ trait Flow[+T] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Unit
+  def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Unit
 
   /**
    * Materialize this flow and return the downstream-most
@@ -380,7 +373,7 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def toPublisher(materializer: FlowMaterializer): Publisher[T @uncheckedVariance]
+  def toPublisher[U >: T]()(implicit materializer: FlowMaterializer): Publisher[U]
 
   /**
    * Attaches a subscriber to this stream.
@@ -390,7 +383,19 @@ trait Flow[+T] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(subscriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit
+  def produceTo(subscriber: Subscriber[_ >: T])(implicit materializer: FlowMaterializer): Unit
+
+  /**
+   * Invoke the given procedure for each received element. Returns a [[scala.concurrent.Future]]
+   * that will be completed with `Success` when reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: T ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit]
 
 }
 

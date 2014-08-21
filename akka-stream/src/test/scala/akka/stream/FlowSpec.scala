@@ -3,15 +3,22 @@
  */
 package akka.stream
 
+import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.stream.testkit.{ AkkaSpec, ChainSetup, StreamTestKit }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.stream.scaladsl.Flow
+import org.reactivestreams.Publisher
+
+object FlowSpec {
+  class Fruit
+  class Apple extends Fruit
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
-
+  import FlowSpec._
   import system.dispatcher
 
   val settings = MaterializerSettings(
@@ -20,6 +27,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher")
+  implicit val mat = FlowMaterializer(settings)
 
   val identity: Flow[Any] ⇒ Flow[Any] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any] ⇒ Flow[Any] = in ⇒ identity(in)
@@ -310,6 +318,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "if an internal error occurs upstream should be cancelled" in pending
     "if an internal error occurs subscribers' onError method should be called" in pending
     "if an internal error occurs future subscribers' onError should be called instead of onSubscribed" in pending
+
+    "be covariant" in {
+      val f1: Flow[Fruit] = Flow(() ⇒ new Apple)
+      val p1: Publisher[Fruit] = Flow(() ⇒ new Apple).toPublisher()
+      val f2: Flow[Publisher[Fruit]] = Flow(() ⇒ new Apple).splitWhen(_ ⇒ true)
+      val f3: Flow[(Boolean, Publisher[Fruit])] = Flow(() ⇒ new Apple).groupBy(_ ⇒ true)
+      val f4: Flow[(immutable.Seq[Apple], Publisher[Fruit])] = Flow(() ⇒ new Apple).prefixAndTail(1)
+    }
 
   }
 

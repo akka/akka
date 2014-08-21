@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.util.Try
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -34,6 +33,8 @@ object Duct {
  * methods on it and then attach the `Subscriber` representing the input side of the `Duct` to an
  * upstream `Publisher`.
  *
+ * Use [[ImplicitFlowMaterializer]] to define an implicit [[akka.stream.FlowMaterializer]]
+ * inside an [[akka.actor.Actor]].
  */
 trait Duct[In, +Out] {
   /**
@@ -62,15 +63,6 @@ trait Duct[In, +Out] {
    * Non-matching elements are filtered out.
    */
   def collect[U](pf: PartialFunction[Out, U]): Duct[In, U]
-
-  /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Duct` needs to be materialized (e.g. using [[#consume]] and attaching the
-   * the `Subscriber` representing the input side of the `Duct` to an upstream
-   * `Publisher`) to initiate its execution.
-   */
-  def foreach(c: Out ⇒ Unit): Duct[In, Unit]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -158,7 +150,7 @@ trait Duct[In, +Out] {
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
-  def prefixAndTail(n: Int): Duct[In, (immutable.Seq[Out], Publisher[Out @uncheckedVariance])]
+  def prefixAndTail[U >: Out](n: Int): Duct[In, (immutable.Seq[Out], Publisher[U])]
 
   /**
    * This operation demultiplexes the incoming stream into separate output
@@ -171,7 +163,7 @@ trait Duct[In, +Out] {
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K](f: Out ⇒ K): Duct[In, (K, Publisher[Out @uncheckedVariance])]
+  def groupBy[K, U >: Out](f: Out ⇒ K): Duct[In, (K, Publisher[U])]
 
   /**
    * This operation applies the given predicate to all incoming elements and
@@ -186,7 +178,7 @@ trait Duct[In, +Out] {
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen(p: Out ⇒ Boolean): Duct[In, Publisher[Out @uncheckedVariance]]
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Duct[In, Publisher[U]]
 
   /**
    * Merge this stream with the one emitted by the given publisher, taking
@@ -215,7 +207,7 @@ trait Duct[In, +Out] {
    * not shutdown until the subscriptions for `other` and at least
    * one downstream subscriber have been established.
    */
-  def tee(other: Subscriber[_ >: Out]): Duct[In, Out]
+  def broadcast(other: Subscriber[_ >: Out]): Duct[In, Out]
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
@@ -281,7 +273,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def produceTo(subscriber: Subscriber[Out] @uncheckedVariance, materializer: FlowMaterializer): Subscriber[In]
+  def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Attaches a subscriber to this stream which will just discard all received
@@ -293,7 +285,7 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def consume(materializer: FlowMaterializer): Subscriber[In]
+  def consume()(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * When this flow is completed, either through an error or normal
@@ -303,7 +295,7 @@ trait Duct[In, +Out] {
    *
    * *This operation materializes the flow and initiates its execution.*
    */
-  def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In]
+  def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Subscriber[In]
 
   /**
    * Materialize this `Duct` into a `Subscriber` representing the input side of the `Duct`
@@ -317,7 +309,25 @@ trait Duct[In, +Out] {
    * The given FlowMaterializer decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
-  def build(materializer: FlowMaterializer): (Subscriber[In], Publisher[Out] @uncheckedVariance)
+  def build[U >: Out]()(implicit materializer: FlowMaterializer): (Subscriber[In], Publisher[U])
+
+  /**
+   * Invoke the given procedure for each received element.
+   * Returns a tuple of a `Subscriber` and a `Future`.
+   *
+   * The returned `Subscriber` represents the input side of the `Duct` and can
+   * later be connected to an upstream `Publisher`.
+   *
+   * The returned [[scala.concurrent.Future]] will be completed with `Success` when
+   * reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: Out ⇒ Unit)(implicit materializer: FlowMaterializer): (Subscriber[In], Future[Unit])
 
   /**
    * INTERNAL API

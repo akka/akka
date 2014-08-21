@@ -19,7 +19,7 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -31,7 +31,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback on normal completion" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
-      Flow(p).onComplete({ onCompleteProbe.ref ! _ }, materializer)
+      Flow(p).onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -43,7 +43,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "yield the first error" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
-      Flow(p).onComplete({ onCompleteProbe.ref ! _ }, materializer)
+      Flow(p).onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex") with NoStackTrace
@@ -55,7 +55,7 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback for an empty stream" in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
-      Flow(p).onComplete({ onCompleteProbe.ref ! _ }, materializer)
+      Flow(p).onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()
@@ -66,12 +66,13 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
     "invoke callback after transform and foreach steps " in {
       val onCompleteProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
+      import system.dispatcher // for the Future.onComplete
       Flow(p).map { x ⇒
         onCompleteProbe.ref ! ("map-" + x)
         x
       }.foreach {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
-      }.onComplete({ onCompleteProbe.ref ! _ }, materializer)
+      }.onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)

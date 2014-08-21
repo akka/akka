@@ -144,7 +144,7 @@ trait RouteTest extends RequestBuilding with RouteResultComponent {
         type Out = RouteResult
 
         def apply(request: HttpRequest, route: Route): Out = {
-          val routeResult = new RouteResult(timeout.duration, materializer)
+          val routeResult = new RouteResult(timeout.duration)
           val effectiveRequest =
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,

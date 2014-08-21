@@ -22,7 +22,6 @@ import akka.util.Collections.EmptyImmutableSeq
  * INTERNAL API
  */
 private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]) extends Flow[O] with Builder[O] {
-  import FlowImpl._
   import Ast._
 
   type Thing[T] = Flow[T]
@@ -36,7 +35,7 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
   override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: O, U]): Flow[U] =
     copy(ops = duct.ops ++: ops)
 
-  override def toFuture(materializer: FlowMaterializer): Future[O] = {
+  override def toFuture()(implicit materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
     transform(new Transformer[O, Unit] {
       var done = false
@@ -44,14 +43,14 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
       override def onError(e: Throwable) = { p failure e }
       override def isComplete = done
       override def onTermination(e: Option[Throwable]) = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
-    }).consume(materializer)
+    }).consume()
     p.future
   }
 
-  override def consume(materializer: FlowMaterializer): Unit =
-    produceTo(new BlackholeSubscriber(materializer.settings.maximumInputBufferSize), materializer)
+  override def consume()(implicit materializer: FlowMaterializer): Unit =
+    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
-  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Unit =
+  override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Unit =
     transform(new Transformer[O, Unit] {
       override def onNext(in: O) = Nil
       override def onError(e: Throwable) = {
@@ -62,12 +61,15 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
         callback(Builder.SuccessUnit)
         Nil
       }
-    }).consume(materializer)
+    }).consume()
 
-  override def toPublisher(materializer: FlowMaterializer): Publisher[O] = materializer.toPublisher(publisherNode, ops)
+  override def toPublisher[U >: O]()(implicit materializer: FlowMaterializer): Publisher[U] = materializer.toPublisher(publisherNode, ops)
 
-  override def produceTo(subscriber: Subscriber[_ >: O], materializer: FlowMaterializer): Unit =
-    toPublisher(materializer).subscribe(subscriber.asInstanceOf[Subscriber[O]])
+  override def produceTo(subscriber: Subscriber[_ >: O])(implicit materializer: FlowMaterializer): Unit =
+    toPublisher().subscribe(subscriber.asInstanceOf[Subscriber[O]])
+
+  override def foreach(c: O ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] =
+    foreachTransform(c).toFuture()
 }
 
 /**
@@ -86,13 +88,13 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
-  override def produceTo(subscriber: Subscriber[Out], materializer: FlowMaterializer): Subscriber[In] =
+  override def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In] =
     materializer.ductProduceTo(subscriber, ops)
 
-  override def consume(materializer: FlowMaterializer): Subscriber[In] =
-    produceTo(new BlackholeSubscriber(materializer.settings.maximumInputBufferSize), materializer)
+  override def consume()(implicit materializer: FlowMaterializer): Subscriber[In] =
+    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
-  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In] =
+  override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Subscriber[In] =
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = Nil
       override def onError(e: Throwable) = {
@@ -103,10 +105,19 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
         callback(Builder.SuccessUnit)
         Nil
       }
-    }).consume(materializer)
+    }).consume()
 
-  override def build(materializer: FlowMaterializer): (Subscriber[In], Publisher[Out]) =
+  override def build[U >: Out]()(implicit materializer: FlowMaterializer): (Subscriber[In], Publisher[U]) =
     materializer.ductBuild(ops)
+
+  override def foreach(c: Out ⇒ Unit)(implicit materializer: FlowMaterializer): (Subscriber[In], Future[Unit]) = {
+    val p = Promise[Unit]()
+    val s = foreachTransform(c).onComplete {
+      case Success(_) ⇒ p.success(())
+      case Failure(e) ⇒ p.failure(e)
+    }
+    (s, p.future)
+  }
 
 }
 
@@ -116,7 +127,6 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
 private[akka] object Builder {
   val SuccessUnit = Success[Unit](())
   private val ListOfUnit = List(())
-
   private case object TakeWithinTimerKey
   private case object DropWithinTimerKey
   private case object GroupedWithinTimerKey
@@ -164,7 +174,7 @@ private[akka] trait Builder[Out] {
       override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
     })
 
-  def foreach(c: Out ⇒ Unit): Thing[Unit] =
+  def foreachTransform(c: Out ⇒ Unit): Thing[Unit] =
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = { c(in); Nil }
       override def onTermination(e: Option[Throwable]) = ListOfUnit
@@ -251,7 +261,7 @@ private[akka] trait Builder[Out] {
       override def name = "takeWithin"
     })
 
-  def prefixAndTail(n: Int): Thing[(immutable.Seq[Out], Publisher[Out])] = andThen(PrefixAndTail(n))
+  def prefixAndTail[U >: Out](n: Int): Thing[(immutable.Seq[Out], Publisher[U])] = andThen(PrefixAndTail(n))
 
   def grouped(n: Int): Thing[immutable.Seq[Out]] =
     transform(new Transformer[Out, immutable.Seq[Out]] {
@@ -309,11 +319,11 @@ private[akka] trait Builder[Out] {
 
   def merge[U >: Out](other: Publisher[_ <: U]): Thing[U] = andThen(Merge(other.asInstanceOf[Publisher[Any]]))
 
-  def splitWhen(p: (Out) ⇒ Boolean): Thing[Publisher[Out]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
+  def splitWhen[U >: Out](p: (Out) ⇒ Boolean): Thing[Publisher[U]] = andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 
-  def groupBy[K](f: (Out) ⇒ K): Thing[(K, Publisher[Out])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+  def groupBy[K, U >: Out](f: (Out) ⇒ K): Thing[(K, Publisher[U])] = andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
-  def tee(other: Subscriber[_ >: Out]): Thing[Out] = andThen(Tee(other.asInstanceOf[Subscriber[Any]]))
+  def broadcast(other: Subscriber[_ >: Out]): Thing[Out] = andThen(Broadcast(other.asInstanceOf[Subscriber[Any]]))
 
   def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Thing[S] =
     andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))

@@ -38,16 +38,16 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
     val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
 
     val (contextBypassSubscriber, contextBypassPublisher) =
-      Duct[(HttpRequest, Any)].map(_._2).build(materializer)
+      Duct[(HttpRequest, Any)].map(_._2).build()(materializer)
 
     val requestSubscriber =
       Duct[(HttpRequest, Any)]
-        .tee(contextBypassSubscriber)
+        .broadcast(contextBypassSubscriber)
         .map(requestMethodByPass)
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform(errorLogger(log, "Outgoing request stream error"))
-        .produceTo(tcpConn.outputStream, materializer)
+        .produceTo(tcpConn.outputStream)(materializer)
 
     val responsePublisher =
       Flow(tcpConn.inputStream)
@@ -59,7 +59,7 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
             HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
         }
         .zip(contextBypassPublisher)
-        .toPublisher(materializer)
+        .toPublisher()(materializer)
 
     val processor = HttpClientProcessor(requestSubscriber, responsePublisher)
     Http.OutgoingConnection(tcpConn.remoteAddress, tcpConn.localAddress, processor)

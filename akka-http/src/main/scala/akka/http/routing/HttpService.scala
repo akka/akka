@@ -28,8 +28,8 @@ import akka.http.model.{ HttpRequest, HttpResponse }
 import scala.util.control.NonFatal
 
 object HttpService {
-  def handleConnections(serverConn: Future[Http.ServerBinding], materializer: FlowMaterializer)(route: Route)(implicit eh: ExceptionHandler, rh: RejectionHandler, rs: RoutingSettings, ec: ExecutionContext): Unit =
-    runServerWithHandler(serverConn, materializer) { request ⇒
+  def handleConnections(serverConn: Future[Http.ServerBinding])(route: Route)(implicit materializer: FlowMaterializer, eh: ExceptionHandler, rh: RejectionHandler, rs: RoutingSettings, ec: ExecutionContext): Unit =
+    runServerWithHandler(serverConn) { request ⇒
       def handleResult(result: RouteResult): Future[HttpResponse] = result match {
         case CompleteWith(response)     ⇒ Future.successful(response)
         case DeferredResult(lateResult) ⇒ lateResult.flatMap(handleResult)
@@ -58,13 +58,13 @@ object HttpService {
     case x :: _ ⇒ sys.error("Unhandled rejection: " + x)
   }
 
-  def runServerWithHandler(serverConn: Future[Http.ServerBinding], materializer: FlowMaterializer)(requestHandler: HttpRequest ⇒ Future[HttpResponse])(implicit ec: ExecutionContext): Unit =
+  def runServerWithHandler(serverConn: Future[Http.ServerBinding])(requestHandler: HttpRequest ⇒ Future[HttpResponse])(implicit materializer: FlowMaterializer, ec: ExecutionContext): Unit =
     serverConn.foreach {
       case Http.ServerBinding(localAddress, connectionStream) ⇒
         Flow(connectionStream).foreach {
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
-            Flow(requestProducer).mapFuture(requestHandler).produceTo(responseConsumer, materializer)
-        }.consume(materializer)
+            Flow(requestProducer).mapFuture(requestHandler).produceTo(responseConsumer)
+        }(materializer)
     }
 }

@@ -39,7 +39,7 @@ package object unmarshalling {
     def asString(implicit mat: FlowMaterializer, ec: ExecutionContext): Future[String] = as[String]
 
     def collectedDataBytes(implicit mat: FlowMaterializer): Future[ByteString] =
-      Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture(mat)
+      Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture()
   }
 }
 

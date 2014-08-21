@@ -116,7 +116,7 @@ class TcpFlowSpec extends AkkaSpec {
     maxFanOutBufferSize = 2,
     dispatcher = "akka.test.stream-dispatcher")
 
-  val materializer = FlowMaterializer(settings)
+  implicit val materializer = FlowMaterializer(settings)
 
   // FIXME: get it from TestUtil
   def temporaryServerAddress: InetSocketAddress = {
@@ -204,7 +204,7 @@ class TcpFlowSpec extends AkkaSpec {
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): Future[Unit] =
     Flow(bind(serverAddress).connectionStream).foreach { conn ⇒
       conn.inputStream.subscribe(conn.outputStream)
-    }.toFuture(materializer)
+    }
 
   "Outgoing TCP stream" must {
 
@@ -239,9 +239,9 @@ class TcpFlowSpec extends AkkaSpec {
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       serverConnection.read(256)
-      Flow(tcpProcessor).consume(materializer)
+      Flow(tcpProcessor).consume()
 
-      Flow(testInput).toPublisher(materializer).subscribe(tcpProcessor)
+      Flow(testInput).toPublisher().subscribe(tcpProcessor)
       serverConnection.waitRead() should be(expectedOutput)
 
     }
@@ -256,7 +256,7 @@ class TcpFlowSpec extends AkkaSpec {
       for (in ← testInput) serverConnection.write(in)
       new TcpWriteProbe(tcpProcessor) // Just register an idle upstream
 
-      val resultFuture = Flow(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
+      val resultFuture = Flow(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
       serverConnection.confirmedClose()
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
@@ -349,8 +349,8 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toPublisher(materializer).subscribe(conn.outputStream)
-      val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
+      Flow(testInput).toPublisher().subscribe(conn.outputStream)
+      val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
@@ -368,10 +368,10 @@ class TcpFlowSpec extends AkkaSpec {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toPublisher(materializer).subscribe(conn1.outputStream)
+      Flow(testInput).toPublisher().subscribe(conn1.outputStream)
       conn1.inputStream.subscribe(conn2.outputStream)
       conn2.inputStream.subscribe(conn3.outputStream)
-      val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture(materializer)
+      val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 

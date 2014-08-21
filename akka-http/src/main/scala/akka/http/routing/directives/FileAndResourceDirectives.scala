@@ -72,7 +72,7 @@ trait FileAndResourceDirectives {
             implicit val ec = refFactory.dispatcher
             conditionalFor(file.length, file.lastModified).apply {
               withRangeSupport() {
-                complete(HttpEntity.Default(contentType, file.length, StreamUtils.fromInputStream(new FileInputStream(file), materializer)))
+                complete(HttpEntity.Default(contentType, file.length, StreamUtils.fromInputStream(new FileInputStream(file))))
               }
             }
         } else reject
@@ -128,7 +128,7 @@ trait FileAndResourceDirectives {
                 conditionalFor(length, lastModified).apply {
                   withRangeSupport() {
                     complete {
-                      HttpEntity.Default(contentType, length, StreamUtils.fromInputStream(url.openStream(), materializer))
+                      HttpEntity.Default(contentType, length, StreamUtils.fromInputStream(url.openStream()))
                     }
                 }
               }

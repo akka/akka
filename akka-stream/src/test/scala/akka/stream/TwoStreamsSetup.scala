@@ -11,7 +11,7 @@ import scala.util.control.NoStackTrace
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
@@ -28,7 +28,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = StreamTestKit.SubscriberProbe[Outputs]()
-    operationUnderTest(Flow(p1), p2).toPublisher(materializer).subscribe(subscriber)
+    operationUnderTest(Flow(p1), p2).toPublisher().subscribe(subscriber)
     subscriber
   }
 
@@ -36,7 +36,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Flow(elems).toPublisher(materializer)
+  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Flow(elems).toPublisher()
 
   def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 

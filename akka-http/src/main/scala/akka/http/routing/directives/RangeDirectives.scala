@@ -54,7 +54,7 @@ trait RangeDirectives {
 
     class IndexRange(val start: Long, val end: Long) {
       def length = end - start
-      def apply(entity: HttpEntity) = entity.sliceData(start, end, materializer)
+      def apply(entity: HttpEntity) = entity.sliceData(start, end)
       def distance(other: IndexRange) = mergedEnd(other) - mergedStart(other) - (length + other.length)
       def mergeWith(other: IndexRange) = new IndexRange(mergedStart(other), mergedEnd(other))
       def contentRangeHeader(entityLength: Long) = `Content-Range`(ContentRange(start, end - 1, entityLength))

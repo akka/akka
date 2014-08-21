@@ -154,7 +154,7 @@ class EncodingDirectivesSpec extends RoutingSpec {
         text.grouped(8).map { chars ⇒
           Chunk(chars.mkString): ChunkStreamPart
         }
-      val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Flow(textChunks).toPublisher(materializer))
+      val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Flow(textChunks).toPublisher())
 
       Post() ~> `Accept-Encoding`(gzip) ~> {
         encodeResponse(Gzip) {

@@ -41,7 +41,7 @@ trait Encoder {
     def encodeChunk(bytes: ByteString): ByteString = ByteString(compressor.compress(bytes.toArray).flush())
     def finish(): ByteString = ByteString(compressor.finish())
 
-    StreamUtils.mapEntityDataBytes(entity, encodeChunk, finish, materializer)
+    StreamUtils.mapEntityDataBytes(entity, encodeChunk, finish)(materializer)
   }
 
   def newCompressor: Compressor

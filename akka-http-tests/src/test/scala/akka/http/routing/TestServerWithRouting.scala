@@ -25,14 +25,14 @@ object TestServerWithRouting extends App {
                                                    """)
   implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
-  val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer(MaterializerSettings())
 
   implicit val askTimeout: Timeout = 500.millis
   val bindingFuture = (IO(Http) ? Http.Bind(interface = "localhost", port = 8080)).mapTo[Http.ServerBinding]
 
   import Directives._
 
-  HttpService.handleConnections(bindingFuture, materializer) {
+  HttpService.handleConnections(bindingFuture) {
     get {
       path("") {
         complete(index)

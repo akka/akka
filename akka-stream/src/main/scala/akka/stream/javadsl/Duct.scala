@@ -19,6 +19,7 @@ import akka.stream.scaladsl.{ Duct ⇒ SDuct }
 import akka.stream.impl.Ast
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
+import akka.dispatch.ExecutionContexts
 
 /**
  * Java API
@@ -73,15 +74,6 @@ abstract class Duct[In, Out] {
    * Use [[akka.japi.pf.PFBuilder]] to construct the `PartialFunction`.
    */
   def collect[U](pf: PartialFunction[Out, U]): Duct[In, U]
-
-  /**
-   * Invoke the given procedure for each received element and produce a Unit value
-   * upon reaching the normal end of the stream. Please note that also in this case
-   * the `Duct` needs to be materialized (e.g. using [[#consume]] and attaching the
-   * the `Subscriber` representing the input side of the `Duct` to an upstream
-   * `Publisher`) to initiate its execution.
-   */
-  def foreach(c: Procedure[Out]): Duct[In, Void]
 
   /**
    * Invoke the given function for every received element, giving it its previous
@@ -226,7 +218,7 @@ abstract class Duct[In, Out] {
    * not shutdown until the subscriptions for `other` and at least
    * one downstream subscriber have been established.
    */
-  def tee(other: Subscriber[_ >: Out]): Duct[In, Out]
+  def broadcast(other: Subscriber[_ >: Out]): Duct[In, Out]
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
@@ -326,6 +318,24 @@ abstract class Duct[In, Out] {
   def build(materializer: FlowMaterializer): Pair[Subscriber[In], Publisher[Out]]
 
   /**
+   * Invoke the given procedure for each received element.
+   * Returns a pair of a `Subscriber` and a `Future`.
+   *
+   * The returned `Subscriber` represents the input side of the `Duct` and can
+   * later be connected to an upstream `Publisher`.
+   *
+   * The returned [[scala.concurrent.Future]] will be completed with `Success` when
+   * reaching the normal end of the stream, or completed
+   * with `Failure` if there is an error is signaled in the stream.
+   *
+   * *This will materialize the flow and initiate its execution.*
+   *
+   * The given FlowMaterializer decides how the flow’s logical structure is
+   * broken down into individual processing steps.
+   */
+  def foreach(c: Procedure[Out], materializer: FlowMaterializer): Pair[Subscriber[In], Future[Void]]
+
+  /**
    * INTERNAL API
    * Used by `Flow.append(duct)`.
    */
@@ -344,9 +354,6 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def filter(p: Predicate[T]): Duct[In, T] = new DuctAdapter(delegate.filter(p.test))
 
   override def collect[U](pf: PartialFunction[T, U]): Duct[In, U] = new DuctAdapter(delegate.collect(pf))
-
-  override def foreach(c: Procedure[T]): Duct[In, Void] =
-    new DuctAdapter(delegate.foreach(c.apply).map(_ ⇒ null)) // FIXME optimize to one step 
 
   override def fold[U](zero: U, f: Function2[U, T, U]): Duct[In, U] =
     new DuctAdapter(delegate.fold(zero) { case (a, b) ⇒ f.apply(a, b) })
@@ -371,10 +378,6 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def transform[U](transformer: Transformer[T, U]): Duct[In, U] =
     new DuctAdapter(delegate.transform(transformer))
 
-  /**
-   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
-   * and a stream representing the remaining elements.
-   */
   override def prefixAndTail(n: Int): Duct[In, Pair[java.util.List[T], Publisher[T]]] =
     new DuctAdapter(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ Pair(taken.asJava, tail) })
 
@@ -393,8 +396,8 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
   override def concat[U >: T](next: Publisher[U]): Duct[In, U] =
     new DuctAdapter(delegate.concat(next))
 
-  override def tee(other: Subscriber[_ >: T]): Duct[In, T] =
-    new DuctAdapter(delegate.tee(other))
+  override def broadcast(other: Subscriber[_ >: T]): Duct[In, T] =
+    new DuctAdapter(delegate.broadcast(other))
 
   override def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, T] =
     new DuctAdapter(delegate.buffer(size, overflowStrategy))
@@ -415,21 +418,27 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
     new DuctAdapter(delegate.appendJava(duct))
 
   override def produceTo(subscriber: Subscriber[T], materializer: FlowMaterializer): Subscriber[In] =
-    delegate.produceTo(subscriber, materializer)
+    delegate.produceTo(subscriber)(materializer)
 
   override def consume(materializer: FlowMaterializer): Subscriber[In] =
-    delegate.consume(materializer)
+    delegate.consume()(materializer)
 
   override def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Subscriber[In] =
-    delegate.onComplete({
-
+    delegate.onComplete {
       case Success(_) ⇒ callback.onComplete(null)
       case Failure(e) ⇒ callback.onComplete(e)
-    }, materializer)
+    }(materializer)
 
   override def build(materializer: FlowMaterializer): Pair[Subscriber[In], Publisher[T]] = {
-    val (in, out) = delegate.build(materializer)
+    val (in, out) = delegate.build()(materializer)
     Pair(in, out)
+  }
+
+  override def foreach(c: Procedure[T], materializer: FlowMaterializer): Pair[Subscriber[In], Future[Void]] = {
+    val (in, fut) = delegate.foreach(elem ⇒ c.apply(elem))(materializer)
+    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    val voidFut = fut.map(_ ⇒ null).mapTo[Void]
+    Pair(in, voidFut)
   }
 
   override private[akka] def ops: immutable.Seq[Ast.AstNode] = delegate.ops

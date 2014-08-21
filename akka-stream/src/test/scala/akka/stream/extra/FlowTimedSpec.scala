@@ -22,7 +22,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
   lazy val metricsConfig = system.settings.config
 
-  val materializer = FlowMaterializer(settings)
+  implicit val materializer = FlowMaterializer(settings)
 
   "Timed Flow" must {
 
@@ -83,9 +83,9 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val duct: Duct[Int, Long] = Duct[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
       val c1 = StreamTestKit.SubscriberProbe[Long]()
-      val c2: Subscriber[Int] = duct.produceTo(c1, materializer)
+      val c2: Subscriber[Int] = duct.produceTo(c1)
 
-      val p = Flow(List(1, 2, 3)).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3)).toPublisher()
       p.subscribe(c2)
 
       val s = c1.expectSubscription()
@@ -111,12 +111,12 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
             map(_.toString), duration ⇒ probe.ref ! duration).
           map { s: String ⇒ s + "!" }
 
-      val (ductIn: Subscriber[Int], ductOut: Publisher[String]) = duct.build(materializer)
+      val (ductIn: Subscriber[Int], ductOut: Publisher[String]) = duct.build()
 
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = ductOut.subscribe(c1)
 
-      val p = Flow(0 to 100).toPublisher(materializer)
+      val p = Flow(0 to 100).toPublisher()
       p.subscribe(ductIn)
 
       val s = c1.expectSubscription()
