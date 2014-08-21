@@ -85,10 +85,10 @@ object MultipartFormData {
   }
 }
 
-final case class FormFile(name: Option[String], entity: HttpEntity.Default)
+final case class FormFile(name: Option[String], entity: HttpEntity)
 
 object FormFile {
-  def apply(name: String, entity: HttpEntity.Default): FormFile = apply(Some(name), entity)
+  def apply(name: String, entity: HttpEntity): FormFile = apply(Some(name), entity)
 }
 
 /**
@@ -129,4 +129,39 @@ object BodyPart {
   def apply(entity: HttpEntity, fieldName: String): BodyPart = apply(entity, fieldName, Map.empty[String, String])
   def apply(entity: HttpEntity, fieldName: String, params: Map[String, String]): BodyPart =
     BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionTypes.`form-data`, params.updated("name", fieldName))))
+}
+
+/**
+ * A convenience extractor that allows to match on a BodyPart including its name if the body-part
+ * is used as part of form-data. If the part has no name the extractor won't match.
+ *
+ * Example:
+ *
+ * {{{
+ * (formData: StrictMultipartFormData).fields collect {
+ *   case NamedBodyPart("address", data, headers) => data
+ * }
+ * }}}
+ */
+object NamedBodyPart {
+  def unapply(part: BodyPart): Option[(String, HttpEntity, immutable.Seq[HttpHeader])] =
+    part.name.map(name ⇒ (name, part.entity, part.headers))
+}
+
+/**
+ * A convenience extractor that allows to match on a BodyPart including its name and filename
+ * if the body-part is used as part of form-data. If the part has no name an empty string will be
+ * extracted, instead. If the part has no filename the extractor won't match.
+ *
+ * Example:
+ *
+ * {{{
+ * (formData: StrictMultipartFormData).fields collect {
+ *   case FileBodyPart("file", filename, data, headers) => filename -> data
+ * }
+ * }}}
+ */
+object FileBodyPart {
+  def unapply(part: BodyPart): Option[(String, String, HttpEntity, immutable.Seq[HttpHeader])] =
+    part.filename.map(filename ⇒ (part.name.getOrElse(""), filename, part.entity, part.headers))
 }
