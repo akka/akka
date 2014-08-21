@@ -42,33 +42,3 @@ package object unmarshalling {
       Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture()
   }
 }
-
-/*
-
-type Deserialized[T] = Future[T]
-  type FromStringDeserializer[T] = Deserializer[String, T]
-  type FromStringOptionDeserializer[T] = Deserializer[Option[String], T]
-  type FromEntityOptionUnmarshaller[T] = Deserializer[Option[HttpEntity], T]
-  type FromBodyPartOptionUnmarshaller[T] = Deserializer[Option[BodyPart], T]
-  type FromMessageUnmarshaller[T] = Deserializer[HttpMessage, T]
-  trait FormFieldConverter[T] {
-    def withDefault(default: T): FormFieldConverter[T]
-  }
-
-  def unmarshalUnsafe[T: Unmarshaller](entity: HttpEntity): T = routing.FIXME
-
-  implicit class RequestAddAs(req: HttpRequest) {
-    def as[T](implicit um: FromRequestUnmarshaller[T]): Deserialized[T] = um(req)
-  }
-  implicit class ResponseAddAs(res: HttpResponse) {
-    def as[T](implicit um: FromResponseUnmarshaller[T]): Deserialized[T] = um(res)
-  }
-  implicit class EntityAddAs(ent: HttpEntity) {
-    def as[T](implicit um: Unmarshaller[T]): Deserialized[T] = um(ent)
-    def asString(implicit mat: FlowMaterializer, ec: ExecutionContext): Future[String] = as[String]
-
-    def collectedDataBytes(implicit mat: FlowMaterializer): Future[ByteString] =
-      Flow(ent.dataBytes(mat)).fold(ByteString.empty)(_ ++ _).toFuture(mat)
-  }
-
-  */ 
