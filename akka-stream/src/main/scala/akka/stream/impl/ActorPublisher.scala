@@ -4,12 +4,13 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import akka.stream.{ MaterializerSettings }
+import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
 import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
 import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
@@ -54,10 +55,10 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
   // SubscribePending message. The AtomicReference is set to null by the shutdown method, which is
   // called by the actor from postStop. Pending (unregistered) subscription attempts are denied by
   // the shutdown method. Subscription attempts after shutdown can be denied immediately.
-  private val pendingSubscribers = new AtomicReference[immutable.Seq[Subscriber[T]]](Nil)
+  private val pendingSubscribers = new AtomicReference[immutable.Seq[Subscriber[_ >: T]]](Nil)
 
-  override def subscribe(subscriber: Subscriber[T]): Unit = {
-    @tailrec def doSubscribe(subscriber: Subscriber[T]): Unit = {
+  override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
+    @tailrec def doSubscribe(subscriber: Subscriber[_ >: T]): Unit = {
       val current = pendingSubscribers.get
       if (current eq null)
         reportSubscribeError(subscriber)
@@ -72,7 +73,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
     doSubscribe(subscriber)
   }
 
-  def takePendingSubscribers(): immutable.Seq[Subscriber[T]] = {
+  def takePendingSubscribers(): immutable.Seq[Subscriber[_ >: T]] = {
     val pending = pendingSubscribers.getAndSet(Nil)
     assert(pending ne null, "takePendingSubscribers must not be called after shutdown")
     pending.reverse
@@ -88,7 +89,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
 
   @volatile private var shutdownReason: Option[Throwable] = None
 
-  private def reportSubscribeError(subscriber: Subscriber[T]): Unit =
+  private def reportSubscribeError(subscriber: Subscriber[_ >: T]): Unit =
     shutdownReason match {
       case Some(e) ⇒ subscriber.onError(e)
       case None    ⇒ subscriber.onComplete()
@@ -108,9 +109,9 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
 /**
  * INTERNAL API
  */
-private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[T]) extends SubscriptionWithCursor[T] {
-  override def request(elements: Int): Unit =
-    if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends SubscriptionWithCursor[T] {
+  override def request(elements: Long): Unit =
+    if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
     else impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
@@ -149,7 +150,6 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   with SubscriberManagement[T]
   with SoftShutdown {
 
-  import akka.stream.impl.ActorBasedFlowMaterializer._
   import akka.stream.impl.SimpleCallbackPublisherImpl._
 
   type S = ActorSubscription[T]
@@ -184,7 +184,7 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   override def postStop(): Unit =
     if (pub ne null) pub.shutdown(shutdownReason)
 
-  private var demand = 0
+  private var demand = 0L
   private def generate(): Unit = {
     if (demand > 0) {
       try {
@@ -201,10 +201,10 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   override def initialBufferSize = settings.initialFanOutBufferSize
   override def maxBufferSize = settings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[T]): ActorSubscription[T] =
+  override def createSubscription(subscriber: Subscriber[_ >: T]): ActorSubscription[T] =
     new ActorSubscription(self, subscriber)
 
-  override def requestFromUpstream(elements: Int): Unit = demand += elements
+  override def requestFromUpstream(elements: Long): Unit = demand += elements
 
   override def cancelUpstream(): Unit = {
     pub.shutdown(shutdownReason)

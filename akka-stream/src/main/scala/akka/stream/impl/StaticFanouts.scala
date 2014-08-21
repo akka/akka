@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.stream.MaterializerSettings
-import org.reactivestreams.{ Subscriber, Subscription, Publisher }
+import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
@@ -15,7 +15,7 @@ private[akka] class BroadcastImpl(_settings: MaterializerSettings, other: Subscr
   override val primaryOutputs = new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
     var secondarySubscribed = false
 
-    override def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
+    override def registerSubscriber(subscriber: Subscriber[_ >: Any]): Unit = {
       if (!secondarySubscribed) {
         super.registerSubscriber(other)
         secondarySubscribed = true

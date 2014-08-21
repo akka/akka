@@ -3,6 +3,8 @@
  */
 package akka.stream.impl
 
+import java.util.concurrent.atomic.AtomicReference
+
 import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
@@ -12,13 +14,13 @@ import org.reactivestreams.{ Subscriber, Subscription }
 private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscriber[T] {
 
   private val lowWatermark = Math.max(1, highWatermark / 2)
-  private var requested = 0
+  private var requested = 0L
 
-  private var subscription: Subscription = _
+  private val subscription: AtomicReference[Subscription] = new AtomicReference(null)
 
   override def onSubscribe(sub: Subscription): Unit = {
-    subscription = sub
-    requestMore()
+    if (subscription.compareAndSet(null, sub)) requestMore()
+    else sub.cancel()
   }
 
   override def onError(cause: Throwable): Unit = ()
@@ -30,10 +32,10 @@ private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscribe
     requestMore()
   }
 
-  private def requestMore(): Unit =
+  protected def requestMore(): Unit =
     if (requested < lowWatermark) {
       val amount = highWatermark - requested
-      subscription.request(amount)
+      subscription.get().request(amount)
       requested += amount
     }
 

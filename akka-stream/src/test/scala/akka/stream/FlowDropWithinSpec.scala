@@ -20,19 +20,19 @@ class FlowDropWithinSpec extends AkkaSpec {
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[Int]()
       Flow(p).dropWithin(1.second).produceTo(c)
-      val pSub = p.expectSubscription
-      val cSub = c.expectSubscription
+      val pSub = p.expectSubscription()
+      val cSub = c.expectSubscription()
       cSub.request(100)
-      val demand1 = pSub.expectRequest
-      (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand2 = pSub.expectRequest
-      (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand3 = pSub.expectRequest
+      val demand1 = pSub.expectRequest()
+      (1 to demand1.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      val demand2 = pSub.expectRequest()
+      (1 to demand2.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      val demand3 = pSub.expectRequest()
       c.expectNoMsg(1500.millis)
-      (1 to demand3) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      ((demand1 + demand2 + 1) to (demand1 + demand2 + demand3)) foreach { n ⇒ c.expectNext(n) }
+      (1 to demand3.toInt) foreach { _ ⇒ pSub.sendNext(input.next()) }
+      ((demand1 + demand2 + 1).toInt to (demand1 + demand2 + demand3).toInt) foreach { n ⇒ c.expectNext(n) }
       pSub.sendComplete()
-      c.expectComplete
+      c.expectComplete()
       c.expectNoMsg(200.millis)
     }
 

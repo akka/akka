@@ -4,6 +4,7 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
+import akka.stream.ReactiveStreamsConstants
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.actor.AbstractActor
 import akka.actor.Actor
@@ -47,7 +48,7 @@ object ActorPublisherMessage {
    * more elements.
    * @param n number of requested elements
    */
-  @SerialVersionUID(1L) case class Request(n: Int) extends ActorPublisherMessage
+  @SerialVersionUID(1L) case class Request(n: Long) extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
@@ -122,11 +123,7 @@ trait ActorPublisher[T] extends Actor {
    * This actor automatically keeps tracks of this amount based on
    * incoming request messages and outgoing `onNext`.
    */
-  final def totalDemand: Int = longToIntMax(demand)
-
-  private def longToIntMax(n: Long): Int =
-    if (n > Int.MaxValue) Int.MaxValue
-    else n.toInt
+  final def totalDemand: Long = demand
 
   /**
    * The terminal state after calling [[#onComplete]]. It is not allowed to
@@ -210,7 +207,7 @@ trait ActorPublisher[T] extends Actor {
       demand += n
       super.aroundReceive(receive, msg)
 
-    case Subscribe(sub) ⇒
+    case Subscribe(sub: Subscriber[_]) ⇒
       lifecycleState match {
         case PreSubscriber ⇒
           subscriber = sub
@@ -219,12 +216,16 @@ trait ActorPublisher[T] extends Actor {
         case ErrorEmitted(cause) ⇒ sub.onError(cause)
         case Completed           ⇒ sub.onComplete()
         case Active | Canceled ⇒
-          sub.onError(new IllegalStateException(s"ActorPublisher [$self] can only have one subscriber"))
+          if (subscriber == sub)
+            sub.onError(new IllegalStateException(s"ActorPublisher [$self, sub: $sub] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
+          else
+            sub.onError(new IllegalStateException(s"ActorPublisher [$self] ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
       }
 
     case Cancel ⇒
       lifecycleState = Canceled
       demand = 0
+      subscriber = null
       super.aroundReceive(receive, msg)
 
     case _ ⇒
@@ -272,7 +273,7 @@ private[akka] case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[
   import ActorPublisher._
   import ActorPublisher.Internal._
 
-  override def subscribe(sub: Subscriber[T]): Unit =
+  override def subscribe(sub: Subscriber[_ >: T]): Unit =
     ref ! Subscribe(sub.asInstanceOf[Subscriber[Any]])
 }
 
@@ -283,8 +284,8 @@ private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscri
   import ActorPublisher._
   import ActorPublisherMessage._
 
-  override def request(n: Int): Unit =
-    if (n <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+  override def request(n: Long): Unit =
+    if (n <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
     else ref ! Request(n)
   override def cancel(): Unit = ref ! Cancel
 }

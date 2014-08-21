@@ -28,15 +28,15 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(100)
-      val demand1 = pSub.expectRequest
+      val demand1 = pSub.expectRequest.toInt
       (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand2 = pSub.expectRequest
+      val demand2 = pSub.expectRequest.toInt
       (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand3 = pSub.expectRequest
-      c.expectNext((1 to (demand1 + demand2)).toVector)
+      val demand3 = pSub.expectRequest.toInt
+      c.expectNext((1 to (demand1 + demand2).toInt).toVector)
       (1 to demand3) foreach { _ ⇒ pSub.sendNext(input.next()) }
       c.expectNoMsg(300.millis)
-      c.expectNext(((demand1 + demand2 + 1) to (demand1 + demand2 + demand3)).toVector)
+      c.expectNext(((demand1 + demand2 + 1).toInt to (demand1 + demand2 + demand3).toInt).toVector)
       c.expectNoMsg(300.millis)
       pSub.expectRequest
       val last = input.next()
@@ -65,10 +65,10 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(1)
-      val demand1 = pSub.expectRequest
+      val demand1 = pSub.expectRequest.toInt
       (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
       c.expectNext((1 to demand1).toVector)
-      val demand2 = pSub.expectRequest
+      val demand2 = pSub.expectRequest.toInt
       (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
       c.expectNoMsg(300.millis)
       cSub.request(1)
@@ -107,7 +107,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(4)
-      val demand1 = pSub.expectRequest
+      val demand1 = pSub.expectRequest.toInt
       demand1 should be(4)
       c.expectNoMsg(1000.millis)
       (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }

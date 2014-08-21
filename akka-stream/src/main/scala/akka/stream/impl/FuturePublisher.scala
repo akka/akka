@@ -3,14 +3,21 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Props, Status, SupervisorStrategy }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.Status
+import akka.actor.SupervisorStrategy
 import akka.pattern.pipe
 import akka.stream.MaterializerSettings
-import org.reactivestreams.{ Subscriber, Subscription }
+import akka.stream.ReactiveStreamsConstants
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -27,8 +34,8 @@ private[akka] object FuturePublisher {
   class FutureSubscription(ref: ActorRef) extends Subscription {
     import akka.stream.impl.FuturePublisher.FutureSubscription._
     def cancel(): Unit = ref ! Cancel(this)
-    def request(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+    def request(elements: Long): Unit =
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
       else ref ! RequestMore(this)
     override def toString = "FutureSubscription"
   }
@@ -39,7 +46,8 @@ private[akka] object FuturePublisher {
  */
 private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.FuturePublisher.FutureSubscription
-  import akka.stream.impl.FuturePublisher.FutureSubscription.{ Cancel, RequestMore }
+  import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
+  import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore
 
   var exposedPublisher: ActorPublisher[Any] = _
   var subscribers = Map.empty[Subscriber[Any], FutureSubscription]
@@ -98,7 +106,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
     if (subscribers.contains(subscriber))
-      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     else {
       val subscription = new FutureSubscription(self)
       subscribers = subscribers.updated(subscriber, subscription)

@@ -169,7 +169,7 @@ trait ActorSubscriber extends Actor {
 
   private val state = ActorSubscriberState(context.system)
   private var subscription: Option[Subscription] = None
-  private var requested = 0L
+  private var requested: Long = 0
   private var canceled = false
 
   protected def requestStrategy: RequestStrategy
@@ -244,7 +244,7 @@ trait ActorSubscriber extends Actor {
   /**
    * Request a number of elements from upstream.
    */
-  protected def request(elements: Int): Unit =
+  protected def request(elements: Long): Unit =
     if (elements > 0 && !canceled) {
       // if we don't have a subscription yet, it will be requested when it arrives
       subscription.foreach(_.request(elements))

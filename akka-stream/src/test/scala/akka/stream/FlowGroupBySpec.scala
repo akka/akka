@@ -23,7 +23,7 @@ class FlowGroupBySpec extends AkkaSpec {
     p.subscribe(probe)
     val subscription = probe.expectSubscription()
 
-    def request(demand: Int): Unit = subscription.request(demand)
+    def request(demand: Long): Unit = subscription.request(demand)
     def expectNext(elem: Int): Unit = probe.expectNext(elem)
     def expectNoMsg(max: FiniteDuration): Unit = probe.expectNoMsg(max)
     def expectComplete(): Unit = probe.expectComplete()

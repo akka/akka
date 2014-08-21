@@ -4,12 +4,11 @@
 package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef, Props, SupervisorStrategy, Terminated }
-import akka.stream.MaterializerSettings
+import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
 
 /**
@@ -21,15 +20,15 @@ private[akka] object IterablePublisher {
 
   object BasicActorSubscription {
     case object Cancel
-    case class RequestMore(elements: Int)
+    case class RequestMore(elements: Long)
   }
 
   class BasicActorSubscription(ref: ActorRef)
     extends Subscription {
     import akka.stream.impl.IterablePublisher.BasicActorSubscription._
     def cancel(): Unit = ref ! Cancel
-    def request(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+    def request(elements: Long): Unit =
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
       else ref ! RequestMore(elements)
     override def toString = "BasicActorSubscription"
   }
@@ -43,7 +42,6 @@ private[akka] object IterablePublisher {
  * beginning of the iterable and it can consume the elements in its own pace.
  */
 private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
-  import akka.stream.impl.ActorBasedFlowMaterializer._
   import akka.stream.impl.IterablePublisher.BasicActorSubscription
 
   require(iterable.nonEmpty, "Use EmptyPublisher for empty iterable")
@@ -91,7 +89,7 @@ private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], setting
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
     if (subscribers(subscriber))
-      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     else {
       val iterator = iterable.iterator
       val worker = context.watch(context.actorOf(IterablePublisherWorker.props(iterator, subscriber,
@@ -130,17 +128,16 @@ private[akka] object IterablePublisherWorker {
  */
 private[akka] class IterablePublisherWorker(iterator: Iterator[Any], subscriber: Subscriber[Any], maxPush: Int)
   extends Actor with SoftShutdown {
-  import akka.stream.impl.ActorBasedFlowMaterializer._
   import akka.stream.impl.IterablePublisher.BasicActorSubscription._
   import akka.stream.impl.IterablePublisherWorker._
 
   require(iterator.hasNext, "Iterator must not be empty")
 
-  var demand = 0L
+  var pendingDemand: Long = 0L
 
   def receive = {
     case RequestMore(elements) ⇒
-      demand += elements
+      pendingDemand += elements
       push()
     case PushMore ⇒
       push()
@@ -151,8 +148,8 @@ private[akka] class IterablePublisherWorker(iterator: Iterator[Any], subscriber:
 
   private def push(): Unit = {
     @tailrec def doPush(n: Int): Unit =
-      if (demand > 0) {
-        demand -= 1
+      if (pendingDemand > 0) {
+        pendingDemand -= 1
         val hasNext = {
           subscriber.onNext(iterator.next())
           iterator.hasNext
@@ -161,7 +158,7 @@ private[akka] class IterablePublisherWorker(iterator: Iterator[Any], subscriber:
           subscriber.onComplete()
           context.parent ! Finished
           softShutdown()
-        } else if (n == 0 && demand > 0)
+        } else if (n == 0 && pendingDemand > 0)
           self ! PushMore
         else
           doPush(n - 1)

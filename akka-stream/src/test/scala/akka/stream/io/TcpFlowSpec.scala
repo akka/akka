@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 
 class TcpFlowSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
+  var demand = 0L
 
   "Outgoing TCP stream" must {
 

@@ -3,13 +3,19 @@
  */
 package akka.stream.actor
 
-import akka.actor.{ ActorRef, PoisonPill, Props }
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.actor.ActorRef
+import akka.actor.PoisonPill
+import akka.actor.Props
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.StreamTestKit
+import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
 import akka.testkit.TestEvent.Mute
-import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
+import akka.testkit.TestProbe
 
+import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -25,7 +31,7 @@ object ActorPublisherSpec {
   case object Complete
 
   class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
-    import ActorPublisherMessage._
+    import akka.stream.actor.ActorPublisherMessage._
 
     def receive = {
       case Request(element) ⇒ probe ! TotalDemand(totalDemand)
@@ -39,7 +45,7 @@ object ActorPublisherSpec {
   def senderProps: Props = Props[Sender].withDispatcher("akka.test.stream-dispatcher")
 
   class Sender extends ActorPublisher[Int] {
-    import ActorPublisherMessage._
+    import akka.stream.actor.ActorPublisherMessage._
 
     var buf = Vector.empty[Int]
 
@@ -57,11 +63,19 @@ object ActorPublisherSpec {
         context.stop(self)
     }
 
-    def deliverBuf(): Unit =
+    @tailrec
+    final def deliverBuf(): Unit =
       if (totalDemand > 0) {
-        val (use, keep) = buf.splitAt(totalDemand)
-        buf = keep
-        use foreach onNext
+        if (totalDemand <= Int.MaxValue) {
+          val (use, keep) = buf.splitAt(totalDemand.toInt)
+          buf = keep
+          use foreach onNext
+        } else {
+          val (use, keep) = buf.splitAt(Int.MaxValue)
+          buf = keep
+          use foreach onNext
+          deliverBuf()
+        }
       }
   }
 
@@ -69,7 +83,7 @@ object ActorPublisherSpec {
     Props(new Receiver(probe)).withDispatcher("akka.test.stream-dispatcher")
 
   class Receiver(probe: ActorRef) extends ActorSubscriber {
-    import ActorSubscriberMessage._
+    import akka.stream.actor.ActorSubscriberMessage._
 
     override val requestStrategy = WatermarkRequestStrategy(10)
 
@@ -83,7 +97,7 @@ object ActorPublisherSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
-  import ActorPublisherSpec._
+  import akka.stream.actor.ActorPublisherSpec._
 
   system.eventStream.publish(Mute(EventFilter[IllegalStateException]()))
 

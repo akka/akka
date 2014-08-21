@@ -4,11 +4,11 @@
 package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
-import akka.stream.MaterializerSettings
+import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import scala.collection.mutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 
 /**
@@ -19,15 +19,15 @@ private[akka] object TickPublisher {
     Props(new TickPublisher(initialDelay, interval, tick, settings)).withDispatcher(settings.dispatcher)
 
   object TickPublisherSubscription {
-    case class Cancel(subscriber: Subscriber[Any])
-    case class RequestMore(elements: Int, subscriber: Subscriber[Any])
+    case class Cancel(subscriber: Subscriber[_ >: Any])
+    case class RequestMore(elements: Long, subscriber: Subscriber[_ >: Any])
   }
 
-  class TickPublisherSubscription(ref: ActorRef, subscriber: Subscriber[Any]) extends Subscription {
+  class TickPublisherSubscription(ref: ActorRef, subscriber: Subscriber[_ >: Any]) extends Subscription {
     import akka.stream.impl.TickPublisher.TickPublisherSubscription._
     def cancel(): Unit = ref ! Cancel(subscriber)
-    def request(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+    def request(elements: Long): Unit =
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
       else ref ! RequestMore(elements, subscriber)
     override def toString = "TickPublisherSubscription"
   }
@@ -47,7 +47,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   import akka.stream.impl.TickPublisher._
 
   var exposedPublisher: ActorPublisher[Any] = _
-  val demand = mutable.Map.empty[Subscriber[Any], Long]
+  val demand = mutable.Map.empty[Subscriber[_ >: Any], Long]
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -97,9 +97,9 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
 
   }
 
-  def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
+  def registerSubscriber(subscriber: Subscriber[_ >: Any]): Unit = {
     if (demand.contains(subscriber))
-      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     else {
       val subscription = new TickPublisherSubscription(self, subscriber)
       demand(subscriber) = 0
@@ -107,7 +107,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
     }
   }
 
-  private def unregisterSubscriber(subscriber: Subscriber[Any]): Unit = {
+  private def unregisterSubscriber(subscriber: Subscriber[_ >: Any]): Unit = {
     demand -= subscriber
     if (demand.isEmpty) {
       exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)

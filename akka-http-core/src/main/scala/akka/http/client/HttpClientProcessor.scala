@@ -18,7 +18,7 @@ object HttpClientProcessor {
   def apply[T](requestSubscriber: Subscriber[(HttpRequest, T)],
                responsePublisher: Publisher[(HttpResponse, T)]): HttpClientProcessor[T] =
     new HttpClientProcessor[T] {
-      override def subscribe(s: Subscriber[(HttpResponse, T)]): Unit = responsePublisher.subscribe(s)
+      override def subscribe(s: Subscriber[_ >: (HttpResponse, T)]): Unit = responsePublisher.subscribe(s)
 
       override def onError(t: Throwable): Unit = requestSubscriber.onError(t)
       override def onSubscribe(s: Subscription): Unit = requestSubscriber.onSubscribe(s)
