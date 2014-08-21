@@ -47,7 +47,7 @@ trait MultipartUnmarshallers {
                   case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
                     BodyPart(createEntity(entityParts), headers)
                   case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
-                }.toPublisher(fm)
+                }.toPublisher()(fm)
               Unmarshalling.Success(create(bodyParts))
           }
         } else Unmarshalling.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
@@ -61,7 +61,7 @@ trait MultipartUnmarshallers {
                                                                      refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
     multipartPartsUnmarshaller(`multipart/form-data`, ContentTypes.`application/octet-stream`) { bodyParts ⇒
       def verify(part: BodyPart): BodyPart = part // TODO
-      val parts = if (verifyIntegrity) Flow(bodyParts).map(verify).toPublisher(fm) else bodyParts
+      val parts = if (verifyIntegrity) Flow(bodyParts).map(verify).toPublisher()(fm) else bodyParts
       MultipartFormData(parts)
     }
 

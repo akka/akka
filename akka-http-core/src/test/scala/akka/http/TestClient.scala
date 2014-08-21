@@ -25,7 +25,7 @@ object TestClient extends App {
   implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer(MaterializerSettings())
   implicit val askTimeout: Timeout = 500.millis
   val host = "spray.io"
 
@@ -37,8 +37,8 @@ object TestClient extends App {
   } yield response.header[headers.Server]
 
   def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
-    Flow(List(HttpRequest() -> 'NoContext)).produceTo(connection.processor, materializer)
-    Flow(connection.processor).map(_._1).toFuture(materializer)
+    Flow(List(HttpRequest() -> 'NoContext)).produceTo(connection.processor)
+    Flow(connection.processor).map(_._1).toFuture()
   }
 
   result onComplete {

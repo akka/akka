@@ -16,9 +16,9 @@ class FlowZipSpec extends TwoStreamsSetup {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val source1 = Flow((1 to 4).iterator).toPublisher(materializer)
-      val source2 = Flow(List("A", "B", "C", "D", "E", "F").iterator).toPublisher(materializer)
-      val p = Flow(source1).zip(source2).toPublisher(materializer)
+      val source1 = Flow((1 to 4).iterator).toPublisher()
+      val source2 = Flow(List("A", "B", "C", "D", "E", "F").iterator).toPublisher()
+      val p = Flow(source1).zip(source2).toPublisher()
 
       val probe = StreamTestKit.SubscriberProbe[(Int, String)]()
       p.subscribe(probe)

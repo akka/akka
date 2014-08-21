@@ -19,7 +19,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
   implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
     Unmarshaller { entity ⇒
       if (entity.isKnownEmpty) Future.successful(Unmarshalling.Success(ByteString.empty))
-      else Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).map(Unmarshalling.Success(_)).toFuture(fm)
+      else Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).map(Unmarshalling.Success(_)).toFuture()(fm)
     }
 
   implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,

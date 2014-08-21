@@ -484,26 +484,26 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
     new FlowAdapter(delegate.appendJava(duct))
 
   override def toFuture(materializer: FlowMaterializer): Future[T] =
-    delegate.toFuture(materializer)
+    delegate.toFuture()(materializer)
 
   override def consume(materializer: FlowMaterializer): Unit =
-    delegate.consume(materializer)
+    delegate.consume()(materializer)
 
   override def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Unit =
-    delegate.onComplete({
+    delegate.onComplete {
       case Success(_) ⇒ callback.onComplete(null)
       case Failure(e) ⇒ callback.onComplete(e)
-    }, materializer)
+    }(materializer)
 
   override def toPublisher(materializer: FlowMaterializer): Publisher[T] =
-    delegate.toPublisher(materializer)
+    delegate.toPublisher()(materializer)
 
   override def produceTo(subsriber: Subscriber[_ >: T], materializer: FlowMaterializer): Unit =
-    delegate.produceTo(subsriber, materializer)
+    delegate.produceTo(subsriber)(materializer)
 
   override def foreach(c: Procedure[T], materializer: FlowMaterializer): Future[Void] = {
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
-    delegate.foreach(elem ⇒ c.apply(elem), materializer).map(_ ⇒ null).mapTo[Void]
+    delegate.foreach(elem ⇒ c.apply(elem))(materializer).map(_ ⇒ null).mapTo[Void]
   }
 
 }

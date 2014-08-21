@@ -11,7 +11,7 @@ import akka.stream.testkit.StreamTestKit
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowBroadcastSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 16,
     initialFanOutBufferSize = 1,
@@ -25,7 +25,7 @@ class FlowBroadcastSpec extends AkkaSpec {
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
         broadcast(c2).
-        toPublisher(materializer)
+        toPublisher()
       p.subscribe(c1)
       val sub1 = c1.expectSubscription()
       val sub2 = c2.expectSubscription()
@@ -50,7 +50,7 @@ class FlowBroadcastSpec extends AkkaSpec {
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
         broadcast(c2).
-        toPublisher(materializer)
+        toPublisher()
       p.subscribe(c1)
       val sub1 = c1.expectSubscription()
       sub1.cancel()
@@ -67,7 +67,7 @@ class FlowBroadcastSpec extends AkkaSpec {
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       val p = Flow(List(1, 2, 3)).
         broadcast(c1).
-        toPublisher(materializer)
+        toPublisher()
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()
       sub1.cancel()

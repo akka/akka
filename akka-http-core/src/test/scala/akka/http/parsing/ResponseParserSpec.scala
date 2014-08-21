@@ -227,10 +227,10 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
                     case Right(response) ⇒ compactEntity(response.entity).map(x ⇒ Right(response.withEntity(x)))
                     case Left(error)     ⇒ Future.successful(Left(error.info.formatPretty))
                   }
-                }.toPublisher(materializer)
+                }.toPublisher()(materializer)
               }
               .flatten(FlattenStrategy.concat)
-              .grouped(1000).toFuture(materializer)
+              .grouped(1000).toFuture()(materializer)
           Await.result(future, 250.millis)
       }
 
@@ -247,7 +247,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
-      Flow(data).grouped(1000).toFuture(materializer)
+      Flow(data).grouped(1000).toFuture()(materializer)
         .map(publisher(_: _*))
         .recover {
           case _: NoSuchElementException ⇒ publisher[ChunkStreamPart]()

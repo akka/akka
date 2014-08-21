@@ -31,7 +31,7 @@ object FlowTransformRecoverSpec {
 class FlowTransformRecoverSpec extends AkkaSpec {
   import FlowTransformRecoverSpec._
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
@@ -40,7 +40,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
   "A Flow with transformRecover operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           var tot = 0
@@ -54,7 +54,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             case Some(_) ⇒ List(-1)
           }
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -68,7 +68,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           var tot = 0
@@ -82,7 +82,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             case Some(_) ⇒ List(-1)
           }
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -99,7 +99,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce dropping transformation as expected" in {
-      val p = Flow(List(1, 2, 3, 4).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3, 4).iterator).toPublisher()
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           var tot = 0
@@ -113,7 +113,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             case Some(_) ⇒ List(-1)
           }
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -127,7 +127,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Flow(List("a", "bc", "def").iterator).toPublisher(materializer)
+      val p = Flow(List("a", "bc", "def").iterator).toPublisher()
       val p2 = Flow(p).
         transform(new TryRecoveryTransformer[String, Int] {
           var concat = ""
@@ -148,7 +148,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             case Some(_) ⇒ List(-1)
           }
         }).
-        toPublisher(materializer)
+        toPublisher()
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c1)
       val sub1 = c1.expectSubscription()
@@ -171,7 +171,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "invoke onComplete when done" in {
-      val p = Flow(List("a").iterator).toPublisher(materializer)
+      val p = Flow(List("a").iterator).toPublisher()
       val p2 = Flow(p).
         transform(new TryRecoveryTransformer[String, String] {
           var s = ""
@@ -181,7 +181,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           }
           override def onTermination(e: Option[Throwable]) = List(s + "B")
         }).
-        toPublisher(materializer)
+        toPublisher()
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
@@ -201,7 +201,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           }
           override def isComplete = s == "Success(1)"
         }).
-        toPublisher(materializer)
+        toPublisher()
       val proc = p.expectSubscription
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -226,7 +226,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           override def isComplete = s == "Success(1)"
           override def onTermination(e: Option[Throwable]) = List(s.length + 10)
         }).
-        toPublisher(materializer)
+        toPublisher()
       val proc = p.expectSubscription
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -241,7 +241,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "report error when exception is thrown" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           override def onNext(elem: Int) = {
@@ -250,7 +250,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           }
           override def onError(e: Throwable) = List(-1)
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -280,7 +280,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
               case Some(_) ⇒ List(-1, -2, -3)
             }
           }).
-          toPublisher(materializer)
+          toPublisher()
         val subscriber = StreamTestKit.SubscriberProbe[Int]()
         p2.subscribe(subscriber)
         val subscription = subscriber.expectSubscription()
@@ -333,7 +333,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             }
           }
         }).
-        toPublisher(materializer)
+        toPublisher()
       val proc = p.expectSubscription()
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
@@ -354,7 +354,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
           override def onNext(in: Int) = List(in)
           override def onError(e: Throwable) = throw e
         }).
-        toPublisher(materializer)
+        toPublisher()
       val proc = p.expectSubscription()
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -367,13 +367,13 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "support cancel as expected" in {
-      val p = Flow(List(1, 2, 3).iterator).toPublisher(materializer)
+      val p = Flow(List(1, 2, 3).iterator).toPublisher()
       val p2 = Flow(p).
         transform(new Transformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
           override def onError(e: Throwable) = List(-1)
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()

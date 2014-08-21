@@ -100,7 +100,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher(materializer)
+              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()(materializer)
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             parseToCloseBody(input, bodyStart)

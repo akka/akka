@@ -11,7 +11,7 @@ import OverflowStrategy._
 
 class FlowBufferSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 1,
     maximumInputBufferSize = 1,
     initialFanOutBufferSize = 1,
@@ -21,12 +21,12 @@ class FlowBufferSpec extends AkkaSpec {
   "Buffer" must {
 
     "pass elements through normally in backpressured mode" in {
-      val future = Flow((1 to 1000).iterator).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).toFuture(materializer)
+      val future = Flow((1 to 1000).iterator).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).toFuture()
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
     "pass elements through normally in backpressured mode with buffer size one" in {
-      val future = Flow((1 to 1000).iterator).buffer(1, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).toFuture(materializer)
+      val future = Flow((1 to 1000).iterator).buffer(1, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).toFuture()
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
@@ -39,7 +39,7 @@ class FlowBufferSpec extends AkkaSpec {
         .buffer(5, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(128, overflowStrategy = OverflowStrategy.backpressure)
         .grouped(1001)
-        .toFuture(materializer)
+        .toFuture()
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
@@ -47,7 +47,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).produceTo(subscriber, materializer)
+      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).produceTo(subscriber)
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -67,7 +67,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).produceTo(subscriber, materializer)
+      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).produceTo(subscriber)
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -95,7 +95,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).produceTo(subscriber, materializer)
+      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).produceTo(subscriber)
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -126,7 +126,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).produceTo(subscriber, materializer)
+      Flow(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).produceTo(subscriber)
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -157,7 +157,7 @@ class FlowBufferSpec extends AkkaSpec {
         val publisher = StreamTestKit.PublisherProbe[Int]
         val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-        Flow(publisher).buffer(1, overflowStrategy = strategy).produceTo(subscriber, materializer)
+        Flow(publisher).buffer(1, overflowStrategy = strategy).produceTo(subscriber)
 
         val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
         val sub = subscriber.expectSubscription()

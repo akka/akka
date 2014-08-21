@@ -18,7 +18,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
 
   import system.dispatcher
 
-  val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   "A Flow with TimerTransformer operations" must {
     "produce scheduled ticks as expected" in {
@@ -35,7 +35,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           }
           override def isComplete: Boolean = !isTimerActive("tick")
         }).
-        toPublisher(materializer)
+        toPublisher()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -61,7 +61,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           }
           override def isComplete: Boolean = !isTimerActive("tick")
         }).
-        consume(materializer)
+        consume()
       val pSub = p.expectSubscription
       expectMsg("tick-1")
       expectMsg("tick-2")
@@ -79,7 +79,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           def onNext(element: Int) = Nil
           override def onTimer(timerKey: Any) =
             throw exception
-        }).toPublisher(materializer)
+        }).toPublisher()
 
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)

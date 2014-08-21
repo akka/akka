@@ -86,7 +86,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |-----""".stripMarginWithNewline("\r\n"))).to[MultipartContent]
       Await.result(future, 1.second) match {
         case Unmarshalling.Success(x) ⇒
-          Await.result(Flow(x.parts).toFuture(materializer).failed, 1.second).getMessage shouldEqual
+          Await.result(Flow(x.parts).toFuture()(materializer).failed, 1.second).getMessage shouldEqual
             "multipart part must not contain more than one Content-Type header"
         case x ⇒ fail(x.toString)
       }
@@ -172,7 +172,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     equal(parts).matcher[Seq[BodyPart]] compose { unmarshallingFuture ⇒
       Await.result(unmarshallingFuture, 1.second) match {
         case Unmarshalling.Success(x) ⇒
-          Await.result(Flow(x.parts).grouped(100).toFuture(materializer).recover {
+          Await.result(Flow(x.parts).grouped(100).toFuture()(materializer).recover {
             case _: NoSuchElementException ⇒ Nil
           }, 1.second)
         case x ⇒ fail(x.toString)
@@ -183,7 +183,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     equal(fields).matcher[Seq[(String, BodyPart)]] compose { unmarshallingFuture ⇒
       Await.result(unmarshallingFuture, 1.second) match {
         case Unmarshalling.Success(x) ⇒
-          val partsSeq = Await.result(Flow(x.parts).grouped(100).toFuture(materializer).recover {
+          val partsSeq = Await.result(Flow(x.parts).grouped(100).toFuture()(materializer).recover {
             case _: NoSuchElementException ⇒ Nil
           }, 1.second)
           partsSeq map { part ⇒

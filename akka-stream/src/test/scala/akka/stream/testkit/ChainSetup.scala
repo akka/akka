@@ -12,7 +12,7 @@ class ChainSetup[I, O](stream: Flow[I] ⇒ Flow[O], val settings: MaterializerSe
   val downstream = StreamTestKit.SubscriberProbe[O]()
 
   private val s = stream(Flow(upstream))
-  val publisher = s.toPublisher(FlowMaterializer(settings))
+  val publisher = s.toPublisher()(FlowMaterializer(settings))
   val upstreamSubscription = upstream.expectSubscription()
   publisher.subscribe(downstream)
   val downstreamSubscription = downstream.expectSubscription()

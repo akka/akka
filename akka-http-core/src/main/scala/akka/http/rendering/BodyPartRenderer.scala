@@ -62,8 +62,8 @@ private[http] class BodyPartRenderer(boundary: String,
       }
 
     def bodyPartChunks(data: Publisher[ByteString]): List[Publisher[ChunkStreamPart]] = {
-      val entityChunks = Flow(data).map[ChunkStreamPart](Chunk(_)).toPublisher(materializer)
-      Flow[ChunkStreamPart](Chunk(r.get) :: Nil).concat(entityChunks).toPublisher(materializer) :: Nil
+      val entityChunks = Flow(data).map[ChunkStreamPart](Chunk(_)).toPublisher()(materializer)
+      Flow[ChunkStreamPart](Chunk(r.get) :: Nil).concat(entityChunks).toPublisher()(materializer) :: Nil
     }
 
     def completePartRendering(): List[Publisher[ChunkStreamPart]] =
@@ -73,8 +73,8 @@ private[http] class BodyPartRenderer(boundary: String,
         case Default(_, _, data)     ⇒ bodyPartChunks(data)
         case CloseDelimited(_, data) ⇒ bodyPartChunks(data)
         case Chunked(_, chunks) ⇒
-          val entityChunks = Flow(chunks).filter(!_.isLastChunk).toPublisher(materializer)
-          Flow(Chunk(r.get) :: Nil).concat(entityChunks).toPublisher(materializer) :: Nil
+          val entityChunks = Flow(chunks).filter(!_.isLastChunk).toPublisher()(materializer)
+          Flow(Chunk(r.get) :: Nil).concat(entityChunks).toPublisher()(materializer) :: Nil
       }
 
     renderBoundary()

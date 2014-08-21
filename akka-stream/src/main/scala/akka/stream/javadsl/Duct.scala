@@ -418,25 +418,24 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
     new DuctAdapter(delegate.appendJava(duct))
 
   override def produceTo(subscriber: Subscriber[T], materializer: FlowMaterializer): Subscriber[In] =
-    delegate.produceTo(subscriber, materializer)
+    delegate.produceTo(subscriber)(materializer)
 
   override def consume(materializer: FlowMaterializer): Subscriber[In] =
-    delegate.consume(materializer)
+    delegate.consume()(materializer)
 
   override def onComplete(callback: OnCompleteCallback, materializer: FlowMaterializer): Subscriber[In] =
-    delegate.onComplete({
-
+    delegate.onComplete {
       case Success(_) ⇒ callback.onComplete(null)
       case Failure(e) ⇒ callback.onComplete(e)
-    }, materializer)
+    }(materializer)
 
   override def build(materializer: FlowMaterializer): Pair[Subscriber[In], Publisher[T]] = {
-    val (in, out) = delegate.build(materializer)
+    val (in, out) = delegate.build()(materializer)
     Pair(in, out)
   }
 
   override def foreach(c: Procedure[T], materializer: FlowMaterializer): Pair[Subscriber[In], Future[Void]] = {
-    val (in, fut) = delegate.foreach(elem ⇒ c.apply(elem), materializer)
+    val (in, fut) = delegate.foreach(elem ⇒ c.apply(elem))(materializer)
     implicit val ec = ExecutionContexts.sameThreadExecutionContext
     val voidFut = fut.map(_ ⇒ null).mapTo[Void]
     Pair(in, voidFut)

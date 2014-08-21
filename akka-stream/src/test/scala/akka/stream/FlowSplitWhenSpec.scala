@@ -12,7 +12,7 @@ import akka.stream.scaladsl.Flow
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowSplitWhenSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     initialInputBufferSize = 2,
     maximumInputBufferSize = 2,
     initialFanOutBufferSize = 2,
@@ -32,8 +32,8 @@ class FlowSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
-    val source = Flow((1 to elementCount).iterator).toPublisher(materializer)
-    val groupStream = Flow(source).splitWhen(_ == splitWhen).toPublisher(materializer)
+    val source = Flow((1 to elementCount).iterator).toPublisher()
+    val groupStream = Flow(source).splitWhen(_ == splitWhen).toPublisher()
     val masterSubscriber = StreamTestKit.SubscriberProbe[Publisher[Int]]()
 
     groupStream.subscribe(masterSubscriber)

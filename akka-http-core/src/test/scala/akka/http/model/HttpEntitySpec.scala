@@ -78,7 +78,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       }
       "Infinite data stream" in {
         val neverCompleted = Promise[ByteString]()
-        val stream: Publisher[ByteString] = Flow(neverCompleted.future).toPublisher(materializer)
+        val stream: Publisher[ByteString] = Flow(neverCompleted.future).toPublisher()(materializer)
         intercept[TimeoutException] {
           Await.result(Default(tpe, 42, stream).toStrict(100.millis, materializer), 150.millis)
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
@@ -92,7 +92,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
     equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity ⇒
       val future =
         Flow(entity.dataBytes(materializer))
-          .grouped(1000).toFuture(materializer)
+          .grouped(1000).toFuture()(materializer)
 
       Await.result(future, 250.millis)
     }

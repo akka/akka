@@ -15,7 +15,7 @@ import akka.stream.testkit.ScriptedTest
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
-  val materializer = FlowMaterializer(settings)
+  implicit val materializer = FlowMaterializer(settings)
 
   "A GroupedWithin" must {
 
@@ -23,7 +23,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val input = Iterator.from(1)
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()
-      Flow(p).groupedWithin(1000, 1.second).produceTo(c, materializer)
+      Flow(p).groupedWithin(1000, 1.second).produceTo(c)
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(100)
@@ -48,7 +48,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
     "deliver bufferd elements onComplete before the timeout" in {
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()
-      Flow(1 to 3).groupedWithin(1000, 10.second).produceTo(c, materializer)
+      Flow(1 to 3).groupedWithin(1000, 10.second).produceTo(c)
       val cSub = c.expectSubscription
       cSub.request(100)
       c.expectNext((1 to 3).toList)
@@ -60,7 +60,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val input = Iterator.from(1)
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()
-      Flow(p).groupedWithin(1000, 1.second).produceTo(c, materializer)
+      Flow(p).groupedWithin(1000, 1.second).produceTo(c)
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(1)
@@ -80,7 +80,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
     "drop empty groups" in {
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()
-      Flow(p).groupedWithin(1000, 500.millis).produceTo(c, materializer)
+      Flow(p).groupedWithin(1000, 500.millis).produceTo(c)
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(2)
@@ -102,7 +102,7 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
       val input = Iterator.from(1)
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[immutable.Seq[Int]]()
-      Flow(p).groupedWithin(3, 2.second).produceTo(c, materializer)
+      Flow(p).groupedWithin(3, 2.second).produceTo(c)
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(4)

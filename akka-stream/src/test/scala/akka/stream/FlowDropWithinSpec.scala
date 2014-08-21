@@ -11,7 +11,7 @@ import akka.stream.testkit.StreamTestKit
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowDropWithinSpec extends AkkaSpec {
 
-  val materializer = FlowMaterializer(MaterializerSettings(
+  implicit val materializer = FlowMaterializer(MaterializerSettings(
     dispatcher = "akka.test.stream-dispatcher"))
 
   "A DropWithin" must {
@@ -20,7 +20,7 @@ class FlowDropWithinSpec extends AkkaSpec {
       val input = Iterator.from(1)
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[Int]()
-      Flow(p).dropWithin(1.second).produceTo(c, materializer)
+      Flow(p).dropWithin(1.second).produceTo(c)
       val pSub = p.expectSubscription
       val cSub = c.expectSubscription
       cSub.request(100)

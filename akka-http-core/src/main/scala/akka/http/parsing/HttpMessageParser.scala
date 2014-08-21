@@ -240,13 +240,13 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
 
   def defaultEntity(cth: Option[`Content-Type`], contentLength: Long,
                     materializer: FlowMaterializer)(entityParts: Publisher[_ <: ParserOutput]): HttpEntity.Regular = {
-    val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher(materializer)
+    val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()(materializer)
     HttpEntity.Default(contentType(cth), contentLength, data)
   }
 
   def chunkedEntity(cth: Option[`Content-Type`],
                     materializer: FlowMaterializer)(entityChunks: Publisher[_ <: ParserOutput]): HttpEntity.Regular = {
-    val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher(materializer)
+    val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher()(materializer)
     HttpEntity.Chunked(contentType(cth), chunks)
   }
 }

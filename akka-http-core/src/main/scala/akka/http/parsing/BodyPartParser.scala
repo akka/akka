@@ -145,7 +145,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
                   emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                     (headers, ct, bytes) ⇒
                       emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.CloseDelimited(ct,
-                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher(materializer))))
+                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher()(materializer))))
                       emit(bytes)
                   },
                   emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {

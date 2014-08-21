@@ -106,12 +106,12 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength)
             renderByteStrings(r,
-              Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher(materializer),
+              Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer),
               materializer)
 
           case HttpEntity.Chunked(_, chunks) ⇒
             r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf ~~ CrLf
-            renderByteStrings(r, Flow(chunks).transform(new ChunkTransformer).toPublisher(materializer), materializer)
+            renderByteStrings(r, Flow(chunks).transform(new ChunkTransformer).toPublisher()(materializer), materializer)
         }
 
       renderRequestLine()

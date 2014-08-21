@@ -93,7 +93,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       private val HttpRequest(POST, uri, List(`User-Agent`(_), Host(_, _), Accept(Vector(MediaRanges.`*/*`))),
         Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
       uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-      Await.result(Flow(chunkStream).grouped(4).toFuture(materializer), 100.millis) shouldEqual chunks
+      Await.result(Flow(chunkStream).grouped(4).toFuture()(materializer), 100.millis) shouldEqual chunks
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
@@ -102,7 +102,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       clientInSub.request(1)
       val (HttpResponse(StatusCodes.PartialContent, List(Date(_), Server(_), RawHeader("Age", "42")),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`), 12345678) = clientIn.expectNext()
-      Await.result(Flow(chunkStream2).grouped(1000).toFuture(materializer), 100.millis) shouldEqual chunks
+      Await.result(Flow(chunkStream2).grouped(1000).toFuture()(materializer), 100.millis) shouldEqual chunks
     }
 
   }

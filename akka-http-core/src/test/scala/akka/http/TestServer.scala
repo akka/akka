@@ -30,17 +30,17 @@ object TestServer extends App {
     case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer(MaterializerSettings())
 
   implicit val askTimeout: Timeout = 500.millis
   val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
   bindingFuture foreach {
     case Http.ServerBinding(localAddress, connectionStream) ⇒
-      Flow(connectionStream).foreach({
+      Flow(connectionStream).foreach {
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Flow(requestPublisher).map(requestHandler).produceTo(responseSubscriber, materializer)
-      }, materializer)
+          Flow(requestPublisher).map(requestHandler).produceTo(responseSubscriber)
+      }
   }
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")

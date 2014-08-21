@@ -16,10 +16,10 @@ class FlowConcatSpec extends TwoStreamsSetup {
   "Concat" must {
 
     "work in the happy case" in {
-      val source0 = Flow(List.empty[Int].iterator).toPublisher(materializer)
-      val source1 = Flow((1 to 4).iterator).toPublisher(materializer)
-      val source2 = Flow((5 to 10).iterator).toPublisher(materializer)
-      val p = Flow(source0).concat(source1).concat(source2).toPublisher(materializer)
+      val source0 = Flow(List.empty[Int].iterator).toPublisher()
+      val source1 = Flow((1 to 4).iterator).toPublisher()
+      val source2 = Flow((5 to 10).iterator).toPublisher()
+      val p = Flow(source0).concat(source1).concat(source2).toPublisher()
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(probe)
@@ -93,9 +93,9 @@ class FlowConcatSpec extends TwoStreamsSetup {
 
     "correctly handle async errors in secondary upstream" in {
       val promise = Promise[Int]()
-      val flow = Flow(List(1, 2, 3)).concat(Flow(promise.future).toPublisher(materializer))
+      val flow = Flow(List(1, 2, 3)).concat(Flow(promise.future).toPublisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      flow.produceTo(subscriber, materializer)
+      flow.produceTo(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(4)
       subscriber.expectNext(1)
