@@ -3,6 +3,9 @@
  */
 package akka.stream.impl
 
+import akka.stream.ReactiveStreamsConstants
+
+import scala.annotation.switch
 import scala.annotation.tailrec
 import org.reactivestreams.{ Subscriber, Subscription }
 import SubscriberManagement.ShutDown
@@ -29,19 +32,32 @@ private[akka] object SubscriberManagement {
     def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
   }
 
-  val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down spi.Publisher"))
+  val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down Publisher"))
 }
 
 /**
  * INTERNAL API
  */
 private[akka] trait SubscriptionWithCursor[T] extends Subscription with ResizableMultiReaderRingBuffer.Cursor {
-  def subscriber: Subscriber[T]
+  def subscriber: Subscriber[_ >: T]
 
   def dispatch(element: T): Unit = subscriber.onNext(element)
 
+  /** Increases the `requested` counter, additionally providing overflow protection */
+  def moreRequested(demand: Long): Long = {
+    val sum = totalDemand + demand
+    val noOverflow = sum > 0
+
+    if (noOverflow) totalDemand = sum
+    else subscriber.onError(new IllegalStateException(s"Total pending demand ($totalDemand + $demand) would overflow `Long`, for Subscriber $subscriber! ${ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue}"))
+
+    sum
+  }
+
   var active = true
-  var requested: Long = 0 // number of requested but not yet dispatched elements
+
+  /** Do not increment directly, use `moreRequested(Long)` instead (it provides overflow protection)! */
+  var totalDemand: Long = 0 // number of requested but not yet dispatched elements
   var cursor: Int = 0 // buffer cursor, managed by buffer
 }
 
@@ -60,7 +76,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    * called when we are ready to consume more elements from our upstream
    * MUST NOT call pushToDownstream
    */
-  protected def requestFromUpstream(elements: Int): Unit
+  protected def requestFromUpstream(elements: Long): Unit
 
   /**
    * called before `shutdown()` if the stream is *not* being regularly completed
@@ -76,7 +92,7 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Use to register a subscriber
    */
-  protected def createSubscription(subscriber: Subscriber[T]): S
+  protected def createSubscription(subscriber: Subscriber[_ >: T]): S
 
   private[this] val buffer = new ResizableMultiReaderRingBuffer[T](initialBufferSize, maxBufferSize, this)
 
@@ -96,9 +112,8 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * more demand was signaled from a given subscriber
    */
-  protected def moreRequested(subscription: S, elements: Int): Unit =
+  protected def moreRequested(subscription: S, elements: Long): Unit =
     if (subscription.active) {
-
       // returns Long.MinValue if the subscription is to be terminated
       @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long, eos: EndOfStream): Long =
         if (requested == 0) {
@@ -112,23 +127,23 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
 
       endOfStream match {
         case eos @ (NotReached | Completed) ⇒
-          val demand = subscription.requested + elements
+          val demand = subscription.moreRequested(elements)
           dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
             case Long.MinValue ⇒
               eos(subscription.subscriber)
               unregisterSubscriptionInternal(subscription)
             case x ⇒
-              subscription.requested = x
+              subscription.totalDemand = x
               requestFromUpstreamIfRequired()
           }
-        case ErrorCompleted(_) ⇒ // ignore, the spi.Subscriber might not have seen our error event yet
+        case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
       }
     }
 
   private[this] final def requestFromUpstreamIfRequired(): Unit = {
     @tailrec def maxRequested(remaining: Subscriptions, result: Long = 0): Long =
       remaining match {
-        case head :: tail ⇒ maxRequested(tail, math.max(head.requested, result))
+        case head :: tail ⇒ maxRequested(tail, math.max(head.totalDemand, result))
         case _            ⇒ result
       }
     val desired = Math.min(Int.MaxValue, Math.min(maxRequested(subscriptions), buffer.maxAvailable) - pendingFromUpstream).toInt
@@ -145,10 +160,10 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     @tailrec def dispatch(remaining: Subscriptions, sent: Boolean = false): Boolean =
       remaining match {
         case head :: tail ⇒
-          if (head.requested > 0) {
+          if (head.totalDemand > 0) {
             val element = buffer.read(head)
             head.dispatch(element)
-            head.requested -= 1
+            head.totalDemand -= 1
             dispatch(tail, true)
           } else dispatch(tail, sent)
         case _ ⇒ sent
@@ -198,9 +213,9 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
   /**
    * Register a new subscriber.
    */
-  protected def registerSubscriber(subscriber: Subscriber[T]): Unit = endOfStream match {
+  protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
     case NotReached if subscriptions.exists(_.subscriber eq subscriber) ⇒
-      subscriber.onError(new IllegalStateException(s"Cannot subscribe $subscriber twice"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [${this}, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     case NotReached ⇒
       val newSubscription = createSubscription(subscriber)
       subscriptions ::= newSubscription

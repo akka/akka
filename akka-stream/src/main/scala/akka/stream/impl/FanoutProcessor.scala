@@ -11,12 +11,13 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   extends DefaultOutputTransferStates
   with SubscriberManagement[Any] {
 
-  override type S = ActorSubscription[Any]
-  override def createSubscription(subscriber: Subscriber[Any]): S =
+  override type S = ActorSubscription[_ >: Any]
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
     new ActorSubscription(self, subscriber)
+
   protected var exposedPublisher: ActorPublisher[Any] = _
 
-  private var downstreamBufferSpace = 0
+  private var downstreamBufferSpace: Long = 0L
   private var downstreamCompleted = false
   override def demandAvailable = downstreamBufferSpace > 0
   override def demandCount: Long = downstreamBufferSpace
@@ -46,7 +47,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 
   def afterShutdown(): Unit
 
-  override protected def requestFromUpstream(elements: Int): Unit = downstreamBufferSpace += elements
+  override protected def requestFromUpstream(elements: Long): Unit = downstreamBufferSpace += elements
 
   private def subscribePending(): Unit =
     exposedPublisher.takePendingSubscribers() foreach registerSubscriber

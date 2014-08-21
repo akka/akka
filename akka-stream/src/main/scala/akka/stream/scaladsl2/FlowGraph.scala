@@ -378,7 +378,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
 
     // FIXME remove when real materialization is done
     def dummyProcessor(name: String): Processor[Any, Any] = new BlackholeSubscriber[Any](1) with Publisher[Any] with Processor[Any, Any] {
-      def subscribe(subscriber: Subscriber[Any]): Unit = subscriber.onComplete()
+      def subscribe(subscriber: Subscriber[_ >: Any]): Unit = subscriber.onComplete()
       override def toString = name
     }
 
