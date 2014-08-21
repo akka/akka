@@ -35,7 +35,7 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
   override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: O, U]): Flow[U] =
     copy(ops = duct.ops ++: ops)
 
-  override def toFuture(materializer: FlowMaterializer): Future[O] = {
+  override def toFuture()(implicit materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
     transform(new Transformer[O, Unit] {
       var done = false
@@ -43,14 +43,14 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
       override def onError(e: Throwable) = { p failure e }
       override def isComplete = done
       override def onTermination(e: Option[Throwable]) = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
-    }).consume(materializer)
+    }).consume()
     p.future
   }
 
-  override def consume(materializer: FlowMaterializer): Unit =
-    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize), materializer)
+  override def consume()(implicit materializer: FlowMaterializer): Unit =
+    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
-  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Unit =
+  override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Unit =
     transform(new Transformer[O, Unit] {
       override def onNext(in: O) = Nil
       override def onError(e: Throwable) = {
@@ -61,15 +61,15 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
         callback(Builder.SuccessUnit)
         Nil
       }
-    }).consume(materializer)
+    }).consume()
 
-  override def toPublisher[U >: O](materializer: FlowMaterializer): Publisher[U] = materializer.toPublisher(publisherNode, ops)
+  override def toPublisher[U >: O]()(implicit materializer: FlowMaterializer): Publisher[U] = materializer.toPublisher(publisherNode, ops)
 
-  override def produceTo(subscriber: Subscriber[_ >: O], materializer: FlowMaterializer): Unit =
-    toPublisher(materializer).subscribe(subscriber.asInstanceOf[Subscriber[O]])
+  override def produceTo(subscriber: Subscriber[_ >: O])(implicit materializer: FlowMaterializer): Unit =
+    toPublisher().subscribe(subscriber.asInstanceOf[Subscriber[O]])
 
-  override def foreach(c: O ⇒ Unit, materializer: FlowMaterializer): Future[Unit] =
-    foreachTransform(c).toFuture(materializer)
+  override def foreach(c: O ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] =
+    foreachTransform(c).toFuture()
 }
 
 /**
@@ -88,13 +88,13 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
-  override def produceTo[U >: Out](subscriber: Subscriber[U], materializer: FlowMaterializer): Subscriber[In] =
+  override def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In] =
     materializer.ductProduceTo(subscriber, ops)
 
-  override def consume(materializer: FlowMaterializer): Subscriber[In] =
-    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize), materializer)
+  override def consume()(implicit materializer: FlowMaterializer): Subscriber[In] =
+    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
-  override def onComplete(callback: Try[Unit] ⇒ Unit, materializer: FlowMaterializer): Subscriber[In] =
+  override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Subscriber[In] =
     transform(new Transformer[Out, Unit] {
       override def onNext(in: Out) = Nil
       override def onError(e: Throwable) = {
@@ -105,17 +105,17 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
         callback(Builder.SuccessUnit)
         Nil
       }
-    }).consume(materializer)
+    }).consume()
 
-  override def build[U >: Out](materializer: FlowMaterializer): (Subscriber[In], Publisher[U]) =
+  override def build[U >: Out]()(implicit materializer: FlowMaterializer): (Subscriber[In], Publisher[U]) =
     materializer.ductBuild(ops)
 
-  override def foreach(c: Out ⇒ Unit, materializer: FlowMaterializer): (Subscriber[In], Future[Unit]) = {
+  override def foreach(c: Out ⇒ Unit)(implicit materializer: FlowMaterializer): (Subscriber[In], Future[Unit]) = {
     val p = Promise[Unit]()
-    val s = foreachTransform(c).onComplete({
+    val s = foreachTransform(c).onComplete {
       case Success(_) ⇒ p.success(())
       case Failure(e) ⇒ p.failure(e)
-    }, materializer)
+    }
     (s, p.future)
   }
 

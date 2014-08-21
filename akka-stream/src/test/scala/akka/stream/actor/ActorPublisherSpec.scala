@@ -226,13 +226,13 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work together with Flow and ActorSubscriber" in {
-      val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+      implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
       val probe = TestProbe()
       val snd = system.actorOf(senderProps)
       val rcv = system.actorOf(receiverProps(probe.ref))
       Flow(ActorPublisher[Int](snd)).collect {
         case n if n % 2 == 0 ⇒ "elem-" + n
-      }.produceTo(ActorSubscriber(rcv), materializer)
+      }.produceTo(ActorSubscriber(rcv))
 
       (1 to 3) foreach { snd ! _ }
       probe.expectMsg("elem-2")

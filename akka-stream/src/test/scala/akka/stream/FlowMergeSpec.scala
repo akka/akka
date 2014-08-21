@@ -19,10 +19,10 @@ class FlowMergeSpec extends TwoStreamsSetup {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val source1 = Flow((1 to 4).iterator).toPublisher(materializer)
-      val source2 = Flow((5 to 10).iterator).toPublisher(materializer)
-      val source3 = Flow(List.empty[Int].iterator).toPublisher(materializer)
-      val p = Flow(source1).merge(source2).merge(source3).toPublisher(materializer)
+      val source1 = Flow((1 to 4).iterator).toPublisher()
+      val source2 = Flow((5 to 10).iterator).toPublisher()
+      val source3 = Flow(List.empty[Int].iterator).toPublisher()
+      val p = Flow(source1).merge(source2).merge(source3).toPublisher()
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(probe)
