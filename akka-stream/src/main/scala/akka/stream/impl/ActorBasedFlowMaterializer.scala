@@ -21,6 +21,16 @@ import akka.actor.ActorSystem
 import akka.actor.Extension
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.TimerTransformer
+import akka.actor.Props
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import akka.actor.LocalActorRef
+import akka.actor.RepointableActorRef
+import akka.actor.ActorCell
 
 /**
  * INTERNAL API
@@ -84,36 +94,36 @@ private[akka] object Ast {
   final case class IteratorPublisherNode[I](iterator: Iterator[I]) extends PublisherNode[I] {
     final def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
       if (iterator.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
-      else ActorPublisher[I](materializer.context.actorOf(IteratorPublisher.props(iterator, materializer.settings),
+      else ActorPublisher[I](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
         name = s"$flowName-0-iterator"))
   }
   final case class IterablePublisherNode[I](iterable: immutable.Iterable[I]) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
       if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
-      else ActorPublisher[I](materializer.context.actorOf(IterablePublisher.props(iterable, materializer.settings),
+      else ActorPublisher[I](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
         name = s"$flowName-0-iterable"), Some(iterable))
   }
   final case class ThunkPublisherNode[I](f: () ⇒ I) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      ActorPublisher[I](materializer.context.actorOf(SimpleCallbackPublisher.props(materializer.settings, f),
+      ActorPublisher[I](materializer.actorOf(SimpleCallbackPublisher.props(materializer.settings, f),
         name = s"$flowName-0-thunk"))
   }
   final case class FuturePublisherNode[I](future: Future[I]) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
       future.value match {
         case Some(Success(element)) ⇒
-          ActorPublisher[I](materializer.context.actorOf(IterablePublisher.props(List(element), materializer.settings),
+          ActorPublisher[I](materializer.actorOf(IterablePublisher.props(List(element), materializer.settings),
             name = s"$flowName-0-future"), Some(future))
         case Some(Failure(t)) ⇒
           ErrorPublisher(t).asInstanceOf[Publisher[I]]
         case None ⇒
-          ActorPublisher[I](materializer.context.actorOf(FuturePublisher.props(future, materializer.settings),
+          ActorPublisher[I](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
             name = s"$flowName-0-future"), Some(future))
       }
   }
   final case class TickPublisherNode[I](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ I) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      ActorPublisher[I](materializer.context.actorOf(TickPublisher.props(initialDelay, interval, tick, materializer.settings),
+      ActorPublisher[I](materializer.actorOf(TickPublisher.props(initialDelay, interval, tick, materializer.settings),
         name = s"$flowName-0-tick"))
   }
 }
@@ -121,60 +131,18 @@ private[akka] object Ast {
 /**
  * INTERNAL API
  */
-private[akka] object ActorBasedFlowMaterializer {
-
-  val ctx = new ThreadLocal[ActorRefFactory]
-
-  def withCtx[T](arf: ActorRefFactory)(block: ⇒ T): T = {
-    val old = ctx.get()
-    ctx.set(arf)
-    try block
-    finally ctx.set(old)
-  }
-
-  def currentActorContext(): ActorContext =
-    ActorBasedFlowMaterializer.ctx.get() match {
-      case c: ActorContext ⇒ c
-      case _ ⇒
-        throw new IllegalStateException(s"Transformer [${getClass.getName}] is running without ActorContext")
-    }
-
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class ActorBasedFlowMaterializer(
-  settings: MaterializerSettings,
-  _context: ActorRefFactory,
+private[akka] case class ActorBasedFlowMaterializer(
+  override val settings: MaterializerSettings,
+  supervisor: ActorRef,
+  flowNameCounter: AtomicLong,
   namePrefix: String)
   extends FlowMaterializer(settings) {
   import Ast._
   import ActorBasedFlowMaterializer._
 
-  _context match {
-    case _: ActorSystem | _: ActorContext ⇒ // ok
-    case null                             ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
-    case _ ⇒ throw new IllegalArgumentException(s"ActorRefFactory context must be a ActorSystem or ActorContext, " +
-      "got [${_contex.getClass.getName}]")
-  }
+  def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
 
-  def context = ctx.get() match {
-    case null ⇒ _context
-    case x    ⇒ x
-  }
-
-  def withNamePrefix(name: String): FlowMaterializer =
-    new ActorBasedFlowMaterializer(settings, _context, name)
-
-  private def system: ActorSystem = _context match {
-    case s: ExtendedActorSystem ⇒ s
-    case c: ActorContext        ⇒ c.system
-    case _ ⇒
-      throw new IllegalArgumentException(s"Unknown ActorRefFactory [${_context.getClass.getName}")
-  }
-
-  private def nextFlowNameCount(): Long = FlowNameCounter(system).counter.incrementAndGet()
+  private def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet()
 
   private def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
@@ -207,9 +175,26 @@ private[akka] class ActorBasedFlowMaterializer(
       override def onNext(element: Any) = List(element)
     })
 
-  def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] =
-    ActorProcessor(context.actorOf(ActorProcessor.props(settings, op),
-      name = s"$flowName-$n-${op.name}"))
+  def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+    val impl = actorOf(ActorProcessor.props(settings, op), s"$flowName-$n-${op.name}")
+    ActorProcessor(impl)
+
+  }
+
+  def actorOf(props: Props, name: String): ActorRef = supervisor match {
+    case ref: LocalActorRef ⇒
+      ref.underlying.attachChild(props, name, systemService = false)
+    case ref: RepointableActorRef ⇒
+      if (ref.isStarted)
+        ref.underlying.asInstanceOf[ActorCell].attachChild(props, name, systemService = false)
+      else {
+        implicit val timeout = ref.system.settings.CreationTimeout
+        val f = (supervisor ? StreamSupervisor.Materialize(props, name)).mapTo[ActorRef]
+        Await.result(f, timeout.duration)
+      }
+    case _ ⇒
+      throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${supervisor.getClass.getName}]")
+  }
 
   override def ductProduceTo[In, Out](subscriber: Subscriber[Out], ops: List[Ast.AstNode]): Subscriber[In] =
     processorChain(subscriber, ops, createFlowName(), ops.size).asInstanceOf[Subscriber[In]]
@@ -243,4 +228,23 @@ private[akka] object FlowNameCounter extends ExtensionId[FlowNameCounter] with E
  */
 private[akka] class FlowNameCounter extends Extension {
   val counter = new AtomicLong(0)
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object StreamSupervisor {
+  def props(settings: MaterializerSettings): Props = Props(new StreamSupervisor(settings))
+
+  case class Materialize(props: Props, name: String)
+}
+
+private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Actor {
+  import StreamSupervisor._
+
+  def receive = {
+    case Materialize(props, name) ⇒
+      val impl = context.actorOf(props, name)
+      sender() ! impl
+  }
 }

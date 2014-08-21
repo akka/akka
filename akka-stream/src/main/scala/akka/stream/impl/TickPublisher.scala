@@ -72,21 +72,19 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
 
   def active: Receive = {
     case Tick ⇒
-      ActorBasedFlowMaterializer.withCtx(context) {
-        try {
-          val tickElement = tick()
-          demand foreach {
-            case (subscriber, d) ⇒
-              if (d > 0) {
-                demand(subscriber) = d - 1
-                subscriber.onNext(tickElement)
-              }
-          }
-        } catch {
-          case NonFatal(e) ⇒
-            // tick closure throwed => onError downstream
-            demand foreach { case (subscriber, _) ⇒ subscriber.onError(e) }
+      try {
+        val tickElement = tick()
+        demand foreach {
+          case (subscriber, d) ⇒
+            if (d > 0) {
+              demand(subscriber) = d - 1
+              subscriber.onNext(tickElement)
+            }
         }
+      } catch {
+        case NonFatal(e) ⇒
+          // tick closure throwed => onError downstream
+          demand foreach { case (subscriber, _) ⇒ subscriber.onError(e) }
       }
 
     case RequestMore(elements, subscriber) ⇒
