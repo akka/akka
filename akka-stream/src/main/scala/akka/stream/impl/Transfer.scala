@@ -158,7 +158,7 @@ private[akka] trait Pump {
   // Generate upstream requestMore for every Nth consumed input element
   final def pump(): Unit = {
     try while (transferState.isExecutable) {
-      ActorBasedFlowMaterializer.withCtx(pumpContext)(currentAction())
+      currentAction()
     } catch { case NonFatal(e) ⇒ pumpFailed(e) }
 
     if (isPumpFinished) pumpFinished()
