@@ -659,7 +659,7 @@ class ShardRegion(
   var shardsByRef = Map.empty[ActorRef, ShardId]
   var handingOff = Set.empty[ActorRef]
 
-  def totalBufferSize = shardBuffers.map { case (_, buf) ⇒ buf.size }.sum
+  def totalBufferSize = shardBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
 
   import context.dispatcher
   val retryTask = context.system.scheduler.schedule(retryInterval, retryInterval, self, Retry)
@@ -786,7 +786,7 @@ class ShardRegion(
         shardBuffers -= shard
 
       if (shards.contains(shard)) {
-        handingOff = handingOff + shards(shard)
+        handingOff += shards(shard)
         shards(shard) forward msg
       } else
         sender() ! ShardStopped(shard)
@@ -1009,7 +1009,7 @@ private[akka] class Shard(
 
   var handOffStopper: Option[ActorRef] = None
 
-  def totalBufferSize = messageBuffers.map { case (_, buf) ⇒ buf.size }.sum
+  def totalBufferSize = messageBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
 
   def processChange[A](event: A)(handler: A ⇒ Unit): Unit =
     if (rememberEntries) persist(event)(handler)
