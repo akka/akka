@@ -9,6 +9,8 @@ import java.lang.reflect.Type
 import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
 import scala.util.Try
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.convert.decorateAsScala._
 
 /**
  * Collection of internal reflection utilities which may or may not be
@@ -118,7 +120,12 @@ private[akka] object Reflect {
    */
   private[akka] def instantiator[T](clazz: Class[T]): () ⇒ T = () ⇒ instantiate(clazz)
 
-  def findMarker(root: Class[_], marker: Class[_]): Type = {
+  private val classMarkerCache = new ConcurrentHashMap[(Class[_], Class[_]), Type].asScala
+
+  def findMarker(root: Class[_], marker: Class[_]): Type =
+    classMarkerCache.getOrElseUpdate((root, marker), lookupMarker(root, marker))
+
+  private def lookupMarker(root: Class[_], marker: Class[_]): Type = {
     @tailrec def rec(curr: Class[_]): Type = {
       if (curr.getSuperclass != null && marker.isAssignableFrom(curr.getSuperclass)) rec(curr.getSuperclass)
       else curr.getGenericInterfaces collectFirst {
