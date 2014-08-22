@@ -1,19 +1,25 @@
 package akka.stream.dsl
 
-/**
- * Dummy implementation needed for runtime tests.
- */
-trait Graph {
-
-  def merge[T](source1: HasOpenOutput[_, T], source2: HasOpenOutput[_, T], destination: HasOpenInput[T, _]) = ()
-  def zip[T, U](source1: HasOpenOutput[_, T], source2: HasOpenOutput[_, U], destination: HasOpenInput[(T, U), _]) = ()
-  def concat[T](source1: HasOpenOutput[_, T], source2: HasOpenOutput[_, T], destination: HasOpenInput[T, _]) = ()
-  def broadcast[T](source: HasOpenOutput[_, T], destinations: Seq[HasOpenInput[T, _]]) = ()
+final case class Merge[T, U, V >: T with U]() {
+  val in1 = new Output[T] {}
+  val in2 = new Output[U] {}
+  val out = new Input[V] {}
 }
 
-object Graph {
-  def apply(): Graph = new Graph {}
+final case class Zip[T, U]() {
+  val in1 = new Output[T] {}
+  val in2 = new Output[U] {}
+  val out = new Input[(T, U)] {}
 }
 
-final case class Broadcast[T]() extends Input[T] with Output[T]
-final case class Zip[T]() extends Input[T] with Output[T]
+final case class Concat[T, U, V >: T with U]() {
+  val in1 = new Output[T] {}
+  val in2 = new Output[U] {}
+  val out = new Input[V] {}
+}
+
+final case class Broadcast[T]() {
+  val in = new Output[T] {}
+  val out1 = new Input[T] {}
+  val out2 = new Input[T] {}
+}
