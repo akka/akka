@@ -37,8 +37,8 @@ package object util {
 
   private[http] implicit class FlowWithPrintEvent[T](val underlying: Flow[T]) {
     def printEvent(marker: String): Flow[T] =
-      underlying.transform {
-        new Transformer[T, T] {
+      underlying.transform("transform",
+        () ⇒ new Transformer[T, T] {
           def onNext(element: T) = {
             println(s"$marker: $element")
             element :: Nil
@@ -47,8 +47,7 @@ package object util {
             println(s"$marker: Terminated with error $e")
             Nil
           }
-        }
-      }
+        })
   }
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =

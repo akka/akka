@@ -43,7 +43,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
    */
   def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[HttpEntity.Strict] =
     Flow(dataBytes(materializer))
-      .transform(new TimerTransformer[ByteString, HttpEntity.Strict] {
+      .timerTransform("toStrict", () ⇒ new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
         scheduleOnce("", timeout)
 

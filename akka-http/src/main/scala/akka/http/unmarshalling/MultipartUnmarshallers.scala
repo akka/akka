@@ -40,7 +40,7 @@ trait MultipartUnmarshallers {
             case None ⇒ sys.error("Content-Type with a multipart media type must have a 'boundary' parameter")
             case Some(boundary) ⇒
               val bodyParts = Flow(entity.dataBytes(fm))
-                .transform(new BodyPartParser(defaultContentType, boundary, fm, actorSystem(refFactory).log))
+                .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, fm, actorSystem(refFactory).log))
                 .splitWhen(_.isInstanceOf[BodyPartParser.BodyPartStart])
                 .headAndTail(fm)
                 .collect {

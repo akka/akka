@@ -21,18 +21,18 @@ class FlowTakeWithinSpec extends AkkaSpec {
       val p = StreamTestKit.PublisherProbe[Int]()
       val c = StreamTestKit.SubscriberProbe[Int]()
       Flow(p).takeWithin(1.second).produceTo(c)
-      val pSub = p.expectSubscription
-      val cSub = c.expectSubscription
+      val pSub = p.expectSubscription()
+      val cSub = c.expectSubscription()
       cSub.request(100)
-      val demand1 = pSub.expectRequest
+      val demand1 = pSub.expectRequest()
       (1 to demand1) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand2 = pSub.expectRequest
+      val demand2 = pSub.expectRequest()
       (1 to demand2) foreach { _ ⇒ pSub.sendNext(input.next()) }
-      val demand3 = pSub.expectRequest
+      val demand3 = pSub.expectRequest()
       val sentN = demand1 + demand2
       (1 to sentN) foreach { n ⇒ c.expectNext(n) }
       within(2.seconds) {
-        c.expectComplete
+        c.expectComplete()
       }
       (1 to demand3) foreach { _ ⇒ pSub.sendNext(input.next()) }
       c.expectNoMsg(200.millis)
@@ -41,11 +41,11 @@ class FlowTakeWithinSpec extends AkkaSpec {
     "deliver bufferd elements onComplete before the timeout" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       Flow(1 to 3).takeWithin(1.second).produceTo(c)
-      val cSub = c.expectSubscription
+      val cSub = c.expectSubscription()
       c.expectNoMsg(200.millis)
       cSub.request(100)
       (1 to 3) foreach { n ⇒ c.expectNext(n) }
-      c.expectComplete
+      c.expectComplete()
       c.expectNoMsg(200.millis)
     }
 

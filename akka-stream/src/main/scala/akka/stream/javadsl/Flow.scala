@@ -10,13 +10,9 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import org.reactivestreams.{ Publisher, Subscriber }
-import akka.japi.Function
-import akka.japi.Function2
-import akka.japi.Pair
-import akka.japi.Predicate
-import akka.japi.Procedure
+import akka.japi._
 import akka.japi.Util.immutableSeq
-import akka.stream.{ FlattenStrategy, OverflowStrategy, FlowMaterializer, Transformer }
+import akka.stream._
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
 import scala.concurrent.duration.FiniteDuration
 import akka.dispatch.ExecutionContexts
@@ -197,7 +193,7 @@ abstract class Flow[T] {
 
   /**
    * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
-   * function is invoked and expecting a (possibly empty) sequence of output elements
+   * function is invoked, expecting a (possibly empty) sequence of output elements
    * to be produced.
    * After handing off the elements produced from one input element to the downstream
    * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
@@ -206,6 +202,8 @@ abstract class Flow[T] {
    * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
+   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
+   *
    * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
    *
    * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
@@ -213,10 +211,35 @@ abstract class Flow[T] {
    * therefore you do not have to add any additional thread safety or memory
    * visibility constructs to access the state from the callback methods.
    *
-   * Note that you can use [[akka.stream.TimerTransformer]] if you need support
-   * for scheduled events in the transformer.
+   * Note that you can use [[#timerTransform]] if you need support for scheduled events in the transformer.
    */
-  def transform[U](transformer: Transformer[T, U]): Flow[U]
+  def transform[U](name: String, mkTransformer: Creator[Transformer[T, U]]): Flow[U]
+
+  /**
+   * Transformation of a stream, with additional support for scheduled events.
+   *
+   * For each element the [[akka.stream.Transformer#onNext]]
+   * function is invoked, expecting a (possibly empty) sequence of output elements
+   * to be produced.
+   * After handing off the elements produced from one input element to the downstream
+   * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
+   * stream processing at this point; in that case the upstream subscription is
+   * canceled. Before signaling normal completion to the downstream subscribers,
+   * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
+   * sequence of elements in response to the end-of-stream event.
+   *
+   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
+   *
+   * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
+   *
+   * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
+   * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
+   * therefore you do not have to add any additional thread safety or memory
+   * visibility constructs to access the state from the callback methods.
+   *
+   * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
+   */
+  def timerTransform[U](name: String, mkTransformer: Creator[TimerTransformer[T, U]]): Flow[U]
 
   /**
    * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
@@ -441,8 +464,11 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
   override def mapConcat[U](f: Function[T, java.util.List[U]]): Flow[U] =
     new FlowAdapter(delegate.mapConcat(elem ⇒ immutableSeq(f.apply(elem))))
 
-  override def transform[U](transformer: Transformer[T, U]): Flow[U] =
-    new FlowAdapter(delegate.transform(transformer))
+  override def transform[U](name: String, transformer: Creator[Transformer[T, U]]): Flow[U] =
+    new FlowAdapter(delegate.transform(name, () ⇒ transformer.create()))
+
+  override def timerTransform[U](name: String, transformer: Creator[TimerTransformer[T, U]]): Flow[U] =
+    new FlowAdapter(delegate.timerTransform(name, () ⇒ transformer.create()))
 
   override def prefixAndTail(n: Int): Flow[Pair[java.util.List[T], Publisher[T]]] =
     new FlowAdapter(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ Pair(taken.asJava, tail) })

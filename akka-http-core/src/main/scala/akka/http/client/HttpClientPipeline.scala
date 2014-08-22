@@ -44,14 +44,14 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
       Duct[(HttpRequest, Any)]
         .broadcast(contextBypassSubscriber)
         .map(requestMethodByPass)
-        .transform(responseRendererFactory.newRenderer)
+        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
-        .transform(errorLogger(log, "Outgoing request stream error"))
+        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
         .produceTo(tcpConn.outputStream)(materializer)
 
     val responsePublisher =
       Flow(tcpConn.inputStream)
-        .transform(rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
+        .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
         .splitWhen(_.isInstanceOf[MessageStart])
         .headAndTail(materializer)
         .collect {
