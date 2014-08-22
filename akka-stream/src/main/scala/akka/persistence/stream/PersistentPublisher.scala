@@ -21,42 +21,43 @@ import akka.stream.scaladsl.Flow
 
 object PersistentFlow {
   /**
-   * Starts a new [[akka.persistence.Persistent]] message flow from the given processor,
-   * identified by `processorId`. Elements are pulled from the processor's
-   * journal (using a [[akka.persistence.View]]) in accordance with the demand coming from
-   * the downstream transformation steps.
+   * Starts a new event flow from the given [[akka.persistence.PersistentActor]],
+   * identified by `persistenceId`. Events are pulled from the peristent actor's
+   * journal (using a [[akka.persistence.PersistentView]]) in accordance with the
+   * demand coming from the downstream transformation steps.
    *
-   * Elements pulled from the processor's journal are buffered in memory so that
+   * Elements pulled from the peristent actor's journal are buffered in memory so that
    * fine-grained demands (requests) from downstream can be served efficiently.
    */
-  def fromProcessor(processorId: String): Flow[Persistent] =
-    fromProcessor(processorId, PersistentPublisherSettings())
+  def fromPersistentActor(persistenceId: String): Flow[Any] =
+    fromPersistentActor(persistenceId, PersistentPublisherSettings())
 
   /**
-   * Starts a new [[akka.persistence.Persistent]] message flow from the given processor,
-   * identified by `processorId`. Elements are pulled from the processor's
-   * journal (using a [[akka.persistence.View]]) in accordance with the demand coming from
-   * the downstream transformation steps.
+   * Starts a new event flow from the given [[akka.persistence.PersistentActor]],
+   * identified by `persistenceId`. Events are pulled from the peristent actor's
+   * journal (using a [[akka.persistence.PersistentView]]) in accordance with the
+   * demand coming from the downstream transformation steps.
    *
-   * Elements pulled from the processor's journal are buffered in memory so that
+   * Elements pulled from the peristent actor's journal are buffered in memory so that
    * fine-grained demands (requests) from downstream can be served efficiently.
+   *
    * Reads from the journal are done in (coarse-grained) batches of configurable
    * size (which correspond to the configurable maximum buffer size).
    *
    * @see [[akka.persistence.PersistentPublisherSettings]]
    */
-  def fromProcessor(processorId: String, publisherSettings: PersistentPublisherSettings): Flow[Persistent] =
-    FlowImpl(PersistentPublisherNode(processorId, publisherSettings), Nil)
+  def fromPersistentActor(persistenceId: String, publisherSettings: PersistentPublisherSettings): Flow[Any] =
+    FlowImpl(PersistentPublisherNode(persistenceId, publisherSettings), Nil)
 }
 
 /**
- * Configuration object for a [[akka.persistence.Persistent]] stream publisher.
+ * Configuration object for a persistent stream publisher.
  *
  * @param fromSequenceNr Sequence number where the published stream shall start (inclusive).
  *                       Default is `1L`.
- * @param maxBufferSize Maximum number of persistent messages to be buffered in memory (per publisher).
+ * @param maxBufferSize Maximum number of persistent events to be buffered in memory (per publisher).
  *                      Default is `100`.
- * @param idle Optional duration to wait if no more persistent messages can be pulled from the journal
+ * @param idle Optional duration to wait if no more persistent events can be pulled from the journal
  *             before attempting the next pull. Default is `None` which causes the publisher to take
  *             the value defined by the `akka.persistence.view.auto-update-interval` configuration
  *             key. If defined, the `idle` value is taken directly.
@@ -66,36 +67,36 @@ case class PersistentPublisherSettings(fromSequenceNr: Long = 1L, maxBufferSize:
 }
 
 private object PersistentPublisher {
-  def props(processorId: String, publisherSettings: PersistentPublisherSettings, settings: MaterializerSettings): Props =
-    Props(classOf[PersistentPublisherImpl], processorId, publisherSettings, settings).withDispatcher(settings.dispatcher)
+  def props(persistenceId: String, publisherSettings: PersistentPublisherSettings, settings: MaterializerSettings): Props =
+    Props(classOf[PersistentPublisherImpl], persistenceId, publisherSettings, settings).withDispatcher(settings.dispatcher)
 }
 
-private case class PersistentPublisherNode(processorId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Persistent] {
-  def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Persistent] =
-    ActorPublisher[Persistent](materializer.actorOf(PersistentPublisher.props(processorId, publisherSettings, materializer.settings),
+private case class PersistentPublisherNode(persistenceId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Any] {
+  def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Any] =
+    ActorPublisher[Any](materializer.actorOf(PersistentPublisher.props(persistenceId, publisherSettings, materializer.settings),
       name = s"$flowName-0-persistentPublisher"))
 }
 
-private class PersistentPublisherImpl(processorId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
+private class PersistentPublisherImpl(persistenceId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
   extends Actor
   with ActorLogging
-  with SubscriberManagement[Persistent]
+  with SubscriberManagement[Any]
   with SoftShutdown {
 
   import ActorBasedFlowMaterializer._
   import PersistentPublisherBuffer._
 
-  type S = ActorSubscription[Persistent]
+  type S = ActorSubscription[Any]
 
-  private val buffer = context.actorOf(Props(classOf[PersistentPublisherBuffer], processorId, publisherSettings, self).
+  private val buffer = context.actorOf(Props(classOf[PersistentPublisherBuffer], persistenceId, publisherSettings, self).
     withDispatcher(context.props.dispatcher), "publisherBuffer")
 
-  private var pub: ActorPublisher[Persistent] = _
+  private var pub: ActorPublisher[Any] = _
   private var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
   final def receive = {
     case ExposedPublisher(pub) ⇒
-      this.pub = pub.asInstanceOf[ActorPublisher[Persistent]]
+      this.pub = pub.asInstanceOf[ActorPublisher[Any]]
       context.become(waitingForSubscribers)
   }
 
@@ -130,7 +131,7 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
   override def maxBufferSize =
     materializerSettings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[Persistent]): ActorSubscription[Persistent] =
+  override def createSubscription(subscriber: Subscriber[Any]): ActorSubscription[Any] =
     new ActorSubscription(self, subscriber)
 
   override def cancelUpstream(): Unit = {
@@ -151,31 +152,29 @@ private class PersistentPublisherImpl(processorId: String, publisherSettings: Pe
 
 private object PersistentPublisherBuffer {
   case class Request(num: Int)
-  case class Response(messages: Vector[Persistent])
+  case class Response(events: Vector[Any])
 
   case object Fill
   case object Filled
 }
 
 /**
- * A view that buffers up to `publisherSettings.maxBufferSize` persistent messages in memory.
+ * A view that buffers up to `publisherSettings.maxBufferSize` persistent events in memory.
  * Downstream demands (requests) are served if the buffer is non-empty either while filling
  * the buffer or after having filled the buffer. When the buffer becomes empty new persistent
- * messages are loaded from the journal (in batches up to `publisherSettings.maxBufferSize`).
+ * events are loaded from the journal (in batches up to `publisherSettings.maxBufferSize`).
  */
-private class PersistentPublisherBuffer(override val processorId: String, publisherSettings: PersistentPublisherSettings, publisher: ActorRef) extends View {
+private class PersistentPublisherBuffer(override val persistenceId: String, publisherSettings: PersistentPublisherSettings, publisher: ActorRef) extends PersistentView {
   import PersistentPublisherBuffer._
   import context.dispatcher
 
   private var replayed = 0
   private var requested = 0
-  private var buffer: Vector[Persistent] = Vector.empty
+  private var buffer: Vector[Any] = Vector.empty
+
+  override def viewId: String = persistenceId + "-stream-view"
 
   private val filling: Receive = {
-    case p: Persistent ⇒
-      buffer :+= p
-      replayed += 1
-      if (requested > 0) respond(requested)
     case Filled ⇒
       if (buffer.nonEmpty && requested > 0) respond(requested)
       if (buffer.nonEmpty) pause()
@@ -184,6 +183,10 @@ private class PersistentPublisherBuffer(override val processorId: String, publis
     case Request(num) ⇒
       requested += num
       if (buffer.nonEmpty) respond(requested)
+    case persistentEvent ⇒
+      buffer :+= persistentEvent
+      replayed += 1
+      if (requested > 0) respond(requested)
   }
 
   private val pausing: Receive = {
