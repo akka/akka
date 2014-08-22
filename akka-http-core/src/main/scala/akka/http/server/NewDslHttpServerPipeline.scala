@@ -6,7 +6,7 @@ import akka.http.model.{ ErrorInfo, HttpRequest, HttpResponse }
 import akka.http.parsing.HttpRequestParser
 import akka.http.parsing.ParserOutput._
 import akka.http.rendering.ResponseRenderingContext
-import akka.stream.dsl.{ FlowMaterializer ⇒ NewFM, _ }
+import akka.stream.dsl._
 import akka.stream.io.StreamTcp
 import akka.stream.{ FlowMaterializer, Transformer }
 import akka.util.ByteString
@@ -53,20 +53,23 @@ class NewDslHttpServerPipeline(settings: ServerSettings,
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
         .withOutput(merge.in1)
 
+    val requestPublisher = PublisherOut[HttpRequest]()
     val requestFlowAfterBroadcast: ClosedFlow[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput]), HttpRequest] =
       From[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])]
         .withInput(broadcast.out2)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-            val pub = entityParts.withOutput(PublisherOut()).as(NewFM.publisher[RequestOutput])
-            HttpRequest(method, effectiveUri, headers, createEntity(pub), protocol)
+            val publisher = PublisherOut[RequestOutput]()
+            val flow = entityParts.withOutput(publisher)
+            HttpRequest(method, effectiveUri, headers, createEntity(publisher.publisher), protocol)
         }
-        .withOutput(PublisherOut())
+        .withOutput(requestPublisher)
 
+    val responseSubscriber = SubscriberIn[HttpResponse]()
     val responseFlowBeforeMerge: ClosedFlow[HttpResponse, HttpResponse] =
       From[HttpResponse]
-        .withInput(SubscriberIn())
+        .withInput(responseSubscriber)
         .withOutput(merge.in2)
 
     val responseFlowAfterMerge: ClosedFlow[Any, ByteString] =
@@ -78,10 +81,7 @@ class NewDslHttpServerPipeline(settings: ServerSettings,
         .transform(errorLogger(log, "Outgoing response stream error"))
         .withOutput(SubscriberOut(tcpConn.outputStream))
 
-    val requestPublisher = requestFlowAfterBroadcast.as(NewFM.publisher[HttpRequest])
-    val responseSubscriber = responseFlowBeforeMerge.as(NewFM.subscriber[HttpResponse])
-
-    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
+    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher.publisher, responseSubscriber.subscriber)
   }
 
   def applyApplicationBypass: Transformer[Any, ResponseRenderingContext] = ???
