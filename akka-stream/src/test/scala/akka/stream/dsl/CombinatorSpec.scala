@@ -27,7 +27,8 @@ class CombinatorSpec extends WordSpec with Matchers {
       }
     }
     "fold" in {
-      val t: OpenFlow[Int, String] = f.fold("elements:") { (soFar, element) ⇒ soFar + element }
+      val fo = FoldOut("elements:") { (soFar, element: Int) ⇒ soFar + element }
+      val t: OpenInputFlow[Int, String] = f.withOutput(fo)
     }
     "drop" in {
       val t: OpenFlow[Int, Int] = f.drop(2)
@@ -67,19 +68,26 @@ class CombinatorSpec extends WordSpec with Matchers {
         f.map(_.toString).prefixAndTail(10)
     }
     "groupBy" in {
-      val grouped: OpenOutputFlow[Int, (Int, OpenOutputFlow[Int, Int])] =
-        From(immutable.Seq(1, 2, 3)).map(_ * 2).groupBy((o: Int) ⇒ o % 3)
+      val grouped: OpenOutputFlow[Int, (String, OpenOutputFlow[Int, Int])] =
+        From(immutable.Seq(1, 2, 3)).map(_ * 2).groupBy((o: Int) ⇒ o.toString)
 
-      val closedInner: OpenOutputFlow[Int, (Int, ClosedFlow[Int, Int])] = grouped.map {
-        case (key, openFlow) ⇒ (key, openFlow.withOutput(FutureOut()))
+      val closedInner: OpenOutputFlow[Int, (String, ClosedFlow[Int, Int])] = grouped.map {
+        case (key, openFlow) ⇒ (key, openFlow.withOutput(PublisherOut()))
       }
 
       // both of these compile, even if `grouped` has inner flows unclosed
-      grouped.withOutput(FutureOut()).run
-      closedInner.withOutput(FutureOut()).run
+      grouped.withOutput(PublisherOut()).run
+      closedInner.withOutput(PublisherOut()).run
     }
     "splitWhen" in {
       val t: OpenFlow[Int, OpenOutputFlow[String, String]] = f.map(_.toString).splitWhen(_.length > 2)
+    }
+  }
+
+  "Linear combinators which consume multiple flows" should {
+    "flatten" in {
+      val split: OpenFlow[Int, OpenOutputFlow[String, String]] = f.map(_.toString).splitWhen(_.length > 2)
+      val flattened: OpenFlow[Int, String] = split.flatten(FlattenStrategy.concatOpenOutputFlow)
     }
   }
 
