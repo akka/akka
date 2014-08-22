@@ -5,18 +5,7 @@ package akka.stream
 
 import scala.collection.immutable
 
-/**
- * General interface for stream transformation.
- *
- * It is possible to keep state in the concrete [[Transformer]] instance with
- * ordinary instance variables. The [[Transformer]] is executed by an actor and
- * therefore you don not have to add any additional thread safety or memory
- * visibility constructs to access the state from the callback methods.
- *
- * @see [[akka.stream.scaladsl.Flow#transform]]
- * @see [[akka.stream.javadsl.Flow#transform]]
- */
-abstract class Transformer[-T, +U] {
+abstract class TransformerLike[-T, +U] {
   /**
    * Invoked for each element to produce a (possibly empty) sequence of
    * output elements.
@@ -55,9 +44,17 @@ abstract class Transformer[-T, +U] {
    */
   def cleanup(): Unit = ()
 
-  /**
-   * Name of this transformation step. Used as part of the actor name.
-   * Facilitates debugging and logging.
-   */
-  def name: String = "transform"
 }
+
+/**
+ * General interface for stream transformation.
+ *
+ * It is possible to keep state in the concrete [[Transformer]] instance with
+ * ordinary instance variables. The [[Transformer]] is executed by an actor and
+ * therefore you don not have to add any additional thread safety or memory
+ * visibility constructs to access the state from the callback methods.
+ *
+ * @see [[akka.stream.scaladsl.Flow#transform]]
+ * @see [[akka.stream.javadsl.Flow#transform]]
+ */
+abstract class Transformer[-T, +U] extends TransformerLike[T, U]

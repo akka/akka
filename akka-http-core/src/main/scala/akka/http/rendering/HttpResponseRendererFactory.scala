@@ -132,7 +132,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             r ~~ `Content-Length` ~~ contentLength ~~ CrLf ~~ CrLf
-            byteStrings(Flow(data).transform(new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer))
+            byteStrings(Flow(data).transform("checkContentLenght", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer))
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = true)
@@ -149,7 +149,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
                 r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
               r ~~ CrLf
-              byteStrings(Flow(chunks).transform(new ChunkTransformer).toPublisher()(materializer))
+              byteStrings(Flow(chunks).transform("checkContentLenght", () ⇒ new ChunkTransformer).toPublisher()(materializer))
             }
         }
 
