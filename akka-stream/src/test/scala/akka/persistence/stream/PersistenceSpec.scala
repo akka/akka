@@ -39,9 +39,9 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec â
   def namePrefix: String = system.name
 
   /**
-   * Creates a processor with current name as constructor argument.
+   * Creates a persistent actor with current name as constructor argument.
    */
-  def namedProcessor[T <: NamedProcessor: ClassTag] =
+  def namedPersistentActor[T <: NamedPersistentActor: ClassTag] =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name))
 
   override protected def beforeEach() {
@@ -78,6 +78,6 @@ trait Cleanup { this: AkkaSpec â‡’
   }
 }
 
-abstract class NamedProcessor(name: String) extends Processor {
-  override def processorId: String = name
+abstract class NamedPersistentActor(name: String) extends PersistentActor {
+  override def persistenceId: String = name
 }
