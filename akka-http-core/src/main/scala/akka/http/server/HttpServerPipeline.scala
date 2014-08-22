@@ -40,7 +40,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
 
     val requestPublisher =
       Flow(tcpConn.inputStream)
-        .transform(rootParser.copyWith(warnOnIllegalHeader))
+        .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader))
         // this will create extra single element `[MessageEnd]` substreams, that will
         // be filtered out by the above `collect` for the applicationBypass and the
         // below `collect` for the actual request handling
@@ -58,10 +58,10 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
     val responseSubscriber =
       Duct[HttpResponse]
         .merge(applicationBypassPublisher)
-        .transform(applyApplicationBypass)
-        .transform(responseRendererFactory.newRenderer)
+        .transform("applyApplicationBypass", () ⇒ applyApplicationBypass)
+        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
-        .transform(errorLogger(log, "Outgoing response stream error"))
+        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
         .produceTo(tcpConn.outputStream)(materializer)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
