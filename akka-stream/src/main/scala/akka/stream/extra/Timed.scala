@@ -27,9 +27,9 @@ private[akka] trait TimedOps {
   def timed[I, O](flow: Flow[I], measuredOps: Flow[I] ⇒ Flow[O], onComplete: FiniteDuration ⇒ Unit): Flow[O] = {
     val ctx = new TimedFlowContext
 
-    val startWithTime = flow.transform(new StartTimedFlow(ctx))
+    val startWithTime = flow.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
     val userFlow = measuredOps(startWithTime)
-    userFlow.transform(new StopTimed(ctx, onComplete))
+    userFlow.transform("stopTimed", () ⇒ new StopTimed(ctx, onComplete))
   }
 
   /**
@@ -41,9 +41,9 @@ private[akka] trait TimedOps {
     // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
     val ctx = new TimedFlowContext
 
-    val startWithTime: Duct[I, O] = duct.transform(new StartTimedFlow(ctx))
+    val startWithTime: Duct[I, O] = duct.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
     val userFlow: Duct[O, Out] = measuredOps(startWithTime)
-    userFlow.transform(new StopTimed(ctx, onComplete))
+    userFlow.transform("stopTimed", () ⇒ new StopTimed(ctx, onComplete))
   }
 
 }
@@ -61,7 +61,7 @@ private[akka] trait TimedIntervalBetweenOps {
    * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[O](flow: Flow[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[O] = {
-    flow.transform(new TimedIntervalTransformer[O](matching, onInterval))
+    flow.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
   }
 
   /**
@@ -69,7 +69,7 @@ private[akka] trait TimedIntervalBetweenOps {
    */
   def timedIntervalBetween[I, O](duct: Duct[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Duct[I, O] = {
     // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
-    duct.transform(new TimedIntervalTransformer[O](matching, onInterval))
+    duct.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
   }
 }
 
@@ -100,8 +100,6 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
   }
 
   final class StartTimedFlow[T](ctx: TimedFlowContext) extends Transformer[T, T] {
-    override def name = "startTimed"
-
     private var started = false
 
     override def onNext(element: T) = {
@@ -115,7 +113,6 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
   }
 
   final class StopTimed[T](ctx: TimedFlowContext, _onComplete: FiniteDuration ⇒ Unit) extends Transformer[T, T] {
-    override def name = "stopTimed"
 
     override def cleanup() {
       val d = ctx.stop()
@@ -126,8 +123,6 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
   }
 
   final class TimedIntervalTransformer[T](matching: T ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit) extends Transformer[T, T] {
-    override def name = "timedInterval"
-
     private var prevNanos = 0L
     private var matched = 0L
 

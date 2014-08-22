@@ -3,16 +3,15 @@
  */
 package akka.stream
 
-import scala.collection.immutable
-import scala.collection.mutable
+import akka.actor.{ ActorContext, Cancellable }
+
+import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.ActorContext
-import akka.actor.Cancellable
 
 /**
  * [[Transformer]] with support for scheduling keyed (named) timer events.
  */
-abstract class TimerTransformer[-T, +U] extends Transformer[T, U] {
+abstract class TimerTransformer[-T, +U] extends TransformerLike[T, U] {
   import TimerTransformer._
   private val timers = mutable.Map[Any, Timer]()
   private val timerIdGen = Iterator from 1
