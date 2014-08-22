@@ -119,7 +119,7 @@ Observe all the parts you need here:
 * ``/user/my/actor/hierarchy/path`` is the absolute path of the remote actor in
   the remote system’s supervision hierarchy, including the system’s guardian
   (i.e. ``/user``, there are others e.g. ``/system`` which hosts loggers, ``/temp``
-  which keeps temporary actor refs used with `ask()`, `/remote` which enables
+  which keeps temporary actor refs used with :meth:`ask`, ``/remote`` which enables
   remote deployment, etc.); this matches how the actor prints its own ``self``
   reference on the remote host, e.g. in log output.
 
