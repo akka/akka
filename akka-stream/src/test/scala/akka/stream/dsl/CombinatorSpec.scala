@@ -28,7 +28,7 @@ class CombinatorSpec extends WordSpec with Matchers {
     }
     "fold" in {
       val fo = FoldOut("elements:") { (soFar, element: Int) ⇒ soFar + element }
-      val t: OpenInputFlow[Int, String] = f.withOutput(fo)
+      val t: OpenInputFlow[Int, Int] = f.withOutput(fo)
     }
     "drop" in {
       val t: OpenFlow[Int, Int] = f.drop(2)
