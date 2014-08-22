@@ -109,8 +109,6 @@ case class MaterializerSettings(
   maxFanOutBufferSize: Int = 16,
   initialInputBufferSize: Int = 4,
   maximumInputBufferSize: Int = 16,
-  upstreamSubscriptionTimeout: FiniteDuration = 3.seconds,
-  downstreamSubscriptionTimeout: FiniteDuration = 3.seconds,
   dispatcher: String = Deploy.NoDispatcherGiven) {
 
   private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0
@@ -131,14 +129,6 @@ case class MaterializerSettings(
 
   def withFanOut(initialFanOutBufferSize: Int, maxFanOutBufferSize: Int): MaterializerSettings =
     copy(initialFanOutBufferSize = initialFanOutBufferSize, maxFanOutBufferSize = maxFanOutBufferSize)
-
-  def withSubscriptionTimeout(timeout: FiniteDuration): MaterializerSettings =
-    copy(upstreamSubscriptionTimeout = timeout, downstreamSubscriptionTimeout = timeout)
-
-  def withSubscriptionTimeout(upstreamSubscriptionTimeout: FiniteDuration,
-                              downstreamSubscriptionTimeout: FiniteDuration): MaterializerSettings =
-    copy(upstreamSubscriptionTimeout = upstreamSubscriptionTimeout,
-      downstreamSubscriptionTimeout = downstreamSubscriptionTimeout)
 
   def withDispatcher(dispatcher: String): MaterializerSettings = copy(dispatcher = dispatcher)
 

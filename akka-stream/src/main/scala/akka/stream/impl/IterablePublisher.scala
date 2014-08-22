@@ -57,7 +57,6 @@ private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], setting
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
       context.become(waitingForFirstSubscriber)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
   }
@@ -65,7 +64,6 @@ private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], setting
   def waitingForFirstSubscriber: Receive = {
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
       context.become(active)
   }
 
