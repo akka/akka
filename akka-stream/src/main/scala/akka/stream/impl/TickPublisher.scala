@@ -56,7 +56,6 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
       context.become(waitingForFirstSubscriber)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
   }
@@ -64,7 +63,6 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   def waitingForFirstSubscriber: Receive = {
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
       import context.dispatcher
       tickTask = Some(context.system.scheduler.schedule(initialDelay, interval, self, Tick))
       context.become(active)

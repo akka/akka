@@ -53,7 +53,6 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
-      context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
       context.become(waitingForFirstSubscriber)
     case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
   }
@@ -61,7 +60,6 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
   def waitingForFirstSubscriber: Receive = {
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
       import context.dispatcher
       future.pipeTo(self)
       context.become(active)
