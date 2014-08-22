@@ -1203,9 +1203,9 @@ object AkkaBuild extends Build {
 
     val parsing = exports(Seq("akka.parboiled2.*", "akka.shapeless.*"))
 
-    val httpCore = exports(Seq("akka.http.*"))
+    val httpCore = Nil // FIXME #15689
 
-    val http = exports(Seq("akka.http.*"))
+    val http = Nil // FIXME #15689
 
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
