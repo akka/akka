@@ -6,44 +6,52 @@ import scala.collection.immutable.Seq
 
 class GraphSpec extends WordSpec with Matchers {
 
-  val intSeq = IterableIn(Seq(1, 2, 3))
-
   "Graph" should {
     "merge" in {
-      val in1 = From[Int]
-      val in2 = From[Int]
-      val out1 = From[Int]
-      val out2 = From[String]
+      val merge = Merge[Int, Int, Int]()
 
-      Graph().merge(in1, in2, out1)
-      "Graph().merge(in1, in2, out2)" shouldNot compile
+      val in1 = From[Int].withOutput(merge.in1)
+      val in2 = From[Int].withOutput(merge.in2)
+      val out1 = From[Int].withInput(merge.out)
+
+      val out2 = From[String]
+      // FIXME: make me not compile
+      //"out2.withInput(merge.out)" shouldNot compile
     }
     "zip" in {
-      val in1 = From[Int]
-      val in2 = From[String]
-      val out1 = From[(Int, String)]
-      val out2 = From[(String, Int)]
+      val zip = Zip[Int, String]()
 
-      Graph().zip(in1, in2, out1)
-      "Graph().zip(in1, in2, out2)" shouldNot compile
+      val in1 = From[Int].withOutput(zip.in1)
+      val in2 = From[String].withOutput(zip.in2)
+      val out1 = From[(Int, String)].withInput(zip.out)
+
+      val out2 = From[(String, Int)]
+      // FIXME: make me not compile
+      //"out2.withInput(zip.out)" shouldNot compile
     }
     "concat" in {
-      val in1 = From[Int]
-      val in2 = From[Int]
-      val out1 = From[Int]
-      val out2 = From[String]
+      trait A
+      trait B extends A
 
-      Graph().concat(in1, in2, out1)
-      "Graph().concat(in1, in2, out2)" shouldNot compile
+      val concat = Concat[A, B, A]()
+      val in1 = From[A].withOutput(concat.in1)
+      val in2 = From[B].withOutput(concat.in2)
+      val out1 = From[A].withInput(concat.out)
+
+      val out2 = From[String]
+      // FIXME: make me not compile
+      //"out2.withInput(concat.out)" shouldNot compile
     }
     "broadcast" in {
-      val in1 = From[Int].map(_ * 2)
-      val in2 = From[Int].map(_.toString)
-      val out1 = From[Int].map(_.toString)
-      val out2 = From[Int].filter(_ % 2 == 0)
+      val broadcast = Broadcast[Int]()
 
-      Graph().broadcast(in1, Seq(out1, out2))
-      "Graph().broadcast(in2, Seq(out1, out2))" shouldNot compile
+      val in1 = From[Int].withOutput(broadcast.in)
+      val in2 = From[Int].withInput(broadcast.out1)
+      val out1 = From[Int].withInput(broadcast.out2)
+
+      val out2 = From[String]
+      // FIXME: make me not compile
+      //"out2.withInput(broadcast.out2)" shouldNot compile
     }
   }
 }

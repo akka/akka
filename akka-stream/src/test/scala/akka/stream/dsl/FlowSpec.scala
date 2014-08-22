@@ -17,7 +17,7 @@ class FlowSpec extends WordSpec with Matchers {
     "go through all states" in {
       val f: OpenFlow[Int, Int] = From[Int]
         .withInput(intSeq)
-        .withOutput(FutureOut())
+        .withOutput(PublisherOut())
         .withoutInput
         .withoutOutput
     }
@@ -40,10 +40,10 @@ class FlowSpec extends WordSpec with Matchers {
       val closedInput: OpenOutputFlow[Int, Int] = open3.withInput(intSeq)
       "closedInput.run" shouldNot compile
 
-      val closedOutput: OpenInputFlow[Int, Int] = open3.withOutput(FutureOut())
+      val closedOutput: OpenInputFlow[Int, Int] = open3.withOutput(PublisherOut())
       "closedOutput.run" shouldNot compile
 
-      closedInput.withOutput(FutureOut()).run
+      closedInput.withOutput(PublisherOut()).run
       closedOutput.withInput(intSeq).run
     }
     "prepend OpenFlow" in {
@@ -55,15 +55,15 @@ class FlowSpec extends WordSpec with Matchers {
       val closedInput: OpenOutputFlow[String, String] = open3.withInput(strSeq)
       "closedInput.run" shouldNot compile
 
-      val closedOutput: OpenInputFlow[String, String] = open3.withOutput(FutureOut())
+      val closedOutput: OpenInputFlow[String, String] = open3.withOutput(PublisherOut())
       "closedOutput.run" shouldNot compile
 
-      closedInput.withOutput(FutureOut()).run
+      closedInput.withOutput(PublisherOut()).run
       closedOutput.withInput(strSeq).run
     }
     "append OpenInputFlow" in {
       val open: OpenFlow[Int, String] = From[Int].map(_.toString)
-      val closedOutput: OpenInputFlow[String, Int] = From[String].map(_.hashCode).withOutput(FutureOut())
+      val closedOutput: OpenInputFlow[String, Int] = From[String].map(_.hashCode).withOutput(PublisherOut())
       val appended: OpenInputFlow[Int, Int] = open.append(closedOutput)
       "appended.run" shouldNot compile
       "appended.toFuture" shouldNot compile
@@ -75,13 +75,13 @@ class FlowSpec extends WordSpec with Matchers {
       val prepended: OpenOutputFlow[String, String] = open.prepend(closedInput)
       "prepended.run" shouldNot compile
       "prepended.withInput(strSeq)" shouldNot compile
-      prepended.withOutput(FutureOut()).run
+      prepended.withOutput(PublisherOut()).run
     }
   }
 
   "OpenInputFlow" should {
     val openInput: OpenInputFlow[Int, String] =
-      From[Int].map(_.toString).withOutput(FutureOut())
+      From[Int].map(_.toString).withOutput(PublisherOut())
     "accept Input" in {
       openInput.withInput(intSeq)
     }
@@ -103,7 +103,7 @@ class FlowSpec extends WordSpec with Matchers {
     val openOutput: OpenOutputFlow[Int, String] =
       From(Seq(1, 2, 3)).map(_.toString)
     "accept Output" in {
-      openOutput.withOutput(FutureOut())
+      openOutput.withOutput(PublisherOut())
     }
     "drop Input" in {
       openOutput.withoutInput
@@ -121,7 +121,7 @@ class FlowSpec extends WordSpec with Matchers {
 
   "ClosedFlow" should {
     val closed: ClosedFlow[Int, String] =
-      From(Seq(1, 2, 3)).map(_.toString).withOutput(FutureOut())
+      From(Seq(1, 2, 3)).map(_.toString).withOutput(PublisherOut())
     "run" in {
       closed.run
     }

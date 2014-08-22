@@ -1,10 +1,12 @@
 package akka.stream.dsl
 
+import akka.stream.impl.Ast
+import org.reactivestreams.{ Subscriber, Publisher }
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import akka.stream.OverflowStrategy
-import akka.stream.FlattenStrategy
+import akka.stream.{ Transformer, OverflowStrategy, FlattenStrategy }
 
 sealed trait Flow[-In, +Out] {
   val transform: Transform[In, Out]
@@ -28,9 +30,25 @@ object From {
    * Example usage: Flow(Future { 1 })
    */
   def apply[T](f: Future[T]): OpenOutputFlow[T, T] = From[T].withInput(FutureIn(f))
+
+  /**
+   * Helper to create Flow with Input from Publisher.
+   */
+  def apply[T](p: Publisher[T]): OpenOutputFlow[T, T] = From[T].withInput(PublisherIn(p))
 }
 
 trait Input[-In]
+
+/**
+ * Default input.
+ * Allows to materialize a Flow with this input to Subscriber.
+ */
+final case class SubscriberIn[-In]() extends Input[In]
+
+/**
+ * Input from Publisher.
+ */
+final case class PublisherIn[-In](p: Publisher[_ >: In]) extends Input[In]
 
 /**
  * Input from Iterable
@@ -48,10 +66,27 @@ final case class IterableIn[-In](i: immutable.Iterable[_ >: In]) extends Input[I
  */
 final case class FutureIn[-In](f: Future[_ >: In]) extends Input[In]
 
-trait Output[+Out]
+trait Output[+Out] {
+  def transform[T, O >: Out]: Transform[O, T] = EmptyTransform[O, T]
+}
 
-final case class FutureOut[+Out]() extends Output[Out]
+/**
+ * Default output. Does no reducing operations.
+ * Allows to materialize a Flow with this output to Publisher.
+ */
 final case class PublisherOut[+Out]() extends Output[Out]
+
+/**
+ * Output to a Subscriber.
+ */
+final case class SubscriberOut[+Out](s: Subscriber[_ <: Out]) extends Output[Out]
+
+/**
+ * Fold output. Reduces output stream according to the given fold function.
+ */
+final case class FoldOut[T, +Out](zero: T)(f: (T, Out) ⇒ T) extends Output[Out] {
+  override def transform[T, O >: Out]: Transform[O, T] = EmptyTransform[O, T]
+}
 
 /**
  * Operations with a Flow which has open (no attached) Input.
@@ -95,8 +130,6 @@ trait HasOpenOutput[-In, +Out] {
     appendTransform(EmptyTransform[Out, Out]())
   def collect[T](pf: PartialFunction[Out, T]): Repr[In, T] =
     appendTransform(EmptyTransform[Out, T]())
-  def fold[T](zero: T)(f: (T, Out) ⇒ T): Repr[In, T] =
-    appendTransform(EmptyTransform[Out, T]())
   def drop(n: Int): Repr[In, Out] =
     appendTransform(EmptyTransform[Out, Out]())
   def dropWithin(d: FiniteDuration): Repr[In, Out] =
@@ -110,6 +143,8 @@ trait HasOpenOutput[-In, +Out] {
   def groupedWithin(n: Int, d: FiniteDuration): Repr[In, immutable.Seq[Out]] =
     appendTransform(EmptyTransform[Out, immutable.Seq[Out]]())
   def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[In, T] =
+    appendTransform(EmptyTransform[Out, T]())
+  def transform[T](transformer: Transformer[Out, T]): Repr[In, T] =
     appendTransform(EmptyTransform[Out, T]())
   def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Repr[In, S] =
     appendTransform(EmptyTransform[Out, S]())
@@ -127,8 +162,8 @@ trait HasOpenOutput[-In, +Out] {
     appendTransform(EmptyTransform[Out, OpenOutputFlow[O, O]]())
 
   // linear combinators which consume multiple flows
-  def flatten[O >: Out](strategy: FlattenStrategy[Out, O]): Repr[In, O] =
-    appendTransform(EmptyTransform[Out, O]())
+  def flatten[T](strategy: FlattenStrategy[Out, T]): Repr[In, T] =
+    appendTransform(EmptyTransform[Out, T]())
 
   // linear combinators with flows
   def append[T](f: OpenFlow[Out, T]): Repr[In, T] =
@@ -142,7 +177,7 @@ final case class OpenFlow[-In, +Out](transform: Transform[In, Out]) extends Flow
   type AfterCloseOutput[-In, +Out] = OpenInputFlow[In, Out]
   type AfterCloseInput[-In, +Out] = OpenOutputFlow[In, Out]
 
-  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = OpenInputFlow(out, transform)
+  def withOutput[O](out: Output[O]): AfterCloseOutput[In, O] = OpenInputFlow(out, transform ++ out.transform)
   def withInput[I <: In](in: Input[I]): AfterCloseInput[I, Out] = OpenOutputFlow(in, transform)
 
   protected def prependTransform[T](t: Transform[T, In]): Repr[T, Out] = OpenFlow(t ++ transform)
@@ -164,7 +199,7 @@ final case class OpenOutputFlow[-In, +Out](input: Input[In], transform: Transfor
   override type Repr[-In, +Out] = OpenOutputFlow[In, Out]
   type AfterCloseOutput[-In, +Out] = ClosedFlow[In, Out]
 
-  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = ClosedFlow(input, out, transform)
+  def withOutput[O](out: Output[O]): AfterCloseOutput[In, O] = ClosedFlow(input, out, transform ++ out.transform)
   def withoutInput: OpenFlow[In, Out] = OpenFlow(transform)
 
   protected def appendTransform[T](t: Transform[Out, T]) = OpenOutputFlow(input, transform ++ t)
@@ -175,9 +210,50 @@ final case class ClosedFlow[-In, +Out](input: Input[In], output: Output[Out], tr
   def withoutInput: OpenInputFlow[In, Out] = OpenInputFlow(output, transform)
 
   def run(): Unit = ()
+
+  def as[O >: Out, R[_]](implicit materializer: FlowMaterializer.M[O, R[O]]): R[O] = ???
 }
 
 trait Transform[-In, +Out] {
   def ++[T](t: Transform[Out, T]): Transform[In, T] = EmptyTransform[In, T]()
 }
 final case class EmptyTransform[-In, +Out]() extends Transform[In, Out]
+
+object FlattenStrategy {
+  def concatOpenOutputFlow[In, Out]: FlattenStrategy[OpenOutputFlow[In, Out], Out] = ConcatOpenOutputFlow[In, Out]()
+  def concatOpenFlow[In, Out]: FlattenStrategy[OpenFlow[In, Out], Out] = ConcatOpenFlow[In, Out]()
+
+  final case class ConcatOpenOutputFlow[In, Out]() extends FlattenStrategy[OpenOutputFlow[In, Out], Out]
+  final case class ConcatOpenFlow[In, Out]() extends FlattenStrategy[OpenFlow[In, Out], Out]
+}
+
+/**
+ * At the end we need to materialize the stream. It could be done by setting an output
+ * with a transformation (e.g Out -> Publisher[Out]) which would do the materialization.
+ *
+ * Or we could have an additional step on ClosedFlow like the one Viktor suggested.
+ * https://github.com/akka/akka/issues/15633#issuecomment-52307292
+ */
+object FlowMaterializer {
+  trait M[T, R] {
+    def apply[I](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): R
+  }
+
+  def publisher[T]: FlowMaterializer.M[T, Publisher[T]] = publisizer.asInstanceOf[FlowMaterializer.M[T, Publisher[T]]]
+  private[this] final val publisizer = mkPublisher[Any]
+  private[this] def mkPublisher[T] = new FlowMaterializer.M[T, Publisher[T]] {
+    def apply[I](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Publisher[T] = ???
+  }
+
+  def subscriber[T]: FlowMaterializer.M[T, Subscriber[T]] = publisizer.asInstanceOf[FlowMaterializer.M[T, Subscriber[T]]]
+  private[this] final val sbscrisizer = mkSubscriber[Any]
+  private[this] def mkSubscriber[T] = new FlowMaterializer.M[T, Subscriber[T]] {
+    def apply[I](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Subscriber[T] = ???
+  }
+
+  def future[T]: FlowMaterializer.M[T, Future[T]] = futurizer.asInstanceOf[M[T, Future[T]]]
+  private[this] final val futurizer = mkFuture[Any]
+  private[this] def mkFuture[T] = new M[T, Future[T]] {
+    def apply[I](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Future[T] = ???
+  }
+}
