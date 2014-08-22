@@ -158,8 +158,6 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   var pub: ActorPublisher[T] = _
   var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
-  context.setReceiveTimeout(settings.downstreamSubscriptionTimeout)
-
   final def receive = {
     case ExposedPublisher(pub) ⇒
       this.pub = pub.asInstanceOf[ActorPublisher[T]]
@@ -169,7 +167,6 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
   final def waitingForSubscribers: Receive = {
     case SubscribePending ⇒
       pub.takePendingSubscribers() foreach registerSubscriber
-      context.setReceiveTimeout(Duration.Undefined)
       context.become(active)
   }
 
