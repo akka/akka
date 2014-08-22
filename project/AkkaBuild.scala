@@ -358,7 +358,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(httpCore, stream % "compile;test->test"),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.http ++
+        javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           version := streamAndHttpVersion,  
           libraryDependencies ++= Dependencies.http,
@@ -366,6 +366,35 @@ object AkkaBuild extends Build {
           //previousArtifact := akkaPreviousArtifact("akka-http")
           previousArtifact := None,
           scalacOptions += "-language:_"
+        )
+  )
+
+  lazy val httpTestkit = Project(
+    id = "akka-http-testkit-experimental",
+    base = file("akka-http-testkit"),
+    dependencies = Seq(http, stream % "compile;test->test"),
+    settings =
+      defaultSettings ++ formatSettings ++ scaladocSettings ++
+        javadocSettings ++ OSGi.httpTestkit ++
+        Seq(
+          // FIXME remove this publishArtifact when akka-http-2.3.x is released
+          publishArtifact := java.lang.Boolean.getBoolean("akka.publish.akka-http"),
+          libraryDependencies ++= Dependencies.httpTestkit,
+          // FIXME include mima when akka-http-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http")
+          previousArtifact := None
+        )
+  )
+
+  lazy val httpTests = Project(
+    id = "akka-http-tests",
+    base = file("akka-http-tests"),
+    dependencies = Seq(httpTestkit, stream % "compile;test->test"),
+    settings =
+      defaultSettings ++ formatSettings ++
+        Seq(
+          publishArtifact := false,
+          libraryDependencies ++= Dependencies.httpTests
         )
   )
 
@@ -1205,7 +1234,9 @@ object AkkaBuild extends Build {
 
     val httpCore = exports(Seq("akka.http.*"))
 
-    val http = exports(Seq("akka.http.*"))
+    val http = exports(Seq("akka.http.routing.*", "akka.http.encoding.*", "akka.http.marshalling.*", "akka.http.unmarshalling.*"))
+
+    val httpTestkit = exports(Seq("akka.http.testkit.*"))
 
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
@@ -1381,6 +1412,12 @@ object Dependencies {
     Test.junit, Test.scalatest)
 
   val http = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+
+  val httpTestkit = Seq(
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.3",
+    Test.junit, Test.scalatest.copy(configurations = Some("provided; test")))
+
+  val httpTests = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released

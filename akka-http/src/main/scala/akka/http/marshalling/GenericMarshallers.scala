@@ -7,7 +7,7 @@ package akka.http.marshalling
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Try, Failure, Success }
 
-trait GenericMarshallers {
+trait GenericMarshallers extends LowPriorityToResponseMarshallerImplicits {
 
   implicit def throwableMarshaller[T]: Marshaller[Throwable, T] = Marshaller(Future.failed)
 

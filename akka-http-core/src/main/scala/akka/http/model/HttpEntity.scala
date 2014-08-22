@@ -211,6 +211,7 @@ object HttpEntity {
     require(data.nonEmpty, "An HttpEntity.Chunk must have non-empty data")
     def isLastChunk = false
 
+    /** Java API */
     def getTrailerHeaders: Iterable[japi.HttpHeader] = java.util.Collections.emptyList[japi.HttpHeader]
   }
   object Chunk {

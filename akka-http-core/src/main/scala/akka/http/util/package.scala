@@ -10,23 +10,31 @@ import com.typesafe.config.Config
 import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.actor.{ ActorRefFactory, ActorContext, ActorSystem }
+import akka.actor._
 import akka.stream.scaladsl.Flow
 import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
+import scala.collection.LinearSeq
+import scala.util.matching.Regex
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
+  private[http] val EmptyByteArray = Array.empty[Byte]
 
-  private[http] def actorSystem(implicit refFactory: ActorRefFactory): ActorSystem =
+  private[http] def actorSystem(implicit refFactory: ActorRefFactory): ExtendedActorSystem =
     refFactory match {
-      case x: ActorContext ⇒ actorSystem(x.system)
-      case x: ActorSystem  ⇒ x
-      case _               ⇒ throw new IllegalStateException
+      case x: ActorContext        ⇒ actorSystem(x.system)
+      case x: ExtendedActorSystem ⇒ x
+      case _                      ⇒ throw new IllegalStateException
     }
 
   private[http] implicit def enhanceByteArray(array: Array[Byte]): EnhancedByteArray = new EnhancedByteArray(array)
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
+  private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
+  private[http] implicit def enhanceSeq[T](seq: Seq[T]): EnhancedSeq[T] = seq match {
+    case x: LinearSeq[_]  ⇒ new EnhancedLinearSeq[T](x)
+    case x: IndexedSeq[_] ⇒ new EnhancedIndexedSeq[T](x)
+  }
 
   private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
     def headAndTail(materializer: FlowMaterializer): Flow[(T, Publisher[T])] =
@@ -56,5 +64,9 @@ package object util {
       def onNext(element: ByteString) = element :: Nil
       override def onError(cause: Throwable): Unit = log.error(cause, msg)
     }
+
+  private[this] val _identityFunc: Any ⇒ Any = x ⇒ x
+  /** Returns a constant identity function to avoid allocating the closure */
+  def identityFunc[T]: T ⇒ T = _identityFunc.asInstanceOf[T ⇒ T]
 }
 

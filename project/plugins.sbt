@@ -22,3 +22,4 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.2")
 
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
 
+addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.5.1")

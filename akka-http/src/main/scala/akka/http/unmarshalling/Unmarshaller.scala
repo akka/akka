@@ -33,13 +33,13 @@ trait Unmarshaller[-A, B] extends (A ⇒ Future[Unmarshalling[B]]) {
 object Unmarshaller
   extends GenericUnmarshallers
   with PredefinedFromEntityUnmarshallers {
-  //with UnmarshallerLifting {
 
   def apply[A, B](f: A ⇒ Future[Unmarshalling[B]]): Unmarshaller[A, B] =
     new Unmarshaller[A, B] { def apply(a: A) = f(a) }
 }
 
 sealed trait Unmarshalling[+A] {
+  def asFuture: Future[A]
   def isSuccess: Boolean
   def isFailure: Boolean
   def value: A
@@ -49,7 +49,16 @@ sealed trait Unmarshalling[+A] {
 }
 
 object Unmarshalling {
+  trait FutureUnmarshallingAsFuture[A] {
+    def asFuture: Future[A]
+  }
+  implicit def addAsFuture[A](f: Future[Unmarshalling[A]])(implicit ec: ExecutionContext): FutureUnmarshallingAsFuture[A] =
+    new FutureUnmarshallingAsFuture[A] {
+      def asFuture: Future[A] = f.flatMap(_.asFuture)
+    }
+
   final case class Success[+A](value: A) extends Unmarshalling[A] {
+    def asFuture: Future[A] = Future.successful(value)
     def isSuccess = true
     def isFailure = false
     def map[B](f: A ⇒ B) = Success(f(value))
@@ -57,7 +66,9 @@ object Unmarshalling {
     def recover[AA >: A](f: PartialFunction[Unmarshalling.Failure, AA]) = this
   }
 
-  sealed abstract class Failure extends Unmarshalling[Nothing] {
+  sealed abstract class Failure extends RuntimeException with Unmarshalling[Nothing] {
+    def asFuture: Future[Nothing] = Future.failed(this)
+
     def isSuccess = false
     def isFailure = true
     def value = sys.error("Expected Unmarshalling.Success but got " + this)

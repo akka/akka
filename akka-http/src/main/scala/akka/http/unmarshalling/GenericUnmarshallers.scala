@@ -8,7 +8,7 @@ import akka.http.unmarshalling.Unmarshalling._
 
 import scala.concurrent.{ Future, ExecutionContext }
 
-trait GenericUnmarshallers {
+trait GenericUnmarshallers extends UnmarshallerLifting {
 
   implicit def targetOptionUnmarshaller[A, B](implicit um: Unmarshaller[A, B], ec: ExecutionContext): Unmarshaller[A, Option[B]] =
     um.mapUnmarshalling {

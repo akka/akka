@@ -10,9 +10,12 @@ import akka.http.model._
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 
-trait PredefinedToResponseMarshallers {
+trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImplicits {
 
   private type TRM[T] = ToResponseMarshaller[T] // brevity alias
+
+  def fromToEntityMarshaller[T](status: StatusCode = StatusCodes.OK, headers: immutable.Seq[HttpHeader] = Nil)(implicit m: ToEntityMarshaller[T], ec: ExecutionContext): ToResponseMarshaller[T] =
+    fromStatusCodeAndHeadersAndValue.compose(t ⇒ (status, headers, t))
 
   implicit val fromResponse: TRM[HttpResponse] = Marshaller.opaque(identity)
 
@@ -32,6 +35,13 @@ trait PredefinedToResponseMarshallers {
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T],
                                                    ec: ExecutionContext): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
     Marshaller { case (status, headers, value) ⇒ mt(value).map(_ map (HttpResponse(status, headers, _))) }
+}
+
+trait LowPriorityToResponseMarshallerImplicits {
+  implicit def liftMarshallerConversion[T](m: ToEntityMarshaller[T])(implicit ec: ExecutionContext): ToResponseMarshaller[T] =
+    liftMarshaller(m, ec)
+  implicit def liftMarshaller[T](implicit m: ToEntityMarshaller[T], ec: ExecutionContext): ToResponseMarshaller[T] =
+    PredefinedToResponseMarshallers.fromToEntityMarshaller()
 }
 
 object PredefinedToResponseMarshallers extends PredefinedToResponseMarshallers
