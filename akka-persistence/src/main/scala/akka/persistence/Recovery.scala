@@ -30,13 +30,22 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
       receive.applyOrElse(message, unhandled)
 
     protected def processPersistent(receive: Receive, persistent: Persistent) =
-      withCurrentPersistent(persistent)(receive.applyOrElse(_, unhandled))
+      withCurrentPersistent(persistent)(runReceive(receive))
 
     protected def recordFailure(cause: Throwable): Unit = {
       _recoveryFailureCause = cause
       _recoveryFailureMessage = context.asInstanceOf[ActorCell].currentMessage
     }
   }
+
+  /**
+   * INTERNAL API.
+   *
+   * This is used to deliver a persistent message to the actor’s behavior
+   * through withCurrentPersistent().
+   */
+  private[persistence] def runReceive(receive: Receive)(msg: Persistent): Unit =
+    receive.applyOrElse(msg, unhandled)
 
   /**
    * INTERNAL API.
