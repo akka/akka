@@ -427,13 +427,13 @@ abstract class ActorSystem extends ActorRefFactory {
    * (below which the logging actors reside) and the execute all registered
    * termination handlers (see [[ActorSystem.registerOnTermination]]).
    */
-  def terminate(): Future[Unit]
+  def terminate(): Future[Terminated]
 
   /**
    * Returns a Future which will be completed after the ActorSystem has been terminated
    * and termination hooks have been executed.
    */
-  def whenTerminated: Future[Unit]
+  def whenTerminated: Future[Terminated]
 
   /**
    * Registers the provided extension and creates its payload, if this extension isn't already registered
@@ -639,7 +639,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
-  def whenTerminated: Future[Unit] = terminationCallbacks.terminationFuture
+  override def whenTerminated: Future[Terminated] = terminationCallbacks.terminationFuture
   def lookupRoot: InternalActorRef = provider.rootGuardian
   def guardian: LocalActorRef = provider.guardian
   def systemGuardian: LocalActorRef = provider.systemGuardian
@@ -672,7 +672,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   override def shutdown(): Unit = terminate()
 
-  override def terminate(): Future[Unit] = {
+  override def terminate(): Future[Terminated] = {
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener foreach stop
     guardian.stop()
     whenTerminated
