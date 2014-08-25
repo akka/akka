@@ -156,7 +156,7 @@ trait ActorRefProvider {
    * This Future is completed upon termination of this ActorRefProvider, which
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
-  def terminationFuture: Future[Unit]
+  def terminationFuture: Future[Terminated]
 
   /**
    * Obtain the address which is to be used within sender references when
@@ -463,9 +463,9 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val deadLetters: InternalActorRef =
     _deadLetters.getOrElse((p: ActorPath) ⇒ new DeadLetterActorRef(this, p, eventStream)).apply(rootPath / "deadLetters")
 
-  private[this] final val terminationPromise: Promise[Unit] = Promise[Unit]()
+  private[this] final val terminationPromise: Promise[Terminated] = Promise[Terminated]()
 
-  def terminationFuture: Future[Unit] = terminationPromise.future
+  def terminationFuture: Future[Terminated] = terminationPromise.future
 
   /*
    * generate name for temporary actor refs
@@ -481,7 +481,7 @@ private[akka] class LocalActorRefProvider private[akka] (
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: InternalActorRef = new MinimalActorRef {
-    val causeOfTermination: Promise[Unit] = Promise[Unit]()
+    val causeOfTermination: Promise[Terminated] = Promise[Terminated]()
 
     val path = rootPath / "bubble-walker"
 
@@ -490,7 +490,7 @@ private[akka] class LocalActorRefProvider private[akka] (
     def isWalking = causeOfTermination.future.isCompleted == false
 
     override def stop(): Unit = {
-      causeOfTermination.trySuccess(()) //Idempotent
+      causeOfTermination.trySuccess(Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
       terminationPromise.tryCompleteWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
@@ -506,10 +506,10 @@ private[akka] class LocalActorRefProvider private[akka] (
 
     override def sendSystemMessage(message: SystemMessage): Unit = if (isWalking) {
       message match {
-        case Failed(child, ex, _) ⇒
+        case Failed(child: InternalActorRef, ex, _) ⇒
           log.error(ex, s"guardian $child failed, shutting down!")
           causeOfTermination.tryFailure(ex) // FIXME: Is the order of this vs the next line important/right?
-          child.asInstanceOf[InternalActorRef].stop()
+          child.stop()
         case Supervise(_, _)           ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _: DeathWatchNotification ⇒ stop()
         case _                         ⇒ log.error(s"$this received unexpected system message [$message]")

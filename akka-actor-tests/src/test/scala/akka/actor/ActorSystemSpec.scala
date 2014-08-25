@@ -221,13 +221,16 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "return isTerminated status correctly" in {
-      val system = ActorSystem()
+      val system = ActorSystem().asInstanceOf[ActorSystemImpl]
       system.isTerminated should be(false)
       val wt = system.whenTerminated
       wt.isCompleted should be(false)
       val f = system.terminate()
-      Await.ready(wt, 10 seconds)
-      Await.ready(f, 10 seconds)
+      val terminated = Await.result(wt, 10 seconds)
+      terminated.actor should be(system.provider.rootGuardian)
+      terminated.addressTerminated should be(true)
+      terminated.existenceConfirmed should be(true)
+      terminated should be(theSameInstanceAs(Await.result(f, 10 seconds)))
       system.awaitTermination(10 seconds)
       system.isTerminated should be(true)
     }
