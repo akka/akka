@@ -51,11 +51,11 @@ class PingPongActorSystemActivatorTest extends WordSpec with Matchers with PojoS
     "stop the ActorSystem when bundle stops" in {
       filterErrors() {
         val system = serviceForType[ActorSystem]
-        system.isTerminated should be(false)
+        system.whenTerminated.isCompleted should be(false)
 
         bundleForName(TEST_BUNDLE_NAME).stop()
-        system.awaitTermination()
-        system.isTerminated should be(true)
+        Await.ready(system.whenTerminated, Duration.Inf)
+        system.whenTerminated.isCompleted should be(true)
       }
     }
   }

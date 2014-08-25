@@ -29,7 +29,7 @@ import scala.collection.JavaConverters._
  *   }
  *
  *   def shutdown = {
- *     system.shutdown()
+ *     system.terminate()
  *   }
  * }
  * }}}

@@ -10,8 +10,6 @@ import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.AbstractPersistentActor;
 import akka.persistence.SnapshotOffer;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -88,6 +86,6 @@ public class SnapshotExample {
     persistentActor.tell("print", null);
 
     Thread.sleep(1000);
-    system.shutdown();
+    system.terminate();
   }
 }

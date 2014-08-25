@@ -5,6 +5,7 @@ package akka.cluster
 
 import language.postfixOps
 import scala.collection.immutable
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.ActorSystem
@@ -159,7 +160,7 @@ abstract class UnreachableNodeJoinsAgainSpec
 
       runOn(victim) {
         val victimAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.awaitTermination(10 seconds)
+        Await.ready(system.whenTerminated, 10 seconds)
         // create new ActorSystem with same host:port
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
             akka.remote.netty.tcp {

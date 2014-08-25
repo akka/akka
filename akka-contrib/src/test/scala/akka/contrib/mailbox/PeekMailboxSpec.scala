@@ -108,7 +108,7 @@ class MyActor extends Actor {
   }
 
   override def postStop() {
-    context.system.shutdown()
+    context.system.terminate()
   }
   //#business-logic-elided
 }

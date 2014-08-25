@@ -13,6 +13,8 @@ import akka.testkit._
 
 import akka.persistence.AtLeastOnceDelivery.AtLeastOnceDeliverySnapshot
 import akka.persistence.AtLeastOnceDelivery.UnconfirmedDelivery
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 object SerializerSpecConfigs {
   val customSerializers = ConfigFactory.parseString(
@@ -202,8 +204,7 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
   }
 
   override def afterTermination() {
-    remoteSystem.shutdown()
-    remoteSystem.awaitTermination()
+    Await.ready(remoteSystem.terminate(), Duration.Inf)
   }
 
   "A message serializer" must {

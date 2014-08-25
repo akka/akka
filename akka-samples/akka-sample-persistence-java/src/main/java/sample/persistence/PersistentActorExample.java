@@ -127,6 +127,6 @@ public class PersistentActorExample {
         persistentActor.tell("print", null);
 
         Thread.sleep(1000);
-        system.shutdown();
+        system.terminate();
     }
 }

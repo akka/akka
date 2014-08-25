@@ -32,8 +32,8 @@ object RemoteQuarantinePiercingSpec extends MultiNodeConfig {
 
   class Subject extends Actor {
     def receive = {
-      case "shutdown" ⇒ context.system.shutdown()
-      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid, self)
+      case "shutdown" ⇒ context.system.terminate()
+      case "identify" ⇒ sender() ! (AddressUidExtension(context.system).addressUid -> self)
     }
   }
 
@@ -100,7 +100,7 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
 
         enterBarrier("actor-identified")
 
-        system.awaitTermination(30.seconds)
+        Await.ready(system.whenTerminated, 30.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
                     akka.remote.netty.tcp {
@@ -110,7 +110,7 @@ abstract class RemoteQuarantinePiercingSpec extends MultiNodeSpec(RemoteQuaranti
                     """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 
-        freshSystem.awaitTermination(30.seconds)
+        Await.ready(freshSystem.whenTerminated, 30.seconds)
       }
 
     }

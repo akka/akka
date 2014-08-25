@@ -21,7 +21,7 @@ public class Main2 {
       receive(ReceiveBuilder.
         match(Terminated.class, t -> {
           log().info("{} has terminated, shutting down system", ref.path());
-          context().system().shutdown();
+          context().system().terminate();
         }).build());
     }
   }
