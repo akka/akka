@@ -153,6 +153,6 @@ object QDumper {
       new QueueDumper(filename, system.log)()
     }
 
-    system.shutdown()
+    system.terminate()
   }
 }

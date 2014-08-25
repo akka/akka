@@ -11,8 +11,6 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.AbstractProcessor;
 import akka.persistence.Persistent;
 import akka.persistence.SnapshotOffer;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -75,6 +73,6 @@ public class SnapshotExample {
     processor.tell("print", null);
 
     Thread.sleep(1000);
-    system.shutdown();
+    system.terminate();
   }
 }

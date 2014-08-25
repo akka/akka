@@ -22,7 +22,7 @@ object EchoServer extends App {
 
   // make sure to stop the system so that the application stops
   try run()
-  finally system.shutdown()
+  finally system.terminate()
 
   def run(): Unit = {
     import ActorDSL._

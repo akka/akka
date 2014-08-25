@@ -9,6 +9,9 @@ import com.typesafe.config.ConfigFactory
 import akka.testkit.TestProbe
 import akka.actor.{ActorRef, ActorSystem}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 class EventStreamSubscriptionsBenchmark {
@@ -55,8 +58,7 @@ class EventStreamSubscriptionsBenchmark {
 
   @TearDown(Level.Iteration)
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.ready(system.terminate(), Duration.Inf)
   }
 
   @Threads(1)

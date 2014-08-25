@@ -12,5 +12,5 @@ trait WithActorSystem {
 
   // FIXME: TestNG dependency comes from TCK. Needs new TCK version
   //  @AfterClass
-  //  def shutdownActorSystem(): Unit = system.shutdown()
+  //  def shutdownActorSystem(): Unit = system.terminate()
 }

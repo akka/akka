@@ -33,7 +33,6 @@ public class Main {
     Integer result = Await.result(ask(calculatorService, task, new Timeout(duration)).mapTo(classTag(Integer.class)), duration);
     System.out.println("Got result: " + result);
 
-    system.shutdown();
-    system.awaitTermination();
+    Await.ready(system.terminate(), Duration.Inf());
   }
 }

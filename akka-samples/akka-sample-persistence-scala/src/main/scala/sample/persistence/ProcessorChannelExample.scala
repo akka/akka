@@ -33,5 +33,5 @@ object ProcessorChannelExample extends App {
   processor ! Persistent("b")
 
   Thread.sleep(1000)
-  system.shutdown()
+  system.terminate()
 }

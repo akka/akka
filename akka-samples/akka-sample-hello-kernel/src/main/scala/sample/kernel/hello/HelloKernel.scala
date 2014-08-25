@@ -29,6 +29,6 @@ class HelloKernel extends Bootable {
   }
 
   def shutdown = {
-    system.shutdown()
+    system.terminate()
   }
 }

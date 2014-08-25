@@ -72,8 +72,7 @@ class FlowMapBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.ready(system.terminate(), Duration.Inf)
   }
 
   @GenerateMicroBenchmark

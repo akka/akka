@@ -104,7 +104,7 @@ class Sender(path: String, totalMessages: Int, burstSize: Int, payloadSize: Int)
 
     case Terminated(`actor`) =>
       println("Receiver terminated")
-      context.system.shutdown()
+      context.system.terminate()
 
   }
 

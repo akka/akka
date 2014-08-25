@@ -10,8 +10,6 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.japi.pf.ReceiveBuilder;
 import akka.persistence.*;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 public class ProcessorChannelExample {
   public static class ExampleProcessor extends AbstractProcessor {
@@ -53,6 +51,6 @@ public class ProcessorChannelExample {
     processor.tell(Persistent.create("b"), null);
 
     Thread.sleep(1000);
-    system.shutdown();
+    system.terminate();
   }
 }

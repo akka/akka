@@ -53,13 +53,13 @@ class Listener extends Actor with ActorLogging {
       log.info("Current progress: {} %", percent)
       if (percent >= 100.0) {
         log.info("That's all, shutting down")
-        context.system.shutdown()
+        context.system.terminate()
       }
 
     case ReceiveTimeout =>
       // No progress within 15 seconds, ServiceUnavailable
       log.error("Shutting down due to unavailable service")
-      context.system.shutdown()
+      context.system.terminate()
   }
 }
 

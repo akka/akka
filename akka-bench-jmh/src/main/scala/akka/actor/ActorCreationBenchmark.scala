@@ -7,6 +7,7 @@ package akka.actor
 import org.openjdk.jmh.annotations._
 import com.typesafe.config.ConfigFactory
 import akka.testkit.TestProbe
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
@@ -48,8 +49,7 @@ class ActorCreationBenchmark {
 
   @TearDown
   def shutdown() {
-    system.shutdown()
-    system.awaitTermination()
+    Await.ready(system.terminate(), Duration.Inf)
   }
 
   import ActorCreationPerfSpec._

@@ -53,10 +53,8 @@ abstract class RestartFirstSeedNodeSpec
 
   override def afterAll(): Unit = {
     runOn(seed1) {
-      if (seed1System.isTerminated)
-        shutdown(restartedSeed1System)
-      else
-        shutdown(seed1System)
+      shutdown(
+        if (seed1System.whenTerminated.isCompleted) restartedSeed1System else seed1System)
     }
     super.afterAll()
   }
