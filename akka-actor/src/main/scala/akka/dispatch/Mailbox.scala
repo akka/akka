@@ -372,7 +372,7 @@ class NodeMessageQueue extends AbstractNodeQueue[Envelope] with MessageQueue wit
 
 //Discards overflowing messages into DeadLetters
 class BoundedNodeMessageQueue(capacity: Int) extends AbstractBoundedNodeQueue[Envelope](capacity)
-with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
+  with MessageQueue with BoundedMessageQueueSemantics with MultipleConsumerSemantics {
   final def pushTimeOut: Duration = Duration.Undefined
 
   final def enqueue(receiver: ActorRef, handle: Envelope): Unit =
