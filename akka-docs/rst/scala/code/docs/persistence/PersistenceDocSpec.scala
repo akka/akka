@@ -322,7 +322,7 @@ trait PersistenceDocSpec {
 
     processor ! PersistentBatch(List(Persistent("a"), Persistent("b")))
     //#batch-write
-    system.shutdown()
+    system.terminate()
   }
 
   new AnyRef {

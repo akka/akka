@@ -5,6 +5,7 @@ package akka.remote
 
 import language.postfixOps
 import java.util.concurrent.TimeoutException
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
@@ -76,8 +77,9 @@ abstract class RemoteDeploymentDeathWatchSpec
 
         sleep()
         // if the remote deployed actor is not removed the system will not shutdown
+
         val timeout = remainingOrDefault
-        try system.awaitTermination(timeout) catch {
+        try Await.ready(system.whenTerminated, timeout) catch {
           case _: TimeoutException ⇒
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
               system.asInstanceOf[ActorSystemImpl].printTree))
