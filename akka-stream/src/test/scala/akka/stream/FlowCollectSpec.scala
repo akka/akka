@@ -3,13 +3,13 @@
  */
 package akka.stream
 
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.{ StreamTestKit, ScriptedTest }
+import akka.stream.testkit.{ AkkaSpec, ScriptedTest }
+
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowCollectSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
+  val settings = MaterializerSettings(system)
 
   "A Collect" must {
 

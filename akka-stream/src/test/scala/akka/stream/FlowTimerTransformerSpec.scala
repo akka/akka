@@ -12,7 +12,7 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTimerTransformerSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A Flow with TimerTransformer operations" must {
     "produce scheduled ticks as expected" in {

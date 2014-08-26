@@ -3,11 +3,11 @@
  */
 package akka.stream.scaladsl2
 
-import org.scalatest.{ Matchers, WordSpec }
+import akka.stream.MaterializerSettings
+import akka.stream.testkit.AkkaSpec
+
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
-import akka.stream.testkit.AkkaSpec
-import akka.stream.MaterializerSettings
 
 class FlowSpec extends AkkaSpec {
 
@@ -16,7 +16,7 @@ class FlowSpec extends AkkaSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   val intFut = FutureIn(Future { 3 })
-  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer(MaterializerSettings(system))
 
   "ProcessorFlow" should {
     "go through all states" in {

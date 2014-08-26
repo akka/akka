@@ -369,7 +369,7 @@ trait PersistenceDocSpec {
     import akka.stream.{ FlowMaterializer, MaterializerSettings }
     import akka.stream.scaladsl.Flow
 
-    val materializer = FlowMaterializer(MaterializerSettings())
+    val materializer = FlowMaterializer()
 
     val flow: Flow[Persistent] = PersistentFlow.fromProcessor("some-processor-id")
     val producer: Producer[Persistent] = flow.toProducer(materializer)

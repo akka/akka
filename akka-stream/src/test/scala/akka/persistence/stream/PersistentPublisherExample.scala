@@ -7,7 +7,6 @@ import org.reactivestreams.Publisher
 
 import akka.actor._
 import akka.persistence.PersistentActor
-import akka.persistence.stream.PersistentFlow
 import akka.stream._
 import akka.stream.scaladsl._
 
@@ -37,7 +36,7 @@ object PersistentPublisherExample extends App {
   val p1 = system.actorOf(Props(classOf[ExamplePersistentActor], "p1"))
   val p2 = system.actorOf(Props(classOf[ExamplePersistentActor], "p2"))
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer()
 
   // 1 view-backed publisher and 2 subscribers:
   val publisher1: Publisher[Any] = PersistentFlow.fromPersistentActor("p1").toPublisher()

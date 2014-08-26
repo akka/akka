@@ -3,18 +3,14 @@
  */
 package akka.stream.actor
 
-import scala.concurrent.duration._
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.actor.{ Actor, ActorRef, Props }
+import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
-import akka.actor.Actor
-import akka.routing.ActorRefRoutee
-import akka.routing.Router
-import akka.routing.RoundRobinRoutingLogic
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.testkit.ImplicitSender
+
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 object ActorSubscriberSpec {
@@ -96,10 +92,10 @@ object ActorSubscriberSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
-  import ActorSubscriberSpec._
   import ActorSubscriberMessage._
+  import ActorSubscriberSpec._
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "An ActorSubscriber" must {
 
