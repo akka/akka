@@ -1,4 +1,7 @@
-package akka.stream.dsl
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl2
 
 final case class Merge[T, U, V >: T with U]() {
   val in1 = new Output[T] {}
