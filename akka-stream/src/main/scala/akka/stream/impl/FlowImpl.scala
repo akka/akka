@@ -37,7 +37,7 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
 
   override def toFuture()(implicit materializer: FlowMaterializer): Future[O] = {
     val p = Promise[O]()
-    transform(new Transformer[O, Unit] {
+    transform("toFuture", () ⇒ new Transformer[O, Unit] {
       var done = false
       override def onNext(in: O) = { p success in; done = true; Nil }
       override def onError(e: Throwable) = { p failure e }
@@ -51,7 +51,7 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
     produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
   override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Unit =
-    transform(new Transformer[O, Unit] {
+    transform("onComplete", () ⇒ new Transformer[O, Unit] {
       override def onNext(in: O) = Nil
       override def onError(e: Throwable) = {
         callback(Failure(e))
@@ -95,7 +95,7 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
     produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
 
   override def onComplete(callback: Try[Unit] ⇒ Unit)(implicit materializer: FlowMaterializer): Subscriber[In] =
-    transform(new Transformer[Out, Unit] {
+    transform("onComplete", () ⇒ new Transformer[Out, Unit] {
       override def onNext(in: Out) = Nil
       override def onError(e: Throwable) = {
         callback(Failure(e))
@@ -155,45 +155,41 @@ private[akka] trait Builder[Out] {
   protected def andThen[U](op: Ast.AstNode): Thing[U]
 
   def map[U](f: Out ⇒ U): Thing[U] =
-    transform(new Transformer[Out, U] {
+    transform("map", () ⇒ new Transformer[Out, U] {
       override def onNext(in: Out) = List(f(in))
-      override def name = "map"
     })
 
   def mapFuture[U](f: Out ⇒ Future[U]): Thing[U] =
     andThen(MapFuture(f.asInstanceOf[Any ⇒ Future[Any]]))
 
   def filter(p: Out ⇒ Boolean): Thing[Out] =
-    transform(new Transformer[Out, Out] {
+    transform("filter", () ⇒ new Transformer[Out, Out] {
       override def onNext(in: Out) = if (p(in)) List(in) else Nil
-      override def name = "filter"
     })
 
   def collect[U](pf: PartialFunction[Out, U]): Thing[U] =
-    transform(new Transformer[Out, U] {
+    transform("collect", () ⇒ new Transformer[Out, U] {
       override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
     })
 
   def foreachTransform(c: Out ⇒ Unit): Thing[Unit] =
-    transform(new Transformer[Out, Unit] {
+    transform("foreach", () ⇒ new Transformer[Out, Unit] {
       override def onNext(in: Out) = { c(in); Nil }
       override def onTermination(e: Option[Throwable]) = ListOfUnit
-      override def name = "foreach"
     })
 
   def fold[U](zero: U)(f: (U, Out) ⇒ U): Thing[U] =
-    transform(new FoldTransformer[U](zero, f))
+    transform("fold", () ⇒ new FoldTransformer[U](zero, f))
 
   // Without this class compiler complains about
   // "Parameter type in structural refinement may not refer to an abstract type defined outside that refinement"
   class FoldTransformer[S](var state: S, f: (S, Out) ⇒ S) extends Transformer[Out, S] {
     override def onNext(in: Out): immutable.Seq[S] = { state = f(state, in); Nil }
     override def onTermination(e: Option[Throwable]): immutable.Seq[S] = List(state)
-    override def name = "fold"
   }
 
   def drop(n: Int): Thing[Out] =
-    transform(new Transformer[Out, Out] {
+    transform("drop", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
         if (n == 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
         else new Transformer[Out, Out] {
@@ -207,11 +203,10 @@ private[akka] trait Builder[Out] {
         }
 
       override def onNext(in: Out) = delegate.onNext(in)
-      override def name = "drop"
     })
 
   def dropWithin(d: FiniteDuration): Thing[Out] =
-    transform(new TimerTransformer[Out, Out] {
+    timerTransform("dropWithin", () ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(DropWithinTimerKey, d)
 
       var delegate: Transformer[Out, Out] =
@@ -224,11 +219,10 @@ private[akka] trait Builder[Out] {
         delegate = identityTransformer.asInstanceOf[Transformer[Out, Out]]
         Nil
       }
-      override def name = "dropWithin"
     })
 
   def take(n: Int): Thing[Out] =
-    transform(new Transformer[Out, Out] {
+    transform("take", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
         if (n == 0) takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
         else new Transformer[Out, Out] {
@@ -243,11 +237,10 @@ private[akka] trait Builder[Out] {
 
       override def onNext(in: Out) = delegate.onNext(in)
       override def isComplete = delegate.isComplete
-      override def name = "take"
     })
 
   def takeWithin(d: FiniteDuration): Thing[Out] =
-    transform(new TimerTransformer[Out, Out] {
+    timerTransform("takeWithin", () ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(TakeWithinTimerKey, d)
 
       var delegate: Transformer[Out, Out] = identityTransformer.asInstanceOf[Transformer[Out, Out]]
@@ -258,13 +251,12 @@ private[akka] trait Builder[Out] {
         delegate = takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
         Nil
       }
-      override def name = "takeWithin"
     })
 
   def prefixAndTail[U >: Out](n: Int): Thing[(immutable.Seq[Out], Publisher[U])] = andThen(PrefixAndTail(n))
 
   def grouped(n: Int): Thing[immutable.Seq[Out]] =
-    transform(new Transformer[Out, immutable.Seq[Out]] {
+    transform("grouped", () ⇒ new Transformer[Out, immutable.Seq[Out]] {
       var buf: Vector[Out] = Vector.empty
       override def onNext(in: Out) = {
         buf :+= in
@@ -276,11 +268,10 @@ private[akka] trait Builder[Out] {
           Nil
       }
       override def onTermination(e: Option[Throwable]) = if (buf.isEmpty) Nil else List(buf)
-      override def name = "grouped"
     })
 
   def groupedWithin(n: Int, d: FiniteDuration): Thing[immutable.Seq[Out]] =
-    transform(new TimerTransformer[Out, immutable.Seq[Out]] {
+    timerTransform("groupedWithin", () ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
       schedulePeriodically(GroupedWithinTimerKey, d)
       var buf: Vector[Out] = Vector.empty
 
@@ -301,17 +292,18 @@ private[akka] trait Builder[Out] {
           buf = Vector.empty
           List(group)
         }
-      override def name = "groupedWithin"
     })
 
   def mapConcat[U](f: Out ⇒ immutable.Seq[U]): Thing[U] =
-    transform(new Transformer[Out, U] {
+    transform("mapConcat", () ⇒ new Transformer[Out, U] {
       override def onNext(in: Out) = f(in)
-      override def name = "mapConcat"
     })
 
-  def transform[U](transformer: Transformer[Out, U]): Thing[U] =
-    andThen(Transform(transformer.asInstanceOf[Transformer[Any, Any]]))
+  def transform[U](name: String, mkTransformer: () ⇒ Transformer[Out, U]): Thing[U] =
+    andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
+
+  def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Thing[U] =
+    andThen(TimerTransform(name, mkTransformer.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
 
   def zip[O2](other: Publisher[O2]): Thing[(Out, O2)] = andThen(Zip(other.asInstanceOf[Publisher[Any]]))
 

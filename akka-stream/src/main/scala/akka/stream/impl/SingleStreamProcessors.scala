@@ -3,17 +3,18 @@
  */
 package akka.stream.impl
 
-import scala.collection.immutable
-import scala.util.{ Failure, Success }
 import akka.actor.Props
-import akka.stream.MaterializerSettings
-import akka.stream.Transformer
+import akka.stream.{ MaterializerSettings, TransformerLike }
+
+import scala.collection.immutable
 import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: Transformer[Any, Any]) extends ActorProcessorImpl(_settings) {
+private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: TransformerLike[Any, Any])
+  extends ActorProcessorImpl(_settings) {
+
   var hasCleanupRun = false
   // TODO performance improvement: mutable buffer?
   var emits = immutable.Seq.empty[Any]
