@@ -28,7 +28,7 @@ public class EchoServer {
       watcher.tell(ackServer, ActorRef.noSender());
       latch.await(10, TimeUnit.MINUTES);
     } finally {
-      system.shutdown();
+      system.terminate();
     }
   }
 

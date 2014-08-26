@@ -156,7 +156,7 @@ trait ActorRefProvider {
    * This Future is completed upon termination of this ActorRefProvider, which
    * is usually initiated by stopping the guardian via ActorSystem.stop().
    */
-  def terminationFuture: Future[Unit]
+  def terminationFuture: Future[Terminated]
 
   /**
    * Obtain the address which is to be used within sender references when
@@ -463,45 +463,53 @@ private[akka] class LocalActorRefProvider private[akka] (
   override val deadLetters: InternalActorRef =
     _deadLetters.getOrElse((p: ActorPath) ⇒ new DeadLetterActorRef(this, p, eventStream)).apply(rootPath / "deadLetters")
 
+  private[this] final val terminationPromise: Promise[Terminated] = Promise[Terminated]()
+
+  def terminationFuture: Future[Terminated] = terminationPromise.future
+
   /*
    * generate name for temporary actor refs
    */
   private val tempNumber = new AtomicLong
 
-  private def tempName() = Helpers.base64(tempNumber.getAndIncrement())
-
   private val tempNode = rootPath / "temp"
 
-  override def tempPath(): ActorPath = tempNode / tempName()
+  override def tempPath(): ActorPath = tempNode / Helpers.base64(tempNumber.getAndIncrement())
 
   /**
    * Top-level anchor for the supervision hierarchy of this actor system. Will
    * receive only Supervise/ChildTerminated system messages or Failure message.
    */
   private[akka] val theOneWhoWalksTheBubblesOfSpaceTime: InternalActorRef = new MinimalActorRef {
-    val stopped = new Switch(false)
-
-    @volatile
-    var causeOfTermination: Option[Throwable] = None
+    val causeOfTermination: Promise[Terminated] = Promise[Terminated]()
 
     val path = rootPath / "bubble-walker"
 
     def provider: ActorRefProvider = LocalActorRefProvider.this
 
-    override def stop(): Unit = stopped switchOn { terminationPromise.complete(causeOfTermination.map(Failure(_)).getOrElse(Success(()))) }
-    @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = stopped.isOn
+    def isWalking = causeOfTermination.future.isCompleted == false
 
-    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = stopped.ifOff(message match {
-      case null ⇒ throw new InvalidMessageException("Message is null")
-      case _    ⇒ log.error(s"$this received unexpected message [$message]")
-    })
+    override def stop(): Unit = {
+      causeOfTermination.trySuccess(Terminated(provider.rootGuardian)(existenceConfirmed = true, addressTerminated = true)) //Idempotent
+      terminationPromise.tryCompleteWith(causeOfTermination.future) // Signal termination downstream, idempotent
+    }
 
-    override def sendSystemMessage(message: SystemMessage): Unit = stopped ifOff {
+    @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+    override def isTerminated: Boolean = !isWalking
+
+    override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
+      if (isWalking)
+        message match {
+          case null ⇒ throw new InvalidMessageException("Message is null")
+          case _    ⇒ log.error(s"$this received unexpected message [$message]")
+        }
+
+    override def sendSystemMessage(message: SystemMessage): Unit = if (isWalking) {
       message match {
-        case Failed(child, ex, _) ⇒
+        case Failed(child: InternalActorRef, ex, _) ⇒
           log.error(ex, s"guardian $child failed, shutting down!")
-          causeOfTermination = Some(ex)
-          child.asInstanceOf[InternalActorRef].stop()
+          causeOfTermination.tryFailure(ex)
+          child.stop()
         case Supervise(_, _)           ⇒ // TODO register child in some map to keep track of it and enable shutdown after all dead
         case _: DeathWatchNotification ⇒ stop()
         case _                         ⇒ log.error(s"$this received unexpected system message [$message]")
@@ -518,10 +526,6 @@ private[akka] class LocalActorRefProvider private[akka] (
    */
   @volatile
   private var system: ActorSystemImpl = _
-
-  lazy val terminationPromise: Promise[Unit] = Promise[Unit]()
-
-  def terminationFuture: Future[Unit] = terminationPromise.future
 
   @volatile
   private var extraNames: Map[String, InternalActorRef] = Map()

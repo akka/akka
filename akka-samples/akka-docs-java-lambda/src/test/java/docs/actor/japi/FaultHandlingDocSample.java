@@ -19,11 +19,8 @@ import akka.util.Timeout;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import scala.concurrent.duration.Duration;
-import scala.PartialFunction;
-import scala.runtime.BoxedUnit;
 
 import static akka.japi.Util.classTag;
-import static akka.actor.SupervisorStrategy.resume;
 import static akka.actor.SupervisorStrategy.restart;
 import static akka.actor.SupervisorStrategy.stop;
 import static akka.actor.SupervisorStrategy.escalate;
@@ -79,13 +76,13 @@ public class FaultHandlingDocSample {
           log().info("Current progress: {} %", progress.percent);
           if (progress.percent >= 100.0) {
             log().info("That's all, shutting down");
-            context().system().shutdown();
+            context().system().terminate();
           }
         }).
         matchEquals(ReceiveTimeout.getInstance(), x -> {
           // No progress within 15 seconds, ServiceUnavailable
           log().error("Shutting down due to unavailable service");
-          context().system().shutdown();
+          context().system().terminate();
         }).build(), context()
       ));
     }

@@ -10,6 +10,9 @@ import java.net.InetSocketAddress
 import akka.testkit.{ ImplicitSender, TestProbe, AkkaSpec }
 import akka.util.ByteString
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
 object PullReadingExample {
 
   class Listener(monitor: ActorRef) extends Actor {
@@ -77,7 +80,6 @@ class PullReadingSpec extends AkkaSpec with ImplicitSender {
     client.send(connection, ResumeReading)
     client.expectMsg(Received(ByteString("hello")))
 
-    system.shutdown()
-    system.awaitTermination
+    Await.ready(system.terminate(), Duration.Inf)
   }
 }
