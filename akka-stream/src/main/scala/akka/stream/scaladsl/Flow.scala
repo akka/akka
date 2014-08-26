@@ -28,16 +28,16 @@ object Flow {
   def apply[T](publisher: Publisher[T]): Flow[T] = FlowImpl(ExistingPublisher(publisher), Nil)
 
   /**
-   * Start a new flow from the given Iterator. The produced stream of elements
+   * Start a new `Flow` from the given Iterator. The produced stream of elements
    * will continue until the iterator runs empty or fails during evaluation of
-   * the <code>next()</code> method. Elements are pulled out of the iterator
+   * the `next()` method. Elements are pulled out of the iterator
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
   def apply[T](iterator: Iterator[T]): Flow[T] = FlowImpl(IteratorPublisherNode(iterator), Nil)
 
   /**
-   * Start a new flow from the given Iterable. This is like starting from an
+   * Start a new `Flow` from the given Iterable. This is like starting from an
    * Iterator, but every Subscriber directly attached to the Publisher of this
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
@@ -53,7 +53,7 @@ object Flow {
   def apply[T](f: () ⇒ T): Flow[T] = FlowImpl(ThunkPublisherNode(f), Nil)
 
   /**
-   * Start a new flow from the given `Future`. The stream will consist of
+   * Start a new `Flow` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
    * The stream terminates with an error if the `Future` is completed with a failure.
@@ -133,7 +133,7 @@ trait Flow[+T] {
 
   /**
    * Invoke the given function for every received element, giving it its previous
-   * output (or the given “zero” value) and the element as input. The returned stream
+   * output (or the given `zero` value) and the element as input. The returned stream
    * will receive the return value of the final function evaluation when the input
    * stream ends.
    */
@@ -249,7 +249,7 @@ trait Flow[+T] {
   def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[T, U]): Flow[U]
 
   /**
-   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
@@ -374,7 +374,7 @@ trait Flow[+T] {
    * (failing the Future with a NoSuchElementException). *This operation
    * materializes the flow and initiates its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def toFuture()(implicit materializer: FlowMaterializer): Future[T]
@@ -383,7 +383,7 @@ trait Flow[+T] {
    * Attaches a subscriber to this stream which will just discard all received
    * elements. *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def consume()(implicit materializer: FlowMaterializer): Unit
@@ -404,7 +404,7 @@ trait Flow[+T] {
    * elements to fill the internal buffers it will assert back-pressure until
    * a subscriber connects and creates demand for elements to be emitted.
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def toPublisher[U >: T]()(implicit materializer: FlowMaterializer): Publisher[U]
@@ -414,7 +414,7 @@ trait Flow[+T] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def produceTo(subscriber: Subscriber[_ >: T])(implicit materializer: FlowMaterializer): Unit
@@ -426,7 +426,7 @@ trait Flow[+T] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def foreach(c: T ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit]
