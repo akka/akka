@@ -45,6 +45,12 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Await.result(Flow(tail).grouped(11).toFuture(), 3.seconds) should be(1 to 10)
     }
 
+    "handle negative take count" in {
+      val (takes, tail) = Await.result(Flow((1 to 10).iterator).prefixAndTail(-1).toFuture(), 3.seconds)
+      takes should be(Nil)
+      Await.result(Flow(tail).grouped(11).toFuture(), 3.seconds) should be(1 to 10)
+    }
+
     "work if size of take is equals to stream size" in {
       val (takes, tail) = Await.result(Flow((1 to 10).iterator).prefixAndTail(10).toFuture(), 3.seconds)
       takes should be(1 to 10)
