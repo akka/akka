@@ -6,6 +6,7 @@ package akka.http.model.japi;
 
 import akka.actor.ActorSystem;
 import akka.http.HttpExt;
+import akka.stream.MaterializerSettings;
 
 public final class Http {
     private Http(){}
@@ -17,5 +18,9 @@ public final class Http {
     /** Create a Bind message to send to the Http Manager */
     public static Object bind(String host, int port) {
         return Accessors$.MODULE$.Bind(host, port);
+    }
+    /** Create a Bind message to send to the Http Manager */
+    public static Object bind(String host, int port, MaterializerSettings materializerSettings) {
+        return Accessors$.MODULE$.Bind(host, port, materializerSettings);
     }
 }

@@ -95,7 +95,7 @@ private[akka] class IterablePublisher(iterable: immutable.Iterable[Any], setting
     else {
       val iterator = iterable.iterator
       val worker = context.watch(context.actorOf(IterablePublisherWorker.props(iterator, subscriber,
-        settings.maximumInputBufferSize).withDispatcher(context.props.dispatcher)))
+        settings.maxInputBufferSize).withDispatcher(context.props.dispatcher)))
       val subscription = new BasicActorSubscription(worker)
       subscribers += subscriber
       workers = workers.updated(worker, subscriber)

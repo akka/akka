@@ -4,29 +4,31 @@
 
 package akka.http
 
+import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-import java.io.{ InputStreamReader, BufferedReader, OutputStreamWriter, BufferedWriter }
-import akka.stream.testkit.StreamTestKit.{ SubscriberProbe, PublisherProbe }
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+
 import akka.actor.ActorSystem
-import akka.testkit.TestProbe
-import akka.io.IO
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.testkit.StreamTestKit
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.scaladsl.Flow
-import akka.http.server.ServerSettings
 import akka.http.client.ClientConnectionSettings
 import akka.http.model._
-import akka.http.util._
-import headers._
-import HttpMethods._
 import HttpEntity._
+import HttpMethods._
 import TestUtils._
+import akka.http.server.ServerSettings
+import akka.http.util._
+import akka.io.IO
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.impl.SynchronousPublisherFromIterable
+import akka.stream.scaladsl.Flow
+import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
+import akka.testkit.TestProbe
+import com.typesafe.config.{ Config, ConfigFactory }
+import headers._
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+
+import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -35,7 +37,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializerSettings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
+  val materializerSettings = MaterializerSettings(system)
   val materializer = FlowMaterializer(materializerSettings)
 
   "The server-side HTTP infrastructure" should {
@@ -43,7 +45,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     "properly bind and unbind a server" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
       val commander = TestProbe()
-      commander.send(IO(Http), Http.Bind(hostname, port, materializerSettings = materializerSettings))
+      commander.send(IO(Http), Http.Bind(hostname, port, materializerSettings = Some(materializerSettings)))
 
       val Http.ServerBinding(localAddress, connectionStream) = commander.expectMsgType[Http.ServerBinding]
       localAddress.getHostName shouldEqual hostname
@@ -118,7 +120,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     val connectionStream: SubscriberProbe[Http.IncomingConnection] = {
       val commander = TestProbe()
       val settings = configOverrides.toOption.map(ServerSettings.apply)
-      commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings, materializerSettings = materializerSettings))
+      commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings, materializerSettings = Some(materializerSettings)))
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
       commander.expectMsgType[Http.ServerBinding].connectionStream.subscribe(probe)
       probe
@@ -127,7 +129,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     def openNewClientConnection[T](settings: Option[ClientConnectionSettings] = None): (PublisherProbe[(HttpRequest, T)], SubscriberProbe[(HttpResponse, T)]) = {
       val commander = TestProbe()
-      commander.send(IO(Http), Http.Connect(hostname, port, settings = settings, materializerSettings = materializerSettings))
+      commander.send(IO(Http), Http.Connect(hostname, port, settings = settings, materializerSettings = Some(materializerSettings)))
       val connection = commander.expectMsgType[Http.OutgoingConnection]
       connection.remoteAddress.getPort shouldEqual port
       connection.remoteAddress.getHostName shouldEqual hostname

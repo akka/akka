@@ -201,7 +201,7 @@ final case class RunnableFlow[-In, +Out](input: Input[In], output: Output[Out], 
 
   // FIXME
   def run()(implicit materializer: FlowMaterializer): Unit =
-    produceTo(new BlackholeSubscriber[Any](materializer.settings.maximumInputBufferSize))
+    produceTo(new BlackholeSubscriber[Any](materializer.settings.maxInputBufferSize))
 
   // FIXME replace with run and input/output factories
   def toPublisher[U >: Out]()(implicit materializer: FlowMaterializer): Publisher[U] =

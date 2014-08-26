@@ -37,7 +37,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   val BOLT = HttpMethods.register(HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true))
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer()
 
   "The request parsing logic should" - {
     "properly parse a request" - {

@@ -15,12 +15,11 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 2,
-    initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 2)
+    .withFanOutBuffer(initialSize = 2, maxSize = 2)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {

@@ -34,7 +34,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer()
   val ServerOnTheMove = StatusCodes.registerCustom(331, "Server on the move")
 
   "The response parsing logic should" - {

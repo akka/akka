@@ -28,7 +28,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   import system.dispatcher
 
   val ServerOnTheMove = StatusCodes.registerCustom(330, "Server on the move")
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer()
 
   "The response preparation logic should properly render" - {
     "a response with no body" - {

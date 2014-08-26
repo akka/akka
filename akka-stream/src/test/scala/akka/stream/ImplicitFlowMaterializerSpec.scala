@@ -3,26 +3,26 @@
  */
 package akka.stream
 
-import akka.actor.Actor
-import akka.actor.Props
+import akka.actor.{ Actor, Props }
 import akka.pattern.pipe
-import akka.stream.scaladsl.ImplicitFlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Flow, ImplicitFlowMaterializer }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit._
 
 object ImplicitFlowMaterializerSpec {
   class SomeActor(input: List[String]) extends Actor with ImplicitFlowMaterializer {
 
-    override def flowMaterializerSettings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
+    override def flowMaterializerSettings = MaterializerSettings(context.system)
+      .withInputBuffer(initialSize = 2, maxSize = 16)
+      .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
     val flow = Flow(input).map(_.toUpperCase()).fold("")(_ + _)
 
     def receive = {
       case "run" ⇒
-        // toFuture takes an implicit FlowMaterializer parameter, which is provided by ImplicitFlowMaterializer 
-        val futureResult = flow.toFuture()
+        // toFuture takes an implicit FlowMaterializer parameter, which is provided by ImplicitFlowMaterializer
         import context.dispatcher
+        val futureResult = flow.toFuture()
         futureResult pipeTo sender()
     }
   }
@@ -30,7 +30,7 @@ object ImplicitFlowMaterializerSpec {
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ImplicitFlowMaterializerSpec extends AkkaSpec with ImplicitSender {
-  import ImplicitFlowMaterializerSpec._
+  import akka.stream.ImplicitFlowMaterializerSpec._
 
   "An ImplicitFlowMaterializer" must {
 

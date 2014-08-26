@@ -11,8 +11,7 @@ import akka.stream.scaladsl.Flow
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTakeWithinSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A TakeWithin" must {
 

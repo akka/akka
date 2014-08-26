@@ -17,8 +17,7 @@ import scala.concurrent.Await
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowMapFutureSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A Flow with mapFuture" must {
 

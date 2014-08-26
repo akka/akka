@@ -3,23 +3,21 @@
  */
 package akka.stream
 
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.ScriptedTest
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
-import akka.stream.testkit.StreamTestKit
+import akka.stream.scaladsl.Flow
+import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import scala.util.Failure
-import akka.stream.scaladsl.Flow
 
 class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 16,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 16)
+    .withFanOutBuffer(initialSize = 1, maxSize = 16)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "A Flow with toFuture" must {
 

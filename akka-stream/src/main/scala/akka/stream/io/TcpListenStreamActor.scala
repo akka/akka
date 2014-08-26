@@ -19,15 +19,16 @@ import scala.util.control.NoStackTrace
 private[akka] object TcpListenStreamActor {
   class TcpListenStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props =
-    Props(new TcpListenStreamActor(bindCmd, requester, settings)).withDispatcher(settings.dispatcher)
+  def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props = {
+    Props(new TcpListenStreamActor(bindCmd, requester, settings))
+  }
 
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, val settings: MaterializerSettings) extends Actor
+private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings) extends Actor
   with Pump with Stash {
   import akka.stream.io.TcpListenStreamActor._
   import context.system

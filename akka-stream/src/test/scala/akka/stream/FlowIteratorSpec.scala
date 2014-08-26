@@ -14,12 +14,11 @@ import akka.stream.scaladsl.Flow
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIteratorSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 2,
-    initialFanOutBufferSize = 4,
-    maxFanOutBufferSize = 4,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 2)
+    .withFanOutBuffer(initialSize = 4, maxSize = 4)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "A Flow based on an iterator" must {
     "produce elements" in {

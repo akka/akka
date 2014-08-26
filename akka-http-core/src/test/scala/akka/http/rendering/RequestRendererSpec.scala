@@ -28,7 +28,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer(MaterializerSettings())
+  val materializer = FlowMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {

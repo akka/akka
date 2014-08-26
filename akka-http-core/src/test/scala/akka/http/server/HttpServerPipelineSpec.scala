@@ -5,25 +5,21 @@
 package akka.http
 package server
 
-import akka.http.model.HttpEntity.{ LastChunk, Chunk, ChunkStreamPart }
-
-import scala.concurrent.duration._
-
 import akka.event.NoLogging
-import akka.http.model.headers.Host
+import akka.http.model.HttpEntity.{ Chunk, ChunkStreamPart, LastChunk }
 import akka.http.model._
+import akka.http.model.headers.Host
 import akka.http.util._
+import akka.stream.FlowMaterializer
 import akka.stream.io.StreamTcp
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.util.ByteString
 import org.scalatest._
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
 
 class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with Inside {
-  val materializerSettings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
-  val materializer = FlowMaterializer(materializerSettings)
+  val materializer = FlowMaterializer()
 
   "The server implementation should" should {
     "deliver an empty request as soon as all headers are received" in new TestSetup {

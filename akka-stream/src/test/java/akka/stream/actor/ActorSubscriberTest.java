@@ -58,7 +58,7 @@ public class ActorSubscriberTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final MaterializerSettings settings = MaterializerSettings.create().withDispatcher("akka.test.stream-dispatcher");
+  final MaterializerSettings settings = MaterializerSettings.create(system.settings().config()).withDispatcher("akka.test.stream-dispatcher");
   final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test

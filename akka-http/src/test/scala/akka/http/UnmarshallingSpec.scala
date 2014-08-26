@@ -4,24 +4,29 @@
 
 package akka.http
 
-import scala.xml.NodeSeq
-import scala.concurrent.duration._
-import scala.concurrent.{ Future, Await }
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-import org.scalatest.matchers.Matcher
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.http.unmarshalling.Unmarshalling
-import akka.http.util._
 import akka.http.model._
 import MediaTypes._
+import akka.http.unmarshalling.Unmarshalling
+import akka.http.util._
+import akka.stream.scaladsl.Flow
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import headers._
+import org.scalatest.matchers.Matcher
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+
+import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
+import scala.xml.NodeSeq
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  val materializerSettings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
+
   import system.dispatcher
+
+  val materializerSettings = MaterializerSettings(system)
+    .withDispatcher("akka.test.stream-dispatcher")
+
   implicit val materializer = FlowMaterializer(materializerSettings)
 
   "The PredefinedFromEntityUnmarshallers." - {

@@ -48,17 +48,24 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
    * message.
    *
    * @param remoteAddress the address to connect to
+   * @param settings if Some the passed [[MaterializerSettings]] will be used during stream actor creation,
+   *                 otherwise the ActorSystem's default settings will be used
    * @param localAddress optionally specifies a specific address to bind to
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
    * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
    * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
    */
-  case class Connect(settings: MaterializerSettings,
-                     remoteAddress: InetSocketAddress,
+  case class Connect(remoteAddress: InetSocketAddress,
                      localAddress: Option[InetSocketAddress] = None,
+                     materializerSettings: Option[MaterializerSettings] = None,
                      options: immutable.Traversable[SocketOption] = Nil,
                      connectTimeout: Duration = Duration.Inf,
                      idleTimeout: Duration = Duration.Inf) {
+    /**
+     * Java API
+     */
+    def withMaterializerSettings(materializerSettings: MaterializerSettings): Connect =
+      copy(materializerSettings = Option(materializerSettings))
 
     /**
      * Java API
@@ -92,14 +99,16 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
    * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
    * the actual port which was bound to.
    *
+   * @param settings if Some, these materializer settings will be used for stream actors,
+   *                 else the ActorSystem's default materializer settings will be used.
    * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
    * @param backlog the number of unaccepted connections the O/S
    *                kernel will hold for this port before refusing connections.
    * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
    * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
    */
-  case class Bind(settings: MaterializerSettings,
-                  localAddress: InetSocketAddress,
+  case class Bind(localAddress: InetSocketAddress,
+                  settings: Option[MaterializerSettings] = None,
                   backlog: Int = 100,
                   options: immutable.Traversable[SocketOption] = Nil,
                   idleTimeout: Duration = Duration.Inf) {
@@ -146,15 +155,14 @@ object StreamTcpMessage {
     options: java.lang.Iterable[SocketOption],
     connectTimeout: Duration,
     idleTimeout: Duration): StreamTcp.Connect =
-    StreamTcp.Connect(settings, remoteAddress, Option(localAddress), Util.immutableSeq(options),
-      connectTimeout, idleTimeout)
+    StreamTcp.Connect(remoteAddress, Option(localAddress), Option(settings), Util.immutableSeq(options), connectTimeout, idleTimeout)
 
   /**
    * Java API: Message to Connect to the given `remoteAddress` without binding to a local address and without
    * specifying options.
    */
   def connect(settings: MaterializerSettings, remoteAddress: InetSocketAddress): StreamTcp.Connect =
-    StreamTcp.Connect(settings, remoteAddress)
+    StreamTcp.Connect(remoteAddress, materializerSettings = Option(settings))
 
   /**
    * Java API: The Bind message is send to the StreamTcp manager actor, which is obtained via
@@ -163,6 +171,8 @@ object StreamTcpMessage {
    * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
    * the actual port which was bound to.
    *
+   * @param settings if Some, these materializer settings will be used for stream actors,
+   *                 else the ActorSystem's default materializer settings will be used.
    * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
    * @param backlog the number of unaccepted connections the O/S
    *                kernel will hold for this port before refusing connections.
@@ -174,14 +184,13 @@ object StreamTcpMessage {
            backlog: Int,
            options: java.lang.Iterable[SocketOption],
            idleTimeout: Duration): StreamTcp.Bind =
-    StreamTcp.Bind(settings, localAddress, backlog, Util.immutableSeq(options), idleTimeout)
+    StreamTcp.Bind(localAddress, Option(settings), backlog, Util.immutableSeq(options), idleTimeout)
 
   /**
    * Java API: Message to open a listening socket without specifying options.
    */
-  def bind(settings: MaterializerSettings,
-           localAddress: InetSocketAddress): StreamTcp.Bind =
-    StreamTcp.Bind(settings, localAddress)
+  def bind(settings: MaterializerSettings, localAddress: InetSocketAddress): StreamTcp.Bind =
+    StreamTcp.Bind(localAddress, Option(settings))
 }
 
 /**
@@ -211,22 +220,26 @@ private[akka] class StreamTcpManager extends Actor {
   }
 
   def receive: Receive = {
-    case StreamTcp.Connect(settings, remoteAddress, localAddress, options, connectTimeout, idleTimeout) ⇒
+    case StreamTcp.Connect(remoteAddress, localAddress, maybeMaterializerSettings, options, connectTimeout, idleTimeout) ⇒
       val connTimeout = connectTimeout match {
         case x: FiniteDuration ⇒ Some(x)
         case _                 ⇒ None
       }
+      val materializerSettings = maybeMaterializerSettings getOrElse MaterializerSettings(context.system)
+
       val processorActor = context.actorOf(TcpStreamActor.outboundProps(
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
         requester = sender(),
-        settings), name = encName("client", remoteAddress))
+        settings = materializerSettings), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
-    case StreamTcp.Bind(settings, localAddress, backlog, options, idleTimeout) ⇒
+    case StreamTcp.Bind(localAddress, maybeMaterializerSettings, backlog, options, idleTimeout) ⇒
+      val materializerSettings = maybeMaterializerSettings getOrElse MaterializerSettings(context.system)
+
       val publisherActor = context.actorOf(TcpListenStreamActor.props(
         Tcp.Bind(context.system.deadLetters, localAddress, backlog, options, pullMode = true),
         requester = sender(),
-        settings), name = encName("server", localAddress))
+        materializerSettings), name = encName("server", localAddress))
       publisherActor ! ExposedPublisher(ActorPublisher[Any](publisherActor))
   }
 }

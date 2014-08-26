@@ -14,8 +14,9 @@ import akka.stream.testkit.ScriptedTest
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
-  implicit val materializer = FlowMaterializer(settings)
+  val settings = MaterializerSettings(system)
+
+  implicit val materializer = FlowMaterializer()
 
   "A GroupedWithin" must {
 

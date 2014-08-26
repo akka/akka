@@ -3,20 +3,19 @@
  */
 package akka.stream
 
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.scaladsl.Flow
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import OverflowStrategy._
 
 class FlowBufferSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    initialInputBufferSize = 1,
-    maximumInputBufferSize = 1,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 1,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 1, maxSize = 1)
+    .withFanOutBuffer(initialSize = 1, maxSize = 1)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "Buffer" must {
 
