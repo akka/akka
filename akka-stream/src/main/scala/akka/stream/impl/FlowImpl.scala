@@ -14,6 +14,7 @@ import akka.stream.scaladsl.Flow
 import scala.util.Success
 import scala.util.Failure
 import akka.stream.scaladsl.Duct
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.TimerTransformer
 import akka.util.Collections.EmptyImmutableSeq
@@ -191,7 +192,7 @@ private[akka] trait Builder[Out] {
   def drop(n: Int): Thing[Out] =
     transform("drop", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
-        if (n == 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
+        if (n <= 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
         else new Transformer[Out, Out] {
           var c = n
           override def onNext(in: Out) = {
@@ -224,7 +225,7 @@ private[akka] trait Builder[Out] {
   def take(n: Int): Thing[Out] =
     transform("take", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
-        if (n == 0) takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
+        if (n <= 0) takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
         else new Transformer[Out, Out] {
           var c = n
           override def onNext(in: Out) = {
@@ -255,7 +256,8 @@ private[akka] trait Builder[Out] {
 
   def prefixAndTail[U >: Out](n: Int): Thing[(immutable.Seq[Out], Publisher[U])] = andThen(PrefixAndTail(n))
 
-  def grouped(n: Int): Thing[immutable.Seq[Out]] =
+  def grouped(n: Int): Thing[immutable.Seq[Out]] = {
+    require(n > 0, "n must be greater than 0")
     transform("grouped", () ⇒ new Transformer[Out, immutable.Seq[Out]] {
       var buf: Vector[Out] = Vector.empty
       override def onNext(in: Out) = {
@@ -269,8 +271,11 @@ private[akka] trait Builder[Out] {
       }
       override def onTermination(e: Option[Throwable]) = if (buf.isEmpty) Nil else List(buf)
     })
+  }
 
-  def groupedWithin(n: Int, d: FiniteDuration): Thing[immutable.Seq[Out]] =
+  def groupedWithin(n: Int, d: FiniteDuration): Thing[immutable.Seq[Out]] = {
+    require(n > 0, "n must be greater than 0")
+    require(d > Duration.Zero)
     timerTransform("groupedWithin", () ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
       schedulePeriodically(GroupedWithinTimerKey, d)
       var buf: Vector[Out] = Vector.empty
@@ -293,6 +298,7 @@ private[akka] trait Builder[Out] {
           List(group)
         }
     })
+  }
 
   def mapConcat[U](f: Out ⇒ immutable.Seq[U]): Thing[U] =
     transform("mapConcat", () ⇒ new Transformer[Out, U] {

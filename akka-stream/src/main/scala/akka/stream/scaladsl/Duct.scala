@@ -74,6 +74,7 @@ trait Duct[In, +Out] {
 
   /**
    * Discard the given number of elements at the beginning of the stream.
+   * No elements will be dropped if `n` is zero or negative.
    */
   def drop(n: Int): Duct[In, Out]
 
@@ -87,6 +88,9 @@ trait Duct[In, +Out] {
    * number of elements. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
    */
   def take(n: Int): Duct[In, Out]
 
@@ -104,6 +108,8 @@ trait Duct[In, +Out] {
   /**
    * Chunk up this stream into groups of the given size, with the last group
    * possibly smaller than requested due to end-of-stream.
+   *
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
   def grouped(n: Int): Duct[In, immutable.Seq[Out]]
 
@@ -113,6 +119,9 @@ trait Duct[In, +Out] {
    * Empty groups will not be emitted if no elements are received from upstream.
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
+   *
+   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
    */
   def groupedWithin(n: Int, d: FiniteDuration): Duct[In, immutable.Seq[Out]]
 

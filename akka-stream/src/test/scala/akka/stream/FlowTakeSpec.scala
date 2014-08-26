@@ -8,6 +8,8 @@ import akka.stream.testkit.ScriptedTest
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete }
 import akka.stream.impl.RequestMore
+import akka.stream.testkit.StreamTestKit
+import akka.stream.scaladsl.Flow
 
 class FlowTakeSpec extends AkkaSpec with ScriptedTest {
 
@@ -17,6 +19,8 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
     initialFanOutBufferSize = 1,
     maxFanOutBufferSize = 16,
     dispatcher = "akka.test.stream-dispatcher")
+
+  implicit val materializer = FlowMaterializer(settings)
 
   muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
 
@@ -28,6 +32,13 @@ class FlowTakeSpec extends AkkaSpec with ScriptedTest {
         val d = Math.min(Math.max(random.nextInt(-10, 60), 0), 50)
         runScript(script(d), settings)(_.take(d))
       }
+    }
+
+    "not take anything for negative n" in {
+      val probe = StreamTestKit.SubscriberProbe[Int]()
+      Flow(List(1, 2, 3)).take(-1).produceTo(probe)
+      probe.expectSubscription().request(10)
+      probe.expectComplete()
     }
 
   }
