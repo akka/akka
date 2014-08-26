@@ -4,9 +4,8 @@
 
 package akka.http.model.japi
 
-import akka.http.{ HttpExt, model }
-import akka.actor.ActorSystem
-import java.net.InetSocketAddress
+import akka.http.model
+import akka.stream.MaterializerSettings
 
 /**
  *  INTERNAL API
@@ -22,5 +21,10 @@ private[http] object Accessors {
   /** INTERNAL API */
   private[http] def Uri(uri: model.Uri): Uri = JavaUri(uri)
   /** INTERNAL API */
-  private[http] def Bind(host: String, port: Int): AnyRef = akka.http.Http.Bind(host, port)
+  private[http] def Bind(host: String, port: Int): AnyRef =
+    akka.http.Http.Bind(host, port, materializerSettings = None)
+
+  /** INTERNAL API */
+  private[http] def Bind(host: String, port: Int, materializerSettings: MaterializerSettings): AnyRef =
+    akka.http.Http.Bind(host, port, materializerSettings = Some(materializerSettings))
 }
