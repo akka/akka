@@ -10,7 +10,12 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import org.reactivestreams.{ Publisher, Subscriber }
-import akka.japi._
+import akka.japi.Creator
+import akka.japi.Function
+import akka.japi.Function2
+import akka.japi.Pair
+import akka.japi.Predicate
+import akka.japi.Procedure
 import akka.japi.Util.immutableSeq
 import akka.stream._
 import akka.stream.scaladsl.{ Flow ⇒ SFlow }
@@ -55,11 +60,10 @@ object Flow {
 
   /**
    * Define the sequence of elements to be produced by the given Callable.
-   * The stream ends normally when evaluation of the Callable results in
-   * a [[akka.stream.Stop]] exception being thrown; it ends exceptionally
-   * when any other exception is thrown.
+   * The stream ends normally when evaluation of the `Callable` returns a `null`.
+   * The stream ends exceptionally when an exception is thrown from the `Callable`.
    */
-  def create[T](block: Callable[T]): Flow[T] = new FlowAdapter(SFlow.apply(() ⇒ block.call()))
+  def create[T](block: Callable[T]): Flow[T] = new FlowAdapter(SFlow.apply(() ⇒ Option(block.call())))
 
   /**
    * Elements are produced from the tick `Callable` periodically with the specified interval.
