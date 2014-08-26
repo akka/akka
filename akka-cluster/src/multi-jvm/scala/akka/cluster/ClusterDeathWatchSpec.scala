@@ -4,6 +4,7 @@
 package akka.cluster
 
 import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
@@ -237,7 +238,7 @@ abstract class ClusterDeathWatchSpec
         enterBarrier("first-unavailable")
 
         val timeout = remainingOrDefault
-        try system.awaitTermination(timeout) catch {
+        try Await.ready(system.whenTerminated, timeout) catch {
           case _: TimeoutException ⇒
             fail("Failed to stop [%s] within [%s] \n%s".format(system.name, timeout,
               system.asInstanceOf[ActorSystemImpl].printTree))

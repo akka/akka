@@ -4,6 +4,7 @@
 package akka.remote
 
 import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
@@ -40,7 +41,7 @@ object RemoteNodeRestartDeathWatchMultiJvmSpec extends MultiNodeConfig {
     def receive = {
       case "shutdown" ⇒
         sender() ! "shutdown-ack"
-        context.system.shutdown()
+        context.system.terminate()
       case msg ⇒ sender() ! msg
     }
   }
@@ -100,7 +101,7 @@ abstract class RemoteNodeRestartDeathWatchSpec
 
         enterBarrier("watch-established")
 
-        system.awaitTermination(30.seconds)
+        Await.ready(system.whenTerminated, 30.seconds)
 
         val freshSystem = ActorSystem(system.name, ConfigFactory.parseString(s"""
                     akka.remote.netty.tcp {
@@ -110,7 +111,7 @@ abstract class RemoteNodeRestartDeathWatchSpec
                     """).withFallback(system.settings.config))
         freshSystem.actorOf(Props[Subject], "subject")
 
-        freshSystem.awaitTermination(30.seconds)
+        Await.ready(freshSystem.whenTerminated, 30.seconds)
       }
 
     }

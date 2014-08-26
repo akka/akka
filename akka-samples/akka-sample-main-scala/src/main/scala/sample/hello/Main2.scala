@@ -20,7 +20,7 @@ object Main2 {
     def receive = {
       case Terminated(_) =>
         log.info("{} has terminated, shutting down system", ref.path)
-        context.system.shutdown()
+        context.system.terminate()
     }
   }
 

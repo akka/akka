@@ -5,8 +5,6 @@
 package docs.actor;
 
 import akka.actor.*;
-import akka.event.LoggingAdapter;
-import akka.event.Logging;
 import akka.japi.pf.ReceiveBuilder;
 import akka.testkit.ErrorFilter;
 import akka.testkit.EventFilter;
@@ -65,9 +63,8 @@ public class ActorDocTest {
   }
 
   @AfterClass
-  public static void afterClass() {
-    system.shutdown();
-    system.awaitTermination(Duration.create("5 seconds"));
+  public static void afterClass() throws Exception {
+    Await.ready(system.terminate(), Duration.create("5 seconds"));
   }
 
   static
@@ -316,7 +313,7 @@ public class ActorDocTest {
       swapper.tell(Swap, ActorRef.noSender()); // logs Ho
       swapper.tell(Swap, ActorRef.noSender()); // logs Hi
       swapper.tell(Swap, ActorRef.noSender()); // logs Ho
-      system.shutdown();
+      system.terminate();
     }
   }
   //#swapper
