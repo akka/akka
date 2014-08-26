@@ -66,7 +66,7 @@ trait Duct[In, +Out] {
 
   /**
    * Invoke the given function for every received element, giving it its previous
-   * output (or the given “zero” value) and the element as input. The returned stream
+   * output (or the given `zero` value) and the element as input. The returned stream
    * will receive the return value of the final function evaluation when the input
    * stream ends.
    */
@@ -180,7 +180,7 @@ trait Duct[In, +Out] {
   def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Duct[In, U]
 
   /**
-   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
@@ -304,7 +304,7 @@ trait Duct[In, +Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In]
@@ -316,7 +316,7 @@ trait Duct[In, +Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def consume()(implicit materializer: FlowMaterializer): Subscriber[In]
@@ -340,7 +340,7 @@ trait Duct[In, +Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def build[U >: Out]()(implicit materializer: FlowMaterializer): (Subscriber[In], Publisher[U])
@@ -358,7 +358,7 @@ trait Duct[In, +Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def foreach(c: Out ⇒ Unit)(implicit materializer: FlowMaterializer): (Subscriber[In], Future[Unit])
