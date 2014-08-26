@@ -4,11 +4,9 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import akka.stream.{ MaterializerSettings, Stop }
+import akka.stream.{ MaterializerSettings }
 import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.Duration

@@ -333,7 +333,7 @@ public class FlowTest {
       @Override
       public Integer call() {
         if (countdown == 0)
-          throw akka.stream.Stop.getInstance();
+          return null;
         else {
           countdown -= 1;
           return countdown;
@@ -358,7 +358,7 @@ public class FlowTest {
     Flow.create(input).onComplete(new OnCompleteCallback() {
       @Override
       public void onComplete(Throwable e) {
-          probe.getRef().tell( (e == null) ? "done" : e, ActorRef.noSender());
+        probe.getRef().tell((e == null) ? "done" : e, ActorRef.noSender());
       }
     }, materializer);
 
@@ -490,11 +490,12 @@ public class FlowTest {
         return "tick-" + (count++);
       }
     };
-      Flow.create(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick).foreach(new Procedure<String>() {
-        public void apply(String elem) {
+    Flow.create(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick)
+        .foreach(new Procedure<String>() {
+          public void apply(String elem) {
             probe.getRef().tell(elem, ActorRef.noSender());
-      }
-    }, materializer);
+          }
+        }, materializer);
     probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick-1");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));

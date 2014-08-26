@@ -14,6 +14,7 @@ import akka.stream.impl.FlowImpl
 import akka.stream.impl.Ast.TickPublisherNode
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.impl.Stop
 
 /**
  * Scala API
@@ -46,11 +47,11 @@ object Flow {
 
   /**
    * Define the sequence of elements to be produced by the given closure.
-   * The stream ends normally when evaluation of the closure results in
-   * a [[akka.stream.Stop]] exception being thrown; it ends exceptionally
-   * when any other exception is thrown.
+   * The stream ends normally when evaluation of the `Callable` returns a `None`.
+   * The stream ends exceptionally when an exception is thrown from the `Callable`.
    */
-  def apply[T](f: () ⇒ T): Flow[T] = FlowImpl(ThunkPublisherNode(f), Nil)
+  def apply[T](f: () ⇒ Option[T]): Flow[T] =
+    FlowImpl(ThunkPublisherNode(() ⇒ f().getOrElse(throw Stop)), Nil)
 
   /**
    * Start a new `Flow` from the given `Future`. The stream will consist of

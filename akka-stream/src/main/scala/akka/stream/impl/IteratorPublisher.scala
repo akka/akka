@@ -5,7 +5,6 @@ package akka.stream.impl
 
 import akka.actor.Props
 import akka.stream.MaterializerSettings
-import akka.stream.Stop
 
 /**
  * INTERNAL API

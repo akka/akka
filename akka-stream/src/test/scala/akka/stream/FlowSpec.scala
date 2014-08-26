@@ -320,11 +320,11 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "if an internal error occurs future subscribers' onError should be called instead of onSubscribed" in pending
 
     "be covariant" in {
-      val f1: Flow[Fruit] = Flow(() ⇒ new Apple)
-      val p1: Publisher[Fruit] = Flow(() ⇒ new Apple).toPublisher()
-      val f2: Flow[Publisher[Fruit]] = Flow(() ⇒ new Apple).splitWhen(_ ⇒ true)
-      val f3: Flow[(Boolean, Publisher[Fruit])] = Flow(() ⇒ new Apple).groupBy(_ ⇒ true)
-      val f4: Flow[(immutable.Seq[Apple], Publisher[Fruit])] = Flow(() ⇒ new Apple).prefixAndTail(1)
+      val f1: Flow[Fruit] = Flow(() ⇒ Some(new Apple))
+      val p1: Publisher[Fruit] = Flow(() ⇒ Some(new Apple)).toPublisher()
+      val f2: Flow[Publisher[Fruit]] = Flow(() ⇒ Some(new Apple)).splitWhen(_ ⇒ true)
+      val f3: Flow[(Boolean, Publisher[Fruit])] = Flow(() ⇒ Some(new Apple)).groupBy(_ ⇒ true)
+      val f4: Flow[(immutable.Seq[Apple], Publisher[Fruit])] = Flow(() ⇒ Some(new Apple)).prefixAndTail(1)
     }
 
   }
