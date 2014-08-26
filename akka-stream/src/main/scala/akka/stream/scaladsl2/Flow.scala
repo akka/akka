@@ -1,4 +1,7 @@
-package akka.stream.dsl
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl2
 
 import akka.stream.impl.Ast
 import org.reactivestreams.{ Subscriber, Publisher }

@@ -1,4 +1,7 @@
-package akka.stream.dsl
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl2
 
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
