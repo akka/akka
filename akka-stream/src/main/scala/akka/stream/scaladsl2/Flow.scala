@@ -20,24 +20,24 @@ object From {
    * Helper to create Flow without Input.
    * Example usage: From[Int]
    */
-  def apply[T]: OpenFlow[T, T] = OpenFlow[T, T](EmptyTransform[T, T]())
+  def apply[T]: ProcessorFlow[T, T] = ProcessorFlow[T, T](EmptyTransform[T, T]())
 
   /**
    * Helper to create Flow with Input from Iterable.
    * Example usage: Flow(Seq(1,2,3))
    */
-  def apply[T](i: immutable.Iterable[T]): OpenOutputFlow[T, T] = From[T].withInput(IterableIn(i))
+  def apply[T](i: immutable.Iterable[T]): PublisherFlow[T, T] = From[T].withInput(IterableIn(i))
 
   /**
    * Helper to create Flow with Input from Future.
    * Example usage: Flow(Future { 1 })
    */
-  def apply[T](f: Future[T]): OpenOutputFlow[T, T] = From[T].withInput(FutureIn(f))
+  def apply[T](f: Future[T]): PublisherFlow[T, T] = From[T].withInput(FutureIn(f))
 
   /**
    * Helper to create Flow with Input from Publisher.
    */
-  def apply[T](p: Publisher[T]): OpenOutputFlow[T, T] = From[T].withInput(PublisherIn(p))
+  def apply[T](p: Publisher[T]): PublisherFlow[T, T] = From[T].withInput(PublisherIn(p))
 }
 
 trait Input[-In]
@@ -107,9 +107,9 @@ sealed trait HasOpenInput[-In, +Out] {
   protected def prependTransform[T](t: Transform[T, In]): Repr[T, Out]
 
   // linear combinators with flows
-  def prepend[T](f: OpenFlow[T, In]): Repr[T, Out] =
+  def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out] =
     prependTransform(f.transform)
-  def prepend[T](f: OpenOutputFlow[T, In]): Repr[T, Out]#AfterCloseInput[T, Out] =
+  def prepend[T](f: PublisherFlow[T, In]): Repr[T, Out]#AfterCloseInput[T, Out] =
     prependTransform(f.transform).withInput(f.input)
 }
 
@@ -159,60 +159,72 @@ trait HasOpenOutput[-In, +Out] {
     appendTransform(EmptyTransform[Out, Out]())
 
   // linear combinators which produce multiple flows
-  def prefixAndTail[O >: Out](n: Int): Repr[In, (immutable.Seq[O], OpenOutputFlow[O, O])] =
-    appendTransform(EmptyTransform[Out, (immutable.Seq[O], OpenOutputFlow[O, O])]())
-  def groupBy[O >: Out, K](f: O ⇒ K): Repr[In, (K, OpenOutputFlow[O, O])] =
-    appendTransform(EmptyTransform[Out, (K, OpenOutputFlow[O, O])]())
-  def splitWhen[O >: Out](p: Out ⇒ Boolean): Repr[In, OpenOutputFlow[O, O]] =
-    appendTransform(EmptyTransform[Out, OpenOutputFlow[O, O]]())
+  def prefixAndTail[O >: Out](n: Int): Repr[In, (immutable.Seq[O], PublisherFlow[O, O])] =
+    appendTransform(EmptyTransform[Out, (immutable.Seq[O], PublisherFlow[O, O])]())
+  def groupBy[O >: Out, K](f: O ⇒ K): Repr[In, (K, PublisherFlow[O, O])] =
+    appendTransform(EmptyTransform[Out, (K, PublisherFlow[O, O])]())
+  def splitWhen[O >: Out](p: Out ⇒ Boolean): Repr[In, PublisherFlow[O, O]] =
+    appendTransform(EmptyTransform[Out, PublisherFlow[O, O]]())
 
   // linear combinators which consume multiple flows
   def flatten[T](strategy: FlattenStrategy[Out, T]): Repr[In, T] =
     appendTransform(EmptyTransform[Out, T]())
 
   // linear combinators with flows
-  def append[T](f: OpenFlow[Out, T]): Repr[In, T] =
+  def append[T](f: ProcessorFlow[Out, T]): Repr[In, T] =
     appendTransform(f.transform)
-  def append[T](f: OpenInputFlow[Out, T]): Repr[In, T]#AfterCloseOutput[In, T] =
+  def append[T](f: SubscriberFlow[Out, T]): Repr[In, T]#AfterCloseOutput[In, T] =
     appendTransform(f.transform).withOutput(f.output)
 }
 
-final case class OpenFlow[-In, +Out](transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenOutput[In, Out] with HasOpenInput[In, Out] {
-  override type Repr[-In, +Out] = OpenFlow[In, Out]
-  type AfterCloseOutput[-In, +Out] = OpenInputFlow[In, Out]
-  type AfterCloseInput[-In, +Out] = OpenOutputFlow[In, Out]
+/**
+ * Flow without attached input and without attached output, can be used as a `Processor`.
+ */
+final case class ProcessorFlow[-In, +Out](transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenOutput[In, Out] with HasOpenInput[In, Out] {
+  override type Repr[-In, +Out] = ProcessorFlow[In, Out]
+  type AfterCloseOutput[-In, +Out] = SubscriberFlow[In, Out]
+  type AfterCloseInput[-In, +Out] = PublisherFlow[In, Out]
 
-  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = OpenInputFlow(out, transform)
-  def withInput[I <: In](in: Input[I]): AfterCloseInput[I, Out] = OpenOutputFlow(in, transform)
+  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = SubscriberFlow(out, transform)
+  def withInput[I <: In](in: Input[I]): AfterCloseInput[I, Out] = PublisherFlow(in, transform)
 
-  protected def prependTransform[T](t: Transform[T, In]): Repr[T, Out] = OpenFlow(t ++ transform)
-  protected def appendTransform[T](t: Transform[Out, T]): Repr[In, T] = OpenFlow(transform ++ t)
+  protected def prependTransform[T](t: Transform[T, In]): Repr[T, Out] = ProcessorFlow(t ++ transform)
+  protected def appendTransform[T](t: Transform[Out, T]): Repr[In, T] = ProcessorFlow(transform ++ t)
 }
 
-final case class OpenInputFlow[-In, +Out](output: Output[Out], transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenInput[In, Out] {
-  type Repr[-In, +Out] = OpenInputFlow[In, Out]
-  type AfterCloseInput[-In, +Out] = ClosedFlow[In, Out]
+/**
+ *  Flow with attached output, can be used as a `Subscriber`.
+ */
+final case class SubscriberFlow[-In, +Out](output: Output[Out], transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenInput[In, Out] {
+  type Repr[-In, +Out] = SubscriberFlow[In, Out]
+  type AfterCloseInput[-In, +Out] = RunnableFlow[In, Out]
 
-  def withInput[I <: In](in: Input[I]): AfterCloseInput[I, Out] = ClosedFlow(in, output, transform)
-  def withoutOutput: OpenFlow[In, Out] = OpenFlow(transform)
+  def withInput[I <: In](in: Input[I]): AfterCloseInput[I, Out] = RunnableFlow(in, output, transform)
+  def withoutOutput: ProcessorFlow[In, Out] = ProcessorFlow(transform)
 
   protected def prependTransform[T](t: Transform[T, In]): Repr[T, Out] =
-    OpenInputFlow(output, t ++ transform)
+    SubscriberFlow(output, t ++ transform)
 }
 
-final case class OpenOutputFlow[-In, +Out](input: Input[In], transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenOutput[In, Out] {
-  override type Repr[-In, +Out] = OpenOutputFlow[In, Out]
-  type AfterCloseOutput[-In, +Out] = ClosedFlow[In, Out]
+/**
+ * Flow with attached input, can be used as a `Publisher`.
+ */
+final case class PublisherFlow[-In, +Out](input: Input[In], transform: Transform[In, Out]) extends Flow[In, Out] with HasOpenOutput[In, Out] {
+  override type Repr[-In, +Out] = PublisherFlow[In, Out]
+  type AfterCloseOutput[-In, +Out] = RunnableFlow[In, Out]
 
-  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = ClosedFlow(input, out, transform)
-  def withoutInput: OpenFlow[In, Out] = OpenFlow(transform)
+  def withOutput[O >: Out](out: Output[O]): AfterCloseOutput[In, O] = RunnableFlow(input, out, transform)
+  def withoutInput: ProcessorFlow[In, Out] = ProcessorFlow(transform)
 
-  protected def appendTransform[T](t: Transform[Out, T]) = OpenOutputFlow(input, transform ++ t)
+  protected def appendTransform[T](t: Transform[Out, T]) = PublisherFlow(input, transform ++ t)
 }
 
-final case class ClosedFlow[-In, +Out](input: Input[In], output: Output[Out], transform: Transform[In, Out]) extends Flow[In, Out] {
-  def withoutOutput: OpenOutputFlow[In, Out] = OpenOutputFlow(input, transform)
-  def withoutInput: OpenInputFlow[In, Out] = OpenInputFlow(output, transform)
+/**
+ * Flow with attached input and output, can be executed.
+ */
+final case class RunnableFlow[-In, +Out](input: Input[In], output: Output[Out], transform: Transform[In, Out]) extends Flow[In, Out] {
+  def withoutOutput: PublisherFlow[In, Out] = PublisherFlow(input, transform)
+  def withoutInput: SubscriberFlow[In, Out] = SubscriberFlow(output, transform)
 
   def run(): Unit = ()
 }
@@ -223,9 +235,9 @@ trait Transform[-In, +Out] {
 final case class EmptyTransform[-In, +Out]() extends Transform[In, Out]
 
 object FlattenStrategy {
-  def concatOpenOutputFlow[In, Out]: FlattenStrategy[OpenOutputFlow[In, Out], Out] = ConcatOpenOutputFlow[In, Out]()
-  def concatOpenFlow[In, Out]: FlattenStrategy[OpenFlow[In, Out], Out] = ConcatOpenFlow[In, Out]()
+  def concatPublisherFlow[In, Out]: FlattenStrategy[PublisherFlow[In, Out], Out] = ConcatPublisherFlow[In, Out]()
+  def concatProcessorFlow[In, Out]: FlattenStrategy[ProcessorFlow[In, Out], Out] = ConcatProcessorFlow[In, Out]()
 
-  final case class ConcatOpenOutputFlow[In, Out]() extends FlattenStrategy[OpenOutputFlow[In, Out], Out]
-  final case class ConcatOpenFlow[In, Out]() extends FlattenStrategy[OpenFlow[In, Out], Out]
+  final case class ConcatPublisherFlow[In, Out]() extends FlattenStrategy[PublisherFlow[In, Out], Out]
+  final case class ConcatProcessorFlow[In, Out]() extends FlattenStrategy[ProcessorFlow[In, Out], Out]
 }

@@ -9,7 +9,7 @@ import scala.collection.immutable.Seq
 
 class GraphSpec extends WordSpec with Matchers {
 
-  "Graph" should {
+  "A Flow Graph" should {
     "merge" in {
       val merge = Merge[Int, Int, Int]()
 
