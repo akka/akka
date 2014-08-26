@@ -354,7 +354,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         val future =
           Flow(input.toList)
             .map(ByteString.apply)
-            .transform(parser)
+            .transform("parser", () ⇒ parser)
             .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
             .headAndTail(materializer)
             .collect {
