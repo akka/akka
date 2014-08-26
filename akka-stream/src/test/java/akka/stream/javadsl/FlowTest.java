@@ -1,40 +1,26 @@
 package akka.stream.javadsl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.TimeUnit;
-import akka.stream.FlattenStrategy;
-import akka.stream.OverflowStrategy;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.dispatch.Futures;
+import akka.dispatch.Mapper;
+import akka.japi.*;
+import akka.stream.*;
+import akka.stream.testkit.AkkaSpec;
+import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
-import static org.junit.Assert.assertEquals;
 import org.reactivestreams.Publisher;
 import scala.Option;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.dispatch.Futures;
-import akka.dispatch.Mapper;
-import akka.japi.Function;
-import akka.japi.Function2;
-import akka.japi.Pair;
-import akka.japi.Predicate;
-import akka.japi.Procedure;
-import akka.japi.Util;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
-import akka.stream.Transformer;
-import akka.stream.testkit.AkkaSpec;
-import akka.testkit.JavaTestKit;
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
 
 public class FlowTest {
 
@@ -113,30 +99,35 @@ public class FlowTest {
     final JavaTestKit probe2 = new JavaTestKit(system);
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
-    Flow.create(input).transform(new Transformer<Integer, Integer>() {
-      int sum = 0;
-      int count = 0;
-
+    Flow.create(input).transform("publish", new Creator<Transformer<Integer, Integer>>() {
       @Override
-      public scala.collection.immutable.Seq<Integer> onNext(Integer element) {
-        sum += element;
-        count += 1;
-        return Util.immutableSeq(new Integer[] { element, element });
-      }
+      public Transformer<Integer, Integer> create() throws Exception {
+        return new Transformer<Integer, Integer>() {
+          int sum = 0;
+          int count = 0;
 
-      @Override
-      public boolean isComplete() {
-        return count == 4;
-      }
+          @Override
+          public scala.collection.immutable.Seq<Integer> onNext(Integer element) {
+            sum += element;
+            count += 1;
+            return Util.immutableSeq(new Integer[]{element, element});
+          }
 
-      @Override
-      public scala.collection.immutable.Seq<Integer> onTermination(Option<Throwable> e) {
-        return Util.immutableSingletonSeq(sum);
-      }
+          @Override
+          public boolean isComplete() {
+            return count == 4;
+          }
 
-      @Override
-      public void cleanup() {
-        probe2.getRef().tell("cleanup", ActorRef.noSender());
+          @Override
+          public scala.collection.immutable.Seq<Integer> onTermination(Option<Throwable> e) {
+            return Util.immutableSingletonSeq(sum);
+          }
+
+          @Override
+          public void cleanup() {
+            probe2.getRef().tell("cleanup", ActorRef.noSender());
+          }
+        };
       }
     }).foreach(new Procedure<Integer>() {
       public void apply(Integer elem) {
@@ -167,34 +158,40 @@ public class FlowTest {
         else
           return elem + elem;
       }
-    }).transform(new Transformer<Integer, String>() {
-
+    }).transform("publish", new Creator<Transformer<Integer, String>>() {
       @Override
-      public scala.collection.immutable.Seq<String> onNext(Integer element) {
-        return Util.immutableSingletonSeq(element.toString());
-      }
+      public Transformer<Integer, String> create() throws Exception {
+        return new Transformer<Integer, String>() {
 
-      @Override
-      public scala.collection.immutable.Seq<String> onTermination(Option<Throwable> e) {
-        if (e.isEmpty())
-          return Util.immutableSeq(new String[0]);
-        else
-          return Util.immutableSingletonSeq(e.get().getMessage());
-      }
+          @Override
+          public scala.collection.immutable.Seq<String> onNext(Integer element) {
+            return Util.immutableSingletonSeq(element.toString());
+          }
 
-      @Override
-      public void onError(Throwable e) {
-      }
+          @Override
+          public scala.collection.immutable.Seq<String> onTermination(Option<Throwable> e) {
+            if (e.isEmpty()) {
+              return Util.immutableSeq(new String[0]);
+            } else {
+              return Util.immutableSingletonSeq(e.get().getMessage());
+            }
+          }
 
-      @Override
-      public boolean isComplete() {
-        return false;
-      }
+          @Override
+          public void onError(Throwable e) {
+          }
 
-      @Override
-      public void cleanup() {
-      }
+          @Override
+          public boolean isComplete() {
+            return false;
+          }
 
+          @Override
+          public void cleanup() {
+          }
+
+        };
+      }
     }).foreach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
