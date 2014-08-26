@@ -3,24 +3,19 @@
  */
 package akka.stream.extra
 
-import akka.stream.testkit.{ StreamTestKit, ScriptedTest, AkkaSpec }
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.scaladsl.{ Duct, Flow }
+import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
 import akka.testkit.TestProbe
-import akka.stream.scaladsl.{ Flow, Duct }
-import org.reactivestreams.{ Subscriber, Publisher }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
   import scala.concurrent.duration._
 
-  val settings = MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 16,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16,
-    dispatcher = "akka.test.stream-dispatcher")
-
-  lazy val metricsConfig = system.settings.config
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 16)
+    .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
   implicit val materializer = FlowMaterializer(settings)
 

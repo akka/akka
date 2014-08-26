@@ -3,16 +3,15 @@
  */
 package akka.stream
 
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.ScriptedTest
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+
+import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import scala.util.control.NoStackTrace
 
 class FlowForeachSpec extends AkkaSpec {
 
-  implicit val mat = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val mat = FlowMaterializer()
   import system.dispatcher
 
   "A Foreach" must {

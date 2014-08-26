@@ -30,7 +30,7 @@ object TestServer extends App {
     case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings())
+  implicit val materializer = FlowMaterializer()
 
   implicit val askTimeout: Timeout = 500.millis
   val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)

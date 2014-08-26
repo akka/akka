@@ -12,8 +12,7 @@ import scala.util.control.NoStackTrace
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TickPublisherSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A Flow based on tick publisher" must {
     "produce ticks" in {

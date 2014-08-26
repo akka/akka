@@ -22,7 +22,7 @@ object DuctSpec {
 class DuctSpec extends AkkaSpec {
   import DuctSpec._
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A Duct" must {
 

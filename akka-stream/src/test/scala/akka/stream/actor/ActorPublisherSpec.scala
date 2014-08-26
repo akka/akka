@@ -3,20 +3,15 @@
  */
 package akka.stream.actor
 
+import akka.actor.{ ActorRef, PoisonPill, Props }
+import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.scaladsl.Flow
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.testkit.TestEvent.Mute
+import akka.testkit.{ EventFilter, ImplicitSender, TestProbe }
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.actor.ActorRef
-import akka.actor.PoisonPill
-import akka.actor.Props
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
-import akka.stream.scaladsl.Flow
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit
-import akka.testkit.EventFilter
-import akka.testkit.ImplicitSender
-import akka.testkit.TestEvent.Mute
-import akka.testkit.TestProbe
 
 object ActorPublisherSpec {
 
@@ -30,7 +25,6 @@ object ActorPublisherSpec {
   case object Complete
 
   class TestPublisher(probe: ActorRef) extends ActorPublisher[String] {
-    import ActorPublisher._
     import ActorPublisherMessage._
 
     def receive = {
@@ -90,7 +84,6 @@ object ActorPublisherSpec {
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
   import ActorPublisherSpec._
-  import ActorPublisher._
 
   system.eventStream.publish(Mute(EventFilter[IllegalStateException]()))
 
@@ -225,7 +218,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work together with Flow and ActorSubscriber" in {
-      implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+      implicit val materializer = FlowMaterializer()
       val probe = TestProbe()
       val snd = system.actorOf(senderProps)
       val rcv = system.actorOf(receiverProps(probe.ref))

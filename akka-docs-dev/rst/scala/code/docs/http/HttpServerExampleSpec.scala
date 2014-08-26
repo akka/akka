@@ -4,11 +4,12 @@
 
 package docs.http
 
-import akka.stream.testkit.AkkaSpec
 import akka.actor.ActorSystem
-import akka.util.Timeout
-import scala.concurrent.duration._
 import akka.http.model._
+import akka.stream.testkit.AkkaSpec
+import akka.util.Timeout
+
+import scala.concurrent.duration._
 
 class HttpServerExampleSpec
   extends AkkaSpec("akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox") {
@@ -16,17 +17,15 @@ class HttpServerExampleSpec
 
   "binding example" in {
     //#bind-example
-    import akka.pattern.ask
-
-    import akka.io.IO
     import akka.http.Http
-
+    import akka.io.IO
+    import akka.pattern.ask
+    import akka.stream.FlowMaterializer
     import akka.stream.scaladsl.Flow
-    import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
     implicit val system = ActorSystem()
     import system.dispatcher
-    implicit val materializer = FlowMaterializer(MaterializerSettings())
+    implicit val materializer = FlowMaterializer()
     implicit val askTimeout: Timeout = 500.millis
 
     val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
@@ -42,23 +41,21 @@ class HttpServerExampleSpec
     //#bind-example
   }
   "full-server-example" in {
-    import akka.pattern.ask
-
-    import akka.io.IO
     import akka.http.Http
-
+    import akka.io.IO
+    import akka.pattern.ask
+    import akka.stream.FlowMaterializer
     import akka.stream.scaladsl.Flow
-    import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
     implicit val system = ActorSystem()
     import system.dispatcher
-    implicit val materializer = FlowMaterializer(MaterializerSettings())
+    implicit val materializer = FlowMaterializer()
     implicit val askTimeout: Timeout = 500.millis
 
     val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
 
     //#full-server-example
-    import HttpMethods._
+    import akka.http.model.HttpMethods._
 
     val requestHandler: HttpRequest ⇒ HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) ⇒
