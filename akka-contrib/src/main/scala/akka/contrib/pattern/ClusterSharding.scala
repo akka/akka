@@ -731,6 +731,7 @@ class ShardRegion(
 
       //Start the shard, if already started this does nothing
       getShard(shard)
+      deliverBufferedMessages(shard)
 
       sender() ! ShardStarted(shard)
 
@@ -748,14 +749,7 @@ class ShardRegion(
       if (ref != self)
         context.watch(ref)
 
-      shardBuffers.get(shard) match {
-        case Some(buf) ⇒
-          buf.foreach {
-            case (msg, snd) ⇒ deliverMessage(msg, snd)
-          }
-          shardBuffers -= shard
-        case None ⇒
-      }
+      deliverBufferedMessages(shard)
 
     case RegisterAck(coord) ⇒
       context.watch(coord)
@@ -842,6 +836,15 @@ class ShardRegion(
         log.debug("Retry request for shard [{}] homes", shard)
         c ! GetShardHome(shard)
       }
+    }
+  }
+
+  def deliverBufferedMessages(shard: String): Unit = {
+    shardBuffers.get(shard) match {
+      case Some(buf) ⇒
+        buf.foreach { case (msg, snd) ⇒ deliverMessage(msg, snd) }
+        shardBuffers -= shard
+      case None ⇒
     }
   }
 
