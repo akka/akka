@@ -54,7 +54,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
           .setClazz(props.clazz.getName)
           .setDeploy(deployProto(props.deploy))
         props.args map serialize foreach builder.addArgs
-        props.args map (_.getClass.getName) foreach builder.addClasses
+        props.args map (a ⇒ if (a == null) "null" else a.getClass.getName) foreach builder.addClasses
         builder.build
       }
 
@@ -93,7 +93,7 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
       import scala.collection.JavaConverters._
       val clazz = system.dynamicAccess.getClassFor[AnyRef](proto.getProps.getClazz).get
       val args: Vector[AnyRef] = (proto.getProps.getArgsList.asScala zip proto.getProps.getClassesList.asScala)
-        .map(p ⇒ deserialize(p._1, system.dynamicAccess.getClassFor[AnyRef](p._2).get))(collection.breakOut)
+        .map(deserialize)(collection.breakOut)
       Props(deploy(proto.getProps.getDeploy), clazz, args)
     }
 
@@ -105,6 +105,10 @@ private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) e
   }
 
   protected def serialize(any: Any): ByteString = ByteString.copyFrom(serialization.serialize(any.asInstanceOf[AnyRef]).get)
+
+  protected def deserialize(p: (ByteString, String)): AnyRef =
+    if (p._1.isEmpty && p._2 == "null") null
+    else deserialize(p._1, system.dynamicAccess.getClassFor[AnyRef](p._2).get)
 
   protected def deserialize[T: ClassTag](data: ByteString, clazz: Class[T]): T = {
     val bytes = data.toByteArray
