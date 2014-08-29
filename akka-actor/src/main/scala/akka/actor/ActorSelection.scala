@@ -31,7 +31,7 @@ abstract class ActorSelection extends Serializable {
   protected val path: immutable.IndexedSeq[SelectionPathElement]
 
   /**
-   * Sends the specified message to the sender, i.e. fire-and-forget
+   * Sends the specified message to this ActorSelection, i.e. fire-and-forget
    * semantics, including the sender reference if possible.
    *
    * Pass [[ActorRef#noSender]] or `null` as sender if there is nobody to reply to
