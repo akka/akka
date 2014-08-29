@@ -77,7 +77,7 @@ abstract class Duct[In, Out] {
 
   /**
    * Invoke the given function for every received element, giving it its previous
-   * output (or the given “zero” value) and the element as input. The returned stream
+   * output (or the given `zero` value) and the element as input. The returned stream
    * will receive the return value of the final function evaluation when the input
    * stream ends.
    */
@@ -85,6 +85,7 @@ abstract class Duct[In, Out] {
 
   /**
    * Discard the given number of elements at the beginning of the stream.
+   * No elements will be dropped if `n` is zero or negative.
    */
   def drop(n: Int): Duct[In, Out]
 
@@ -98,6 +99,9 @@ abstract class Duct[In, Out] {
    * number of elements. Due to input buffering some elements may have been
    * requested from upstream publishers that will then not be processed downstream
    * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
    */
   def take(n: Int): Duct[In, Out]
 
@@ -115,6 +119,8 @@ abstract class Duct[In, Out] {
   /**
    * Chunk up this stream into groups of the given size, with the last group
    * possibly smaller than requested due to end-of-stream.
+   *
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
   def grouped(n: Int): Duct[In, java.util.List[Out]]
 
@@ -124,6 +130,9 @@ abstract class Duct[In, Out] {
    * Empty groups will not be emitted if no elements are received from upstream.
    * The last group before end-of-stream will contain the buffered elements
    * since the previously emitted group.
+   *
+   * `n` must be positive, and `d` must be greater than 0 seconds, , otherwise
+   *  IllegalArgumentException is thrown.
    */
   def groupedWithin(n: Int, d: FiniteDuration): Duct[In, java.util.List[Out]]
 
@@ -182,7 +191,7 @@ abstract class Duct[In, Out] {
   def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Duct[In, U]
 
   /**
-   * Takes up to n elements from the stream and returns a pair containing a strict sequence of the taken element
+   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
@@ -301,7 +310,7 @@ abstract class Duct[In, Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def produceTo(subscriber: Subscriber[Out], materializer: FlowMaterializer): Subscriber[In]
@@ -313,7 +322,7 @@ abstract class Duct[In, Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def consume(materializer: FlowMaterializer): Subscriber[In]
@@ -337,7 +346,7 @@ abstract class Duct[In, Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def build(materializer: FlowMaterializer): Pair[Subscriber[In], Publisher[Out]]
@@ -355,7 +364,7 @@ abstract class Duct[In, Out] {
    *
    * *This will materialize the flow and initiate its execution.*
    *
-   * The given FlowMaterializer decides how the flow’s logical structure is
+   * The given `FlowMaterializer` decides how the flow’s logical structure is
    * broken down into individual processing steps.
    */
   def foreach(c: Procedure[Out], materializer: FlowMaterializer): Pair[Subscriber[In], Future[Void]]
