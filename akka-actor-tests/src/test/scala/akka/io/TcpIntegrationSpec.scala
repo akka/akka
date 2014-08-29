@@ -4,17 +4,22 @@
 
 package akka.io
 
+import akka.actor.PoisonPill
+import akka.io.Tcp._
 import akka.testkit.{ TestProbe, AkkaSpec }
-import akka.util.ByteString
 import akka.TestUtils._
-import concurrent.duration._
-import Tcp._
-import java.net.InetSocketAddress
+import akka.util.ByteString
+import java.io.IOException
+import java.net.{ ServerSocket, InetSocketAddress }
+import org.scalatest.concurrent.Timeouts
+import scala.concurrent.duration._
+
+import scala.language.postfixOps
 
 class TcpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
     akka.actor.serialize-creators = on
-    """) with TcpIntegrationSpecSupport {
+    """) with TcpIntegrationSpecSupport with Timeouts {
 
   "The TCP transport implementation" should {
 
@@ -73,15 +78,34 @@ class TcpIntegrationSpec extends AkkaSpec("""
       override def bindOptions = List(SO.SendBufferSize(1024))
       override def connectOptions = List(SO.ReceiveBufferSize(1024))
     }
+
     "don't report Connected when endpoint isn't responding" in {
       val connectCommander = TestProbe()
-      // a "random" endpoint hopefully unavailable
-      val endpoint = new InetSocketAddress("10.226.182.48", 23825)
+      // a "random" endpoint hopefully unavailable since it's in the test-net IP range
+      val endpoint = new InetSocketAddress("192.0.2.1", 23825)
       connectCommander.send(IO(Tcp), Connect(endpoint))
       // expecting CommandFailed or no reply (within timeout)
       val replies = connectCommander.receiveWhile(1.second) { case m: Connected ⇒ m }
       replies should be(Nil)
     }
-  }
 
+    "handle tcp connection actor death properly" in new TestSetup(shouldBindServer = false) {
+      val serverSocket = new ServerSocket(endpoint.getPort(), 100, endpoint.getAddress())
+      val connectCommander = TestProbe()
+      connectCommander.send(IO(Tcp), Connect(endpoint))
+
+      val accept = serverSocket.accept()
+      connectCommander.expectMsgType[Connected].remoteAddress should be(endpoint)
+      val connectionActor = connectCommander.lastSender
+      connectCommander.send(connectionActor, PoisonPill)
+      failAfter(3 seconds) {
+        try {
+          accept.getInputStream.read() should be(-1)
+        } catch {
+          case e: IOException ⇒ // this is also fine
+        }
+      }
+      verifyActorTermination(connectionActor)
+    }
+  }
 }
