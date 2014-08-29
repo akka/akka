@@ -14,11 +14,11 @@ import Tcp._
 
 trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 
-  class TestSetup {
+  class TestSetup(shouldBindServer: Boolean = true) {
     val bindHandler = TestProbe()
     val endpoint = temporaryServerAddress()
 
-    bindServer()
+    if (shouldBindServer) bindServer()
 
     def bindServer(): Unit = {
       val bindCommander = TestProbe()
