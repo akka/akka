@@ -11,6 +11,7 @@ import akka.actor.{ Props, Actor }
 import akka.testkit.{ TestLatch, ImplicitSender, AkkaSpec }
 import akka.actor.ActorRef
 import org.scalatest.BeforeAndAfterEach
+import java.net.URLEncoder
 
 object BalancingSpec {
   val counter = new AtomicInteger(1)
@@ -22,6 +23,15 @@ object BalancingSpec {
         if (id == 1) Thread.sleep(10) // dispatch to other routees
         else Await.ready(latch, 1.minute)
         sender() ! id
+    }
+  }
+
+  class Parent extends Actor {
+    val pool = context.actorOf(BalancingPool(2).props(routeeProps =
+      Props(classOf[Worker], TestLatch(0)(context.system))))
+
+    def receive = {
+      case msg ⇒ pool.forward(msg)
     }
   }
 }
@@ -96,6 +106,19 @@ class BalancingSpec extends AkkaSpec(
       val pool = system.actorOf(BalancingPool(1).props(routeeProps =
         Props(classOf[Worker], latch)), name = "balancingPool-3")
       test(pool, latch)
+    }
+
+    "work with anonymous actor names" in {
+      // the dispatcher-id must not contain invalid config key characters (e.g. $a) 
+      system.actorOf(Props[Parent]) ! "hello"
+      expectMsgType[Int]
+    }
+
+    "work with encoded actor names" in {
+      val encName = URLEncoder.encode("abcå6#$€xyz", "utf-8")
+      // % is a valid config key character (e.g. %C3%A5) 
+      system.actorOf(Props[Parent], encName) ! "hello"
+      expectMsgType[Int]
     }
 
   }
