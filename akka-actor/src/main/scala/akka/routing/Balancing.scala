@@ -99,7 +99,10 @@ final case class BalancingPool(
    */
   override private[akka] def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
 
-    val deployPath = context.self.path.elements.drop(1).mkString("/", "/", "")
+    val rawDeployPath = context.self.path.elements.drop(1).mkString("/", "/", "")
+    val deployPath = BalancingPool.invalidConfigKeyChars.foldLeft(rawDeployPath) { (replaced, c) ⇒
+      replaced.replace(c, '_')
+    }
     val dispatcherId = s"BalancingPool-$deployPath"
     def dispatchers = context.system.dispatchers
 
@@ -147,3 +150,6 @@ final case class BalancingPool(
 
 }
 
+object BalancingPool {
+  private val invalidConfigKeyChars = List('$', '@', ':')
+}
