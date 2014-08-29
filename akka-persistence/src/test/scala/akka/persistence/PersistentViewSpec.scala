@@ -100,6 +100,17 @@ object PersistentViewSpec {
     }
   }
 
+  private class BecomingPersistentView(name: String, probe: ActorRef) extends PersistentView {
+    override def persistenceId = name
+    override def viewId = name + "-view"
+
+    def receive = Actor.emptyBehavior
+
+    context.become {
+      case payload ⇒ probe ! s"replicated-${payload}-${lastSequenceNr}"
+    }
+  }
+
   private class PersistentOrNotTestPersistentView(name: String, probe: ActorRef) extends PersistentView {
     override val persistenceId: String = name
     override val viewId: String = name + "-view"
@@ -280,6 +291,11 @@ abstract class PersistentViewSpec(config: Config) extends AkkaSpec(config) with 
       replayProbe.expectMsgPF() { case ReplayMessages(1L, _, 2L, _, _, _) ⇒ }
       replayProbe.expectMsgPF() { case ReplayMessages(3L, _, 2L, _, _, _) ⇒ }
       replayProbe.expectMsgPF() { case ReplayMessages(5L, _, 2L, _, _, _) ⇒ }
+    }
+    "support context.become" in {
+      view = system.actorOf(Props(classOf[BecomingPersistentView], name, viewProbe.ref))
+      viewProbe.expectMsg("replicated-a-1")
+      viewProbe.expectMsg("replicated-b-2")
     }
     "check if an incoming message is persistent" in {
       persistentActor ! "c"

@@ -136,10 +136,8 @@ trait PersistentView extends Actor with Recovery {
    * INTERNAL API
    * WARNING: This implementation UNWRAPS PERSISTENT() before delivering to the receive block.
    */
-  override private[persistence] def withCurrentPersistent(persistent: Persistent)(body: Persistent ⇒ Unit): Unit =
-    super.withCurrentPersistent(persistent) { p ⇒
-      receive.applyOrElse(p.payload, unhandled)
-    }
+  override private[persistence] def runReceive(receive: Receive)(msg: Persistent): Unit =
+    receive.applyOrElse(msg.payload, unhandled)
 
   private val viewSettings = extension.settings.view
 
