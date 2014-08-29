@@ -88,22 +88,26 @@ object ActorDSL extends dsl.Inbox with dsl.Creators {
 
   protected class Extension(val system: ExtendedActorSystem) extends akka.actor.Extension with InboxExtension {
 
-    val boss = system.systemActorOf(Props(
+    private case class MkChild(props: Props, name: String) extends NoSerializationVerificationNeeded
+    private val boss = system.systemActorOf(Props(
       new Actor {
-        def receive = { case any ⇒ sender() ! any }
+        def receive = {
+          case MkChild(props, name) ⇒ sender() ! context.actorOf(props, name)
+          case any                  ⇒ sender() ! any
+        }
       }), "dsl").asInstanceOf[RepointableActorRef]
-
-    {
-      implicit val timeout = system.settings.CreationTimeout
-      if (Await.result(boss ? "OK", system.settings.CreationTimeout.duration) != "OK")
-        throw new IllegalStateException("Creation of boss actor did not succeed!")
-    }
 
     lazy val config = system.settings.config.getConfig("akka.actor.dsl")
 
     val DSLDefaultTimeout = config.getMillisDuration("default-timeout")
 
-    def mkChild(p: Props, name: String) = boss.underlying.asInstanceOf[ActorCell].attachChild(p, name, systemService = true)
+    def mkChild(p: Props, name: String): ActorRef =
+      if (boss.isStarted)
+        boss.underlying.asInstanceOf[ActorCell].attachChild(p, name, systemService = true)
+      else {
+        implicit val timeout = system.settings.CreationTimeout
+        Await.result(boss ? MkChild(p, name), timeout.duration).asInstanceOf[ActorRef]
+      }
   }
 
 }
