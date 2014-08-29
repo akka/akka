@@ -37,26 +37,18 @@ class NewDslHttpServerPipeline(settings: ServerSettings,
    */
   def apply(tcpConn: StreamTcp.IncomingTcpConnection) = {
 
-    val broadcast = Broadcast[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])]()
-    val merge = Merge[MessageStart, HttpResponse, Any]()
-
-    val requestFlowBeforeBroadcast: ClosedFlow[ByteString, (RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])] =
+    val requestFlowBeforeBroadcast: OpenOutputFlow[ByteString, (RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])] =
       From(tcpConn.inputStream)
         .transform(rootParser.copyWith(warnOnIllegalHeader))
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .headAndTail()
-        .withOutput(broadcast.in)
 
-    val applicationBypassFlow: ClosedFlow[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput]), MessageStart] =
+    val applicationBypassFlow: OpenFlow[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput]), MessageStart] =
       From[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])]
-        .withInput(broadcast.out1)
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .withOutput(merge.in1)
 
-    val requestPublisher = PublisherOut[HttpRequest]()
-    val requestFlowAfterBroadcast: ClosedFlow[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput]), HttpRequest] =
+    val requestFlowAfterBroadcast: OpenFlow[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput]), HttpRequest] =
       From[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])]
-        .withInput(broadcast.out2)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
@@ -64,24 +56,45 @@ class NewDslHttpServerPipeline(settings: ServerSettings,
             val flow = entityParts.withOutput(publisher)
             HttpRequest(method, effectiveUri, headers, createEntity(publisher.publisher), protocol)
         }
-        .withOutput(requestPublisher)
 
-    val responseSubscriber = SubscriberIn[HttpResponse]()
-    val responseFlowBeforeMerge: ClosedFlow[HttpResponse, HttpResponse] =
+    val responseFlowBeforeMerge: OpenFlow[HttpResponse, HttpResponse] =
       From[HttpResponse]
-        .withInput(responseSubscriber)
-        .withOutput(merge.in2)
 
-    val responseFlowAfterMerge: ClosedFlow[Any, ByteString] =
+    val responseFlowAfterMerge: OpenInputFlow[Any, ByteString] =
       From[Any]
-        .withInput(merge.out)
         .transform(applyApplicationBypass)
         .transform(responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concatOpenOutputFlow)
         .transform(errorLogger(log, "Outgoing response stream error"))
         .withOutput(SubscriberOut(tcpConn.outputStream))
 
-    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher.publisher, responseSubscriber.subscriber)
+    val responseSubscriber = SubscriberInput[HttpResponse]()
+    val requestPublisher = PublisherOutput[HttpRequest]()
+
+    // building using EdgeBuilder
+    val materialized: MaterializedGraph = {
+      val g = EdgeBuilder()
+      val broadcast = g.broadcast[(RequestOutput, OpenOutputFlow[RequestOutput, RequestOutput])]
+      val merge = g.merge[MessageStart, HttpResponse, Any]
+
+      g(requestFlowBeforeBroadcast) ~> broadcast ~> requestFlowAfterBroadcast ~> requestPublisher
+      g(responseSubscriber) ~> responseFlowBeforeMerge ~> merge ~> responseFlowAfterMerge
+      g(broadcast) ~> applicationBypassFlow ~~> merge
+
+      g.run(materializer)
+    }
+
+    // building using VertexBuilder
+    val materialized2: MaterializedGraph = {
+      VertexBuilder()
+        .broadcast(requestFlowBeforeBroadcast, requestFlowAfterBroadcast :: applicationBypassFlow :: Nil)
+        .merge(responseFlowBeforeMerge, applicationBypassFlow, responseFlowAfterMerge)
+        .from(responseSubscriber, responseFlowBeforeMerge)
+        .to(requestPublisher, requestFlowAfterBroadcast)
+        .run(materializer)
+    }
+
+    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher.getOutputFrom(materialized), responseSubscriber.getInputFrom(materialized))
   }
 
   def applyApplicationBypass: Transformer[Any, ResponseRenderingContext] = ???
