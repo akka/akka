@@ -4,7 +4,6 @@
 package akka.remote
 
 import language.postfixOps
-
 import akka.testkit._
 import akka.actor._
 import com.typesafe.config._
@@ -19,6 +18,9 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.event.{ Logging, NoLogging, LoggingAdapter }
 import akka.remote.transport.netty.{ SSLSettings, NettySSLSupport }
+import Configuration.{ CipherConfig, getCipherConfig }
+import org.uncommons.maths.random.RandomDotOrgSeedGenerator
+import scala.util.control.NonFatal
 
 object Configuration {
   // set this in your JAVA_OPTS to see all ssl debug info: "-Djavax.net.debug=ssl,keymanager"
@@ -87,8 +89,6 @@ object Configuration {
   }
 }
 
-import Configuration.{ CipherConfig, getCipherConfig }
-
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978SHA1PRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("SHA1PRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
 
@@ -103,12 +103,27 @@ class Ticket1978AES256CounterSecureRNGSpec extends Ticket1978CommunicationSpec(g
  */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978AES128CounterInetRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES128CounterInetRNG", "TLS_RSA_WITH_AES_128_CBC_SHA"))
+  with InetRNGSpec
 
 /**
  * Both of the <quote>Inet</quote> variants require access to the Internet to access random.org.
  */
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978AES256CounterInetRNGSpec extends Ticket1978CommunicationSpec(getCipherConfig("AES256CounterInetRNG", "TLS_RSA_WITH_AES_256_CBC_SHA"))
+  with InetRNGSpec
+
+trait InetRNGSpec { this: Ticket1978CommunicationSpec ⇒
+  override def preCondition = try {
+    (new RandomDotOrgSeedGenerator).generateSeed(128)
+    true
+  } catch {
+    case NonFatal(e) ⇒
+      log.warning("random.org not available: {}", e.getMessage())
+      false
+  }
+
+  override implicit val timeout: Timeout = Timeout(90.seconds)
+}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class Ticket1978DefaultRNGSecureSpec extends Ticket1978CommunicationSpec(getCipherConfig("", "TLS_RSA_WITH_AES_128_CBC_SHA"))
@@ -121,7 +136,7 @@ class Ticket1978NonExistingRNGSecureSpec extends Ticket1978CommunicationSpec(Cip
 
 abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) extends AkkaSpec(cipherConfig.config) with ImplicitSender {
 
-  implicit val timeout: Timeout = Timeout(10 seconds)
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
   lazy val other: ActorSystem = ActorSystem(
     "remote-sys",
@@ -133,22 +148,24 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
     }
   }
 
+  def preCondition: Boolean = true
+
   ("-") must {
-    if (cipherConfig.runTest) {
+    if (cipherConfig.runTest && preCondition) {
       val ignoreMe = other.actorOf(Props(new Actor { def receive = { case ("ping", x) ⇒ sender() ! ((("pong", x), sender())) } }), "echo")
       val otherAddress = other.asInstanceOf[ExtendedActorSystem].provider.asInstanceOf[RemoteActorRefProvider].transport.defaultAddress
 
-      "support tell" in {
+      "support tell" in within(timeout.duration) {
         val here = {
           system.actorSelection(otherAddress.toString + "/user/echo") ! Identify(None)
           expectMsgType[ActorIdentity].ref.get
         }
 
         for (i ← 1 to 1000) here ! (("ping", i))
-        for (i ← 1 to 1000) expectMsgPF(timeout.duration) { case (("pong", i), `testActor`) ⇒ true }
+        for (i ← 1 to 1000) expectMsgPF() { case (("pong", i), `testActor`) ⇒ true }
       }
 
-      "support ask" in {
+      "support ask" in within(timeout.duration) {
         import system.dispatcher
         val here = {
           system.actorSelection(otherAddress.toString + "/user/echo") ! Identify(None)
@@ -156,7 +173,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
         }
 
         val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
-        Await.result(Future.sequence(f), timeout.duration).map(_._1._1).toSet should be(Set("pong"))
+        Await.result(Future.sequence(f), remaining).map(_._1._1).toSet should be(Set("pong"))
       }
 
     } else {
