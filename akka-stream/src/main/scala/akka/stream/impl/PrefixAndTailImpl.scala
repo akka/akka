@@ -44,7 +44,7 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
 
   def emitNonEmptyTail(): Unit = {
     val substreamOutput = newSubstream()
-    primaryOutputs.enqueueOutputElement((taken, substreamOutput.processor))
+    primaryOutputs.enqueueOutputElement((taken, substreamOutput))
     primaryOutputs.complete()
     nextPhase(streamTailPhase(substreamOutput))
   }

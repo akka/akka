@@ -59,10 +59,10 @@ class FlowSplitWhenSpec extends AkkaSpec {
       s1.request(2)
       s1.expectNext(1)
       s1.expectNext(2)
+      s1.request(1)
       s1.expectComplete()
 
       val s2 = StreamPuppet(getSubPublisher())
-      masterSubscriber.expectComplete()
 
       s2.request(1)
       s2.expectNext(3)
@@ -70,8 +70,10 @@ class FlowSplitWhenSpec extends AkkaSpec {
 
       s2.request(1)
       s2.expectNext(4)
+      s2.request(1)
       s2.expectComplete()
 
+      masterSubscriber.expectComplete()
     }
 
     "support cancelling substreams" in new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
@@ -84,8 +86,10 @@ class FlowSplitWhenSpec extends AkkaSpec {
       s2.expectNext(6)
       s2.expectNext(7)
       s2.expectNext(8)
+      s2.request(1)
       s2.expectComplete()
 
+      masterSubscription.request(1)
       masterSubscriber.expectComplete()
     }
 
@@ -97,6 +101,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       s1.expectNext(2)
       s1.expectNext(3)
       s1.expectNext(4)
+      s1.request(1)
       s1.expectComplete()
     }
 

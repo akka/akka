@@ -3,8 +3,8 @@
  */
 package akka.stream.impl
 
-import akka.actor.ActorRef
 import akka.stream.MaterializerSettings
+import akka.stream.impl.MultiStreamOutputProcessor.SubstreamKey
 
 /**
  * INTERNAL API
@@ -20,7 +20,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
 
   def openSubstream(elem: Any): TransferPhase = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
     val substreamOutput = newSubstream()
-    primaryOutputs.enqueueOutputElement(substreamOutput.processor)
+    primaryOutputs.enqueueOutputElement(substreamOutput)
     currentSubstream = substreamOutput
     nextPhase(serveSubstreamFirst(currentSubstream, elem))
   }
@@ -49,8 +49,8 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
 
   nextPhase(waitFirst)
 
-  override def invalidateSubstream(substream: ActorRef): Unit = {
-    if ((currentSubstream ne null) && substream == currentSubstream.substream) nextPhase(ignoreUntilNewSubstream)
+  override def invalidateSubstream(substream: SubstreamKey): Unit = {
+    if ((currentSubstream ne null) && substream == currentSubstream.key) nextPhase(ignoreUntilNewSubstream)
     super.invalidateSubstream(substream)
   }
 

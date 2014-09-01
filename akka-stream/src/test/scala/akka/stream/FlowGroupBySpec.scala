@@ -69,18 +69,21 @@ class FlowGroupBySpec extends AkkaSpec {
       s2.expectNoMsg(100.millis)
       s2.request(2)
       s2.expectNext(2)
+
+      // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
+      s1.request(1)
       s2.expectNext(4)
 
       s2.expectNoMsg(100.millis)
 
-      s1.request(1)
       s1.expectNext(3)
 
       s2.request(1)
+      // Important to request here on the OTHER stream because the buffer space is exactly one without the fanout box
+      s1.request(1)
       s2.expectNext(6)
       s2.expectComplete()
 
-      s1.request(1)
       s1.expectNext(5)
       s1.expectComplete()
 
@@ -135,67 +138,6 @@ class FlowGroupBySpec extends AkkaSpec {
       //      substream.expectNext(10)
       //      substream.expectNext(13)
       //      substream.expectComplete()
-    }
-
-    "work with fanout on substreams" in new SubstreamsSupport(groupCount = 2) {
-      val substreamPublisher = getSubPublisher(1)
-      getSubPublisher(0)
-
-      val substreamSubscriber1 = StreamPuppet(substreamPublisher)
-      val substreamSubscriber2 = StreamPuppet(substreamPublisher)
-
-      substreamSubscriber1.request(1)
-      substreamSubscriber1.expectNext(1)
-      substreamSubscriber2.request(1)
-      substreamSubscriber2.expectNext(1)
-
-      substreamSubscriber1.request(1)
-      substreamSubscriber1.expectNext(3)
-      substreamSubscriber2.request(1)
-      substreamSubscriber2.expectNext(3)
-    }
-
-    "work with fanout on master stream" in {
-      val source = Flow((1 to 4).iterator).toPublisher()
-      val groupStream = Flow(source).groupBy(_ % 2).toPublisher()
-      val masterSubscriber1 = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
-      val masterSubscriber2 = StreamTestKit.SubscriberProbe[(Int, Publisher[Int])]()
-
-      groupStream.subscribe(masterSubscriber1)
-      groupStream.subscribe(masterSubscriber2)
-
-      val masterSubscription1 = masterSubscriber1.expectSubscription()
-      val masterSubscription2 = masterSubscriber2.expectSubscription()
-
-      masterSubscription1.request(2)
-      masterSubscription2.request(1)
-
-      val (key11, substream11) = masterSubscriber1.expectNext()
-      key11 should be(1)
-      val (key21, substream21) = masterSubscriber2.expectNext()
-      key21 should be(1)
-
-      val puppet11 = StreamPuppet(substream11)
-      val puppet21 = StreamPuppet(substream21)
-
-      puppet11.request(2)
-      puppet11.expectNext(1)
-      puppet11.expectNext(3)
-
-      puppet21.request(1)
-      puppet21.expectNext(1)
-      puppet21.cancel()
-
-      masterSubscription2.cancel()
-
-      val (key12, substream12) = masterSubscriber1.expectNext()
-      key12 should be(0)
-
-      val puppet12 = StreamPuppet(substream12)
-      puppet12.request(1)
-      puppet12.expectNext(2)
-      puppet12.cancel()
-      masterSubscription1.cancel()
     }
 
     "work with empty input stream" in {

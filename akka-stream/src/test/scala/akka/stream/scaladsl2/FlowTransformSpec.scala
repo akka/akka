@@ -115,7 +115,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             List(tot)
           }
         }).
-        toPublisher()
+        toFanoutPublisher(2, 2)
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c1)
       val sub1 = c1.expectSubscription()

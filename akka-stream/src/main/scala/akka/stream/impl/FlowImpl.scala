@@ -334,6 +334,10 @@ private[akka] trait Builder[Out] {
     andThen(Buffer(size, overflowStrategy))
   }
 
+  def fanout(initialBufferSize: Int, maximumBufferSize: Int): Thing[Out] = {
+    andThen(FanoutBox(initialBufferSize, maximumBufferSize))
+  }
+
   def flatten[U](strategy: FlattenStrategy[Out, U]): Thing[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
     case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")

@@ -287,6 +287,8 @@ trait Duct[In, +Out] {
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, Out]
 
+  def fanout(initialBufferSize: Int, maximumBufferSize: Int): Duct[In, Out]
+
   /**
    * Append the operations of a [[Duct]] to this `Duct`.
    */

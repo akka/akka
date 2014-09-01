@@ -19,6 +19,7 @@ private[akka] object ActorProcessor {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
+      case fb: FanoutBox     ⇒ Props(new FanoutProcessorImpl(settings, fb.initialBufferSize, fb.maximumBufferSize))
       case t: TimerTransform ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
@@ -159,61 +160,48 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBufferSize: Int, self: ActorRef, val pump: Pump)
-  extends DefaultOutputTransferStates
-  with SubscriberManagement[Any] {
-
-  override type S = ActorSubscription[Any]
-  override def createSubscription(subscriber: Subscriber[Any]): S =
-    new ActorSubscription(self, subscriber)
+private[akka] class SimpleOutputs(self: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
   protected var exposedPublisher: ActorPublisher[Any] = _
 
-  private var downstreamBufferSpace = 0
-  private var downstreamCompleted = false
-  override def demandAvailable = downstreamBufferSpace > 0
-  def demandCount: Int = downstreamBufferSpace
+  protected var subscriber: Subscriber[Any] = _
+  protected var downstreamDemand: Long = 0L
+  protected var downstreamCompleted = false
+  override def demandAvailable = downstreamDemand > 0
+  override def demandCount: Long = downstreamDemand
 
-  override val subreceive = new SubReceive(waitingExposedPublisher)
+  override def subreceive = _subreceive
+  private val _subreceive = new SubReceive(waitingExposedPublisher)
 
   def enqueueOutputElement(elem: Any): Unit = {
-    downstreamBufferSpace -= 1
-    pushToDownstream(elem)
+    downstreamDemand -= 1
+    subscriber.onNext(elem)
   }
 
-  def complete(): Unit =
+  def complete(): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
-      completeDownstream()
+      if (subscriber ne null) subscriber.onComplete()
+      if (exposedPublisher ne null) exposedPublisher.shutdown(None)
     }
+  }
 
   def cancel(e: Throwable): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
-      abortDownstream(e)
+      if (subscriber ne null) subscriber.onError(e)
+      if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
     }
-    if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
   }
 
   def isClosed: Boolean = downstreamCompleted
 
-  def afterShutdown(): Unit
-
-  override protected def requestFromUpstream(elements: Int): Unit = downstreamBufferSpace += elements
-
-  private def subscribePending(): Unit =
-    exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-
-  override protected def shutdown(completed: Boolean): Unit = {
-    if (exposedPublisher ne null) {
-      if (completed) exposedPublisher.shutdown(None)
-      else exposedPublisher.shutdown(Some(new IllegalStateException("Cannot subscribe to shutdown publisher")))
+  private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
+    subscribers foreach { sub ⇒
+      if (subscriber eq null) {
+        subscriber = sub
+        subscriber.onSubscribe(new ActorSubscription(self, subscriber))
+      } else sub.onError(new IllegalStateException("Cannot subscribe two or more Subscribers to this Publisher"))
     }
-    afterShutdown()
-  }
-
-  override protected def cancelUpstream(): Unit = {
-    downstreamCompleted = true
-  }
 
   protected def waitingExposedPublisher: Actor.Receive = {
     case ExposedPublisher(publisher) ⇒
@@ -225,12 +213,13 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 
   protected def downstreamRunning: Actor.Receive = {
     case SubscribePending ⇒
-      subscribePending()
+      subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
-      moreRequested(subscription.asInstanceOf[ActorSubscription[Any]], elements)
+      downstreamDemand += elements
       pump.pump()
     case Cancel(subscription) ⇒
-      unregisterSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
+      downstreamCompleted = true
+      exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
       pump.pump()
   }
 
@@ -242,7 +231,6 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
 private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettings)
   extends Actor
   with ActorLogging
-  with SoftShutdown
   with Pump
   with Stash {
 
@@ -251,13 +239,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
     override def inputOnError(e: Throwable): Unit = ActorProcessorImpl.this.onError(e)
   }
 
-  protected val primaryOutputs: FanoutOutputs =
-    new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, this) {
-      override def afterShutdown(): Unit = {
-        primaryOutputsShutdown = true
-        shutdownHooks()
-      }
-    }
+  protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
 
   /**
    * Subclass may override [[#activeReceive]]
@@ -279,29 +261,20 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
     log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
     primaryInputs.cancel()
     primaryOutputs.cancel(e)
-    primaryOutputsShutdown = true
-    softShutdown()
+    context.stop(self)
   }
-
-  override val pumpContext = context
 
   override def pumpFinished(): Unit = {
-    if (primaryInputs.isOpen) primaryInputs.cancel()
+    primaryInputs.cancel()
     primaryOutputs.complete()
+    context.stop(self)
   }
+
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
-  protected def shutdownHooks(): Unit = {
-    primaryInputs.cancel()
-    softShutdown()
-  }
-
-  var primaryOutputsShutdown = false
-
   override def postStop(): Unit = {
-    // Non-gracefully stopped, do our best here
-    if (!primaryOutputsShutdown)
-      primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
+    primaryInputs.cancel()
+    primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

@@ -15,7 +15,6 @@ import scala.util.control.NonFatal
 private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: TransformerLike[Any, Any])
   extends ActorProcessorImpl(_settings) {
 
-  var hasCleanupRun = false
   // TODO performance improvement: mutable buffer?
   var emits = immutable.Seq.empty[Any]
   var errorEvent: Option[Throwable] = None
@@ -35,7 +34,7 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
 
   object NeedsInputAndDemandOrCompletion extends TransferState {
     def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandAvailable) || primaryInputs.inputsDepleted
-    def isCompleted = false
+    def isCompleted = primaryOutputs.isClosed
   }
 
   private val runningPhase: TransferPhase = TransferPhase(NeedsInputAndDemandOrCompletion) { () ⇒
@@ -73,15 +72,7 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
 
   override def toString: String = s"Transformer(emits=$emits, transformer=$transformer)"
 
-  override def softShutdown(): Unit = {
-    transformer.cleanup()
-    hasCleanupRun = true // for postStop
-    super.softShutdown()
-  }
-
-  override def postStop(): Unit = {
-    try super.postStop() finally if (!hasCleanupRun) transformer.cleanup()
-  }
+  override def postStop(): Unit = try super.postStop() finally transformer.cleanup()
 }
 
 /**

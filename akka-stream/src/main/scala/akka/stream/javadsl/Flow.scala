@@ -367,6 +367,8 @@ abstract class Flow[T] {
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Flow[T]
 
+  def fanout(initialBufferSize: Int, maximumBufferSize: Int): Flow[T]
+
   /**
    * Returns a [[scala.concurrent.Future]] that will be fulfilled with the first
    * thing that is signaled to this stream, which can be either an element (after
@@ -509,6 +511,9 @@ private[akka] class FlowAdapter[T](delegate: SFlow[T]) extends Flow[T] {
 
   override def buffer(size: Int, overflowStrategy: OverflowStrategy): Flow[T] =
     new FlowAdapter(delegate.buffer(size, overflowStrategy))
+
+  override def fanout(initialBufferSize: Int, maximumBufferSize: Int): Flow[T] =
+    new FlowAdapter(delegate.fanout(initialBufferSize, maximumBufferSize))
 
   override def expand[S, U](seed: Function[T, S], extrapolate: Function[S, Pair[U, S]]): Flow[U] =
     new FlowAdapter(delegate.expand(seed.apply, (s: S) ⇒ {

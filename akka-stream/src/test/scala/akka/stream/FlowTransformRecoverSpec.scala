@@ -146,7 +146,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
             case None    ⇒ Nil
             case Some(_) ⇒ List(-1)
           }
-        }).
+        }).fanout(1, 1).
         toPublisher()
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c1)

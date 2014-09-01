@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import akka.actor.{ Terminated, Props, ActorRef }
 import akka.stream.MaterializerSettings
+import akka.stream.impl.MultiStreamOutputProcessor.SubstreamKey
 
 /**
  * INTERNAL API
@@ -39,7 +40,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       nextPhase(waitNext)
     } else {
       val substreamOutput = newSubstream()
-      primaryOutputs.enqueueOutputElement((key, substreamOutput.processor))
+      primaryOutputs.enqueueOutputElement((key, substreamOutput))
       keyToSubstreamOutputs(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))
     }
@@ -48,7 +49,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
   def dispatchToSubstream(elem: Any, substream: SubstreamOutputs): TransferPhase = {
     pendingSubstreamOutputs = substream
     TransferPhase(substream.NeedsDemand) { () ⇒
-      if (substream.isOpen) substream.enqueueOutputElement(elem)
+      substream.enqueueOutputElement(elem)
       pendingSubstreamOutputs = null
       nextPhase(waitNext)
     }
@@ -56,8 +57,8 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
 
   nextPhase(waitFirst)
 
-  override def invalidateSubstream(substream: ActorRef): Unit = {
-    if ((pendingSubstreamOutputs ne null) && substream == pendingSubstreamOutputs.substream) {
+  override def invalidateSubstream(substream: SubstreamKey): Unit = {
+    if ((pendingSubstreamOutputs ne null) && substream == pendingSubstreamOutputs.key) {
       pendingSubstreamOutputs = null
       nextPhase(waitNext)
     }

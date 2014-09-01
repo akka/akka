@@ -50,7 +50,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       Await.result(Flow(tail).grouped(11).toFuture(), 3.seconds) should be(1 to 10)
     }
 
-    "work if size of take is equals to stream size" in {
+    "work if size of take is equal to stream size" in {
       val (takes, tail) = Await.result(Flow((1 to 10).iterator).prefixAndTail(10).toFuture(), 3.seconds)
       takes should be(1 to 10)
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
