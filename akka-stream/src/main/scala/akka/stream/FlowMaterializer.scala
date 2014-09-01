@@ -14,8 +14,7 @@ object FlowMaterializer {
    * Scala API: Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
-   * will be used to create these actors, therefore it is *forbidden* to pass this object
-   * to another actor if the factory is an ActorContext.
+   * will be used to create one actor that in turn creates actors for the transformation steps.
    *
    * The materializer's [[akka.stream.MaterializerSettings]] will be obtained from the
    * configuration of the `context`'s underlying [[akka.actor.ActorSystem]].
@@ -83,8 +82,7 @@ object FlowMaterializer {
    * Java API: Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
-   * will be used to create these actors, therefore it is *forbidden* to pass this object
-   * to another actor if the factory is an ActorContext.
+   * will be used to create one actor that in turn creates actors for the transformation steps.
    */
   def create(settings: MaterializerSettings, context: ActorRefFactory): FlowMaterializer =
     apply(Option(settings), None)(context)
