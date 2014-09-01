@@ -11,30 +11,30 @@ import akka.stream.MaterializerSettings
 
 class FlowSpec extends AkkaSpec {
 
-  val intSeq = IterableIn(Seq(1, 2, 3))
-  val strSeq = IterableIn(Seq("a", "b", "c"))
+  val intSeq = IterableSource(Seq(1, 2, 3))
+  val strSeq = IterableSource(Seq("a", "b", "c"))
 
   import scala.concurrent.ExecutionContext.Implicits.global
-  val intFut = FutureIn(Future { 3 })
+  val intFut = FutureSource(Future { 3 })
   implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
 
   "ProcessorFlow" should {
     "go through all states" in {
       val f: ProcessorFlow[Int, Int] = FlowFrom[Int]
-        .withInput(intSeq)
-        .withOutput(PublisherOut())
-        .withoutInput
-        .withoutOutput
+        .withSource(intSeq)
+        .withSink(PublisherSink())
+        .withoutSource
+        .withoutSink
     }
     "should not run" in {
       val open: ProcessorFlow[Int, Int] = FlowFrom[Int]
       "open.run()" shouldNot compile
     }
-    "accept IterableIn" in {
-      val f: PublisherFlow[Int, Int] = FlowFrom[Int].withInput(intSeq)
+    "accept IterableSource" in {
+      val f: FlowWithSource[Int, Int] = FlowFrom[Int].withSource(intSeq)
     }
-    "accept FutureIn" in {
-      val f: PublisherFlow[Int, Int] = FlowFrom[Int].withInput(intFut)
+    "accept FutureSource" in {
+      val f: FlowWithSource[Int, Int] = FlowFrom[Int].withSource(intFut)
     }
     "append ProcessorFlow" in {
       val open1: ProcessorFlow[Int, String] = FlowFrom[Int].map(_.toString)
@@ -42,14 +42,14 @@ class FlowSpec extends AkkaSpec {
       val open3: ProcessorFlow[Int, Int] = open1.append(open2)
       "open3.run()" shouldNot compile
 
-      val closedInput: PublisherFlow[Int, Int] = open3.withInput(intSeq)
-      "closedInput.run()" shouldNot compile
+      val closedSource: FlowWithSource[Int, Int] = open3.withSource(intSeq)
+      "closedSource.run()" shouldNot compile
 
-      val closedOutput: SubscriberFlow[Int, Int] = open3.withOutput(PublisherOut())
-      "closedOutput.run()" shouldNot compile
+      val closedSink: FlowWithSink[Int, Int] = open3.withSink(PublisherSink())
+      "closedSink.run()" shouldNot compile
 
-      closedInput.withOutput(PublisherOut()).run()
-      closedOutput.withInput(intSeq).run()
+      closedSource.withSink(PublisherSink()).run()
+      closedSink.withSource(intSeq).run()
     }
     "prepend ProcessorFlow" in {
       val open1: ProcessorFlow[Int, String] = FlowFrom[Int].map(_.toString)
@@ -57,89 +57,89 @@ class FlowSpec extends AkkaSpec {
       val open3: ProcessorFlow[String, String] = open1.prepend(open2)
       "open3.run()" shouldNot compile
 
-      val closedInput: PublisherFlow[String, String] = open3.withInput(strSeq)
-      "closedInput.run()" shouldNot compile
+      val closedSource: FlowWithSource[String, String] = open3.withSource(strSeq)
+      "closedSource.run()" shouldNot compile
 
-      val closedOutput: SubscriberFlow[String, String] = open3.withOutput(PublisherOut())
-      "closedOutput.run()" shouldNot compile
+      val closedSink: FlowWithSink[String, String] = open3.withSink(PublisherSink())
+      "closedSink.run()" shouldNot compile
 
-      closedInput.withOutput(PublisherOut()).run
-      closedOutput.withInput(strSeq).run
+      closedSource.withSink(PublisherSink()).run
+      closedSink.withSource(strSeq).run
     }
-    "append SubscriberFlow" in {
+    "append FlowWithSink" in {
       val open: ProcessorFlow[Int, String] = FlowFrom[Int].map(_.toString)
-      val closedOutput: SubscriberFlow[String, Int] = FlowFrom[String].map(_.hashCode).withOutput(PublisherOut())
-      val appended: SubscriberFlow[Int, Int] = open.append(closedOutput)
+      val closedSink: FlowWithSink[String, Int] = FlowFrom[String].map(_.hashCode).withSink(PublisherSink())
+      val appended: FlowWithSink[Int, Int] = open.append(closedSink)
       "appended.run()" shouldNot compile
       "appended.toFuture" shouldNot compile
-      appended.withInput(intSeq).run
+      appended.withSource(intSeq).run
     }
-    "prepend PublisherFlow" in {
+    "prepend FlowWithSource" in {
       val open: ProcessorFlow[Int, String] = FlowFrom[Int].map(_.toString)
-      val closedInput: PublisherFlow[String, Int] = FlowFrom[String].map(_.hashCode).withInput(strSeq)
-      val prepended: PublisherFlow[String, String] = open.prepend(closedInput)
+      val closedSource: FlowWithSource[String, Int] = FlowFrom[String].map(_.hashCode).withSource(strSeq)
+      val prepended: FlowWithSource[String, String] = open.prepend(closedSource)
       "prepended.run()" shouldNot compile
-      "prepended.withInput(strSeq)" shouldNot compile
-      prepended.withOutput(PublisherOut()).run
+      "prepended.withSource(strSeq)" shouldNot compile
+      prepended.withSink(PublisherSink()).run
     }
   }
 
-  "SubscriberFlow" should {
-    val openInput: SubscriberFlow[Int, String] =
-      FlowFrom[Int].map(_.toString).withOutput(PublisherOut())
-    "accept Input" in {
-      openInput.withInput(intSeq)
+  "FlowWithSink" should {
+    val openSource: FlowWithSink[Int, String] =
+      FlowFrom[Int].map(_.toString).withSink(PublisherSink())
+    "accept Source" in {
+      openSource.withSource(intSeq)
     }
-    "drop Output" in {
-      openInput.withoutOutput
+    "drop Sink" in {
+      openSource.withoutSink
     }
-    "not drop Input" in {
-      "openInput.withoutInput" shouldNot compile
+    "not drop Source" in {
+      "openSource.withoutSource" shouldNot compile
     }
-    "not accept Output" in {
-      "openInput.ToFuture" shouldNot compile
+    "not accept Sink" in {
+      "openSource.ToFuture" shouldNot compile
     }
     "not run()" in {
-      "openInput.run()" shouldNot compile
+      "openSource.run()" shouldNot compile
     }
   }
 
-  "PublisherFlow" should {
-    val openOutput: PublisherFlow[Int, String] =
+  "FlowWithSource" should {
+    val openSink: FlowWithSource[Int, String] =
       FlowFrom(Seq(1, 2, 3)).map(_.toString)
-    "accept Output" in {
-      openOutput.withOutput(PublisherOut())
+    "accept Sink" in {
+      openSink.withSink(PublisherSink())
     }
-    "drop Input" in {
-      openOutput.withoutInput
+    "drop Source" in {
+      openSink.withoutSource
     }
-    "not drop Output" in {
-      "openOutput.withoutOutput" shouldNot compile
+    "not drop Sink" in {
+      "openSink.withoutSink" shouldNot compile
     }
-    "not accept Input" in {
-      "openOutput.withInput(intSeq)" shouldNot compile
+    "not accept Source" in {
+      "openSink.withSource(intSeq)" shouldNot compile
     }
     "not run()" in {
-      "openOutput.run()" shouldNot compile
+      "openSink.run()" shouldNot compile
     }
   }
 
   "RunnableFlow" should {
     val closed: RunnableFlow[Int, String] =
-      FlowFrom(Seq(1, 2, 3)).map(_.toString).withOutput(PublisherOut())
+      FlowFrom(Seq(1, 2, 3)).map(_.toString).withSink(PublisherSink())
     "run" in {
       closed.run()
     }
-    "drop Input" in {
-      closed.withoutInput
+    "drop Source" in {
+      closed.withoutSource
     }
-    "drop Output" in {
-      closed.withoutOutput
+    "drop Sink" in {
+      closed.withoutSink
     }
-    "not accept Input" in {
-      "closed.withInput(intSeq)" shouldNot compile
+    "not accept Source" in {
+      "closed.withSource(intSeq)" shouldNot compile
     }
-    "not accept Output" in {
+    "not accept Sink" in {
       "closed.ToFuture" shouldNot compile
     }
   }

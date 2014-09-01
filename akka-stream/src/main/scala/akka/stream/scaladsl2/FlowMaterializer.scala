@@ -22,8 +22,7 @@ object FlowMaterializer {
    * Scala API: Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
-   * will be used to create these actors, therefore it is *forbidden* to pass this object
-   * to another actor if the factory is an ActorContext.
+   * will be used to create one actor that in turn creates actors for the transformation steps.
    *
    * The `namePrefix` is used as the first part of the names of the actors running
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
@@ -49,8 +48,7 @@ object FlowMaterializer {
    * Java API: Creates a FlowMaterializer which will execute every step of a transformation
    * pipeline within its own [[akka.actor.Actor]]. The required [[akka.actor.ActorRefFactory]]
    * (which can be either an [[akka.actor.ActorSystem]] or an [[akka.actor.ActorContext]])
-   * will be used to create these actors, therefore it is *forbidden* to pass this object
-   * to another actor if the factory is an ActorContext.
+   * will be used to create one actor that in turn creates actors for the transformation steps.
    */
   def create(settings: MaterializerSettings, context: ActorRefFactory): FlowMaterializer =
     apply(settings)(context)
@@ -75,7 +73,12 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * INTERNAL API
    * ops are stored in reverse order
    */
-  private[akka] def toPublisher[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Publisher[O]
+  private[akka] def toPublisher[In, Out](publisherNode: Ast.PublisherNode[In], ops: List[Ast.AstNode]): Publisher[Out]
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Subscriber[In], Publisher[Out])
 
 }
 

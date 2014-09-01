@@ -90,6 +90,19 @@ private[akka] case class ActorBasedFlowMaterializer(
     }
   }
 
+  override def ductBuild[In, Out](ops: List[Ast.AstNode]): (Subscriber[In], Publisher[Out]) = {
+    val flowName = createFlowName()
+    if (ops.isEmpty) {
+      val identityProcessor: Processor[In, Out] = processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[In, Out]]
+      (identityProcessor, identityProcessor)
+    } else {
+      val opsSize = ops.size
+      val outProcessor = processorForNode(ops.head, flowName, opsSize).asInstanceOf[Processor[In, Out]]
+      val topSubscriber = processorChain(outProcessor, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Out]]
+      (topSubscriber, outProcessor)
+    }
+  }
+
   private val identityTransform = Transform("identity", () ⇒
     new Transformer[Any, Any] {
       override def onNext(element: Any) = List(element)
