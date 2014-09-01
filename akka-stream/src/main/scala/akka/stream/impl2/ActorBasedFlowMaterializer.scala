@@ -21,6 +21,9 @@ import akka.stream.impl.IterablePublisher
 import akka.stream.impl.TransformProcessorImpl
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.ExposedPublisher
+import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl2.Sink
+import akka.stream.scaladsl2.MaterializedFlow
 
 /**
  * INTERNAL API
@@ -31,21 +34,6 @@ private[akka] object Ast {
   }
 
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
-
-  trait PublisherNode[I] {
-    private[akka] def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I]
-  }
-
-  final case class ExistingPublisher[I](publisher: Publisher[I]) extends PublisherNode[I] {
-    def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String) = publisher
-  }
-
-  final case class IterablePublisherNode[I](iterable: immutable.Iterable[I]) extends PublisherNode[I] {
-    def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
-      else ActorPublisher[I](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
-        name = s"$flowName-0-iterable"), Some(iterable))
-  }
 
 }
 
@@ -78,29 +66,36 @@ private[akka] case class ActorBasedFlowMaterializer(
   }
 
   // Ops come in reverse order
-  override def toPublisher[I, O](publisherNode: PublisherNode[I], ops: List[AstNode]): Publisher[O] = {
+  override def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow = {
     val flowName = createFlowName()
-    if (ops.isEmpty) publisherNode.createPublisher(this, flowName).asInstanceOf[Publisher[O]]
-    else {
-      val opsSize = ops.size
-      val opProcessor = processorForNode(ops.head, flowName, opsSize)
-      val topSubscriber = processorChain(opProcessor, ops.tail, flowName, opsSize - 1)
-      publisherNode.createPublisher(this, flowName).subscribe(topSubscriber.asInstanceOf[Subscriber[I]])
-      opProcessor.asInstanceOf[Publisher[O]]
-    }
+    val (sourcePublisher, sourceValue) = source.materialize(this, flowName)
+    val p =
+      if (ops.isEmpty) sourcePublisher.asInstanceOf[Publisher[Out]]
+      else {
+        val opsSize = ops.size
+        val opProcessor = processorForNode(ops.head, flowName, opsSize)
+        val topSubscriber = processorChain(opProcessor, ops.tail, flowName, opsSize - 1)
+        sourcePublisher.subscribe(topSubscriber.asInstanceOf[Subscriber[In]])
+        opProcessor.asInstanceOf[Publisher[Out]]
+      }
+    val sinkValue = sink.attach(p, this)
+    new MaterializedFlow(source, sourceValue, sink, sinkValue)
   }
+
+  override def identityProcessor[I](flowName: String): Processor[I, I] =
+    processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[I, I]]
 
   private val identityTransform = Transform("identity", () ⇒
     new Transformer[Any, Any] {
       override def onNext(element: Any) = List(element)
     })
 
-  def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+  private def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
     val impl = actorOf(ActorProcessorFactory.props(settings, op), s"$flowName-$n-${op.name}")
     ActorProcessorFactory(impl)
   }
 
-  def actorOf(props: Props, name: String): ActorRef = supervisor match {
+  private def actorOf(props: Props, name: String): ActorRef = supervisor match {
     case ref: LocalActorRef ⇒
       ref.underlying.attachChild(props, name, systemService = false)
     case ref: RepointableActorRef ⇒
@@ -114,6 +109,9 @@ private[akka] case class ActorBasedFlowMaterializer(
     case _ ⇒
       throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${supervisor.getClass.getName}]")
   }
+
+  def actorPublisher[I](props: Props, name: String, equalityValue: Option[AnyRef]): Publisher[I] =
+    ActorPublisher[I](actorOf(props, name), equalityValue)
 
 }
 
