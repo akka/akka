@@ -192,7 +192,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           }
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        withSink(BlackholeSink()).run()
+        withSink(BlackholeSink).run()
       cleanupProbe.expectMsg("a")
     }
 

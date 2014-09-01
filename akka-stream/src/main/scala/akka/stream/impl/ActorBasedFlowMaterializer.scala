@@ -76,13 +76,13 @@ private[akka] object Ast {
 
   final case class IteratorPublisherNode[I](iterator: Iterator[I]) extends PublisherNode[I] {
     final def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      if (iterator.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
+      if (iterator.isEmpty) EmptyPublisher[I]
       else ActorPublisher[I](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
         name = s"$flowName-0-iterator"))
   }
   final case class IterablePublisherNode[I](iterable: immutable.Iterable[I]) extends PublisherNode[I] {
     def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
+      if (iterable.isEmpty) EmptyPublisher[I]
       else ActorPublisher[I](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
         name = s"$flowName-0-iterable"), Some(iterable))
   }

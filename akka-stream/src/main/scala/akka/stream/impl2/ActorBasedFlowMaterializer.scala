@@ -15,7 +15,6 @@ import scala.util.{ Failure, Success }
 import akka.stream.Transformer
 import akka.stream.scaladsl2.FlowMaterializer
 import akka.stream.MaterializerSettings
-import akka.stream.impl.EmptyPublisher
 import akka.stream.impl.ActorPublisher
 import akka.stream.impl.IterablePublisher
 import akka.stream.impl.TransformProcessorImpl
