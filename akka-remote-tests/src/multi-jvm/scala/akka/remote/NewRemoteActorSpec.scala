@@ -3,21 +3,26 @@
  */
 package akka.remote
 
+import akka.actor.Terminated
+
 import language.postfixOps
-import com.typesafe.config.ConfigFactory
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.pattern.ask
 import testkit.{ STMultiNodeSpec, MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
-import akka.actor.Terminated
-import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.duration._
 
 object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   class SomeActor extends Actor {
+    def receive = {
+      case "identify" ⇒ sender() ! self
+    }
+  }
+
+  class SomeActorWithParam(ignored: String) extends Actor {
     def receive = {
       case "identify" ⇒ sender() ! self
     }
@@ -31,6 +36,7 @@ object NewRemoteActorMultiJvmSpec extends MultiNodeConfig {
 
   deployOn(master, """
     /service-hello.remote = "@slave@"
+    /service-hello-null.remote = "@slave@"
     /service-hello3.remote = "@slave@"
     """)
 
@@ -54,6 +60,21 @@ class NewRemoteActorSpec extends MultiNodeSpec(NewRemoteActorMultiJvmSpec)
 
       runOn(master) {
         val actor = system.actorOf(Props[SomeActor], "service-hello")
+        actor.isInstanceOf[RemoteActorRef] should be(true)
+        actor.path.address should be(node(slave).address)
+
+        val slaveAddress = testConductor.getAddressFor(slave).await
+        actor ! "identify"
+        expectMsgType[ActorRef].path.address should be(slaveAddress)
+      }
+
+      enterBarrier("done")
+    }
+
+    "be locally instantiated on a remote node (with null parameter) and be able to communicate through its RemoteActorRef" taggedAs LongRunningTest in {
+
+      runOn(master) {
+        val actor = system.actorOf(Props(classOf[SomeActorWithParam], null), "service-hello-null")
         actor.isInstanceOf[RemoteActorRef] should be(true)
         actor.path.address should be(node(slave).address)
 
