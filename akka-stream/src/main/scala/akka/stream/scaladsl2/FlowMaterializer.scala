@@ -15,6 +15,7 @@ import akka.actor.ActorContext
 import akka.stream.impl2.StreamSupervisor
 import akka.stream.impl2.FlowNameCounter
 import akka.stream.MaterializerSettings
+import org.reactivestreams.Processor
 
 object FlowMaterializer {
 
@@ -73,12 +74,12 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * INTERNAL API
    * ops are stored in reverse order
    */
-  private[akka] def toPublisher[In, Out](publisherNode: Ast.PublisherNode[In], ops: List[Ast.AstNode]): Publisher[Out]
+  private[akka] def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
 
   /**
    * INTERNAL API
    */
-  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Subscriber[In], Publisher[Out])
+  private[akka] def identityProcessor[I](flowName: String): Processor[I, I]
 
 }
 

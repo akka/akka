@@ -14,6 +14,9 @@ import akka.stream.impl2.Ast._
 import scala.annotation.unchecked.uncheckedVariance
 import akka.stream.impl.BlackholeSubscriber
 import scala.concurrent.Promise
+import akka.stream.impl.EmptyPublisher
+import akka.stream.impl.IterablePublisher
+import akka.stream.impl2.ActorBasedFlowMaterializer
 
 sealed trait Flow
 
@@ -37,7 +40,7 @@ object FlowFrom {
 }
 
 trait Source[-In] {
-  def materialize(materializer: FlowMaterializer): (Publisher[In], AnyRef) @uncheckedVariance
+  def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) @uncheckedVariance
 }
 
 /**
@@ -45,9 +48,9 @@ trait Source[-In] {
  * Allows to materialize a Flow with this input to Subscriber.
  */
 final case class SubscriberSource[In]() extends Source[In] {
-  override def materialize(materializer: FlowMaterializer): (Publisher[In], AnyRef) = {
-    val (s, p) = materializer.ductBuild[In, In](Nil) // FIXME this must be improved somehow
-    (p, s)
+  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) = {
+    val identityProcessor = materializer.identityProcessor[In](flowName)
+    (identityProcessor.asInstanceOf[Publisher[In]], identityProcessor.asInstanceOf[Subscriber[In]])
   }
 
   def subscriber[I <: In](m: MaterializedSource): Subscriber[I] =
@@ -58,7 +61,7 @@ final case class SubscriberSource[In]() extends Source[In] {
  * [[Source]] from `Publisher`.
  */
 final case class PublisherSource[In](p: Publisher[_ >: In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer): (Publisher[In], AnyRef) =
+  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) =
     (p.asInstanceOf[Publisher[In]], p)
 }
 
@@ -68,9 +71,19 @@ final case class PublisherSource[In](p: Publisher[_ >: In]) extends Source[In] {
  * Changing In from Contravariant to Covariant is needed because Iterable[+A].
  * But this brakes IterableSource variance and we get IterableSource(Seq(1,2,3)): IterableSource[Any]
  */
-final case class IterableSource[In](i: immutable.Iterable[_ >: In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer): (Publisher[In], AnyRef) =
-    (materializer.toPublisher(IterablePublisherNode(i), Nil), i) // FIXME this must be improved somehow
+final case class IterableSource[In](iterable: immutable.Iterable[_ >: In]) extends Source[In] {
+  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) = {
+    val p =
+      if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[In]]
+      else materializer match {
+        case m: ActorBasedFlowMaterializer ⇒
+          m.actorPublisher(IterablePublisher.props(iterable, materializer.settings),
+            name = s"$flowName-0-iterable", Some(iterable))
+        case other ⇒
+          throw new IllegalArgumentException(s"IterableSource requires ActorBasedFlowMaterializer, got [${other.getClass.getName}]")
+      }
+    (p.asInstanceOf[Publisher[In]], iterable)
+  }
 }
 
 /**
@@ -80,11 +93,11 @@ final case class IterableSource[In](i: immutable.Iterable[_ >: In]) extends Sour
  * But this brakes FutureSource variance and we get FutureSource(Future{1}): FutureSource[Any]
  */
 final case class FutureSource[In](f: Future[_ >: In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer): (Publisher[In], AnyRef) = ???
+  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) = ???
 }
 
 trait Sink[+Out] {
-  def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef
+  def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef
 }
 
 /**
@@ -92,14 +105,14 @@ trait Sink[+Out] {
  * Allows to materialize a Flow with this output to Publisher.
  */
 final case class PublisherSink[+Out]() extends Sink[Out] {
-  def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = p
+  def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = flowPublisher
   def publisher[O >: Out](m: MaterializedSink): Publisher[O] = m.getSinkFor(this).asInstanceOf[Publisher[O]]
 }
 
 final case class BlackholeSink[+Out]() extends Sink[Out] {
-  override def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
+  override def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
     val s = new BlackholeSubscriber[Out](materializer.settings.maximumInputBufferSize)
-    p.subscribe(s)
+    flowPublisher.subscribe(s)
     s
   }
 }
@@ -107,10 +120,10 @@ final case class BlackholeSink[+Out]() extends Sink[Out] {
 /**
  * [[Sink]] to a Subscriber.
  */
-final case class SubscriberSink[+Out](s: Subscriber[_ <: Out]) extends Sink[Out] {
-  override def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
-    p.subscribe(s.asInstanceOf[Subscriber[Out]])
-    s
+final case class SubscriberSink[+Out](subscriber: Subscriber[_ <: Out]) extends Sink[Out] {
+  override def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
+    flowPublisher.subscribe(subscriber.asInstanceOf[Subscriber[Out]])
+    subscriber
   }
 }
 
@@ -126,9 +139,9 @@ private[akka] object ForeachSink {
  * all elements processed, or stream failed.
  */
 final case class ForeachSink[Out](f: Out ⇒ Unit) extends Sink[Out] { // FIXME variance?
-  override def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
+  override def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = {
     val promise = Promise[Unit]()
-    FlowFrom(p).transform("foreach", () ⇒ new Transformer[Out, Unit] {
+    FlowFrom(flowPublisher).transform("foreach", () ⇒ new Transformer[Out, Unit] {
       override def onNext(in: Out) = { f(in); Nil }
       override def onTermination(e: Option[Throwable]) = {
         e match {
@@ -147,7 +160,7 @@ final case class ForeachSink[Out](f: Out ⇒ Unit) extends Sink[Out] { // FIXME 
  * Fold output. Reduces output stream according to the given fold function.
  */
 final case class FoldSink[T, +Out](zero: T)(f: (T, Out) ⇒ T) extends Sink[Out] {
-  override def materialize(p: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = ???
+  override def attach(flowPublisher: Publisher[Out] @uncheckedVariance, materializer: FlowMaterializer): AnyRef = ???
   def future: Future[T] = ???
 }
 
@@ -279,12 +292,8 @@ final case class RunnableFlow[-In, +Out](input: Source[In], output: Sink[Out], o
   def withoutSink: FlowWithSource[In, Out] = FlowWithSource(input, ops)
   def withoutSource: FlowWithSink[In, Out] = FlowWithSink(output, ops)
 
-  def run()(implicit materializer: FlowMaterializer): MaterializedFlow = {
-    val (inPublisher, inValue) = input.materialize(materializer)
-    val p = materializer.toPublisher(ExistingPublisher(inPublisher), ops).asInstanceOf[Publisher[Out]]
-    val outValue = output.materialize(p, materializer)
-    new MaterializedFlow(input, inValue, output, outValue)
-  }
+  def run()(implicit materializer: FlowMaterializer): MaterializedFlow =
+    materializer.materialize(input, output, ops)
 }
 
 class MaterializedFlow(sourceKey: AnyRef, matSource: AnyRef, sinkKey: AnyRef, matSink: AnyRef) extends MaterializedSource with MaterializedSink {
