@@ -251,8 +251,8 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
       }
 
       private def nonfatal(ex: ZMQException) = ex.getErrorCode match {
-        case org.zeromq.ZeroMQ.EFSM | 45 /* ENOTSUP */ ⇒ true
-        case _                                         ⇒ false
+        case zmq.ZError.EFSM | zmq.ZError.ENOTSUP ⇒ true
+        case _                                    ⇒ false
       }
 
       def receive = { case p: Props ⇒ sender() ! context.actorOf(p) }
