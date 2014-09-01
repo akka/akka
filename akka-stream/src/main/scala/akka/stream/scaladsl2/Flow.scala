@@ -180,10 +180,14 @@ trait FlowOps[-In, +Out] {
   }
 }
 
+sealed trait HasNoSource
+
+sealed trait HasNoSink
+
 /**
  * Flow without attached input and without attached output, can be used as a `Processor`.
  */
-final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] {
+final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] with HasNoSource with HasNoSink {
   override type Repr[-In, +Out] = ProcessorFlow[In, Out]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
@@ -201,7 +205,7 @@ final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In
 /**
  *  Flow with attached output, can be used as a `Subscriber`.
  */
-final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) {
+final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) extends HasNoSource {
   type Repr[-In, +Out] = FlowWithSink[In, Out]
 
   def withSource[I <: In](in: Source[I]): RunnableFlow[I, Out] = RunnableFlow(in, output, ops)
@@ -220,7 +224,7 @@ final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) 
 /**
  * Flow with attached input, can be used as a `Publisher`.
  */
-final case class FlowWithSource[-In, +Out](input: Source[In], ops: List[AstNode]) extends FlowOps[In, Out] {
+final case class FlowWithSource[-In, +Out](input: Source[In], ops: List[AstNode]) extends FlowOps[In, Out] with HasNoSink {
   override type Repr[-In, +Out] = FlowWithSource[In, Out]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
