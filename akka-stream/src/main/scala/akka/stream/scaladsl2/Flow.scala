@@ -3,23 +3,12 @@
  */
 package akka.stream.scaladsl2
 
-import scala.language.higherKinds
-import scala.collection.immutable
-import scala.concurrent.Future
 import akka.stream._
-import akka.stream.impl.BlackholeSubscriber
 import akka.stream.impl2.Ast._
-import scala.annotation.unchecked.uncheckedVariance
-import akka.stream.impl.BlackholeSubscriber
-import scala.concurrent.Promise
-import akka.stream.impl.EmptyPublisher
-import akka.stream.impl.IterablePublisher
-import akka.stream.impl2.ActorBasedFlowMaterializer
 import org.reactivestreams._
-import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
-import scala.util.Failure
-import scala.util.Success
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.language.higherKinds
 
 /**
  * This is the interface from which all concrete Flows inherit. No generic
@@ -109,6 +98,12 @@ final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[
 
   def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
     val pubOut = PublisherSink[Out]
+    val mf = withSink(pubOut).run()
+    pubOut.publisher(mf)
+  }
+
+  def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
+    val pubOut = PublisherSink.withFanout[Out](initialBufferSize, maximumBufferSize)
     val mf = withSink(pubOut).run()
     pubOut.publisher(mf)
   }

@@ -37,13 +37,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     override def inputOnError(e: Throwable): Unit = fail(e)
   }
 
-  val primaryOutputs: Outputs =
-    new FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, readPump) {
-      override def afterShutdown(): Unit = {
-        tcpInputs.cancel()
-        TcpStreamActor.this.tryShutdown()
-      }
-    }
+  val primaryOutputs: Outputs = new SimpleOutputs(self, readPump)
 
   object tcpInputs extends DefaultInputTransferStates {
     private var closed: Boolean = false
@@ -150,7 +144,6 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
       tryShutdown()
     }
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
-    override protected def pumpContext: ActorRefFactory = context
   }
 
   object readPump extends Pump {
@@ -160,11 +153,11 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     }
 
     override protected def pumpFinished(): Unit = {
+      tcpInputs.cancel()
       primaryOutputs.complete()
       tryShutdown()
     }
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
-    override protected def pumpContext: ActorRefFactory = context
   }
 
   final override def receive = {
