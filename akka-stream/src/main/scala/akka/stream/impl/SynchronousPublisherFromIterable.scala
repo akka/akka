@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
  */
 private[akka] object SynchronousPublisherFromIterable {
   def apply[T](iterable: immutable.Iterable[T]): Publisher[T] =
-    if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[T]]
+    if (iterable.isEmpty) EmptyPublisher[T]
     else new SynchronousPublisherFromIterable(iterable)
 
   private class IteratorSubscription[T](subscriber: Subscriber[T], iterator: Iterator[T]) extends Subscription {
