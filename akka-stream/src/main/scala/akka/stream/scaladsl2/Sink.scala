@@ -3,13 +3,15 @@
  */
 package akka.stream.scaladsl2
 
+import akka.actor.Props
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.stream.Transformer
-import akka.stream.impl.BlackholeSubscriber
-import akka.stream.impl2.ActorBasedFlowMaterializer
+import akka.stream.impl.{ FanoutProcessorImpl, BlackholeSubscriber }
+import akka.stream.impl2.{ ActorProcessorFactory, ActorBasedFlowMaterializer }
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -99,13 +101,28 @@ trait SinkWithKey[-Out, T] extends Sink[Out] {
 object PublisherSink {
   private val instance = new PublisherSink[Nothing]
   def apply[T]: PublisherSink[T] = instance.asInstanceOf[PublisherSink[T]]
+  def withFanout[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
+    new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
 }
 
-class PublisherSink[Out]() extends SinkWithKey[Out, Publisher[Out]] {
+class PublisherSink[Out] extends SinkWithKey[Out, Publisher[Out]] {
   def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] = flowPublisher
   def publisher(m: MaterializedSink): Publisher[Out] = m.getSinkFor(this)
 
   override def toString: String = "PublisherSink"
+}
+
+class FanoutPublisherSink[Out](initialBufferSize: Int, maximumBufferSize: Int) extends SinkWithKey[Out, Publisher[Out]] {
+  def publisher(m: MaterializedSink): Publisher[Out] = m.getSinkFor(this)
+  override def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] = {
+    val fanoutActor = materializer.actorOf(
+      Props(new FanoutProcessorImpl(materializer.settings, initialBufferSize, maximumBufferSize)), "fanout")
+    val fanoutProcessor = ActorProcessorFactory[Out, Out](fanoutActor)
+    flowPublisher.subscribe(fanoutProcessor)
+    fanoutProcessor
+  }
+
+  override def toString: String = "Fanout"
 }
 
 /**

@@ -24,6 +24,9 @@ private[akka] object Ast {
     def name: String
   }
 
+  case class FanoutBox(initialBufferSize: Int, maximumBufferSize: Int) extends AstNode {
+    override def name = "fanoutBox"
+  }
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
   case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
   case class MapFuture(f: Any ⇒ Future[Any]) extends AstNode {
