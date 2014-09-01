@@ -164,37 +164,11 @@ final case class FoldSink[T, +Out](zero: T)(f: (T, Out) ⇒ T) extends Sink[Out]
   def future: Future[T] = ???
 }
 
-/**
- * Operations with a Flow which has no attached [[Source]].
- *
- * No Out type parameter would be useful for Graph signatures, but we need it here
- * for `withSource` and `prependTransform` methods.
- */
-sealed trait HasNoSource[-In, +Out] extends Flow {
-  type Repr[-In, +Out] <: HasNoSource[In, Out]
-  type AfterAttachingSource[-In, +Out] <: Flow
-
-  def withSource[I <: In](in: Source[I]): AfterAttachingSource[I, Out]
-
-  def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out]
-  def prepend[T](f: FlowWithSource[T, In]): Repr[T, Out]#AfterAttachingSource[T, Out]
-
-}
-
-/**
- * Operations with a Flow which has no attached [[Sink]].
- *
- * No In type parameter would be useful for Graph signatures, but we need it here
- * for `withSink`.
- */
-trait HasNoSink[-In, +Out] extends Flow {
-  type Repr[-In, +Out] <: HasNoSink[In, Out]
-  type AfterAttachingSink[-In, +Out] <: Flow
+trait FlowOps[-In, +Out] {
+  type Repr[-In, +Out] <: FlowOps[In, Out]
 
   // Storing ops in reverse order
   protected def andThen[U](op: AstNode): Repr[In, U]
-
-  def withSink[O >: Out](out: Sink[O]): AfterAttachingSink[In, O]
 
   def map[T](f: Out ⇒ T): Repr[In, T] =
     transform("map", () ⇒ new Transformer[Out, T] {
@@ -204,49 +178,37 @@ trait HasNoSink[-In, +Out] extends Flow {
   def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[In, T] = {
     andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
   }
-
-  def append[T](f: ProcessorFlow[Out, T]): Repr[In, T]
-  def append[T](f: FlowWithSink[Out, T]): Repr[In, T]#AfterAttachingSink[In, T]
-
 }
 
 /**
  * Flow without attached input and without attached output, can be used as a `Processor`.
  */
-final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends HasNoSink[In, Out] with HasNoSource[In, Out] {
+final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] {
   override type Repr[-In, +Out] = ProcessorFlow[In, Out]
-  type AfterAttachingSink[-In, +Out] = FlowWithSink[In, Out]
-  type AfterAttachingSource[-In, +Out] = FlowWithSource[In, Out]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
 
-  override def withSink[O >: Out](out: Sink[O]): AfterAttachingSink[In, O] = FlowWithSink(out, ops)
-  override def withSource[I <: In](in: Source[I]): AfterAttachingSource[I, Out] = FlowWithSource(in, ops)
+  def withSink[O >: Out](out: Sink[O]): FlowWithSink[In, O] = FlowWithSink(out, ops)
+  def withSource[I <: In](in: Source[I]): FlowWithSource[I, Out] = FlowWithSource(in, ops)
 
-  override def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out] =
-    ProcessorFlow(ops ::: f.ops)
-  override def prepend[T](f: FlowWithSource[T, In]): Repr[T, Out]#AfterAttachingSource[T, Out] =
-    FlowWithSource(f.input, ops ::: f.ops)
+  def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out] = ProcessorFlow(ops ::: f.ops)
+  def prepend[T](f: FlowWithSource[T, In]): FlowWithSource[T, Out] = FlowWithSource(f.input, ops ::: f.ops)
 
-  override def append[T](f: ProcessorFlow[Out, T]): Repr[In, T] = ProcessorFlow(f.ops ++: ops)
-  override def append[T](f: FlowWithSink[Out, T]): Repr[In, T]#AfterAttachingSink[In, T] =
-    FlowWithSink(f.output, f.ops ++: ops)
+  def append[T](f: ProcessorFlow[Out, T]): Repr[In, T] = ProcessorFlow(f.ops ++: ops)
+  def append[T](f: FlowWithSink[Out, T]): FlowWithSink[In, T] = FlowWithSink(f.output, f.ops ++: ops)
 }
 
 /**
  *  Flow with attached output, can be used as a `Subscriber`.
  */
-final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) extends HasNoSource[In, Out] {
+final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) {
   type Repr[-In, +Out] = FlowWithSink[In, Out]
-  type AfterAttachingSource[-In, +Out] = RunnableFlow[In, Out]
 
-  override def withSource[I <: In](in: Source[I]): AfterAttachingSource[I, Out] = RunnableFlow(in, output, ops)
+  def withSource[I <: In](in: Source[I]): RunnableFlow[I, Out] = RunnableFlow(in, output, ops)
   def withoutSink: ProcessorFlow[In, Out] = ProcessorFlow(ops)
 
-  override def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out] =
-    FlowWithSink(output, ops ::: f.ops)
-  override def prepend[T](f: FlowWithSource[T, In]): Repr[T, Out]#AfterAttachingSource[T, Out] =
-    RunnableFlow(f.input, output, ops ::: f.ops)
+  def prepend[T](f: ProcessorFlow[T, In]): Repr[T, Out] = FlowWithSink(output, ops ::: f.ops)
+  def prepend[T](f: FlowWithSource[T, In]): RunnableFlow[T, Out] = RunnableFlow(f.input, output, ops ::: f.ops)
 
   def toSubscriber[I <: In]()(implicit materializer: FlowMaterializer): Subscriber[I] = {
     val subIn = SubscriberSource[I]()
@@ -258,18 +220,16 @@ final case class FlowWithSink[-In, +Out](output: Sink[Out], ops: List[AstNode]) 
 /**
  * Flow with attached input, can be used as a `Publisher`.
  */
-final case class FlowWithSource[-In, +Out](input: Source[In], ops: List[AstNode]) extends HasNoSink[In, Out] {
+final case class FlowWithSource[-In, +Out](input: Source[In], ops: List[AstNode]) extends FlowOps[In, Out] {
   override type Repr[-In, +Out] = FlowWithSource[In, Out]
-  type AfterAttachingSink[-In, +Out] = RunnableFlow[In, Out]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
 
-  override def withSink[O >: Out](out: Sink[O]): AfterAttachingSink[In, O] = RunnableFlow(input, out, ops)
+  def withSink[O >: Out](out: Sink[O]): RunnableFlow[In, O] = RunnableFlow(input, out, ops)
   def withoutSource: ProcessorFlow[In, Out] = ProcessorFlow(ops)
 
-  override def append[T](f: ProcessorFlow[Out, T]): Repr[In, T] = FlowWithSource(input, f.ops ++: ops)
-  override def append[T](f: FlowWithSink[Out, T]): Repr[In, T]#AfterAttachingSink[In, T] =
-    RunnableFlow(input, f.output, f.ops ++: ops)
+  def append[T](f: ProcessorFlow[Out, T]): Repr[In, T] = FlowWithSource(input, f.ops ++: ops)
+  def append[T](f: FlowWithSink[Out, T]): RunnableFlow[In, T] = RunnableFlow(input, f.output, f.ops ++: ops)
 
   def toPublisher[U >: Out]()(implicit materializer: FlowMaterializer): Publisher[U] = {
     val pubOut = PublisherSink[Out]()
