@@ -12,9 +12,10 @@ import scala.concurrent.duration._
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIterableSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    maximumInputBufferSize = 512,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 512)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "A Flow based on an iterable" must {
     "produce elements" in {

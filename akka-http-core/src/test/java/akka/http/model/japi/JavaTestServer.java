@@ -24,8 +24,7 @@ public abstract class JavaTestServer {
   public static void main(String[] args) throws IOException, InterruptedException {
     ActorSystem system = ActorSystem.create();
 
-    MaterializerSettings settings = MaterializerSettings.create();
-    final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
+    final FlowMaterializer materializer = FlowMaterializer.create(system);
 
     ActorRef httpManager = Http.get(system).manager();
     Future<Object> binding = ask(httpManager, Http.bind("localhost", 8080), 1000);

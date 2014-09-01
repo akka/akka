@@ -14,12 +14,11 @@ import scala.util.control.NoStackTrace
 
 class FlowPrefixAndTailSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 2,
-    initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2,
-    dispatcher = "akka.test.stream-dispatcher"))
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 2)
+    .withFanOutBuffer(initialSize = 2, maxSize = 2)
+
+  implicit val materializer = FlowMaterializer(settings)
 
   "PrefixAndTail" must {
 

@@ -4,14 +4,14 @@
 
 package akka.stream
 
-import org.openjdk.jmh.annotations._
+import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
-import akka.stream.testkit._
 import com.typesafe.config.ConfigFactory
-import java.util.concurrent.{CountDownLatch, TimeUnit}
-import scala.concurrent.{Lock, Promise, duration, Await}
-import scala.concurrent.duration.Duration
+import org.openjdk.jmh.annotations._
+
+import scala.concurrent.Lock
 import scala.util.Success
 
 @State(Scope.Benchmark)
@@ -59,11 +59,9 @@ class FlowMapBenchmark {
 
   @Setup
   def setup() {
-    val settings = MaterializerSettings(
-      initialInputBufferSize = initialInputBufferSize,
-      maximumInputBufferSize = 16,
-      initialFanOutBufferSize = 1,
-      maxFanOutBufferSize = 16)
+    val settings = MaterializerSettings(system)
+      .withInputBuffer(initialInputBufferSize, 16)
+      .withFanOutBuffer(1, 16)
 
     materializer = FlowMaterializer(settings)
 

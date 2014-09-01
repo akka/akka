@@ -4,23 +4,27 @@
 
 package akka.http
 
+import akka.actor.ActorSystem
+import akka.http.marshalling.{ MultipartMarshallers, ToEntityMarshallers }
+import akka.http.model._
+import HttpCharsets._
+import MediaTypes._
+import akka.http.util._
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import headers._
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+
 import scala.collection.immutable.ListMap
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, FreeSpec }
-import akka.actor.ActorSystem
-import akka.http.marshalling.{ ToEntityMarshallers, MultipartMarshallers }
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.http.util._
-import akka.http.model._
-import headers._
-import MediaTypes._
-import HttpCharsets._
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers {
   implicit val system = ActorSystem(getClass.getSimpleName)
   import system.dispatcher
-  val materializerSettings = MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")
+
+  val materializerSettings = MaterializerSettings(system)
+    .withDispatcher("akka.test.stream-dispatcher")
+
   implicit val materializer = FlowMaterializer(materializerSettings)
 
   "The PredefinedToEntityMarshallers." - {
