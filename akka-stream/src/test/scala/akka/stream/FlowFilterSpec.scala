@@ -3,20 +3,16 @@
  */
 package akka.stream
 
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.{ StreamTestKit, ScriptedTest }
-import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import akka.stream.scaladsl.Flow
-import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
+
+import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 class FlowFilterSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 16,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16,
-    dispatcher = "akka.test.stream-dispatcher")
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 16)
+    .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
   "A Filter" must {
 
@@ -26,12 +22,10 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
     }
 
     "not blow up with high request counts" in {
-      implicit val materializer = FlowMaterializer(MaterializerSettings(
-        initialInputBufferSize = 1,
-        maximumInputBufferSize = 1,
-        initialFanOutBufferSize = 1,
-        maxFanOutBufferSize = 1,
-        dispatcher = "akka.test.stream-dispatcher"))
+      val settings = MaterializerSettings(system)
+        .withInputBuffer(initialSize = 1, maxSize = 1)
+        .withFanOutBuffer(initialSize = 1, maxSize = 1)
+      implicit val materializer = FlowMaterializer(settings)
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
       Flow(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).

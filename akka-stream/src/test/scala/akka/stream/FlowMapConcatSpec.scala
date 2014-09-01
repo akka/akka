@@ -3,17 +3,13 @@
  */
 package akka.stream
 
-import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit.{ AkkaSpec, ScriptedTest }
 
 class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(
-    initialInputBufferSize = 2,
-    maximumInputBufferSize = 16,
-    initialFanOutBufferSize = 1,
-    maxFanOutBufferSize = 16,
-    dispatcher = "akka.test.stream-dispatcher")
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 2, maxSize = 16)
+    .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
   "A MapConcat" must {
 

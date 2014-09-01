@@ -11,8 +11,7 @@ import akka.stream.testkit.StreamTestKit
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowDropWithinSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(
-    dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "A DropWithin" must {
 

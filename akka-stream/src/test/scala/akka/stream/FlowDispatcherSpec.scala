@@ -4,13 +4,13 @@
 package akka.stream
 
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
+import akka.stream.testkit.AkkaSpec
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowDispatcherSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(dispatcher = "akka.test.stream-dispatcher"))
+  implicit val materializer = FlowMaterializer()
 
   "Flow with dispatcher setting" must {
     "use the specified dispatcher" in {

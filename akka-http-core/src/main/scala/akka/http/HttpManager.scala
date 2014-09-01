@@ -4,17 +4,18 @@
 
 package akka.http
 
-import scala.util.{ Failure, Success }
-import scala.concurrent.duration._
-import akka.io.IO
-import akka.util.Timeout
-import akka.stream.io.StreamTcp
-import akka.stream.FlowMaterializer
-import akka.http.client._
 import akka.actor._
+import akka.http.client._
 import akka.http.server.{ HttpServerPipeline, ServerSettings }
+import akka.io.IO
 import akka.pattern.ask
+import akka.stream.FlowMaterializer
+import akka.stream.io.StreamTcp
 import akka.stream.scaladsl.Flow
+import akka.util.Timeout
+
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -27,18 +28,19 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
   private[this] var clientPipelines = Map.empty[ClientConnectionSettings, HttpClientPipeline]
 
   def receive = {
-    case connect @ Http.Connect(remoteAddress, localAddress, options, settings, materializerSettings) ⇒
+    case connect @ Http.Connect(remoteAddress, localAddress, options, clientConnectionSettings, materializerSettings) ⇒
       log.debug("Attempting connection to {}", remoteAddress)
       val commander = sender()
-      val effectiveSettings = ClientConnectionSettings(settings)
-      val tcpConnect = StreamTcp.Connect(materializerSettings, remoteAddress, localAddress, options,
+      val effectiveSettings = ClientConnectionSettings(clientConnectionSettings)
+
+      val tcpConnect = StreamTcp.Connect(remoteAddress, localAddress, materializerSettings, options,
         effectiveSettings.connectingTimeout, effectiveSettings.idleTimeout)
       val askTimeout = Timeout(effectiveSettings.connectingTimeout + 5.seconds) // FIXME: how can we improve this?
       val tcpConnectionFuture = IO(StreamTcp)(context.system).ask(tcpConnect)(askTimeout)
       tcpConnectionFuture onComplete {
         case Success(tcpConn: StreamTcp.OutgoingTcpConnection) ⇒
           val pipeline = clientPipelines.getOrElse(effectiveSettings, {
-            val pl = new HttpClientPipeline(effectiveSettings, FlowMaterializer(materializerSettings), log)
+            val pl = new HttpClientPipeline(effectiveSettings, FlowMaterializer(), log)
             clientPipelines = clientPipelines.updated(effectiveSettings, pl)
             pl
           })
@@ -51,17 +53,17 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
         case x ⇒ throw new IllegalStateException("Unexpected response to `Connect` from StreamTcp: " + x)
       }
 
-    case Http.Bind(endpoint, backlog, options, settings, materializerSettings) ⇒
+    case Http.Bind(endpoint, backlog, options, serverSettings, materializerSettings) ⇒
       log.debug("Binding to {}", endpoint)
       val commander = sender()
-      val effectiveSettings = ServerSettings(settings)
-      val tcpBind = StreamTcp.Bind(materializerSettings, endpoint, backlog, options)
+      val effectiveSettings = ServerSettings(serverSettings)
+      val tcpBind = StreamTcp.Bind(endpoint, materializerSettings, backlog, options)
       val askTimeout = Timeout(effectiveSettings.bindTimeout + 5.seconds) // FIXME: how can we improve this?
       val tcpServerBindingFuture = IO(StreamTcp)(context.system).ask(tcpBind)(askTimeout)
       tcpServerBindingFuture onComplete {
         case Success(StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
           log.info("Bound to {}", endpoint)
-          implicit val materializer = FlowMaterializer(materializerSettings)
+          implicit val materializer = FlowMaterializer()
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, materializer, log)
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)

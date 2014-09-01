@@ -109,12 +109,9 @@ object TcpFlowSpec {
 class TcpFlowSpec extends AkkaSpec {
   import TcpFlowSpec._
 
-  val settings = MaterializerSettings(
-    initialInputBufferSize = 4,
-    maximumInputBufferSize = 4,
-    initialFanOutBufferSize = 2,
-    maxFanOutBufferSize = 2,
-    dispatcher = "akka.test.stream-dispatcher")
+  val settings = MaterializerSettings(system)
+    .withInputBuffer(initialSize = 4, maxSize = 4)
+    .withFanOutBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = FlowMaterializer(settings)
 
@@ -182,7 +179,7 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(server: Server): (Processor[ByteString, ByteString], ServerConnection) = {
     val tcpProbe = TestProbe()
-    tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(settings, server.address))
+    tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(server.address, materializerSettings = Some(settings)))
     val client = server.waitAccept()
     val outgoingConnection = tcpProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
 
@@ -191,13 +188,13 @@ class TcpFlowSpec extends AkkaSpec {
 
   def connect(serverAddress: InetSocketAddress): StreamTcp.OutgoingTcpConnection = {
     val connectProbe = TestProbe()
-    connectProbe.send(IO(StreamTcp), StreamTcp.Connect(settings, serverAddress))
+    connectProbe.send(IO(StreamTcp), StreamTcp.Connect(serverAddress, materializerSettings = Some(settings)))
     connectProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
   }
 
   def bind(serverAddress: InetSocketAddress = temporaryServerAddress): StreamTcp.TcpServerBinding = {
     val bindProbe = TestProbe()
-    bindProbe.send(IO(StreamTcp), StreamTcp.Bind(settings, serverAddress))
+    bindProbe.send(IO(StreamTcp), StreamTcp.Bind(serverAddress, Some(settings)))
     bindProbe.expectMsgType[StreamTcp.TcpServerBinding]
   }
 
