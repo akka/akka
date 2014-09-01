@@ -16,9 +16,11 @@ import scala.concurrent.duration._
 
 object DaemonMsgCreateSerializerSpec {
   class MyActor extends Actor {
-    def receive = {
-      case _ ⇒
-    }
+    def receive = Actor.emptyBehavior
+  }
+
+  class MyActorWithParam(ignore: String) extends Actor {
+    def receive = Actor.emptyBehavior
   }
 }
 
@@ -39,6 +41,16 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
       verifySerialization {
         DaemonMsgCreate(
           props = Props[MyActor],
+          deploy = Deploy(),
+          path = "foo",
+          supervisor = supervisor)
+      }
+    }
+
+    "serialize and de-serialize DaemonMsgCreate with FromClassCreator, with null parameters for Props" in {
+      verifySerialization {
+        DaemonMsgCreate(
+          props = Props(classOf[MyActorWithParam], null),
           deploy = Deploy(),
           path = "foo",
           supervisor = supervisor)
