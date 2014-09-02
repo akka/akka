@@ -76,10 +76,7 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    */
   private[akka] def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
 
-  /**
-   * INTERNAL API
-   */
-  private[akka] def identityProcessor[I](flowName: String): Processor[I, I]
+  def materializeSource[In](source: IterableSource[In], flowName: String): Publisher[In]
 
 }
 
