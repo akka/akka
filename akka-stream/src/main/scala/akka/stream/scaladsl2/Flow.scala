@@ -17,6 +17,9 @@ import akka.stream.impl.IterablePublisher
 import akka.stream.impl2.ActorBasedFlowMaterializer
 import org.reactivestreams._
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
+import scala.util.Failure
+import scala.util.Success
 
 sealed trait Flow
 
@@ -186,17 +189,56 @@ trait SinkKey[-Out, T] extends Sink[Out] {
 }
 
 /**
- * Default output.
- * Allows to materialize a Flow with this output to Publisher.
+ * Holds the downstream-most [[org.reactivestreams.Publisher]] interface of the materialized flow.
+ * The stream will not have any subscribers attached at this point, which means that after prefetching
+ * elements to fill the internal buffers it will assert back-pressure until
+ * a subscriber connects and creates demand for elements to be emitted.
  */
-// FIXME: make case object
-final case class PublisherSink[Out]() extends SinkKey[Out, Publisher[Out]] {
+object PublisherSink {
+  private val instance = new PublisherSink[Nothing]
+  def apply[T]: PublisherSink[T] = instance.asInstanceOf[PublisherSink[T]]
+}
+
+class PublisherSink[Out]() extends SinkKey[Out, Publisher[Out]] {
   def attach(flowPublisher: Publisher[Out], materializer: FlowMaterializer): Publisher[Out] = flowPublisher
   def publisher(m: MaterializedSink): Publisher[Out] = m.getSinkFor(this)
+
+  override def toString: String = "FutureSink"
 }
 
 /**
- * Output to nirvana.
+ * Holds a [[scala.concurrent.Future]] that will be fulfilled with the first
+ * thing that is signaled to this stream, which can be either an element (after
+ * which the upstream subscription is canceled), an error condition (putting
+ * the Future into the corresponding failed state) or the end-of-stream
+ * (failing the Future with a NoSuchElementException).
+ */
+object FutureSink {
+  private val instance = new FutureSink[Nothing]
+  def apply[T]: FutureSink[T] = instance.asInstanceOf[FutureSink[T]]
+}
+
+class FutureSink[Out] extends SinkKey[Out, Future[Out]] {
+  def attach(flowPublisher: Publisher[Out], materializer: FlowMaterializer): Future[Out] = {
+    val p = Promise[Out]()
+    FlowFrom(flowPublisher).transform("futureSink", () ⇒ new Transformer[Out, Unit] {
+      var done = false
+      override def onNext(in: Out) = { p success in; done = true; Nil }
+      override def onError(e: Throwable) = { p failure e }
+      override def isComplete = done
+      override def onTermination(e: Option[Throwable]) = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
+    }).consume()(materializer)
+    p.future
+  }
+
+  def future(m: MaterializedSink): Future[Out] = m.getSinkFor(this)
+
+  override def toString: String = "FutureSink"
+}
+
+/**
+ * Attaches a subscriber to this stream which will just discard all received
+ * elements.
  */
 final case object BlackholeSink extends Sink[Any] {
   override def attach(flowPublisher: Publisher[Any], materializer: FlowMaterializer): AnyRef = {
@@ -207,7 +249,7 @@ final case object BlackholeSink extends Sink[Any] {
 }
 
 /**
- * [[Sink]] to a Subscriber.
+ * Attaches a subscriber to this stream.
  */
 final case class SubscriberSink[Out](subscriber: Subscriber[Out]) extends Sink[Out] {
   override def attach(flowPublisher: Publisher[Out], materializer: FlowMaterializer): AnyRef = {
@@ -216,15 +258,44 @@ final case class SubscriberSink[Out](subscriber: Subscriber[Out]) extends Sink[O
   }
 }
 
+object OnCompleteSink {
+  private val SuccessUnit = Success[Unit](())
+}
+
 /**
- * Foreach output. Invokes the given function for each element. Completes the [[#future]] when
- * all elements processed, or stream failed.
+ * When the flow is completed, either through an error or normal
+ * completion, apply the provided function with [[scala.util.Success]]
+ * or [[scala.util.Failure]].
+ */
+final case class OnCompleteSink[Out](callback: Try[Unit] ⇒ Unit) extends Sink[Out] {
+  override def attach(flowPublisher: Publisher[Out], materializer: FlowMaterializer): AnyRef = {
+    val promise = Promise[Unit]()
+    FlowFrom(flowPublisher).transform("onCompleteSink", () ⇒ new Transformer[Out, Unit] {
+      override def onNext(in: Out) = Nil
+      override def onError(e: Throwable) = {
+        callback(Failure(e))
+        throw e
+      }
+      override def onTermination(e: Option[Throwable]) = {
+        callback(OnCompleteSink.SuccessUnit)
+        Nil
+      }
+    }).consume()(materializer)
+    promise.future
+  }
+}
+
+/**
+ * Invoke the given procedure for each received element. The sink holds a [[scala.concurrent.Future]]
+ * that will be completed with `Success` when reaching the normal end of the stream, or completed
+ * with `Failure` if there is an error is signaled in the stream.
  */
 final case class ForeachSink[Out](f: Out ⇒ Unit) extends SinkKey[Out, Future[Unit]] {
   override def attach(flowPublisher: Publisher[Out], materializer: FlowMaterializer): Future[Unit] = {
     val promise = Promise[Unit]()
     FlowFrom(flowPublisher).transform("foreach", () ⇒ new Transformer[Out, Unit] {
       override def onNext(in: Out) = { f(in); Nil }
+      override def onError(cause: Throwable): Unit = ()
       override def onTermination(e: Option[Throwable]) = {
         e match {
           case None    ⇒ promise.success(())
@@ -326,7 +397,7 @@ final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[
   def append[T](f: FlowWithSink[Out, T]): RunnableFlow[In, T] = new RunnableFlow(input, f.output, f.ops ++: ops)
 
   def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
-    val pubOut = PublisherSink[Out]()
+    val pubOut = PublisherSink[Out]
     val mf = withSink(pubOut).run()
     pubOut.publisher(mf)
   }
