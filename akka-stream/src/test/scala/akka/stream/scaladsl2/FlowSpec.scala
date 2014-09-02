@@ -22,7 +22,7 @@ class FlowSpec extends AkkaSpec {
     "go through all states" in {
       val f: ProcessorFlow[Int, Int] = FlowFrom[Int]
         .withSource(intSeq)
-        .withSink(PublisherSink())
+        .withSink(PublisherSink[Int])
         .withoutSource
         .withoutSink
     }
@@ -45,10 +45,10 @@ class FlowSpec extends AkkaSpec {
       val closedSource: FlowWithSource[Int, Int] = open3.withSource(intSeq)
       "closedSource.run()" shouldNot compile
 
-      val closedSink: FlowWithSink[Int, Int] = open3.withSink(PublisherSink())
+      val closedSink: FlowWithSink[Int, Int] = open3.withSink(PublisherSink[Int])
       "closedSink.run()" shouldNot compile
 
-      closedSource.withSink(PublisherSink()).run()
+      closedSource.withSink(PublisherSink[Int]).run()
       closedSink.withSource(intSeq).run()
     }
     "prepend ProcessorFlow" in {
@@ -60,15 +60,15 @@ class FlowSpec extends AkkaSpec {
       val closedSource: FlowWithSource[String, String] = open3.withSource(strSeq)
       "closedSource.run()" shouldNot compile
 
-      val closedSink: FlowWithSink[String, String] = open3.withSink(PublisherSink())
+      val closedSink: FlowWithSink[String, String] = open3.withSink(PublisherSink[String])
       "closedSink.run()" shouldNot compile
 
-      closedSource.withSink(PublisherSink()).run
+      closedSource.withSink(PublisherSink[String]).run
       closedSink.withSource(strSeq).run
     }
     "append FlowWithSink" in {
       val open: ProcessorFlow[Int, String] = FlowFrom[Int].map(_.toString)
-      val closedSink: FlowWithSink[String, Int] = FlowFrom[String].map(_.hashCode).withSink(PublisherSink())
+      val closedSink: FlowWithSink[String, Int] = FlowFrom[String].map(_.hashCode).withSink(PublisherSink[Int])
       val appended: FlowWithSink[Int, Int] = open.append(closedSink)
       "appended.run()" shouldNot compile
       "appended.toFuture" shouldNot compile
@@ -80,13 +80,13 @@ class FlowSpec extends AkkaSpec {
       val prepended: FlowWithSource[String, String] = open.prepend(closedSource)
       "prepended.run()" shouldNot compile
       "prepended.withSource(strSeq)" shouldNot compile
-      prepended.withSink(PublisherSink()).run
+      prepended.withSink(PublisherSink[String]).run
     }
   }
 
   "FlowWithSink" should {
     val openSource: FlowWithSink[Int, String] =
-      FlowFrom[Int].map(_.toString).withSink(PublisherSink())
+      FlowFrom[Int].map(_.toString).withSink(PublisherSink[String])
     "accept Source" in {
       openSource.withSource(intSeq)
     }
@@ -108,7 +108,7 @@ class FlowSpec extends AkkaSpec {
     val openSink: FlowWithSource[Int, String] =
       FlowFrom(Seq(1, 2, 3)).map(_.toString)
     "accept Sink" in {
-      openSink.withSink(PublisherSink())
+      openSink.withSink(PublisherSink[String])
     }
     "drop Source" in {
       openSink.withoutSource
@@ -126,7 +126,7 @@ class FlowSpec extends AkkaSpec {
 
   "RunnableFlow" should {
     val closed: RunnableFlow[Int, String] =
-      FlowFrom(Seq(1, 2, 3)).map(_.toString).withSink(PublisherSink())
+      FlowFrom(Seq(1, 2, 3)).map(_.toString).withSink(PublisherSink[String])
     "run" in {
       closed.run()
     }
