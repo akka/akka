@@ -39,13 +39,14 @@ object FlowFrom {
 }
 
 trait Source[+In] {
-  def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In @uncheckedVariance], Any)
+  def attach(flowSubscriber: Subscriber[In] @uncheckedVariance, materializer: FlowMaterializer, flowName: String): Any
 }
 
 trait SourceKey[+In, T] extends Source[In] {
-  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In @uncheckedVariance], T)
+  override def attach(flowSubscriber: Subscriber[In] @uncheckedVariance, materializer: FlowMaterializer, flowName: String): T
   // these are unique keys, case class equality would break them
-  override def equals(other: AnyRef): Boolean = this eq other
+  final override def equals(other: Any): Boolean = super.equals(other)
+  final override def hashCode: Int = super.hashCode
 }
 
 /**
@@ -53,10 +54,8 @@ trait SourceKey[+In, T] extends Source[In] {
  * Allows to materialize a Flow with this input to Subscriber.
  */
 final case class SubscriberSource[In]() extends SourceKey[In, Subscriber[In]] {
-  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], Subscriber[In]) = {
-    val identityProcessor = materializer.identityProcessor[In](flowName)
-    (identityProcessor, identityProcessor)
-  }
+  override def attach(flowSubscriber: Subscriber[In], materializer: FlowMaterializer, flowName: String): Subscriber[In] =
+    flowSubscriber
 
   def subscriber(m: MaterializedSource): Subscriber[In] =
     m.getSourceFor(this)
@@ -66,25 +65,20 @@ final case class SubscriberSource[In]() extends SourceKey[In, Subscriber[In]] {
  * [[Source]] from `Publisher`.
  */
 final case class PublisherSource[In](p: Publisher[In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) =
-    (p, p)
+  override def attach(flowSubscriber: Subscriber[In], materializer: FlowMaterializer, flowName: String): AnyRef = {
+    p.subscribe(flowSubscriber)
+    p
+  }
 }
 
 /**
  * [[Source]] from `Iterable`
  */
 final case class IterableSource[In](iterable: immutable.Iterable[In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) = {
-    val p: Publisher[In] =
-      if (iterable.isEmpty) EmptyPublisher[In]
-      else materializer match {
-        case m: ActorBasedFlowMaterializer ⇒
-          m.actorPublisher(IterablePublisher.props(iterable, materializer.settings),
-            name = s"$flowName-0-iterable", Some(iterable))
-        case other ⇒
-          throw new IllegalArgumentException(s"IterableSource requires ActorBasedFlowMaterializer, got [${other.getClass.getName}]")
-      }
-    (p, iterable)
+  override def attach(flowSubscriber: Subscriber[In], materializer: FlowMaterializer, flowName: String): AnyRef = {
+    val p: Publisher[In] = materializer.materializeSource(this, flowName)
+    p.subscribe(flowSubscriber)
+    iterable
   }
 }
 
@@ -92,7 +86,7 @@ final case class IterableSource[In](iterable: immutable.Iterable[In]) extends So
  * [[Source]] from `Future`
  */
 final case class FutureSource[In](f: Future[In]) extends Source[In] {
-  override def materialize(materializer: FlowMaterializer, flowName: String): (Publisher[In], AnyRef) = ???
+  override def attach(flowSubscriber: Subscriber[In], materializer: FlowMaterializer, flowName: String): AnyRef = ???
 }
 
 trait Sink[-Out] {
@@ -102,7 +96,8 @@ trait Sink[-Out] {
 trait SinkKey[-Out, T] extends Sink[Out] {
   override def attach(flowPublisher: Publisher[Out @uncheckedVariance], materializer: FlowMaterializer): T
   // these are unique keys, case class equality would break them
-  override def equals(other: AnyRef): Boolean = this eq other
+  final override def equals(other: Any): Boolean = super.equals(other)
+  final override def hashCode: Int = super.hashCode
 }
 
 /**
