@@ -31,6 +31,19 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
       proc.expectCancellation()
     }
 
+    "yield the first value when actively constructing" in {
+      val p = StreamTestKit.PublisherProbe[Int]()
+      val f = FutureSink[Int]
+      val s = SubscriberSource[Int]
+      val m = FlowFrom[Int].withSource(s).withSink(f).run()
+      p.subscribe(s.subscriber(m))
+      val proc = p.expectSubscription
+      proc.expectRequest()
+      proc.sendNext(42)
+      Await.result(f.future(m), 100.millis) should be(42)
+      proc.expectCancellation()
+    }
+
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f = FutureSink[Int]
