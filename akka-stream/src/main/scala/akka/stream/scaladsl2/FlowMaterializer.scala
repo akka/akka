@@ -3,17 +3,9 @@
  */
 package akka.stream.scaladsl2
 
-import scala.concurrent.duration._
-import org.reactivestreams.Publisher
-import akka.actor.ActorContext
-import akka.actor.ActorRefFactory
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
+import akka.actor.{ ActorContext, ActorRefFactory, ActorSystem, ExtendedActorSystem }
 import akka.stream.MaterializerSettings
-import akka.stream.impl2.ActorBasedFlowMaterializer
-import akka.stream.impl2.Ast
-import akka.stream.impl2.FlowNameCounter
-import akka.stream.impl2.StreamSupervisor
+import akka.stream.impl2.{ ActorBasedFlowMaterializer, Ast, FlowNameCounter, StreamSupervisor }
 
 object FlowMaterializer {
 
@@ -131,26 +123,25 @@ object FlowMaterializer {
 abstract class FlowMaterializer(val settings: MaterializerSettings) {
 
   /**
-   * The `namePrefix` is used as the first part of the names of the actors running
-   * the processing steps.
+   * The `namePrefix` shall be used for deriving the names of processing
+   * entities that are created during materialization. This is meant to aid
+   * logging and error reporting both during materialization and while the
+   * stream is running.
    */
   def withNamePrefix(name: String): FlowMaterializer
 
   /**
-   * INTERNAL API
-   * ops are stored in reverse order
+   * This method interprets the given Flow description and creates the running
+   * stream. The result can be highly implementation specific, ranging from
+   * local actor chains to remote-deployed processing networks.
    */
-  private[akka] def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
-
-  def materializeSource[In](source: IterableSource[In], flowName: String): Publisher[In]
-
-  def materializeSource[In](source: IteratorSource[In], flowName: String): Publisher[In]
-
-  def materializeSource[In](source: ThunkSource[In], flowName: String): Publisher[In]
-
-  def materializeSource[In](source: FutureSource[In], flowName: String): Publisher[In]
-
-  def materializeSource[In](source: TickSource[In], flowName: String): Publisher[In]
+  def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
 
 }
+
+/**
+ * This exception or subtypes thereof should be used to signal materialization
+ * failures.
+ */
+class MaterializationException(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
 
