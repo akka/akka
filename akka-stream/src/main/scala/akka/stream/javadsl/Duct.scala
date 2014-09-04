@@ -303,6 +303,8 @@ abstract class Duct[In, Out] {
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, Out]
 
+  def fanout(initialBufferSize: Int, maximumBufferSize: Int): Duct[In, Out]
+
   /**
    * Materialize this `Duct` by attaching it to the specified downstream `subscriber`
    * and return a `Subscriber` representing the input side of the `Duct`.
@@ -438,6 +440,9 @@ private[akka] class DuctAdapter[In, T](delegate: SDuct[In, T]) extends Duct[In, 
 
   override def buffer(size: Int, overflowStrategy: OverflowStrategy): Duct[In, T] =
     new DuctAdapter(delegate.buffer(size, overflowStrategy))
+
+  override def fanout(initialBufferSize: Int, maximumBufferSize: Int): Duct[In, T] =
+    new DuctAdapter(delegate.fanout(initialBufferSize, maximumBufferSize))
 
   override def expand[S, U](seed: Function[T, S], extrapolate: Function[S, Pair[U, S]]): Duct[In, U] =
     new DuctAdapter(delegate.expand(seed.apply, (s: S) ⇒ {

@@ -65,6 +65,9 @@ private[akka] trait Outputs {
 
   def subreceive: SubReceive
 
+  // FIXME: This is completely unnecessary, refactor MapFutureProcessorImpl
+  def demandCount: Long = -1L
+
   def complete(): Unit
   def cancel(e: Throwable): Unit
   def isClosed: Boolean
@@ -138,7 +141,6 @@ private[akka] case class TransferPhase(precondition: TransferState)(val action: 
  * INTERNAL API
  */
 private[akka] trait Pump {
-  protected def pumpContext: ActorRefFactory
   private var transferState: TransferState = NotInitialized
   private var currentAction: () ⇒ Unit =
     () ⇒ throw new IllegalStateException("Pump has been not initialized with a phase")
