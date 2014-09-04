@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference
  * implement [[SinkWithKey]] or [[SimpleSink]], otherwise a custom [[FlowMaterializer]]
  * will have to be used to be able to attach them.
  *
- * All Sinks defined in this package rely upon an [[ActorBasedFlowMaterializer]] being
+ * All Sinks defined in this package rely upon an [[akka.stream.impl2.ActorBasedFlowMaterializer]] being
  * made available to them in order to use the <code>attach</code> method. Other
  * FlowMaterializers can be used but must then implement the functionality of these
  * Sink nodes themselves (or construct an ActorBasedFlowMaterializer).
@@ -54,6 +54,10 @@ trait SimpleSink[-Out] extends Sink[Out] {
    * operations.
    */
   def isActive: Boolean = false
+
+  // these are unique keys, case class equality would break them
+  final override def equals(other: Any): Boolean = super.equals(other)
+  final override def hashCode: Int = super.hashCode
 }
 
 /**
