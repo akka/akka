@@ -1310,6 +1310,9 @@ object Dependencies {
 
     // Cluster Sample
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+    
+    // Graph for Scala
+    val scalaGraph = "com.assembla.scala-incubator"   % "graph-core_2.10"              % "1.9.0" // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
@@ -1387,6 +1390,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-actor" % "2.3.5",
     "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.5",
     "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
+    scalaGraph,
     Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
