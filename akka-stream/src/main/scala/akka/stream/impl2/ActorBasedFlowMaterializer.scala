@@ -4,23 +4,18 @@
 package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicLong
-import akka.actor.{ Actor, ActorCell, ActorRef, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider, LocalActorRef, Props, RepointableActorRef }
-import akka.pattern.ask
-import org.reactivestreams.{ Processor, Publisher, Subscriber }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
-import akka.stream.Transformer
-import akka.stream.scaladsl2.FlowMaterializer
-import akka.stream.MaterializerSettings
-import akka.stream.impl.EmptyPublisher
-import akka.stream.impl.ActorPublisher
-import akka.stream.impl.IterablePublisher
-import akka.stream.impl.TransformProcessorImpl
-import akka.stream.impl.ActorProcessor
-import akka.stream.impl.ExposedPublisher
+import scala.concurrent.Await
+
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
+
+import akka.actor._
+import akka.pattern.ask
+import akka.stream.{ MaterializerSettings, Transformer }
+import akka.stream.impl.{ ActorProcessor, ActorPublisher, ExposedPublisher, TransformProcessorImpl }
+import akka.stream.scaladsl2._
 
 /**
  * INTERNAL API
@@ -32,32 +27,17 @@ private[akka] object Ast {
 
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
 
-  trait PublisherNode[I] {
-    private[akka] def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I]
-  }
-
-  final case class ExistingPublisher[I](publisher: Publisher[I]) extends PublisherNode[I] {
-    def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String) = publisher
-  }
-
-  final case class IterablePublisherNode[I](iterable: immutable.Iterable[I]) extends PublisherNode[I] {
-    def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[I] =
-      if (iterable.isEmpty) EmptyPublisher.asInstanceOf[Publisher[I]]
-      else ActorPublisher[I](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
-        name = s"$flowName-0-iterable"), Some(iterable))
-  }
-
 }
 
 /**
  * INTERNAL API
  */
-private[akka] case class ActorBasedFlowMaterializer(
-  override val settings: MaterializerSettings,
-  supervisor: ActorRef,
-  flowNameCounter: AtomicLong,
-  namePrefix: String)
+case class ActorBasedFlowMaterializer(override val settings: MaterializerSettings,
+                                      supervisor: ActorRef,
+                                      flowNameCounter: AtomicLong,
+                                      namePrefix: String)
   extends FlowMaterializer(settings) {
+
   import akka.stream.impl2.Ast._
 
   def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
@@ -78,16 +58,57 @@ private[akka] case class ActorBasedFlowMaterializer(
   }
 
   // Ops come in reverse order
-  override def toPublisher[I, O](publisherNode: PublisherNode[I], ops: List[AstNode]): Publisher[O] = {
+  override def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow = {
     val flowName = createFlowName()
-    if (ops.isEmpty) publisherNode.createPublisher(this, flowName).asInstanceOf[Publisher[O]]
-    else {
-      val opsSize = ops.size
-      val opProcessor = processorForNode(ops.head, flowName, opsSize)
-      val topSubscriber = processorChain(opProcessor, ops.tail, flowName, opsSize - 1)
-      publisherNode.createPublisher(this, flowName).subscribe(topSubscriber.asInstanceOf[Subscriber[I]])
-      opProcessor.asInstanceOf[Publisher[O]]
+
+    def attachSink(pub: Publisher[Out]) = sink match {
+      case s: SimpleSink[Out]     ⇒ s.attach(pub, this, flowName)
+      case s: SinkWithKey[Out, _] ⇒ s.attach(pub, this, flowName)
+      case _                      ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
     }
+    def attachSource(sub: Subscriber[In]) = source match {
+      case s: SimpleSource[In]     ⇒ s.attach(sub, this, flowName)
+      case s: SourceWithKey[In, _] ⇒ s.attach(sub, this, flowName)
+      case _                       ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
+    }
+    def createSink() = sink.asInstanceOf[Sink[In]] match {
+      case s: SimpleSink[In]     ⇒ s.create(this, flowName) -> (())
+      case s: SinkWithKey[In, _] ⇒ s.create(this, flowName)
+      case _                     ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
+    }
+    def createSource() = source.asInstanceOf[Source[Out]] match {
+      case s: SimpleSource[Out]     ⇒ s.create(this, flowName) -> (())
+      case s: SourceWithKey[Out, _] ⇒ s.create(this, flowName)
+      case _                        ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
+    }
+    def isActive(s: AnyRef) = s match {
+      case source: SimpleSource[_]     ⇒ source.isActive
+      case source: SourceWithKey[_, _] ⇒ source.isActive
+      case sink: SimpleSink[_]         ⇒ sink.isActive
+      case sink: SinkWithKey[_, _]     ⇒ sink.isActive
+      case _: Source[_]                ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
+      case _: Sink[_]                  ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
+    }
+
+    val (sourceValue, sinkValue) =
+      if (ops.isEmpty) {
+        if (isActive(sink)) {
+          val (sub, value) = createSink()
+          (attachSource(sub), value)
+        } else if (isActive(source)) {
+          val (pub, value) = createSource()
+          (value, attachSink(pub))
+        } else {
+          val id: Processor[In, Out] = processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[In, Out]]
+          (attachSource(id), attachSink(id))
+        }
+      } else {
+        val opsSize = ops.size
+        val last = processorForNode(ops.head, flowName, opsSize).asInstanceOf[Processor[Any, Out]]
+        val first = processorChain(last, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Any]]
+        (attachSource(first), attachSink(last))
+      }
+    new MaterializedFlow(source, sourceValue, sink, sinkValue)
   }
 
   private val identityTransform = Transform("identity", () ⇒
@@ -95,7 +116,7 @@ private[akka] case class ActorBasedFlowMaterializer(
       override def onNext(element: Any) = List(element)
     })
 
-  def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+  private def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
     val impl = actorOf(ActorProcessorFactory.props(settings, op), s"$flowName-$n-${op.name}")
     ActorProcessorFactory(impl)
   }
