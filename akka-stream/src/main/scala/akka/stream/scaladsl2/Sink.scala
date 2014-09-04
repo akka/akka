@@ -6,9 +6,7 @@ package akka.stream.scaladsl2
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
-
-import org.reactivestreams.{ Publisher, Subscriber }
-
+import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.stream.Transformer
 import akka.stream.impl.BlackholeSubscriber
 import akka.stream.impl2.ActorBasedFlowMaterializer
@@ -18,10 +16,10 @@ import akka.stream.impl2.ActorBasedFlowMaterializer
  * implement [[SinkWithKey]] or [[SimpleSink]], otherwise a custom [[FlowMaterializer]]
  * will have to be used to be able to attach them.
  *
- * All Sinks defined in this package rely upon an ActorBasedFlowMaterializer being
+ * All Sinks defined in this package rely upon an [[ActorBasedFlowMaterializer]] being
  * made available to them in order to use the <code>attach</code> method. Other
  * FlowMaterializers can be used but must then implement the functionality of these
- * Source nodes themselves (or construct an ActorBasedFlowMaterializer).
+ * Sink nodes themselves (or construct an ActorBasedFlowMaterializer).
  */
 trait Sink[-Out]
 
@@ -45,9 +43,10 @@ trait SimpleSink[-Out] extends Sink[Out] {
    * This method is only used for Sinks that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] @uncheckedVariance = null
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] @uncheckedVariance =
+    throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
-   * This method indicates with this Sink can create a Subscriber instead of being
+   * This method indicates whether this Sink can create a Subscriber instead of being
    * attached to a Publisher. This is only used if the Flow does not contain any
    * operations.
    */
@@ -76,9 +75,10 @@ trait SinkWithKey[-Out, T] extends Sink[Out] {
    * This method is only used for Sinks that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[Out] @uncheckedVariance, T) = null
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[Out] @uncheckedVariance, T) =
+    throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
-   * This method indicates with this Sink can create a Subscriber instead of being
+   * This method indicates whether this Sink can create a Subscriber instead of being
    * attached to a Publisher. This is only used if the Flow does not contain any
    * operations.
    */
@@ -104,7 +104,7 @@ class PublisherSink[Out]() extends SinkWithKey[Out, Publisher[Out]] {
   def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] = flowPublisher
   def publisher(m: MaterializedSink): Publisher[Out] = m.getSinkFor(this)
 
-  override def toString: String = "FutureSink"
+  override def toString: String = "PublisherSink"
 }
 
 /**
@@ -121,15 +121,21 @@ object FutureSink {
 
 class FutureSink[Out] extends SinkWithKey[Out, Future[Out]] {
   def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Future[Out] = {
+    val (sub, f) = create(materializer, flowName)
+    flowPublisher.subscribe(sub)
+    f
+  }
+  override def isActive = true
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[Out], Future[Out]) = {
     val p = Promise[Out]()
-    FlowFrom(flowPublisher).transform("futureSink", () ⇒ new Transformer[Out, Unit] {
-      var done = false
-      override def onNext(in: Out) = { p success in; done = true; Nil }
-      override def onError(e: Throwable) = { p failure e }
-      override def isComplete = done
-      override def onTermination(e: Option[Throwable]) = { p.tryFailure(new NoSuchElementException("empty stream")); Nil }
-    }).consume()(materializer.withNamePrefix(flowName))
-    p.future
+    val sub = new Subscriber[Out] {
+      private var sub: Subscription = _
+      override def onSubscribe(s: Subscription): Unit = { s.request(1); sub = s }
+      override def onNext(t: Out): Unit = { p.trySuccess(t); sub.cancel() }
+      override def onError(t: Throwable): Unit = p.tryFailure(t)
+      override def onComplete(): Unit = p.tryFailure(new NoSuchElementException("empty stream"))
+    }
+    (sub, p.future)
   }
 
   def future(m: MaterializedSink): Future[Out] = m.getSinkFor(this)

@@ -14,6 +14,73 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import akka.stream.impl.{ ActorPublisher, EmptyPublisher, ErrorPublisher, FuturePublisher, IterablePublisher, IteratorPublisher, SimpleCallbackPublisher, TickPublisher }
 import akka.stream.impl2.ActorBasedFlowMaterializer
 
+object FlowFrom {
+  /**
+   * Helper to create `Flow` without [[Source]].
+   * Example usage: `FlowFrom[Int]`
+   */
+  def apply[T]: ProcessorFlow[T, T] = ProcessorFlow[T, T](Nil)
+
+  /**
+   * Helper to create `Flow` with [[Source]] from `Publisher`.
+   *
+   * Construct a transformation starting with given publisher. The transformation steps
+   * are executed by a series of [[org.reactivestreams.Processor]] instances
+   * that mediate the flow of elements downstream and the propagation of
+   * back-pressure upstream.
+   */
+  def apply[T](publisher: Publisher[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(PublisherSource(publisher))
+
+  /**
+   * Helper to create `Flow` with [[Source]] from `Iterator`.
+   * Example usage: `FlowFrom(Seq(1,2,3).iterator)`
+   *
+   * Start a new `Flow` from the given Iterator. The produced stream of elements
+   * will continue until the iterator runs empty or fails during evaluation of
+   * the `next()` method. Elements are pulled out of the iterator
+   * in accordance with the demand coming from the downstream transformation
+   * steps.
+   */
+  def apply[T](iterator: Iterator[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(IteratorSource(iterator))
+
+  /**
+   * Helper to create `Flow` with [[Source]] from `Iterable`.
+   * Example usage: `FlowFrom(Seq(1,2,3))`
+   *
+   * Starts a new `Flow` from the given `Iterable`. This is like starting from an
+   * Iterator, but every Subscriber directly attached to the Publisher of this
+   * stream will see an individual flow of elements (always starting from the
+   * beginning) regardless of when they subscribed.
+   */
+  def apply[T](iterable: immutable.Iterable[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(IterableSource(iterable))
+
+  /**
+   * Define the sequence of elements to be produced by the given closure.
+   * The stream ends normally when evaluation of the closure returns a `None`.
+   * The stream ends exceptionally when an exception is thrown from the closure.
+   */
+  def apply[T](f: () ⇒ Option[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(ThunkSource(f))
+
+  /**
+   * Start a new `Flow` from the given `Future`. The stream will consist of
+   * one element when the `Future` is completed with a successful value, which
+   * may happen before or after materializing the `Flow`.
+   * The stream terminates with an error if the `Future` is completed with a failure.
+   */
+  def apply[T](future: Future[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(FutureSource(future))
+
+  /**
+   * Elements are produced from the tick closure periodically with the specified interval.
+   * The tick element will be delivered to downstream consumers that has requested any elements.
+   * If a consumer has not requested any elements at the point in time when the tick
+   * element is produced it will not receive that tick element later. It will
+   * receive new tick elements as soon as it has requested more elements.
+   */
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): FlowWithSource[T, T] =
+    FlowFrom[T].withSource(TickSource(initialDelay, interval, tick))
+
+}
+
 /**
  * This trait is a marker for a pluggable stream source. Concrete instances should
  * implement [[SourceWithKey]] or [[SimpleSource]], otherwise a custom [[FlowMaterializer]]
@@ -46,9 +113,10 @@ trait SimpleSource[+In] extends Source[In] {
    * This method is only used for Sources that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] @uncheckedVariance = null
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] @uncheckedVariance =
+    throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
-   * This method indicates with this Source can create a Publisher instead of being
+   * This method indicates whether this Source can create a Publisher instead of being
    * attached to a Subscriber. This is only used if the Flow does not contain any
    * operations.
    */
@@ -77,9 +145,10 @@ trait SourceWithKey[+In, T] extends Source[In] {
    * This method is only used for Sources that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[In] @uncheckedVariance, T) = null
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[In] @uncheckedVariance, T) =
+    throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
-   * This method indicates with this Source can create a Publisher instead of being
+   * This method indicates whether this Source can create a Publisher instead of being
    * attached to a Subscriber. This is only used if the Flow does not contain any
    * operations.
    */
