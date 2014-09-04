@@ -25,7 +25,7 @@ object StreamTestKit {
    */
   def errorPublisher[T](cause: Throwable): Publisher[T] = ErrorPublisher(cause: Throwable).asInstanceOf[Publisher[T]]
 
-  def emptyPublisher[T](): Publisher[T] = EmptyPublisher.asInstanceOf[Publisher[T]]
+  def emptyPublisher[T](): Publisher[T] = EmptyPublisher[T]
 
   /**
    * Subscribes the subscriber and signals error after the first request.
