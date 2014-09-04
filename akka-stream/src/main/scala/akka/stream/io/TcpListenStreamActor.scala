@@ -33,11 +33,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
   import akka.stream.io.TcpListenStreamActor._
   import context.system
 
-  object primaryOutputs extends FanoutOutputs(settings.maxFanOutBufferSize, settings.initialFanOutBufferSize, self, pump = this) {
-    override def afterShutdown(): Unit = {
-      incomingConnections.cancel()
-      context.stop(self)
-    }
+  object primaryOutputs extends SimpleOutputs(self, pump = this) {
 
     override def waitingExposedPublisher: Actor.Receive = {
       case ExposedPublisher(publisher) ⇒
@@ -51,9 +47,12 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     def getExposedPublisher = exposedPublisher
   }
 
-  override protected def pumpFinished(): Unit = incomingConnections.cancel()
+  override protected def pumpFinished(): Unit = {
+    incomingConnections.cancel()
+    context.stop(self)
+  }
+
   override protected def pumpFailed(e: Throwable): Unit = fail(e)
-  override protected def pumpContext: ActorRefFactory = context
 
   val incomingConnections: Inputs = new DefaultInputTransferStates {
     var listener: ActorRef = _

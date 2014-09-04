@@ -23,11 +23,22 @@ private[akka] class BroadcastImpl(_settings: MaterializerSettings, other: Subscr
       super.registerSubscriber(subscriber)
     }
 
-    override def afterShutdown(): Unit = {
-      primaryOutputsShutdown = true
-      shutdownHooks()
-    }
+    override def afterShutdown(): Unit = afterFlush()
   }
+
+  override def fail(e: Throwable): Unit = {
+    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    primaryInputs.cancel()
+    primaryOutputs.cancel(e)
+    // Stopping will happen after flush
+  }
+
+  override def pumpFinished(): Unit = {
+    primaryInputs.cancel()
+    primaryOutputs.complete()
+  }
+
+  def afterFlush(): Unit = context.stop(self)
 
   val running = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val in = primaryInputs.dequeueInputElement()
