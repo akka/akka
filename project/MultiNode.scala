@@ -9,7 +9,6 @@ import sbt.Keys._
 import com.typesafe.sbt.SbtScalariform.ScalariformKeys
 
 object MultiNode {
-  def executeMultiJvmTests = Filter.containsOrNotExcludesTag("long-running")
 
   val multiNodeEnabled = sys.props.get("akka.test.multi-node").getOrElse("false").toBoolean
 
@@ -41,13 +40,13 @@ object MultiNode {
   lazy val multiJvmSettings = SbtMultiJvm.multiJvmSettings ++ inConfig(MultiJvm)(SbtScalariform.configScalariformSettings) ++ Seq(
     jvmOptions in MultiJvm := defaultMultiJvmOptions,
     compileInputs in(MultiJvm, compile) <<= (compileInputs in(MultiJvm, compile)) dependsOn (ScalariformKeys.format in MultiJvm),
-    compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test),
-    ScalariformKeys.preferences in MultiJvm := Formatting.formattingPreferences) ++
+    compile in MultiJvm <<= (compile in MultiJvm) triggeredBy (compile in Test)) ++
     Option(System.getProperty("akka.test.multi-node.hostsFileName")).map(x => Seq(multiNodeHostsFileName in MultiJvm := x)).getOrElse(Seq.empty) ++
     Option(System.getProperty("akka.test.multi-node.java")).map(x => Seq(multiNodeJavaName in MultiJvm := x)).getOrElse(Seq.empty) ++
     Option(System.getProperty("akka.test.multi-node.targetDirName")).map(x => Seq(multiNodeTargetDirName in MultiJvm := x)).getOrElse(Seq.empty) ++
-    ((executeMultiJvmTests, multiNodeEnabled) match {
-      case (true, true) =>
+    // make sure that MultiJvm tests are executed by the default test target, 
+    // and combine the results from ordinary test and multi-jvm tests
+    (if (multiNodeEnabled) {
         executeTests in Test <<= (executeTests in Test, multiNodeExecuteTests in MultiJvm) map {
           case (testResults, multiNodeResults)  =>
             val overall =
@@ -59,7 +58,7 @@ object MultiNode {
               testResults.events ++ multiNodeResults.events,
               testResults.summaries ++ multiNodeResults.summaries)
         }
-      case (true, false) =>
+    } else { 
         executeTests in Test <<= (executeTests in Test, executeTests in MultiJvm) map {
           case (testResults, multiNodeResults)  =>
             val overall =
@@ -71,7 +70,6 @@ object MultiNode {
               testResults.events ++ multiNodeResults.events,
               testResults.summaries ++ multiNodeResults.summaries)
         }
-      case (false, _) => Seq.empty
     })
 
 }
