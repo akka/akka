@@ -3,26 +3,22 @@
  */
 package akka.routing
 
-import scala.collection.immutable
-import scala.concurrent.duration._
 import akka.actor.Actor
 import akka.actor.ActorCell
 import akka.actor.ActorInitializationException
+import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
-import akka.actor.AutoReceivedMessage
 import akka.actor.IndirectActorProducer
 import akka.actor.InternalActorRef
+import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
-import akka.actor.ActorContext
-import akka.actor.PoisonPill
-import akka.actor.SupervisorStrategy
-import akka.actor.ActorRef
-import akka.actor.ReceiveTimeout
-import akka.actor.Identify
-import akka.actor.ActorIdentity
+
+import scala.collection.immutable
+import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -106,8 +102,9 @@ private[akka] class RoutedActorCell(
     _router = routerConfig.createRouter(system)
     routerConfig match {
       case pool: Pool ⇒
-        if (pool.nrOfInstances > 0)
-          addRoutees(Vector.fill(pool.nrOfInstances)(pool.newRoutee(routeeProps, this)))
+        val nrOfRoutees = pool.nrOfInstances(system)
+        if (nrOfRoutees > 0)
+          addRoutees(Vector.fill(nrOfRoutees)(pool.newRoutee(routeeProps, this)))
       case group: Group ⇒
         val paths = group.paths
         if (paths.nonEmpty)

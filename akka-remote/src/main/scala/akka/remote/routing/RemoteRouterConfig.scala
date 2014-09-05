@@ -3,25 +3,25 @@
  */
 package akka.remote.routing
 
-import akka.routing.Router
-import akka.actor.Props
-import akka.actor.ActorContext
-import akka.routing.Routee
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Address
+
 import akka.actor.ActorCell
-import akka.actor.Deploy
-import com.typesafe.config.ConfigFactory
-import akka.routing.ActorRefRoutee
-import akka.remote.RemoteScope
-import akka.actor.Actor
-import akka.actor.SupervisorStrategy
-import akka.routing.Resizer
-import akka.routing.RouterConfig
-import akka.routing.Pool
+import akka.actor.ActorContext
 import akka.actor.ActorSystem
-import akka.routing.RouterActor
+import akka.actor.Address
+import akka.actor.Deploy
+import akka.actor.Props
+import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
+import akka.remote.RemoteScope
+import akka.routing.ActorRefRoutee
+import akka.routing.Pool
+import akka.routing.Resizer
+import akka.routing.Routee
+import akka.routing.Router
+import akka.routing.RouterActor
+import akka.routing.RouterConfig
+import com.typesafe.config.ConfigFactory
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -44,7 +44,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
 
   override def createRouter(system: ActorSystem): Router = local.createRouter(system)
 
-  override def nrOfInstances: Int = local.nrOfInstances
+  override def nrOfInstances(sys: ActorSystem): Int = local.nrOfInstances(sys)
 
   override def newRoutee(routeeProps: Props, context: ActorContext): Routee = {
     val name = "c" + childNameCounter.incrementAndGet

@@ -176,10 +176,11 @@ abstract class PoolBase extends Pool
  * them from the router if they terminate.
  */
 trait Pool extends RouterConfig {
+
   /**
    * Initial number of routee instances
    */
-  def nrOfInstances: Int
+  def nrOfInstances(sys: ActorSystem): Int
 
   /**
    * Use a dedicated dispatcher for the routees of the pool.
@@ -315,7 +316,7 @@ class FromConfig(override val resizer: Option[Resizer],
   def withDispatcher(dispatcherId: String): FromConfig =
     new FromConfig(resizer, supervisorStrategy, dispatcherId)
 
-  override val nrOfInstances: Int = 0
+  override def nrOfInstances(sys: ActorSystem): Int = 0
 
   /**
    * [[akka.actor.Props]] for a group router based on the settings defined by
