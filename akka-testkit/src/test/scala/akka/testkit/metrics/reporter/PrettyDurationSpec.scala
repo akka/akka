@@ -29,8 +29,8 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
 
   cases foreach {
     case (d, expectedValue) ⇒
-      it should s"print $d seconds as $expectedValue" in {
-        d.pretty should fullyMatch regex expectedValue.replace(".", "[,.]")
+      it should s"print $d nanos as $expectedValue" in {
+        d.pretty should be(expectedValue)
       }
   }
 
@@ -40,5 +40,9 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
 
   it should "work with -infinity" in {
     Duration.MinusInf.pretty should include("minus infinity")
+  }
+
+  it should "work with undefined" in {
+    Duration.Undefined.pretty should include("undefined")
   }
 }
