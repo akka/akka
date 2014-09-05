@@ -6,8 +6,10 @@ package docs.io
 
 import java.net.{Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily}
 import java.nio.channels.DatagramChannel
+import scala.util.Random
 
 import akka.actor.{ActorSystem, Props}
+import akka.io.Udp
 import akka.testkit.TestKit
 import org.scalatest.{BeforeAndAfter, WordSpecLike}
 
@@ -21,13 +23,18 @@ class ScalaUdpMulticastSpec extends TestKit(ActorSystem("ScalaUdpMulticastSpec")
         case iface if iface.getInetAddresses.exists(_.isInstanceOf[Inet6Address]) => iface
       }
 
+      // host assigned link local multicast address http://tools.ietf.org/html/rfc3307#section-4.3.2
+      // generate a random 32 bit multicast address with the high order bit set
+      val randomAddress: String = (Random.nextInt().abs.toLong | (1L << 31)).toHexString.toUpperCase
+      val group = randomAddress.grouped(4).mkString("FF02::", ":", "")
       val port = TestUtils.temporaryUdpIpv6Port(ipv6Iface)
-
-      val (iface, group, msg, sink) = (ipv6Iface.getName, "FF33::1200", "ohi", testActor)
+      val msg = "ohi"
+      val sink = testActor
+      val iface = ipv6Iface.getName
 
       val listener = system.actorOf(Props(classOf[Listener], iface, group, port, sink))
-      val sender = system.actorOf(Props(classOf[Sender], group, port, msg))
-
+      expectMsgType[Udp.Bound]
+      val sender = system.actorOf(Props(classOf[Sender], iface, group, port, msg))
       expectMsg(msg)
 
       // unbind
