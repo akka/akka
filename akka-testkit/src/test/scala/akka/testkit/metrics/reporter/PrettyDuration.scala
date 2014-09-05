@@ -3,6 +3,8 @@
  */
 package akka.testkit.metrics.reporter
 
+import java.util.Locale
+
 import scala.concurrent.duration._
 
 object PrettyDuration {
@@ -21,10 +23,11 @@ object PrettyDuration {
           val unit = chooseUnit(nanos)
           val value = nanos.toDouble / NANOSECONDS.convert(1, unit)
 
-          s"%.${precision}g %s%s".format(value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
+          s"%.${precision}g %s%s".formatLocal(Locale.ROOT, value, abbreviate(unit), if (includeNanos) s" ($nanos ns)" else "")
 
-        case d: Duration.Infinite if d == Duration.MinusInf ⇒ s" -∞ (minus infinity)"
-        case d ⇒ s"∞ (infinity)"
+        case Duration.MinusInf ⇒ s"-∞ (minus infinity)"
+        case Duration.Inf      ⇒ s"∞ (infinity)"
+        case _                 ⇒ "undefined"
       }
     }
 
