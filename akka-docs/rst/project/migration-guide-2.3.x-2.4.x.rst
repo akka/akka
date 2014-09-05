@@ -115,3 +115,12 @@ If you use ``Slf4jLogger`` you should add the following configuration::
 
 It will filter the log events using the backend configuration (e.g. logback.xml) before
 they are published to the event bus.
+
+Pool routers nrOfInstances method now takes ActorSystem
+=======================================================
+
+In order to make cluster routers smarter about when they can start local routees,
+``nrOfInstances`` defined on ``Pool`` now takes ``ActorSystem`` as an argument.
+In case you have implemented a custom Pool you will have to update the method's signature,
+however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
+

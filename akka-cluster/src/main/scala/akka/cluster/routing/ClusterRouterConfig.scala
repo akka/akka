@@ -3,43 +3,31 @@
  */
 package akka.cluster.routing
 
-import scala.collection.immutable
-import akka.routing.RouterConfig
-import akka.routing.Router
-import akka.actor.Props
-import akka.actor.ActorContext
-import akka.routing.Routee
 import java.util.concurrent.atomic.AtomicInteger
-import akka.actor.Address
-import akka.actor.ActorCell
-import akka.actor.Deploy
-import com.typesafe.config.ConfigFactory
-import akka.routing.ActorRefRoutee
-import akka.remote.RemoteScope
-import akka.actor.Actor
-import akka.actor.SupervisorStrategy
-import akka.routing.Resizer
-import akka.routing.RouterConfig
-import akka.routing.Pool
-import akka.routing.Group
-import akka.remote.routing.RemoteRouterConfig
-import akka.routing.RouterActor
+
+import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
-import akka.actor.ActorRef
 import akka.cluster.Member
-import scala.annotation.tailrec
-import akka.actor.RootActorPath
 import akka.cluster.MemberStatus
-import akka.routing.ActorSelectionRoutee
-import akka.actor.ActorInitializationException
-import akka.routing.RouterPoolActor
-import akka.actor.ActorSystem
-import akka.actor.ActorSystem
-import akka.routing.RoutingLogic
-import akka.actor.RelativeActorPath
-import com.typesafe.config.Config
 import akka.japi.Util.immutableSeq
+import akka.remote.RemoteScope
+import akka.routing.ActorRefRoutee
+import akka.routing.ActorSelectionRoutee
+import akka.routing.Group
+import akka.routing.Pool
+import akka.routing.Resizer
+import akka.routing.Routee
+import akka.routing.Router
+import akka.routing.RouterActor
+import akka.routing.RouterConfig
+import akka.routing.RouterPoolActor
+import akka.routing.RoutingLogic
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import scala.annotation.tailrec
+import scala.collection.immutable
 
 object ClusterRouterGroupSettings {
   def fromConfig(config: Config): ClusterRouterGroupSettings =
@@ -127,7 +115,8 @@ private[akka] trait ClusterRouterSettingsBase {
   def allowLocalRoutees: Boolean
   def useRole: Option[String]
 
-  if (totalInstances <= 0) throw new IllegalArgumentException("totalInstances of cluster router must be > 0")
+  require(useRole.isEmpty || useRole.get.nonEmpty, "useRole must be either None or non-empty Some wrapped role")
+  require(totalInstances > 0, "totalInstances of cluster router must be > 0")
 }
 
 /**
@@ -183,7 +172,14 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
   /**
    * Initial number of routee instances
    */
-  override def nrOfInstances: Int = if (settings.allowLocalRoutees) settings.maxInstancesPerNode else 0
+  override def nrOfInstances(sys: ActorSystem): Int =
+    if (settings.allowLocalRoutees && settings.useRole.isDefined) {
+      if (Cluster(sys).selfRoles.contains(settings.useRole.get)) {
+        settings.maxInstancesPerNode
+      } else 0
+    } else if (settings.allowLocalRoutees && settings.useRole.isEmpty) {
+      settings.maxInstancesPerNode
+    } else 0
 
   override def resizer: Option[Resizer] = local.resizer
 
@@ -195,8 +191,8 @@ final case class ClusterRouterPool(local: Pool, settings: ClusterRouterPoolSetti
   override def supervisorStrategy: SupervisorStrategy = local.supervisorStrategy
 
   override def withFallback(other: RouterConfig): RouterConfig = other match {
-    case ClusterRouterPool(_: ClusterRouterPool, _) ⇒ throw new IllegalStateException(
-      "ClusterRouterPool is not allowed to wrap a ClusterRouterPool")
+    case ClusterRouterPool(_: ClusterRouterPool, _) ⇒
+      throw new IllegalStateException("ClusterRouterPool is not allowed to wrap a ClusterRouterPool")
     case ClusterRouterPool(otherLocal, _) ⇒
       copy(local = this.local.withFallback(otherLocal).asInstanceOf[Pool])
     case _ ⇒
@@ -321,6 +317,7 @@ private[akka] class ClusterRouterGroupActor(val settings: ClusterRouterGroupSett
     } else {
       // find the node with least routees
       val unusedNodes = currentNodes filterNot usedRouteePaths.contains
+
       if (unusedNodes.nonEmpty) {
         Some((unusedNodes.head, settings.routeesPaths.head))
       } else {
@@ -359,7 +356,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   var nodes: immutable.SortedSet[Address] = {
-    import Member.addressOrdering
+    import akka.cluster.Member.addressOrdering
     cluster.readView.members.collect {
       case m if isAvailable(m) ⇒ m.address
     }
@@ -376,13 +373,12 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
   }
 
   def availableNodes: immutable.SortedSet[Address] = {
-    import Member.addressOrdering
-    val currentNodes = nodes
-    if (currentNodes.isEmpty && settings.allowLocalRoutees && satisfiesRole(cluster.selfRoles))
-      //use my own node, cluster information not updated yet
+    import akka.cluster.Member.addressOrdering
+    if (nodes.isEmpty && settings.allowLocalRoutees && satisfiesRole(cluster.selfRoles))
+      // use my own node, cluster information not updated yet
       immutable.SortedSet(cluster.selfAddress)
     else
-      currentNodes
+      nodes
   }
 
   /**
@@ -424,7 +420,7 @@ private[akka] trait ClusterRouterActor { this: RouterActor ⇒
 
   def clusterReceive: Receive = {
     case s: CurrentClusterState ⇒
-      import Member.addressOrdering
+      import akka.cluster.Member.addressOrdering
       nodes = s.members.collect { case m if isAvailable(m) ⇒ m.address }
       addRoutees()
 

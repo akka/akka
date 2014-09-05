@@ -3,40 +3,14 @@
  */
 package akka.cluster
 
-import com.typesafe.config.Config
 import akka.ConfigurationException
-import akka.actor.ActorSystem
-import akka.actor.ActorSystemImpl
-import akka.actor.Deploy
-import akka.actor.DynamicAccess
-import akka.actor.InternalActorRef
-import akka.actor.NoScopeGiven
-import akka.actor.Scheduler
-import akka.actor.Scope
-import akka.actor.Terminated
-import akka.dispatch.sysmsg.DeathWatchNotification
+import akka.actor.{ ActorRef, ActorSystem, ActorSystemImpl, Deploy, DynamicAccess, NoScopeGiven, Scope }
+import akka.cluster.routing.{ ClusterRouterGroup, ClusterRouterGroupSettings, ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.event.EventStream
-import akka.japi.Util.immutableSeq
-import akka.remote.RemoteActorRefProvider
-import akka.remote.RemoteDeployer
+import akka.remote.{ RemoteActorRefProvider, RemoteDeployer }
 import akka.remote.routing.RemoteRouterConfig
-import akka.routing.RouterConfig
-import akka.routing.DefaultResizer
-import akka.cluster.routing.MixMetricsSelector
-import akka.cluster.routing.HeapMetricsSelector
-import akka.cluster.routing.SystemLoadAverageMetricsSelector
-import akka.cluster.routing.CpuMetricsSelector
-import akka.cluster.routing.MetricsSelector
-import akka.dispatch.sysmsg.SystemMessage
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.routing.Pool
-import akka.routing.Group
-import akka.cluster.routing.ClusterRouterPool
-import akka.cluster.routing.ClusterRouterGroup
-import com.typesafe.config.ConfigFactory
-import akka.cluster.routing.ClusterRouterPoolSettings
-import akka.cluster.routing.ClusterRouterGroupSettings
+import akka.routing.{ Group, Pool }
+import com.typesafe.config.Config
 
 /**
  * INTERNAL API
