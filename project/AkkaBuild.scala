@@ -255,7 +255,7 @@ object AkkaBuild extends Build {
     id = "akka-sample-cluster-java",
     base = file("akka-samples/akka-sample-cluster-java"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
-    settings = multiJvmSettings ++ sampleSettings ++ Seq(
+    settings = sampleSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
       javaOptions in run ++= Seq(
         "-Djava.library.path=./sigar",
@@ -266,14 +266,14 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
-    )
+    ) ++ multiJvmSettings
   ) configs (MultiJvm)
 
   lazy val clusterSampleScala = Project(
     id = "akka-sample-cluster-scala",
     base = file("akka-samples/akka-sample-cluster-scala"),
     dependencies = Seq(cluster, contrib, remoteTests % "test", testkit % "test"),
-    settings = multiJvmSettings ++ sampleSettings ++ Seq(
+    settings = sampleSettings ++ Seq(
       libraryDependencies ++= Dependencies.clusterSample,
       javaOptions in run ++= Seq(
         "-Djava.library.path=./sigar",
@@ -284,21 +284,21 @@ object AkkaBuild extends Build {
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
-    )
+    ) ++ multiJvmSettings
   ) configs (MultiJvm)
 
   lazy val multiNodeSampleScala = Project(
     id = "akka-sample-multi-node-scala",
     base = file("akka-samples/akka-sample-multi-node-scala"),
     dependencies = Seq(multiNodeTestkit % "test", testkit % "test"),
-    settings = multiJvmSettings ++ sampleSettings ++ experimentalSettings ++ Seq(
+    settings = sampleSettings ++ experimentalSettings ++ Seq(
       libraryDependencies ++= Dependencies.multiNodeSample,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
-    )
+    ) ++ multiJvmSettings
   ) configs (MultiJvm)
 
   lazy val osgiDiningHakkersSample = Project(id = "akka-sample-osgi-dining-hakkers",
@@ -385,7 +385,7 @@ object AkkaBuild extends Build {
   )
 
   lazy val sampleSettings = defaultSettings ++ docFormatSettings ++ Seq(
-    publishArtifact in (Compile, packageBin) := false,
+    publishArtifact := false,
     reportBinaryIssues := () // disable bin comp check
   )
 
