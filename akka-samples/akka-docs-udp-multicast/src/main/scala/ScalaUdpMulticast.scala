@@ -37,22 +37,24 @@ class Listener(iface: String, group: String, port: Int, sink: ActorRef) extends 
   //#bind
 
   def receive = {
-    case Udp.Bound(to) => log.info(s"Bound to $to")
+    case b @ Udp.Bound(to) =>
+      log.info("Bound to {}", to)
+      sink ! (b)
     case Udp.Received(data, remote) =>
       val msg = data.decodeString("utf-8")
-      log.info(s"Received '$msg' from '$remote'")
+      log.info("Received '{}' from {}", msg, remote)
       sink ! msg
   }
 }
 
-class Sender(group: String, port: Int, msg: String) extends Actor with ActorLogging {
+class Sender(iface: String, group: String, port: Int, msg: String) extends Actor with ActorLogging {
   import context.system
   IO(Udp) ! Udp.SimpleSender(List(Inet6ProtocolFamily()))
 
   def receive = {
     case Udp.SimpleSenderReady => {
-      val remote = new InetSocketAddress(group, port)
-      log.info(s"Sending message to $remote")
+      val remote = new InetSocketAddress(s"$group%$iface", port)
+      log.info("Sending message to {}", remote)
       sender() ! Udp.Send(ByteString(msg), remote)
     }
   }

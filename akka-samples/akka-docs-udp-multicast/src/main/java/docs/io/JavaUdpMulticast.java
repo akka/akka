@@ -80,10 +80,13 @@ public class JavaUdpMulticast {
         public void onReceive(Object msg) {
             if (msg instanceof Udp.Bound) {
                 final Udp.Bound b = (Udp.Bound) msg;
-                log.info("Bound to " + b.localAddress());
+                log.info("Bound to {}", b.localAddress());
+                sink.tell(b, getSelf());
             } else if (msg instanceof Udp.Received) {
                 final Udp.Received r = (Udp.Received) msg;
-                log.info("Received '" + r.data().decodeString("utf-8") + "' from '" + r.sender() + "'");
+                final String txt = r.data().decodeString("utf-8");
+                log.info("Received '{}' from {}", txt, r.sender());
+                sink.tell(txt, getSelf());
             } else unhandled(msg);
         }
     }
@@ -91,11 +94,13 @@ public class JavaUdpMulticast {
     public static class Sender extends UntypedActor {
         LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
+        String iface;
         String group;
         Integer port;
         String message;
 
-        public Sender(String group, Integer port, String msg) {
+        public Sender(String iface, String group, Integer port, String msg) {
+            this.iface = iface;
             this.group = group;
             this.port = port;
             this.message = msg;
@@ -110,7 +115,7 @@ public class JavaUdpMulticast {
         @Override
         public void onReceive(Object msg) {
             if (msg instanceof Udp.SimpleSenderReady) {
-                InetSocketAddress remote = new InetSocketAddress(group, port);
+                InetSocketAddress remote = new InetSocketAddress(group + "%" + iface, port);
                 log.info("Sending message to " + remote);
                 getSender().tell(UdpMessage.send(ByteString.fromString(message), remote), getSelf());
             } else unhandled(msg);
