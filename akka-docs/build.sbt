@@ -13,9 +13,9 @@ site.sphinxSupport()
 
 site.publishSite
 
-SphinxDoc.docsSettings
-
 SphinxDoc.sphinxPreprocessing
+
+SphinxDoc.docsSettings
 
 libraryDependencies ++= Dependencies.docs
 
