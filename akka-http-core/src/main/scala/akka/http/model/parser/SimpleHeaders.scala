@@ -77,7 +77,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   // http://tools.ietf.org/html/rfc7231#section-3.1.2.2
   // http://tools.ietf.org/html/rfc7231#appendix-D
   def `content-encoding` = rule {
-    oneOrMore(token ~> (x ⇒ HttpEncodings.getForKey(x.toLowerCase) getOrElse HttpEncoding.custom(x)))
+    oneOrMore(token ~> (x ⇒ HttpEncodings.getForKeyCaseInsensitive(x) getOrElse HttpEncoding.custom(x)))
       .separatedBy(listSep) ~ EOI ~> (`Content-Encoding`(_))
   }
 

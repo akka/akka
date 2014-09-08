@@ -13,6 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.stream.FlowMaterializer
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.util.ByteString
+import akka.http.util._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -81,8 +82,10 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def connectionCloseExpected: Boolean = HttpMessage.connectionCloseExpected(protocol, header[Connection])
 
   def addHeader(header: japi.HttpHeader): Self = mapHeaders(_ :+ header.asInstanceOf[HttpHeader])
+
+  /** Removes the header with the given name (case-insensitive) */
   def removeHeader(headerName: String): Self = {
-    val lowerHeaderName = headerName.toLowerCase()
+    val lowerHeaderName = headerName.toRootLowerCase
     mapHeaders(_.filterNot(_.is(lowerHeaderName)))
   }
 
@@ -101,7 +104,7 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def getHeader[T <: japi.HttpHeader](headerClass: Class[T]): akka.japi.Option[T] = header(ClassTag(headerClass))
   /** Java API */
   def getHeader(headerName: String): akka.japi.Option[japi.HttpHeader] = {
-    val lowerCased = headerName.toLowerCase
+    val lowerCased = headerName.toRootLowerCase
     headers.find(_.is(lowerCased))
   }
   /** Java API */

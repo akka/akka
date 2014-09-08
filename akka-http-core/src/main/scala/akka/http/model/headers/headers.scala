@@ -21,7 +21,7 @@ import ProtectedHeaderCreation.enable
 
 sealed abstract class ModeledCompanion extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
-  val lowercaseName = name.toLowerCase
+  val lowercaseName = name.toRootLowerCase
   private[this] val nameBytes = name.asciiBytes
   def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
 }
@@ -109,7 +109,7 @@ final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) ex
 
 // FIXME: resurrect SSL-Session-Info header once akka.io.SslTlsSupport supports it
 final case class RawHeader(name: String, value: String) extends japi.headers.RawHeader {
-  val lowercaseName = name.toLowerCase
+  val lowercaseName = name.toRootLowerCase
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
 
