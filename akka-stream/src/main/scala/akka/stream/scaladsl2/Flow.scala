@@ -67,6 +67,22 @@ trait FlowOps[-In, +Out] extends HasNoSink[Out] {
    */
   def groupBy[K, U >: Out](f: Out ⇒ K): Repr[In, (K, FlowWithSource[U, U])] =
     andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+
+  /**
+   * This operation applies the given predicate to all incoming elements and
+   * emits them to a stream of output streams, always beginning a new one with
+   * the current element if the given predicate returns true for it. This means
+   * that for the following series of predicate values, three substreams will
+   * be produced with lengths 1, 2, and 3:
+   *
+   * {{{
+   * false,             // element goes into first substream
+   * true, false,       // elements go into second substream
+   * true, false, false // elements go into third substream
+   * }}}
+   */
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[In, FlowWithSource[U, U]] =
+    andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 }
 
 /**
