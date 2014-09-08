@@ -4,12 +4,11 @@
 package akka.stream.scaladsl2
 
 import scala.collection.immutable
-import akka.stream._
 import akka.stream.impl2.Ast._
 import org.reactivestreams._
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
+import akka.stream.Transformer
 
 /**
  * This is the interface from which all concrete Flows inherit. No generic
@@ -83,6 +82,15 @@ trait FlowOps[-In, +Out] extends HasNoSink[Out] {
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[In, FlowWithSource[U, U]] =
     andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
+
+  /**
+   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
+   * This operation can be used on a stream of element type [[StreamWithSource]].
+   */
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[In, U] = strategy match {
+    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
+  }
 }
 
 /**
