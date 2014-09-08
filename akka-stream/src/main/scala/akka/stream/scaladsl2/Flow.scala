@@ -44,6 +44,20 @@ trait FlowOps[-In, +Out] extends HasNoSink[Out] {
   def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[In, T] = {
     andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
   }
+
+  /**
+   * This operation demultiplexes the incoming stream into separate output
+   * streams, one for each element key. The key is computed for each element
+   * using the given function. When a new key is encountered for the first time
+   * it is emitted to the downstream subscriber together with a fresh
+   * flow that will eventually produce all the elements of the substream
+   * for that key. Not consuming the elements from the created streams will
+   * stop this processor from processing more elements, therefore you must take
+   * care to unblock (or cancel) all of the produced streams even if you want
+   * to consume only one of them.
+   */
+  def groupBy[K, U >: Out](f: Out ⇒ K): Repr[In, (K, FlowWithSource[U, U])] =
+    andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 }
 
 /**

@@ -4,13 +4,10 @@
 package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
-
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
-
 import akka.actor._
 import akka.pattern.ask
 import akka.stream.{ MaterializerSettings, Transformer }
@@ -26,6 +23,10 @@ private[akka] object Ast {
   }
 
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
+
+  case class GroupBy(f: Any ⇒ Any) extends AstNode {
+    override def name = "groupBy"
+  }
 
 }
 
@@ -182,6 +183,7 @@ private[akka] object ActorProcessorFactory {
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
       case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
     }).withDispatcher(settings.dispatcher)
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
