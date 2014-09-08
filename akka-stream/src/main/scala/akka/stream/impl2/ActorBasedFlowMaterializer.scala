@@ -28,6 +28,10 @@ private[akka] object Ast {
     override def name = "groupBy"
   }
 
+  case class PrefixAndTail(n: Int) extends AstNode {
+    override def name = "prefixAndTail"
+  }
+
 }
 
 /**
@@ -182,8 +186,10 @@ private[akka] object ActorProcessorFactory {
   import Ast._
   def props(settings: MaterializerSettings, op: AstNode): Props =
     (op match {
-      case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
-      case g: GroupBy   ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
+
     }).withDispatcher(settings.dispatcher)
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {

@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import scala.collection.immutable
 import akka.stream._
 import akka.stream.impl2.Ast._
 import org.reactivestreams._
@@ -44,6 +45,14 @@ trait FlowOps[-In, +Out] extends HasNoSink[Out] {
   def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[In, T] = {
     andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
   }
+
+  /**
+   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
+   * of an empty collection and a stream containing the whole upstream unchanged.
+   */
+  def prefixAndTail[U >: Out](n: Int): Repr[In, (immutable.Seq[Out], FlowWithSource[U, U])] =
+    andThen(PrefixAndTail(n))
 
   /**
    * This operation demultiplexes the incoming stream into separate output
