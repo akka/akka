@@ -4,6 +4,8 @@
 
 package akka.http.util
 
+import java.util.Locale
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -111,4 +113,10 @@ private[http] class EnhancedString(val underlying: String) extends AnyVal {
 
   /** Strips margin and fixes the newline sequence to the given one preventing dependencies on the build platform */
   def stripMarginWithNewline(newline: String) = underlying.stripMargin.replace("\r\n", "\n").replace("\n", newline)
+
+  /**
+   * Provides a default toLowerCase that doesn't suffer from the dreaded turkish-i problem.
+   * See http://bugs.java.com/view_bug.do?bug_id=6208680
+   */
+  def toRootLowerCase: String = underlying.toLowerCase(Locale.ROOT)
 }

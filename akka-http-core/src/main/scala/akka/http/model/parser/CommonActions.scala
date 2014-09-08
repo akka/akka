@@ -5,6 +5,8 @@
 package akka.http.model
 package parser
 
+import akka.http.util._
+
 import MediaTypes._
 
 private[parser] trait CommonActions {
@@ -12,8 +14,8 @@ private[parser] trait CommonActions {
   type StringMapBuilder = scala.collection.mutable.Builder[(String, String), Map[String, String]]
 
   def getMediaType(mainType: String, subType: String, params: Map[String, String]): MediaType = {
-    mainType.toLowerCase match {
-      case "multipart" ⇒ subType.toLowerCase match {
+    mainType.toRootLowerCase match {
+      case "multipart" ⇒ subType.toRootLowerCase match {
         case "mixed"       ⇒ multipart.mixed(params)
         case "alternative" ⇒ multipart.alternative(params)
         case "related"     ⇒ multipart.related(params)
@@ -23,7 +25,7 @@ private[parser] trait CommonActions {
         case custom        ⇒ multipart(custom, params)
       }
       case mainLower ⇒
-        MediaTypes.getForKey((mainLower, subType.toLowerCase)) match {
+        MediaTypes.getForKey((mainLower, subType.toRootLowerCase)) match {
           case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params)
           case None             ⇒ MediaType.custom(mainType, subType, params = params, allowArbitrarySubtypes = true)
         }
@@ -32,7 +34,7 @@ private[parser] trait CommonActions {
 
   def getCharset(name: String): HttpCharset =
     HttpCharsets
-      .getForKey(name.toLowerCase)
+      .getForKeyCaseInsensitive(name)
       .orElse(HttpCharset.custom(name))
       .getOrElse(throw new ParsingException("Unsupported charset", name))
 }

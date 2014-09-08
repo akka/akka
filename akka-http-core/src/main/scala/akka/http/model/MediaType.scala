@@ -76,7 +76,7 @@ object MediaRange {
 
   def custom(mainType: String, params: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
     val (ps, q) = splitOffQValue(params, qValue)
-    Custom(mainType.toLowerCase, ps, q)
+    Custom(mainType.toRootLowerCase, ps, q)
   }
 
   final case class One(mediaType: MediaType, qValue: Float) extends MediaRange with ValueRenderable {
@@ -228,15 +228,15 @@ object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
 
   def register(mediaType: MediaType): MediaType = synchronized {
     def registerFileExtension(ext: String): Unit = {
-      val lcExt = ext.toLowerCase
+      val lcExt = ext.toRootLowerCase
       require(!extensionMap.contains(lcExt), s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'")
       extensionMap = extensionMap.updated(lcExt, mediaType)
     }
     mediaType.fileExtensions.foreach(registerFileExtension)
-    register(mediaType.mainType.toLowerCase -> mediaType.subType.toLowerCase, mediaType)
+    register(mediaType.mainType.toRootLowerCase -> mediaType.subType.toRootLowerCase, mediaType)
   }
 
-  def forExtension(ext: String): Option[MediaType] = extensionMap.get(ext.toLowerCase)
+  def forExtension(ext: String): Option[MediaType] = extensionMap.get(ext.toRootLowerCase)
 
   private def app(subType: String, compressible: Boolean, binary: Boolean, fileExtensions: String*) = register {
     new NonMultipartMediaType("application", subType, compressible, binary, immutable.Seq(fileExtensions: _*)) {
