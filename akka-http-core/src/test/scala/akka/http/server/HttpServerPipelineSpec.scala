@@ -53,15 +53,18 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
           dataProbe.expectNoMsg(50.millis)
       }
     }
-    "deliver an error as soon as a parsing error occurred" in pendingUntilFixed(new TestSetup {
+    "deliver an error as soon as a parsing error occurred" in new TestSetup {
+      pending
+      // POST should require Content-Length header
       send("""POST / HTTP/1.1
              |Host: example.com
              |
              |""".stripMarginWithNewline("\r\n"))
 
       requests.expectError()
-    })
-    "report a invalid Chunked stream" in pendingUntilFixed(new TestSetup {
+    }
+    "report a invalid Chunked stream" in new TestSetup {
+      pending
       send("""POST / HTTP/1.1
              |Host: example.com
              |Transfer-Encoding: chunked
@@ -83,7 +86,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
           dataProbe.expectError()
           requests.expectError()
       }
-    })
+    }
 
     "deliver the request entity as it comes in strictly for an immediately completed Strict entity" in new TestSetup {
       send("""POST /strict HTTP/1.1
