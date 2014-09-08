@@ -32,6 +32,10 @@ private[akka] object Ast {
     override def name = "prefixAndTail"
   }
 
+  case class SplitWhen(p: Any ⇒ Boolean) extends AstNode {
+    override def name = "splitWhen"
+  }
+
 }
 
 /**
@@ -189,6 +193,7 @@ private[akka] object ActorProcessorFactory {
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
       case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
+      case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
 
     }).withDispatcher(settings.dispatcher)
 
