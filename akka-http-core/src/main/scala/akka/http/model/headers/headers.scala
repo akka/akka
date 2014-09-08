@@ -55,8 +55,14 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
 }
 
 // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-3.3.2
-object `Content-Length` extends ModeledCompanion
-final case class `Content-Length`(length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
+private[http] object `Content-Length` extends ModeledCompanion
+/**
+ * Instances of this class will only be created transiently during header parsing and will never appear
+ * in HttpMessage.header. To access the Content-Length, see subclasses of HttpEntity.
+ *
+ * INTERNAL API
+ */
+private[http] final case class `Content-Length`(length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ length
   protected def companion = `Content-Length`
 }
