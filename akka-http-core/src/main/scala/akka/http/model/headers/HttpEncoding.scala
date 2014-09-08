@@ -49,7 +49,7 @@ object HttpEncoding {
 // see http://www.iana.org/assignments/http-parameters/http-parameters.xml
 object HttpEncodings extends ObjectRegistry[String, HttpEncoding] {
   def register(encoding: HttpEncoding): HttpEncoding =
-    register(encoding.value.toLowerCase, encoding)
+    register(encoding.value.toRootLowerCase, encoding)
 
   private def register(value: String): HttpEncoding = register(HttpEncoding(value))
 

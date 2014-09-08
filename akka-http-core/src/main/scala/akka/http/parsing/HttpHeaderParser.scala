@@ -9,7 +9,7 @@ import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
-import akka.http.util.{ SingletonException, Rendering }
+import akka.http.util._
 import akka.http.model.{ IllegalHeaderException, StatusCodes, HttpHeader, ErrorInfo }
 import akka.http.model.headers.RawHeader
 import akka.http.model.parser.HeaderParser
@@ -420,7 +420,7 @@ private[http] object HttpHeaderParser {
         val pivot = (startIx + endIx) / 2
         items(pivot) match {
           case valueParser: HeaderValueParser ⇒
-            val insertName = valueParser.headerName.toLowerCase + ':'
+            val insertName = valueParser.headerName.toRootLowerCase + ':'
             if (parser.isEmpty) parser.insertRemainingCharsAsNewNodes(ByteString(insertName), valueParser)()
             else parser.insert(ByteString(insertName), valueParser)()
           case header: String ⇒
