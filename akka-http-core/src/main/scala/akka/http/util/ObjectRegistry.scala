@@ -22,4 +22,7 @@ private[http] trait ObjectRegistry[K, V <: AnyRef] {
   protected def registry: Map[K, V] = _registry
 
   def getForKey(key: K): Option[V] = registry.get(key)
+
+  def getForKeyCaseInsensitive(key: String)(implicit conv: String <:< K): Option[V] =
+    getForKey(conv(key.toRootLowerCase))
 }

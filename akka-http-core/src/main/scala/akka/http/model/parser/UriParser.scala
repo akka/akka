@@ -6,6 +6,7 @@ package akka.http.model.parser
 
 import java.nio.charset.Charset
 import akka.parboiled2._
+import akka.http.util.enhanceString_
 import akka.http.model.Uri
 import akka.http.model.headers.HttpOrigin
 import Uri._
@@ -220,7 +221,7 @@ private[http] class UriParser(val input: ParserInput,
     if (firstPercentIx >= 0) decode(sb.toString, charset, firstPercentIx)() else sb.toString
 
   private def getDecodedStringAndLowerIfEncoded(charset: Charset = uriParsingCharset) =
-    if (firstPercentIx >= 0) decode(sb.toString, charset, firstPercentIx)().toLowerCase else sb.toString
+    if (firstPercentIx >= 0) decode(sb.toString, charset, firstPercentIx)().toRootLowerCase else sb.toString
 
   private def createUriReference(): Uri = {
     val path = if (_scheme.isEmpty) _path else collapseDotSegments(_path)
