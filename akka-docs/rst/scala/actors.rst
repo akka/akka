@@ -32,7 +32,7 @@ Creating Actors
 Defining an Actor class
 -----------------------
 
-Actor classes are implemented by extending the Actor class and implementing the
+Actors are implemented by extending the :class:`Actor` base trait and implementing the
 :meth:`receive` method. The :meth:`receive` method should define a series of case
 statements (which has the type ``PartialFunction[Any, Unit]``) that defines
 which messages your Actor can handle, using standard Scala pattern matching,
