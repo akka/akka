@@ -18,19 +18,9 @@ import scala.language.higherKinds
 sealed trait Flow
 
 /**
- * Marker interface for flows that have a free (attachable) input side.
- */
-sealed trait HasNoSource[-In] extends Flow
-
-/**
- * Marker interface for flows that have a free (attachable) output side.
- */
-sealed trait HasNoSink[+Out] extends Flow
-
-/**
  * Operations offered by flows with a free output side: the DSL flows left-to-right only.
  */
-trait FlowOps[-In, +Out] extends HasNoSink[Out] {
+trait FlowOps[-In, +Out] {
   type Repr[-I, +O] <: FlowOps[I, O]
 
   // Storing ops in reverse order
@@ -49,7 +39,7 @@ trait FlowOps[-In, +Out] extends HasNoSink[Out] {
 /**
  * Flow without attached input and without attached output, can be used as a `Processor`.
  */
-final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] with HasNoSource[In] {
+final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] {
   override type Repr[-I, +O] = ProcessorFlow[I, O]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
@@ -67,7 +57,7 @@ final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In
 /**
  *  Flow with attached output, can be used as a `Subscriber`.
  */
-final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) extends HasNoSource[In] {
+final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) {
 
   def withSource(in: Source[In]): RunnableFlow[In, Out] = RunnableFlow(in, output, ops)
   def withoutSink: ProcessorFlow[In, Out] = ProcessorFlow(ops)
@@ -128,11 +118,22 @@ final case class RunnableFlow[-In, +Out](private[scaladsl2] val input: Source[In
     materializer.materialize(input, output, ops)
 }
 
+/**
+ * Returned by [[RunnableFlow#run]] and can be used as parameter to the
+ * accessor method to retrieve the materialized `Source` or `Sink`, e.g.
+ * [[SubscriberSource#subscriber]] or [[PublisherSink#publisher]].
+ */
 class MaterializedFlow(sourceKey: AnyRef, matSource: Any, sinkKey: AnyRef, matSink: Any) extends MaterializedSource with MaterializedSink {
+  /**
+   * Do not call directly. Use accessor method in the concrete `Source`, e.g. [[SubscriberSource#subscriber]].
+   */
   override def getSourceFor[T](key: SourceWithKey[_, T]): T =
     if (key == sourceKey) matSource.asInstanceOf[T]
     else throw new IllegalArgumentException(s"Source key [$key] doesn't match the source [$sourceKey] of this flow")
 
+  /**
+   * Do not call directly. Use accessor method in the concrete `Sink`, e.g. [[PublisherSink#publisher]].
+   */
   def getSinkFor[T](key: SinkWithKey[_, T]): T =
     if (key == sinkKey) matSink.asInstanceOf[T]
     else throw new IllegalArgumentException(s"Sink key [$key] doesn't match the sink [$sinkKey] of this flow")
