@@ -15,6 +15,11 @@ import akka.stream.impl.{ ActorProcessor, ActorPublisher, ExposedPublisher, Tran
 import akka.stream.scaladsl2._
 import akka.stream.TimerTransformer
 import akka.stream.impl.TimerTransformerProcessorsImpl
+import akka.stream.OverflowStrategy
+import akka.stream.impl.ConflateImpl
+import akka.stream.impl.ExpandImpl
+import akka.stream.impl.BufferImpl
+import akka.stream.impl.FanoutProcessorImpl
 
 /**
  * INTERNAL API
@@ -42,6 +47,18 @@ private[akka] object Ast {
 
   case object ConcatAll extends AstNode {
     override def name = "concatFlatten"
+  }
+
+  case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any) extends AstNode {
+    override def name = "conflate"
+  }
+
+  case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any)) extends AstNode {
+    override def name = "expand"
+  }
+
+  case class Buffer(size: Int, overflowStrategy: OverflowStrategy) extends AstNode {
+    override def name = "buffer"
   }
 
 }
@@ -205,6 +222,9 @@ private[akka] object ActorProcessorFactory {
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case ConcatAll         ⇒ Props(new ConcatAllImpl(materializer))
+      case cf: Conflate      ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
+      case ex: Expand        ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
+      case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
     }).withDispatcher(settings.dispatcher)
   }
 
