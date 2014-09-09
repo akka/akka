@@ -3,7 +3,9 @@
  */
 package akka.stream.scaladsl2
 
-import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
+import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit2.ScriptedTest
 import akka.testkit.TestProbe
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }

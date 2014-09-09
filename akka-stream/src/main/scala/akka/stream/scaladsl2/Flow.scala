@@ -4,11 +4,16 @@
 package akka.stream.scaladsl2
 
 import scala.collection.immutable
+import scala.collection.immutable
 import akka.stream.impl2.Ast._
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
 import akka.stream.Transformer
+import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
+import akka.util.Collections.EmptyImmutableSeq
+import akka.stream.TimerTransformer
 
 /**
  * This is the interface from which all concrete Flows inherit. No generic
@@ -17,10 +22,15 @@ import akka.stream.Transformer
  */
 sealed trait Flow
 
+object FlowOps {
+  private case object GroupedWithinTimerKey
+}
+
 /**
  * Operations offered by flows with a free output side: the DSL flows left-to-right only.
  */
 trait FlowOps[-In, +Out] {
+  import FlowOps._
   type Repr[-I, +O] <: FlowOps[I, O]
 
   // Storing ops in reverse order
@@ -52,6 +62,66 @@ trait FlowOps[-In, +Out] {
     transform("collect", () ⇒ new Transformer[Out, T] {
       override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
     })
+
+  /**
+   * Chunk up this stream into groups of the given size, with the last group
+   * possibly smaller than requested due to end-of-stream.
+   *
+   * `n` must be positive, otherwise IllegalArgumentException is thrown.
+   */
+  def grouped(n: Int): Repr[In, immutable.Seq[Out]] = {
+    require(n > 0, "n must be greater than 0")
+    transform("grouped", () ⇒ new Transformer[Out, immutable.Seq[Out]] {
+      var buf: Vector[Out] = Vector.empty
+      override def onNext(in: Out) = {
+        buf :+= in
+        if (buf.size == n) {
+          val group = buf
+          buf = Vector.empty
+          List(group)
+        } else
+          Nil
+      }
+      override def onTermination(e: Option[Throwable]) = if (buf.isEmpty) Nil else List(buf)
+    })
+  }
+
+  /**
+   * Chunk up this stream into groups of elements received within a time window,
+   * or limited by the given number of elements, whatever happens first.
+   * Empty groups will not be emitted if no elements are received from upstream.
+   * The last group before end-of-stream will contain the buffered elements
+   * since the previously emitted group.
+   *
+   * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
+   * IllegalArgumentException is thrown.
+   */
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[In, immutable.Seq[Out]] = {
+    require(n > 0, "n must be greater than 0")
+    require(d > Duration.Zero)
+    timerTransform("groupedWithin", () ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
+      schedulePeriodically(GroupedWithinTimerKey, d)
+      var buf: Vector[Out] = Vector.empty
+
+      override def onNext(in: Out) = {
+        buf :+= in
+        if (buf.size == n) {
+          // start new time window
+          schedulePeriodically(GroupedWithinTimerKey, d)
+          emitGroup()
+        } else Nil
+      }
+      override def onTermination(e: Option[Throwable]) = if (buf.isEmpty) Nil else List(buf)
+      override def onTimer(timerKey: Any) = emitGroup()
+      private def emitGroup(): immutable.Seq[immutable.Seq[Out]] =
+        if (buf.isEmpty) EmptyImmutableSeq
+        else {
+          val group = buf
+          buf = Vector.empty
+          List(group)
+        }
+    })
+  }
 
   /**
    * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
@@ -125,6 +195,33 @@ trait FlowOps[-In, +Out] {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
     case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
   }
+
+  /**
+   * Transformation of a stream, with additional support for scheduled events.
+   *
+   * For each element the [[akka.stream.Transformer#onNext]]
+   * function is invoked, expecting a (possibly empty) sequence of output elements
+   * to be produced.
+   * After handing off the elements produced from one input element to the downstream
+   * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
+   * stream processing at this point; in that case the upstream subscription is
+   * canceled. Before signaling normal completion to the downstream subscribers,
+   * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
+   * sequence of elements in response to the end-of-stream event.
+   *
+   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
+   *
+   * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
+   *
+   * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
+   * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
+   * therefore you do not have to add any additional thread safety or memory
+   * visibility constructs to access the state from the callback methods.
+   *
+   * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
+   */
+  def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Repr[In, U] =
+    andThen(TimerTransform(name, mkTransformer.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
 }
 
 /**

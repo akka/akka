@@ -11,6 +11,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.MaterializerSettings
+import akka.stream.testkit.StreamTestKit.SubscriberProbe
 
 class FlowPrefixAndTailSpec extends AkkaSpec {
 
@@ -30,14 +31,22 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val futureSink = newFutureSink
       val mf = FlowFrom(Nil).prefixAndTail(10).withSink(futureSink).run()
       val fut = futureSink.future(mf)
-      Await.result(fut, 3.seconds) should be((Nil, FlowFrom(EmptyPublisher[Int])))
+      val (prefix, tailFlow) = Await.result(fut, 3.seconds)
+      prefix should be(Nil)
+      val tailSubscriber = SubscriberProbe[Int]
+      tailFlow.publishTo(tailSubscriber)
+      tailSubscriber.expectComplete()
     }
 
     "work on short input" in {
       val futureSink = newFutureSink
       val mf = FlowFrom(List(1, 2, 3)).prefixAndTail(10).withSink(futureSink).run()
       val fut = futureSink.future(mf)
-      Await.result(fut, 3.seconds) should be((List(1, 2, 3), FlowFrom(EmptyPublisher[Int])))
+      val (prefix, tailFlow) = Await.result(fut, 3.seconds)
+      prefix should be(List(1, 2, 3))
+      val tailSubscriber = SubscriberProbe[Int]
+      tailFlow.publishTo(tailSubscriber)
+      tailSubscriber.expectComplete()
     }
 
     "work on longer inputs" in {
@@ -47,11 +56,10 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 5)
 
-      // FIXME enable this again, when grouped is implemented
-      //      val futureSink2 = ???
-      //      val mf2 = tail.grouped(6).withSink(futureSink2).run()
-      //      val fut2 = futureSink2.future(mf2)
-      //      Await.result(fut2, 3.seconds) should be(6 to 10)
+      val futureSink2 = FutureSink[immutable.Seq[Int]]
+      val mf2 = tail.grouped(6).withSink(futureSink2).run()
+      val fut2 = futureSink2.future(mf2)
+      Await.result(fut2, 3.seconds) should be(6 to 10)
     }
 
     "handle zero take count" in {
@@ -61,8 +69,10 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      // FIXME enable this again, when grouped is implemented
-      // Await.result(FlowFrom(tail).grouped(11).toFuture(), 3.seconds) should be(1 to 10)
+      val futureSink2 = FutureSink[immutable.Seq[Int]]
+      val mf2 = tail.grouped(11).withSink(futureSink2).run()
+      val fut2 = futureSink2.future(mf2)
+      Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "handle negative take count" in {
@@ -72,8 +82,10 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      // FIXME enable this again, when grouped is implemented
-      // Await.result(FlowFrom(tail).grouped(11).toFuture(), 3.seconds) should be(1 to 10)
+      val futureSink2 = FutureSink[immutable.Seq[Int]]
+      val mf2 = tail.grouped(11).withSink(futureSink2).run()
+      val fut2 = futureSink2.future(mf2)
+      Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "work if size of take is equal to stream size" in {
