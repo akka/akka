@@ -5,6 +5,8 @@
 package akka.http.model
 package parser
 
+import akka.http.util._
+
 import akka.parboiled2.Parser
 import headers._
 
@@ -19,7 +21,7 @@ private[parser] trait AcceptHeader { this: Parser with CommonRules with CommonAc
   def `media-range-decl` = rule {
     `media-range-def` ~ OWS ~ zeroOrMore(ws(';') ~ parameter) ~> { (main, sub, params) ⇒
       if (sub == "*") {
-        val mainLower = main.toLowerCase
+        val mainLower = main.toRootLowerCase
         MediaRanges.getForKey(mainLower) match {
           case Some(registered) ⇒ if (params.isEmpty) registered else registered.withParams(params.toMap)
           case None             ⇒ MediaRange.custom(mainLower, params.toMap)

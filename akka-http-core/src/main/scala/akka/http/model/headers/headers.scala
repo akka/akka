@@ -21,7 +21,7 @@ import ProtectedHeaderCreation.enable
 
 sealed abstract class ModeledCompanion extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
-  val lowercaseName = name.toLowerCase
+  val lowercaseName = name.toRootLowerCase
   private[this] val nameBytes = name.asciiBytes
   def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
 }
@@ -55,8 +55,14 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
 }
 
 // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-3.3.2
-object `Content-Length` extends ModeledCompanion
-final case class `Content-Length`(length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
+private[http] object `Content-Length` extends ModeledCompanion
+/**
+ * Instances of this class will only be created transiently during header parsing and will never appear
+ * in HttpMessage.header. To access the Content-Length, see subclasses of HttpEntity.
+ *
+ * INTERNAL API
+ */
+private[http] final case class `Content-Length`(length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ length
   protected def companion = `Content-Length`
 }
@@ -103,7 +109,7 @@ final case class `If-Range`(entityTagOrDateTime: Either[EntityTag, DateTime]) ex
 
 // FIXME: resurrect SSL-Session-Info header once akka.io.SslTlsSupport supports it
 final case class RawHeader(name: String, value: String) extends japi.headers.RawHeader {
-  val lowercaseName = name.toLowerCase
+  val lowercaseName = name.toRootLowerCase
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
 
