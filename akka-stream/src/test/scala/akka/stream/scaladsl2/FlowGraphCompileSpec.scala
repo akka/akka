@@ -226,5 +226,30 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "chain input and output ports" in {
+      FlowGraph { implicit b ⇒
+        val zip = Zip[Int, String]
+        val out = PublisherSink[(Int, String)]
+        import FlowGraphImplicits._
+        FlowFrom(List(1, 2, 3)) ~> zip.left ~> out
+        FlowFrom(List("a", "b", "c")) ~> zip.right
+      }.run()
+    }
+
+    "distinguish between input and output ports" in {
+      intercept[IllegalArgumentException] {
+        FlowGraph { implicit b ⇒
+          val zip = Zip[Int, String]
+          val wrongOut = PublisherSink[(Int, Int)]
+          import FlowGraphImplicits._
+          "FlowFrom(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
+          """FlowFrom(List("a", "b", "c")) ~> zip.left""" shouldNot compile
+          """FlowFrom(List("a", "b", "c")) ~> zip.out""" shouldNot compile
+          "zip.left ~> zip.right" shouldNot compile
+          "FlowFrom(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
+        }
+      }.getMessage should include("empty")
+    }
+
   }
 }

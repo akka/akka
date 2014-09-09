@@ -57,6 +57,8 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
   // the shutdown method. Subscription attempts after shutdown can be denied immediately.
   private val pendingSubscribers = new AtomicReference[immutable.Seq[Subscriber[_ >: T]]](Nil)
 
+  protected val wakeUpMsg: Any = SubscribePending
+
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     @tailrec def doSubscribe(subscriber: Subscriber[_ >: T]): Unit = {
       val current = pendingSubscribers.get
@@ -64,7 +66,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
         reportSubscribeError(subscriber)
       else {
         if (pendingSubscribers.compareAndSet(current, subscriber +: current))
-          impl ! SubscribePending
+          impl ! wakeUpMsg
         else
           doSubscribe(subscriber) // CAS retry
       }

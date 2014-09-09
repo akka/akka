@@ -4,6 +4,9 @@
 package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicLong
+
+import akka.stream.actor.ActorSubscriber
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
@@ -70,12 +73,20 @@ private[akka] object Ast {
     def name: String
   }
 
-  case object Merge extends JunctionAstNode {
+  // FIXME: Try to eliminate these
+  sealed trait FanInAstNode extends JunctionAstNode
+  sealed trait FanOutAstNode extends JunctionAstNode
+
+  case object Merge extends FanInAstNode {
     override def name = "merge"
   }
 
-  case object Broadcast extends JunctionAstNode {
+  case object Broadcast extends FanOutAstNode {
     override def name = "broadcast"
+  }
+
+  case object Zip extends FanInAstNode {
+    override def name = "zip"
   }
 
 }
@@ -187,15 +198,38 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${supervisor.getClass.getName}]")
   }
 
-  override def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]]) = op match {
-    case Ast.Merge ⇒
-      // FIXME real impl
-      require(outputCount == 1)
-      (Vector.fill(inputCount)(dummySubscriber[In]), List(dummyPublisher[Out]))
-    case Ast.Broadcast ⇒
-      // FIXME real impl
-      require(inputCount == 1)
-      (List(dummySubscriber[In]), Vector.fill(outputCount)(dummyPublisher[Out]))
+  override def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]]) = {
+    val flowName = createFlowName()
+    val actorName = s"$flowName-${op.name}"
+
+    op match {
+      case fanin: Ast.FanInAstNode ⇒
+        val impl = op match {
+          case Ast.Merge ⇒
+            actorOf(Props(new FairMerge(settings, inputCount)).withDispatcher(settings.dispatcher), actorName)
+          case Ast.Zip ⇒
+            actorOf(Props(new Zip(settings)).withDispatcher(settings.dispatcher), actorName)
+        }
+
+        val publisher = new ActorPublisher[Out](impl, equalityValue = None)
+        impl ! ExposedPublisher(publisher.asInstanceOf[ActorPublisher[Any]])
+        val subscribers = Vector.tabulate(inputCount)(FanIn.SubInput[In](impl, _))
+        (subscribers, List(publisher))
+
+      case fanout: Ast.FanOutAstNode ⇒
+        val impl = op match {
+          case Ast.Broadcast ⇒
+            actorOf(Props(new Broadcast(settings, outputCount)).withDispatcher(settings.dispatcher), actorName)
+        }
+
+        val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl, equalityValue = None) {
+          override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
+        })
+        impl ! FanOut.ExposedPublishers(publishers.asInstanceOf[immutable.Seq[ActorPublisher[Any]]])
+        val subscriber = ActorSubscriber[In](impl)
+        (List(subscriber), publishers)
+    }
+
   }
 
   // FIXME remove
