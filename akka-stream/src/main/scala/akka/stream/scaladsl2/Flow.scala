@@ -23,7 +23,18 @@ import akka.stream.TimerTransformer
 sealed trait Flow
 
 object FlowOps {
+  private case object TakeWithinTimerKey
+  private case object DropWithinTimerKey
   private case object GroupedWithinTimerKey
+
+  private val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = Nil
+    override def isComplete = true
+  }
+
+  private val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = List(elem)
+  }
 }
 
 /**
@@ -122,6 +133,96 @@ trait FlowOps[-In, +Out] {
         }
     })
   }
+
+  /**
+   * Discard the given number of elements at the beginning of the stream.
+   * No elements will be dropped if `n` is zero or negative.
+   */
+  def drop(n: Int): Repr[In, Out] =
+    transform("drop", () ⇒ new Transformer[Out, Out] {
+      var delegate: Transformer[Out, Out] =
+        if (n <= 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
+        else new Transformer[Out, Out] {
+          var c = n
+          override def onNext(in: Out) = {
+            c -= 1
+            if (c == 0)
+              delegate = identityTransformer.asInstanceOf[Transformer[Out, Out]]
+            Nil
+          }
+        }
+
+      override def onNext(in: Out) = delegate.onNext(in)
+    })
+
+  /**
+   * Discard the elements received within the given duration at beginning of the stream.
+   */
+  def dropWithin(d: FiniteDuration): Repr[In, Out] =
+    timerTransform("dropWithin", () ⇒ new TimerTransformer[Out, Out] {
+      scheduleOnce(DropWithinTimerKey, d)
+
+      var delegate: Transformer[Out, Out] =
+        new Transformer[Out, Out] {
+          override def onNext(in: Out) = Nil
+        }
+
+      override def onNext(in: Out) = delegate.onNext(in)
+      override def onTimer(timerKey: Any) = {
+        delegate = identityTransformer.asInstanceOf[Transformer[Out, Out]]
+        Nil
+      }
+    })
+
+  /**
+   * Terminate processing (and cancel the upstream publisher) after the given
+   * number of elements. Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * The stream will be completed without producing any elements if `n` is zero
+   * or negative.
+   */
+  def take(n: Int): Repr[In, Out] =
+    transform("take", () ⇒ new Transformer[Out, Out] {
+      var delegate: Transformer[Out, Out] =
+        if (n <= 0) takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
+        else new Transformer[Out, Out] {
+          var c = n
+          override def onNext(in: Out) = {
+            c -= 1
+            if (c == 0)
+              delegate = takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
+            List(in)
+          }
+        }
+
+      override def onNext(in: Out) = delegate.onNext(in)
+      override def isComplete = delegate.isComplete
+    })
+
+  /**
+   * Terminate processing (and cancel the upstream publisher) after the given
+   * duration. Due to input buffering some elements may have been
+   * requested from upstream publishers that will then not be processed downstream
+   * of this step.
+   *
+   * Note that this can be combined with [[#take]] to limit the number of elements
+   * within the duration.
+   */
+  def takeWithin(d: FiniteDuration): Repr[In, Out] =
+    timerTransform("takeWithin", () ⇒ new TimerTransformer[Out, Out] {
+      scheduleOnce(TakeWithinTimerKey, d)
+
+      var delegate: Transformer[Out, Out] = identityTransformer.asInstanceOf[Transformer[Out, Out]]
+
+      override def onNext(in: Out) = delegate.onNext(in)
+      override def isComplete = delegate.isComplete
+      override def onTimer(timerKey: Any) = {
+        delegate = takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
+        Nil
+      }
+    })
 
   /**
    * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
