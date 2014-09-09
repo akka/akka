@@ -426,16 +426,13 @@ That is not done by the router. The configuration for a group looks like this:
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-scala/src/multi-jvm/scala/sample/cluster/stats/StatsSampleSpec.scala#router-lookup-config
 
-.. note:: 
-
+.. note::
   The routee actors should be started as early as possible when starting the actor system, because
-  the router will try to use them as soon as the member status is changed to 'Up'. If it is not
-  available at that point it will be removed from the router and it will only re-try when the 
-  cluster members are changed.
+  the router will try to use them as soon as the member status is changed to 'Up'.
 
-It is the relative actor paths defined in ``routees.paths`` that identify what actor to lookup. 
-It is possible to limit the lookup of routees to member nodes tagged with a certain role by
-specifying ``use-role``.
+The relative actor paths defined in ``routees.paths`` are used as for selecting the actors to which the messages will be forwarded to by the router.
+Messages will be forwarded to the routees using :ref:`ActorSelection <actorSelection-scala>`, so the same delivery semantics should be expected.
+It is possible to limit the lookup of routees to member nodes tagged with a certain role by specifying ``use-role``.
 
 ``nr-of-instances`` defines total number of routees in the cluster. Setting ``nr-of-instances`` 
 to a high value will result in new routees added to the router when nodes join the cluster.
