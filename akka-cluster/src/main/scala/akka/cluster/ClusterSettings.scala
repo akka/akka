@@ -15,6 +15,7 @@ import akka.util.Helpers.Requiring
 import akka.util.Helpers.ConfigOps
 import scala.concurrent.duration.FiniteDuration
 import akka.japi.Util.immutableSeq
+import java.util.Locale
 
 final class ClusterSettings(val config: Config, val systemName: String) {
 
@@ -38,7 +39,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val SeedNodeTimeout: FiniteDuration = cc.getMillisDuration("seed-node-timeout")
   val RetryUnsuccessfulJoinAfter: Duration = {
     val key = "retry-unsuccessful-join-after"
-    cc.getString(key).toLowerCase match {
+    cc.getString(key).toLowerCase(Locale.ROOT) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s, or off")
     }
@@ -52,7 +53,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val UnreachableNodesReaperInterval: FiniteDuration = cc.getMillisDuration("unreachable-nodes-reaper-interval")
   val PublishStatsInterval: Duration = {
     val key = "publish-stats-interval"
-    cc.getString(key).toLowerCase match {
+    cc.getString(key).toLowerCase(Locale.ROOT) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
@@ -60,7 +61,7 @@ final class ClusterSettings(val config: Config, val systemName: String) {
 
   val AutoDownUnreachableAfter: Duration = {
     val key = "auto-down-unreachable-after"
-    cc.getString(key).toLowerCase match {
+    cc.getString(key).toLowerCase(Locale.ROOT) match {
       case "off" ⇒ Duration.Undefined
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
