@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+import java.util.Locale
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -440,7 +441,7 @@ object Logging {
    * valid inputs are upper or lowercase (not mixed) versions of:
    * "error", "warning", "info" and "debug"
    */
-  def levelFor(s: String): Option[LogLevel] = s.toLowerCase match {
+  def levelFor(s: String): Option[LogLevel] = s.toLowerCase(Locale.ROOT) match {
     case "off"     ⇒ Some(OffLevel)
     case "error"   ⇒ Some(ErrorLevel)
     case "warning" ⇒ Some(WarningLevel)
