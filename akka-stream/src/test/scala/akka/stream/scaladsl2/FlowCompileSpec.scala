@@ -9,7 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-class FlowSpec extends AkkaSpec {
+class FlowCompileSpec extends AkkaSpec {
 
   val intSeq = IterableSource(Seq(1, 2, 3))
   val strSeq = IterableSource(Seq("a", "b", "c"))
@@ -143,4 +143,5 @@ class FlowSpec extends AkkaSpec {
       "closed.ToFuture" shouldNot compile
     }
   }
+
 }
