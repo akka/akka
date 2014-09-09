@@ -13,6 +13,8 @@ import akka.pattern.ask
 import akka.stream.{ MaterializerSettings, Transformer }
 import akka.stream.impl.{ ActorProcessor, ActorPublisher, ExposedPublisher, TransformProcessorImpl }
 import akka.stream.scaladsl2._
+import akka.stream.TimerTransformer
+import akka.stream.impl.TimerTransformerProcessorsImpl
 
 /**
  * INTERNAL API
@@ -23,6 +25,8 @@ private[akka] object Ast {
   }
 
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
+
+  case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
 
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"
@@ -196,11 +200,11 @@ private[akka] object ActorProcessorFactory {
     val settings = materializer.settings
     (op match {
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case t: TimerTransform ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
       case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case ConcatAll         ⇒ Props(new ConcatAllImpl(materializer))
-
     }).withDispatcher(settings.dispatcher)
   }
 
