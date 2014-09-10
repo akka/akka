@@ -376,10 +376,10 @@ object AkkaBuild extends Build {
     libraryDependencies <++= scalaVersion { v =>
       Seq("org.scala-lang" % "scala-reflect" % v) ++ (
         if (v.startsWith("2.10."))
-          Seq("org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile")
+          Seq("org.scalamacros" %% "quasiquotes" % "2.0.1" % "compile")
         else Nil)
     },
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
   )
 
   lazy val parsing = Project(
