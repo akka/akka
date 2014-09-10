@@ -16,6 +16,8 @@ import akka.stream.scaladsl2.FlowFrom
 private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeMax: Int)
   extends MultiStreamOutputProcessor(_settings) {
 
+  import MultiStreamOutputProcessor._
+
   var taken = immutable.Vector.empty[Any]
   var left = takeMax
 
@@ -32,7 +34,7 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
     }
   }
 
-  def streamTailPhase(substream: SubstreamOutputs) = TransferPhase(primaryInputs.NeedsInput && substream.NeedsDemand) { () ⇒
+  def streamTailPhase(substream: SubstreamOutput) = TransferPhase(primaryInputs.NeedsInput && substream.NeedsDemand) { () ⇒
     substream.enqueueOutputElement(primaryInputs.dequeueInputElement())
   }
 
@@ -47,7 +49,7 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
   }
 
   def emitNonEmptyTail(): Unit = {
-    val substreamOutput = newSubstream()
+    val substreamOutput = createSubstreamOutput()
     val substreamFlow = FlowFrom(substreamOutput) // substreamOutput is a Publisher
     primaryOutputs.enqueueOutputElement((taken, substreamFlow))
     primaryOutputs.complete()

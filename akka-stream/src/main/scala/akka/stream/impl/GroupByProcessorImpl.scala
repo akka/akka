@@ -11,9 +11,11 @@ import akka.stream.impl.MultiStreamOutputProcessor.SubstreamKey
  * INTERNAL API
  */
 private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any) extends MultiStreamOutputProcessor(settings) {
-  var keyToSubstreamOutputs = collection.mutable.Map.empty[Any, SubstreamOutputs]
+  import MultiStreamOutputProcessor._
 
-  var pendingSubstreamOutputs: SubstreamOutputs = _
+  var keyToSubstreamOutput = collection.mutable.Map.empty[Any, SubstreamOutput]
+
+  var pendingSubstreamOutput: SubstreamOutput = _
 
   // No substream is open yet. If downstream cancels now, we are complete
   val waitFirst = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
@@ -27,8 +29,8 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
     val elem = primaryInputs.dequeueInputElement()
     val key = keyFor(elem)
 
-    keyToSubstreamOutputs.get(key) match {
-      case Some(substream) if substream.isOpen ⇒ nextPhase(dispatchToSubstream(elem, keyToSubstreamOutputs(key)))
+    keyToSubstreamOutput.get(key) match {
+      case Some(substream) if substream.isOpen ⇒ nextPhase(dispatchToSubstream(elem, keyToSubstreamOutput(key)))
       case None if primaryOutputs.isOpen       ⇒ nextPhase(openSubstream(elem, key))
       case _                                   ⇒ // stay
     }
@@ -39,30 +41,30 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       // Just drop, we do not open any more substreams
       nextPhase(waitNext)
     } else {
-      val substreamOutput = newSubstream()
+      val substreamOutput = createSubstreamOutput()
       primaryOutputs.enqueueOutputElement((key, substreamOutput))
-      keyToSubstreamOutputs(key) = substreamOutput
+      keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))
     }
   }
 
-  def dispatchToSubstream(elem: Any, substream: SubstreamOutputs): TransferPhase = {
-    pendingSubstreamOutputs = substream
+  def dispatchToSubstream(elem: Any, substream: SubstreamOutput): TransferPhase = {
+    pendingSubstreamOutput = substream
     TransferPhase(substream.NeedsDemand) { () ⇒
       substream.enqueueOutputElement(elem)
-      pendingSubstreamOutputs = null
+      pendingSubstreamOutput = null
       nextPhase(waitNext)
     }
   }
 
   nextPhase(waitFirst)
 
-  override def invalidateSubstream(substream: SubstreamKey): Unit = {
-    if ((pendingSubstreamOutputs ne null) && substream == pendingSubstreamOutputs.key) {
-      pendingSubstreamOutputs = null
+  override def invalidateSubstreamOutput(substream: SubstreamKey): Unit = {
+    if ((pendingSubstreamOutput ne null) && substream == pendingSubstreamOutput.key) {
+      pendingSubstreamOutput = null
       nextPhase(waitNext)
     }
-    super.invalidateSubstream(substream)
+    super.invalidateSubstreamOutput(substream)
   }
 
 }
