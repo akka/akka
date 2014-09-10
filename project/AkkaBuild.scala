@@ -237,6 +237,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
+      Dependencies.addScalaXmlTestDepencency,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -302,6 +303,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
+      Dependencies.addScalaXmlTestDepencency,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
@@ -362,6 +364,7 @@ object AkkaBuild extends Build {
         Seq(
           version := streamAndHttpVersion,
           libraryDependencies ++= Dependencies.http,
+          Dependencies.addScalaXmlDepencency,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
           previousArtifact := None,
@@ -1365,8 +1368,14 @@ object Dependencies {
 
   import Compile._
 
-  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(scalaXml))
-  val scalaXmlTestDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
+  val addScalaXmlDepencency = addPost210Dependency(scalaXml)
+  val addScalaXmlTestDepencency = addPost210Dependency(Test.scalaXml)
+
+  def addPost210Dependency(moduleId: ModuleID) =
+    libraryDependencies <++= scalaVersion {
+      case version if version.startsWith("2.10") => Nil
+      case _ => Seq(moduleId)
+    }
 
   val actor = Seq(config)
 
@@ -1376,7 +1385,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlTestDepencency
+  val remoteTests = Seq(Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1386,15 +1395,14 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
-    scalaXmlTestDepencency
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
   val httpCore = Seq(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
     Test.junit, Test.scalatest)
 
-  val http = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+  val http = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
