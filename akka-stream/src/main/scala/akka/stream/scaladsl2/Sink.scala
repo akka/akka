@@ -5,6 +5,7 @@ package akka.stream.scaladsl2
 
 import akka.actor.Props
 
+import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
@@ -235,5 +236,33 @@ final case class ForeachSink[Out](f: Out ⇒ Unit) extends SinkWithKey[Out, Futu
     promise.future
   }
   def future(m: MaterializedSink): Future[Unit] = m.getSinkFor(this)
+}
+
+/**
+ * Invoke the given function for every received element, giving it its previous
+ * output (or the given `zero` value) and the element as input. The sink holds a
+ * [[scala.concurrent.Future]] that will be completed with value of the final
+ * function evaluation when the input stream ends, or completed with `Failure`
+ * if there is an error is signaled in the stream.
+ */
+final case class FoldSink[U, Out](zero: U)(f: (U, Out) ⇒ U) extends SinkWithKey[Out, Future[U]] {
+  override def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Future[U] = {
+    val promise = Promise[U]()
+
+    FlowFrom(flowPublisher).transform("fold", () ⇒ new Transformer[Out, U] {
+      var state: U = zero
+      override def onNext(in: Out): immutable.Seq[U] = { state = f(state, in); Nil }
+      override def onTermination(e: Option[Throwable]) = {
+        e match {
+          case None    ⇒ promise.success(state)
+          case Some(e) ⇒ promise.failure(e)
+        }
+        Nil
+      }
+    }).consume()(materializer.withNamePrefix(flowName))
+
+    promise.future
+  }
+  def future(m: MaterializedSink): Future[U] = m.getSinkFor(this)
 }
 
