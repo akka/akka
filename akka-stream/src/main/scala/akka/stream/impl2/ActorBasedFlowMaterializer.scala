@@ -62,15 +62,15 @@ private[akka] object Ast {
     override def name = "buffer"
   }
 
-  sealed trait FanAstNode {
+  sealed trait JunctionAstNode {
     def name: String
   }
 
-  case object Merge extends FanAstNode {
+  case object Merge extends JunctionAstNode {
     override def name = "merge"
   }
 
-  case object Broadcast extends FanAstNode {
+  case object Broadcast extends JunctionAstNode {
     override def name = "broadcast"
   }
 
@@ -183,7 +183,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${supervisor.getClass.getName}]")
   }
 
-  override def materializeFan[In, Out](op: Ast.FanAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]]) = op match {
+  override def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]]) = op match {
     case Ast.Merge ⇒
       // FIXME real impl
       require(outputCount == 1)
