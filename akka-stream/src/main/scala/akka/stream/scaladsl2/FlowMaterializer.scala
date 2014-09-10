@@ -143,7 +143,7 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
   /**
    * Create publishers and subscribers for fan-in and fan-out operations.
    */
-  def materializeFan[In, Out](op: Ast.FanAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
+  def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
 
 }
 
