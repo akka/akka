@@ -89,11 +89,11 @@ trait ScriptedTest extends Matchers {
     var currentScript = script
     var remainingDemand = script.expectedOutputs.size + ThreadLocalRandom.current().nextInt(1, maximumOverrun)
     debugLog(s"starting with remainingDemand=$remainingDemand")
-    var pendingRequests = 0
-    var outstandingDemand = 0
+    var pendingRequests: Long = 0
+    var outstandingDemand: Long = 0
     var completed = false
 
-    def getNextDemand(): Int = {
+    def getNextDemand(): Long = {
       val max = Math.min(remainingDemand, maximumRequest)
       if (max == 1) {
         remainingDemand = 0
@@ -107,7 +107,7 @@ trait ScriptedTest extends Matchers {
 
     def debugLog(msg: String): Unit = _debugLog :+= msg
 
-    def request(demand: Int): Unit = {
+    def request(demand: Long): Unit = {
       debugLog(s"test environment requests $demand")
       downstreamSubscription.request(demand)
       outstandingDemand += demand

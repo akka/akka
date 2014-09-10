@@ -9,7 +9,7 @@ import org.reactivestreams.{ Subscriber, Publisher }
  * INTERNAL API
  */
 private[akka] case object EmptyPublisher extends Publisher[Nothing] {
-  def subscribe(subscriber: Subscriber[Nothing]): Unit = subscriber.onComplete()
+  def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit = subscriber.onComplete()
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
 }
 
@@ -17,6 +17,6 @@ private[akka] case object EmptyPublisher extends Publisher[Nothing] {
  * INTERNAL API
  */
 private[akka] case class ErrorPublisher(t: Throwable) extends Publisher[Nothing] {
-  def subscribe(subscriber: Subscriber[Nothing]): Unit = subscriber.onError(t)
+  def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit = subscriber.onError(t)
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
 }
