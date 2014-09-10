@@ -1296,7 +1296,7 @@ object Dependencies {
     // mirrored in OSGi sample
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
-    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1" // Scala License
+    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1"       // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
@@ -1311,16 +1311,16 @@ object Dependencies {
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"          % reactiveStreamsVersion // CC0
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % reactiveStreamsVersion // CC0
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"       // ApacheV2
     
     // Graph for Scala
-    val scalaGraph = "com.assembla.scala-incubator"   % "graph-core_2.10"              % "1.9.0" // ApacheV2
+    val scalaGraph = "com.assembla.scala-incubator"  %% "graph-core"                   % "1.9.0"       // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
