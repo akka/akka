@@ -313,7 +313,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LDiEdge])
           require(node.outgoing.size == 1, "Merge must have one outgoing edge: " + node.outgoing)
         case bcast: Broadcast[_] ⇒
           require(node.incoming.size == 1, "Broadcast must have one incoming edge: " + node.incoming)
-          require(node.outgoing.size == 2, "Broadcast must have two outgoing edges: " + node.outgoing)
+          require(node.outgoing.size >= 1, "Broadcast must have at least one outgoing edge: " + node.outgoing)
         case _ ⇒ // no check for other node types
       }
     }
