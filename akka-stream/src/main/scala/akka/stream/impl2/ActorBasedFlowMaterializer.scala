@@ -4,13 +4,10 @@
 package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicLong
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
-
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
-
 import akka.actor._
 import akka.pattern.ask
 import akka.stream.{ MaterializerSettings, Transformer }
@@ -26,6 +23,22 @@ private[akka] object Ast {
   }
 
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
+
+  case class GroupBy(f: Any ⇒ Any) extends AstNode {
+    override def name = "groupBy"
+  }
+
+  case class PrefixAndTail(n: Int) extends AstNode {
+    override def name = "prefixAndTail"
+  }
+
+  case class SplitWhen(p: Any ⇒ Boolean) extends AstNode {
+    override def name = "splitWhen"
+  }
+
+  case object ConcatAll extends AstNode {
+    override def name = "concatFlatten"
+  }
 
 }
 
@@ -117,7 +130,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
     })
 
   private def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
-    val impl = actorOf(ActorProcessorFactory.props(settings, op), s"$flowName-$n-${op.name}")
+    val impl = actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.name}")
     ActorProcessorFactory(impl)
   }
 
@@ -179,10 +192,17 @@ private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Act
 private[akka] object ActorProcessorFactory {
 
   import Ast._
-  def props(settings: MaterializerSettings, op: AstNode): Props =
+  def props(materializer: FlowMaterializer, op: AstNode): Props = {
+    val settings = materializer.settings
     (op match {
-      case t: Transform ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
+      case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
+      case ConcatAll         ⇒ Props(new ConcatAllImpl(materializer))
+
     }).withDispatcher(settings.dispatcher)
+  }
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
     val p = new ActorProcessor[I, O](impl)

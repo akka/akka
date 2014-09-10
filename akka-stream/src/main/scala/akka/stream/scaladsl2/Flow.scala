@@ -3,12 +3,12 @@
  */
 package akka.stream.scaladsl2
 
-import akka.stream._
+import scala.collection.immutable
 import akka.stream.impl2.Ast._
 import org.reactivestreams._
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.higherKinds
+import akka.stream.Transformer
 
 /**
  * This is the interface from which all concrete Flows inherit. No generic
@@ -77,6 +77,53 @@ trait FlowOps[-In, +Out] {
    */
   def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[In, T] = {
     andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
+  }
+
+  /**
+   * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
+   * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
+   * of an empty collection and a stream containing the whole upstream unchanged.
+   */
+  def prefixAndTail[U >: Out](n: Int): Repr[In, (immutable.Seq[Out], FlowWithSource[U, U])] =
+    andThen(PrefixAndTail(n))
+
+  /**
+   * This operation demultiplexes the incoming stream into separate output
+   * streams, one for each element key. The key is computed for each element
+   * using the given function. When a new key is encountered for the first time
+   * it is emitted to the downstream subscriber together with a fresh
+   * flow that will eventually produce all the elements of the substream
+   * for that key. Not consuming the elements from the created streams will
+   * stop this processor from processing more elements, therefore you must take
+   * care to unblock (or cancel) all of the produced streams even if you want
+   * to consume only one of them.
+   */
+  def groupBy[K, U >: Out](f: Out ⇒ K): Repr[In, (K, FlowWithSource[U, U])] =
+    andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
+
+  /**
+   * This operation applies the given predicate to all incoming elements and
+   * emits them to a stream of output streams, always beginning a new one with
+   * the current element if the given predicate returns true for it. This means
+   * that for the following series of predicate values, three substreams will
+   * be produced with lengths 1, 2, and 3:
+   *
+   * {{{
+   * false,             // element goes into first substream
+   * true, false,       // elements go into second substream
+   * true, false, false // elements go into third substream
+   * }}}
+   */
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[In, FlowWithSource[U, U]] =
+    andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
+
+  /**
+   * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
+   * This operation can be used on a stream of element type [[StreamWithSource]].
+   */
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[In, U] = strategy match {
+    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
   }
 }
 
