@@ -114,6 +114,52 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.getMessage.toLowerCase should include("cycle")
     }
 
+    "build broadcast - merge" in {
+      FlowGraph { implicit b ⇒
+        val bcast = Broadcast[String]
+        val bcast2 = Broadcast[String]
+        val merge = Merge[String]
+        import FlowGraphImplicits._
+        in1 ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out1
+        bcast ~> f4 ~> bcast2 ~> f5 ~> merge
+        bcast2 ~> f6 ~> out2
+
+        // FIXME the following is doesn't work because of edge equality
+        //        in1 ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out1
+        //        bcast ~> f4 ~> merge
+      }.run()
+    }
+
+    "build wikipedia Topological_sorting" in {
+      // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
+      FlowGraph { implicit b ⇒
+        val b3 = Broadcast[String]
+        val b7 = Broadcast[String]
+        val b11 = Broadcast[String]
+        val m8 = Merge[String]
+        val m9 = Merge[String]
+        val m10 = Merge[String]
+        val m11 = Merge[String]
+        val in3 = IterableSource(List("b"))
+        val in5 = IterableSource(List("b"))
+        val in7 = IterableSource(List("a"))
+        val out2 = PublisherSink[String]
+        val out9 = FutureSink[String]
+        val out10 = ForeachSink[String](_ ⇒ ())
+        // FIXME PublisherSink can't be object, equality
+        def f(s: String) = FlowFrom[String].transform(s, op[String, String])
+        import FlowGraphImplicits._
+
+        in7 ~> f("a") ~> b7 ~> f("b") ~> m11 ~> f("c") ~> b11 ~> f("d") ~> out2
+        b11 ~> f("e") ~> m9 ~> f("f") ~> out9
+        b7 ~> f("g") ~> m8 ~> f("h") ~> m9
+        b11 ~> f("i") ~> m10 ~> f("j") ~> out10
+        in5 ~> f("k") ~> m11
+        in3 ~> f("l") ~> b3 ~> f("m") ~> m8
+        b3 ~> f("n") ~> m10
+      }.run()
+    }
+
     "attachSource and attachSink" in {
       val mg = FlowGraph { b ⇒
         val merge = Merge[String]
