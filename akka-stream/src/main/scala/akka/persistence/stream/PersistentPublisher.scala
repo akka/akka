@@ -122,7 +122,7 @@ private class PersistentPublisherImpl(persistenceId: String, publisherSettings: 
       }
   }
 
-  override def requestFromUpstream(elements: Int): Unit =
+  override def requestFromUpstream(elements: Long): Unit =
     buffer ! Request(elements)
 
   override def initialBufferSize =
@@ -131,7 +131,7 @@ private class PersistentPublisherImpl(persistenceId: String, publisherSettings: 
   override def maxBufferSize =
     materializerSettings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[Any]): ActorSubscription[Any] =
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): ActorSubscription[Any] =
     new ActorSubscription(self, subscriber)
 
   override def cancelUpstream(): Unit = {
@@ -151,7 +151,7 @@ private class PersistentPublisherImpl(persistenceId: String, publisherSettings: 
 }
 
 private object PersistentPublisherBuffer {
-  case class Request(num: Int)
+  case class Request(n: Long)
   case class Response(events: Vector[Any])
 
   case object Fill
@@ -168,31 +168,31 @@ private class PersistentPublisherBuffer(override val persistenceId: String, publ
   import PersistentPublisherBuffer._
   import context.dispatcher
 
-  private var replayed = 0
-  private var requested = 0
+  private var replayed = 0L
+  private var pendingDemand = 0L
   private var buffer: Vector[Any] = Vector.empty
 
   override def viewId: String = persistenceId + "-stream-view"
 
   private val filling: Receive = {
     case Filled ⇒
-      if (buffer.nonEmpty && requested > 0) respond(requested)
+      if (buffer.nonEmpty && pendingDemand > 0) respond(pendingDemand)
       if (buffer.nonEmpty) pause()
       else if (replayed > 0) fill()
       else schedule()
     case Request(num) ⇒
-      requested += num
-      if (buffer.nonEmpty) respond(requested)
+      pendingDemand += num
+      if (buffer.nonEmpty) respond(pendingDemand)
     case persistentEvent ⇒
       buffer :+= persistentEvent
       replayed += 1
-      if (requested > 0) respond(requested)
+      if (pendingDemand > 0) respond(pendingDemand)
   }
 
   private val pausing: Receive = {
     case Request(num) ⇒
-      requested += num
-      respond(requested)
+      pendingDemand += num
+      respond(pendingDemand)
       if (buffer.isEmpty) fill()
   }
 
@@ -200,7 +200,7 @@ private class PersistentPublisherBuffer(override val persistenceId: String, publ
     case Fill ⇒
       fill()
     case Request(num) ⇒
-      requested += num
+      pendingDemand += num
   }
 
   def receive = filling
@@ -242,10 +242,16 @@ private class PersistentPublisherBuffer(override val persistenceId: String, publ
     context.system.scheduler.scheduleOnce(autoUpdateInterval, self, Fill)
   }
 
-  private def respond(num: Int): Unit = {
-    val (res, buf) = buffer.splitAt(num)
-    publisher ! Response(res)
-    buffer = buf
-    requested -= res.size
+  // TODO Breaks now?
+  private def respond(num: Long): Unit = {
+    if (num <= Int.MaxValue) {
+      val n = num.toInt
+      val (res, buf) = buffer.splitAt(n)
+      publisher ! Response(res)
+      buffer = buf
+      pendingDemand -= res.size
+    } else {
+      respond(Int.MaxValue)
+    }
   }
 }

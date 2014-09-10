@@ -16,7 +16,7 @@ object StreamTestKit {
    * Subscribes the subscriber and completes after the first request.
    */
   def lazyEmptyPublisher[T]: Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit =
+    override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
       subscriber.onSubscribe(CompletedSubscription(subscriber))
   }
 
@@ -31,21 +31,21 @@ object StreamTestKit {
    * Subscribes the subscriber and signals error after the first request.
    */
   def lazyErrorPublisher[T](cause: Throwable): Publisher[T] = new Publisher[T] {
-    override def subscribe(subscriber: Subscriber[T]): Unit =
+    override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
       subscriber.onSubscribe(FailedSubscription(subscriber, cause))
   }
 
   private case class FailedSubscription[T](subscriber: Subscriber[T], cause: Throwable) extends Subscription {
-    override def request(elements: Int): Unit = subscriber.onError(cause)
+    override def request(elements: Long): Unit = subscriber.onError(cause)
     override def cancel(): Unit = ()
   }
 
   private case class CompletedSubscription[T](subscriber: Subscriber[T]) extends Subscription {
-    override def request(elements: Int): Unit = subscriber.onComplete()
+    override def request(elements: Long): Unit = subscriber.onComplete()
     override def cancel(): Unit = ()
   }
 
-  class AutoPublisher[T](probe: PublisherProbe[T], initialPendingRequests: Int = 0) {
+  class AutoPublisher[T](probe: PublisherProbe[T], initialPendingRequests: Long = 0) {
     val subscription = probe.expectSubscription()
     var pendingRequests = initialPendingRequests
 
@@ -65,14 +65,14 @@ object StreamTestKit {
   sealed trait PublisherEvent
   case class Subscribe(subscription: Subscription) extends PublisherEvent
   case class CancelSubscription(subscription: Subscription) extends PublisherEvent
-  case class RequestMore(subscription: Subscription, elements: Int) extends PublisherEvent
+  case class RequestMore(subscription: Subscription, elements: Long) extends PublisherEvent
 
-  case class PublisherProbeSubscription[I](subscriber: Subscriber[I], publisherProbe: TestProbe) extends Subscription {
-    def request(elements: Int): Unit = publisherProbe.ref ! RequestMore(this, elements)
+  case class PublisherProbeSubscription[I](subscriber: Subscriber[_ >: I], publisherProbe: TestProbe) extends Subscription {
+    def request(elements: Long): Unit = publisherProbe.ref ! RequestMore(this, elements)
     def cancel(): Unit = publisherProbe.ref ! CancelSubscription(this)
 
-    def expectRequest(n: Int): Unit = publisherProbe.expectMsg(RequestMore(this, n))
-    def expectRequest(): Int = publisherProbe.expectMsgPF() {
+    def expectRequest(n: Long): Unit = publisherProbe.expectMsg(RequestMore(this, n))
+    def expectRequest(): Long = publisherProbe.expectMsgPF() {
       case RequestMore(sub, n) if sub eq this ⇒ n
     }
 
@@ -142,7 +142,7 @@ object StreamTestKit {
   case class PublisherProbe[I]()(implicit system: ActorSystem) extends Publisher[I] {
     val probe: TestProbe = TestProbe()
 
-    def subscribe(subscriber: Subscriber[I]): Unit = {
+    def subscribe(subscriber: Subscriber[_ >: I]): Unit = {
       val subscription: PublisherProbeSubscription[I] = new PublisherProbeSubscription[I](subscriber, probe)
       probe.ref ! Subscribe(subscription)
       subscriber.onSubscribe(subscription)

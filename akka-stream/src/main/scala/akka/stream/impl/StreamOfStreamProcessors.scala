@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
+import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
 import akka.actor.{ Actor, ActorRef }
 import akka.stream.MaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
@@ -15,13 +15,13 @@ import scala.collection.mutable
  */
 private[akka] object MultiStreamOutputProcessor {
   case class SubstreamKey(id: Long)
-  case class SubstreamRequestMore(substream: SubstreamKey, demand: Int)
+  case class SubstreamRequestMore(substream: SubstreamKey, demand: Long)
   case class SubstreamCancel(substream: SubstreamKey)
   case class SubstreamSubscribe(substream: SubstreamKey, subscriber: Subscriber[Any])
 
   class SubstreamSubscription(val parent: ActorRef, val substreamKey: SubstreamKey) extends Subscription {
-    override def request(elements: Int): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
+    override def request(elements: Long): Unit =
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
       else parent ! SubstreamRequestMore(substreamKey, elements)
     override def cancel(): Unit = parent ! SubstreamCancel(substreamKey)
     override def toString = "SubstreamSubscription" + System.identityHashCode(this)
@@ -46,7 +46,7 @@ private[akka] object MultiStreamOutputProcessor {
     override def subreceive: SubReceive =
       throw new UnsupportedOperationException("Substream outputs are managed in a dedicated receive block")
 
-    def enqueueOutputDemand(demand: Int): Unit = {
+    def enqueueOutputDemand(demand: Long): Unit = {
       downstreamDemand += demand
       pump.pump()
     }
@@ -78,7 +78,7 @@ private[akka] object MultiStreamOutputProcessor {
       case Failed(e) ⇒ s.onError(e)
     }
 
-    override def subscribe(s: Subscriber[Any]): Unit = {
+    override def subscribe(s: Subscriber[_ >: Any]): Unit = {
       if (state.compareAndSet(Open, Attached(s))) actor ! SubstreamSubscribe(key, s)
       else {
         state.get() match {

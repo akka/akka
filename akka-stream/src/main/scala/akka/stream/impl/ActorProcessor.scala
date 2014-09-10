@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.stream.ReactiveStreamsConstants
 import org.reactivestreams.{ Publisher, Subscriber, Subscription, Processor }
 import akka.actor._
 import akka.stream.MaterializerSettings
@@ -142,9 +143,10 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   }
 
   protected def upstreamRunning: Actor.Receive = {
-    case OnNext(element) ⇒ enqueueInputElement(element)
-    case OnComplete      ⇒ onComplete()
-    case OnError(cause)  ⇒ onError(cause)
+    case OnNext(element)           ⇒ enqueueInputElement(element)
+    case OnComplete                ⇒ onComplete()
+    case OnError(cause)            ⇒ onError(cause)
+    case OnSubscribe(subscription) ⇒ subscription.cancel() // spec rule 2.5
   }
 
   protected def completed: Actor.Receive = {
@@ -161,6 +163,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
  * INTERNAL API
  */
 private[akka] class SimpleOutputs(self: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
+
   protected var exposedPublisher: ActorPublisher[Any] = _
 
   protected var subscriber: Subscriber[Any] = _
@@ -200,7 +203,7 @@ private[akka] class SimpleOutputs(self: ActorRef, val pump: Pump) extends Defaul
       if (subscriber eq null) {
         subscriber = sub
         subscriber.onSubscribe(new ActorSubscription(self, subscriber))
-      } else sub.onError(new IllegalStateException("Cannot subscribe two or more Subscribers to this Publisher"))
+      } else sub.onError(new IllegalStateException(s"${getClass.getSimpleName} ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
@@ -215,7 +218,16 @@ private[akka] class SimpleOutputs(self: ActorRef, val pump: Pump) extends Defaul
     case SubscribePending ⇒
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
+
+      // TODO centralize overflow protection
       downstreamDemand += elements
+      if (downstreamDemand < 0) {
+        // Long has overflown
+        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
+        subscriber.onError(demandOverflowException)
+        cancel(demandOverflowException)
+      }
+
       pump.pump()
     case Cancel(subscription) ⇒
       downstreamCompleted = true

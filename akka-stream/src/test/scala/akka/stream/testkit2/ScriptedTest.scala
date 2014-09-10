@@ -90,8 +90,8 @@ trait ScriptedTest extends Matchers {
     var currentScript = script
     var remainingDemand = script.expectedOutputs.size + ThreadLocalRandom.current().nextInt(1, maximumOverrun)
     debugLog(s"starting with remainingDemand=$remainingDemand")
-    var pendingRequests = 0
-    var outstandingDemand = 0
+    var pendingRequests = 0L
+    var outstandingDemand = 0L
     var completed = false
 
     def getNextDemand(): Int = {

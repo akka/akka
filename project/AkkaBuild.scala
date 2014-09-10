@@ -360,7 +360,7 @@ object AkkaBuild extends Build {
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.http ++
         Seq(
-          version := streamAndHttpVersion,  
+          version := streamAndHttpVersion,
           libraryDependencies ++= Dependencies.http,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
@@ -907,6 +907,8 @@ object AkkaBuild extends Build {
     parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
+    resolvers += "Akka Repo Snapshots" at "http://repo.akka.io/snapshots", // TODO Remove once reactive streams TCK is released
+
     excludeTestNames := useExcludeTestNames,
     excludeTestTags := useExcludeTestTags,
     onlyTestTags := useOnlyTestTags,
@@ -1271,6 +1273,11 @@ object Dependencies {
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
+
+//    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M1")
+    // TODO swap with stable released version reactive-streams version once it includes the TCK
+    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M2-20140910-174042-SNAPSHOT")
+
   }
 
   object Compile {
@@ -1303,7 +1310,8 @@ object Dependencies {
     // mirrored in OSGi sample
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % "0.4.0.M1"         // CC0
+    // reactive streams
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"          % reactiveStreamsVersion // CC0
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
@@ -1341,6 +1349,9 @@ object Dependencies {
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
       val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test" // Scala License
+
+      // reactive streams tck
+      val reactiveStreamsTck = "org.reactivestreams"      % "reactive-streams-tck"         % reactiveStreamsVersion % "test" // CC0
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -1391,7 +1402,7 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.5",
     "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
     scalaGraph,
-    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.commonsIo)
+    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreamsTck, Test.commonsIo)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
