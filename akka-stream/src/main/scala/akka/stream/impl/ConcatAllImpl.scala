@@ -12,13 +12,15 @@ import akka.stream.impl.MultiStreamInputProcessor.SubstreamKey
  */
 private[akka] class ConcatAllImpl(_settings: MaterializerSettings) extends MultiStreamInputProcessor(_settings) {
 
+  import MultiStreamInputProcessor._
+
   val takeNextSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val publisher = primaryInputs.dequeueInputElement().asInstanceOf[Publisher[Any]]
-    val inputs = createSubstreamInputs(publisher)
+    val inputs = createAndSubscribeSubstreamInput(publisher)
     nextPhase(streamSubstream(inputs))
   }
 
-  def streamSubstream(substream: SubstreamInputs): TransferPhase =
+  def streamSubstream(substream: SubstreamInput): TransferPhase =
     TransferPhase(substream.NeedsInputOrComplete && primaryOutputs.NeedsDemand) { () ⇒
       if (substream.inputsDepleted) nextPhase(takeNextSubstream)
       else primaryOutputs.enqueueOutputElement(substream.dequeueInputElement())
@@ -26,5 +28,5 @@ private[akka] class ConcatAllImpl(_settings: MaterializerSettings) extends Multi
 
   nextPhase(takeNextSubstream)
 
-  override def invalidateSubstream(substream: SubstreamKey, e: Throwable): Unit = fail(e)
+  override def invalidateSubstreamInput(substream: SubstreamKey, e: Throwable): Unit = fail(e)
 }
