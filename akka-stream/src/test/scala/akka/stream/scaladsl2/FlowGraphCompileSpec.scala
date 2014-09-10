@@ -144,9 +144,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val in5 = IterableSource(List("b"))
         val in7 = IterableSource(List("a"))
         val out2 = PublisherSink[String]
-        val out9 = FutureSink[String]
-        val out10 = ForeachSink[String](_ ⇒ ())
-        // FIXME PublisherSink can't be object, equality
+        val out9 = PublisherSink[String]
+        val out10 = PublisherSink[String]
         def f(s: String) = FlowFrom[String].transform(s, op[String, String])
         import FlowGraphImplicits._
 

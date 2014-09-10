@@ -128,9 +128,15 @@ private[akka] object FlowGraphInternal {
   sealed trait Vertex
   case class SourceVertex(source: Source[_]) extends Vertex {
     override def toString = source.toString
+    // these are unique keys, case class equality would break them
+    final override def equals(other: Any): Boolean = super.equals(other)
+    final override def hashCode: Int = super.hashCode
   }
   case class SinkVertex(sink: Sink[_]) extends Vertex {
     override def toString = sink.toString
+    // these are unique keys, case class equality would break them
+    final override def equals(other: Any): Boolean = super.equals(other)
+    final override def hashCode: Int = super.hashCode
   }
 
   sealed trait NamedVertex extends Vertex {
