@@ -36,7 +36,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           addEdge(in1, f1, merge).
           addEdge(in2, f2, merge).
           addEdge(merge, f3, out1)
-      }
+      }.run()
     }
 
     "build simple broadcast" in {
@@ -46,7 +46,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           addEdge(in1, f1, bcast).
           addEdge(bcast, f2, out1).
           addEdge(bcast, f3, out2)
-      }
+      }.run()
     }
 
     "build simple merge - broadcast" in {
@@ -59,7 +59,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           addEdge(merge, f3, bcast).
           addEdge(bcast, f4, out1).
           addEdge(bcast, f5, out2)
-      }
+      }.run()
     }
 
     "build simple merge - broadcast with implicits" in {
@@ -70,7 +70,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         in1 ~> f1 ~> merge ~> f2 ~> bcast ~> f3 ~> out1
         in2 ~> f4 ~> merge
         bcast ~> f5 ~> out2
-      }
+      }.run()
     }
 
     /**
@@ -161,7 +161,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
       FlowGraph(partial2) { implicit b ⇒
         b.attachSink(undefinedSink1, out1)
         b.attachSink(UndefinedSink[String]("sink2"), out2)
-      }
+      }.run()
     }
 
   }

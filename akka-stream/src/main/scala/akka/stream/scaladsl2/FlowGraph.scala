@@ -10,7 +10,7 @@ import scalax.collection.immutable.{ Graph ⇒ ImmutableGraph }
 import org.reactivestreams.Subscriber
 import akka.stream.impl.BlackholeSubscriber
 import org.reactivestreams.Publisher
-import org.reactivestreams.Processor
+import akka.stream.impl2.Ast
 
 /**
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
@@ -376,17 +376,12 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
   def run()(implicit materializer: FlowMaterializer): MaterializedFlowGraph = {
     import scalax.collection.GraphTraversal._
 
-    // FIXME remove when real materialization is done
-    def dummyProcessor(name: String): Processor[Any, Any] = new BlackholeSubscriber[Any](1) with Publisher[Any] with Processor[Any, Any] {
-      def subscribe(subscriber: Subscriber[_ >: Any]): Unit = subscriber.onComplete()
-      override def toString = name
-    }
-
     // start with sinks
     val startingNodes = graph.nodes.filter(n ⇒ n.isLeaf && n.diSuccessors.isEmpty)
 
     case class Memo(visited: Set[graph.EdgeT] = Set.empty,
-                    nodeProcessor: Map[graph.NodeT, Processor[Any, Any]] = Map.empty,
+                    downstreamSubscriber: Map[graph.EdgeT, Subscriber[Any]] = Map.empty,
+                    upstreamPublishers: Map[graph.EdgeT, Publisher[Any]] = Map.empty,
                     sources: Map[Source[_], FlowWithSink[Any, Any]] = Map.empty,
                     materializedSinks: Map[Sink[_], Any] = Map.empty)
 
@@ -403,8 +398,8 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
               val flow = edge.label.asInstanceOf[ProcessorFlow[Any, Any]]
 
               // returns the materialized sink, if any
-              def connectProcessorToDownstream(processor: Processor[Any, Any]): Option[(SinkWithKey[_, _], Any)] = {
-                val f = flow.withSource(PublisherSource(processor))
+              def connectToDownstream(publisher: Publisher[Any]): Option[(SinkWithKey[_, _], Any)] = {
+                val f = flow.withSource(PublisherSource(publisher))
                 edge.to.value match {
                   case SinkVertex(sink: SinkWithKey[_, _]) ⇒
                     val mf = f.withSink(sink.asInstanceOf[Sink[Any]]).run()
@@ -413,36 +408,55 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
                     f.withSink(sink.asInstanceOf[Sink[Any]]).run()
                     None
                   case _ ⇒
-                    f.withSink(SubscriberSink(memo.nodeProcessor(edge.to))).run()
+                    f.withSink(SubscriberSink(memo.downstreamSubscriber(edge))).run()
                     None
                 }
               }
 
               edge.from.value match {
                 case SourceVertex(src) ⇒
-                  val f = flow.withSink(SubscriberSink(memo.nodeProcessor(edge.to)))
+                  val f = flow.withSink(SubscriberSink(memo.downstreamSubscriber(edge)))
                   // connect the source with the flow later
                   memo.copy(visited = memo.visited + edge,
                     sources = memo.sources.updated(src, f))
 
-                case _: FanOperation[_] ⇒
-                  val processor = edge.from.value match {
-                    case merge: Merge[_] ⇒
-                      // FIXME materialize Merge
-                      dummyProcessor("merge-processor")
-                    case bcast: Broadcast[_] ⇒
-                      memo.nodeProcessor.getOrElse(edge.from, {
-                        // FIXME materialize Broadcast
-                        dummyProcessor("bcast-processor")
-                      })
-                    case other ⇒
-                      throw new IllegalArgumentException("Unknown fan operation: " + other)
-                  }
-                  val materializedSink = connectProcessorToDownstream(processor)
+                case merge: Merge[_] ⇒
+                  // one subscriber for each incoming edge of the merge vertex
+                  val (subscribers, publishers) =
+                    materializer.materializeFan[Any, Any](Ast.Merge, edge.from.inDegree, 1)
+                  val publisher = publishers.head
+                  val edgeSubscribers = edge.from.incoming.zip(subscribers)
+                  val materializedSink = connectToDownstream(publisher)
                   memo.copy(
                     visited = memo.visited + edge,
-                    nodeProcessor = memo.nodeProcessor.updated(edge.from, processor),
+                    downstreamSubscriber = memo.downstreamSubscriber ++ edgeSubscribers,
                     materializedSinks = memo.materializedSinks ++ materializedSink)
+
+                case bcast: Broadcast[_] ⇒
+                  if (memo.upstreamPublishers.contains(edge)) {
+                    // broadcast vertex already materialized
+                    val materializedSink = connectToDownstream(memo.upstreamPublishers(edge))
+                    memo.copy(
+                      visited = memo.visited + edge,
+                      materializedSinks = memo.materializedSinks ++ materializedSink)
+                  } else {
+                    // one publisher for each outgoing edge of the broadcast vertex   
+                    val (subscribers, publishers) =
+                      materializer.materializeFan[Any, Any](Ast.Broadcast, 1, edge.from.outDegree)
+                    val subscriber = subscribers.head
+                    val edgePublishers = edge.from.outgoing.zip(publishers).toMap
+                    val publisher = edgePublishers(edge)
+                    val materializedSink = connectToDownstream(publisher)
+                    memo.copy(
+                      visited = memo.visited + edge,
+                      downstreamSubscriber = memo.downstreamSubscriber + (edge.from.incoming.head -> subscriber),
+                      upstreamPublishers = memo.upstreamPublishers ++ edgePublishers,
+                      materializedSinks = memo.materializedSinks ++ materializedSink)
+                  }
+
+                case other ⇒
+                  throw new IllegalArgumentException("Unknown fan operation: " + other)
+
               }
             }
 
