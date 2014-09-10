@@ -5,17 +5,20 @@ package akka.stream.impl2
 
 import akka.stream.MaterializerSettings
 import akka.stream.impl.TransferPhase
-import akka.stream.impl.MultiStreamOutputProcessor.SubstreamKey
 import akka.stream.scaladsl2.FlowFrom
 import akka.stream.impl.MultiStreamOutputProcessor
 
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any) extends MultiStreamOutputProcessor(settings) {
-  var keyToSubstreamOutputs = collection.mutable.Map.empty[Any, SubstreamOutputs]
+private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any)
+  extends MultiStreamOutputProcessor(settings) {
 
-  var pendingSubstreamOutputs: SubstreamOutputs = _
+  import MultiStreamOutputProcessor._
+
+  var keyToSubstreamOutput = collection.mutable.Map.empty[Any, SubstreamOutput]
+
+  var pendingSubstreamOutput: SubstreamOutput = _
 
   // No substream is open yet. If downstream cancels now, we are complete
   val waitFirst = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
@@ -29,8 +32,8 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
     val elem = primaryInputs.dequeueInputElement()
     val key = keyFor(elem)
 
-    keyToSubstreamOutputs.get(key) match {
-      case Some(substream) if substream.isOpen ⇒ nextPhase(dispatchToSubstream(elem, keyToSubstreamOutputs(key)))
+    keyToSubstreamOutput.get(key) match {
+      case Some(substream) if substream.isOpen ⇒ nextPhase(dispatchToSubstream(elem, keyToSubstreamOutput(key)))
       case None if primaryOutputs.isOpen       ⇒ nextPhase(openSubstream(elem, key))
       case _                                   ⇒ // stay
     }
@@ -41,31 +44,31 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       // Just drop, we do not open any more substreams
       nextPhase(waitNext)
     } else {
-      val substreamOutput = newSubstream()
+      val substreamOutput = createSubstreamOutput()
       val substreamFlow = FlowFrom(substreamOutput) // substreamOutput is a Publisher
       primaryOutputs.enqueueOutputElement((key, substreamFlow))
-      keyToSubstreamOutputs(key) = substreamOutput
+      keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))
     }
   }
 
-  def dispatchToSubstream(elem: Any, substream: SubstreamOutputs): TransferPhase = {
-    pendingSubstreamOutputs = substream
+  def dispatchToSubstream(elem: Any, substream: SubstreamOutput): TransferPhase = {
+    pendingSubstreamOutput = substream
     TransferPhase(substream.NeedsDemand) { () ⇒
       substream.enqueueOutputElement(elem)
-      pendingSubstreamOutputs = null
+      pendingSubstreamOutput = null
       nextPhase(waitNext)
     }
   }
 
   nextPhase(waitFirst)
 
-  override def invalidateSubstream(substream: SubstreamKey): Unit = {
-    if ((pendingSubstreamOutputs ne null) && substream == pendingSubstreamOutputs.key) {
-      pendingSubstreamOutputs = null
+  override def invalidateSubstreamOutput(substream: SubstreamKey): Unit = {
+    if ((pendingSubstreamOutput ne null) && substream == pendingSubstreamOutput.key) {
+      pendingSubstreamOutput = null
       nextPhase(waitNext)
     }
-    super.invalidateSubstream(substream)
+    super.invalidateSubstreamOutput(substream)
   }
 
 }
