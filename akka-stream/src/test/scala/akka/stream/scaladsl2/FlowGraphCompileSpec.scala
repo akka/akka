@@ -204,5 +204,25 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "make it optional to specify flows" in {
+      FlowGraph { implicit b ⇒
+        val merge = Merge[String]
+        val bcast = Broadcast[String]
+        import FlowGraphImplicits._
+        in1 ~> merge ~> bcast ~> out1
+        in2 ~> merge
+        bcast ~> out2
+      }.run()
+    }
+
+    "use FlowWithSource and FlowWithSink" in {
+      FlowGraph { implicit b ⇒
+        val bcast = Broadcast[String]
+        import FlowGraphImplicits._
+        f1.withSource(in1) ~> bcast ~> f2.withSink(out1)
+        bcast ~> f3.withSink(out2)
+      }.run()
+    }
+
   }
 }

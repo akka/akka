@@ -369,6 +369,11 @@ trait FlowOps[-In, +Out] {
     andThen(TimerTransform(name, mkTransformer.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
 }
 
+object ProcessorFlow {
+  private val emptyInstance = ProcessorFlow[Any, Any](ops = Nil)
+  def empty[T]: ProcessorFlow[T, T] = emptyInstance.asInstanceOf[ProcessorFlow[T, T]]
+}
+
 /**
  * Flow without attached input and without attached output, can be used as a `Processor`.
  */
