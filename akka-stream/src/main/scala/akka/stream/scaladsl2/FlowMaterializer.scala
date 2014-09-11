@@ -3,9 +3,12 @@
  */
 package akka.stream.scaladsl2
 
+import scala.collection.immutable
 import akka.actor.{ ActorContext, ActorRefFactory, ActorSystem, ExtendedActorSystem }
 import akka.stream.MaterializerSettings
 import akka.stream.impl2.{ ActorBasedFlowMaterializer, Ast, FlowNameCounter, StreamSupervisor }
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Publisher
 
 object FlowMaterializer {
 
@@ -136,6 +139,11 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * local actor chains to remote-deployed processing networks.
    */
   def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
+
+  /**
+   * Create publishers and subscribers for fan-in and fan-out operations.
+   */
+  def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
 
 }
 

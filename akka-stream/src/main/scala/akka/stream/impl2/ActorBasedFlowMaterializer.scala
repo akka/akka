@@ -20,6 +20,7 @@ import akka.stream.impl.ConflateImpl
 import akka.stream.impl.ExpandImpl
 import akka.stream.impl.BufferImpl
 import akka.stream.impl.FanoutProcessorImpl
+import akka.stream.impl.BlackholeSubscriber
 
 /**
  * INTERNAL API
@@ -59,6 +60,18 @@ private[akka] object Ast {
 
   case class Buffer(size: Int, overflowStrategy: OverflowStrategy) extends AstNode {
     override def name = "buffer"
+  }
+
+  sealed trait JunctionAstNode {
+    def name: String
+  }
+
+  case object Merge extends JunctionAstNode {
+    override def name = "merge"
+  }
+
+  case object Broadcast extends JunctionAstNode {
+    override def name = "broadcast"
   }
 
 }
@@ -168,6 +181,23 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       }
     case _ ⇒
       throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${supervisor.getClass.getName}]")
+  }
+
+  override def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]]) = op match {
+    case Ast.Merge ⇒
+      // FIXME real impl
+      require(outputCount == 1)
+      (Vector.fill(inputCount)(dummySubscriber[In]), List(dummyPublisher[Out]))
+    case Ast.Broadcast ⇒
+      // FIXME real impl
+      require(inputCount == 1)
+      (List(dummySubscriber[In]), Vector.fill(outputCount)(dummyPublisher[Out]))
+  }
+
+  // FIXME remove
+  private def dummySubscriber[T]: Subscriber[T] = new BlackholeSubscriber[T](1)
+  private def dummyPublisher[T]: Publisher[T] = new Publisher[T] {
+    def subscribe(subscriber: Subscriber[_ >: T]): Unit = subscriber.onComplete()
   }
 
 }
