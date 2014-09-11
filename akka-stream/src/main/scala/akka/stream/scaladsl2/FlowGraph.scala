@@ -499,6 +499,9 @@ object FlowGraph {
 
 /**
  * Concrete flow graph that can be materialized with [[#run]].
+ *
+ * Build a `FlowGraph` by starting with one of the `apply` methods in
+ * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
 class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge]) {
   import FlowGraphInternal._
@@ -639,8 +642,11 @@ object PartialFlowGraph {
 }
 
 /**
- * `PartialFlowGraph` may have sources and sinks that are not attach, and it can therefore not
- * be `run`.
+ * `PartialFlowGraph` may have sources and sinks that are not attached, and it can therefore not
+ * be `run` until those are attached.
+ *
+ * Build a `PartialFlowGraph` by starting with one of the `apply` methods in
+ * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
 class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge]) {
   import FlowGraphInternal._
