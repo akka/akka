@@ -6,7 +6,7 @@ package akka.stream.impl2
 import java.util.concurrent.atomic.AtomicLong
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
 import akka.actor._
 import akka.pattern.ask
@@ -19,8 +19,8 @@ import akka.stream.OverflowStrategy
 import akka.stream.impl.ConflateImpl
 import akka.stream.impl.ExpandImpl
 import akka.stream.impl.BufferImpl
-import akka.stream.impl.FanoutProcessorImpl
 import akka.stream.impl.BlackholeSubscriber
+import akka.stream.impl.MapFutureProcessorImpl
 
 /**
  * INTERNAL API
@@ -33,6 +33,10 @@ private[akka] object Ast {
   case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
 
   case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
+
+  case class MapFuture(f: Any ⇒ Future[Any]) extends AstNode {
+    override def name = "mapFuture"
+  }
 
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
     override def name = "groupBy"
@@ -248,6 +252,7 @@ private[akka] object ActorProcessorFactory {
     (op match {
       case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
       case t: TimerTransform ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
+      case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
       case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
