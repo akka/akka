@@ -19,7 +19,7 @@ object FlowFrom {
    * Helper to create `Flow` without [[Source]].
    * Example usage: `FlowFrom[Int]`
    */
-  def apply[T]: ProcessorFlow[T, T] = ProcessorFlow[T, T](Nil)
+  def apply[T]: ProcessorFlow[T, T] = ProcessorFlow.empty[T]
 
   /**
    * Helper to create `Flow` with [[Source]] from `Publisher`.
