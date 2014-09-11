@@ -237,6 +237,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
       libraryDependencies ++= Dependencies.remoteTests,
+      Dependencies.addScalaXmlTestDepencency,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -302,6 +303,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
+      Dependencies.addScalaXmlTestDepencency,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
@@ -362,6 +364,7 @@ object AkkaBuild extends Build {
         Seq(
           version := streamAndHttpVersion,
           libraryDependencies ++= Dependencies.http,
+          Dependencies.addScalaXmlDepencency,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
           previousArtifact := None,
@@ -373,10 +376,10 @@ object AkkaBuild extends Build {
     libraryDependencies <++= scalaVersion { v =>
       Seq("org.scala-lang" % "scala-reflect" % v) ++ (
         if (v.startsWith("2.10."))
-          Seq("org.scalamacros" %% "quasiquotes" % "2.0.0" % "compile")
+          Seq("org.scalamacros" %% "quasiquotes" % "2.0.1" % "compile")
         else Nil)
     },
-    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.0" cross CrossVersion.full)
+    addCompilerPlugin("org.scalamacros" % "paradise" % "2.0.1" cross CrossVersion.full)
   )
 
   lazy val parsing = Project(
@@ -1296,7 +1299,7 @@ object Dependencies {
     // mirrored in OSGi sample
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
-    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1" // Scala License
+    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1"       // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
@@ -1311,16 +1314,16 @@ object Dependencies {
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"          % reactiveStreamsVersion // CC0
+    val reactiveStreams = "org.reactivestreams"       % "reactive-streams"             % reactiveStreamsVersion // CC0
 
     // Camel Sample
     val camelJetty  = "org.apache.camel"              % "camel-jetty"                  % camelCore.revision // ApacheV2
 
     // Cluster Sample
-    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"            // ApacheV2
+    val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"       // ApacheV2
     
     // Graph for Scala
-    val scalaGraph = "com.assembla.scala-incubator"   % "graph-core_2.10"              % "1.9.0" // ApacheV2
+    val scalaGraph = "com.assembla.scala-incubator"  %% "graph-core"                   % "1.9.0"       // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
@@ -1365,8 +1368,14 @@ object Dependencies {
 
   import Compile._
 
-  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(scalaXml))
-  val scalaXmlTestDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
+  val addScalaXmlDepencency = addPost210Dependency(scalaXml)
+  val addScalaXmlTestDepencency = addPost210Dependency(Test.scalaXml)
+
+  def addPost210Dependency(moduleId: ModuleID) =
+    libraryDependencies <++= scalaVersion {
+      case version if version.startsWith("2.10") => Nil
+      case _ => Seq(moduleId)
+    }
 
   val actor = Seq(config)
 
@@ -1376,7 +1385,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlTestDepencency
+  val remoteTests = Seq(Test.junit, Test.scalatest)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1386,15 +1395,14 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
-    scalaXmlTestDepencency
+  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
 
   val httpCore = Seq(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
     Test.junit, Test.scalatest)
 
-  val http = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+  val http = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
