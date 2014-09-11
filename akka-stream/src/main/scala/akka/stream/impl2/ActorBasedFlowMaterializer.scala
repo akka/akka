@@ -178,7 +178,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       override def onNext(element: Any) = List(element)
     })
 
-  private def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+  protected def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
     val impl = actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.name}")
     ActorProcessorFactory(impl)
   }
