@@ -19,24 +19,21 @@ import akka.http.util._
 /**
  * INTERNAL API
  */
-private[http] class HttpServerPipeline(settings: ServerSettings,
-                                       materializer: FlowMaterializer,
-                                       log: LoggingAdapter)
+private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit fm: FlowMaterializer)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
 
-  val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader, materializer)()
+  val rootParser = new HttpRequestParser(settings.parserSettings, settings.rawRequestUriHeader)()
   val warnOnIllegalHeader: ErrorInfo ⇒ Unit = errorInfo ⇒
     if (settings.parserSettings.illegalHeaderWarnings)
       log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
 
-  val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader,
-    settings.responseHeaderSizeHint, materializer, log)
+  val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
     val (applicationBypassSubscriber, applicationBypassPublisher) =
       Duct[(RequestOutput, Publisher[RequestOutput])]
         .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .build()(materializer)
+        .build()
 
     val requestPublisher =
       Flow(tcpConn.inputStream)
@@ -46,14 +43,14 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         // below `collect` for the actual request handling
         // TODO: replace by better combinator, maybe `splitAfter(_ == MessageEnd)`?
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .headAndTail(materializer)
+        .headAndTail
         .broadcast(applicationBypassSubscriber)
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
             HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
         }
-        .toPublisher()(materializer)
+        .toPublisher()
 
     val responseSubscriber =
       Duct[HttpResponse]
@@ -62,7 +59,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings,
         .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
-        .produceTo(tcpConn.outputStream)(materializer)
+        .produceTo(tcpConn.outputStream)
 
     Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
   }

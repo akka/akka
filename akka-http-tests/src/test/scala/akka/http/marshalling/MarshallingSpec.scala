@@ -2,21 +2,18 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
-
-import akka.actor.ActorSystem
-import akka.http.marshalling.{ MultipartMarshallers, ToEntityMarshallers }
-import akka.http.model._
-import HttpCharsets._
-import MediaTypes._
-import akka.http.util._
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import headers._
-import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+package akka.http.marshalling
 
 import scala.collection.immutable.ListMap
-import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
+import akka.actor.ActorSystem
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.http.util._
+import akka.http.model._
+import headers._
+import HttpCharsets._
+import MediaTypes._
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -156,7 +153,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   override def afterAll() = system.shutdown()
 
   def marshal[T: ToEntityMarshallers](value: T): HttpEntity.Strict =
-    Await.result(Await.result(Marshal(value).to[HttpEntity], 1.second).toStrict(1.second, materializer), 1.second)
+    Marshal(value).to[HttpEntity].await(1.second).toStrict(1.second).await(1.second)
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)

@@ -34,11 +34,11 @@ private object RenderSupport {
     if (entity.contentType != ContentTypes.NoContentType)
       r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString], materializer: FlowMaterializer,
-                        skipEntity: Boolean = false): List[Publisher[ByteString]] = {
+  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString],
+                        skipEntity: Boolean = false)(implicit fm: FlowMaterializer): List[Publisher[ByteString]] = {
     val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
     val messageBytes =
-      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()(materializer)
+      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()
       else messageStart
     messageBytes :: Nil
   }

@@ -38,8 +38,8 @@ trait MultipartMarshallers {
     val mediaTypeWithBoundary = mediaType withBoundary boundary
     Marshaller.withOpenCharset(mediaTypeWithBoundary) { (value, charset) ⇒
       val log = actorSystem(refFactory).log
-      val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, fm, log)
-      val chunks = Flow(value.parts).transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat).toPublisher()(fm)
+      val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
+      val chunks = Flow(value.parts).transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat).toPublisher()
       HttpEntity.Chunked(ContentType(mediaTypeWithBoundary), chunks)
     }
   }
