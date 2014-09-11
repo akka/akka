@@ -127,6 +127,10 @@ class FanoutPublisherSink[Out](initialBufferSize: Int, maximumBufferSize: Int) e
   override def toString: String = "Fanout"
 }
 
+object FutureSink {
+  def apply[T]: FutureSink[T] = new FutureSink[T]
+}
+
 /**
  * Holds a [[scala.concurrent.Future]] that will be fulfilled with the first
  * thing that is signaled to this stream, which can be either an element (after
@@ -134,11 +138,6 @@ class FanoutPublisherSink[Out](initialBufferSize: Int, maximumBufferSize: Int) e
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-object FutureSink {
-  private val instance = new FutureSink[Nothing]
-  def apply[T]: FutureSink[T] = instance.asInstanceOf[FutureSink[T]]
-}
-
 class FutureSink[Out] extends SinkWithKey[Out, Future[Out]] {
   def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Future[Out] = {
     val (sub, f) = create(materializer, flowName)

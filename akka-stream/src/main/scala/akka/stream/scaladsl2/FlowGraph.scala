@@ -414,8 +414,8 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
     case class Memo(visited: Set[graph.EdgeT] = Set.empty,
                     downstreamSubscriber: Map[graph.EdgeT, Subscriber[Any]] = Map.empty,
                     upstreamPublishers: Map[graph.EdgeT, Publisher[Any]] = Map.empty,
-                    sources: Map[Source[_], FlowWithSink[Any, Any]] = Map.empty,
-                    materializedSinks: Map[Sink[_], Any] = Map.empty)
+                    sources: Map[SourceVertex, FlowWithSink[Any, Any]] = Map.empty,
+                    materializedSinks: Map[SinkWithKey[_, _], Any] = Map.empty)
 
     val result = startingNodes.foldLeft(Memo()) {
       case (memo, start) ⇒
@@ -446,7 +446,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
               }
 
               edge.from.value match {
-                case SourceVertex(src) ⇒
+                case src: SourceVertex ⇒
                   val f = flow.withSink(SubscriberSink(memo.downstreamSubscriber(edge)))
                   // connect the source with the flow later
                   memo.copy(visited = memo.visited + edge,
@@ -497,11 +497,11 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
     }
 
     // connect all input sources as the last thing
-    val materializedSources = result.sources.foldLeft(Map.empty[Source[_], Any]) {
-      case (acc, (src, flow)) ⇒
+    val materializedSources = result.sources.foldLeft(Map.empty[SourceWithKey[_, _], Any]) {
+      case (acc, (SourceVertex(src), flow)) ⇒
         val mf = flow.withSource(src).run()
         src match {
-          case srcKey: SourceWithKey[_, _] ⇒ acc.updated(src, mf.getSourceFor(srcKey))
+          case srcKey: SourceWithKey[_, _] ⇒ acc.updated(srcKey, mf.getSourceFor(srcKey))
           case _                           ⇒ acc
         }
     }
@@ -568,7 +568,7 @@ class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[Fl
  * accessor method to retrieve the materialized `Source` or `Sink`, e.g.
  * [[SubscriberSource#subscriber]] or [[PublisherSink#publisher]].
  */
-class MaterializedFlowGraph(materializedSources: Map[Source[_], Any], materializedSinks: Map[Sink[_], Any])
+class MaterializedFlowGraph(materializedSources: Map[SourceWithKey[_, _], Any], materializedSinks: Map[SinkWithKey[_, _], Any])
   extends MaterializedSource with MaterializedSink {
 
   /**
