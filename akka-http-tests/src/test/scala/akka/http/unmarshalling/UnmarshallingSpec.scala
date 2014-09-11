@@ -2,22 +2,20 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
+package akka.http.unmarshalling
 
-import akka.actor.ActorSystem
-import akka.http.model._
-import MediaTypes._
-import akka.http.unmarshalling.Unmarshalling
-import akka.http.util._
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import headers._
+import scala.xml.NodeSeq
+import scala.concurrent.duration._
+import scala.concurrent.Await
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.xml.NodeSeq
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.Flow
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.http.model._
+import akka.http.util._
+import headers._
+import MediaTypes._
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
@@ -37,7 +35,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
     }
     "nodeSeqUnmarshaller should unmarshal `text/xml` content in UTF-8 to NodeSeqs" in {
-      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].map(_.map(_.text)) should evaluateTo("Hällö")
+      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].map(_.text) should evaluateTo("Hällö")
     }
   }
 
@@ -81,20 +79,18 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
 
     "multipartContentUnmarshaller should reject illegal multipart content" in {
-      val future = Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",
+      val mpc = Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",
         """---
           |Content-type: text/plain; charset=UTF8
           |Content-type: application/json
           |content-disposition: form-data; name="email"
           |
           |test@there.com
-          |-----""".stripMarginWithNewline("\r\n"))).to[MultipartContent]
-      Await.result(future, 1.second) match {
-        case Unmarshalling.Success(x) ⇒
-          Await.result(Flow(x.parts).toFuture()(materializer).failed, 1.second).getMessage shouldEqual
-            "multipart part must not contain more than one Content-Type header"
-        case x ⇒ fail(x.toString)
-      }
+          |-----""".stripMarginWithNewline("\r\n")))
+        .to[MultipartContent]
+        .await(1.second)
+      Await.result(Flow(mpc.parts).toFuture().failed, 1.second).getMessage shouldEqual
+        "multipart part must not contain more than one Content-Type header"
     }
 
     "multipartByteRangesUnmarshaller should correctly unmarshal multipart/byteranges content with two different parts" in {
@@ -165,38 +161,26 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
   override def afterAll() = system.shutdown()
 
-  def evaluateTo[T](value: T): Matcher[Future[Unmarshalling[T]]] =
-    equal(value).matcher[T] compose { unmarshallingFuture ⇒
-      Await.result(unmarshallingFuture, 1.second) match {
-        case Unmarshalling.Success(x) ⇒ x
-        case x                        ⇒ fail(x.toString)
-      }
+  def evaluateTo[T](value: T): Matcher[Deferrable[T]] =
+    equal(value).matcher[T] compose (_.await(1.second))
+
+  def haveParts[T <: MultipartParts](parts: BodyPart*): Matcher[Deferrable[T]] =
+    equal(parts).matcher[Seq[BodyPart]] compose {
+      _.flatMap(x ⇒ Deferrable(Flow(x.parts).grouped(100).toFuture()))
+        .recover { case _: NoSuchElementException ⇒ Nil }
+        .await(1.second)
     }
 
-  def haveParts[T <: MultipartParts](parts: BodyPart*): Matcher[Future[Unmarshalling[T]]] =
-    equal(parts).matcher[Seq[BodyPart]] compose { unmarshallingFuture ⇒
-      Await.result(unmarshallingFuture, 1.second) match {
-        case Unmarshalling.Success(x) ⇒
-          Await.result(Flow(x.parts).grouped(100).toFuture()(materializer).recover {
-            case _: NoSuchElementException ⇒ Nil
-          }, 1.second)
-        case x ⇒ fail(x.toString)
-      }
-    }
-
-  def haveFormData(fields: (String, BodyPart)*): Matcher[Future[Unmarshalling[MultipartFormData]]] =
-    equal(fields).matcher[Seq[(String, BodyPart)]] compose { unmarshallingFuture ⇒
-      Await.result(unmarshallingFuture, 1.second) match {
-        case Unmarshalling.Success(x) ⇒
-          val partsSeq = Await.result(Flow(x.parts).grouped(100).toFuture()(materializer).recover {
-            case _: NoSuchElementException ⇒ Nil
-          }, 1.second)
-          partsSeq map { part ⇒
+  def haveFormData(fields: (String, BodyPart)*): Matcher[Deferrable[MultipartFormData]] =
+    equal(fields).matcher[Seq[(String, BodyPart)]] compose {
+      _.flatMap(x ⇒ Deferrable(Flow(x.parts).grouped(100).toFuture()))
+        .recover { case _: NoSuchElementException ⇒ Nil }
+        .map {
+          _ map { part ⇒
             part.headers.collectFirst {
               case `Content-Disposition`(ContentDispositionTypes.`form-data`, params) ⇒ params("name")
             }.get -> part
           }
-        case x ⇒ fail(x.toString)
-      }
+        }.await(1.second)
     }
 }
