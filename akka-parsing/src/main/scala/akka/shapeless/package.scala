@@ -17,62 +17,6 @@
 package akka
 
 package object shapeless {
-  def unexpected: Nothing = sys.error("Unexpected invocation")
-
-  // Basic definitions
-  type Id[+T] = T
-  type Const[C] = {
-    type λ[T] = C
-  }
-
-  type ¬[T] = T ⇒ Nothing
-  type ¬¬[T] = ¬[¬[T]]
-  type ∧[T, U] = T with U
-  type ∨[T, U] = ¬[¬[T] ∧ ¬[U]]
-
-  // Type-lambda for context bound
-  type |∨|[T, U] = {
-    type λ[X] = ¬¬[X] <:< (T ∨ U)
-  }
-
-  // Type inequalities
-  trait =:!=[A, B]
-
-  implicit def neq[A, B]: A =:!= B = new =:!=[A, B] {}
-  implicit def neqAmbig1[A]: A =:!= A = unexpected
-  implicit def neqAmbig2[A]: A =:!= A = unexpected
-
-  trait <:!<[A, B]
-
-  implicit def nsub[A, B]: A <:!< B = new <:!<[A, B] {}
-  implicit def nsubAmbig1[A, B >: A]: A <:!< B = unexpected
-  implicit def nsubAmbig2[A, B >: A]: A <:!< B = unexpected
-
-  // Type-lambda for context bound
-  type |¬|[T] = {
-    type λ[U] = U <:!< T
-  }
-
-  // Quantifiers
-  type ∃[P[_]] = P[T] forSome { type T }
-  type ∀[P[_]] = ¬[∃[({ type λ[X] = ¬[P[X]] })#λ]]
-
-  /** `Lens` definitions */
-  val lens = LensDefns
-
-  /** `Nat` literals */
-  val nat = Nat
-
-  /** `Poly` definitions */
-  val poly = PolyDefns
-  import poly._
-
-  /** Dependent nullary function type. */
-  trait DepFn0 {
-    type Out
-    def apply(): Out
-  }
-
   /** Dependent unary function type. */
   trait DepFn1[T] {
     type Out
@@ -84,18 +28,4 @@ package object shapeless {
     type Out
     def apply(t: T, u: U): Out
   }
-
-  /** The SYB everything combinator */
-  type Everything[F <: Poly, K <: Poly, T] = Case1[EverythingAux[F, K], T]
-
-  class ApplyEverything[F <: Poly] {
-    def apply(k: Poly): EverythingAux[F, k.type] {} = new EverythingAux[F, k.type]
-  }
-
-  def everything(f: Poly): ApplyEverything[f.type] {} = new ApplyEverything[f.type]
-
-  /** The SYB everywhere combinator */
-  type Everywhere[F <: Poly, T] = Case1[EverywhereAux[F], T]
-
-  def everywhere(f: Poly): EverywhereAux[f.type] {} = new EverywhereAux[f.type]
 }
