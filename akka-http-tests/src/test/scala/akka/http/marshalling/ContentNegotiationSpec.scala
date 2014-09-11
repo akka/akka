@@ -2,15 +2,10 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
+package akka.http.marshalling
 
-import akka.http.Marshal.UnacceptableResponseContentTypeException
-
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import org.scalatest.{ Matchers, FreeSpec }
-import akka.util.Timeout
-import akka.http.marshalling.Marshaller
 import akka.http.model.parser.HeaderParser
 import akka.http.model._
 import headers._
@@ -132,10 +127,10 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
         case ct @ ContentType(mt, Some(cs)) ⇒ Marshaller.withFixedCharset(mt, cs)((s: String) ⇒ HttpEntity(ct, s))
         case ContentType(mt, None)          ⇒ Marshaller.withOpenCharset(mt)((s: String, cs) ⇒ HttpEntity(ContentType(mt, cs), s))
       }
-      Await.result(
-        Marshal("foo").toResponseFor(request)
-          .map(response ⇒ Some(response.entity.contentType))
-          .recover { case _: UnacceptableResponseContentTypeException ⇒ None }, 1.second)
+      Marshal("foo").toResponseFor(request)
+        .map(response ⇒ Some(response.entity.contentType))
+        .recover { case _: Marshal.UnacceptableResponseContentTypeException ⇒ None }
+        .await(1.second)
     }
   }
 
