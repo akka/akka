@@ -4,10 +4,10 @@
 
 package akka.http.parsing
 
-import akka.event.LoggingAdapter
 import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
+import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
 import akka.stream.scaladsl.Flow
 import akka.stream.{ FlowMaterializer, Transformer }
@@ -23,9 +23,8 @@ import headers._
  */
 private[http] final class BodyPartParser(defaultContentType: ContentType,
                                          boundary: String,
-                                         materializer: FlowMaterializer,
                                          log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)
+                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)(implicit fm: FlowMaterializer)
   extends Transformer[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
@@ -145,7 +144,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
                   emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                     (headers, ct, bytes) ⇒
                       emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.CloseDelimited(ct,
-                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher()(materializer))))
+                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher())))
                       emit(bytes)
                   },
                   emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {

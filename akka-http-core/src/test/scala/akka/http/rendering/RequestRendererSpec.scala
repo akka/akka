@@ -16,7 +16,7 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.scaladsl.Flow
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import HttpEntity._
 import HttpMethods._
@@ -28,7 +28,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer()
+  implicit val materializer = FlowMaterializer()
 
   "The request preparation logic should" - {
     "properly render an unchunked" - {
@@ -184,13 +184,13 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
   class TestSetup(val userAgent: Option[`User-Agent`] = Some(`User-Agent`("spray-can/1.0.0")),
                   serverAddress: InetSocketAddress = new InetSocketAddress("test.com", 8080))
-    extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, materializer, NoLogging) {
+    extends HttpRequestRendererFactory(userAgent, requestHeaderSizeHint = 64, NoLogging) {
 
     def renderTo(expected: String): Matcher[HttpRequest] =
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
         val byteStringPublisher :: Nil = renderer.onNext(RequestRenderingContext(request, serverAddress))
-        val future = Flow(byteStringPublisher).grouped(1000).toFuture()(materializer).map(_.reduceLeft(_ ++ _).utf8String)
+        val future = Flow(byteStringPublisher).grouped(1000).toFuture().map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)
       }
   }

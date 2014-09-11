@@ -16,7 +16,7 @@ import akka.http.model.headers._
 import akka.http.util._
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import HttpEntity._
 
@@ -28,7 +28,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   import system.dispatcher
 
   val ServerOnTheMove = StatusCodes.registerCustom(330, "Server on the move")
-  val materializer = FlowMaterializer()
+  implicit val materializer = FlowMaterializer()
 
   "The response preparation logic should properly render" - {
     "a response with no body" - {
@@ -328,7 +328,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
 
   class TestSetup(val serverHeader: Option[Server] = Some(Server("akka-http/1.0.0")),
                   val transparentHeadRequests: Boolean = true)
-    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, materializer, NoLogging) {
+    extends HttpResponseRendererFactory(serverHeader, responseHeaderSizeHint = 64, NoLogging) {
 
     def renderTo(expected: String): Matcher[HttpResponse] =
       renderTo(expected, close = false) compose (ResponseRenderingContext(_))
@@ -337,7 +337,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
         val renderer = newRenderer
         val byteStringPublisher :: Nil = renderer.onNext(ctx)
-        val future = Flow(byteStringPublisher).grouped(1000).toFuture()(materializer).map(_.reduceLeft(_ ++ _).utf8String)
+        val future = Flow(byteStringPublisher).grouped(1000).toFuture().map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis) -> renderer.isComplete
       }
 
