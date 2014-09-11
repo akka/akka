@@ -183,6 +183,8 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
 
   var edgeQualifier = graph.edges.size
 
+  private var cyclesAllowed = false
+
   def addEdge[In, Out](source: Source[In], flow: ProcessorFlow[In, Out], sink: Junction[Out]): this.type = {
     val sourceVertex = SourceVertex(source)
     checkAddSourceSinkPrecondition(sourceVertex)
@@ -261,6 +263,16 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     this
   }
 
+  /**
+   * Flow graphs with cycles are in general dangerous as it can result in deadlocks.
+   * Therefore, cycles in the graph are by default disallowed. `IllegalArgumentException` will
+   * be throw when cycles are detected. Sometimes cycles are needed and then
+   * you can allow them with this method.
+   */
+  def allowCycles(): Unit = {
+    cyclesAllowed = true
+  }
+
   private def checkAddSourceSinkPrecondition(node: Vertex): Unit =
     require(graph.find(node) == None, s"[$node] instance is already used in this flow graph")
 
@@ -304,7 +316,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     ImmutableGraph.from(edges = graph.edges.map(e ⇒ LkDiEdge(e.from.value, e.to.value)(e.label)).toIterable)
 
   private def checkPartialBuildPreconditions(): Unit = {
-    graph.findCycle match {
+    if (!cyclesAllowed) graph.findCycle match {
       case None        ⇒
       case Some(cycle) ⇒ throw new IllegalArgumentException("Cycle detected, not supported yet. " + cycle)
     }
