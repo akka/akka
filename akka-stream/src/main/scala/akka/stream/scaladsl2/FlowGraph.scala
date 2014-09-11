@@ -588,6 +588,11 @@ object FlowGraphImplicits {
     def ~>[Out](flow: ProcessorFlow[In, Out])(implicit builder: FlowGraphBuilder): SourceNextStep[In, Out] = {
       new SourceNextStep(source, flow, builder)
     }
+
+    def ~>(sink: Junction[In])(implicit builder: FlowGraphBuilder): Junction[In] = {
+      builder.addEdge(source, ProcessorFlow.empty[In], sink)
+      sink
+    }
   }
 
   class SourceNextStep[In, Out](source: Source[In], flow: ProcessorFlow[In, Out], builder: FlowGraphBuilder) {
@@ -601,6 +606,20 @@ object FlowGraphImplicits {
     def ~>[Out](flow: ProcessorFlow[In, Out])(implicit builder: FlowGraphBuilder): JunctionNextStep[In, Out] = {
       new JunctionNextStep(junction, flow, builder)
     }
+
+    def ~>(sink: Sink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(junction, ProcessorFlow.empty[In], sink)
+
+    def ~>(sink: UndefinedSink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(junction, ProcessorFlow.empty[In], sink)
+
+    def ~>(sink: Junction[In])(implicit builder: FlowGraphBuilder): Junction[In] = {
+      builder.addEdge(junction, ProcessorFlow.empty[In], sink)
+      sink
+    }
+
+    def ~>(flow: FlowWithSink[In, _])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(junction, flow)
   }
 
   class JunctionNextStep[In, Out](junction: Junction[In], flow: ProcessorFlow[In, Out], builder: FlowGraphBuilder) {
@@ -625,12 +644,16 @@ object FlowGraphImplicits {
     }
   }
 
-  // FIXME add more for FlowWithSource and FlowWithSink, and shortcuts injecting identity flows
-
   implicit class UndefinedSourceOps[In](val source: UndefinedSource[In]) extends AnyVal {
     def ~>[Out](flow: ProcessorFlow[In, Out])(implicit builder: FlowGraphBuilder): UndefinedSourceNextStep[In, Out] = {
       new UndefinedSourceNextStep(source, flow, builder)
     }
+
+    def ~>(sink: Junction[In])(implicit builder: FlowGraphBuilder): Junction[In] = {
+      builder.addEdge(source, ProcessorFlow.empty[In], sink)
+      sink
+    }
+
   }
 
   class UndefinedSourceNextStep[In, Out](source: UndefinedSource[In], flow: ProcessorFlow[In, Out], builder: FlowGraphBuilder) {
