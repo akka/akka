@@ -11,5 +11,4 @@ Networking
    io
    io-tcp
    io-udp
-   zeromq
    camel

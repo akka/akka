@@ -48,8 +48,6 @@ Akka is very modular and consists of several JARs containing different features.
 
 - ``akka-testkit`` – Toolkit for testing Actor systems
 
-- ``akka-zeromq`` – ZeroMQ integration
-
 In addition to these stable modules there are several which are on their way
 into the stable core but are still marked “experimental” at this point. This
 does not mean that they do not function as intended, it primarily means that
