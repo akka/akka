@@ -8,6 +8,7 @@ import scala.collection.immutable
 import akka.stream.impl2.Ast._
 import org.reactivestreams._
 import scala.annotation.unchecked.uncheckedVariance
+import scala.concurrent.Future
 import scala.language.higherKinds
 import akka.stream.Transformer
 import scala.concurrent.duration.FiniteDuration
@@ -56,6 +57,25 @@ trait FlowOps[-In, +Out] {
     transform("map", () ⇒ new Transformer[Out, T] {
       override def onNext(in: Out) = List(f(in))
     })
+
+  /**
+   * Transform each input element into a sequence of output elements that is
+   * then flattened into the output stream.
+   */
+  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[In, T] =
+    transform("mapConcat", () ⇒ new Transformer[Out, T] {
+      override def onNext(in: Out) = f(in)
+    })
+
+  /**
+   * Transform this stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function returns a `Future` of the
+   * element that will be emitted downstream. As many futures as requested elements by
+   * downstream may run in parallel and may complete in any order, but the elements that
+   * are emitted downstream are in the same order as from upstream.
+   */
+  def mapFuture[T](f: Out ⇒ Future[T]): Repr[In, T] =
+    andThen(MapFuture(f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
