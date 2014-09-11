@@ -40,7 +40,7 @@ object FlowOps {
 }
 
 /**
- * Operations offered by flows with a free output side: the DSL flows left-to-right only.
+ * Scala API: Operations offered by flows with a free output side: the DSL flows left-to-right only.
  */
 trait FlowOps[-In, +Out] {
   import FlowOps._
