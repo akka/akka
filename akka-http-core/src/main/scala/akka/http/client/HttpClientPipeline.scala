@@ -21,45 +21,44 @@ import akka.http.util._
  * INTERNAL API
  */
 private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettings,
-                                       materializer: FlowMaterializer,
-                                       log: LoggingAdapter)
+                                       log: LoggingAdapter)(implicit fm: FlowMaterializer)
   extends (StreamTcp.OutgoingTcpConnection ⇒ Http.OutgoingConnection) {
 
   import effectiveSettings._
 
-  val rootParser = new HttpResponseParser(parserSettings, materializer)()
+  val rootParser = new HttpResponseParser(parserSettings)()
   val warnOnIllegalHeader: ErrorInfo ⇒ Unit = errorInfo ⇒
     if (parserSettings.illegalHeaderWarnings)
       log.warning(errorInfo.withSummaryPrepended("Illegal response header").formatPretty)
 
-  val responseRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, materializer, log)
+  val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.OutgoingTcpConnection): Http.OutgoingConnection = {
     val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
 
     val (contextBypassSubscriber, contextBypassPublisher) =
-      Duct[(HttpRequest, Any)].map(_._2).build()(materializer)
+      Duct[(HttpRequest, Any)].map(_._2).build()
 
     val requestSubscriber =
       Duct[(HttpRequest, Any)]
         .broadcast(contextBypassSubscriber)
         .map(requestMethodByPass)
-        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+        .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
         .flatten(FlattenStrategy.concat)
         .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
-        .produceTo(tcpConn.outputStream)(materializer)
+        .produceTo(tcpConn.outputStream)
 
     val responsePublisher =
       Flow(tcpConn.inputStream)
         .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
         .splitWhen(_.isInstanceOf[MessageStart])
-        .headAndTail(materializer)
+        .headAndTail
         .collect {
           case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
             HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
         }
         .zip(contextBypassPublisher)
-        .toPublisher()(materializer)
+        .toPublisher()
 
     val processor = HttpClientProcessor(requestSubscriber, responsePublisher)
     Http.OutgoingConnection(tcpConn.remoteAddress, tcpConn.localAddress, processor)

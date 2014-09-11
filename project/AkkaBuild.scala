@@ -78,7 +78,7 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
       validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev, test in Test in stream, test in Test in httpCore,
-        test in Test in http, test in Test in docsDev) map { (_, _, _, _, _) => }
+        test in Test in http, test in Test in httpTests, test in Test in docsDev) map { (_, _, _, _, _, _) => }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
@@ -332,7 +332,7 @@ object AkkaBuild extends Build {
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
       publishArtifact in packageSite := false
     ),
-    aggregate = Seq(parsing, stream, http, httpCore, docsDev)
+    aggregate = Seq(parsing, stream, http, httpCore, httpTestkit, httpTests, docsDev)
   )
 
   lazy val httpCore = Project(
@@ -360,15 +360,43 @@ object AkkaBuild extends Build {
     dependencies = Seq(httpCore, stream % "compile;test->test"),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
-        javadocSettings ++ OSGi.http ++
+        javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           version := streamAndHttpVersion,
-          libraryDependencies ++= Dependencies.http,
           Dependencies.addScalaXmlDepencency,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
           previousArtifact := None,
-          scalacOptions += "-language:_"
+          scalacOptions in Compile += "-language:_"
+        )
+  )
+
+  lazy val httpTestkit = Project(
+    id = "akka-http-testkit-experimental",
+    base = file("akka-http-testkit"),
+    dependencies = Seq(http, stream % "compile;test->test"),
+    settings =
+      defaultSettings ++ formatSettings ++ scaladocSettings ++
+        javadocSettings ++ OSGi.httpTestkit ++
+        Seq(
+          libraryDependencies ++= Dependencies.httpTestkit,
+          // FIXME include mima when akka-http-2.3.x is released
+          //previousArtifact := akkaPreviousArtifact("akka-http-testkit")
+          previousArtifact := None,
+          scalacOptions in Compile  += "-language:_"
+        )
+  )
+
+  lazy val httpTests = Project(
+    id = "akka-http-tests",
+    base = file("akka-http-tests"),
+    dependencies = Seq(httpTestkit, stream % "compile;test->test"),
+    settings =
+      defaultSettings ++ formatSettings ++
+        Seq(
+          publishArtifact := false,
+          libraryDependencies ++= Dependencies.httpTests,
+          scalacOptions in Compile  += "-language:_"
         )
   )
 
@@ -1212,6 +1240,8 @@ object AkkaBuild extends Build {
 
     val http = Nil // FIXME #15689
 
+    val httpTestkit = exports(Seq("akka.http.testkit.*"))
+
     // Temporary fix for #15379. Should be removed when stream is stabilized.
     // And yes OSGi wont like you mixing the persistence and stream artifacts.
     val stream = exports(Seq("akka.stream.*", "akka.persistence.stream.*"))
@@ -1402,7 +1432,11 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
     Test.junit, Test.scalatest)
 
-  val http = Seq(Test.junit, Test.scalatest)
+  val httpTestkit = Seq(
+    "com.typesafe.akka" %% "akka-testkit" % "2.3.5",
+    Test.junit, Test.scalatest.copy(configurations = Some("provided; test")))
+
+  val httpTests = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
