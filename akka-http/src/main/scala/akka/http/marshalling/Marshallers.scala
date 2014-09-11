@@ -5,8 +5,9 @@
 package akka.http.marshalling
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.ExecutionContext
 import scala.xml.NodeSeq
+import akka.http.util.Deferrable
 import akka.http.model._
 import MediaTypes._
 
@@ -41,7 +42,7 @@ sealed abstract class SingleMarshallerMarshallers {
 }
 
 sealed trait Marshaller[-A, B] { outer ⇒
-  def apply(value: A): Future[Marshalling[B]]
+  def apply(value: A): Deferrable[Marshalling[B]]
 
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshaller[A, C] =
     Marshaller[A, C](value ⇒ outer(value) map (_ map f))
@@ -69,19 +70,19 @@ object Marshaller
   with PredefinedToResponseMarshallers
   with PredefinedToRequestMarshallers {
 
-  def apply[A, B](f: A ⇒ Future[Marshalling[B]]): Marshaller[A, B] =
+  def apply[A, B](f: A ⇒ Deferrable[Marshalling[B]]): Marshaller[A, B] =
     new Marshaller[A, B] {
       def apply(value: A) = f(value)
     }
 
   def withFixedCharset[A, B](mediaType: MediaType, charset: HttpCharset)(marshal: A ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Future.successful(Marshalling.WithFixedCharset(mediaType, charset, () ⇒ marshal(value))) }
+    Marshaller { value ⇒ Deferrable(Marshalling.WithFixedCharset(mediaType, charset, () ⇒ marshal(value))) }
 
   def withOpenCharset[A, B](mediaType: MediaType)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Future.successful(Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset))) }
+    Marshaller { value ⇒ Deferrable(Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset))) }
 
   def opaque[A, B](marshal: A ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Future.successful(Marshalling.Opaque(() ⇒ marshal(value))) }
+    Marshaller { value ⇒ Deferrable(Marshalling.Opaque(() ⇒ marshal(value))) }
 }
 
 /**

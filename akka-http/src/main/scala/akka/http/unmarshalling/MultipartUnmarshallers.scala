@@ -5,11 +5,10 @@
 package akka.http.unmarshalling
 
 import org.reactivestreams.Publisher
-import scala.concurrent.Future
 import akka.actor.ActorRefFactory
-import akka.http.parsing.BodyPartParser
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
+import akka.http.parsing.BodyPartParser
 import akka.http.model._
 import akka.http.util._
 import MediaRanges._
@@ -34,24 +33,22 @@ trait MultipartUnmarshallers {
   def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: Publisher[BodyPart] ⇒ T)(implicit fm: FlowMaterializer,
                                                                                                                                                 refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
     Unmarshaller { entity ⇒
-      Future.successful {
-        if (mediaRange matches entity.contentType.mediaType) {
-          entity.contentType.mediaType.params.get("boundary") match {
-            case None ⇒ sys.error("Content-Type with a multipart media type must have a 'boundary' parameter")
-            case Some(boundary) ⇒
-              val bodyParts = Flow(entity.dataBytes(fm))
-                .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, fm, actorSystem(refFactory).log))
-                .splitWhen(_.isInstanceOf[BodyPartParser.BodyPartStart])
-                .headAndTail(fm)
-                .collect {
-                  case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
-                    BodyPart(createEntity(entityParts), headers)
-                  case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
-                }.toPublisher()(fm)
-              Unmarshalling.Success(create(bodyParts))
-          }
-        } else Unmarshalling.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
-      }
+      if (mediaRange matches entity.contentType.mediaType) {
+        entity.contentType.mediaType.params.get("boundary") match {
+          case None ⇒ UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter")
+          case Some(boundary) ⇒
+            val bodyParts = Flow(entity.dataBytes(fm))
+              .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, actorSystem(refFactory).log))
+              .splitWhen(_.isInstanceOf[BodyPartParser.BodyPartStart])
+              .headAndTail(fm)
+              .collect {
+                case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
+                  BodyPart(createEntity(entityParts), headers)
+                case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
+              }.toPublisher()(fm)
+            Deferrable(create(bodyParts))
+        }
+      } else UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
     }
 
   implicit def defaultMultipartFormDataUnmarshaller(implicit fm: FlowMaterializer,
@@ -71,13 +68,7 @@ trait MultipartUnmarshallers {
   def strictMultipartFormDataUnmarshaller(verifyIntegrity: Boolean = true)(implicit fm: FlowMaterializer,
                                                                            refFactory: ActorRefFactory): FromEntityUnmarshaller[StrictMultipartFormData] = {
     implicit val ec = actorSystem(refFactory).dispatcher
-    val m = multipartFormDataUnmarshaller(verifyIntegrity)
-    Unmarshaller {
-      m(_) flatMap {
-        case Unmarshalling.Success(mfd) ⇒ mfd.toStrict(fm).map(Unmarshalling.Success.apply)
-        case e: Unmarshalling.Failure   ⇒ Future.successful(e)
-      }
-    }
+    multipartFormDataUnmarshaller(verifyIntegrity) flatMap (mfd ⇒ mfd.toStrict())
   }
 
 }

@@ -5,14 +5,12 @@
 package akka.http.marshalling
 
 import java.nio.CharBuffer
-
+import scala.concurrent.ExecutionContext
+import scala.xml.NodeSeq
 import akka.http.model.MediaTypes._
 import akka.http.model._
-import akka.http.util.StringRendering
+import akka.http.util.{ Deferrable, StringRendering }
 import akka.util.ByteString
-
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.xml.NodeSeq
 
 trait PredefinedToEntityMarshallers extends MultipartMarshallers {
 
@@ -65,7 +63,7 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
 
   implicit val HttpEntityMarshaller: ToEntityMarshaller[HttpEntity.Regular] = Marshaller { value ⇒
     // since we don't want to recode we simply ignore the charset determined by content negotiation here
-    Future.successful(Marshalling.WithOpenCharset(value.contentType.mediaType, _ ⇒ value))
+    Deferrable(Marshalling.WithOpenCharset(value.contentType.mediaType, _ ⇒ value))
   }
 }
 

@@ -4,10 +4,10 @@
 
 package akka.http.marshalling
 
-import akka.http.model._
-
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.ExecutionContext
+import akka.http.util.Deferrable
+import akka.http.model._
 
 trait PredefinedToRequestMarshallers {
   private type TRM[T] = ToRequestMarshaller[T] // brevity alias
@@ -15,7 +15,7 @@ trait PredefinedToRequestMarshallers {
   implicit val fromRequest: TRM[HttpRequest] = Marshaller.opaque(identity)
 
   implicit def fromUri(implicit ec: ExecutionContext): TRM[Uri] =
-    Marshaller { uri ⇒ Future.successful(Marshalling.Opaque(() ⇒ HttpRequest(uri = uri))) }
+    Marshaller { uri ⇒ Deferrable(Marshalling.Opaque(() ⇒ HttpRequest(uri = uri))) }
 
   implicit def fromMethodAndUriAndValue[S, T](implicit mt: ToEntityMarshaller[T],
                                               ec: ExecutionContext): TRM[(HttpMethod, Uri, T)] =

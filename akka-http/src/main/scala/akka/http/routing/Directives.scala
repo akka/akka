@@ -1,0 +1,35 @@
+/*
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.http.routing
+
+import directives._
+
+// FIXME: the comments are kept as a reminder which directives are not yet imported
+
+trait Directives extends RouteConcatenation
+  with BasicDirectives
+  //with CacheConditionDirectives
+  //with ChunkingDirectives
+  //with CookieDirectives
+  //with DebuggingDirectives
+  //with EncodingDirectives
+  with ExecutionDirectives
+  //with FileAndResourceDirectives
+  //with FormFieldDirectives
+  //with FutureDirectives
+  //with HeaderDirectives
+  //with HostDirectives
+  //with MarshallingDirectives
+  with MethodDirectives
+  //with MiscDirectives
+  //with ParameterDirectives
+  with PathDirectives
+  //with RangeDirectives
+  //with RespondWithDirectives
+  with RouteDirectives
+//with SchemeDirectives
+//with SecurityDirectives
+
+object Directives extends Directives
