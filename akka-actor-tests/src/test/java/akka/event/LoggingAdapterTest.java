@@ -65,15 +65,15 @@ public class LoggingAdapterTest {
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
 
             ref.tell(new Log(ErrorLevel(), "An Error"), system.deadLetters());
-            expectLog(ErrorLevel(), "An Error", "Map(messageLength -> 8)");
+            expectLog(ErrorLevel(), "An Error", "{messageLength=8}");
             ref.tell(new Log(WarningLevel(), "A Warning"), system.deadLetters());
-            expectLog(WarningLevel(), "A Warning", "Map(messageLength -> 9)");
+            expectLog(WarningLevel(), "A Warning", "{messageLength=9}");
             ref.tell(new Log(InfoLevel(), "Some Info"), system.deadLetters());
-            expectLog(InfoLevel(), "Some Info", "Map(messageLength -> 9)");
+            expectLog(InfoLevel(), "Some Info", "{messageLength=9}");
             ref.tell(new Log(DebugLevel(), "No MDC for 4th call"), system.deadLetters());
             expectLog(DebugLevel(), "No MDC for 4th call");
             ref.tell(new Log(Logging.DebugLevel(), "And now yes, a debug with MDC"), system.deadLetters());
-            expectLog(DebugLevel(), "And now yes, a debug with MDC", "Map(messageLength -> 29)");
+            expectLog(DebugLevel(), "And now yes, a debug with MDC", "{messageLength=29}");
         }};
     }
 
@@ -85,7 +85,7 @@ public class LoggingAdapterTest {
             ActorRef ref = system.actorOf(Props.create(ActorWithMDC.class));
 
             ref.tell(new Log(InfoLevel(), "Null MDC"), system.deadLetters());
-            expectLog(InfoLevel(), "Null MDC", "Map()");
+            expectLog(InfoLevel(), "Null MDC", "{}");
         }};
     }
 
@@ -104,7 +104,7 @@ public class LoggingAdapterTest {
 
     private static class LogJavaTestKit extends JavaTestKit {
 
-        private static final String emptyMDC = "Map()";
+        private static final String emptyMDC = "{}";
 
         public LogJavaTestKit(ActorSystem system) {
             super(system);
@@ -128,7 +128,7 @@ public class LoggingAdapterTest {
                     LogEvent log = (LogEvent) event;
                     assertEquals(message, log.message());
                     assertEquals(level, log.level());
-                    assertEquals(mdc, log.mdc().toString());
+                    assertEquals(mdc, log.getMDC().toString());
                     if(cause != null) {
                         Error error = (Error) log;
                         assertSame(cause, error.cause());
