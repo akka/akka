@@ -5,14 +5,14 @@
 package akka.http.model
 
 import java.io.File
+import org.reactivestreams.Publisher
+import scala.concurrent.ExecutionContext
+import scala.collection.immutable
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
-import org.reactivestreams.Publisher
 import akka.stream.impl.SynchronousPublisherFromIterable
-import scala.collection.immutable
+import akka.http.util.Deferrable
 import headers._
-
-import scala.concurrent.{ ExecutionContext, Future }
 
 trait MultipartParts {
   def parts: Publisher[BodyPart]
@@ -56,8 +56,8 @@ case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts 
    * Turns this instance into its strict specialization using the given `maxFieldCount` as the field number cut-off
    * hint.
    */
-  def toStrict(materializer: FlowMaterializer, maxFieldCount: Int = 1000)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
-    Flow(parts).grouped(maxFieldCount).toFuture()(materializer).map(new StrictMultipartFormData(_))
+  def toStrict(maxFieldCount: Int = 1000)(implicit ec: ExecutionContext, fm: FlowMaterializer): Deferrable[StrictMultipartFormData] =
+    Deferrable(Flow(parts).grouped(maxFieldCount).toFuture()).map(new StrictMultipartFormData(_))
 }
 
 /**
@@ -69,8 +69,8 @@ class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends Multi
    */
   def get(partName: String): Option[BodyPart] = fields.find(_.name.exists(_ == partName))
 
-  override def toStrict(materializer: FlowMaterializer, maxFieldCount: Int)(implicit ec: ExecutionContext): Future[StrictMultipartFormData] =
-    Future.successful(this)
+  override def toStrict(maxFieldCount: Int = 1000)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+    Deferrable(this)
 }
 
 object MultipartFormData {

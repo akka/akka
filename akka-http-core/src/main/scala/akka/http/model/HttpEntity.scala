@@ -6,17 +6,17 @@ package akka.http.model
 
 import language.implicitConversions
 import java.io.File
+import java.lang.{ Iterable ⇒ JIterable }
 import org.reactivestreams.Publisher
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-
+import akka.http.util.Deferrable
 import akka.stream.{ TimerTransformer, FlowMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.stream.impl.{ EmptyPublisher, SynchronousPublisherFromIterable }
-import java.lang.Iterable
 import japi.JavaMapping.Implicits._
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -35,15 +35,15 @@ sealed trait HttpEntity extends japi.HttpEntity {
   /**
    * A stream of the data of this entity.
    */
-  def dataBytes(materializer: FlowMaterializer): Publisher[ByteString]
+  def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString]
 
   /**
-   * Collects all possible parts and returns a future Strict entity for easier processing. The future is failed with an
-   * TimeoutException if the stream isn't completed after the given timeout.
+   * Collects all possible parts and returns a potentially future Strict entity for easier processing.
+   * The Deferrable is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[HttpEntity.Strict] =
-    Flow(dataBytes(materializer))
-      .timerTransform("toStrict", () ⇒ new TimerTransformer[ByteString, HttpEntity.Strict] {
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Deferrable[HttpEntity.Strict] = {
+    def transformer() =
+      new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
         scheduleOnce("", timeout)
 
@@ -58,8 +58,9 @@ sealed trait HttpEntity extends japi.HttpEntity {
         def onTimer(timerKey: Any): immutable.Seq[HttpEntity.Strict] =
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
-      })
-      .toFuture()(materializer)
+      }
+    Deferrable(Flow(dataBytes).timerTransform("toStrict", transformer).toFuture())
+  }
 
   /**
    * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
@@ -116,16 +117,14 @@ object HttpEntity {
 
   /**
    * The model for the entity of a "regular" unchunked HTTP message with known, fixed data.
-   * @param contentType
-   * @param data
    */
   final case class Strict(contentType: ContentType, data: ByteString) extends japi.HttpEntityStrict with Regular {
     def isKnownEmpty: Boolean = data.isEmpty
 
-    def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
+    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
 
-    override def toStrict(timeout: FiniteDuration, materializer: FlowMaterializer)(implicit ec: ExecutionContext): Future[Strict] =
-      Future.successful(this)
+    override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+      Deferrable(this)
 
     def withContentType(contentType: ContentType): Strict =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -141,7 +140,7 @@ object HttpEntity {
     def isKnownEmpty = false
     override def isDefault: Boolean = true
 
-    def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
+    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = data
 
     def withContentType(contentType: ContentType): Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -156,7 +155,7 @@ object HttpEntity {
     def isKnownEmpty = data eq EmptyPublisher
     override def isCloseDelimited: Boolean = true
 
-    def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] = data
+    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = data
 
     def withContentType(contentType: ContentType): CloseDelimited =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -169,8 +168,8 @@ object HttpEntity {
     def isKnownEmpty = chunks eq EmptyPublisher
     override def isChunked: Boolean = true
 
-    def dataBytes(materializer: FlowMaterializer): Publisher[ByteString] =
-      Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher()(materializer)
+    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] =
+      Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher()
 
     def withContentType(contentType: ContentType): Chunked =
       if (contentType == this.contentType) this else copy(contentType = contentType)
@@ -183,10 +182,10 @@ object HttpEntity {
      * Returns a ``Chunked`` entity where one Chunk is produced for every non-empty ByteString of the given
      * ``Publisher[ByteString]``.
      */
-    def apply(contentType: ContentType, chunks: Publisher[ByteString], materializer: FlowMaterializer): Chunked =
+    def fromData(contentType: ContentType, chunks: Publisher[ByteString])(implicit fm: FlowMaterializer): Chunked =
       Chunked(contentType, Flow(chunks).collect[ChunkStreamPart] {
         case b: ByteString if b.nonEmpty ⇒ Chunk(b)
-      }.toPublisher()(materializer))
+      }.toPublisher())
   }
 
   /**
@@ -211,7 +210,8 @@ object HttpEntity {
     require(data.nonEmpty, "An HttpEntity.Chunk must have non-empty data")
     def isLastChunk = false
 
-    def getTrailerHeaders: Iterable[japi.HttpHeader] = java.util.Collections.emptyList[japi.HttpHeader]
+    /** Java API */
+    def getTrailerHeaders: JIterable[japi.HttpHeader] = java.util.Collections.emptyList[japi.HttpHeader]
   }
   object Chunk {
     def apply(string: String): Chunk = apply(ByteString(string))
@@ -228,7 +228,7 @@ object HttpEntity {
     def isLastChunk = true
 
     /** Java API */
-    def getTrailerHeaders: Iterable[japi.HttpHeader] = trailer.asJava
+    def getTrailerHeaders: JIterable[japi.HttpHeader] = trailer.asJava
   }
   object LastChunk extends LastChunk("", Nil)
 }
