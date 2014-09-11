@@ -121,12 +121,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val merge = Merge[String]
         import FlowGraphImplicits._
         in1 ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out1
-        bcast ~> f4 ~> bcast2 ~> f5 ~> merge
-        bcast2 ~> f6 ~> out2
-
-        // FIXME the following is doesn't work because of edge equality
-        //        in1 ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out1
-        //        bcast ~> f4 ~> merge
+        bcast ~> f4 ~> merge
       }.run()
     }
 
