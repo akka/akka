@@ -28,7 +28,7 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
-    val zeroMQClient  = "org.spark-project.zeromq"   %% "zeromq-scala-binding"         % "0.0.7-spark"  // ApacheV2
+    // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
@@ -90,8 +90,6 @@ object Dependencies {
   val osgi = Seq(osgiCore, osgiCompendium, Test.logback, Test.commonsIo, Test.pojosr, Test.tinybundles, Test.scalatest, Test.junit)
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
-
-  val zeroMQ = deps(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
   val contrib = Seq(Test.junitIntf, Test.commonsIo)
 }
