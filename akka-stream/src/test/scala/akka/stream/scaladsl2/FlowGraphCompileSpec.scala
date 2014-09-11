@@ -5,6 +5,7 @@ package akka.stream.scaladsl2
 
 import akka.stream.testkit.AkkaSpec
 import akka.stream.Transformer
+import akka.stream.OverflowStrategy
 
 class FlowGraphCompileSpec extends AkkaSpec {
 
@@ -88,11 +89,12 @@ class FlowGraphCompileSpec extends AkkaSpec {
           val merge = Merge[String]
           val bcast1 = Broadcast[String]
           val bcast2 = Broadcast[String]
+          val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.DropBuffer)
           b.
             addEdge(in1, f1, merge).
             addEdge(merge, f2, bcast1).
             addEdge(bcast1, f3, out1).
-            addEdge(bcast1, f4, bcast2).
+            addEdge(bcast1, feedbackLoopBuffer, bcast2).
             addEdge(bcast2, f5, merge). // cycle
             addEdge(bcast2, f6, out2)
         }
@@ -101,17 +103,17 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "express complex topologies in a readable way" in {
-      intercept[IllegalArgumentException] {
-        FlowGraph { implicit b ⇒
-          val merge = Merge[String]
-          val bcast1 = Broadcast[String]
-          val bcast2 = Broadcast[String]
-          import FlowGraphImplicits._
-          in1 ~> f1 ~> merge ~> f2 ~> bcast1 ~> f3 ~> out1
-          bcast1 ~> f4 ~> bcast2 ~> f5 ~> merge
-          bcast2 ~> f6 ~> out2
-        }
-      }.getMessage.toLowerCase should include("cycle")
+      FlowGraph { implicit b ⇒
+        b.allowCycles()
+        val merge = Merge[String]
+        val bcast1 = Broadcast[String]
+        val bcast2 = Broadcast[String]
+        val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.DropBuffer)
+        import FlowGraphImplicits._
+        in1 ~> f1 ~> merge ~> f2 ~> bcast1 ~> f3 ~> out1
+        bcast1 ~> feedbackLoopBuffer ~> bcast2 ~> f5 ~> merge
+        bcast2 ~> f6 ~> out2
+      }.run()
     }
 
     "build broadcast - merge" in {
