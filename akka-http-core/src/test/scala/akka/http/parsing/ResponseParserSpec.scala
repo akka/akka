@@ -7,15 +7,14 @@ package akka.http.parsing
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-import org.scalatest.{ Tag, BeforeAndAfterAll, FreeSpec, Matchers }
+import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import org.reactivestreams.Publisher
 import akka.stream.scaladsl.Flow
 import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.{ FlattenStrategy, MaterializerSettings, FlowMaterializer }
+import akka.stream.{ FlattenStrategy, FlowMaterializer }
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.http.client.HttpClientPipeline
 import akka.http.util._
 import akka.http.model._
 import headers._
@@ -34,7 +33,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer()
+  implicit val materializer = FlowMaterializer()
   val ServerOnTheMove = StatusCodes.registerCustom(331, "Server on the move")
 
   "The response parsing logic should" - {
@@ -117,7 +116,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "response start" in new Test {
         Seq(start, "rest") should generalMultiParseTo(
-          Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher()))),
+          Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher()))),
           Left("Illegal character 'r' in chunk start"))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -136,11 +135,11 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |0123456789""",
           """ABCDEF
             |dead""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher(
-              HttpEntity.Chunk(ByteString("abc")),
-              HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
-              HttpEntity.Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
-              HttpEntity.Chunk(ByteString("0123456789ABCDEF"), ""))))))
+            Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher(
+              Chunk(ByteString("abc")),
+              Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
+              Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
+              Chunk(ByteString("0123456789ABCDEF"), ""))))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -149,7 +148,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           """0
             |
             |""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`, publisher(HttpEntity.LastChunk)))))
+            Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher(LastChunk)))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -161,8 +160,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Bar: xyz
             |
             |HT""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(HttpEntity.Chunked(`application/pdf`,
-              publisher(HttpEntity.LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+            Right(baseResponse.withEntity(Chunked(`application/pdf`,
+              publisher(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
@@ -215,7 +214,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               .map(ByteString.apply)
               .transform("parser", () ⇒ newParser(requestMethod))
               .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
-              .headAndTail(materializer)
+              .headAndTail
               .collect {
                 case (ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
                   closeAfterResponseCompletion :+= close
@@ -224,34 +223,32 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               }.map { x ⇒
                 Flow {
                   x match {
-                    case Right(response) ⇒ compactEntity(response.entity).map(x ⇒ Right(response.withEntity(x)))
+                    case Right(response) ⇒ compactEntity(response.entity).map(x ⇒ Right(response.withEntity(x))).toFuture
                     case Left(error)     ⇒ Future.successful(Left(error.info.formatPretty))
                   }
-                }.toPublisher()(materializer)
+                }.toPublisher()
               }
               .flatten(FlattenStrategy.concat)
-              .grouped(1000).toFuture()(materializer)
+              .grouped(1000).toFuture()
           Await.result(future, 250.millis)
       }
 
     def newParser(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(ParserSettings(system), materializer,
+      val parser = new HttpResponseParser(ParserSettings(system),
         dequeueRequestMethodForNextResponse = () ⇒ requestMethod)()
       parser
     }
 
-    private def compactEntity(entity: HttpEntity): Future[HttpEntity] =
+    private def compactEntity(entity: HttpEntity): Deferrable[HttpEntity] =
       entity match {
         case x: HttpEntity.Chunked ⇒ compactEntityChunks(x.chunks).map(compacted ⇒ x.copy(chunks = compacted))
-        case _                     ⇒ entity.toStrict(250.millis, materializer)
+        case _                     ⇒ entity.toStrict(250.millis)
       }
 
-    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
-      Flow(data).grouped(1000).toFuture()(materializer)
+    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Deferrable[Publisher[ChunkStreamPart]] =
+      Deferrable(Flow(data).grouped(1000).toFuture())
         .map(publisher(_: _*))
-        .recover {
-          case _: NoSuchElementException ⇒ publisher[ChunkStreamPart]()
-        }
+        .recover { case _: NoSuchElementException ⇒ publisher() }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
 

@@ -8,7 +8,7 @@ import language.implicitConversions
 import scala.collection.immutable
 import java.nio.charset.Charset
 import akka.http.util._
-import java.lang.Iterable
+import java.lang.{ Iterable ⇒ JIterable }
 
 /**
  * A charset range as encountered in `Accept-Charset`. Can either be a single charset, or `*`
@@ -63,7 +63,7 @@ final case class HttpCharset private[http] (override val value: String)(val alia
   def withQValue(qValue: Float): HttpCharsetRange = HttpCharsetRange(this, qValue.toFloat)
 
   /** Java API */
-  def getAliases: Iterable[String] = {
+  def getAliases: JIterable[String] = {
     import collection.JavaConverters._
     aliases.asJava
   }

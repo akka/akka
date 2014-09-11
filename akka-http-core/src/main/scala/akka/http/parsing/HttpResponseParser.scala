@@ -18,8 +18,7 @@ import HttpResponseParser.NoMethod
  * INTERNAL API
  */
 private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       materializer: FlowMaterializer,
-                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
+                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit fm: FlowMaterializer)
   extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
   import settings._
 
@@ -27,7 +26,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
   def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit, dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
-    new HttpResponseParser(settings, materializer, dequeueRequestMethodForNextResponse)(headerParser.copyWith(warnOnIllegalHeader))
+    new HttpResponseParser(settings, dequeueRequestMethodForNextResponse)(headerParser.copyWith(warnOnIllegalHeader))
 
   override def startNewMessage(input: ByteString, offset: Int): StateResult = {
     requestMethodForCurrentResponse = dequeueRequestMethodForNextResponse()
@@ -95,12 +94,12 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
               emitResponseStart(strictEntity(cth, input, bodyStart, cl))
               startNewMessage(input, bodyStart + cl)
             } else {
-              emitResponseStart(defaultEntity(cth, contentLength, materializer))
+              emitResponseStart(defaultEntity(cth, contentLength))
               parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()(materializer)
+              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             parseToCloseBody(input, bodyStart)
@@ -109,7 +108,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
         case Some(te) ⇒
           if (te.encodings.size == 1 && te.hasChunked) {
             if (clh.isEmpty) {
-              emitResponseStart(chunkedEntity(cth, materializer))
+              emitResponseStart(chunkedEntity(cth))
               parseChunk(input, bodyStart, closeAfterResponseCompletion)
             } else fail("A chunked request must not contain a Content-Length header.")
           } else fail(s"`$te` is not supported by this client")

@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Flow
 import akka.http.model.HttpEntity._
 import org.reactivestreams.Publisher
 import akka.actor.ActorSystem
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.{ Promise, Await }
@@ -31,7 +31,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializer = FlowMaterializer()
+  implicit val materializer = FlowMaterializer()
   override def afterAll() = system.shutdown()
 
   "HttpEntity" - {
@@ -40,20 +40,16 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         Strict(tpe, abc) must collectBytesTo(abc)
       }
       "Default" in {
-        Default(tpe, 11, publisher(abc, de, fgh, ijk)) must
-          collectBytesTo(abc, de, fgh, ijk)
+        Default(tpe, 11, publisher(abc, de, fgh, ijk)) must collectBytesTo(abc, de, fgh, ijk)
       }
       "CloseDelimited" in {
-        CloseDelimited(tpe, publisher(abc, de, fgh, ijk)) must
-          collectBytesTo(abc, de, fgh, ijk)
+        CloseDelimited(tpe, publisher(abc, de, fgh, ijk)) must collectBytesTo(abc, de, fgh, ijk)
       }
       "Chunked w/o LastChunk" in {
-        Chunked(tpe, publisher(Chunk(abc), Chunk(fgh), Chunk(ijk))) must
-          collectBytesTo(abc, fgh, ijk)
+        Chunked(tpe, publisher(Chunk(abc), Chunk(fgh), Chunk(ijk))) must collectBytesTo(abc, fgh, ijk)
       }
       "Chunked with LastChunk" in {
-        Chunked(tpe, publisher(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)) must
-          collectBytesTo(abc, fgh, ijk)
+        Chunked(tpe, publisher(Chunk(abc), Chunk(fgh), Chunk(ijk), LastChunk)) must collectBytesTo(abc, fgh, ijk)
       }
     }
     "support toStrict" - {
@@ -78,9 +74,9 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       }
       "Infinite data stream" in {
         val neverCompleted = Promise[ByteString]()
-        val stream: Publisher[ByteString] = Flow(neverCompleted.future).toPublisher()(materializer)
+        val stream: Publisher[ByteString] = Flow(neverCompleted.future).toPublisher()
         intercept[TimeoutException] {
-          Await.result(Default(tpe, 42, stream).toStrict(100.millis, materializer), 150.millis)
+          Default(tpe, 42, stream).toStrict(100.millis).await(150.millis)
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
       }
     }
@@ -90,16 +86,10 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
 
   def collectBytesTo(bytes: ByteString*): Matcher[HttpEntity] =
     equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity ⇒
-      val future =
-        Flow(entity.dataBytes(materializer))
-          .grouped(1000).toFuture()(materializer)
-
+      val future = Flow(entity.dataBytes).grouped(1000).toFuture()
       Await.result(future, 250.millis)
     }
 
   def strictifyTo(strict: Strict): Matcher[HttpEntity] =
-    equal(strict).matcher[Strict].compose { entity ⇒
-      val future = entity.toStrict(250.millis, materializer)
-      Await.result(future, 250.millis)
-    }
+    equal(strict).matcher[Strict].compose(_.toStrict(250.millis).await(250.millis))
 }

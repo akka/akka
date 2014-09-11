@@ -22,8 +22,7 @@ import headers._
  */
 private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`User-Agent`],
                                                requestHeaderSizeHint: Int,
-                                               materializer: FlowMaterializer,
-                                               log: LoggingAdapter) {
+                                               log: LoggingAdapter)(implicit fm: FlowMaterializer) {
 
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
 
@@ -106,12 +105,11 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength)
             renderByteStrings(r,
-              Flow(data).transform("checkContentLenght", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer),
-              materializer)
+              Flow(data).transform("checkContentLenght", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher())
 
           case HttpEntity.Chunked(_, chunks) ⇒
             r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf ~~ CrLf
-            renderByteStrings(r, Flow(chunks).transform("chunkTransform", () ⇒ new ChunkTransformer).toPublisher()(materializer), materializer)
+            renderByteStrings(r, Flow(chunks).transform("chunkTransform", () ⇒ new ChunkTransformer).toPublisher())
         }
 
       renderRequestLine()

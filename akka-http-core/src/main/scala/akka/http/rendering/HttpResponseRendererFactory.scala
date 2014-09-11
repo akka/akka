@@ -22,8 +22,7 @@ import headers._
  */
 private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Server],
                                                 responseHeaderSizeHint: Int,
-                                                materializer: FlowMaterializer,
-                                                log: LoggingAdapter) {
+                                                log: LoggingAdapter)(implicit fm: FlowMaterializer) {
 
   private val renderDefaultServerHeader: Rendering ⇒ Unit =
     serverHeader match {
@@ -117,7 +116,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
         }
 
       def byteStrings(entityBytes: ⇒ Publisher[ByteString]): List[Publisher[ByteString]] =
-        renderByteStrings(r, entityBytes, materializer, skipEntity = noEntity)
+        renderByteStrings(r, entityBytes, skipEntity = noEntity)
 
       def completeResponseRendering(entity: HttpEntity): List[Publisher[ByteString]] =
         entity match {
@@ -132,7 +131,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             r ~~ `Content-Length` ~~ contentLength ~~ CrLf ~~ CrLf
-            byteStrings(Flow(data).transform("checkContentLenght", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher()(materializer))
+            byteStrings(Flow(data).transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher())
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = true)
@@ -142,14 +141,14 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
           case HttpEntity.Chunked(contentType, chunks) ⇒
             if (ctx.requestProtocol == `HTTP/1.0`)
-              completeResponseRendering(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toPublisher()(materializer)))
+              completeResponseRendering(HttpEntity.CloseDelimited(contentType, Flow(chunks).map(_.data).toPublisher()))
             else {
               renderHeaders(headers.toList)
               renderEntityContentType(r, entity)
               if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
                 r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
               r ~~ CrLf
-              byteStrings(Flow(chunks).transform("checkContentLenght", () ⇒ new ChunkTransformer).toPublisher()(materializer))
+              byteStrings(Flow(chunks).transform("checkContentLength", () ⇒ new ChunkTransformer).toPublisher())
             }
         }
 

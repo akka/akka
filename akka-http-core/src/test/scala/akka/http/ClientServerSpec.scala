@@ -6,29 +6,27 @@ package akka.http
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-
+import com.typesafe.config.{ Config, ConfigFactory }
+import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
-import akka.http.client.ClientConnectionSettings
-import akka.http.model._
-import HttpEntity._
-import HttpMethods._
-import TestUtils._
-import akka.http.server.ServerSettings
-import akka.http.util._
 import akka.io.IO
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.testkit.TestProbe
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
-import akka.testkit.TestProbe
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.http.client.ClientConnectionSettings
+import akka.http.server.ServerSettings
+import akka.http.model._
+import akka.http.util._
 import headers._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import HttpEntity._
+import HttpMethods._
+import TestUtils._
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -37,15 +35,14 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val materializerSettings = MaterializerSettings(system)
-  val materializer = FlowMaterializer(materializerSettings)
+  implicit val materializer = FlowMaterializer()
 
   "The server-side HTTP infrastructure" should {
 
     "properly bind and unbind a server" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
       val commander = TestProbe()
-      commander.send(IO(Http), Http.Bind(hostname, port, materializerSettings = Some(materializerSettings)))
+      commander.send(IO(Http), Http.Bind(hostname, port))
 
       val Http.ServerBinding(localAddress, connectionStream) = commander.expectMsgType[Http.ServerBinding]
       localAddress.getHostName shouldEqual hostname
@@ -95,7 +92,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       private val HttpRequest(POST, uri, List(`User-Agent`(_), Host(_, _), Accept(Vector(MediaRanges.`*/*`))),
         Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
       uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-      Await.result(Flow(chunkStream).grouped(4).toFuture()(materializer), 100.millis) shouldEqual chunks
+      Await.result(Flow(chunkStream).grouped(4).toFuture(), 100.millis) shouldEqual chunks
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
@@ -104,7 +101,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       clientInSub.request(1)
       val (HttpResponse(StatusCodes.PartialContent, List(Date(_), Server(_), RawHeader("Age", "42")),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`), 12345678) = clientIn.expectNext()
-      Await.result(Flow(chunkStream2).grouped(1000).toFuture()(materializer), 100.millis) shouldEqual chunks
+      Await.result(Flow(chunkStream2).grouped(1000).toFuture(), 100.millis) shouldEqual chunks
     }
 
   }
@@ -120,7 +117,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     val connectionStream: SubscriberProbe[Http.IncomingConnection] = {
       val commander = TestProbe()
       val settings = configOverrides.toOption.map(ServerSettings.apply)
-      commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings, materializerSettings = Some(materializerSettings)))
+      commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings))
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
       commander.expectMsgType[Http.ServerBinding].connectionStream.subscribe(probe)
       probe
@@ -129,7 +126,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     def openNewClientConnection[T](settings: Option[ClientConnectionSettings] = None): (PublisherProbe[(HttpRequest, T)], SubscriberProbe[(HttpResponse, T)]) = {
       val commander = TestProbe()
-      commander.send(IO(Http), Http.Connect(hostname, port, settings = settings, materializerSettings = Some(materializerSettings)))
+      commander.send(IO(Http), Http.Connect(hostname, port, settings = settings))
       val connection = commander.expectMsgType[Http.OutgoingConnection]
       connection.remoteAddress.getPort shouldEqual port
       connection.remoteAddress.getHostName shouldEqual hostname
@@ -170,6 +167,5 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  def toStrict(entity: HttpEntity): HttpEntity.Strict =
-    Await.result(entity.toStrict(500.millis, materializer), 1.second)
+  def toStrict(entity: HttpEntity): HttpEntity.Strict = entity.toStrict(500.millis).await(1.second)
 }

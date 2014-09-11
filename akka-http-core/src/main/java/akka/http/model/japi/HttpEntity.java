@@ -103,7 +103,7 @@ public abstract class HttpEntity {
                 Util.<ChunkStreamPart, akka.http.model.HttpEntity.ChunkStreamPart>upcastPublisher(chunks));
     }
     public static HttpEntityChunked createChunked(ContentType contentType, Publisher<ByteString> data, FlowMaterializer materializer) {
-        return akka.http.model.HttpEntity.Chunked$.MODULE$.apply(
+        return akka.http.model.HttpEntity.Chunked$.MODULE$.fromData(
                 (akka.http.model.ContentType) contentType,
                 data, materializer);
     }

@@ -4,6 +4,8 @@
 
 package akka.http
 
+import scala.util.{ Failure, Success }
+import scala.concurrent.duration._
 import akka.actor._
 import akka.http.client._
 import akka.http.server.{ HttpServerPipeline, ServerSettings }
@@ -13,9 +15,6 @@ import akka.stream.FlowMaterializer
 import akka.stream.io.StreamTcp
 import akka.stream.scaladsl.Flow
 import akka.util.Timeout
-
-import scala.concurrent.duration._
-import scala.util.{ Failure, Success }
 
 /**
  * INTERNAL API
@@ -40,7 +39,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
       tcpConnectionFuture onComplete {
         case Success(tcpConn: StreamTcp.OutgoingTcpConnection) ⇒
           val pipeline = clientPipelines.getOrElse(effectiveSettings, {
-            val pl = new HttpClientPipeline(effectiveSettings, FlowMaterializer(), log)
+            val pl = new HttpClientPipeline(effectiveSettings, log)(FlowMaterializer(materializerSettings))
             clientPipelines = clientPipelines.updated(effectiveSettings, pl)
             pl
           })
@@ -64,7 +63,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
         case Success(StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
           log.info("Bound to {}", endpoint)
           implicit val materializer = FlowMaterializer()
-          val httpServerPipeline = new HttpServerPipeline(effectiveSettings, materializer, log)
+          val httpServerPipeline = new HttpServerPipeline(effectiveSettings, log)
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)
             .toPublisher()

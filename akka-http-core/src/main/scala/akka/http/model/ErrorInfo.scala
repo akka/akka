@@ -4,6 +4,8 @@
 
 package akka.http.model
 
+import StatusCodes.{ ClientError, ServerError }
+
 /**
  * Two-level model of error information.
  * The summary should explain what is wrong with the request or response *without* directly
@@ -47,4 +49,18 @@ class InvalidContentLengthException(info: ErrorInfo) extends ExceptionWithErrorI
 
 class ParsingException(info: ErrorInfo) extends ExceptionWithErrorInfo(info) {
   def this(summary: String, detail: String = "") = this(ErrorInfo(summary, detail))
+}
+
+class IllegalRequestException private (info: ErrorInfo, val status: ClientError)
+  extends ExceptionWithErrorInfo(info) {
+  def this(status: ClientError) = this(ErrorInfo(status.defaultMessage), status)
+  def this(status: ClientError, info: ErrorInfo) = this(info.withFallbackSummary(status.defaultMessage), status)
+  def this(status: ClientError, detail: String) = this(ErrorInfo(status.defaultMessage, detail), status)
+}
+
+class RequestProcessingException private (info: ErrorInfo, val status: ServerError)
+  extends ExceptionWithErrorInfo(info) {
+  def this(status: ServerError) = this(ErrorInfo(status.defaultMessage), status)
+  def this(status: ServerError, info: ErrorInfo) = this(info.withFallbackSummary(status.defaultMessage), status)
+  def this(status: ServerError, detail: String) = this(ErrorInfo(status.defaultMessage, detail), status)
 }

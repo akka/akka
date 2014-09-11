@@ -7,10 +7,8 @@ package akka.http.parsing
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import org.reactivestreams.Publisher
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 import akka.http.model.parser.CharacterClasses
 import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
 import akka.util.ByteString
 import akka.http.model._
 import headers._
@@ -20,8 +18,7 @@ import StatusCodes._
  * INTERNAL API
  */
 private[http] class HttpRequestParser(_settings: ParserSettings,
-                                      rawRequestUriHeader: Boolean,
-                                      materializer: FlowMaterializer)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
+                                      rawRequestUriHeader: Boolean)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit fm: FlowMaterializer)
   extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
   import settings._
 
@@ -30,7 +27,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
   private[this] var uriBytes: Array[Byte] = _
 
   def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit): HttpRequestParser =
-    new HttpRequestParser(settings, rawRequestUriHeader, materializer)(headerParser.copyWith(warnOnIllegalHeader))
+    new HttpRequestParser(settings, rawRequestUriHeader)(headerParser.copyWith(warnOnIllegalHeader))
 
   def parseMessage(input: ByteString, offset: Int): StateResult = {
     var cursor = parseMethod(input, offset)
@@ -131,14 +128,14 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
             startNewMessage(input, bodyStart + cl)
           } else {
-            emitRequestStart(defaultEntity(cth, contentLength, materializer))
+            emitRequestStart(defaultEntity(cth, contentLength))
             parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
           }
 
         case Some(te) ⇒
           if (te.encodings.size == 1 && te.hasChunked) {
             if (clh.isEmpty) {
-              emitRequestStart(chunkedEntity(cth, materializer))
+              emitRequestStart(chunkedEntity(cth))
               parseChunk(input, bodyStart, closeAfterResponseCompletion)
             } else fail("A chunked request must not contain a Content-Length header.")
           } else fail(NotImplemented, s"`$te` is not supported by this server")
