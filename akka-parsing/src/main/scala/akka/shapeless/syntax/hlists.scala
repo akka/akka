@@ -17,8 +17,6 @@
 package akka.shapeless
 package syntax
 
-import scala.annotation.tailrec
-
 /**
  * Carrier for `HList` operations.
  *
@@ -31,49 +29,9 @@ final class HListOps[L <: HList](l: L) {
   import ops.hlist._
 
   /**
-   * Returns the head of this `HList`. Available only if there is evidence that this `HList` is composite.
-   */
-  def head(implicit c: IsHCons[L]): c.H = c.head(l)
-
-  /**
-   * Returns the tail of this `HList`. Available only if there is evidence that this `HList` is composite.
-   */
-  def tail(implicit c: IsHCons[L]): c.T = c.tail(l)
-
-  /**
    * Prepend the argument element to this `HList`.
    */
   def ::[H](h: H): H :: L = akka.shapeless.::(h, l)
-
-  /**
-   * Prepend the argument element to this `HList`.
-   */
-  def +:[H](h: H): H :: L = akka.shapeless.::(h, l)
-
-  /**
-   * Append the argument element to this `HList`.
-   */
-  def :+[T](t: T)(implicit prepend: Prepend[L, T :: HNil]): prepend.Out = prepend(l, t :: HNil)
-
-  /**
-   * Append the argument `HList` to this `HList`.
-   */
-  def ++[S <: HList](suffix: S)(implicit prepend: Prepend[L, S]): prepend.Out = prepend(l, suffix)
-
-  /**
-   * Prepend the argument `HList` to this `HList`.
-   */
-  def ++:[P <: HList](prefix: P)(implicit prepend: Prepend[P, L]): prepend.Out = prepend(prefix, l)
-
-  /**
-   * Prepend the argument `HList` to this `HList`.
-   */
-  def :::[P <: HList](prefix: P)(implicit prepend: Prepend[P, L]): prepend.Out = prepend(prefix, l)
-
-  /**
-   * Prepend the reverse of the argument `HList` to this `HList`.
-   */
-  //def reverse_:::[P <: HList](prefix: P)(implicit prepend: ReversePrepend[P, L]): prepend.Out = prepend(prefix, l)
 
   /**
    * Reverses this `HList`.
