@@ -89,6 +89,10 @@ private[akka] object Ast {
     override def name = "zip"
   }
 
+  case object Concat extends FanInAstNode {
+    override def name = "concat"
+  }
+
 }
 
 /**
@@ -209,6 +213,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
             actorOf(Props(new FairMerge(settings, inputCount)).withDispatcher(settings.dispatcher), actorName)
           case Ast.Zip ⇒
             actorOf(Props(new Zip(settings)).withDispatcher(settings.dispatcher), actorName)
+          case Ast.Concat ⇒
+            actorOf(Props(new Concat(settings)).withDispatcher(settings.dispatcher), actorName)
         }
 
         val publisher = new ActorPublisher[Out](impl, equalityValue = None)
