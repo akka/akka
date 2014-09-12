@@ -89,7 +89,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           val merge = Merge[String]
           val bcast1 = Broadcast[String]
           val bcast2 = Broadcast[String]
-          val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.DropBuffer)
+          val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.dropBuffer)
           b.
             addEdge(in1, f1, merge).
             addEdge(merge, f2, bcast1).
@@ -108,7 +108,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val merge = Merge[String]
         val bcast1 = Broadcast[String]
         val bcast2 = Broadcast[String]
-        val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.DropBuffer)
+        val feedbackLoopBuffer = FlowFrom[String].buffer(10, OverflowStrategy.dropBuffer)
         import FlowGraphImplicits._
         in1 ~> f1 ~> merge ~> f2 ~> bcast1 ~> f3 ~> out1
         bcast1 ~> feedbackLoopBuffer ~> bcast2 ~> f5 ~> merge
