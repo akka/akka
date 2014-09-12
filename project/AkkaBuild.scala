@@ -1310,6 +1310,7 @@ object Dependencies {
     // TODO swap with stable released version reactive-streams version once it includes the TCK
     val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M2-20140910-174042-SNAPSHOT")
 
+    val publishedAkkaVersion = "2.3.6"
   }
 
   object Compile {
@@ -1428,20 +1429,20 @@ object Dependencies {
 
   val httpCore = Seq(
     // FIXME switch back to project dependency
-    "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
+    "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     Test.junit, Test.scalatest)
 
   val httpTestkit = Seq(
-    "com.typesafe.akka" %% "akka-testkit" % "2.3.5",
+    "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion,
     Test.junit, Test.scalatest.copy(configurations = Some("provided; test")))
 
   val httpTests = Seq(Test.junit, Test.scalatest)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
-    "com.typesafe.akka" %% "akka-actor" % "2.3.5",
-    "com.typesafe.akka" %% "akka-persistence-experimental" % "2.3.5",
-    "com.typesafe.akka" %% "akka-testkit" % "2.3.5" % "test",
+    "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
+    "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.publishedAkkaVersion,
+    "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     scalaGraph,
     Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreamsTck, Test.commonsIo)
 
