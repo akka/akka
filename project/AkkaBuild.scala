@@ -415,7 +415,6 @@ object AkkaBuild extends Build {
     base = file("akka-parsing"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.parsing ++ macroParadise ++ Seq(
       version := streamAndHttpVersion,
-      unmanagedSourceDirectories in Compile += (sourceDirectory in Compile).value / sourceDirName(scalaVersion.value),
       scalacOptions += "-language:_",
       // ScalaDoc doesn't like the macros
       sources in doc in Compile := List(),
