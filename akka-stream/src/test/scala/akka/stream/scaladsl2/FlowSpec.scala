@@ -524,7 +524,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         try {
           system.eventStream.publish(Mute(filters))
 
-          EventFilter[akka.actor.PreRestartException](occurrences = 1) intercept {
+          EventFilter[akka.actor.PostRestartException](occurrences = 1) intercept {
             upstream.expectRequest(upstreamSubscription, 1)
             upstreamSubscription.sendNext("a3")
             upstreamSubscription.expectCancellation()

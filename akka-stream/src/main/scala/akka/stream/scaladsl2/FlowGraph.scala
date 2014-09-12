@@ -74,6 +74,8 @@ final class Merge[T](override val name: Option[String]) extends FlowGraphInterna
   override val maximumInputCount: Int = Int.MaxValue
   override val minimumOutputCount: Int = 1
   override val maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = Ast.Merge
 }
 
 object Broadcast {
@@ -103,6 +105,8 @@ final class Broadcast[T](override val name: Option[String]) extends FlowGraphInt
   override def maximumInputCount: Int = 1
   override def minimumOutputCount: Int = 2
   override def maximumOutputCount: Int = Int.MaxValue
+
+  override private[akka] def astNode = Ast.Broadcast
 }
 
 object Zip {
@@ -149,6 +153,56 @@ final class Zip[A, B](override val name: Option[String]) extends FlowGraphIntern
   override def maximumInputCount: Int = 2
   override def minimumOutputCount: Int = 1
   override def maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = Ast.Zip
+}
+
+object Concat {
+  /**
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def apply[T]: Concat[T] = new Concat[T](None)
+
+  /**
+   * Create a named `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def apply[T](name: String): Concat[T] = new Concat[T](Some(name))
+
+  class First[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
+    override val port = 0
+    type NextT = T
+    override def next = vertex.out
+  }
+  class Second[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
+    override val port = 1
+    type NextT = T
+    override def next = vertex.out
+  }
+  class Out[T] private[akka] (val vertex: Concat[T]) extends JunctionOutPort[T]
+}
+
+/**
+ * Takes two streams and outputs an output stream formed from the two input streams
+ * by consuming one stream first emitting all of its elements, then consuming the
+ * second stream emitting all of its elements.
+ */
+final class Concat[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+  val first = new Concat.First(this)
+  val second = new Concat.Second(this)
+  val out = new Concat.Out(this)
+
+  override def minimumInputCount: Int = 2
+  override def maximumInputCount: Int = 2
+  override def minimumOutputCount: Int = 1
+  override def maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = Ast.Concat
 }
 
 object UndefinedSink {
@@ -177,6 +231,8 @@ final class UndefinedSink[T](override val name: Option[String]) extends FlowGrap
   override def maximumInputCount: Int = 1
   override def minimumOutputCount: Int = 0
   override def maximumOutputCount: Int = 0
+
+  override private[akka] def astNode = throw new UnsupportedOperationException("Undefined sinks cannot be materialized")
 }
 
 object UndefinedSource {
@@ -205,6 +261,8 @@ final class UndefinedSource[T](override val name: Option[String]) extends FlowGr
   override def maximumInputCount: Int = 0
   override def minimumOutputCount: Int = 1
   override def maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = throw new UnsupportedOperationException("Undefined sources cannot be materialized")
 }
 
 /**
@@ -235,6 +293,8 @@ private[akka] object FlowGraphInternal {
     def maximumInputCount: Int
     def minimumOutputCount: Int
     def maximumOutputCount: Int
+
+    private[akka] def astNode: Ast.JunctionAstNode
 
     final override def equals(obj: Any): Boolean =
       obj match {
@@ -577,11 +637,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
                       materializedSinks = memo.materializedSinks ++ materializedSink)
                   } else {
 
-                    val op: Ast.JunctionAstNode = v match {
-                      case _: Merge[_]     ⇒ Ast.Merge
-                      case _: Broadcast[_] ⇒ Ast.Broadcast
-                      case _: Zip[_, _]    ⇒ Ast.Zip
-                    }
+                    val op = v.astNode
                     val (subscribers, publishers) =
                       materializer.materializeJunction[Any, Any](op, edge.from.inDegree, edge.from.outDegree)
                     // TODO: Check for gaps in port numbers
