@@ -37,8 +37,9 @@ private[akka] object FanIn {
     private var markCount = 0
     private val pending = Array.ofDim[Boolean](inputCount)
     private var markedPending = 0
+    private val depleted = Array.ofDim[Boolean](inputCount)
     private val completed = Array.ofDim[Boolean](inputCount)
-    private var markedCompleted = 0
+    private var markedDepleted = 0
 
     private var preferredId = 0
 
@@ -52,7 +53,7 @@ private[akka] object FanIn {
 
     def markInput(input: Int): Unit = {
       if (!marked(input)) {
-        if (completed(input)) markedCompleted += 1
+        if (depleted(input)) markedDepleted += 1
         if (pending(input)) markedPending += 1
         marked(input) = true
         markCount += 1
@@ -61,14 +62,14 @@ private[akka] object FanIn {
 
     def unmarkInput(input: Int): Unit = {
       if (marked(input)) {
-        if (completed(input)) markedCompleted -= 1
+        if (depleted(input)) markedDepleted -= 1
         if (pending(input)) markedPending -= 1
         marked(input) = false
         markCount -= 1
       }
     }
 
-    def depleted(input: Int): Boolean = completed(input) && !pending(input)
+    def isDepleted(input: Int): Boolean = depleted(input)
 
     private def idToDequeue(): Int = {
       var id = preferredId
@@ -87,6 +88,10 @@ private[akka] object FanIn {
         if (marked(id)) markedPending -= 1
         pending(id) = false
       }
+      if (input.inputsDepleted) {
+        depleted(id) = true
+        if (marked(id)) markedDepleted += 1
+      }
       elem
     }
 
@@ -103,12 +108,12 @@ private[akka] object FanIn {
     }
 
     val AllOfMarkedInputs = new TransferState {
-      override def isCompleted: Boolean = markedCompleted > markedPending
+      override def isCompleted: Boolean = markedDepleted > 0
       override def isReady: Boolean = markedPending == markCount
     }
 
     val AnyOfMarkedInputs = new TransferState {
-      override def isCompleted: Boolean = markedCompleted == markCount && markedPending == 0
+      override def isCompleted: Boolean = markedDepleted == markCount && markedPending == 0
       override def isReady: Boolean = markedPending > 0
     }
 
@@ -119,7 +124,7 @@ private[akka] object FanIn {
 
     def inputsOrCompleteAvailableFor(id: Int) = new TransferState {
       override def isCompleted: Boolean = false
-      override def isReady: Boolean = pending(id) || completed(id)
+      override def isReady: Boolean = pending(id) || depleted(id)
     }
 
     // FIXME: Eliminate re-wraps
@@ -131,7 +136,10 @@ private[akka] object FanIn {
         pending(id) = true
         inputs(id).subreceive(ActorSubscriberMessage.OnNext(elem))
       case OnComplete(id) ⇒
-        if (marked(id) && !completed(id)) markedCompleted += 1
+        if (!pending(id)) {
+          if (marked(id) && !depleted(id)) markedDepleted += 1
+          depleted(id) = true
+        }
         completed(id) = true
         inputs(id).subreceive(ActorSubscriberMessage.OnComplete)
       case OnError(id, e) ⇒ onError(e)
@@ -228,7 +236,7 @@ private[akka] class Concat(_settings: MaterializerSettings) extends FanIn(_setti
   val Second = 1
 
   def drainFirst = TransferPhase(inputBunch.inputsOrCompleteAvailableFor(First) && primaryOutputs.NeedsDemand) { () ⇒
-    if (!inputBunch.depleted(First)) {
+    if (!inputBunch.isDepleted(First)) {
       val elem = inputBunch.dequeue(First)
       primaryOutputs.enqueueOutputElement(elem)
     } else {
