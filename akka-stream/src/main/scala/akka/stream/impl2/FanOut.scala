@@ -97,7 +97,7 @@ private[akka] object FanOut {
       val output = outputs(id)
       output.enqueueOutputElement(elem)
       if (!output.demandAvailable) {
-        markedPending -= 1
+        if (marked(id)) markedPending -= 1
         pending(id) = false
       }
     }

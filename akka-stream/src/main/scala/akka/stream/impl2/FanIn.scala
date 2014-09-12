@@ -68,6 +68,8 @@ private[akka] object FanIn {
       }
     }
 
+    def depleted(input: Int): Boolean = completed(input) && !pending(input)
+
     private def idToDequeue(): Int = {
       var id = preferredId
       while (!(marked(id) && pending(id))) {
@@ -82,7 +84,7 @@ private[akka] object FanIn {
       val input = inputs(id)
       val elem = input.dequeueInputElement()
       if (!input.inputsAvailable) {
-        markedPending -= 1
+        if (marked(id)) markedPending -= 1
         pending(id) = false
       }
       elem
@@ -101,13 +103,23 @@ private[akka] object FanIn {
     }
 
     val AllOfMarkedInputs = new TransferState {
-      override def isCompleted: Boolean = markedCompleted == markCount && markedPending < markCount
+      override def isCompleted: Boolean = markedCompleted > markedPending
       override def isReady: Boolean = markedPending == markCount
     }
 
     val AnyOfMarkedInputs = new TransferState {
       override def isCompleted: Boolean = markedCompleted == markCount && markedPending == 0
       override def isReady: Boolean = markedPending > 0
+    }
+
+    def inputsAvailableFor(id: Int) = new TransferState {
+      override def isCompleted: Boolean = depleted(id)
+      override def isReady: Boolean = pending(id)
+    }
+
+    def inputsOrCompleteAvailableFor(id: Int) = new TransferState {
+      override def isCompleted: Boolean = false
+      override def isReady: Boolean = pending(id) || completed(id)
     }
 
     // FIXME: Eliminate re-wraps
@@ -206,4 +218,28 @@ private[akka] class Zip(_settings: MaterializerSettings) extends FanIn(_settings
     val elem1 = inputBunch.dequeue(1)
     primaryOutputs.enqueueOutputElement((elem0, elem1))
   })
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class Concat(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
+  val First = 0
+  val Second = 1
+
+  def drainFirst = TransferPhase(inputBunch.inputsOrCompleteAvailableFor(First) && primaryOutputs.NeedsDemand) { () ⇒
+    if (!inputBunch.depleted(First)) {
+      val elem = inputBunch.dequeue(First)
+      primaryOutputs.enqueueOutputElement(elem)
+    } else {
+      nextPhase(drainSecond)
+    }
+  }
+
+  def drainSecond = TransferPhase(inputBunch.inputsAvailableFor(Second) && primaryOutputs.NeedsDemand) { () ⇒
+    val elem = inputBunch.dequeue(Second)
+    primaryOutputs.enqueueOutputElement(elem)
+  }
+
+  nextPhase(drainFirst)
 }
