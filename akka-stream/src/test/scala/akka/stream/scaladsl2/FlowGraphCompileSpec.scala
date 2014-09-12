@@ -251,5 +251,27 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.getMessage should include("empty")
     }
 
+    "check maximumInputCount" in {
+      intercept[IllegalArgumentException] {
+        FlowGraph { implicit b ⇒
+          val bcast = Broadcast[String]
+          import FlowGraphImplicits._
+          in1 ~> bcast ~> out1
+          in2 ~> bcast // wrong
+        }
+      }.getMessage should include("at most 1 incoming")
+    }
+
+    "check maximumOutputCount" in {
+      intercept[IllegalArgumentException] {
+        FlowGraph { implicit b ⇒
+          val merge = Merge[String]
+          import FlowGraphImplicits._
+          in1 ~> merge ~> out1
+          merge ~> out2 // wrong
+        }
+      }.getMessage should include("at most 1 outgoing")
+    }
+
   }
 }
