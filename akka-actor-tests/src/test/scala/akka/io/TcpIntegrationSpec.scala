@@ -4,7 +4,7 @@
 
 package akka.io
 
-import akka.actor.PoisonPill
+import akka.actor.{ ActorRef, PoisonPill }
 import akka.io.Tcp._
 import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.TestUtils._
@@ -34,13 +34,84 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort from one side" in new TestSetup {
+    "properly handle connection abort from client side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       clientHandler.send(clientConnection, Abort)
       clientHandler.expectMsg(Aborted)
       serverHandler.expectMsgType[ErrorClosed]
       verifyActorTermination(clientConnection)
       verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort from client side after chit-chat" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
+
+      clientHandler.send(clientConnection, Abort)
+      clientHandler.expectMsg(Aborted)
+      serverHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(clientConnection)
+      verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort from server side" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      serverHandler.send(serverConnection, Abort)
+      serverHandler.expectMsg(Aborted)
+      clientHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(clientConnection)
+      verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort from server side after chit-chat" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
+
+      serverHandler.send(serverConnection, Abort)
+      serverHandler.expectMsg(Aborted)
+      clientHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(clientConnection)
+      verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort via PosionPill from client side" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      clientHandler.send(clientConnection, PoisonPill)
+      verifyActorTermination(clientConnection)
+
+      serverHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort via PosionPill from client side after chit-chat" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
+
+      clientHandler.send(clientConnection, PoisonPill)
+      verifyActorTermination(clientConnection)
+
+      serverHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(serverConnection)
+    }
+
+    "properly handle connection abort via PosionPill from server side" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      serverHandler.send(serverConnection, PoisonPill)
+      verifyActorTermination(serverConnection)
+
+      clientHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(clientConnection)
+    }
+
+    "properly handle connection abort via PosionPill from server side after chit-chat" in new TestSetup {
+      val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
+      chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
+
+      serverHandler.send(serverConnection, PoisonPill)
+      verifyActorTermination(serverConnection)
+
+      clientHandler.expectMsgType[ErrorClosed]
+      verifyActorTermination(clientConnection)
     }
 
     "properly complete one client/server request/response cycle" in new TestSetup {
@@ -108,4 +179,21 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(connectionActor)
     }
   }
+
+  def chitchat(
+    clientHandler: TestProbe,
+    clientConnection: ActorRef,
+    serverHandler: TestProbe,
+    serverConnection: ActorRef,
+    rounds: Int = 100) = {
+
+    val testData = ByteString(0)
+    (1 to rounds) foreach { _ ⇒
+      clientHandler.send(clientConnection, Write(testData))
+      serverHandler.expectMsg(Received(testData))
+      serverHandler.send(serverConnection, Write(testData))
+      clientHandler.expectMsg(Received(testData))
+    }
+  }
+
 }
