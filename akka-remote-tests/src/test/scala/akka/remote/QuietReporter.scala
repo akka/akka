@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package org.scalatest.akka
+package org.scalatest.extra
 
 import org.scalatest.tools.StandardOutReporter
 import org.scalatest.events._
