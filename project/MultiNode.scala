@@ -32,7 +32,7 @@ object MultiNode {
   }
 
   lazy val defaultMultiJvmScalatestOptions = Def.setting {
-    Seq("-C", "org.scalatest.akka.QuietReporter") ++
+    Seq("-C", "org.scalatest.extra.QuietReporter") ++
       (if (excludeTestTags.value.isEmpty) Seq.empty else Seq("-l", if (multiNodeEnabled) excludeTestTags.value.mkString("\"", " ", "\"") else excludeTestTags.value.mkString(" "))) ++
       (if (onlyTestTags.value.isEmpty) Seq.empty else Seq("-n", if (multiNodeEnabled) onlyTestTags.value.mkString("\"", " ", "\"") else onlyTestTags.value.mkString(" ")))
   }
