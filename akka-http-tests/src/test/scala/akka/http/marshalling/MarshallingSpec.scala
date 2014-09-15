@@ -20,7 +20,6 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   import system.dispatcher
 
   val materializerSettings = MaterializerSettings(system)
-    .withDispatcher("akka.test.stream-dispatcher")
 
   implicit val materializer = FlowMaterializer(materializerSettings)
 
