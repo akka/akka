@@ -236,8 +236,7 @@ object AkkaBuild extends Build {
     base = file("akka-remote-tests"),
     dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
-      libraryDependencies ++= Dependencies.remoteTests,
-      Dependencies.addScalaXmlTestDepencency,
+      Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -302,8 +301,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
-      libraryDependencies ++= Dependencies.persistence,
-      Dependencies.addScalaXmlTestDepencency,
+      Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
     )
   )
@@ -363,7 +361,7 @@ object AkkaBuild extends Build {
         javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
         Seq(
           version := streamAndHttpVersion,
-          Dependencies.addScalaXmlDepencency,
+          Dependencies.http,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http")
           previousArtifact := None,
@@ -1297,6 +1295,7 @@ object AkkaBuild extends Build {
 // Dependencies
 
 object Dependencies {
+  import DependencyHelpers._
 
   object Versions {
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
@@ -1329,7 +1328,7 @@ object Dependencies {
     // mirrored in OSGi sample
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
-    val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                    % "1.0.1"       // Scala License
+    val scalaXml      = ScalaVersionDependentModuleID.post210Dependency("org.scala-lang.modules" %% "scala-xml" % "1.0.1") // Scala License
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
     val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
@@ -1381,7 +1380,7 @@ object Dependencies {
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1" % "test" // Scala License
+      val scalaXml     = Compile.scalaXml % "test"                                                                    // Scala License
 
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams"      % "reactive-streams-tck"         % reactiveStreamsTckVersion % "test" // CC0
@@ -1398,15 +1397,6 @@ object Dependencies {
 
   import Compile._
 
-  val addScalaXmlDepencency = addPost210Dependency(scalaXml)
-  val addScalaXmlTestDepencency = addPost210Dependency(Test.scalaXml)
-
-  def addPost210Dependency(moduleId: ModuleID) =
-    libraryDependencies <++= scalaVersion {
-      case version if version.startsWith("2.10") => Nil
-      case _ => Seq(moduleId)
-    }
-
   val actor = Seq(config)
 
   val testkit = Seq(Test.junit, Test.scalatest) ++ Test.metricsAll
@@ -1415,7 +1405,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest)
+  val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1425,12 +1415,14 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo)
+  val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val httpCore = Seq(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     Test.junit, Test.scalatest)
+
+  val http = deps(scalaXml)
 
   val httpTestkit = Seq(
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion,
@@ -1475,4 +1467,28 @@ object Dependencies {
   val contrib = Seq(Test.junitIntf, Test.commonsIo)
 
   val multiNodeSample = Seq(Test.scalatest)
+}
+
+object DependencyHelpers {
+  case class ScalaVersionDependentModuleID(val modules: String => Seq[ModuleID]) {
+    def %(config: String): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
+  }
+  object ScalaVersionDependentModuleID {
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(_ => Seq(mod))
+
+    def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
+    def post210Dependency(moduleId: ModuleID): ScalaVersionDependentModuleID = fromPF {
+      case version if !version.startsWith("2.10") => moduleId
+    }
+  }
+
+  /**
+   * Use this as a dependency setting if the dependencies contain both static and Scala-version
+   * dependent entries.
+   */
+  def deps(modules: ScalaVersionDependentModuleID*) =
+    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
 }
