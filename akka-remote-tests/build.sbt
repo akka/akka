@@ -10,7 +10,7 @@ Unidoc.scaladocSettings
 
 MultiNode.multiJvmSettings
 
-libraryDependencies ++= Dependencies.remoteTests
+Dependencies.remoteTests
 
 // disable parallel tests
 parallelExecution in Test := false

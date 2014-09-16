@@ -14,7 +14,7 @@ Unidoc.javadocSettings
 
 OSGi.persistence
 
-libraryDependencies ++= Dependencies.persistence
+Dependencies.persistence
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
 
