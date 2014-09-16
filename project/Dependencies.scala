@@ -4,6 +4,9 @@ import sbt._
 
 object Dependencies {
 
+  import DependencyHelpers._
+  import DependencyHelpers.ScalaVersionDependentModuleID.post210Dependency
+
   object Versions {
     val scalaVersion = sys.props.get("akka.scalaVersion").getOrElse("2.10.4")
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
@@ -70,7 +73,7 @@ object Dependencies {
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
       // mirrored in OSGi sample
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1"            % "test"
+      val scalaXml     = post210Dependency("org.scala-lang.modules" %% "scala-xml" % "1.0.1"  % "test")
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
@@ -83,8 +86,6 @@ object Dependencies {
 
   import Compile._
 
-  val scalaXmlDepencency = (if (Versions.scalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
-
   val actor = Seq(config)
 
   val testkit = Seq(Test.junit, Test.scalatest) ++ Test.metricsAll
@@ -93,7 +94,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+  val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -101,8 +102,7 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
-    scalaXmlDepencency
+  val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
@@ -131,4 +131,33 @@ object Dependencies {
   val contrib = Seq(Test.junitIntf, Test.commonsIo)
 
   val multiNodeSample = Seq(Test.scalatest)
+}
+
+object DependencyHelpers {
+
+  import sbt.Keys._
+
+  case class ScalaVersionDependentModuleID(val modules: String => Seq[ModuleID]) {
+    def %(config: String): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => modules(version).map(_ % config))
+  }
+
+  object ScalaVersionDependentModuleID {
+    implicit def liftConstantModule(mod: ModuleID): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(_ => Seq(mod))
+
+    def fromPF(f: PartialFunction[String, ModuleID]): ScalaVersionDependentModuleID =
+      ScalaVersionDependentModuleID(version => if (f.isDefinedAt(version)) Seq(f(version)) else Nil)
+
+    def post210Dependency(moduleId: ModuleID): ScalaVersionDependentModuleID = ScalaVersionDependentModuleID.fromPF {
+      case version if !version.startsWith("2.10") => moduleId
+    }
+  }
+
+  /**
+   * Use this as a dependency setting if the dependencies contain both static and Scala-version
+   * dependent entries.
+   */
+  def deps(modules: ScalaVersionDependentModuleID*) =
+    libraryDependencies <++= scalaVersion(version => modules.flatMap(m => m.modules(version)))
 }
