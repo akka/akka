@@ -111,7 +111,7 @@ Observe all the parts you need here:
 * ``system`` is the remote system’s name (must match exactly, case-sensitive!)
 
 * ``host`` is the remote system’s IP address or DNS name, and it must match that
-  system’s configuration (i.e. `akka.remote.netty.hostname`)
+  system’s configuration (i.e. `akka.remote.netty.tcp.hostname`)
 
 * ``1234`` is the port number on which the remote system is listening for
   connections and receiving messages
@@ -130,6 +130,14 @@ The most common reason is that the local system’s name (i.e. the
 ``system@host:1234`` part in the answer above) is not reachable from the remote
 system’s network location, e.g. because ``host`` was configured to be ``0.0.0.0``,
 ``localhost`` or a NAT’ed IP address.
+
+If you are running an ActorSystem under a NAT or inside a docker container, make sure to
+set `akka.remote.netty.tcp.hostname` and `akka.remote.netty.tcp.port` to the address
+it is reachable at from other ActorSystems. If you need to bind your network interface
+to a different address - use `akka.remote.netty.tcp.bind-hostname` and
+`akka.remote.netty.tcp.bind-port` settings. Also make sure your network is configured
+to translate from the address your ActorSystem is reachable at to the address your
+ActorSystem network interface is bound to.
 
 How reliable is the message delivery?
 -------------------------------------
