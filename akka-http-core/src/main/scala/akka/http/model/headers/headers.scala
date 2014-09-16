@@ -55,14 +55,12 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
 }
 
 // http://tools.ietf.org/html/draft-ietf-httpbis-p1-messaging-26#section-3.3.2
-private[http] object `Content-Length` extends ModeledCompanion
+object `Content-Length` extends ModeledCompanion
 /**
  * Instances of this class will only be created transiently during header parsing and will never appear
  * in HttpMessage.header. To access the Content-Length, see subclasses of HttpEntity.
- *
- * INTERNAL API
  */
-private[http] final case class `Content-Length`(length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
+final case class `Content-Length` private[http] (length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ length
   protected def companion = `Content-Length`
 }
@@ -349,7 +347,11 @@ final case class `Content-Range`(rangeUnit: RangeUnit, contentRange: ContentRang
 
 // http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#section-3.1.1.5
 object `Content-Type` extends ModeledCompanion
-final case class `Content-Type`(contentType: ContentType) extends japi.headers.ContentType with ModeledHeader {
+/**
+ * Instances of this class will only be created transiently during header parsing and will never appear
+ * in HttpMessage.header. To access the Content-Type, see subclasses of HttpEntity.
+ */
+final case class `Content-Type` private[http] (contentType: ContentType) extends japi.headers.ContentType with ModeledHeader {
 
   def renderValue[R <: Rendering](r: R): r.type = r ~~ contentType
   protected def companion = `Content-Type`
