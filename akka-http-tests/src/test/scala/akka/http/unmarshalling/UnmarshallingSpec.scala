@@ -23,7 +23,6 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   val materializerSettings = MaterializerSettings(system)
-    .withDispatcher("akka.test.stream-dispatcher")
 
   implicit val materializer = FlowMaterializer(materializerSettings)
 
