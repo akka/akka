@@ -89,6 +89,8 @@ abstract class AbstractTransportAdapter(protected val wrappedTransport: Transpor
     } yield (augmentScheme(listenAddress), upstreamListenerPromise)
   }
 
+  override def boundAddress: Address = wrappedTransport.boundAddress
+
   override def associate(remoteAddress: Address): Future[AssociationHandle] = {
     // Prepare a future, and pass its promise to the manager
     val statusPromise: Promise[AssociationHandle] = Promise()
