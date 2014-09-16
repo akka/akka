@@ -77,8 +77,12 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz"))
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev, test in Test in stream, test in Test in httpCore,
-        test in Test in http, test in Test in httpTests, test in Test in docsDev) map { (_, _, _, _, _, _) => }
+      validatePullRequest <<= (SphinxSupport.generate in Sphinx in docsDev,
+        test in Test in stream, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
+        test in Test in httpCore, test in Test in http, test in Test in httpTestkit, test in Test in httpTests,
+        test in Test in docsDev) map {
+        (_, _, _, _, _, _, _, _, _, _) =>
+      }
     ),
     aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
       persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
@@ -330,13 +334,13 @@ object AkkaBuild extends Build {
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
       publishArtifact in packageSite := false
     ),
-    aggregate = Seq(parsing, stream, http, httpCore, httpTestkit, httpTests, docsDev)
+    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTck, http, httpCore, httpTestkit, httpTests, docsDev)
   )
 
   lazy val httpCore = Project(
     id = "akka-http-core-experimental",
     base = file("akka-http-core"),
-    dependencies = Seq(parsing, stream % "compile;test->test"),
+    dependencies = Seq(parsing, streamTestkit % "test->test", stream),
     // FIXME enable javadoc generation when genjavadoc is fixed (++ javadocSettings)
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ OSGi.httpCore ++ Seq(
       version := streamAndHttpVersion,
@@ -355,7 +359,7 @@ object AkkaBuild extends Build {
   lazy val http = Project(
     id = "akka-http-experimental",
     base = file("akka-http"),
-    dependencies = Seq(httpCore, stream % "compile;test->test"),
+    dependencies = Seq(httpCore),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.http ++ spray.boilerplate.BoilerplatePlugin.Boilerplate.settings ++
@@ -372,7 +376,7 @@ object AkkaBuild extends Build {
   lazy val httpTestkit = Project(
     id = "akka-http-testkit-experimental",
     base = file("akka-http-testkit"),
-    dependencies = Seq(http, stream % "compile;test->test"),
+    dependencies = Seq(http),
     settings =
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.httpTestkit ++
@@ -386,9 +390,9 @@ object AkkaBuild extends Build {
   )
 
   lazy val httpTests = Project(
-    id = "akka-http-tests",
+    id = "akka-http-tests-experimental",
     base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit, stream % "compile;test->test"),
+    dependencies = Seq(httpTestkit),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
@@ -430,8 +434,42 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.stream,
       // FIXME include mima when akka-stream-experimental-2.3.x has been released
       //previousArtifact := akkaPreviousArtifact("akka-stream-experimental")
+      previousArtifact := None
+    )
+  )
+
+  lazy val streamTestkit = Project(
+    id = "akka-stream-testkit-experimental",
+    base = file("akka-stream-testkit"),
+    dependencies = Seq(stream),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
+      version := streamAndHttpVersion,
+      libraryDependencies ++= Dependencies.streamTestkit,
+      previousArtifact := None
+    )
+  )
+
+  lazy val streamTests = Project(
+    id = "akka-stream-tests-experimental",
+    base = file("akka-stream-tests"),
+    dependencies = Seq(streamTestkit % "test->test", stream),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
+      version := streamAndHttpVersion,
+      libraryDependencies ++= Dependencies.streamTest,
       previousArtifact := None,
+      // FIXME remove this when persistence tests are moved out
       fork in Test := true
+    )
+  )
+
+  lazy val streamTck = Project(
+    id = "akka-stream-tck-experimental",
+    base = file("akka-stream-tck"),
+    dependencies = Seq(streamTestkit % "test->test", stream),
+    settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
+      version := streamAndHttpVersion,
+      libraryDependencies ++= Dependencies.streamTck,
+      previousArtifact := None
     )
   )
 
@@ -740,7 +778,7 @@ object AkkaBuild extends Build {
   lazy val docsDev = Project(
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
-    dependencies = Seq(stream % "test -> test", httpCore),
+    dependencies = Seq(streamTestkit % "test->test", stream, httpCore),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
@@ -1434,9 +1472,20 @@ object Dependencies {
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
     "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.publishedAkkaVersion,
+    scalaGraph, reactiveStreams,
+    Test.scalatest)
+
+  val streamTestkit = Seq(
+    // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
-    scalaGraph,
-    Test.scalatest, Test.scalacheck, Test.junit, reactiveStreams, Test.reactiveStreamsTck, Test.commonsIo)
+    Test.scalatest, Test.scalacheck, Test.junit)
+
+  val streamTest = Seq(
+    Test.scalatest, Test.scalacheck, Test.junit, Test.commonsIo)
+
+  val streamTck = Seq(
+    Test.scalatest, Test.scalacheck, Test.junit, Test.reactiveStreamsTck)
+
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 

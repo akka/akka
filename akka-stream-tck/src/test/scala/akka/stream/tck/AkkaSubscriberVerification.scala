@@ -6,7 +6,6 @@ package akka.stream.tck
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
-import akka.stream.Timeouts
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import org.reactivestreams.Publisher
