@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.client
+package akka.http.engine.client
 
 import com.typesafe.config.Config
 import scala.concurrent.duration.{ FiniteDuration, Duration }
 import akka.actor.ActorRefFactory
 import akka.http.model.headers.`User-Agent`
-import akka.http.parsing.ParserSettings
+import akka.http.engine.parsing.ParserSettings
 import akka.http.util._
 
 final case class ClientConnectionSettings(

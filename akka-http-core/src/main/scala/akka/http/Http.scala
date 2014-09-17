@@ -10,8 +10,8 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.collection.immutable
 import akka.io.Inet
 import akka.stream.MaterializerSettings
-import akka.http.client.{ HttpClientProcessor, ClientConnectionSettings }
-import akka.http.server.ServerSettings
+import akka.http.engine.client.{ HttpClientProcessor, ClientConnectionSettings }
+import akka.http.engine.server.ServerSettings
 import akka.http.model.{ HttpResponse, HttpRequest, japi }
 import akka.http.util._
 import akka.actor._

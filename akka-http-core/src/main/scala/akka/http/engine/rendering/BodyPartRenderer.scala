@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.rendering
+package akka.http.engine.rendering
 
 import java.nio.charset.Charset
 import org.reactivestreams.Publisher
@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.http.model._
 import akka.http.model.headers._
-import akka.http.rendering.RenderSupport._
+import akka.http.engine.rendering.RenderSupport._
 import akka.http.util._
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.scaladsl.Flow

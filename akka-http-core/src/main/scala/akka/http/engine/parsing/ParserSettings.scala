@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.parsing
+package akka.http.engine.parsing
 
 import com.typesafe.config.Config
 import scala.collection.JavaConverters._

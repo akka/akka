@@ -2,13 +2,13 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.server
+package akka.http.engine.server
 
 import language.implicitConversions
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.actor.ActorRefFactory
-import akka.http.parsing.ParserSettings
+import akka.http.engine.parsing.ParserSettings
 import akka.http.model.parser.HeaderParser
 import akka.http.model.headers.{ Server, Host, RawHeader }
 import akka.http.util._

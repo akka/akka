@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.rendering
+package akka.http.engine.rendering
 
 import com.typesafe.config.{ Config, ConfigFactory }
 import java.net.InetSocketAddress

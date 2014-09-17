@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.rendering
+package akka.http.engine.rendering
 
 import org.reactivestreams.Publisher
 import scala.annotation.tailrec

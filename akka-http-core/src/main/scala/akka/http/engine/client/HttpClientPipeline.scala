@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.client
+package akka.http.engine.client
 
 import java.net.InetSocketAddress
 import scala.collection.immutable.Queue
@@ -12,9 +12,9 @@ import akka.stream.io.StreamTcp
 import akka.stream.scaladsl.{ Flow, Duct }
 import akka.http.Http
 import akka.http.model.{ HttpMethod, HttpRequest, ErrorInfo, HttpResponse }
-import akka.http.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
-import akka.http.parsing.HttpResponseParser
-import akka.http.parsing.ParserOutput._
+import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
+import akka.http.engine.parsing.HttpResponseParser
+import akka.http.engine.parsing.ParserOutput._
 import akka.http.util._
 
 /**

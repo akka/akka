@@ -2,8 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
-package server
+package akka.http.engine.server
 
 import scala.concurrent.duration._
 import akka.event.NoLogging
@@ -11,6 +10,7 @@ import akka.http.model.HttpEntity.{ Chunk, ChunkStreamPart, LastChunk }
 import akka.http.model._
 import akka.http.model.headers.Host
 import akka.http.util._
+import akka.http.Http
 import akka.stream.FlowMaterializer
 import akka.stream.io.StreamTcp
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
