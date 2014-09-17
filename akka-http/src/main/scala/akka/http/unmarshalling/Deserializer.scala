@@ -4,7 +4,7 @@
 
 package akka.http.unmarshalling
 
-import akka.http.routing
+import akka.http.server
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -27,8 +27,8 @@ object Deserializer extends FromStringDeserializers {
       }
     }
 
-  implicit def liftFromStringDeserializer[T: FromStringDeserializer]: FromStringOptionDeserializer[T] = routing.FIXME
-  implicit def liftFromStringDeserializerConversion[T](f: FromStringDeserializer[T]): FromStringOptionDeserializer[T] = routing.FIXME
+  implicit def liftFromStringDeserializer[T: FromStringDeserializer]: FromStringOptionDeserializer[T] = server.FIXME
+  implicit def liftFromStringDeserializerConversion[T](f: FromStringDeserializer[T]): FromStringOptionDeserializer[T] = server.FIXME
 }
 
 trait DeserializationError extends RuntimeException
@@ -39,7 +39,7 @@ case class UnsupportedContentType(errorMessage: String) extends DeserializationE
 case class MalformedContent(errorMessage: String, cause: Option[Throwable] = None) extends DeserializationError
 
 trait FromStringDeserializers {
-  implicit def String2IntConverter: FromStringDeserializer[Int] = routing.FIXME
-  def HexInt: FromStringDeserializer[Int] = routing.FIXME
+  implicit def String2IntConverter: FromStringDeserializer[Int] = server.FIXME
+  def HexInt: FromStringDeserializer[Int] = server.FIXME
 }
 object FromStringDeserializers extends FromStringDeserializers
