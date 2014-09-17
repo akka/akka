@@ -28,8 +28,9 @@ private[akka] case class StreamTestDefaultMailbox() extends MailboxType with Pro
         // StreamTcpManager is allowed to use another dispatcher
         assert(!actorClass.getName.startsWith("akka.stream.") || actorClass == classOf[StreamTcpManager],
           s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
-            "Have you forgot to define `props.withDispatcher` when creating the actor? " +
-            """Or have you forgot to use `MaterializerSettings(dispatcher = "akka.test.stream-dispatcher")` in the test?""")
+            "Did you forget to define `props.withDispatcher` when creating the actor? " +
+            "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
+            """dispatcher using `MaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
       case _ ⇒
     }
     new UnboundedMailbox.MessageQueue
