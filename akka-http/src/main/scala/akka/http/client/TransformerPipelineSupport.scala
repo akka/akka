@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.testkit
-
-import akka.event.{ Logging, LoggingAdapter }
+package akka.http.client
 
 import scala.concurrent.{ Future, ExecutionContext }
+import akka.event.{ Logging, LoggingAdapter }
 
 trait TransformerPipelineSupport {
 
