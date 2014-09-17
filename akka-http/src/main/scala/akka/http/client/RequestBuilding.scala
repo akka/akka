@@ -2,10 +2,10 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.testkit
+package akka.http.client
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.util.Timeout
