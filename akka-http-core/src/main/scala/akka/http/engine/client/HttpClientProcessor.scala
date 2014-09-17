@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.client
+package akka.http.engine.client
 
 import akka.http.model.{ HttpResponse, HttpRequest }
 import org.reactivestreams.{ Subscription, Publisher, Subscriber, Processor }

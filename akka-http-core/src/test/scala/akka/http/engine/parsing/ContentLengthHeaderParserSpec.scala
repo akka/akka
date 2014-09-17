@@ -2,12 +2,12 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.parsing
+package akka.http.engine.parsing
 
 import org.scalatest.{ WordSpec, Matchers }
 import akka.util.ByteString
 import akka.http.model.headers.`Content-Length`
-import akka.http.parsing.SpecializedHeaderValueParsers.ContentLengthParser
+import akka.http.engine.parsing.SpecializedHeaderValueParsers.ContentLengthParser
 
 class ContentLengthHeaderParserSpec extends WordSpec with Matchers {
 
