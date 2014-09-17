@@ -8,7 +8,7 @@ import org.reactivestreams.Publisher
 import akka.actor.ActorRefFactory
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
-import akka.http.parsing.BodyPartParser
+import akka.http.engine.parsing.BodyPartParser
 import akka.http.model._
 import akka.http.util._
 import MediaRanges._
