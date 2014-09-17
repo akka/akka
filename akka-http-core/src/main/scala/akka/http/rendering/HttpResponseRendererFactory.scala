@@ -148,7 +148,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
                 r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
               r ~~ CrLf
-              byteStrings(Flow(chunks).transform("checkContentLength", () ⇒ new ChunkTransformer).toPublisher())
+              byteStrings(Flow(chunks).transform("renderChunks", () ⇒ new ChunkTransformer).toPublisher())
             }
         }
 
