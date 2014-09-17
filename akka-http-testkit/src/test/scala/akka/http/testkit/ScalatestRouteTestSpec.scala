@@ -11,7 +11,7 @@ import akka.testkit.TestProbe
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.http.model.headers.RawHeader
-import akka.http.routing._
+import akka.http.server._
 import akka.http.model._
 import StatusCodes._
 import HttpMethods._

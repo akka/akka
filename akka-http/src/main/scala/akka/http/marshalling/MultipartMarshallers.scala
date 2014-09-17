@@ -10,7 +10,7 @@ import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
 import akka.stream.{ FlattenStrategy, FlowMaterializer }
 import akka.stream.scaladsl.Flow
-import akka.http.rendering.BodyPartRenderer
+import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.actorSystem
 import akka.http.model._
 import MediaTypes._

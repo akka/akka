@@ -13,7 +13,7 @@ import scala.reflect.ClassTag
 import org.scalatest.Suite
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
-import akka.http.routing._
+import akka.http.server._
 import akka.http.unmarshalling._
 import akka.http.model._
 import headers.Host

@@ -12,7 +12,7 @@ import scala.concurrent.{ Await, ExecutionContext }
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 import akka.http.model.HttpEntity.ChunkStreamPart
-import akka.http.routing._
+import akka.http.server._
 import akka.http.model._
 
 trait RouteTestResultComponent {
