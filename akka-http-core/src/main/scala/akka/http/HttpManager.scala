@@ -7,8 +7,8 @@ package akka.http
 import scala.util.{ Failure, Success }
 import scala.concurrent.duration._
 import akka.actor._
-import akka.http.client._
-import akka.http.server.{ HttpServerPipeline, ServerSettings }
+import akka.http.engine.client._
+import akka.http.engine.server.{ HttpServerPipeline, ServerSettings }
 import akka.io.IO
 import akka.pattern.ask
 import akka.stream.FlowMaterializer

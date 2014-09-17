@@ -7,13 +7,13 @@ package akka.http
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
 import akka.stream.scaladsl.Flow
+import akka.stream.FlowMaterializer
 import akka.io.IO
 import akka.util.Timeout
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.http.model._
 import HttpMethods._
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""

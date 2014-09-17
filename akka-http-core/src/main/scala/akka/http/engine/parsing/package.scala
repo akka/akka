@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http
+package akka.http.engine
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec

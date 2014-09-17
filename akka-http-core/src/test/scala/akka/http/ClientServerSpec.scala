@@ -19,8 +19,8 @@ import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
-import akka.http.client.ClientConnectionSettings
-import akka.http.server.ServerSettings
+import akka.http.engine.client.ClientConnectionSettings
+import akka.http.engine.server.ServerSettings
 import akka.http.model._
 import akka.http.util._
 import headers._
