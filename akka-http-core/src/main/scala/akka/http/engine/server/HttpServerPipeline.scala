@@ -2,17 +2,17 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.http.server
+package akka.http.engine.server
 
 import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
 import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
 import akka.stream.scaladsl.{ Flow, Duct }
-import akka.http.parsing.HttpRequestParser
-import akka.http.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
+import akka.http.engine.parsing.HttpRequestParser
+import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
-import akka.http.parsing.ParserOutput._
+import akka.http.engine.parsing.ParserOutput._
 import akka.http.Http
 import akka.http.util._
 

@@ -4,19 +4,18 @@
 
 package akka.http
 
-import akka.actor.ActorSystem
-import akka.http.model.HttpMethods._
-import akka.http.model._
-import akka.io.IO
-import akka.pattern.ask
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
-import akka.util.Timeout
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
+import akka.actor.ActorSystem
+import akka.pattern.ask
+import akka.util.Timeout
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Flow
+import akka.io.IO
+import akka.http.model.HttpMethods._
+import akka.http.model._
 
 object TestClient extends App {
   val testConf: Config = ConfigFactory.parseString("""
