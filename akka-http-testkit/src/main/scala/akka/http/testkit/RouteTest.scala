@@ -4,7 +4,6 @@
 
 package akka.http.testkit
 
-import akka.http.util.Deferrable
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -13,6 +12,8 @@ import scala.reflect.ClassTag
 import org.scalatest.Suite
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
+import akka.http.client.RequestBuilding
+import akka.http.util.Deferrable
 import akka.http.server._
 import akka.http.unmarshalling._
 import akka.http.model._
