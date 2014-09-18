@@ -118,7 +118,7 @@ actors in the hierarchy from the root up. Examples are::
 
 Here, ``akka.tcp`` is the default remote transport for the 2.2 release; other transports
 are pluggable. A remote host using UDP would be accessible by using ``akka.udp``.
-The interpretation of the host and port part (i.e.``serv.example.com:5678`` in the example)
+The interpretation of the host and port part (i.e.``host.example.com:5678`` in the example)
 depends on the transport mechanism used, but it must abide by the URI structural rules.
 
 Logical Actor Paths
