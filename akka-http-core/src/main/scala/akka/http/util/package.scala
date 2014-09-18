@@ -7,7 +7,7 @@ package akka.http
 import language.implicitConversions
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import org.reactivestreams.Publisher
+import org.reactivestreams.{Subscription, Subscriber, Publisher}
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -51,6 +51,14 @@ package object util {
             Nil
           }
         })
+  }
+
+  // FIXME: This should be fixed by a CancelledSink once #15903 is done. Currently this is needed for the tests
+  private[http] def cancelledSusbcriber[T]: Subscriber[T] = new Subscriber[T] {
+    override def onSubscribe(s: Subscription): Unit = s.cancel()
+    override def onError(t: Throwable): Unit = ()
+    override def onComplete(): Unit = ()
+    override def onNext(t: T): Unit = ()
   }
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =
