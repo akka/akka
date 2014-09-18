@@ -11,7 +11,7 @@ import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
 import akka.stream.scaladsl.{ Flow, Duct }
 import akka.http.engine.parsing.HttpRequestParser
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
-import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
+import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse, HttpMethods }
 import akka.http.engine.parsing.ParserOutput._
 import akka.http.Http
 import akka.http.util._
@@ -48,7 +48,8 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
         .collect {
           case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-            HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
+            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+            HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
         }
         .toPublisher()
 

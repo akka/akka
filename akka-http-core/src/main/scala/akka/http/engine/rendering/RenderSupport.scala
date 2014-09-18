@@ -4,7 +4,7 @@
 
 package akka.http.engine.rendering
 
-import org.reactivestreams.Publisher
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.event.LoggingAdapter
@@ -39,7 +39,11 @@ private object RenderSupport {
     val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
     val messageBytes =
       if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()
-      else messageStart
+      else {
+        // FIXME: This should be fixed by a CancelledSink once #15903 is done. Currently this is needed for the tests
+        entityBytes.subscribe(cancelledSusbcriber)
+        messageStart
+      }
     messageBytes :: Nil
   }
 

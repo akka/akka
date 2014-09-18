@@ -134,7 +134,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             byteStrings(Flow(data).transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher())
 
           case HttpEntity.CloseDelimited(_, data) ⇒
-            renderHeaders(headers.toList, alwaysClose = true)
+            renderHeaders(headers.toList, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
             renderEntityContentType(r, entity)
             r ~~ CrLf
             byteStrings(data)

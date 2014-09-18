@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.event.NoLogging
 import akka.http.model.HttpEntity.{ Chunk, ChunkStreamPart, LastChunk }
 import akka.http.model._
-import akka.http.model.headers.Host
+import akka.http.model.headers.{ ProductVersion, Server, Host }
 import akka.http.util._
 import akka.http.Http
 import akka.stream.FlowMaterializer
@@ -329,6 +329,163 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
           dataProbe.expectError()
       }
     })
+
+    "translate HEAD request to GET request when transparent-head-requests are enabled" in new TestSetup {
+      override def settings = ServerSettings(system).copy(transparentHeadRequests = true)
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest shouldEqual HttpRequest(HttpMethods.GET, uri = "http://example.com/", headers = List(Host("example.com")))
+    }
+
+    "keep HEAD request when transparent-head-requests are disabled" in new TestSetup {
+      override def settings = ServerSettings(system).copy(transparentHeadRequests = false)
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      expectRequest shouldEqual HttpRequest(HttpMethods.HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
+    }
+
+    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in new TestSetup {
+      override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      inside(expectRequest) {
+        case HttpRequest(HttpMethods.GET, _, _, _, _) ⇒
+          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Strict(ContentTypes.`text/plain`, ByteString("abcd"))))
+
+          netOutSub.request(1)
+          wipeDate(netOut.expectNext().utf8String) shouldEqual
+            """|HTTP/1.1 200 OK
+               |Server: akka-http/test
+               |Date: XXXX
+               |Content-Type: text/plain
+               |Content-Length: 4
+               |
+               |""".stripMarginWithNewline("\r\n")
+      }
+    }
+
+    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in new TestSetup {
+      override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val data = StreamTestKit.PublisherProbe[ByteString]
+
+      inside(expectRequest) {
+        case HttpRequest(HttpMethods.GET, _, _, _, _) ⇒
+          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Default(ContentTypes.`text/plain`, 4, data)))
+
+          netOutSub.request(1)
+
+          val dataSub = data.expectSubscription()
+          dataSub.expectCancellation()
+
+          wipeDate(netOut.expectNext().utf8String) shouldEqual
+            """|HTTP/1.1 200 OK
+               |Server: akka-http/test
+               |Date: XXXX
+               |Content-Type: text/plain
+               |Content-Length: 4
+               |
+               |""".stripMarginWithNewline("\r\n")
+      }
+    }
+
+    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in new TestSetup {
+      override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val data = StreamTestKit.PublisherProbe[ByteString]
+
+      inside(expectRequest) {
+        case HttpRequest(HttpMethods.GET, _, _, _, _) ⇒
+          responsesSub.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, data)))
+
+          netOutSub.request(1)
+
+          val dataSub = data.expectSubscription()
+          dataSub.expectCancellation()
+
+          wipeDate(netOut.expectNext().utf8String) shouldEqual
+            """|HTTP/1.1 200 OK
+               |Server: akka-http/test
+               |Date: XXXX
+               |Content-Type: text/plain
+               |
+               |""".stripMarginWithNewline("\r\n")
+      }
+
+      // No close should happen here since this was a HEAD request
+      netOut.expectNoMsg(50.millis)
+    }
+
+    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in new TestSetup {
+      override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val data = StreamTestKit.PublisherProbe[ChunkStreamPart]
+
+      inside(expectRequest) {
+        case HttpRequest(HttpMethods.GET, _, _, _, _) ⇒
+          responsesSub.sendNext(HttpResponse(entity = HttpEntity.Chunked(ContentTypes.`text/plain`, data)))
+
+          netOutSub.request(1)
+
+          val dataSub = data.expectSubscription()
+          dataSub.expectCancellation()
+
+          wipeDate(netOut.expectNext().utf8String) shouldEqual
+            """|HTTP/1.1 200 OK
+               |Server: akka-http/test
+               |Date: XXXX
+               |Content-Type: text/plain
+               |Transfer-Encoding: chunked
+               |
+               |""".stripMarginWithNewline("\r\n")
+      }
+    }
+
+    "respect Connetion headers of HEAD requests if transparent-head-requests is enabled" in new TestSetup {
+      override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
+      send("""HEAD / HTTP/1.1
+             |Host: example.com
+             |Connection: close
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val data = StreamTestKit.PublisherProbe[ByteString]
+
+      inside(expectRequest) {
+        case HttpRequest(HttpMethods.GET, _, _, _, _) ⇒
+          responsesSub.sendNext(HttpResponse(entity = HttpEntity.CloseDelimited(ContentTypes.`text/plain`, data)))
+
+          netOutSub.request(1)
+
+          val dataSub = data.expectSubscription()
+          dataSub.expectCancellation()
+
+          netOut.expectNext()
+      }
+
+      netOut.expectComplete()
+    }
   }
 
   class TestSetup {
@@ -336,10 +493,19 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
     val netOut = StreamTestKit.SubscriberProbe[ByteString]
     val tcpConnection = StreamTcp.IncomingTcpConnection(null, netIn, netOut)
 
-    val pipeline = new HttpServerPipeline(ServerSettings(system), NoLogging)
+    def settings = ServerSettings(system)
+
+    val pipeline = new HttpServerPipeline(settings, NoLogging)
     val Http.IncomingConnection(_, requestsIn, responsesOut) = pipeline(tcpConnection)
 
+    def wipeDate(string: String) =
+      string.fastSplit('\n').map {
+        case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
+        case s                          ⇒ s
+      }.mkString("\n")
+
     val netInSub = netIn.expectSubscription()
+    val netOutSub = netOut.expectSubscription()
 
     val requests = StreamTestKit.SubscriberProbe[HttpRequest]
     val responses = StreamTestKit.PublisherProbe[HttpResponse]
