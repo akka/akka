@@ -32,7 +32,7 @@ trait RequestBuilding extends TransformerPipelineSupport {
     def apply[T](uri: String, content: Option[T])(implicit m: ToEntityMarshallers[T], ec: ExecutionContext): HttpRequest =
       apply(Uri(uri), content)
 
-    def apply(uri: String, entity: HttpEntity.Regular): HttpRequest =
+    def apply(uri: String, entity: RequestEntity): HttpRequest =
       apply(Uri(uri), entity)
 
     def apply(uri: Uri): HttpRequest =
@@ -45,11 +45,11 @@ trait RequestBuilding extends TransformerPipelineSupport {
       content match {
         case None ⇒ apply(uri, HttpEntity.Empty)
         case Some(value) ⇒
-          val entity = Marshal(value).to[HttpEntity.Regular].await(timeout.duration)
+          val entity = Marshal(value).to[RequestEntity].await(timeout.duration)
           apply(uri, entity)
       }
 
-    def apply(uri: Uri, entity: HttpEntity.Regular): HttpRequest =
+    def apply(uri: Uri, entity: RequestEntity): HttpRequest =
       HttpRequest(method, uri, Nil, entity)
   }
 

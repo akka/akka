@@ -72,7 +72,7 @@ private[http] class RequestContextImpl(
       case RouteResult.Complete(response) ⇒ RouteResult.complete(f(response))
     }
 
-  override def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext =
+  override def withHttpResponseEntityMapped(f: ResponseEntity ⇒ ResponseEntity): RequestContext =
     withHttpResponseMapped(_ mapEntity f)
 
   override def withHttpResponseHeadersMapped(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestContext =

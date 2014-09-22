@@ -48,7 +48,7 @@ public interface HttpMessage {
     /**
      * The entity of this message.
      */
-    HttpEntity entity();
+    ResponseEntity entity();
 
     public static interface MessageTransformations<Self> {
         /**
@@ -70,11 +70,6 @@ public interface HttpMessage {
          * Returns a copy of this message with all headers of the given name (case-insensitively) removed.
          */
         Self removeHeader(String headerName);
-
-        /**
-         * Returns a copy of this message with a new entity.
-         */
-        Self withEntity(HttpEntity entity);
 
         /**
          * Returns a copy of this message with a new entity.
@@ -110,5 +105,10 @@ public interface HttpMessage {
          * Returns a copy of Self message with a new entity.
          */
         Self withEntity(ContentType type, File file);
+
+        /**
+         * Returns a copy of Self message with a new entity.
+         */
+        Self withEntity(RequestEntity entity);
     }
 }
