@@ -143,7 +143,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   def parseEntity(headers: List[HttpHeader], contentType: ContentType,
                   emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                     (headers, ct, bytes) ⇒
-                      emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.CloseDelimited(ct,
+                      emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(ct,
                         Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher())))
                       emit(bytes)
                   },
@@ -217,7 +217,7 @@ private[http] object BodyPartParser {
   val boundaryCharNoSpace = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=?"
 
   sealed trait Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Publisher[Output] ⇒ HttpEntity) extends Output
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Publisher[Output] ⇒ BodyPartEntity) extends Output
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends Output
 

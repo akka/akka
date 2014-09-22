@@ -108,7 +108,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: Publisher[ParserOutput.RequestOutput] ⇒ HttpEntity.Regular) =
+      def emitRequestStart(createEntity: Publisher[ParserOutput.RequestOutput] ⇒ RequestEntity) =
         emit(ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, closeAfterResponseCompletion))
 
       teh match {

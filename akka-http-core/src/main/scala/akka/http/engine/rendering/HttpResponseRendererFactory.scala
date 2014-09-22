@@ -118,7 +118,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       def byteStrings(entityBytes: ⇒ Publisher[ByteString]): List[Publisher[ByteString]] =
         renderByteStrings(r, entityBytes, skipEntity = noEntity)
 
-      def completeResponseRendering(entity: HttpEntity): List[Publisher[ByteString]] =
+      def completeResponseRendering(entity: ResponseEntity): List[Publisher[ByteString]] =
         entity match {
           case HttpEntity.Strict(_, data) ⇒
             renderHeaders(headers.toList)

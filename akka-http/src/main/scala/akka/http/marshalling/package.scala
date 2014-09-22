@@ -8,12 +8,12 @@ import scala.collection.immutable
 import akka.http.model._
 
 package object marshalling {
-  type ToEntityMarshaller[T] = Marshaller[T, HttpEntity.Regular]
-  type ToHeadersAndEntityMarshaller[T] = Marshaller[T, (immutable.Seq[HttpHeader], HttpEntity.Regular)]
+  type ToEntityMarshaller[T] = Marshaller[T, MessageEntity]
+  type ToHeadersAndEntityMarshaller[T] = Marshaller[T, (immutable.Seq[HttpHeader], MessageEntity)]
   type ToResponseMarshaller[T] = Marshaller[T, HttpResponse]
   type ToRequestMarshaller[T] = Marshaller[T, HttpRequest]
 
-  type ToEntityMarshallers[T] = Marshallers[T, HttpEntity.Regular]
+  type ToEntityMarshallers[T] = Marshallers[T, MessageEntity]
   type ToResponseMarshallers[T] = Marshallers[T, HttpResponse]
   type ToRequestMarshallers[T] = Marshallers[T, HttpRequest]
 }
