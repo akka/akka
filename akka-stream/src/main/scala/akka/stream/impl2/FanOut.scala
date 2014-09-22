@@ -41,7 +41,7 @@ private[akka] object FanOut {
     private val outputs = Array.tabulate(outputCount)(new FanoutOutputs(_, impl, pump))
 
     private val marked = Array.ofDim[Boolean](outputCount)
-    private var markCount = 0
+    private var markedCount = 0
     private val pending = Array.ofDim[Boolean](outputCount)
     private var markedPending = 0
     private val cancelled = Array.ofDim[Boolean](outputCount)
@@ -68,7 +68,7 @@ private[akka] object FanOut {
         if (cancelled(output)) markedCancelled += 1
         if (pending(output)) markedPending += 1
         marked(output) = true
-        markCount += 1
+        markedCount += 1
       }
     }
 
@@ -77,7 +77,7 @@ private[akka] object FanOut {
         if (cancelled(output)) markedCancelled -= 1
         if (pending(output)) markedPending -= 1
         marked(output) = false
-        markCount -= 1
+        markedCount -= 1
       }
     }
 
@@ -123,13 +123,23 @@ private[akka] object FanOut {
       enqueue(id, elem)
     }
 
+    /**
+     * Will only transfer an element when all marked outputs
+     * have demand, and will complete as soon as any of the marked
+     * outputs have cancelled.
+     */
     val AllOfMarkedOutputs = new TransferState {
-      override def isCompleted: Boolean = markedCancelled > 0
-      override def isReady: Boolean = markedPending == markCount
+      override def isCompleted: Boolean = markedCancelled > 0 || markedCount == 0
+      override def isReady: Boolean = markedPending == markedCount
     }
 
+    /**
+     * Will transfer an element when any of the  marked outputs
+     * have demand, and will complete when all of the marked
+     * outputs have cancelled.
+     */
     val AnyOfMarkedOutputs = new TransferState {
-      override def isCompleted: Boolean = markedCancelled == markCount
+      override def isCompleted: Boolean = markedCancelled == markedCount
       override def isReady: Boolean = markedPending > 0
     }
 
@@ -147,8 +157,7 @@ private[akka] object FanOut {
         outputs(id).subreceive(RequestMore(null, demand))
       case SubstreamCancel(id) ⇒
         if (unmarkCancelled) {
-          if (marked(id)) markCount -= 1
-          marked(id) = false
+          unmarkOutput(id)
         }
         if (marked(id) && !cancelled(id)) markedCancelled += 1
         cancelled(id) = true
