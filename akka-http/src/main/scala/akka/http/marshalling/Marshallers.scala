@@ -30,7 +30,7 @@ object Marshallers extends SingleMarshallerMarshallers {
     Marshallers(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)(PredefinedToEntityMarshallers.nodeSeqMarshaller)
   }
 
-  implicit def entity2response[T](implicit m: Marshallers[T, HttpEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
+  implicit def entity2response[T](implicit m: Marshallers[T, ResponseEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
     m map (entity ⇒ HttpResponse(entity = entity))
 }
 

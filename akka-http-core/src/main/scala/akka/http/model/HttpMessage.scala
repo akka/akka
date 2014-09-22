@@ -25,7 +25,7 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def isResponse: Boolean
 
   def headers: immutable.Seq[HttpHeader]
-  def entity: HttpEntity
+  def entity: ResponseEntity
   def protocol: HttpProtocol
 
   /** Returns a copy of this message with the list of headers set to the given ones. */
@@ -44,20 +44,20 @@ sealed trait HttpMessage extends japi.HttpMessage {
     }
 
   /** Returns a copy of this message with the entity set to the given one. */
-  def withEntity(entity: japi.HttpEntity): Self
+  def withEntity(entity: MessageEntity): Self
 
   /** Returns a sharable and serializable copy of this message with a strict entity. */
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Deferrable[Self] =
     entity.toStrict(timeout).map(this.withEntity)
 
   /** Returns a copy of this message with the entity and headers set to the given ones. */
-  def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity): Self
+  def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): Self
 
   /** Returns a copy of this message with the list of headers transformed by the given function */
   def mapHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Self = withHeaders(f(headers))
 
   /** Returns a copy of this message with the entity transformed by the given function */
-  def mapEntity(f: HttpEntity ⇒ HttpEntity): Self = withEntity(f(entity))
+  def mapEntity(f: HttpEntity ⇒ MessageEntity): Self = withEntity(f(entity))
 
   /**
    * The content encoding as specified by the Content-Encoding header. If no Content-Encoding header is present the
@@ -125,7 +125,7 @@ object HttpMessage {
 final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              uri: Uri = Uri./,
                              headers: immutable.Seq[HttpHeader] = Nil,
-                             entity: HttpEntity.Regular = HttpEntity.Empty,
+                             entity: RequestEntity = HttpEntity.Empty,
                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpRequest with HttpMessage {
   require(!uri.isEmpty, "An HttpRequest must not have an empty Uri")
   require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
@@ -239,19 +239,11 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   override def withHeaders(headers: immutable.Seq[HttpHeader]): HttpRequest =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withEntity(entity: japi.HttpEntity): HttpRequest =
-    if (entity ne this.entity) entity match {
-      case x: HttpEntity.Regular ⇒ copy(entity = x)
-      case _                     ⇒ throw new IllegalArgumentException("entity must be HttpEntity.Regular")
-    }
-    else this
+  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: RequestEntity): HttpRequest = copy(headers = headers, entity = entity)
+  override def withEntity(entity: japi.RequestEntity): HttpRequest = copy(entity = entity.asInstanceOf[RequestEntity])
+  override def withEntity(entity: MessageEntity): HttpRequest = copy(entity = entity)
 
-  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity): HttpRequest =
-    if ((headers ne this.headers) || (entity ne this.entity)) entity match {
-      case x: HttpEntity.Regular ⇒ copy(headers = headers, entity = x)
-      case _                     ⇒ throw new IllegalArgumentException("entity must be HttpEntity.Regular")
-    }
-    else this
+  def mapEntity(f: RequestEntity ⇒ RequestEntity): HttpRequest = withEntity(f(entity))
 
   override def withMethod(method: akka.http.model.japi.HttpMethod): HttpRequest = copy(method = method.asInstanceOf[HttpMethod])
   override def withProtocol(protocol: akka.http.model.japi.HttpProtocol): HttpRequest = copy(protocol = protocol.asInstanceOf[HttpProtocol])
@@ -292,7 +284,7 @@ object HttpRequest {
  */
 final case class HttpResponse(status: StatusCode = StatusCodes.OK,
                               headers: immutable.Seq[HttpHeader] = Nil,
-                              entity: HttpEntity = HttpEntity.Empty,
+                              entity: ResponseEntity = HttpEntity.Empty,
                               protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpResponse with HttpMessage {
   type Self = HttpResponse
 
@@ -302,12 +294,15 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
   override def withHeaders(headers: immutable.Seq[HttpHeader]) =
     if (headers eq this.headers) this else copy(headers = headers)
 
-  override def withEntity(entity: japi.HttpEntity) = if (entity eq this.entity) this else copy(entity = entity.asInstanceOf[HttpEntity])
-
-  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: HttpEntity) =
-    if ((headers eq this.headers) && (entity eq this.entity)) this else copy(headers = headers, entity = entity)
-
   override def withProtocol(protocol: akka.http.model.japi.HttpProtocol): akka.http.model.japi.HttpResponse = copy(protocol = protocol.asInstanceOf[HttpProtocol])
   override def withStatus(statusCode: Int): akka.http.model.japi.HttpResponse = copy(status = statusCode)
   override def withStatus(statusCode: akka.http.model.japi.StatusCode): akka.http.model.japi.HttpResponse = copy(status = statusCode.asInstanceOf[StatusCode])
+
+  override def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): HttpResponse = withHeadersAndEntity(headers, entity: ResponseEntity)
+  def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: ResponseEntity): HttpResponse = copy(headers = headers, entity = entity)
+  override def withEntity(entity: japi.ResponseEntity): HttpResponse = copy(entity = entity.asInstanceOf[ResponseEntity])
+  override def withEntity(entity: MessageEntity): HttpResponse = copy(entity = entity)
+  override def withEntity(entity: japi.RequestEntity): HttpResponse = withEntity(entity: japi.ResponseEntity)
+
+  def mapEntity(f: ResponseEntity ⇒ ResponseEntity): HttpResponse = withEntity(f(entity))
 }
