@@ -231,19 +231,19 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     case None    ⇒ ContentTypes.`application/octet-stream`
   }
 
-  def emptyEntity(cth: Option[`Content-Type`])(entityParts: Any): HttpEntity.Regular =
+  def emptyEntity(cth: Option[`Content-Type`])(entityParts: Any): UniversalEntity =
     if (cth.isDefined) HttpEntity.empty(cth.get.contentType) else HttpEntity.Empty
 
   def strictEntity(cth: Option[`Content-Type`], input: ByteString, bodyStart: Int,
-                   contentLength: Int)(entityParts: Any): HttpEntity.Regular =
+                   contentLength: Int)(entityParts: Any): UniversalEntity =
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
-  def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): HttpEntity.Regular = {
+  def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): UniversalEntity = {
     val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()
     HttpEntity.Default(contentType(cth), contentLength, data)
   }
 
-  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): HttpEntity.Regular = {
+  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): RequestEntity with ResponseEntity = {
     val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher()
     HttpEntity.Chunked(contentType(cth), chunks)
   }

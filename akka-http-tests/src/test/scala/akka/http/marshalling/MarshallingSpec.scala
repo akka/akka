@@ -42,6 +42,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
 
   "The GenericMarshallers." - {
     "optionMarshaller should enable marshalling of Option[T]" in {
+
       marshal(Some("Ha“llo")) shouldEqual HttpEntity("Ha“llo")
       marshal(None: Option[String]) shouldEqual HttpEntity.Empty
     }

@@ -10,6 +10,6 @@ import org.reactivestreams.Publisher;
  * Represents an entity transferred using `Transfer-Encoding: chunked`. It consists of a
  * stream of {@link ChunkStreamPart}.
  */
-public abstract class HttpEntityChunked extends HttpEntityRegular {
+public abstract class HttpEntityChunked implements RequestEntity, ResponseEntity {
     public abstract Publisher<ChunkStreamPart> getChunks();
 }

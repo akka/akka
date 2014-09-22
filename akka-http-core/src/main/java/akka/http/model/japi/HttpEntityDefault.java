@@ -10,7 +10,7 @@ import org.reactivestreams.Publisher;
 /**
  * The default entity type which has a predetermined length and a stream of data bytes.
  */
-public abstract class HttpEntityDefault extends HttpEntityRegular {
+public abstract class HttpEntityDefault implements BodyPartEntity, RequestEntity, ResponseEntity {
     public abstract long contentLength();
     public abstract Publisher<ByteString> data();
 }

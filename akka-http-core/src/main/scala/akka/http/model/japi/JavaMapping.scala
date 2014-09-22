@@ -110,7 +110,6 @@ object JavaMapping {
   implicit object HttpCharset extends Inherited[HttpCharset, model.HttpCharset]
   implicit object HttpCharsetRange extends Inherited[HttpCharsetRange, model.HttpCharsetRange]
   implicit object HttpEntity extends Inherited[HttpEntity, model.HttpEntity]
-  implicit object HttpEntityRegular extends Inherited[HttpEntityRegular, model.HttpEntity.Regular]
   implicit object HttpHeader extends Inherited[HttpHeader, model.HttpHeader]
   implicit object HttpMethod extends Inherited[HttpMethod, model.HttpMethod]
   implicit object HttpProtocol extends Inherited[HttpProtocol, model.HttpProtocol]

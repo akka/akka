@@ -377,7 +377,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     private def newParser = new HttpRequestParser(ParserSettings(system), false)()
 
-    private def compactEntity(entity: HttpEntity): Deferrable[HttpEntity] =
+    private def compactEntity(entity: RequestEntity): Deferrable[RequestEntity] =
       entity match {
         case x: Chunked ⇒ compactEntityChunks(x.chunks).map(compacted ⇒ x.copy(chunks = compacted))
         case _          ⇒ entity.toStrict(250.millis)

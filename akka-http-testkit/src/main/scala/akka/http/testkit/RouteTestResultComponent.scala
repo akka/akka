@@ -39,7 +39,7 @@ trait RouteTestResultComponent {
     def response: HttpResponse = rawResponse.copy(entity = entity)
 
     /** Returns a "fresh" entity with a "fresh" unconsumed byte- or chunk stream (if not strict) */
-    def entity: HttpEntity = entityRecreator()
+    def entity: ResponseEntity = entityRecreator()
 
     def chunks: immutable.Seq[ChunkStreamPart] =
       entity match {
@@ -76,7 +76,7 @@ trait RouteTestResultComponent {
       this
     }
 
-    private[this] lazy val entityRecreator: () ⇒ HttpEntity =
+    private[this] lazy val entityRecreator: () ⇒ ResponseEntity =
       rawResponse.entity match {
         case s: HttpEntity.Strict ⇒ () ⇒ s
 

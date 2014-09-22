@@ -14,6 +14,11 @@ public abstract class HttpResponse implements HttpMessage, HttpMessage.MessageTr
     public abstract StatusCode status();
 
     /**
+     * Returns the entity of this request.
+     */
+    public abstract ResponseEntity entity();
+
+    /**
      * Returns a copy of this instance with a new status-code.
      */
     public abstract HttpResponse withStatus(StatusCode statusCode);
@@ -22,6 +27,11 @@ public abstract class HttpResponse implements HttpMessage, HttpMessage.MessageTr
      * Returns a copy of this instance with a new status-code.
      */
     public abstract HttpResponse withStatus(int statusCode);
+
+    /**
+     * Returns a copy of this instance with a new entity.
+     */
+    public abstract HttpResponse withEntity(ResponseEntity entity);
 
     /**
      * Returns a default response to be changed using the `withX` methods.

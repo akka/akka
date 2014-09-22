@@ -27,14 +27,14 @@ private[http] object ParserOutput {
     uri: Uri,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Publisher[RequestOutput] ⇒ HttpEntity.Regular,
+    createEntity: Publisher[RequestOutput] ⇒ RequestEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Publisher[ResponseOutput] ⇒ HttpEntity,
+    createEntity: Publisher[ResponseOutput] ⇒ ResponseEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput

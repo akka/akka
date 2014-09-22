@@ -21,10 +21,10 @@ object MediaTypeOverrider {
   }
   implicit val forResponse = new MediaTypeOverrider[HttpResponse] {
     def apply(value: HttpResponse, mediaType: MediaType) =
-      value.mapEntity(forEntity(_: HttpEntity, mediaType))
+      value.mapEntity(forEntity(_: ResponseEntity, mediaType))
   }
   implicit val forRequest = new MediaTypeOverrider[HttpRequest] {
     def apply(value: HttpRequest, mediaType: MediaType) =
-      value.mapEntity(forEntity(_, mediaType))
+      value.mapEntity(forEntity(_: RequestEntity, mediaType))
   }
 }

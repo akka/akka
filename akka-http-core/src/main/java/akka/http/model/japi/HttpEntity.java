@@ -9,8 +9,6 @@ import akka.stream.FlowMaterializer;
 import akka.util.ByteString;
 import org.reactivestreams.Publisher;
 
-import java.io.File;
-
 /**
  * Represents the entity of an Http message. An entity consists of the content-type of the data
  * and the actual data itself. Some subtypes of HttpEntity also define the content-length of the
@@ -19,16 +17,24 @@ import java.io.File;
  * An HttpEntity can be of several kinds:
  *
  *  - HttpEntity.Empty: the statically known empty entity
+ *  - HttpEntityStrict: an entity containing already evaluated ByteString data
  *  - HttpEntityDefault: the default entity which has a known length and which contains
  *                       a stream of ByteStrings.
  *  - HttpEntityChunked: represents an entity that is delivered using `Transfer-Encoding: chunked`
- *  - HttpEntityCloseDelimited: the entity which doesn't have a fixed length but which is delimited by
+ *  - HttpEntityCloseDelimited: an entity which doesn't have a fixed length but which is delimited by
  *                              closing the connection.
+ *  - HttpEntityIndefiniteLength: an entity which doesn't have a fixed length which can be used to construct BodyParts
+ *                                with indefinite length
  *
- *  All entity subtypes but HttpEntityCloseDelimited are subtypes of {@link HttpEntityRegular} which
- *  means they can be used in Http request that disallow close-delimited transfer of the entity.
+ *  Marker-interfaces denote which subclasses can be used in which context:
+ *  - RequestEntity: an entity type that can be used in an HttpRequest
+ *  - ResponseEntity: an entity type that can be used in an HttpResponse
+ *  - BodyPartEntity: an entity type that can be used in a BodyPart
+ *  - UniversalEntity: an entity type that can be used in every context
+ *
+ * Use the static constructors in HttpEntities to construct instances.
  */
-public abstract class HttpEntity {
+public interface HttpEntity {
     /**
      * Returns the content-type of this entity
      */
@@ -46,11 +52,6 @@ public abstract class HttpEntity {
     public abstract boolean isKnownEmpty();
 
     /**
-     * Returns if this entity is a subtype of HttpEntityRegular.
-     */
-    public abstract boolean isRegular();
-
-    /**
      * Returns if this entity is a subtype of HttpEntityChunked.
      */
     public abstract boolean isChunked();
@@ -66,45 +67,12 @@ public abstract class HttpEntity {
     public abstract boolean isCloseDelimited();
 
     /**
+     * Returns if this entity is a subtype of HttpEntityIndefiniteLength.
+     */
+    public abstract boolean isIndefiniteLength();
+
+    /**
      * Returns a stream of data bytes this entity consists of.
      */
     public abstract Publisher<ByteString> getDataBytes(FlowMaterializer materializer);
-
-    public static HttpEntityStrict create(String string) {
-        return HttpEntity$.MODULE$.apply(string);
-    }
-    public static HttpEntityStrict create(byte[] bytes) {
-        return HttpEntity$.MODULE$.apply(bytes);
-    }
-    public static HttpEntityStrict create(ByteString bytes) {
-        return HttpEntity$.MODULE$.apply(bytes);
-    }
-    public static HttpEntityStrict create(ContentType contentType, String string) {
-        return HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, string);
-    }
-    public static HttpEntityStrict create(ContentType contentType, byte[] bytes) {
-        return HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, bytes);
-    }
-    public static HttpEntityStrict create(ContentType contentType, ByteString bytes) {
-        return HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, bytes);
-    }
-    public static HttpEntityRegular create(ContentType contentType, File file) {
-        return (HttpEntityRegular) HttpEntity$.MODULE$.apply((akka.http.model.ContentType) contentType, file);
-    }
-    public static HttpEntityDefault create(ContentType contentType, long contentLength, Publisher<ByteString> data) {
-        return new akka.http.model.HttpEntity.Default((akka.http.model.ContentType) contentType, contentLength, data);
-    }
-    public static HttpEntityCloseDelimited createCloseDelimited(ContentType contentType, Publisher<ByteString> data) {
-        return new akka.http.model.HttpEntity.CloseDelimited((akka.http.model.ContentType) contentType, data);
-    }
-    public static HttpEntityChunked createChunked(ContentType contentType, Publisher<ChunkStreamPart> chunks) {
-        return new akka.http.model.HttpEntity.Chunked(
-                (akka.http.model.ContentType) contentType,
-                Util.<ChunkStreamPart, akka.http.model.HttpEntity.ChunkStreamPart>upcastPublisher(chunks));
-    }
-    public static HttpEntityChunked createChunked(ContentType contentType, Publisher<ByteString> data, FlowMaterializer materializer) {
-        return akka.http.model.HttpEntity.Chunked$.MODULE$.fromData(
-                (akka.http.model.ContentType) contentType,
-                data, materializer);
-    }
 }

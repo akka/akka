@@ -75,7 +75,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ HttpEntity) =
+    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ ResponseEntity) =
       emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
