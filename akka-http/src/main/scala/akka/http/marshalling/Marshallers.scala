@@ -11,7 +11,7 @@ import akka.http.util.Deferrable
 import akka.http.model._
 import MediaTypes._
 
-case class Marshallers[-A, B](marshallers: immutable.Seq[Marshaller[A, B]]) {
+case class Marshallers[-A, +B](marshallers: immutable.Seq[Marshaller[A, B]]) {
   require(marshallers.nonEmpty, "marshallers must be non-empty")
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshallers[A, C] =
     Marshallers(marshallers map (_ map f))
@@ -30,18 +30,15 @@ object Marshallers extends SingleMarshallerMarshallers {
     Marshallers(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)(PredefinedToEntityMarshallers.nodeSeqMarshaller)
   }
 
-  implicit def entity2response[T](implicit m: Marshallers[T, HttpEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
+  implicit def entity2response[T](implicit m: Marshallers[T, ResponseEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
     m map (entity ⇒ HttpResponse(entity = entity))
-
-  implicit def regularEntity2entity[T](implicit m: Marshallers[T, HttpEntity.Regular], ec: ExecutionContext): Marshallers[T, HttpEntity] =
-    m map identity
 }
 
 sealed abstract class SingleMarshallerMarshallers {
   implicit def singleMarshallerMarshallers[A, B](implicit m: Marshaller[A, B]): Marshallers[A, B] = Marshallers(m)
 }
 
-sealed trait Marshaller[-A, B] { outer ⇒
+sealed trait Marshaller[-A, +B] { outer ⇒
   def apply(value: A): Deferrable[Marshalling[B]]
 
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshaller[A, C] =
@@ -51,7 +48,7 @@ sealed trait Marshaller[-A, B] { outer ⇒
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
    * the produced media-type with another one.
    */
-  def wrap[C](mediaType: MediaType)(f: C ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[B]): Marshaller[C, B] =
+  def wrap[C, D >: B](mediaType: MediaType)(f: C ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[D]): Marshaller[C, D] =
     Marshaller { value ⇒
       import Marshalling._
       outer(f(value)) map {

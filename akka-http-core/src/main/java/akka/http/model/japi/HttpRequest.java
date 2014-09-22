@@ -21,7 +21,7 @@ public abstract class HttpRequest implements HttpMessage, HttpMessage.MessageTra
     /**
      * Returns the entity of this request.
      */
-    public abstract HttpEntityRegular entity();
+    public abstract RequestEntity entity();
 
     /**
      * Returns a copy of this instance with a new method.
@@ -37,6 +37,11 @@ public abstract class HttpRequest implements HttpMessage, HttpMessage.MessageTra
      * Returns a copy of this instance with a new Uri.
      */
     public abstract HttpRequest withUri(String path);
+
+    /**
+     * Returns a copy of this instance with a new entity.
+     */
+    public abstract HttpRequest withEntity(RequestEntity entity);
 
     /**
      * Returns a default request to be changed using the `withX` methods.

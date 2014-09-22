@@ -106,7 +106,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the given response transformation function chained into the response chain.
    */
-  def withHttpResponseEntityMapped(f: HttpEntity ⇒ HttpEntity): RequestContext
+  def withHttpResponseEntityMapped(f: ResponseEntity ⇒ ResponseEntity): RequestContext
 
   /**
    * Returns a copy of this context with the given response transformation function chained into the response chain.
