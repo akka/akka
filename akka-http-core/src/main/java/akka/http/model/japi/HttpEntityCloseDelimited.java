@@ -12,6 +12,6 @@ import org.reactivestreams.Publisher;
  * determined by closing the underlying connection. Therefore, this entity type is only
  * available for Http responses.
  */
-public abstract class HttpEntityCloseDelimited extends HttpEntity {
+public abstract class HttpEntityCloseDelimited implements ResponseEntity {
     public abstract Publisher<ByteString> data();
 }

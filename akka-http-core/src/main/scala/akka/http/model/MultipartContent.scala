@@ -85,16 +85,16 @@ object MultipartFormData {
   }
 }
 
-final case class FormFile(name: Option[String], entity: HttpEntity)
+final case class FormFile(name: Option[String], entity: BodyPartEntity)
 
 object FormFile {
-  def apply(name: String, entity: HttpEntity): FormFile = apply(Some(name), entity)
+  def apply(name: String, entity: BodyPartEntity): FormFile = apply(Some(name), entity)
 }
 
 /**
  * Model for one part of a multipart message.
  */
-final case class BodyPart(entity: HttpEntity, headers: immutable.Seq[HttpHeader] = Nil) {
+final case class BodyPart(entity: BodyPartEntity, headers: immutable.Seq[HttpHeader] = Nil) {
   val name: Option[String] = dispositionParameterValue("name")
 
   def filename: Option[String] = dispositionParameterValue("filename")
@@ -126,8 +126,8 @@ object BodyPart {
       case None       ⇒ apply(formFile.entity, fieldName)
     }
 
-  def apply(entity: HttpEntity, fieldName: String): BodyPart = apply(entity, fieldName, Map.empty[String, String])
-  def apply(entity: HttpEntity, fieldName: String, params: Map[String, String]): BodyPart =
+  def apply(entity: BodyPartEntity, fieldName: String): BodyPart = apply(entity, fieldName, Map.empty[String, String])
+  def apply(entity: BodyPartEntity, fieldName: String, params: Map[String, String]): BodyPart =
     BodyPart(entity, immutable.Seq(`Content-Disposition`(ContentDispositionTypes.`form-data`, params.updated("name", fieldName))))
 }
 
@@ -144,7 +144,7 @@ object BodyPart {
  * }}}
  */
 object NamedBodyPart {
-  def unapply(part: BodyPart): Option[(String, HttpEntity, immutable.Seq[HttpHeader])] =
+  def unapply(part: BodyPart): Option[(String, BodyPartEntity, immutable.Seq[HttpHeader])] =
     part.name.map(name ⇒ (name, part.entity, part.headers))
 }
 
@@ -162,6 +162,6 @@ object NamedBodyPart {
  * }}}
  */
 object FileBodyPart {
-  def unapply(part: BodyPart): Option[(String, String, HttpEntity, immutable.Seq[HttpHeader])] =
+  def unapply(part: BodyPart): Option[(String, String, BodyPartEntity, immutable.Seq[HttpHeader])] =
     part.filename.map(filename ⇒ (part.name.getOrElse(""), filename, part.entity, part.headers))
 }

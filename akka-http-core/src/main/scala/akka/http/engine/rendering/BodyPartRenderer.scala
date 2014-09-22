@@ -67,13 +67,10 @@ private[http] class BodyPartRenderer(boundary: String,
 
     def completePartRendering(): List[Publisher[ChunkStreamPart]] =
       bodyPart.entity match {
-        case x if x.isKnownEmpty     ⇒ chunkStream(r.get)
-        case Strict(_, data)         ⇒ chunkStream((r ~~ data).get)
-        case Default(_, _, data)     ⇒ bodyPartChunks(data)
-        case CloseDelimited(_, data) ⇒ bodyPartChunks(data)
-        case Chunked(_, chunks) ⇒
-          val entityChunks = Flow(chunks).filter(!_.isLastChunk).toPublisher()
-          Flow(Chunk(r.get) :: Nil).concat(entityChunks).toPublisher() :: Nil
+        case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
+        case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
+        case Default(_, _, data)       ⇒ bodyPartChunks(data)
+        case IndefiniteLength(_, data) ⇒ bodyPartChunks(data)
       }
 
     renderBoundary()

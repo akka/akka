@@ -72,9 +72,26 @@ sealed trait HttpEntity extends japi.HttpEntity {
 
   // default implementations, should be overridden
   def isCloseDelimited: Boolean = false
+  def isIndefiniteLength: Boolean = false
   def isDefault: Boolean = false
   def isChunked: Boolean = false
-  def isRegular: Boolean = false
+}
+
+/* An entity that can be used for body parts */
+sealed trait BodyPartEntity extends HttpEntity with japi.BodyPartEntity {
+  def withContentType(contentType: ContentType): BodyPartEntity
+}
+/* An entity that can be used for requests */
+sealed trait RequestEntity extends HttpEntity with japi.RequestEntity with ResponseEntity {
+  def withContentType(contentType: ContentType): RequestEntity
+}
+/* An entity that can be used for responses */
+sealed trait ResponseEntity extends HttpEntity with japi.ResponseEntity {
+  def withContentType(contentType: ContentType): ResponseEntity
+}
+/* An entity that can be used for requests, responses, and body parts */
+sealed trait UniversalEntity extends japi.UniversalEntity with MessageEntity with BodyPartEntity {
+  def withContentType(contentType: ContentType): UniversalEntity
 }
 
 object HttpEntity {
@@ -87,10 +104,10 @@ object HttpEntity {
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): Strict =
     if (data.isEmpty) empty(contentType) else Strict(contentType, data)
-  def apply(contentType: ContentType, contentLength: Long, data: Publisher[ByteString]): Regular =
+  def apply(contentType: ContentType, contentLength: Long, data: Publisher[ByteString]): UniversalEntity =
     if (contentLength == 0) empty(contentType) else Default(contentType, contentLength, data)
 
-  def apply(contentType: ContentType, file: File): Regular = {
+  def apply(contentType: ContentType, file: File): UniversalEntity = {
     val fileLength = file.length
     if (fileLength > 0) Default(contentType, fileLength, ???) // FIXME: attach from-file-Publisher
     else empty(contentType)
@@ -102,23 +119,15 @@ object HttpEntity {
     if (contentType == Empty.contentType) Empty
     else Strict(contentType, data = ByteString.empty)
 
-  /**
-   * An HttpEntity that is "well-behaved" according to the HTTP/1.1 spec as that
-   * it is either chunked or defines a content-length that is known a-priori.
-   * Close-delimited entities are not `Regular` as they exists primarily for backwards compatibility with HTTP/1.0.
-   */
-  sealed trait Regular extends japi.HttpEntityRegular with HttpEntity {
-    def withContentType(contentType: ContentType): HttpEntity.Regular
-    override def isRegular: Boolean = true
-  }
-
   // TODO: re-establish serializability
   // TODO: equal/hashcode ?
 
   /**
    * The model for the entity of a "regular" unchunked HTTP message with known, fixed data.
    */
-  final case class Strict(contentType: ContentType, data: ByteString) extends japi.HttpEntityStrict with Regular {
+  final case class Strict(contentType: ContentType, data: ByteString)
+    extends japi.HttpEntityStrict with UniversalEntity {
+
     def isKnownEmpty: Boolean = data.isEmpty
 
     def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
@@ -135,7 +144,9 @@ object HttpEntity {
    */
   final case class Default(contentType: ContentType,
                            contentLength: Long,
-                           data: Publisher[ByteString]) extends japi.HttpEntityDefault with Regular {
+                           data: Publisher[ByteString])
+    extends japi.HttpEntityDefault with UniversalEntity {
+
     require(contentLength > 0, "contentLength must be positive (use `HttpEntity.empty(contentType)` for empty entities)")
     def isKnownEmpty = false
     override def isDefault: Boolean = true
@@ -147,24 +158,51 @@ object HttpEntity {
   }
 
   /**
-   * The model for the entity of an HTTP response that is terminated by the server closing the connection.
-   * The content-length of such responses is unknown at the time the response headers have been received.
-   * Note that this type of HttpEntity cannot be used for HttpRequests!
+   * Supertype of CloseDelimited and IndefiniteLength.
+   *
+   * INTERNAL API
    */
-  final case class CloseDelimited(contentType: ContentType, data: Publisher[ByteString]) extends japi.HttpEntityCloseDelimited with HttpEntity {
+  private[http] sealed trait WithoutKnownLength extends HttpEntity {
+    def contentType: ContentType
+    def data: Publisher[ByteString]
+
     def isKnownEmpty = data eq EmptyPublisher
-    override def isCloseDelimited: Boolean = true
 
     def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = data
+  }
 
+  /**
+   * The model for the entity of an HTTP response that is terminated by the server closing the connection.
+   * The content-length of such responses is unknown at the time the response headers have been received.
+   * Note that this type of HttpEntity can only be used for HttpResponses.
+   */
+  final case class CloseDelimited(contentType: ContentType, data: Publisher[ByteString])
+    extends japi.HttpEntityCloseDelimited with ResponseEntity with WithoutKnownLength {
+    type Self = CloseDelimited
+
+    override def isCloseDelimited: Boolean = true
     def withContentType(contentType: ContentType): CloseDelimited =
+      if (contentType == this.contentType) this else copy(contentType = contentType)
+  }
+
+  /**
+   * The model for the entity of a BodyPart with an indefinite length.
+   * Note that this type of HttpEntity can only be used for BodyParts.
+   */
+  final case class IndefiniteLength(contentType: ContentType, data: Publisher[ByteString])
+    extends japi.HttpEntityIndefiniteLength with BodyPartEntity with WithoutKnownLength {
+
+    override def isIndefiniteLength: Boolean = true
+    def withContentType(contentType: ContentType): IndefiniteLength =
       if (contentType == this.contentType) this else copy(contentType = contentType)
   }
 
   /**
    * The model for the entity of a chunked HTTP message (with `Transfer-Encoding: chunked`).
    */
-  final case class Chunked(contentType: ContentType, chunks: Publisher[ChunkStreamPart]) extends japi.HttpEntityChunked with Regular {
+  final case class Chunked(contentType: ContentType, chunks: Publisher[ChunkStreamPart])
+    extends japi.HttpEntityChunked with MessageEntity {
+
     def isKnownEmpty = chunks eq EmptyPublisher
     override def isChunked: Boolean = true
 

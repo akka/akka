@@ -33,7 +33,7 @@ trait BasicDirectives {
   def mapHttpResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
     mapRequestContext(_ withHttpResponseMapped f)
 
-  def mapHttpResponseEntity(f: HttpEntity ⇒ HttpEntity): Directive0 =
+  def mapHttpResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
     mapRequestContext(_ withHttpResponseEntityMapped f)
 
   def mapHttpResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
