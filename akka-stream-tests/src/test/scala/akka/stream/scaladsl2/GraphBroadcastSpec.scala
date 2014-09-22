@@ -111,6 +111,35 @@ class GraphBroadcastSpec extends AkkaSpec {
       c2.expectComplete()
     }
 
+    "cancel upstream when downstreams cancel" in {
+      val p1 = StreamTestKit.PublisherProbe[Int]()
+      val c1 = StreamTestKit.SubscriberProbe[Int]()
+      val c2 = StreamTestKit.SubscriberProbe[Int]()
+
+      FlowGraph { implicit b ⇒
+        val bcast = Broadcast[Int]("broadcast")
+        FlowFrom(p1.getPublisher) ~> bcast
+        bcast ~> FlowFrom[Int] ~> SubscriberSink(c1)
+        bcast ~> FlowFrom[Int] ~> SubscriberSink(c2)
+      }.run()
+
+      val bsub = p1.expectSubscription()
+      val sub1 = c1.expectSubscription()
+      val sub2 = c2.expectSubscription()
+      sub1.request(3)
+      sub2.request(3)
+      p1.expectRequest(bsub, 16)
+      bsub.sendNext(1)
+      c1.expectNext(1)
+      c2.expectNext(1)
+      bsub.sendNext(2)
+      c1.expectNext(2)
+      c2.expectNext(2)
+      sub1.cancel()
+      sub2.cancel()
+      bsub.expectCancellation()
+    }
+
   }
 
 }
