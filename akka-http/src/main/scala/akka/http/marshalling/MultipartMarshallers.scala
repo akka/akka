@@ -50,7 +50,7 @@ trait MultipartMarshallers {
       mcm(MultipartContent(value.parts)) map {
         case Marshalling.WithOpenCharset(mt, marshal) ⇒
           val mediaType = `multipart/form-data` withBoundary mt.params("boundary")
-          Marshalling.WithOpenCharset(mediaType, cs ⇒ MediaTypeOverrider.forRegularEntity(marshal(cs), mediaType))
+          Marshalling.WithOpenCharset(mediaType, cs ⇒ MediaTypeOverrider.forEntity(marshal(cs), mediaType))
         case x ⇒ throw new IllegalStateException("ToRegularEntityMarshaller[MultipartContent] is expected to produce " +
           "a Marshalling.WithOpenCharset, not a " + x)
       }
