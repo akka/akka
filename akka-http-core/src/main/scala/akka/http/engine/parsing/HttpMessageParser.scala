@@ -4,14 +4,13 @@
 
 package akka.http.engine.parsing
 
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import scala.collection.immutable
-import akka.stream.scaladsl.Flow
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.Transformer
+import akka.stream.scaladsl2.{ FlowWithSource, FlowMaterializer }
 import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._
@@ -238,13 +237,13 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
                    contentLength: Int)(entityParts: Any): UniversalEntity =
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
-  def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): UniversalEntity = {
-    val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()
+  def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: FlowWithSource[_, _ <: ParserOutput])(implicit fm: FlowMaterializer): UniversalEntity = {
+    val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
     HttpEntity.Default(contentType(cth), contentLength, data)
   }
 
-  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Publisher[_ <: ParserOutput])(implicit fm: FlowMaterializer): RequestEntity with ResponseEntity = {
-    val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher()
+  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: FlowWithSource[_, _ <: ParserOutput])(implicit fm: FlowMaterializer): RequestEntity with ResponseEntity = {
+    val chunks = entityChunks.collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }
     HttpEntity.Chunked(contentType(cth), chunks)
   }
 

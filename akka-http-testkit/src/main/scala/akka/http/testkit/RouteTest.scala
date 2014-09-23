@@ -12,7 +12,7 @@ import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import org.scalatest.Suite
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.FlowMaterializer
 import akka.http.client.RequestBuilding
 import akka.http.util.FastFuture
 import akka.http.server._

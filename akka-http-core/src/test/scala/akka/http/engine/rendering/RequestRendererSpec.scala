@@ -4,6 +4,7 @@
 
 package akka.http.engine.rendering
 
+import akka.util.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
 import java.net.InetSocketAddress
 import scala.concurrent.duration._
@@ -15,8 +16,7 @@ import akka.event.NoLogging
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
-import akka.stream.scaladsl.Flow
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.{ FutureSink, FlowFrom, FlowMaterializer }
 import akka.stream.impl.SynchronousPublisherFromIterable
 import HttpEntity._
 import HttpMethods._
@@ -120,7 +120,8 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
     "proper render a chunked" - {
 
       "PUT request with empty chunk stream and custom Content-Type" in new TestSetup() {
-        HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`, publisher())) should renderTo {
+        pending // Disabled until #15981 is fixed
+        HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`, source())) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |Host: test.com:8080
             |User-Agent: spray-can/1.0.0
@@ -133,7 +134,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
       "POST request with body" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`,
-          publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
+          source("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
           """POST /abc/xyz HTTP/1.1
               |Host: test.com:8080
               |User-Agent: spray-can/1.0.0
@@ -152,7 +153,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
 
       "POST request with custom Transfer-Encoding header" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-          entity = Chunked(ContentTypes.`text/plain`, publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
+          entity = Chunked(ContentTypes.`text/plain`, source("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
             """POST /abc/xyz HTTP/1.1
               |Transfer-Encoding: fancy, chunked
               |Host: test.com:8080
@@ -223,10 +224,11 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
         val byteStringPublisher :: Nil = renderer.onNext(RequestRenderingContext(request, serverAddress))
-        val future = Flow(byteStringPublisher).grouped(1000).toFuture().map(_.reduceLeft(_ ++ _).utf8String)
+        val future =
+          byteStringPublisher.grouped(1000).runWithSink(FutureSink[Seq[ByteString]]).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)
       }
   }
 
-  def publisher[T](elems: T*) = SynchronousPublisherFromIterable(elems.toList)
+  def source[T](elems: T*) = FlowFrom(elems.toList)
 }
