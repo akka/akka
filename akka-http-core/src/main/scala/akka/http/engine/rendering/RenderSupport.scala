@@ -4,13 +4,11 @@
 
 package akka.http.engine.rendering
 
-import org.reactivestreams.Publisher
+import akka.stream.scaladsl2._
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.Transformer
 import akka.http.model._
 import akka.http.util._
 
@@ -34,12 +32,23 @@ private object RenderSupport {
     if (entity.contentType != ContentTypes.NoContentType)
       r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString],
-                        skipEntity: Boolean = false)(implicit fm: FlowMaterializer): List[Publisher[ByteString]] = {
-    val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
+  def renderByteStrings(r: ByteStringRendering, entityBytes: FlowWithSource[_, ByteString],
+                        skipEntity: Boolean = false)(implicit fm: FlowMaterializer): List[FlowWithSource[_, ByteString]] = {
+    import FlowGraphImplicits._
+    val messageStart = r.get :: Nil
     val messageBytes =
-      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()
-      else messageStart
+      if (!skipEntity) {
+        val p = PublisherSink[ByteString]
+        val g = FlowGraph { implicit b ⇒
+          val concat = Concat[ByteString]
+          IterableSource(messageStart) ~> concat.first
+          entityBytes ~> concat.second
+          concat.out ~> p
+        }.run
+        // FIXME, the above graph should not be materialized, but we don't have Sink types that leave things
+        // unmaterialized
+        FlowFrom(p.publisher(g))
+      } else FlowFrom(messageStart)
     messageBytes :: Nil
   }
 

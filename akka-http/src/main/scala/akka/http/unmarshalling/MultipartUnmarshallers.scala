@@ -4,10 +4,8 @@
 
 package akka.http.unmarshalling
 
-import org.reactivestreams.Publisher
 import akka.actor.ActorRefFactory
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FlowWithSource, FlattenStrategy, FlowMaterializer }
 import akka.http.engine.parsing.BodyPartParser
 import akka.http.model._
 import akka.http.util._
@@ -30,22 +28,22 @@ trait MultipartUnmarshallers {
     multipartPartsUnmarshaller[MultipartByteRanges](`multipart/byteranges`,
       ContentTypes.`text/plain` withCharset defaultCharset)(MultipartByteRanges(_))
 
-  def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: Publisher[BodyPart] ⇒ T)(implicit fm: FlowMaterializer,
-                                                                                                                                                refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
+  def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: FlowWithSource[_, BodyPart] ⇒ T)(implicit fm: FlowMaterializer,
+                                                                                                                                                        refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
     Unmarshaller { entity ⇒
       if (mediaRange matches entity.contentType.mediaType) {
         entity.contentType.mediaType.params.get("boundary") match {
           case None ⇒ UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter")
           case Some(boundary) ⇒
-            val bodyParts = Flow(entity.dataBytes(fm))
+            val bodyParts = entity.dataBytes
               .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, actorSystem(refFactory).log))
               .splitWhen(_.isInstanceOf[BodyPartParser.BodyPartStart])
-              .headAndTail(fm)
+              .headAndTail
               .collect {
                 case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
                   BodyPart(createEntity(entityParts), headers)
                 case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
-              }.toPublisher()(fm)
+              }
             Deferrable(create(bodyParts))
         }
       } else UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
@@ -58,7 +56,7 @@ trait MultipartUnmarshallers {
                                                                      refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
     multipartPartsUnmarshaller(`multipart/form-data`, ContentTypes.`application/octet-stream`) { bodyParts ⇒
       def verify(part: BodyPart): BodyPart = part // TODO
-      val parts = if (verifyIntegrity) Flow(bodyParts).map(verify).toPublisher()(fm) else bodyParts
+      val parts = if (verifyIntegrity) bodyParts.map(verify) else bodyParts
       MultipartFormData(parts)
     }
 

@@ -11,8 +11,7 @@ import scala.util.{ Failure, Success }
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FutureSink, SubscriberSink, FlowFrom, FlowMaterializer }
 import akka.io.IO
 import akka.http.model.HttpMethods._
 import akka.http.model._
@@ -37,8 +36,10 @@ object TestClient extends App {
   } yield response.header[headers.Server]
 
   def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
-    Flow(List(HttpRequest() -> 'NoContext)).produceTo(connection.processor)
-    Flow(connection.processor).map(_._1).toFuture()
+    FlowFrom(List(HttpRequest() -> 'NoContext)).withSink(SubscriberSink(connection.requestSubscriber)).run()
+    val futureSink = FutureSink[HttpResponse]
+    val f = FlowFrom(connection.responsePublisher).map(_._1).withSink(futureSink).run()
+    futureSink.future(f)
   }
 
   result onComplete {

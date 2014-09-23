@@ -8,8 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
-import akka.stream.{ FlattenStrategy, FlowMaterializer }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FlattenStrategy, FlowMaterializer }
 import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.actorSystem
 import akka.http.model._
@@ -39,7 +38,7 @@ trait MultipartMarshallers {
     Marshaller.withOpenCharset(mediaTypeWithBoundary) { (value, charset) ⇒
       val log = actorSystem(refFactory).log
       val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-      val chunks = Flow(value.parts).transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat).toPublisher()
+      val chunks = value.parts.transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat)
       HttpEntity.Chunked(ContentType(mediaTypeWithBoundary), chunks)
     }
   }

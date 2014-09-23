@@ -10,8 +10,8 @@ import scala.concurrent.Await
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.scaladsl2.{ FutureSink, FlowMaterializer }
+import akka.stream.MaterializerSettings
 import akka.http.model._
 import akka.http.util._
 import headers._
@@ -88,7 +88,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |-----""".stripMarginWithNewline("\r\n")))
         .to[MultipartContent]
         .await(1.second)
-      Await.result(Flow(mpc.parts).toFuture().failed, 1.second).getMessage shouldEqual
+      Await.result(mpc.parts.runWithSink(FutureSink[BodyPart]).failed, 1.second).getMessage shouldEqual
         "multipart part must not contain more than one Content-Type header"
     }
 
@@ -165,14 +165,14 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
   def haveParts[T <: MultipartParts](parts: BodyPart*): Matcher[Deferrable[T]] =
     equal(parts).matcher[Seq[BodyPart]] compose {
-      _.flatMap(x ⇒ Deferrable(Flow(x.parts).grouped(100).toFuture()))
+      _.flatMap(x ⇒ Deferrable(x.parts.grouped(100).runWithSink(FutureSink[Seq[BodyPart]])))
         .recover { case _: NoSuchElementException ⇒ Nil }
         .await(1.second)
     }
 
   def haveFormData(fields: (String, BodyPart)*): Matcher[Deferrable[MultipartFormData]] =
     equal(fields).matcher[Seq[(String, BodyPart)]] compose {
-      _.flatMap(x ⇒ Deferrable(Flow(x.parts).grouped(100).toFuture()))
+      _.flatMap(x ⇒ Deferrable(x.parts.grouped(100).runWithSink(FutureSink[Seq[BodyPart]])))
         .recover { case _: NoSuchElementException ⇒ Nil }
         .map {
           _ map { part ⇒

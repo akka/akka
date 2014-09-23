@@ -5,10 +5,9 @@
 package akka.http.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import akka.http.model.parser.CharacterClasses
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.{ FlowWithSource, FlowMaterializer }
 import akka.util.ByteString
 import akka.http.model._
 import headers._
@@ -108,7 +107,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: Publisher[ParserOutput.RequestOutput] ⇒ RequestEntity) =
+      def emitRequestStart(createEntity: FlowWithSource[_, ParserOutput.RequestOutput] ⇒ RequestEntity) =
         emit(ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, closeAfterResponseCompletion))
 
       teh match {
