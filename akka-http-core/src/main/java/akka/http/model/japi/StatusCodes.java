@@ -85,17 +85,17 @@ public final class StatusCodes {
     public static final StatusCode NETWORK_CONNECT_TIMEOUT = akka.http.model.StatusCodes.NetworkConnectTimeout();
 
     /**
-     * Registers a custom status code.
+     * Create a custom status code.
      */
-    public static StatusCode registerCustom(int intValue, String reason, String defaultMessage, boolean isSuccess, boolean allowsEntity) {
-        return akka.http.model.StatusCodes.registerCustom(intValue, reason, defaultMessage, isSuccess, allowsEntity);
+    public static StatusCode custom(int intValue, String reason, String defaultMessage, boolean isSuccess, boolean allowsEntity) {
+        return akka.http.model.StatusCodes.custom(intValue, reason, defaultMessage, isSuccess, allowsEntity);
     }
 
     /**
-     * Registers a custom status code.
+     * Create a custom status code.
      */
-    public static StatusCode registerCustom(int intValue, String reason, String defaultMessage) {
-        return akka.http.model.StatusCodes.registerCustom(intValue, reason, defaultMessage);
+    public static StatusCode custom(int intValue, String reason, String defaultMessage) {
+        return akka.http.model.StatusCodes.custom(intValue, reason, defaultMessage);
     }
 
     /**

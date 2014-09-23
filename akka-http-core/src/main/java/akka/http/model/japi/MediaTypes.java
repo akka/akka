@@ -179,16 +179,16 @@ public abstract class MediaTypes {
     public static final MediaType VIDEO_WEBM = akka.http.model.MediaTypes.video$divwebm();
 
     /**
-     * Register a custom media type.
+     * Creates a custom media type.
      */
-    public static MediaType registerCustom(
+    public static MediaType custom(
             String mainType,
             String subType,
             boolean compressible,
             boolean binary,
             Iterable<String> fileExtensions,
             Map<String, String> params) {
-        return akka.http.model.MediaTypes.register(akka.http.model.MediaType.custom(mainType, subType, compressible, binary, Util.<String, String>convertIterable(fileExtensions), Util.convertMapToScala(params), false));
+        return akka.http.model.MediaType.custom(mainType, subType, compressible, binary, Util.<String, String>convertIterable(fileExtensions), Util.convertMapToScala(params), false);
     }
 
     /**
