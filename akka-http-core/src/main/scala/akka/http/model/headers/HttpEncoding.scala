@@ -48,11 +48,6 @@ object HttpEncoding {
 
 // see http://www.iana.org/assignments/http-parameters/http-parameters.xml
 object HttpEncodings extends ObjectRegistry[String, HttpEncoding] {
-  def register(encoding: HttpEncoding): HttpEncoding =
-    register(encoding.value.toRootLowerCase, encoding)
-
-  private def register(value: String): HttpEncoding = register(HttpEncoding(value))
-
   // format: OFF
   val compress      = register("compress")
   val chunked       = register("chunked")
@@ -62,4 +57,7 @@ object HttpEncodings extends ObjectRegistry[String, HttpEncoding] {
   val `x-compress`  = register("x-compress")
   val `x-zip`       = register("x-zip")
   // format: ON
+
+  private def register(encoding: HttpEncoding): HttpEncoding = register(encoding.value.toRootLowerCase, encoding)
+  private def register(value: String): HttpEncoding = register(HttpEncoding(value))
 }

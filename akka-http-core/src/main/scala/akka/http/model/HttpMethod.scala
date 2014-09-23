@@ -4,58 +4,49 @@
 
 package akka.http.model
 
-import akka.http.util.{ SingletonValueRenderable, ObjectRegistry }
+import scala.collection.immutable
+import akka.http.util._
 
 /**
  * The method of an HTTP request.
- * @param fingerprint unique Int value for faster equality checks (uniqueness is verified during registration)
  * @param isSafe true if the resource should not be altered on the server
  * @param isIdempotent true if requests can be safely (& automatically) repeated
  * @param isEntityAccepted true if meaning of request entities is properly defined
  */
 final case class HttpMethod private[http] (override val value: String,
-                                           fingerprint: Int,
                                            isSafe: Boolean,
                                            isIdempotent: Boolean,
                                            isEntityAccepted: Boolean) extends japi.HttpMethod with SingletonValueRenderable {
   def name = value
-
-  override def hashCode(): Int = fingerprint
-  override def equals(obj: Any): Boolean =
-    obj match {
-      case m: HttpMethod ⇒ fingerprint == m.fingerprint
-      case _             ⇒ false
-    }
-
   override def toString: String = s"HttpMethod($value)"
 }
 
 object HttpMethod {
-  def custom(value: String, safe: Boolean, idempotent: Boolean, entityAccepted: Boolean): HttpMethod =
-    custom(value, value.##, safe, idempotent, entityAccepted)
-
-  def custom(value: String, fingerprint: Int, safe: Boolean, idempotent: Boolean, entityAccepted: Boolean): HttpMethod = {
-    require(value.nonEmpty, "value must be non-empty")
+  def custom(name: String, safe: Boolean, idempotent: Boolean, entityAccepted: Boolean): HttpMethod = {
+    require(name.nonEmpty, "value must be non-empty")
     require(!safe || idempotent, "An HTTP method cannot be safe without being idempotent")
-    apply(value, fingerprint, safe, idempotent, entityAccepted)
+    apply(name, safe, idempotent, entityAccepted)
   }
+
+  /**
+   * Creates a custom method by name and assumes properties conservatively to be
+   * safe = idempotent = false and entityAccepted = true.
+   */
+  def custom(name: String): HttpMethod = custom(name, safe = false, idempotent = false, entityAccepted = true)
 }
 
 object HttpMethods extends ObjectRegistry[String, HttpMethod] {
-  def register(method: HttpMethod): HttpMethod = {
-    require(registry.values.forall(_.fingerprint != method.fingerprint), "Method fingerprint collision")
-    register(method.value, method)
-  }
+  private def register(method: HttpMethod): HttpMethod = register(method.value, method)
 
   // format: OFF
-  val CONNECT = register(HttpMethod("CONNECT", 0x01, isSafe = false, isIdempotent = false, isEntityAccepted = false))
-  val DELETE  = register(HttpMethod("DELETE" , 0x02, isSafe = false, isIdempotent = true , isEntityAccepted = false))
-  val GET     = register(HttpMethod("GET"    , 0x03, isSafe = true , isIdempotent = true , isEntityAccepted = false))
-  val HEAD    = register(HttpMethod("HEAD"   , 0x04, isSafe = true , isIdempotent = true , isEntityAccepted = false))
-  val OPTIONS = register(HttpMethod("OPTIONS", 0x05, isSafe = true , isIdempotent = true , isEntityAccepted = true))
-  val PATCH   = register(HttpMethod("PATCH"  , 0x06, isSafe = false, isIdempotent = false, isEntityAccepted = true))
-  val POST    = register(HttpMethod("POST"   , 0x07, isSafe = false, isIdempotent = false, isEntityAccepted = true))
-  val PUT     = register(HttpMethod("PUT"    , 0x08, isSafe = false, isIdempotent = true , isEntityAccepted = true))
-  val TRACE   = register(HttpMethod("TRACE"  , 0x09, isSafe = true , isIdempotent = true , isEntityAccepted = false))
+  val CONNECT = register(HttpMethod("CONNECT", isSafe = false, isIdempotent = false, isEntityAccepted = false))
+  val DELETE  = register(HttpMethod("DELETE" , isSafe = false, isIdempotent = true , isEntityAccepted = false))
+  val GET     = register(HttpMethod("GET"    , isSafe = true , isIdempotent = true , isEntityAccepted = false))
+  val HEAD    = register(HttpMethod("HEAD"   , isSafe = true , isIdempotent = true , isEntityAccepted = false))
+  val OPTIONS = register(HttpMethod("OPTIONS", isSafe = true , isIdempotent = true , isEntityAccepted = true))
+  val PATCH   = register(HttpMethod("PATCH"  , isSafe = false, isIdempotent = false, isEntityAccepted = true))
+  val POST    = register(HttpMethod("POST"   , isSafe = false, isIdempotent = false, isEntityAccepted = true))
+  val PUT     = register(HttpMethod("PUT"    , isSafe = false, isIdempotent = true , isEntityAccepted = true))
+  val TRACE   = register(HttpMethod("TRACE"  , isSafe = true , isIdempotent = true , isEntityAccepted = false))
   // format: ON
 }

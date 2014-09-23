@@ -21,13 +21,10 @@ public final class HttpCharsets {
     public static final HttpCharset UTF_16LE = akka.http.model.HttpCharsets.UTF$minus16LE();
 
     /**
-     * Registers a custom charset. Returns Some(newCharset) if the charset is supported by this JVM.
-     * Returns None otherwise.
+     * Create and return a custom charset.
      */
-    public static Option<HttpCharset> registerCustom(String value, String... aliases) {
-        scala.Option<akka.http.model.HttpCharset> custom = akka.http.model.HttpCharset.custom(value, Util.<String, String>convertArray(aliases));
-        if (custom.isDefined()) return Option.<HttpCharset>some(akka.http.model.HttpCharsets.register(custom.get()));
-        else return Option.none();
+    public static HttpCharset custom(String value, String... aliases) {
+        return akka.http.model.HttpCharset.custom(value, Util.<String, String>convertArray(aliases));
     }
 
     /**

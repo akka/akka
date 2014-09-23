@@ -35,7 +35,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val BOLT = HttpMethods.register(HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true))
+  val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true)
   implicit val materializer = FlowMaterializer()
 
   "The request parsing logic should" - {
@@ -124,6 +124,9 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "with a custom HTTP method" in new Test {
+        override protected def parserSettings: ParserSettings =
+          super.parserSettings.withCustomMethods(BOLT)
+
         """BOLT / HTTP/1.0
           |
           |""" should parseTo(HttpRequest(BOLT, "/", protocol = `HTTP/1.0`))
@@ -266,6 +269,14 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           "GETX " should parseToError(NotImplemented, ErrorInfo("Unsupported HTTP method", "GETX"))
         }
 
+        "a too long HTTP method" in new Test {
+          "ABCDEFGHIJKLMNOPQ " should
+            parseToError(BadRequest,
+              ErrorInfo(
+                "Unsupported HTTP method",
+                "HTTP method too long (started with 'ABCDEFGHIJKLMNOP'). Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
+        }
+
         "two Content-Length headers" in new Test {
           """GET / HTTP/1.1
             |Content-Length: 3
@@ -375,7 +386,8 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         Await.result(future, 250.millis)
       }
 
-    private def newParser = new HttpRequestParser(ParserSettings(system), false)()
+    protected def parserSettings: ParserSettings = ParserSettings(system)
+    protected def newParser = new HttpRequestParser(parserSettings, false)()
 
     private def compactEntity(entity: RequestEntity): Deferrable[RequestEntity] =
       entity match {

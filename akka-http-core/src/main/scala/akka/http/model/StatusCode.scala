@@ -62,23 +62,22 @@ object StatusCodes extends ObjectRegistry[Int, StatusCode] {
   }
 
   /**
-   * Create and register a custom status code and allow full customization of behavior. The value of `allowsEntity`
+   * Create a custom status code and allow full customization of behavior. The value of `allowsEntity`
    * changes the parser behavior: If it is set to true, a response with this status code is required to include a
    * `Content-Length` header to be parsed correctly when keep-alive is enabled (which is the default in HTTP/1.1).
    * If `allowsEntity` is false, an entity is never expected.
    */
-  def registerCustom(intValue: Int, reason: String, defaultMessage: String, isSuccess: Boolean, allowsEntity: Boolean): StatusCode =
-    reg(CustomStatusCode(intValue)(reason, defaultMessage, isSuccess, allowsEntity))
+  def custom(intValue: Int, reason: String, defaultMessage: String, isSuccess: Boolean, allowsEntity: Boolean): StatusCode =
+    StatusCodes.CustomStatusCode(intValue)(reason, defaultMessage, isSuccess, allowsEntity)
 
-  /** Create and register a custom status code with default behavior for its value region. */
-  def registerCustom(intValue: Int, reason: String, defaultMessage: String = ""): StatusCode = reg {
+  /** Create a custom status code with default behavior for its value region. */
+  def custom(intValue: Int, reason: String, defaultMessage: String = ""): StatusCode =
     if (100 to 199 contains intValue) Informational(intValue)(reason, defaultMessage)
     else if (200 to 299 contains intValue) Success(intValue)(reason, defaultMessage)
     else if (300 to 399 contains intValue) Redirection(intValue)(reason, defaultMessage, defaultMessage)
     else if (400 to 499 contains intValue) ClientError(intValue)(reason, defaultMessage)
     else if (500 to 599 contains intValue) ServerError(intValue)(reason, defaultMessage)
     else throw new IllegalArgumentException("Can't register status code in non-standard region")
-  }
 
   import Informational.{apply => i}
   import Success      .{apply => s}

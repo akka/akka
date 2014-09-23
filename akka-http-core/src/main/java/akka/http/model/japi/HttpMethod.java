@@ -6,7 +6,7 @@ package akka.http.model.japi;
 
 /**
  * Represents an HTTP request method. See {@link HttpMethods} for a set of predefined methods
- * and static constructors to build and register custom ones.
+ * and static constructors to create custom ones.
  */
 public abstract class HttpMethod {
     /**

@@ -24,12 +24,15 @@ public final class HttpMethods {
     public static final HttpMethod TRACE   = akka.http.model.HttpMethods.TRACE();
 
     /**
-     * Register a custom method type.
+     * Create a custom method type.
      */
-    public static HttpMethod registerCustom(String value, boolean safe, boolean idempotent, boolean entityAccepted) {
-        return akka.http.model.HttpMethods.register(akka.http.model.HttpMethod.custom(value, safe, idempotent, entityAccepted));
+    public static HttpMethod custom(String value, boolean safe, boolean idempotent, boolean entityAccepted) {
+        return akka.http.model.HttpMethod.custom(value, safe, idempotent, entityAccepted);
     }
 
+    /**
+     * Looks up a predefined HTTP method with the given name.
+     */
     public static Option<HttpMethod> lookup(String name) {
         return Util.<HttpMethod, akka.http.model.HttpMethod>lookupInRegistry(HttpMethods$.MODULE$, name);
     }

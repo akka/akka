@@ -17,7 +17,7 @@ import HttpEncodings._
 import HttpMethods._
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
-  val `application/vnd.spray` = MediaTypes.register(MediaType.custom("application/vnd.spray"))
+  val `application/vnd.spray` = MediaType.custom("application/vnd.spray")
 
   "The HTTP header model must correctly parse and render the headers" - {
 

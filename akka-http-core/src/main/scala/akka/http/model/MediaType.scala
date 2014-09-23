@@ -195,9 +195,7 @@ sealed abstract class NonMultipartMediaType private[http] (_value: String, _main
 
 object MediaType {
   /**
-   * Allows the definition of custom media types. In order for your custom type to be properly used by the
-   * HTTP layer you need to create an instance, register it via `MediaTypes.register` and use this instance in
-   * your custom Marshallers and Unmarshallers.
+   * Create a custom media type.
    */
   def custom(mainType: String, subType: String, compressible: Boolean = false, binary: Boolean = false,
              fileExtensions: immutable.Seq[String] = Nil, params: Map[String, String] = Map.empty,
@@ -224,9 +222,9 @@ object MediaType {
 }
 
 object MediaTypes extends ObjectRegistry[(String, String), MediaType] {
-  @volatile private[this] var extensionMap = Map.empty[String, MediaType]
+  private[this] var extensionMap = Map.empty[String, MediaType]
 
-  def register(mediaType: MediaType): MediaType = synchronized {
+  private def register(mediaType: MediaType): MediaType = {
     def registerFileExtension(ext: String): Unit = {
       val lcExt = ext.toRootLowerCase
       require(!extensionMap.contains(lcExt), s"Extension '$ext' clash: media-types '${extensionMap(lcExt)}' and '$mediaType'")
