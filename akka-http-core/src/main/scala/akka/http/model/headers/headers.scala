@@ -6,18 +6,9 @@ package akka.http.model
 package headers
 
 import java.net.InetSocketAddress
-import scala.annotation.{ tailrec, implicitNotFound }
+import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.util._
-
-object ProtectedHeaderCreation {
-  @implicitNotFound("Headers of this type are managed automatically by akka-http-core. If you are sure that creating " +
-    "instances manually is required in your use case `import HttpHeaders.ProtectedHeaderCreation.enable` to override " +
-    "this warning.")
-  sealed trait Enabled
-  implicit def enable: Enabled = null
-}
-import ProtectedHeaderCreation.enable
 
 sealed abstract class ModeledCompanion extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
@@ -60,7 +51,7 @@ object `Content-Length` extends ModeledCompanion
  * Instances of this class will only be created transiently during header parsing and will never appear
  * in HttpMessage.header. To access the Content-Length, see subclasses of HttpEntity.
  */
-final case class `Content-Length` private[http] (length: Long)(implicit ev: ProtectedHeaderCreation.Enabled) extends ModeledHeader {
+final case class `Content-Length` private[http] (length: Long) extends ModeledHeader {
   def renderValue[R <: Rendering](r: R): r.type = r ~~ length
   protected def companion = `Content-Length`
 }
