@@ -12,7 +12,7 @@ private[parser] trait AcceptEncodingHeader { this: Parser with CommonRules with 
 
   // http://tools.ietf.org/html/rfc7231#section-5.3.4
   def `accept-encoding` = rule {
-    zeroOrMore(`encoding-range-decl`).separatedBy(listSep) ~ EOI ~> (`Accept-Encoding`(_: _*))
+    zeroOrMore(`encoding-range-decl`).separatedBy(listSep) ~ EOI ~> (`Accept-Encoding`(_))
   }
 
   def `encoding-range-decl` = rule {

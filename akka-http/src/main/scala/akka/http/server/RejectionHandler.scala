@@ -57,7 +57,7 @@ object RejectionHandler {
 
     case rejections @ (MethodRejection(_) :: _) ⇒
       val methods = rejections.collect { case MethodRejection(method) ⇒ method }
-      complete(MethodNotAllowed, List(Allow(methods: _*)), "HTTP method not allowed, supported methods: " + methods.mkString(", "))
+      complete(MethodNotAllowed, List(Allow(methods)), "HTTP method not allowed, supported methods: " + methods.mkString(", "))
 
     case rejections @ (SchemeRejection(_) :: _) ⇒
       val schemes = rejections.collect { case SchemeRejection(scheme) ⇒ scheme }
