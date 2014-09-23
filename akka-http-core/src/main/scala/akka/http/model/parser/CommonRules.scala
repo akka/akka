@@ -408,7 +408,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
     token ~> { s ⇒
       HttpMethods.getForKey(s) match {
         case Some(m) ⇒ m
-        case None    ⇒ throw new ParsingException("Unknown HTTP method", s)
+        case None    ⇒ HttpMethod.custom(s)
       }
     }
   }
