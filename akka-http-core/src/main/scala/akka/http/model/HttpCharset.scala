@@ -4,11 +4,12 @@
 
 package akka.http.model
 
+import java.lang.{ Iterable ⇒ JIterable }
 import language.implicitConversions
 import scala.collection.immutable
+import scala.util.Try
 import java.nio.charset.Charset
 import akka.http.util._
-import java.lang.{ Iterable ⇒ JIterable }
 
 /**
  * A charset range as encountered in `Accept-Charset`. Can either be a single charset, or `*`
@@ -52,12 +53,14 @@ object HttpCharsetRange {
 
 final case class HttpCharset private[http] (override val value: String)(val aliases: immutable.Seq[String])
   extends japi.HttpCharset with SingletonValueRenderable with WithQValue[HttpCharsetRange] {
-  @transient private[this] var _nioCharset: Charset = Charset.forName(value)
-  def nioCharset: Charset = _nioCharset
+  @transient private[this] var _nioCharset: Try[Charset] = HttpCharset.findNioCharset(value)
+
+  /** Returns the Charset for this charset if available or throws an exception otherwise */
+  def nioCharset: Charset = _nioCharset.get
 
   private def readObject(in: java.io.ObjectInputStream): Unit = {
     in.defaultReadObject()
-    _nioCharset = Charset.forName(value)
+    _nioCharset = HttpCharset.findNioCharset(value)
   }
 
   def withQValue(qValue: Float): HttpCharsetRange = HttpCharsetRange(this, qValue.toFloat)
@@ -70,12 +73,10 @@ final case class HttpCharset private[http] (override val value: String)(val alia
 }
 
 object HttpCharset {
-  def custom(value: String, aliases: String*): Option[HttpCharset] =
-    try Some(HttpCharset(value)(immutable.Seq(aliases: _*)))
-    catch {
-      // per documentation all exceptions thrown by `Charset.forName` are IllegalArgumentExceptions
-      case e: IllegalArgumentException ⇒ None
-    }
+  def custom(value: String, aliases: String*): HttpCharset =
+    HttpCharset(value)(immutable.Seq(aliases: _*))
+
+  private[http] def findNioCharset(name: String): Try[Charset] = Try(Charset.forName(name))
 }
 
 // see http://www.iana.org/assignments/character-sets
