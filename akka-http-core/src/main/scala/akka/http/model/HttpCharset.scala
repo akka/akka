@@ -80,7 +80,7 @@ object HttpCharset {
 
 // see http://www.iana.org/assignments/character-sets
 object HttpCharsets extends ObjectRegistry[String, HttpCharset] {
-  def register(charset: HttpCharset): HttpCharset = {
+  private def register(charset: HttpCharset): HttpCharset = {
     charset.aliases.foreach(alias ⇒ register(alias.toRootLowerCase, charset))
     register(charset.value.toRootLowerCase, charset)
   }

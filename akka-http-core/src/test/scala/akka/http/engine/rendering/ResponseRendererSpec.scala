@@ -27,7 +27,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  val ServerOnTheMove = StatusCodes.registerCustom(330, "Server on the move")
+  val ServerOnTheMove = StatusCodes.custom(330, "Server on the move")
   implicit val materializer = FlowMaterializer()
 
   "The response preparation logic should properly render" - {

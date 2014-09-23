@@ -6,7 +6,7 @@ package akka.http.model.japi;
 
 /**
  * Represents a charset in Http. See {@link HttpCharsets} for a set of predefined charsets and
- * static constructors to create and register custom charsets.
+ * static constructors to create custom charsets.
  */
 public abstract class HttpCharset {
     /**
@@ -34,7 +34,7 @@ public abstract class HttpCharset {
     public abstract HttpCharsetRange withQValue(float qValue);
 
     /**
-     * Returns the predefined (and registered) alias names for this charset.
+     * Returns the predefined alias names for this charset.
      */
     public abstract Iterable<String> getAliases();
 }
