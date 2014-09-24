@@ -4,19 +4,20 @@
 
 package akka.http.model
 
-import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
-import akka.util.ByteString
-import org.scalatest.matchers.Matcher
-import akka.stream.scaladsl.Flow
-import akka.http.model.HttpEntity._
-import org.reactivestreams.Publisher
-import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
-import akka.stream.impl.SynchronousPublisherFromIterable
+import java.util.concurrent.TimeoutException
 import com.typesafe.config.{ ConfigFactory, Config }
+import org.reactivestreams.Publisher
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
-import java.util.concurrent.TimeoutException
+import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
+import org.scalatest.matchers.Matcher
+import akka.util.ByteString
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.Flow
+import akka.stream.FlowMaterializer
+import akka.stream.impl.SynchronousPublisherFromIterable
+import akka.http.model.HttpEntity._
+import akka.http.util.FastFuture._
 
 class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val tpe: ContentType = ContentTypes.`application/octet-stream`
@@ -76,7 +77,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
         val neverCompleted = Promise[ByteString]()
         val stream: Publisher[ByteString] = Flow(neverCompleted.future).toPublisher()
         intercept[TimeoutException] {
-          Default(tpe, 42, stream).toStrict(100.millis).await(150.millis)
+          Await.result(Default(tpe, 42, stream).toStrict(100.millis), 150.millis)
         }.getMessage must be("HttpEntity.toStrict timed out after 100 milliseconds while still waiting for outstanding data")
       }
     }
@@ -91,5 +92,5 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
     }
 
   def strictifyTo(strict: Strict): Matcher[HttpEntity] =
-    equal(strict).matcher[Strict].compose(_.toStrict(250.millis).await(250.millis))
+    equal(strict).matcher[Strict].compose(x ⇒ Await.result(x.toStrict(250.millis), 250.millis))
 }
