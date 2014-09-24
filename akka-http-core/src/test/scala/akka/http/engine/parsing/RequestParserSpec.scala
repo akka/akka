@@ -24,6 +24,7 @@ import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
 import ParserOutput.ParseError
+import FastFuture._
 
 class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -365,7 +366,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             .map { x ⇒
               Flow {
                 x match {
-                  case Right(request) ⇒ compactEntity(request.entity).map(x ⇒ Right(request.withEntity(x))).toFuture
+                  case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
                   case Left(error)    ⇒ Future.successful(Left(error))
                 }
               }.toPublisher()
@@ -377,16 +378,16 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     private def newParser = new HttpRequestParser(ParserSettings(system), false)()
 
-    private def compactEntity(entity: RequestEntity): Deferrable[RequestEntity] =
+    private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
-        case x: Chunked ⇒ compactEntityChunks(x.chunks).map(compacted ⇒ x.copy(chunks = compacted))
+        case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = compacted))
         case _          ⇒ entity.toStrict(250.millis)
       }
 
-    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Deferrable[Publisher[ChunkStreamPart]] =
-      Deferrable(Flow(data).grouped(1000).toFuture())
-        .map(publisher(_: _*))
-        .recover { case _: NoSuchElementException ⇒ publisher() }
+    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
+      Flow(data).grouped(1000).toFuture()
+        .fast.map(publisher(_: _*))
+        .fast.recover { case _: NoSuchElementException ⇒ publisher() }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }
