@@ -378,13 +378,13 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     this
   }
 
-  def addEdge[In, Out](flow: FlowWithSource[In, Out], sink: JunctionInPort[Out]): this.type = {
-    addEdge(flow.input, flow.withoutSource, sink)
+  def addEdge[Out](flow: FlowWithSource[Out], sink: JunctionInPort[Out]): this.type = {
+    addEdge(flow.input, ProcessorFlow(flow.ops), sink)
     this
   }
 
-  def addEdge[In, Out](source: JunctionOutPort[In], flow: FlowWithSink[In, Out]): this.type = {
-    addEdge(source, flow.withoutSink, flow.output)
+  def addEdge[In, Out](source: JunctionOutPort[In], flow: FlowWithSink[In]): this.type = {
+    addEdge(source, ProcessorFlow(flow.ops), flow.output)
     this
   }
 
@@ -590,7 +590,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
     case class Memo(visited: Set[graph.EdgeT] = Set.empty,
                     downstreamSubscriber: Map[graph.EdgeT, Subscriber[Any]] = Map.empty,
                     upstreamPublishers: Map[graph.EdgeT, Publisher[Any]] = Map.empty,
-                    sources: Map[SourceVertex, FlowWithSink[Any, Any]] = Map.empty,
+                    sources: Map[SourceVertex, FlowWithSink[Any]] = Map.empty,
                     materializedSinks: Map[SinkWithKey[_, _], Any] = Map.empty)
 
     val result = startingNodes.foldLeft(Memo()) {
@@ -798,7 +798,7 @@ object FlowGraphImplicits {
       sink.next
     }
 
-    def ~>(flow: FlowWithSink[In, _])(implicit builder: FlowGraphBuilder): Unit =
+    def ~>(flow: FlowWithSink[In])(implicit builder: FlowGraphBuilder): Unit =
       builder.addEdge(junction, flow)
   }
 
@@ -817,7 +817,7 @@ object FlowGraphImplicits {
     }
   }
 
-  implicit class FlowWithSourceOps[In, Out](val flow: FlowWithSource[In, Out]) extends AnyVal {
+  implicit class FlowWithSourceOps[Out](val flow: FlowWithSource[Out]) extends AnyVal {
     def ~>(sink: JunctionInPort[Out])(implicit builder: FlowGraphBuilder): JunctionOutPort[sink.NextT] = {
       builder.addEdge(flow, sink)
       sink.next

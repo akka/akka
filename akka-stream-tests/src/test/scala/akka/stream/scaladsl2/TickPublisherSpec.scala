@@ -74,7 +74,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      FlowFrom(1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).publishTo(c)
+      FlowFrom[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).publishTo(c)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")

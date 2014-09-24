@@ -42,18 +42,18 @@ object FlowOps {
 /**
  * Scala API: Operations offered by flows with a free output side: the DSL flows left-to-right only.
  */
-trait FlowOps[-In, +Out] {
+trait FlowOps[+Out] {
   import FlowOps._
-  type Repr[-I, +O] <: FlowOps[I, O]
+  type Repr[+O] <: FlowOps[O]
 
   // Storing ops in reverse order
-  protected def andThen[U](op: AstNode): Repr[In, U]
+  protected def andThen[U](op: AstNode): Repr[U]
 
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: Out ⇒ T): Repr[In, T] =
+  def map[T](f: Out ⇒ T): Repr[T] =
     transform("map", () ⇒ new Transformer[Out, T] {
       override def onNext(in: Out) = List(f(in))
     })
@@ -62,7 +62,7 @@ trait FlowOps[-In, +Out] {
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    */
-  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[In, T] =
+  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] =
     transform("mapConcat", () ⇒ new Transformer[Out, T] {
       override def onNext(in: Out) = f(in)
     })
@@ -74,13 +74,13 @@ trait FlowOps[-In, +Out] {
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as from upstream.
    */
-  def mapFuture[T](f: Out ⇒ Future[T]): Repr[In, T] =
+  def mapFuture[T](f: Out ⇒ Future[T]): Repr[T] =
     andThen(MapFuture(f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: Out ⇒ Boolean): Repr[In, Out] =
+  def filter(p: Out ⇒ Boolean): Repr[Out] =
     transform("filter", () ⇒ new Transformer[Out, Out] {
       override def onNext(in: Out) = if (p(in)) List(in) else Nil
     })
@@ -90,7 +90,7 @@ trait FlowOps[-In, +Out] {
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[In, T] =
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] =
     transform("collect", () ⇒ new Transformer[Out, T] {
       override def onNext(in: Out) = if (pf.isDefinedAt(in)) List(pf(in)) else Nil
     })
@@ -101,7 +101,7 @@ trait FlowOps[-In, +Out] {
    *
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
-  def grouped(n: Int): Repr[In, immutable.Seq[Out]] = {
+  def grouped(n: Int): Repr[immutable.Seq[Out]] = {
     require(n > 0, "n must be greater than 0")
     transform("grouped", () ⇒ new Transformer[Out, immutable.Seq[Out]] {
       var buf: Vector[Out] = Vector.empty
@@ -128,7 +128,7 @@ trait FlowOps[-In, +Out] {
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[In, immutable.Seq[Out]] = {
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = {
     require(n > 0, "n must be greater than 0")
     require(d > Duration.Zero)
     timerTransform("groupedWithin", () ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
@@ -159,7 +159,7 @@ trait FlowOps[-In, +Out] {
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): Repr[In, Out] =
+  def drop(n: Int): Repr[Out] =
     transform("drop", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
         if (n <= 0) identityTransformer.asInstanceOf[Transformer[Out, Out]]
@@ -179,7 +179,7 @@ trait FlowOps[-In, +Out] {
   /**
    * Discard the elements received within the given duration at beginning of the stream.
    */
-  def dropWithin(d: FiniteDuration): Repr[In, Out] =
+  def dropWithin(d: FiniteDuration): Repr[Out] =
     timerTransform("dropWithin", () ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(DropWithinTimerKey, d)
 
@@ -204,7 +204,7 @@ trait FlowOps[-In, +Out] {
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    */
-  def take(n: Int): Repr[In, Out] =
+  def take(n: Int): Repr[Out] =
     transform("take", () ⇒ new Transformer[Out, Out] {
       var delegate: Transformer[Out, Out] =
         if (n <= 0) takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
@@ -231,7 +231,7 @@ trait FlowOps[-In, +Out] {
    * Note that this can be combined with [[#take]] to limit the number of elements
    * within the duration.
    */
-  def takeWithin(d: FiniteDuration): Repr[In, Out] =
+  def takeWithin(d: FiniteDuration): Repr[Out] =
     timerTransform("takeWithin", () ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(TakeWithinTimerKey, d)
 
@@ -256,7 +256,7 @@ trait FlowOps[-In, +Out] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Repr[In, S] =
+  def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Repr[S] =
     andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
 
   /**
@@ -272,7 +272,7 @@ trait FlowOps[-In, +Out] {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Repr[In, U] =
+  def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Repr[U] =
     andThen(Expand(seed.asInstanceOf[Any ⇒ Any], extrapolate.asInstanceOf[Any ⇒ (Any, Any)]))
 
   /**
@@ -283,7 +283,7 @@ trait FlowOps[-In, +Out] {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[In, Out] = {
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
     andThen(Buffer(size, overflowStrategy))
   }
@@ -310,7 +310,7 @@ trait FlowOps[-In, +Out] {
    *
    * Note that you can use [[#timerTransform]] if you need support for scheduled events in the transformer.
    */
-  def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[In, T] = {
+  def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[T] = {
     andThen(Transform(name, mkTransformer.asInstanceOf[() ⇒ Transformer[Any, Any]]))
   }
 
@@ -319,7 +319,7 @@ trait FlowOps[-In, +Out] {
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
-  def prefixAndTail[U >: Out](n: Int): Repr[In, (immutable.Seq[Out], FlowWithSource[U, U])] =
+  def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], FlowWithSource[U])] =
     andThen(PrefixAndTail(n))
 
   /**
@@ -333,7 +333,7 @@ trait FlowOps[-In, +Out] {
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
    */
-  def groupBy[K, U >: Out](f: Out ⇒ K): Repr[In, (K, FlowWithSource[U, U])] =
+  def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, FlowWithSource[U])] =
     andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
 
   /**
@@ -349,14 +349,14 @@ trait FlowOps[-In, +Out] {
    * true, false, false // elements go into third substream
    * }}}
    */
-  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[In, FlowWithSource[U, U]] =
+  def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[FlowWithSource[U]] =
     andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[StreamWithSource]].
    */
-  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[In, U] = strategy match {
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
     case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
   }
@@ -385,7 +385,7 @@ trait FlowOps[-In, +Out] {
    *
    * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
    */
-  def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Repr[In, U] =
+  def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Repr[U] =
     andThen(TimerTransform(name, mkTransformer.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
 }
 
@@ -397,31 +397,29 @@ object ProcessorFlow {
 /**
  * Flow without attached input and without attached output, can be used as a `Processor`.
  */
-final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In, Out] {
-  override type Repr[-I, +O] = ProcessorFlow[I, O]
+final case class ProcessorFlow[-In, +Out] private[scaladsl2] (ops: List[AstNode]) extends FlowOps[Out] {
+  override type Repr[+O] = ProcessorFlow[In @uncheckedVariance, O]
 
-  override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
+  override protected def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops)
 
-  def withSink(out: Sink[Out]): FlowWithSink[In, Out] = FlowWithSink(out, ops)
-  def withSource(in: Source[In]): FlowWithSource[In, Out] = FlowWithSource(in, ops)
+  def withSink(out: Sink[Out]): FlowWithSink[In] = FlowWithSink(out, ops)
+  def withSource(in: Source[In]): FlowWithSource[Out] = FlowWithSource(in, ops)
 
   def prepend[T](f: ProcessorFlow[T, In]): ProcessorFlow[T, Out] = ProcessorFlow(ops ::: f.ops)
-  def prepend[T](f: FlowWithSource[T, In]): FlowWithSource[T, Out] = f.append(this)
+  def prepend(f: FlowWithSource[In]): FlowWithSource[Out] = f.append(this)
 
   def append[T](f: ProcessorFlow[Out, T]): ProcessorFlow[In, T] = ProcessorFlow(f.ops ++: ops)
-  def append[T](f: FlowWithSink[Out, T]): FlowWithSink[In, T] = f.prepend(this)
+  def append(f: FlowWithSink[Out]): FlowWithSink[In] = f.prepend(this)
 }
 
 /**
  *  Flow with attached output, can be used as a `Subscriber`.
  */
-final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) {
+final case class FlowWithSink[-In] private[scaladsl2] (output: Sink[_], ops: List[AstNode]) {
+  def withSource(in: Source[In]) = RunnableFlow(in, output, ops)
 
-  def withSource(in: Source[In]): RunnableFlow[In, Out] = RunnableFlow(in, output, ops)
-  def withoutSink: ProcessorFlow[In, Out] = ProcessorFlow(ops)
-
-  def prepend[T](f: ProcessorFlow[T, In]): FlowWithSink[T, Out] = FlowWithSink(output, ops ::: f.ops)
-  def prepend[T](f: FlowWithSource[T, In]): RunnableFlow[T, Out] = RunnableFlow(f.input, output, ops ::: f.ops)
+  def prepend[T](f: ProcessorFlow[T, In]): FlowWithSink[T] = FlowWithSink(output, ops ::: f.ops)
+  def prepend(f: FlowWithSource[In]): RunnableFlow = RunnableFlow(f.input, output, ops ::: f.ops)
 
   def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] = {
     val subIn = SubscriberSource[In]()
@@ -433,16 +431,15 @@ final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out
 /**
  * Flow with attached input, can be used as a `Publisher`.
  */
-final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[In @uncheckedVariance], ops: List[AstNode]) extends FlowOps[In, Out] {
-  override type Repr[-I, +O] = FlowWithSource[I, O]
+final case class FlowWithSource[+Out] private[scaladsl2] (input: Source[_], ops: List[AstNode]) extends FlowOps[Out] {
+  override type Repr[+O] = FlowWithSource[O]
 
-  override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
+  override protected def andThen[U](op: AstNode): Repr[U] = FlowWithSource(input, op :: ops)
 
-  def withSink(out: Sink[Out]): RunnableFlow[In, Out] = RunnableFlow(input, out, ops)
-  def withoutSource: ProcessorFlow[In, Out] = ProcessorFlow(ops)
+  def withSink(out: Sink[Out]): RunnableFlow = RunnableFlow(input, out, ops)
 
-  def append[T](f: ProcessorFlow[Out, T]): FlowWithSource[In, T] = FlowWithSource(input, f.ops ++: ops)
-  def append[T](f: FlowWithSink[Out, T]): RunnableFlow[In, T] = RunnableFlow(input, f.output, f.ops ++: ops)
+  def append[T](f: ProcessorFlow[Out, T]): FlowWithSource[T] = FlowWithSource(input, f.ops ++: ops)
+  def append(f: FlowWithSink[Out]): RunnableFlow = RunnableFlow(input, f.output, f.ops ++: ops)
 
   def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
     val pubOut = PublisherSink[Out]
@@ -461,17 +458,12 @@ final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[
 
   def consume()(implicit materializer: FlowMaterializer): Unit =
     withSink(BlackholeSink).run()
-
 }
 
 /**
  * Flow with attached input and output, can be executed.
  */
-final case class RunnableFlow[-In, +Out](private[scaladsl2] val input: Source[In @uncheckedVariance],
-                                         private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) extends Flow {
-  def withoutSink: FlowWithSource[In, Out] = FlowWithSource(input, ops)
-  def withoutSource: FlowWithSink[In, Out] = FlowWithSink(output, ops)
-
+final case class RunnableFlow private[scaladsl2] (input: Source[_], output: Sink[_], ops: List[AstNode]) extends Flow {
   def run()(implicit materializer: FlowMaterializer): MaterializedFlow =
     materializer.materialize(input, output, ops)
 }

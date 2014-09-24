@@ -82,9 +82,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   val identity: ProcessorFlow[Any, Any] ⇒ ProcessorFlow[Any, Any] = in ⇒ in.map(e ⇒ e)
   val identity2: ProcessorFlow[Any, Any] ⇒ ProcessorFlow[Any, Any] = in ⇒ identity(in)
 
-  val toPublisher: (FlowWithSource[Any, Any], FlowMaterializer) ⇒ Publisher[Any] =
+  val toPublisher: (FlowWithSource[Any], FlowMaterializer) ⇒ Publisher[Any] =
     (f, m) ⇒ f.toPublisher()(m)
-  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out] =
+  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (FlowWithSource[Out], FlowMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.toFanoutPublisher(initialBufferSize, maximumBufferSize)(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](processorFlow: ProcessorFlow[In, Out]): (Subscriber[In], Publisher[Out]) = {
@@ -226,7 +226,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "subscribe Subscriber" in {
       val processorFlow: ProcessorFlow[String, String] = FlowFrom[String]
       val c1 = StreamTestKit.SubscriberProbe[String]()
-      val flow: FlowWithSink[String, String] = processorFlow.withSink(SubscriberSink(c1))
+      val flow: FlowWithSink[String] = processorFlow.withSink(SubscriberSink(c1))
       val source: Publisher[String] = FlowFrom(List("1", "2", "3")).toPublisher()
       flow.withSource(PublisherSource(source)).run()
 
@@ -252,7 +252,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "perform transformation operation and subscribe Subscriber" in {
       val processorFlow = FlowFrom[Int].map(_.toString)
       val c1 = StreamTestKit.SubscriberProbe[String]()
-      val flow: FlowWithSink[Int, String] = processorFlow.withSink(SubscriberSink(c1))
+      val flow: FlowWithSink[Int] = processorFlow.withSink(SubscriberSink(c1))
       val source: Publisher[Int] = FlowFrom(List(1, 2, 3)).toPublisher()
       flow.withSource(PublisherSource(source)).run()
 
@@ -265,14 +265,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
 
     "be covariant" in {
-      val f1: FlowWithSource[Fruit, Fruit] = FlowFrom[Fruit](() ⇒ Some(new Apple))
+      val f1: FlowWithSource[Fruit] = FlowFrom[Fruit](() ⇒ Some(new Apple))
       val p1: Publisher[Fruit] = FlowFrom[Fruit](() ⇒ Some(new Apple)).toPublisher()
-      val f2: FlowWithSource[Fruit, FlowWithSource[Fruit, Fruit]] = FlowFrom[Fruit](() ⇒ Some(new Apple)).splitWhen(_ ⇒ true)
-      val f3: FlowWithSource[Fruit, (Boolean, FlowWithSource[Fruit, Fruit])] = FlowFrom[Fruit](() ⇒ Some(new Apple)).groupBy(_ ⇒ true)
-      val f4: FlowWithSource[Fruit, (immutable.Seq[Fruit], FlowWithSource[Fruit, Fruit])] = FlowFrom[Fruit](() ⇒ Some(new Apple)).prefixAndTail(1)
-      val d1: ProcessorFlow[String, FlowWithSource[Fruit, Fruit]] = FlowFrom[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
-      val d2: ProcessorFlow[String, (Boolean, FlowWithSource[Fruit, Fruit])] = FlowFrom[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
-      val d3: ProcessorFlow[String, (immutable.Seq[Apple], FlowWithSource[Fruit, Fruit])] = FlowFrom[String].map(_ ⇒ new Apple).prefixAndTail(1)
+      val f2: FlowWithSource[FlowWithSource[Fruit]] = FlowFrom[Fruit](() ⇒ Some(new Apple)).splitWhen(_ ⇒ true)
+      val f3: FlowWithSource[(Boolean, FlowWithSource[Fruit])] = FlowFrom[Fruit](() ⇒ Some(new Apple)).groupBy(_ ⇒ true)
+      val f4: FlowWithSource[(immutable.Seq[Fruit], FlowWithSource[Fruit])] = FlowFrom[Fruit](() ⇒ Some(new Apple)).prefixAndTail(1)
+      val d1: ProcessorFlow[String, FlowWithSource[Fruit]] = FlowFrom[String].map(_ ⇒ new Apple).splitWhen(_ ⇒ true)
+      val d2: ProcessorFlow[String, (Boolean, FlowWithSource[Fruit])] = FlowFrom[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
+      val d3: ProcessorFlow[String, (immutable.Seq[Apple], FlowWithSource[Fruit])] = FlowFrom[String].map(_ ⇒ new Apple).prefixAndTail(1)
     }
   }
 

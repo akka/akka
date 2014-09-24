@@ -29,7 +29,7 @@ object FlowFrom {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def apply[T](publisher: Publisher[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(PublisherSource(publisher))
+  def apply[T](publisher: Publisher[T]): FlowWithSource[T] = FlowFrom[T].withSource(PublisherSource(publisher))
 
   /**
    * Helper to create `Flow` with [[Source]] from `Iterator`.
@@ -41,7 +41,7 @@ object FlowFrom {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def apply[T](iterator: Iterator[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(IteratorSource(iterator))
+  def apply[T](iterator: Iterator[T]): FlowWithSource[T] = FlowFrom[T].withSource(IteratorSource(iterator))
 
   /**
    * Helper to create `Flow` with [[Source]] from `Iterable`.
@@ -52,14 +52,14 @@ object FlowFrom {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(IterableSource(iterable))
+  def apply[T](iterable: immutable.Iterable[T]): FlowWithSource[T] = FlowFrom[T].withSource(IterableSource(iterable))
 
   /**
    * Define the sequence of elements to be produced by the given closure.
    * The stream ends normally when evaluation of the closure returns a `None`.
    * The stream ends exceptionally when an exception is thrown from the closure.
    */
-  def apply[T](f: () ⇒ Option[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(ThunkSource(f))
+  def apply[T](f: () ⇒ Option[T]): FlowWithSource[T] = FlowFrom[T].withSource(ThunkSource(f))
 
   /**
    * Start a new `Flow` from the given `Future`. The stream will consist of
@@ -67,7 +67,7 @@ object FlowFrom {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with an error if the `Future` is completed with a failure.
    */
-  def apply[T](future: Future[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(FutureSource(future))
+  def apply[T](future: Future[T]): FlowWithSource[T] = FlowFrom[T].withSource(FutureSource(future))
 
   /**
    * Elements are produced from the tick closure periodically with the specified interval.
@@ -76,7 +76,7 @@ object FlowFrom {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): FlowWithSource[T, T] =
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): FlowWithSource[T] =
     FlowFrom[T].withSource(TickSource(initialDelay, interval, tick))
 
 }
