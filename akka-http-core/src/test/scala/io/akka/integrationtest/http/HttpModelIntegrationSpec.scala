@@ -4,16 +4,16 @@
 
 package io.akka.integrationtest.http
 
-import akka.actor.ActorSystem
-import akka.http.model._
-import akka.http.model.ContentTypes
-import akka.http.model.headers._
-import akka.http.model.parser.HeaderParser
-import akka.stream.scaladsl2._
-import akka.util.ByteString
 import com.typesafe.config.{ ConfigFactory, Config }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import scala.concurrent.Await
 import scala.concurrent.duration._
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import akka.util.ByteString
+import akka.actor.ActorSystem
+import akka.http.model.parser.HeaderParser
+import akka.http.model._
+import akka.stream.scaladsl2._
+import headers._
 
 /**
  * Integration test for external HTTP libraries that are built on top of
@@ -88,7 +88,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
       // Finally convert the body into an Array[Byte].
 
-      val entityBytes: Array[Byte] = request.entity.toStrict(1.second).await(2.seconds).data.toArray
+      val entityBytes: Array[Byte] = Await.result(request.entity.toStrict(1.second), 2.seconds).data.toArray
       entityBytes.to[Seq] shouldEqual ByteString("hello").to[Seq]
     }
 

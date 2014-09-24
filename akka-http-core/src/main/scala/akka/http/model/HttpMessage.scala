@@ -6,7 +6,7 @@ package akka.http.model
 
 import java.lang.{ Iterable ⇒ JIterable }
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.reflect.{ classTag, ClassTag }
 import akka.stream.FlowMaterializer
@@ -14,6 +14,7 @@ import akka.util.ByteString
 import akka.http.util._
 import headers._
 import HttpCharsets._
+import FastFuture._
 
 /**
  * Common base class of HttpRequest and HttpResponse.
@@ -47,8 +48,8 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def withEntity(entity: MessageEntity): Self
 
   /** Returns a sharable and serializable copy of this message with a strict entity. */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Deferrable[Self] =
-    entity.toStrict(timeout).map(this.withEntity)
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Self] =
+    entity.toStrict(timeout).fast.map(this.withEntity)
 
   /** Returns a copy of this message with the entity and headers set to the given ones. */
   def withHeadersAndEntity(headers: immutable.Seq[HttpHeader], entity: MessageEntity): Self

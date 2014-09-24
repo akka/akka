@@ -4,15 +4,16 @@
 
 package akka.http.model
 
+import akka.http.util.FastFuture
+
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable }
 import org.reactivestreams.Publisher
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.http.util.Deferrable
 import akka.stream.{ TimerTransformer, FlowMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.stream.impl.{ EmptyPublisher, SynchronousPublisherFromIterable }
@@ -41,7 +42,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Deferrable is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Deferrable[HttpEntity.Strict] = {
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[HttpEntity.Strict] = {
     def transformer() =
       new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
@@ -59,7 +60,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       }
-    Deferrable(Flow(dataBytes).timerTransform("toStrict", transformer).toFuture())
+    Flow(dataBytes).timerTransform("toStrict", transformer).toFuture()
   }
 
   /**
@@ -133,7 +134,7 @@ object HttpEntity {
     def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
-      Deferrable(this)
+      FastFuture.successful(this)
 
     def withContentType(contentType: ContentType): Strict =
       if (contentType == this.contentType) this else copy(contentType = contentType)
