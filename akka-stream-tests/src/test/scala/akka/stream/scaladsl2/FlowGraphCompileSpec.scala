@@ -226,6 +226,23 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "allow attaching SourceFlow and SinkFlow" in {
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val undefinedSrc = UndefinedSource[String]
+        val undefinedSink = UndefinedSink[String]
+        val bcast = Broadcast[String]
+        undefinedSrc ~> bcast ~> undefinedSink
+        bcast ~> BlackholeSink
+
+        "b.attachSource(undefinedSrc, FlowFrom[String])" shouldNot compile
+        "b.attachSink(undefinedSink, FlowFrom[String])" shouldNot compile
+
+        b.attachSource(undefinedSrc, FlowFrom(List("hello", "world")))
+        b.attachSink(undefinedSink, FlowFrom[String].withSink(BlackholeSink))
+      }.run()
+    }
+
     "chain input and output ports" in {
       FlowGraph { implicit b ⇒
         val zip = Zip[Int, String]

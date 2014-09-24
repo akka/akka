@@ -24,7 +24,7 @@ import akka.stream.OverflowStrategy
  */
 sealed trait Flow
 
-object FlowOps {
+protected[scaladsl2] object FlowOps {
   private case object TakeWithinTimerKey
   private case object DropWithinTimerKey
   private case object GroupedWithinTimerKey
@@ -40,11 +40,75 @@ object FlowOps {
 }
 
 /**
+ * This type describes a flow that can be used as a source. In contrast to
+ * FlowWithSource this one does not allow modifications or the conversion
+ * into a ProcessorFlow. This restriction allows the omission of the input
+ * type parameter.
+ */
+sealed trait SourceFlow[+T] extends FlowOps[Nothing, T] with Flow {
+  type Repr[-I, +O] <: SourceFlow[O]
+
+  /**
+   * Transform this source by appending the given processing stages.
+   */
+  def append[U](f: ProcessorFlow[T, U]): Repr[Nothing, U]
+  /**
+   * Connect this source to a sink, concatenating the processing steps of both.
+   */
+  def append[U](f: FlowWithSink[T, U]): RunnableFlow[Nothing, U]
+  /**
+   * Connect this source to a sink, concatenating the processing steps of both.
+   */
+  def append(s: SinkFlow[T]): RunnableFlow[Nothing, Any]
+
+  /**
+   * INTERNAL API. Extract the [[Source]] object from this flow.
+   */
+  private[scaladsl2] def input: Source[_]
+  /**
+   * INTERNAL API. Extract the transformation operations from this flow,
+   * useful when writing a [[FlowMaterializer]].
+   */
+  def ops: List[AstNode]
+}
+
+/**
+ * This type describes a flow that can be used as a sink. In contrast to
+ * FlowWithSink this one does not allow modifications or the conversion
+ * into a ProcessorFlow. This restriction allows the omission of the output
+ * type parameter.
+ */
+sealed trait SinkFlow[-T] extends Flow {
+  /**
+   * Transform this sink by prepending the given processing stages.
+   */
+  def prepend[U](f: ProcessorFlow[U, T]): SinkFlow[U]
+  /**
+   * Connect a source to this sink, concatenating the processing steps of both.
+   */
+  def prepend[U](f: FlowWithSource[U, T]): RunnableFlow[U, Any]
+  /**
+   * Connect a source to this sink, concatenating the processing steps of both.
+   */
+  def prepend(s: SourceFlow[T]): RunnableFlow[Nothing, Any]
+
+  /**
+   * INTERNAL API. Extract the [[Sink]] object from this flow.
+   */
+  private[scaladsl2] def output: Sink[_]
+  /**
+   * INTERNAL API. Extract the transformation operations from this flow,
+   * useful when writing a [[FlowMaterializer]].
+   */
+  def ops: List[AstNode]
+}
+
+/**
  * Scala API: Operations offered by flows with a free output side: the DSL flows left-to-right only.
  */
-trait FlowOps[-In, +Out] {
+protected[scaladsl2] trait FlowOps[-In, +Out] {
   import FlowOps._
-  type Repr[-I, +O] <: FlowOps[I, O]
+  type Repr[-I, +O]
 
   // Storing ops in reverse order
   protected def andThen[U](op: AstNode): Repr[In, U]
@@ -415,13 +479,14 @@ final case class ProcessorFlow[-In, +Out](ops: List[AstNode]) extends FlowOps[In
 /**
  *  Flow with attached output, can be used as a `Subscriber`.
  */
-final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) {
+final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out @uncheckedVariance], ops: List[AstNode]) extends SinkFlow[In] {
 
   def withSource(in: Source[In]): RunnableFlow[In, Out] = RunnableFlow(in, output, ops)
   def withoutSink: ProcessorFlow[In, Out] = ProcessorFlow(ops)
 
   def prepend[T](f: ProcessorFlow[T, In]): FlowWithSink[T, Out] = FlowWithSink(output, ops ::: f.ops)
   def prepend[T](f: FlowWithSource[T, In]): RunnableFlow[T, Out] = RunnableFlow(f.input, output, ops ::: f.ops)
+  def prepend(s: SourceFlow[In]): RunnableFlow[Nothing, Out] = RunnableFlow(s.input, output, ops ::: s.ops)
 
   def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] = {
     val subIn = SubscriberSource[In]()
@@ -433,7 +498,9 @@ final case class FlowWithSink[-In, +Out](private[scaladsl2] val output: Sink[Out
 /**
  * Flow with attached input, can be used as a `Publisher`.
  */
-final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[In @uncheckedVariance], ops: List[AstNode]) extends FlowOps[In, Out] {
+final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[In @uncheckedVariance], ops: List[AstNode])
+  extends SourceFlow[Out] with FlowOps[In, Out] {
+
   override type Repr[-I, +O] = FlowWithSource[I, O]
 
   override protected def andThen[U](op: AstNode): Repr[In, U] = this.copy(ops = op :: ops)
@@ -441,8 +508,9 @@ final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[
   def withSink(out: Sink[Out]): RunnableFlow[In, Out] = RunnableFlow(input, out, ops)
   def withoutSource: ProcessorFlow[In, Out] = ProcessorFlow(ops)
 
-  def append[T](f: ProcessorFlow[Out, T]): FlowWithSource[In, T] = FlowWithSource(input, f.ops ++: ops)
-  def append[T](f: FlowWithSink[Out, T]): RunnableFlow[In, T] = RunnableFlow(input, f.output, f.ops ++: ops)
+  def append[T](f: ProcessorFlow[Out, T]): FlowWithSource[In, T] = FlowWithSource(input, f.ops ::: ops)
+  def append[T](f: FlowWithSink[Out, T]): RunnableFlow[In, T] = RunnableFlow(input, f.output, f.ops ::: ops)
+  def append(s: SinkFlow[Out]): RunnableFlow[In, Any] = RunnableFlow(input, s.output, s.ops ::: ops)
 
   def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
     val pubOut = PublisherSink[Out]
