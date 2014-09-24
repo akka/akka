@@ -5,7 +5,7 @@
 package akka.http.client
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Await, ExecutionContext }
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.util.Timeout
@@ -45,7 +45,7 @@ trait RequestBuilding extends TransformerPipelineSupport {
       content match {
         case None ⇒ apply(uri, HttpEntity.Empty)
         case Some(value) ⇒
-          val entity = Marshal(value).to[RequestEntity].await(timeout.duration)
+          val entity = Await.result(Marshal(value).to[RequestEntity], timeout.duration)
           apply(uri, entity)
       }
 

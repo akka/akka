@@ -6,8 +6,9 @@ package akka.http.marshalling
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
-import akka.http.util.Deferrable
+import akka.http.util.FastFuture
 import akka.http.model._
+import FastFuture._
 
 trait PredefinedToRequestMarshallers {
   private type TRM[T] = ToRequestMarshaller[T] // brevity alias
@@ -15,7 +16,7 @@ trait PredefinedToRequestMarshallers {
   implicit val fromRequest: TRM[HttpRequest] = Marshaller.opaque(identity)
 
   implicit def fromUri(implicit ec: ExecutionContext): TRM[Uri] =
-    Marshaller { uri ⇒ Deferrable(Marshalling.Opaque(() ⇒ HttpRequest(uri = uri))) }
+    Marshaller { uri ⇒ FastFuture.successful(Marshalling.Opaque(() ⇒ HttpRequest(uri = uri))) }
 
   implicit def fromMethodAndUriAndValue[S, T](implicit mt: ToEntityMarshaller[T],
                                               ec: ExecutionContext): TRM[(HttpMethod, Uri, T)] =
@@ -23,7 +24,7 @@ trait PredefinedToRequestMarshallers {
 
   implicit def fromMethodAndUriAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T],
                                                      ec: ExecutionContext): TRM[(HttpMethod, Uri, immutable.Seq[HttpHeader], T)] =
-    Marshaller { case (m, u, h, v) ⇒ mt(v) map (_ map (HttpRequest(m, u, h, _))) }
+    Marshaller { case (m, u, h, v) ⇒ mt(v).fast.map(_ map (HttpRequest(m, u, h, _))) }
 }
 
 object PredefinedToRequestMarshallers extends PredefinedToRequestMarshallers
