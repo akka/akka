@@ -75,7 +75,8 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ ResponseEntity) =
+    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ ResponseEntity,
+                          headers: List[HttpHeader] = headers) =
       emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
@@ -106,12 +107,14 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
         }
 
         case Some(te) ⇒
-          if (te.encodings.size == 1 && te.hasChunked) {
+          val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
+          if (te.isChunked) {
             if (clh.isEmpty) {
-              emitResponseStart(chunkedEntity(cth))
+              emitResponseStart(chunkedEntity(cth), completedHeaders)
               parseChunk(input, bodyStart, closeAfterResponseCompletion)
             } else fail("A chunked request must not contain a Content-Length header.")
-          } else fail(s"`$te` is not supported by this client")
+          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None, hostHeaderPresent,
+            closeAfterResponseCompletion)
       }
     } else finishEmptyResponse()
   }

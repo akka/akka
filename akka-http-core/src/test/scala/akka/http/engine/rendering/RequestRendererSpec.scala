@@ -90,7 +90,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         HttpRequest(PUT, "/abc/xyz", List(
           RawHeader("X-Fancy", "naa"),
           RawHeader("Cache-Control", "public"),
-          Host("spray.io"))).withEntity(HttpEntity(ContentTypes.NoContentType, "The content please!")) should renderTo {
+          Host("spray.io")), HttpEntity(ContentTypes.NoContentType, "The content please!")) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |X-Fancy: naa
             |Cache-Control: public
@@ -101,12 +101,26 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
             |The content please!"""
         }
       }
+
+      "PUT request with a custom Transfer-Encoding header" in new TestSetup() {
+        HttpRequest(PUT, "/abc/xyz", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))))
+          .withEntity("The content please!") should renderTo {
+            """PUT /abc/xyz HTTP/1.1
+              |Transfer-Encoding: fancy
+              |Host: test.com:8080
+              |User-Agent: spray-can/1.0.0
+              |Content-Type: text/plain; charset=UTF-8
+              |Content-Length: 19
+              |
+              |The content please!"""
+          }
+      }
     }
 
     "proper render a chunked" - {
 
       "PUT request with empty chunk stream and custom Content-Type" in new TestSetup() {
-        HttpRequest(PUT, "/abc/xyz").withEntity(Chunked(ContentTypes.`text/plain`, publisher())) should renderTo {
+        HttpRequest(PUT, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`, publisher())) should renderTo {
           """PUT /abc/xyz HTTP/1.1
             |Host: test.com:8080
             |User-Agent: spray-can/1.0.0
@@ -118,13 +132,32 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       }
 
       "POST request with body" in new TestSetup() {
-        HttpRequest(POST, "/abc/xyz")
-          .withEntity(Chunked(ContentTypes.`text/plain`, publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
+        HttpRequest(POST, "/abc/xyz", entity = Chunked(ContentTypes.`text/plain`,
+          publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
+          """POST /abc/xyz HTTP/1.1
+              |Host: test.com:8080
+              |User-Agent: spray-can/1.0.0
+              |Transfer-Encoding: chunked
+              |Content-Type: text/plain
+              |
+              |4
+              |XXXX
+              |1a
+              |ABCDEFGHIJKLMNOPQRSTUVWXYZ
+              |0
+              |
+              |"""
+        }
+      }
+
+      "POST request with custom Transfer-Encoding header" in new TestSetup() {
+        HttpRequest(POST, "/abc/xyz", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+          entity = Chunked(ContentTypes.`text/plain`, publisher("XXXX", "ABCDEFGHIJKLMNOPQRSTUVWXYZ"))) should renderTo {
             """POST /abc/xyz HTTP/1.1
+              |Transfer-Encoding: fancy, chunked
               |Host: test.com:8080
               |User-Agent: spray-can/1.0.0
               |Content-Type: text/plain
-              |Transfer-Encoding: chunked
               |
               |4
               |XXXX

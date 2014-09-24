@@ -536,7 +536,15 @@ object `Transfer-Encoding` extends ModeledCompanion {
 final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding]) extends japi.headers.TransferEncoding with ModeledHeader {
   require(encodings.nonEmpty, "encodings must not be empty")
   import `Transfer-Encoding`.encodingsRenderer
-  def hasChunked: Boolean = encodings contains TransferEncodings.chunked
+  def isChunked: Boolean = encodings.last == TransferEncodings.chunked
+  def withChunked: `Transfer-Encoding` = if (isChunked) this else `Transfer-Encoding`(encodings :+ TransferEncodings.chunked)
+  def withChunkedPeeled: Option[`Transfer-Encoding`] =
+    if (isChunked) {
+      encodings.init match {
+        case Nil       ⇒ None
+        case remaining ⇒ Some(`Transfer-Encoding`(remaining))
+      }
+    } else Some(this)
   def renderValue[R <: Rendering](r: R): r.type = r ~~ encodings
   protected def companion = `Transfer-Encoding`
 

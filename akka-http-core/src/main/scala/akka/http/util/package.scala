@@ -7,7 +7,7 @@ package akka.http
 import language.implicitConversions
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import org.reactivestreams.{Subscription, Subscriber, Publisher}
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString

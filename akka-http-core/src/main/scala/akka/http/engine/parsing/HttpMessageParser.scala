@@ -247,4 +247,10 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     val chunks = Flow(entityChunks).collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }.toPublisher()
     HttpEntity.Chunked(contentType(cth), chunks)
   }
+
+  def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
+    teh.withChunkedPeeled match {
+      case Some(x) ⇒ x :: headers
+      case None    ⇒ headers
+    }
 }

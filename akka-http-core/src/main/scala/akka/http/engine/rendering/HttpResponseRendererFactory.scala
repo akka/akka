@@ -68,38 +68,53 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
       def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
+      def mustRenderTransferEncodingChunkedHeader =
+        entity.isChunked && (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD) && (ctx.requestProtocol == `HTTP/1.1`)
+
       @tailrec def renderHeaders(remaining: List[HttpHeader], alwaysClose: Boolean = false,
-                                 connHeader: Connection = null, serverHeaderSeen: Boolean = false): Unit =
+                                 connHeader: Connection = null, serverHeaderSeen: Boolean = false,
+                                 transferEncodingSeen: Boolean = false): Unit =
         remaining match {
           case head :: tail ⇒ head match {
             case x: `Content-Length` ⇒
               suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
 
             case x: `Content-Type` ⇒
               suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpResponse.entity.contentType` instead.")
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
 
-            case `Transfer-Encoding`(_) | Date(_) ⇒
+            case Date(_) ⇒
               suppressionWarning(log, head)
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
+
+            case x: `Transfer-Encoding` ⇒
+              x.withChunkedPeeled match {
+                case None ⇒
+                  suppressionWarning(log, head)
+                  renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
+                case Some(te) ⇒
+                  // if the user applied some custom transfer-encoding we need to keep the header
+                  render(if (mustRenderTransferEncodingChunkedHeader) te.withChunked else te)
+                  renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen = true)
+              }
 
             case x: `Connection` ⇒
               val connectionHeader = if (connHeader eq null) x else Connection(x.tokens ++ connHeader.tokens)
-              renderHeaders(tail, alwaysClose, connectionHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connectionHeader, serverHeaderSeen, transferEncodingSeen)
 
             case x: `Server` ⇒
               render(x)
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen = true)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen = true, transferEncodingSeen)
 
             case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
               (x is "date") || (x is "server") || (x is "connection") ⇒
               suppressionWarning(log, x, "illegal RawHeader")
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
 
             case x ⇒
               render(x)
-              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
           }
 
           case Nil ⇒
@@ -113,6 +128,8 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               case `HTTP/1.1` if close  ⇒ r ~~ Connection ~~ CloseBytes ~~ CrLf
               case _                    ⇒ // no need for rendering
             }
+            if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
+              r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
 
       def byteStrings(entityBytes: ⇒ Publisher[ByteString]): List[Publisher[ByteString]] =
@@ -145,8 +162,6 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             else {
               renderHeaders(headers.toList)
               renderEntityContentType(r, entity)
-              if (!entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD)
-                r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
               r ~~ CrLf
               byteStrings(Flow(chunks).transform("renderChunks", () ⇒ new ChunkTransformer).toPublisher())
             }

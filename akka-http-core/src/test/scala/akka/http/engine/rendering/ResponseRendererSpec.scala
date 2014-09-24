@@ -31,8 +31,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
   implicit val materializer = FlowMaterializer()
 
   "The response preparation logic should properly render" - {
-    "a response with no body" - {
-      "with status 200, no headers and no body" in new TestSetup() {
+    "a response with no body," - {
+      "status 200 and no headers" in new TestSetup() {
         HttpResponse(200) should renderTo {
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
@@ -43,7 +43,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         }
       }
 
-      "with status 304, a few headers and no body" in new TestSetup() {
+      "status 304 and a few headers" in new TestSetup() {
         HttpResponse(304, List(RawHeader("X-Fancy", "of course"), RawHeader("Age", "0"))) should renderTo {
           """HTTP/1.1 304 Not Modified
             |X-Fancy: of course
@@ -55,7 +55,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |"""
         }
       }
-      "with a custom status code, no headers and no body" in new TestSetup() {
+      "a custom status code and no headers" in new TestSetup() {
         HttpResponse(ServerOnTheMove) should renderTo {
           """HTTP/1.1 330 Server on the move
             |Server: akka-http/1.0.0
@@ -83,8 +83,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       }
     }
 
-    "a response with a Strict body" - {
-      "with status 400, a few headers and a body" in new TestSetup() {
+    "a response with a Strict body," - {
+      "status 400 and a few headers" in new TestSetup() {
         HttpResponse(400, List(RawHeader("Age", "30"), Connection("Keep-Alive")), "Small f*ck up overhere!") should renderTo {
           """HTTP/1.1 400 Bad Request
             |Age: 30
@@ -97,7 +97,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         }
       }
 
-      "with status 400, a few headers and a body with an explicitly suppressed Content Type header" in new TestSetup() {
+      "status 400, a few headers and a body with an explicitly suppressed Content Type header" in new TestSetup() {
         HttpResponse(400, List(RawHeader("Age", "30"), Connection("Keep-Alive")),
           HttpEntity(contentType = ContentTypes.NoContentType, "Small f*ck up overhere!")) should renderTo {
             """HTTP/1.1 400 Bad Request
@@ -109,9 +109,23 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Small f*ck up overhere!"""
           }
       }
+
+      "status 200 and a custom Transfer-Encoding header" in new TestSetup() {
+        HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+          entity = "All good") should renderTo {
+            """HTTP/1.1 200 OK
+              |Transfer-Encoding: fancy
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Content-Type: text/plain; charset=UTF-8
+              |Content-Length: 8
+              |
+              |All good"""
+          }
+      }
     }
-    "a response with a Default (streamed with explicit content-length body" - {
-      "with status 400, a few headers and a body" in new TestSetup() {
+    "a response with a Default (streamed with explicit content-length body," - {
+      "status 400 and a few headers" in new TestSetup() {
         HttpResponse(400, List(RawHeader("Age", "30"), Connection("Keep-Alive")),
           entity = Default(contentType = ContentTypes.`text/plain(UTF-8)`, 23, publisher(ByteString("Small f*ck up overhere!")))) should renderTo {
             """HTTP/1.1 400 Bad Request
@@ -124,14 +138,14 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
               |Small f*ck up overhere!"""
           }
       }
-      "with one chunk and incorrect (too large) Content-Length" in new TestSetup() {
+      "one chunk and incorrect (too large) Content-Length" in new TestSetup() {
         the[RuntimeException] thrownBy {
           HttpResponse(200, entity = Default(ContentTypes.`application/json`, 10,
             publisher(ByteString("body123")))) should renderTo("")
         } should have message "HTTP message had declared Content-Length 10 but entity chunk stream amounts to 3 bytes less"
       }
 
-      "with one chunk and incorrect (too small) Content-Length" in new TestSetup() {
+      "one chunk and incorrect (too small) Content-Length" in new TestSetup() {
         the[RuntimeException] thrownBy {
           HttpResponse(200, entity = Default(ContentTypes.`application/json`, 5,
             publisher(ByteString("body123")))) should renderTo("")
@@ -198,8 +212,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
-            |Content-Type: text/plain; charset=UTF-8
             |Transfer-Encoding: chunked
+            |Content-Type: text/plain; charset=UTF-8
             |
             |7
             |Yahoooo
@@ -216,8 +230,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
           """HTTP/1.1 200 OK
             |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
-            |Content-Type: text/plain; charset=UTF-8
             |Transfer-Encoding: chunked
+            |Content-Type: text/plain; charset=UTF-8
             |
             |7;key=value;another="tl;dr"
             |body123
@@ -228,9 +242,26 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |"""
         }
       }
+
+      "with a custom Transfer-Encoding header" in new TestSetup() {
+        HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+          entity = Chunked(ContentTypes.`text/plain(UTF-8)`, publisher("Yahoooo"))) should renderTo {
+            """HTTP/1.1 200 OK
+              |Transfer-Encoding: fancy, chunked
+              |Server: akka-http/1.0.0
+              |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Content-Type: text/plain; charset=UTF-8
+              |
+              |7
+              |Yahoooo
+              |0
+              |
+              |"""
+          }
+      }
     }
 
-    "chunked responses with HTTP/1.0 requests" - {
+    "chunked responses to a HTTP/1.0 request" - {
       "with two chunks" in new TestSetup() {
         ResponseRenderingContext(
           requestProtocol = HttpProtocols.`HTTP/1.0`,
