@@ -5,12 +5,13 @@
 package akka.http.server
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
 import akka.stream.FlowMaterializer
 import akka.http.marshalling.ToResponseMarshallable
-import akka.http.util.{ Deferrable, identityFunc }
+import akka.http.util.{ FastFuture, identityFunc }
 import akka.http.model._
+import FastFuture._
 
 /**
  * INTERNAL API
@@ -21,7 +22,7 @@ private[http] class RequestContextImpl(
   val executionContext: ExecutionContext,
   val flowMaterializer: FlowMaterializer,
   val log: LoggingAdapter,
-  finish: RouteResult ⇒ Deferrable[RouteResult] = Deferrable(_)) extends RequestContext {
+  finish: RouteResult ⇒ Future[RouteResult] = FastFuture.successful) extends RequestContext {
 
   def this(request: HttpRequest, log: LoggingAdapter)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
     this(request, request.uri.path, ec, fm, log)
@@ -31,19 +32,19 @@ private[http] class RequestContextImpl(
                   log: LoggingAdapter): RequestContext =
     copy(executionContext = executionContext, flowMaterializer = flowMaterializer, log = log)
 
-  override def complete(trm: ToResponseMarshallable): Deferrable[RouteResult] =
+  override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
-      .map(res ⇒ RouteResult.complete(res))(executionContext)
-      .recover {
+      .fast.map(res ⇒ RouteResult.complete(res))(executionContext)
+      .fast.recover {
         case RejectionError(rej) ⇒ RouteResult.rejected(rej :: Nil)
         case error               ⇒ RouteResult.failure(error)
       }(executionContext)
-      .flatMap(finish)(executionContext)
+      .fast.flatMap(finish)(executionContext)
 
-  override def reject(rejections: Rejection*): Deferrable[RouteResult] =
+  override def reject(rejections: Rejection*): Future[RouteResult] =
     finish(RouteResult.rejected(rejections.toList))
 
-  override def fail(error: Throwable): Deferrable[RouteResult] =
+  override def fail(error: Throwable): Future[RouteResult] =
     finish(RouteResult.failure(error))
 
   override def withRequest(req: HttpRequest): RequestContext =
@@ -64,8 +65,8 @@ private[http] class RequestContextImpl(
   override def withRouteResponseMappedPF(pf: PartialFunction[RouteResult, RouteResult]): RequestContext =
     withRouteResponseMapped(pf.applyOrElse(_, identityFunc[RouteResult]))
 
-  override def withRouteResponseFlatMapped(f: RouteResult ⇒ Deferrable[RouteResult]): RequestContext =
-    copy(finish = rr ⇒ f(rr).flatMap(finish)(executionContext))
+  override def withRouteResponseFlatMapped(f: RouteResult ⇒ Future[RouteResult]): RequestContext =
+    copy(finish = rr ⇒ f(rr).fast.flatMap(finish)(executionContext))
 
   override def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext =
     withRouteResponseMappedPF {
@@ -83,21 +84,21 @@ private[http] class RequestContextImpl(
       case RouteResult.Rejected(rejs) ⇒ RouteResult.rejected(f(rejs))
     }
 
-  override def withRejectionHandling(f: List[Rejection] ⇒ Deferrable[RouteResult]): RequestContext =
+  override def withRejectionHandling(f: List[Rejection] ⇒ Future[RouteResult]): RequestContext =
     withRouteResponseHandling {
       case RouteResult.Rejected(rejs) ⇒
         // `finish` is *not* chained in here, because the user already applied it when creating the result of f
         f(rejs)
     }
 
-  override def withExceptionHandling(pf: PartialFunction[Throwable, Deferrable[RouteResult]]): RequestContext =
+  override def withExceptionHandling(pf: PartialFunction[Throwable, Future[RouteResult]]): RequestContext =
     withRouteResponseHandling {
       case RouteResult.Failure(error) if pf isDefinedAt error ⇒
         // `finish` is *not* chained in here, because the user already applied it when creating the result of pf
         pf(error)
     }
 
-  def withRouteResponseHandling(pf: PartialFunction[RouteResult, Deferrable[RouteResult]]): RequestContext =
+  def withRouteResponseHandling(pf: PartialFunction[RouteResult, Future[RouteResult]]): RequestContext =
     copy(finish = pf.applyOrElse(_, finish))
 
   override def withContentNegotiationDisabled: RequestContext =
@@ -108,6 +109,6 @@ private[http] class RequestContextImpl(
                    executionContext: ExecutionContext = executionContext,
                    flowMaterializer: FlowMaterializer = flowMaterializer,
                    log: LoggingAdapter = log,
-                   finish: RouteResult ⇒ Deferrable[RouteResult] = finish) =
+                   finish: RouteResult ⇒ Future[RouteResult] = finish) =
     new RequestContextImpl(request, unmatchedPath, executionContext, flowMaterializer, log, finish)
 }

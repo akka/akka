@@ -12,6 +12,7 @@ import akka.stream.{ FlattenStrategy, FlowMaterializer }
 import akka.stream.scaladsl.Flow
 import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.actorSystem
+import akka.http.util.FastFuture._
 import akka.http.model._
 import MediaTypes._
 
@@ -47,7 +48,7 @@ trait MultipartMarshallers {
   implicit def multipartFormDataMarshaller(implicit mcm: ToEntityMarshaller[MultipartContent],
                                            ec: ExecutionContext): ToEntityMarshaller[MultipartFormData] =
     Marshaller { value ⇒
-      mcm(MultipartContent(value.parts)) map {
+      mcm(MultipartContent(value.parts)).fast.map {
         case Marshalling.WithOpenCharset(mt, marshal) ⇒
           val mediaType = `multipart/form-data` withBoundary mt.params("boundary")
           Marshalling.WithOpenCharset(mediaType, cs ⇒ MediaTypeOverrider.forEntity(marshal(cs), mediaType))

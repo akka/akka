@@ -5,10 +5,11 @@
 package akka.http.marshalling
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ Future, ExecutionContext }
 import scala.xml.NodeSeq
-import akka.http.util.Deferrable
+import akka.http.util.FastFuture
 import akka.http.model._
+import FastFuture._
 import MediaTypes._
 
 case class Marshallers[-A, +B](marshallers: immutable.Seq[Marshaller[A, B]]) {
@@ -39,10 +40,10 @@ sealed abstract class SingleMarshallerMarshallers {
 }
 
 sealed trait Marshaller[-A, +B] { outer ⇒
-  def apply(value: A): Deferrable[Marshalling[B]]
+  def apply(value: A): Future[Marshalling[B]]
 
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshaller[A, C] =
-    Marshaller[A, C](value ⇒ outer(value) map (_ map f))
+    Marshaller[A, C](value ⇒ outer(value).fast.map(_ map f))
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
@@ -51,7 +52,7 @@ sealed trait Marshaller[-A, +B] { outer ⇒
   def wrap[C, D >: B](mediaType: MediaType)(f: C ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[D]): Marshaller[C, D] =
     Marshaller { value ⇒
       import Marshalling._
-      outer(f(value)) map {
+      outer(f(value)).fast.map {
         case WithFixedCharset(_, cs, marshal) ⇒ WithFixedCharset(mediaType, cs, () ⇒ mto(marshal(), mediaType))
         case WithOpenCharset(_, marshal)      ⇒ WithOpenCharset(mediaType, cs ⇒ mto(marshal(cs), mediaType))
         case Opaque(marshal)                  ⇒ Opaque(() ⇒ mto(marshal(), mediaType))
@@ -67,19 +68,19 @@ object Marshaller
   with PredefinedToResponseMarshallers
   with PredefinedToRequestMarshallers {
 
-  def apply[A, B](f: A ⇒ Deferrable[Marshalling[B]]): Marshaller[A, B] =
+  def apply[A, B](f: A ⇒ Future[Marshalling[B]]): Marshaller[A, B] =
     new Marshaller[A, B] {
       def apply(value: A) = f(value)
     }
 
   def withFixedCharset[A, B](mediaType: MediaType, charset: HttpCharset)(marshal: A ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Deferrable(Marshalling.WithFixedCharset(mediaType, charset, () ⇒ marshal(value))) }
+    Marshaller { value ⇒ FastFuture.successful(Marshalling.WithFixedCharset(mediaType, charset, () ⇒ marshal(value))) }
 
   def withOpenCharset[A, B](mediaType: MediaType)(marshal: (A, HttpCharset) ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Deferrable(Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset))) }
+    Marshaller { value ⇒ FastFuture.successful(Marshalling.WithOpenCharset(mediaType, charset ⇒ marshal(value, charset))) }
 
   def opaque[A, B](marshal: A ⇒ B): Marshaller[A, B] =
-    Marshaller { value ⇒ Deferrable(Marshalling.Opaque(() ⇒ marshal(value))) }
+    Marshaller { value ⇒ FastFuture.successful(Marshalling.Opaque(() ⇒ marshal(value))) }
 }
 
 /**

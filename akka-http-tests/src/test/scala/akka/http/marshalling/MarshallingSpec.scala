@@ -5,6 +5,7 @@
 package akka.http.marshalling
 
 import scala.collection.immutable.ListMap
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
@@ -153,7 +154,7 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   override def afterAll() = system.shutdown()
 
   def marshal[T: ToEntityMarshallers](value: T): HttpEntity.Strict =
-    Marshal(value).to[HttpEntity].await(1.second).toStrict(1.second).await(1.second)
+    Await.result(Await.result(Marshal(value).to[HttpEntity], 1.second).toStrict(1.second), 1.second)
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)

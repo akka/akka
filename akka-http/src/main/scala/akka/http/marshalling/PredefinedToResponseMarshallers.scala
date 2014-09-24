@@ -6,6 +6,7 @@ package akka.http.marshalling
 
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
+import akka.http.util.FastFuture._
 import akka.http.model.MediaTypes._
 import akka.http.model._
 
@@ -33,7 +34,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T],
                                                    ec: ExecutionContext): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
-    Marshaller { case (status, headers, value) ⇒ mt(value).map(_ map (HttpResponse(status, headers, _))) }
+    Marshaller { case (status, headers, value) ⇒ mt(value).fast.map(_ map (HttpResponse(status, headers, _))) }
 }
 
 trait LowPriorityToResponseMarshallerImplicits {

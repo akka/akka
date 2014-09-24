@@ -6,6 +6,7 @@ package akka.http.testkit
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
@@ -13,11 +14,12 @@ import org.scalatest.Suite
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
 import akka.http.client.RequestBuilding
-import akka.http.util.Deferrable
+import akka.http.util.FastFuture
 import akka.http.server._
 import akka.http.unmarshalling._
 import akka.http.model._
 import headers.Host
+import FastFuture._
 
 trait RouteTest extends RequestBuilding with RouteTestResultComponent {
   this: TestFrameworkInterface ⇒
@@ -57,11 +59,11 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $response"
-    Unmarshal(entity).to[T].recover[T] { case error ⇒ failTest(msg(error)) }.await(timeout)
+    Await.result(Unmarshal(entity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
   def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $response"
-    Unmarshal(response).to[T].recover[T] { case error ⇒ failTest(msg(error)) }.await(timeout)
+    Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
   def contentType: ContentType = entity.contentType
   def mediaType: MediaType = contentType.mediaType
@@ -116,7 +118,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
     }
     implicit def injectIntoRoute(implicit timeout: RouteTestTimeout, setup: RoutingSetup,
                                  defaultHostInfo: DefaultHostInfo) =
-      new TildeArrow[RequestContext, Deferrable[RouteResult]] {
+      new TildeArrow[RequestContext, Future[RouteResult]] {
         type Out = RouteTestResult
         def apply(request: HttpRequest, route: Route): Out = {
           val routeTestResult = new RouteTestResult(timeout.duration)(setup.materializer)
@@ -133,7 +135,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
           val semiSealedRoute = // sealed for exceptions but not for rejections
             Directives.handleExceptions(sealedExceptionHandler) { route }
           val deferrableRouteResult = semiSealedRoute(ctx)
-          deferrableRouteResult.foreach(routeTestResult.handleResult)(setup.executor)
+          deferrableRouteResult.fast.foreach(routeTestResult.handleResult)(setup.executor)
           routeTestResult
         }
       }

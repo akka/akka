@@ -4,8 +4,10 @@
 
 package akka.http.marshalling
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ Matchers, FreeSpec }
+import akka.http.util.FastFuture._
 import akka.http.model.parser.HeaderParser
 import akka.http.model._
 import headers._
@@ -127,10 +129,9 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
         case ct @ ContentType(mt, Some(cs)) ⇒ Marshaller.withFixedCharset(mt, cs)((s: String) ⇒ HttpEntity(ct, s))
         case ContentType(mt, None)          ⇒ Marshaller.withOpenCharset(mt)((s: String, cs) ⇒ HttpEntity(ContentType(mt, cs), s))
       }
-      Marshal("foo").toResponseFor(request)
-        .map(response ⇒ Some(response.entity.contentType))
-        .recover { case _: Marshal.UnacceptableResponseContentTypeException ⇒ None }
-        .await(1.second)
+      Await.result(Marshal("foo").toResponseFor(request)
+        .fast.map(response ⇒ Some(response.entity.contentType))
+        .fast.recover { case _: Marshal.UnacceptableResponseContentTypeException ⇒ None }, 1.second)
     }
   }
 
