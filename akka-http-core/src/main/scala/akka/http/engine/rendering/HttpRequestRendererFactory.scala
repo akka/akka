@@ -46,45 +46,54 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
       def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
       @tailrec def renderHeaders(remaining: List[HttpHeader], hostHeaderSeen: Boolean = false,
-                                 userAgentSeen: Boolean = false): Unit =
+                                 userAgentSeen: Boolean = false, transferEncodingSeen: Boolean = false): Unit =
         remaining match {
           case head :: tail ⇒ head match {
             case x: `Content-Length` ⇒
               suppressionWarning(log, x, "explicit `Content-Length` header is not allowed. Use the appropriate HttpEntity subtype.")
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
             case x: `Content-Type` ⇒
               suppressionWarning(log, x, "explicit `Content-Type` header is not allowed. Set `HttpRequest.entity.contentType` instead.")
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
-            case `Transfer-Encoding`(_) ⇒
-              suppressionWarning(log, head)
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+            case x: `Transfer-Encoding` ⇒
+              x.withChunkedPeeled match {
+                case None ⇒
+                  suppressionWarning(log, head)
+                  renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
+                case Some(te) ⇒
+                  // if the user applied some custom transfer-encoding we need to keep the header
+                  render(if (entity.isChunked && !entity.isKnownEmpty) te.withChunked else te)
+                  renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen = true)
+              }
 
             case x: `Host` ⇒
               render(x)
-              renderHeaders(tail, hostHeaderSeen = true, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen = true, userAgentSeen, transferEncodingSeen)
 
             case x: `User-Agent` ⇒
               render(x)
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen = true)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen = true, transferEncodingSeen)
 
             case x: `Raw-Request-URI` ⇒ // we never render this header
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
             case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
               (x is "host") || (x is "user-agent") ⇒
               suppressionWarning(log, x, "illegal RawHeader")
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
 
             case x ⇒
               render(x)
-              renderHeaders(tail, hostHeaderSeen, userAgentSeen)
+              renderHeaders(tail, hostHeaderSeen, userAgentSeen, transferEncodingSeen)
           }
 
           case Nil ⇒
             if (!hostHeaderSeen) r ~~ Host(ctx.serverAddress) ~~ CrLf
             if (!userAgentSeen && userAgentHeader.isDefined) r ~~ userAgentHeader.get ~~ CrLf
+            if (entity.isChunked && !entity.isKnownEmpty && !transferEncodingSeen)
+              r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
 
       def renderContentLength(contentLength: Long): Unit = {
@@ -105,10 +114,10 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength)
             renderByteStrings(r,
-              Flow(data).transform("checkContentLenght", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher())
+              Flow(data).transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)).toPublisher())
 
           case HttpEntity.Chunked(_, chunks) ⇒
-            r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf ~~ CrLf
+            r ~~ CrLf
             renderByteStrings(r, Flow(chunks).transform("chunkTransform", () ⇒ new ChunkTransformer).toPublisher())
         }
 
