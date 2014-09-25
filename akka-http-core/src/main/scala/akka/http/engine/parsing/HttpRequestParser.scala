@@ -40,18 +40,20 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
 
   def parseMethod(input: ByteString, cursor: Int): Int = {
     @tailrec def parseCustomMethod(ix: Int = 0, sb: JStringBuilder = new JStringBuilder(16)): Int =
-      if (ix < 16) { // hard-coded maximum custom method length
+      if (ix < maxMethodLength) {
         byteChar(input, cursor + ix) match {
           case ' ' ⇒
-            HttpMethods.getForKey(sb.toString) match {
+            customMethods(sb.toString) match {
               case Some(m) ⇒
                 method = m
                 cursor + ix + 1
-              case None ⇒ parseCustomMethod(Int.MaxValue, sb)
+              case None ⇒ throw new ParsingException(NotImplemented, ErrorInfo("Unsupported HTTP method", sb.toString))
             }
           case c ⇒ parseCustomMethod(ix + 1, sb.append(c))
         }
-      } else throw new ParsingException(NotImplemented, ErrorInfo("Unsupported HTTP method", sb.toString))
+      } else throw new ParsingException(BadRequest,
+        ErrorInfo("Unsupported HTTP method", s"HTTP method too long (started with '${sb.toString}'). " +
+          "Increase `akka.http.server.parsing.max-method-length` to support HTTP methods with more characters."))
 
     @tailrec def parseMethod(meth: HttpMethod, ix: Int = 1): Int =
       if (ix == meth.value.length)

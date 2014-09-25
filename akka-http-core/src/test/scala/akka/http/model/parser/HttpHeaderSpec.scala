@@ -17,7 +17,8 @@ import HttpEncodings._
 import HttpMethods._
 
 class HttpHeaderSpec extends FreeSpec with Matchers {
-  val `application/vnd.spray` = MediaTypes.register(MediaType.custom("application/vnd.spray"))
+  val `application/vnd.spray` = MediaType.custom("application/vnd.spray")
+  val PROPFIND = HttpMethod.custom("PROPFIND")
 
   "The HTTP header model must correctly parse and render the headers" - {
 
@@ -49,6 +50,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Accept-Charset`(`ISO-8859-1`, `UTF-16` withQValue 0, HttpCharsetRange.`*` withQValue 0.8).renderedTo(
           "ISO-8859-1, UTF-16;q=0.0, *;q=0.8")
       `Accept-Charset`(`UTF-16` withQValue 0.234567).toString shouldEqual "Accept-Charset: UTF-16;q=0.235"
+      "Accept-Charset: UTF-16, unsupported42" =!= `Accept-Charset`(`UTF-16`, HttpCharset.custom("unsupported42"))
     }
 
     "Access-Control-Allow-Credentials" in {
@@ -61,6 +63,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Access-Control-Allow-Methods" in {
       "Access-Control-Allow-Methods: GET, POST" =!= `Access-Control-Allow-Methods`(GET, POST)
+      "Access-Control-Allow-Methods: GET, PROPFIND, POST" =!= `Access-Control-Allow-Methods`(GET, PROPFIND, POST)
     }
 
     "Access-Control-Allow-Origin" in {
@@ -85,6 +88,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Access-Control-Request-Method" in {
       "Access-Control-Request-Method: POST" =!= `Access-Control-Request-Method`(POST)
+      "Access-Control-Request-Method: PROPFIND" =!= `Access-Control-Request-Method`(PROPFIND)
     }
 
     "Accept-Ranges" in {
@@ -113,6 +117,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     "Allow" in {
       "Allow: " =!= Allow()
       "Allow: GET, PUT" =!= Allow(GET, PUT)
+      "Allow: GET, PROPFIND, PUT" =!= Allow(GET, PROPFIND, PUT)
     }
 
     "Authorization" in {
@@ -177,7 +182,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Content-Type: text/xml; version=3; charset=windows-1252" =!=
         `Content-Type`(ContentType(MediaType.custom("text", "xml", params = Map("version" -> "3")), HttpCharsets.getForKey("windows-1252")))
       "Content-Type: text/plain; charset=fancy-pants" =!=
-        ErrorInfo("Illegal HTTP header 'Content-Type': Unsupported charset", "fancy-pants")
+        `Content-Type`(ContentType(`text/plain`, HttpCharset.custom("fancy-pants")))
       "Content-Type: multipart/mixed; boundary=ABC123" =!=
         `Content-Type`(ContentType(`multipart/mixed` withBoundary "ABC123"))
       "Content-Type: multipart/mixed; boundary=\"ABC/123\"" =!=
