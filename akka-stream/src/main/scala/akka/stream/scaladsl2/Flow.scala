@@ -22,22 +22,7 @@ import akka.stream.OverflowStrategy
  * operations are presented because the concrete type of Flow (i.e. whether
  * it has a [[Source]] or a [[Sink]]) determines what is available.
  */
-sealed trait Flow
-
-protected[scaladsl2] object FlowOps {
-  private case object TakeWithinTimerKey
-  private case object DropWithinTimerKey
-  private case object GroupedWithinTimerKey
-
-  private val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
-    override def onNext(elem: Any) = Nil
-    override def isComplete = true
-  }
-
-  private val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
-    override def onNext(elem: Any) = List(elem)
-  }
-}
+sealed abstract class Flow
 
 /**
  * This type describes a flow that can be used as a source. In contrast to
@@ -45,7 +30,7 @@ protected[scaladsl2] object FlowOps {
  * into a ProcessorFlow. This restriction allows the omission of the input
  * type parameter.
  */
-sealed trait SourceFlow[+T] extends FlowOps[Nothing, T] with Flow {
+sealed trait SourceFlow[+T] extends Flow with FlowOps[Nothing, T] {
   type Repr[-I, +O] <: SourceFlow[O]
 
   /**
@@ -101,6 +86,21 @@ sealed trait SinkFlow[-T] extends Flow {
    * useful when writing a [[FlowMaterializer]].
    */
   def ops: List[AstNode]
+}
+
+protected[scaladsl2] object FlowOps {
+  private case object TakeWithinTimerKey
+  private case object DropWithinTimerKey
+  private case object GroupedWithinTimerKey
+
+  private val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = Nil
+    override def isComplete = true
+  }
+
+  private val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+    override def onNext(elem: Any) = List(elem)
+  }
 }
 
 /**
