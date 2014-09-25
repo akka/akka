@@ -4,16 +4,17 @@
 
 package akka.http
 
-import language.implicitConversions
 import java.nio.charset.Charset
-import com.typesafe.config.Config
-import org.reactivestreams.Publisher
-import scala.util.matching.Regex
-import akka.event.LoggingAdapter
-import akka.util.ByteString
+
 import akka.actor._
-import akka.stream.scaladsl.Flow
-import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
+import akka.event.LoggingAdapter
+import akka.stream.scaladsl2.{ ProcessorFlow, FlowOps, FlattenStrategy, FlowWithSource }
+import akka.stream.Transformer
+import akka.util.ByteString
+import com.typesafe.config.Config
+
+import scala.language.implicitConversions
+import scala.util.matching.Regex
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -31,15 +32,20 @@ package object util {
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
 
-  private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
-    def headAndTail(implicit fm: FlowMaterializer): Flow[(T, Publisher[T])] =
-      underlying.map { p ⇒
-        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toPublisher()
-      }.flatten(FlattenStrategy.Concat())
+  private[http] implicit class FlowWithSourceHeadAndTail[A, T](val underlying: FlowWithSource[A, FlowWithSource[T, T]]) extends AnyVal {
+    def headAndTail: FlowWithSource[A, (T, FlowWithSource[T, T])] =
+      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+        .flatten(FlattenStrategy.concat)
   }
 
-  private[http] implicit class FlowWithPrintEvent[T](val underlying: Flow[T]) {
-    def printEvent(marker: String): Flow[T] =
+  private[http] implicit class FlowProcessorWithHeadAndTail[A, T](val underlying: ProcessorFlow[A, FlowWithSource[T, T]]) extends AnyVal {
+    def headAndTail: ProcessorFlow[A, (T, FlowWithSource[T, T])] =
+      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+        .flatten(FlattenStrategy.concat)
+  }
+
+  private[http] implicit class FlowWithPrintEvent[T](val underlying: FlowWithSource[_, T]) {
+    def printEvent(marker: String): FlowWithSource[_, T] =
       underlying.transform("transform",
         () ⇒ new Transformer[T, T] {
           def onNext(element: T) = {

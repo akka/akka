@@ -7,7 +7,7 @@ package akka.http.server
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.FlowMaterializer
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.util.{ Deferrable, identityFunc }
 import akka.http.model._

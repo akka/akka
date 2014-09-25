@@ -7,8 +7,7 @@ package akka.http.unmarshalling
 import java.io.{ ByteArrayInputStream, InputStreamReader }
 import scala.concurrent.ExecutionContext
 import scala.xml.{ XML, NodeSeq }
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FoldSink, FutureSink, FlowMaterializer }
 import akka.util.ByteString
 import akka.http.util.Deferrable
 import akka.http.model._
@@ -19,7 +18,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
   implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
     Unmarshaller { entity ⇒
       if (entity.isKnownEmpty) Deferrable(ByteString.empty)
-      else Deferrable(Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).toFuture())
+      else Deferrable(entity.dataBytes.runWithSink(FoldSink(ByteString.empty)(_ ++ _)))
     }
 
   implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,

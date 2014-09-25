@@ -7,7 +7,7 @@ package akka.http.server
 import scala.concurrent.ExecutionContext
 import akka.actor.{ ActorSystem, ActorContext }
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.FlowMaterializer
 import akka.http.model.HttpRequest
 import akka.http.Http
 

@@ -4,11 +4,11 @@
 
 package akka.http.engine.server
 
-import org.reactivestreams.Publisher
+import akka.stream.scaladsl2._
 import akka.event.LoggingAdapter
+import akka.util.ByteString
 import akka.stream.io.StreamTcp
-import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
-import akka.stream.scaladsl.{ Flow, Duct }
+import akka.stream.Transformer
 import akka.http.engine.parsing.HttpRequestParser
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse }
@@ -30,38 +30,48 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
   val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    val (applicationBypassSubscriber, applicationBypassPublisher) =
-      Duct[(RequestOutput, Publisher[RequestOutput])]
-        .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .build()
+    import FlowGraphImplicits._
 
-    val requestPublisher =
-      Flow(tcpConn.inputStream)
-        .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader))
-        // this will create extra single element `[MessageEnd]` substreams, that will
-        // be filtered out by the above `collect` for the applicationBypass and the
-        // below `collect` for the actual request handling
-        // TODO: replace by better combinator, maybe `splitAfter(_ == MessageEnd)`?
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .headAndTail
-        .broadcast(applicationBypassSubscriber)
-        .collect {
-          case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
-            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-            HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
-        }
-        .toPublisher()
+    val networkIn = PublisherSource(tcpConn.inputStream)
+    val networkOut = SubscriberSink(tcpConn.outputStream)
 
-    val responseSubscriber =
-      Duct[HttpResponse]
-        .merge(applicationBypassPublisher)
-        .transform("applyApplicationBypass", () ⇒ applyApplicationBypass)
-        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
-        .flatten(FlattenStrategy.concat)
-        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
-        .produceTo(tcpConn.outputStream)
+    val userIn = PublisherSink[HttpRequest]
+    val userOut = SubscriberSource[HttpResponse]
 
-    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
+    val pipeline = FlowGraph { implicit b ⇒
+      val bypassFanout = Broadcast[(RequestOutput, FlowWithSource[RequestOutput, RequestOutput])]("bypassFanout")
+      val bypassFanin = Merge[Any]("merge")
+
+      val rootParsePipeline =
+        FlowFrom[ByteString]
+          .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader))
+          .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
+          .headAndTail
+
+      val rendererPipeline =
+        FlowFrom[Any]
+          .transform("applyApplicationBypass", () ⇒ applyApplicationBypass)
+          .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+          .flatten(FlattenStrategy.concat)
+          .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
+
+      val x = FlowFrom[(RequestOutput, FlowWithSource[RequestOutput, RequestOutput])].collect {
+        case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
+          val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
+          HttpRequest(method, effectiveUri, headers, createEntity(entityParts), protocol)
+      }
+
+      val bypass =
+        FlowFrom[(RequestOutput, FlowWithSource[RequestOutput, RequestOutput])]
+          .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
+
+      networkIn ~> rootParsePipeline ~> bypassFanout ~> x ~> userIn
+      bypassFanout ~> bypass ~> bypassFanin.asInstanceOf[JunctionInPort[MessageStart with RequestOutput]]
+      userOut ~> bypassFanin.asInstanceOf[JunctionInPort[HttpResponse]] ~> rendererPipeline ~> networkOut
+
+    }.run()
+
+    Http.IncomingConnection(tcpConn.remoteAddress, userIn.publisher(pipeline), userOut.subscriber(pipeline))
   }
 
   /**

@@ -4,12 +4,12 @@
 
 package akka.http.model.japi;
 
+import akka.stream.scaladsl2.FlowWithSource;
 import akka.util.ByteString;
-import org.reactivestreams.Publisher;
 
 /**
  * Represents an entity without a predetermined content-length to use in a BodyParts.
  */
 public abstract class HttpEntityIndefiniteLength implements BodyPartEntity {
-    public abstract Publisher<ByteString> data();
+    public abstract FlowWithSource<?, ByteString> data();
 }

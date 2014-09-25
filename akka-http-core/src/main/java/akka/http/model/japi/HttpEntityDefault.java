@@ -4,13 +4,13 @@
 
 package akka.http.model.japi;
 
+import akka.stream.scaladsl2.FlowWithSource;
 import akka.util.ByteString;
-import org.reactivestreams.Publisher;
 
 /**
  * The default entity type which has a predetermined length and a stream of data bytes.
  */
 public abstract class HttpEntityDefault implements BodyPartEntity, RequestEntity, ResponseEntity {
     public abstract long contentLength();
-    public abstract Publisher<ByteString> data();
+    public abstract FlowWithSource<?, ByteString> data();
 }
