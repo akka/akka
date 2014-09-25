@@ -4,7 +4,7 @@
 package akka.stream.scaladsl2
 
 import scala.language.existentials
-import scalax.collection.edge.LkDiEdge
+import scalax.collection.edge.{ LkBase, LkDiEdge }
 import scalax.collection.mutable.Graph
 import scalax.collection.immutable.{ Graph ⇒ ImmutableGraph }
 import org.reactivestreams.Subscriber
@@ -315,9 +315,11 @@ private[akka] object FlowGraphInternal {
   }
 
   // flow not part of equals/hashCode
-  case class EdgeLabel(qualifier: Int, inputPort: Int)(val flow: ProcessorFlow[Any, Any]) {
+  case class EdgeLabel(qualifier: Int, inputPort: Int)(val flow: ProcessorFlow[Any, Nothing]) {
     override def toString: String = flow.toString
   }
+
+  type EdgeType[T] = LkDiEdge[T] { type L1 = EdgeLabel }
 
 }
 
@@ -325,15 +327,19 @@ private[akka] object FlowGraphInternal {
  * Builder of [[FlowGraph]] and [[PartialFlowGraph]].
  * Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]) {
+class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) {
   import FlowGraphInternal._
 
-  private[akka] def this() = this(Graph.empty[FlowGraphInternal.Vertex, LkDiEdge])
+  private[akka] def this() = this(Graph.empty[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType])
 
-  private[akka] def this(immutableGraph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge]) =
-    this(Graph.from(edges = immutableGraph.edges.map(e ⇒ LkDiEdge(e.from.value, e.to.value)(e.label)).toIterable))
+  private[akka] def this(immutableGraph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) =
+    this({
+      val edges: Iterable[FlowGraphInternal.EdgeType[FlowGraphInternal.Vertex]] =
+        immutableGraph.edges.map(e ⇒ LkDiEdge(e.from.value, e.to.value)(e.label))
+      Graph.from(edges = edges)
+    })
 
-  private implicit val edgeFactory = scalax.collection.edge.LkDiEdge
+  private implicit val edgeFactory = scalax.collection.edge.LkDiEdge.asInstanceOf[LkBase.LkEdgeCompanion[EdgeType]]
 
   var edgeQualifier = graph.edges.size
 
@@ -391,7 +397,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
   private def addGraphEdge[In, Out](from: Vertex, to: Vertex, flow: ProcessorFlow[In, Out], portQualifier: Int): Unit = {
     if (edgeQualifier == Int.MaxValue) throw new IllegalArgumentException(s"Too many edges")
     val effectivePortQualifier = if (portQualifier == UnlabeledPort) edgeQualifier else portQualifier
-    val label = EdgeLabel(edgeQualifier, portQualifier)(flow.asInstanceOf[ProcessorFlow[Any, Any]])
+    val label = EdgeLabel(edgeQualifier, portQualifier)(flow.asInstanceOf[ProcessorFlow[Any, Nothing]])
     graph.addLEdge(from, to)(label)
     edgeQualifier += 1
   }
@@ -399,7 +405,6 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
   def attachSink[Out](token: UndefinedSink[Out], sink: Sink[Out]): this.type = {
     graph.find(token) match {
       case Some(existing) ⇒
-        require(existing.value.isInstanceOf[UndefinedSink[_]], s"Flow already attached to a sink [${existing.value}]")
         val edge = existing.incoming.head
         graph.remove(existing)
         graph.addLEdge(edge.from.value, SinkVertex(sink))(edge.label)
@@ -408,13 +413,36 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     this
   }
 
+  def attachSink[Out](token: UndefinedSink[Out], sink: SinkFlow[Out]): this.type = {
+    graph.find(token) match {
+      case Some(existing) ⇒
+        val edge = existing.incoming.head
+        graph.remove(existing)
+        val combined = ProcessorFlow(sink.prepend(edge.label.flow).ops)
+        graph.addLEdge(edge.from.value, SinkVertex(sink.output))(edge.label.copy()(combined))
+      case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSink [${token}]")
+    }
+    this
+  }
+
   def attachSource[In](token: UndefinedSource[In], source: Source[In]): this.type = {
     graph.find(token) match {
       case Some(existing) ⇒
-        require(existing.value.isInstanceOf[UndefinedSource[_]], s"Flow already attached to a source [${existing.value}]")
         val edge = existing.outgoing.head
         graph.remove(existing)
         graph.addLEdge(SourceVertex(source), edge.to.value)(edge.label)
+      case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSource [${token}]")
+    }
+    this
+  }
+
+  def attachSource[In](token: UndefinedSource[In], source: SourceFlow[In]): this.type = {
+    graph.find(token) match {
+      case Some(existing) ⇒
+        val edge = existing.outgoing.head
+        graph.remove(existing)
+        val combined = ProcessorFlow(source.append(edge.label.flow).ops)
+        graph.addLEdge(SourceVertex(source.input), edge.to.value)(edge.label.copy()(combined))
       case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSource [${token}]")
     }
     this
@@ -479,8 +507,10 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
   }
 
   //convert it to an immutable.Graph
-  private def immutableGraph(): ImmutableGraph[Vertex, LkDiEdge] =
-    ImmutableGraph.from(edges = graph.edges.map(e ⇒ LkDiEdge(e.from.value, e.to.value)(e.label)).toIterable)
+  private def immutableGraph(): ImmutableGraph[Vertex, FlowGraphInternal.EdgeType] = {
+    val edges = graph.edges.map(e ⇒ LkDiEdge(e.from.value, e.to.value)(e.label))
+    ImmutableGraph.from(edges = edges: Iterable[FlowGraphInternal.EdgeType[FlowGraphInternal.Vertex]])
+  }
 
   private def checkPartialBuildPreconditions(): Unit = {
     if (!cyclesAllowed) graph.findCycle match {
@@ -545,7 +575,7 @@ object FlowGraph {
    * Build a [[FlowGraph]] from scratch.
    */
   def apply(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
-    apply(ImmutableGraph.empty[FlowGraphInternal.Vertex, LkDiEdge])(block)
+    apply(ImmutableGraph.empty[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType])(block)
 
   /**
    * Continue building a [[FlowGraph]] from an existing `PartialFlowGraph`.
@@ -562,7 +592,7 @@ object FlowGraph {
   def apply(flowGraph: FlowGraph)(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
     apply(flowGraph.graph)(block)
 
-  private def apply(graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge])(block: FlowGraphBuilder ⇒ Unit): FlowGraph = {
+  private def apply(graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType])(block: FlowGraphBuilder ⇒ Unit): FlowGraph = {
     val builder = new FlowGraphBuilder(graph)
     block(builder)
     builder.build()
@@ -575,7 +605,7 @@ object FlowGraph {
  * Build a `FlowGraph` by starting with one of the `apply` methods in
  * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge]) {
+class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) {
   import FlowGraphInternal._
 
   /**
@@ -603,17 +633,17 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
             if (memo.visited(edge)) {
               memo
             } else {
-              val flow = edge.label.asInstanceOf[EdgeLabel].flow
+              val flow = edge.label.flow
 
               // returns the materialized sink, if any
               def connectToDownstream(publisher: Publisher[Any]): Option[(SinkWithKey[_, _], Any)] = {
                 val f = flow.withSource(PublisherSource(publisher))
                 edge.to.value match {
                   case SinkVertex(sink: SinkWithKey[_, _]) ⇒
-                    val mf = f.withSink(sink.asInstanceOf[Sink[Any]]).run()
+                    val mf = f.withSink(sink).run()
                     Some(sink -> mf.getSinkFor(sink))
                   case SinkVertex(sink) ⇒
-                    f.withSink(sink.asInstanceOf[Sink[Any]]).run()
+                    f.withSink(sink).run()
                     None
                   case _ ⇒
                     f.withSink(SubscriberSink(memo.downstreamSubscriber(edge))).run()
@@ -642,9 +672,9 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
                       materializer.materializeJunction[Any, Any](op, edge.from.inDegree, edge.from.outDegree)
                     // TODO: Check for gaps in port numbers
                     val edgeSubscribers =
-                      edge.from.incoming.toSeq.sortBy(_.label.asInstanceOf[EdgeLabel].inputPort).zip(subscribers)
+                      edge.from.incoming.toSeq.sortBy(_.label.inputPort).zip(subscribers)
                     val edgePublishers =
-                      edge.from.outgoing.toSeq.sortBy(_.label.asInstanceOf[EdgeLabel].inputPort).zip(publishers).toMap
+                      edge.from.outgoing.toSeq.sortBy(_.label.inputPort).zip(publishers).toMap
                     val publisher = edgePublishers(edge)
                     val materializedSink = connectToDownstream(publisher)
                     memo.copy(
@@ -687,7 +717,7 @@ object PartialFlowGraph {
    * Build a [[PartialFlowGraph]] from scratch.
    */
   def apply(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(ImmutableGraph.empty[FlowGraphInternal.Vertex, LkDiEdge])(block)
+    apply(ImmutableGraph.empty[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType])(block)
 
   /**
    * Continue building a [[PartialFlowGraph]] from an existing `PartialFlowGraph`.
@@ -701,7 +731,7 @@ object PartialFlowGraph {
   def apply(flowGraph: FlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
     apply(flowGraph.graph)(block)
 
-  private def apply(graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge])(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
+  private def apply(graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType])(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
     val builder = new FlowGraphBuilder(graph)
     block(builder)
     builder.partialBuild()
@@ -716,18 +746,18 @@ object PartialFlowGraph {
  * Build a `PartialFlowGraph` by starting with one of the `apply` methods in
  * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, LkDiEdge]) {
+class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) {
   import FlowGraphInternal._
 
   def undefinedSources: Set[UndefinedSource[_]] =
-    graph.nodes.collect {
-      case n if n.value.isInstanceOf[UndefinedSource[_]] ⇒ n.value.asInstanceOf[UndefinedSource[_]]
-    }(collection.breakOut)
+    graph.nodes.iterator.map(_.value).collect {
+      case n: UndefinedSource[_] ⇒ n
+    }.toSet
 
   def undefinedSinks: Set[UndefinedSink[_]] =
-    graph.nodes.collect {
-      case n if n.value.isInstanceOf[UndefinedSink[_]] ⇒ n.value.asInstanceOf[UndefinedSink[_]]
-    }(collection.breakOut)
+    graph.nodes.iterator.map(_.value).collect {
+      case n: UndefinedSink[_] ⇒ n
+    }.toSet
 
 }
 

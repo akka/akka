@@ -88,10 +88,10 @@ class FlowCompileSpec extends AkkaSpec {
     val openSource: FlowWithSink[Int, String] =
       FlowFrom[Int].map(_.toString).withSink(PublisherSink[String])
     "accept Source" in {
-      openSource.withSource(intSeq)
+      openSource.withSource(intSeq): RunnableFlow[Int, String]
     }
     "drop Sink" in {
-      openSource.withoutSink
+      openSource.withoutSink: ProcessorFlow[Int, String]
     }
     "not drop Source" in {
       "openSource.withoutSource" shouldNot compile
@@ -108,10 +108,10 @@ class FlowCompileSpec extends AkkaSpec {
     val openSink: FlowWithSource[Int, String] =
       FlowFrom(Seq(1, 2, 3)).map(_.toString)
     "accept Sink" in {
-      openSink.withSink(PublisherSink[String])
+      openSink.withSink(PublisherSink[String]): RunnableFlow[Int, String]
     }
     "drop Source" in {
-      openSink.withoutSource
+      openSink.withoutSource: ProcessorFlow[Int, String]
     }
     "not drop Sink" in {
       "openSink.withoutSink" shouldNot compile
@@ -131,16 +131,47 @@ class FlowCompileSpec extends AkkaSpec {
       closed.run()
     }
     "drop Source" in {
-      closed.withoutSource
+      closed.withoutSource: FlowWithSink[Int, String]
     }
     "drop Sink" in {
-      closed.withoutSink
+      closed.withoutSink: FlowWithSource[Int, String]
     }
     "not accept Source" in {
       "closed.withSource(intSeq)" shouldNot compile
     }
     "not accept Sink" in {
       "closed.ToFuture" shouldNot compile
+    }
+  }
+
+  "SourceFlow" should {
+    val source = FlowFrom(Seq(1, 2, 3)): SourceFlow[Int]
+    val sink = FlowFrom[Int].withSink(BlackholeSink)
+    "transform" in {
+      source.map(_.toString).filter(_.length < 5): SourceFlow[String]
+    }
+    "append" in {
+      source.append(FlowFrom[Int].map(_.toString)): SourceFlow[String]
+    }
+    "run" in {
+      source.append(sink): RunnableFlow[Nothing, Int]
+      source.append(sink: SinkFlow[Int]): RunnableFlow[Nothing, Any]
+      sink.prepend(source): RunnableFlow[Nothing, Int]
+      (sink: SinkFlow[Int]).prepend(source): RunnableFlow[Nothing, Any]
+    }
+  }
+
+  "SinkFlow" should {
+    val source = FlowFrom(Seq(1, 2, 3))
+    val sink = FlowFrom[Int].withSink(BlackholeSink): SinkFlow[Int]
+    "prepend" in {
+      sink.prepend(FlowFrom[String].map(Integer.parseInt(_))): SinkFlow[String]
+    }
+    "run" in {
+      source.append(sink): RunnableFlow[Int, Any]
+      (source: SourceFlow[Int]).append(sink): RunnableFlow[Nothing, Any]
+      sink.prepend(source): RunnableFlow[Int, Any]
+      sink.prepend(source: SourceFlow[Int]): RunnableFlow[Nothing, Any]
     }
   }
 
