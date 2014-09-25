@@ -31,7 +31,7 @@ class SerializabilitySpec extends WordSpec with Matchers {
       }
       "with accept-charset" in {
         HttpRequest().withHeaders(`Accept-Charset`(HttpCharsets.`UTF-16`)) should beSerializable
-        HttpRequest().withHeaders(`Accept-Charset`(HttpCharset.custom("utf8").get)) should beSerializable
+        HttpRequest().withHeaders(`Accept-Charset`(HttpCharset.custom("utf8"))) should beSerializable
       }
       "with accepted encodings" in {
         HttpRequest().withHeaders(`Accept-Encoding`(HttpEncodings.chunked)) should beSerializable

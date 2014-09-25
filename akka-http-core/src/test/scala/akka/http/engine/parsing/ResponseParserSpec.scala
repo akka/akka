@@ -34,7 +34,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   implicit val materializer = FlowMaterializer()
-  val ServerOnTheMove = StatusCodes.registerCustom(331, "Server on the move")
+  val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
 
   "The response parsing logic should" - {
     "properly parse" - {
@@ -56,6 +56,9 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "a response with a custom status code" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
+
         """HTTP/1.1 331 Server on the move
           |Content-Length: 0
           |
@@ -233,8 +236,9 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           Await.result(future, 250.millis)
       }
 
+    def parserSettings: ParserSettings = ParserSettings(system)
     def newParser(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(ParserSettings(system),
+      val parser = new HttpResponseParser(parserSettings,
         dequeueRequestMethodForNextResponse = () ⇒ requestMethod)()
       parser
     }
