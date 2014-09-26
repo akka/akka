@@ -4,8 +4,7 @@
 
 package akka.http.marshalling
 
-import scala.concurrent.ExecutionContext
-import akka.http.util.Deferrable
+import scala.concurrent.{ Future, ExecutionContext }
 import akka.http.model._
 
 /** Something that can later be marshalled into a response */
@@ -14,7 +13,7 @@ trait ToResponseMarshallable {
   def value: T
   implicit def marshaller: ToResponseMarshaller[T]
 
-  def apply(request: HttpRequest)(implicit ec: ExecutionContext): Deferrable[HttpResponse] =
+  def apply(request: HttpRequest)(implicit ec: ExecutionContext): Future[HttpResponse] =
     Marshal(value).toResponseFor(request)
 }
 
