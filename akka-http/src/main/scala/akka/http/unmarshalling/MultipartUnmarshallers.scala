@@ -46,7 +46,7 @@ trait MultipartUnmarshallers {
                   BodyPart(createEntity(entityParts), headers)
                 case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
               }.toPublisher()(fm)
-            Deferrable(create(bodyParts))
+            FastFuture.successful(create(bodyParts))
         }
       } else UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
     }

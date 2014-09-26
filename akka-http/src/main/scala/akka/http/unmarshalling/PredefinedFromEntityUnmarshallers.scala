@@ -10,7 +10,7 @@ import scala.xml.{ XML, NodeSeq }
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
 import akka.util.ByteString
-import akka.http.util.Deferrable
+import akka.http.util.FastFuture
 import akka.http.model._
 import MediaTypes._
 
@@ -18,8 +18,8 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
   implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
     Unmarshaller { entity ⇒
-      if (entity.isKnownEmpty) Deferrable(ByteString.empty)
-      else Deferrable(Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).toFuture())
+      if (entity.isKnownEmpty) FastFuture.successful(ByteString.empty)
+      else Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).toFuture()
     }
 
   implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,
@@ -53,7 +53,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
           case e: org.xml.sax.SAXNotRecognizedException ⇒ // property is not needed
         }
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), entity.contentType.charset.nioCharset)
-        Deferrable(XML.withSAXParser(parser).load(reader)) // blocking call! Ideally we'd have a `loadToFuture`
+        FastFuture.successful(XML.withSAXParser(parser).load(reader)) // blocking call! Ideally we'd have a `loadToFuture`
       } else UnmarshallingError.UnsupportedContentType(nodeSeqMediaTypes map (ContentTypeRange(_)))
     }
 }

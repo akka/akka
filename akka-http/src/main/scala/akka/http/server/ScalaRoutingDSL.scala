@@ -4,14 +4,13 @@
 
 package akka.http.server
 
-import akka.stream.FlowMaterializer
-
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Flow
-import akka.http.util.Deferrable
+import akka.http.util.FastFuture
 import akka.http.model.{ HttpRequest, HttpResponse }
 import akka.http.Http
+import FastFuture._
 
 /**
  * The main entry point into the Scala routing DSL.
@@ -24,7 +23,6 @@ trait ScalaRoutingDSL extends Directives {
     def withRoute(route: Route): R
     def withSyncHandler(handler: HttpRequest ⇒ HttpResponse): R
     def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): R
-    def withHandler(handler: HttpRequest ⇒ Deferrable[HttpResponse]): R
   }
 
   def handleConnections(bindingFuture: Future[Http.ServerBinding])(implicit ec: ExecutionContext, fm: FlowMaterializer,
@@ -33,7 +31,6 @@ trait ScalaRoutingDSL extends Directives {
       def withRoute(route: Route) = afterBinding(_ withRoute route)
       def withSyncHandler(handler: HttpRequest ⇒ HttpResponse) = afterBinding(_ withSyncHandler handler)
       def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]) = afterBinding(_ withAsyncHandler handler)
-      def withHandler(handler: HttpRequest ⇒ Deferrable[HttpResponse]) = afterBinding(_ withHandler handler)
 
       def afterBinding(f: Applicator[Unit] ⇒ Unit): Future[Unit] =
         bindingFuture.map(binding ⇒ f(handleConnections(binding)))
@@ -46,32 +43,29 @@ trait ScalaRoutingDSL extends Directives {
         run(routeRunner(route, _))
 
       def withSyncHandler(handler: HttpRequest ⇒ HttpResponse): Unit =
-        withHandler(request ⇒ Deferrable(handler(request)))
+        withAsyncHandler(request ⇒ FastFuture.successful(handler(request)))
 
       def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): Unit =
-        withHandler(request ⇒ Deferrable(handler(request)))
-
-      def withHandler(handler: HttpRequest ⇒ Deferrable[HttpResponse]): Unit =
         run(_ ⇒ handler)
 
-      private def run(f: RoutingSetup ⇒ HttpRequest ⇒ Deferrable[HttpResponse]): Unit =
+      private def run(f: RoutingSetup ⇒ HttpRequest ⇒ Future[HttpResponse]): Unit =
         Flow(binding.connectionStream).foreach {
           case connection @ Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             val setup = setupProvider(connection)
             setup.routingLog.log.debug("Accepted new connection from " + remoteAddress)
             val runner = f(setup)
             Flow(requestProducer)
-              .mapFuture(request ⇒ runner(request).toFuture)
+              .mapFuture(request ⇒ runner(request))
               .produceTo(responseConsumer)(setup.flowMaterializer)
         }
     }
   }
 
-  def routeRunner(route: Route, setup: RoutingSetup): HttpRequest ⇒ Deferrable[HttpResponse] = {
+  def routeRunner(route: Route, setup: RoutingSetup): HttpRequest ⇒ Future[HttpResponse] = {
     import setup._
     val sealedRoute = sealRoute(route)(setup)
     request ⇒
-      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request))) map {
+      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request))).fast.map {
         case RouteResult.Complete(response) ⇒ response
         case RouteResult.Rejected(rejected) ⇒ throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
         case RouteResult.Failure(error)     ⇒ throw new IllegalStateException(s"Unhandled error '$error', unsealed ExceptionHandler?!")

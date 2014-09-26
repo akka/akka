@@ -24,6 +24,7 @@ import HttpProtocols._
 import StatusCodes._
 import HttpEntity._
 import ParserOutput.ParseError
+import FastFuture._
 
 class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -249,8 +250,8 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               }.map { x ⇒
                 Flow {
                   x match {
-                    case Right(response) ⇒ compactEntity(response.entity).map(x ⇒ Right(response.withEntity(x))).toFuture
-                    case Left(error)     ⇒ Future.successful(Left(error.info.formatPretty))
+                    case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
+                    case Left(error)     ⇒ FastFuture.successful(Left(error.info.formatPretty))
                   }
                 }.toPublisher()
               }
@@ -266,16 +267,16 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       parser
     }
 
-    private def compactEntity(entity: ResponseEntity): Deferrable[ResponseEntity] =
+    private def compactEntity(entity: ResponseEntity): Future[ResponseEntity] =
       entity match {
-        case x: HttpEntity.Chunked ⇒ compactEntityChunks(x.chunks).map(compacted ⇒ x.copy(chunks = compacted))
+        case x: HttpEntity.Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = compacted))
         case _                     ⇒ entity.toStrict(250.millis)
       }
 
-    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Deferrable[Publisher[ChunkStreamPart]] =
-      Deferrable(Flow(data).grouped(1000).toFuture())
-        .map(publisher(_: _*))
-        .recover { case _: NoSuchElementException ⇒ publisher() }
+    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
+      Flow(data).grouped(1000).toFuture()
+        .fast.map(publisher(_: _*))
+        .fast.recover { case _: NoSuchElementException ⇒ publisher() }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
 
