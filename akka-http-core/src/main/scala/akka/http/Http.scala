@@ -4,6 +4,7 @@
 
 package akka.http
 
+import java.io.Closeable
 import java.net.InetSocketAddress
 import com.typesafe.config.Config
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -109,10 +110,17 @@ object Http extends ExtensionKey[HttpExt] {
       apply(new InetSocketAddress(interface, port), backlog, options, serverSettings, materializerSettings)
   }
 
-  final case class ServerBinding(localAddress: InetSocketAddress,
-                                 connectionStream: Publisher[IncomingConnection]) extends model.japi.ServerBinding {
+  sealed abstract case class ServerBinding(localAddress: InetSocketAddress,
+                                           connectionStream: Publisher[IncomingConnection]) extends model.japi.ServerBinding {
     /** Java API */
     def getConnectionStream: Publisher[japi.IncomingConnection] = connectionStream.asInstanceOf[Publisher[japi.IncomingConnection]]
+  }
+
+  /** INTERNAL API */
+  private[http] final class InternalServerBinding(_localAddress: InetSocketAddress,
+                                                  _connectionStream: Publisher[IncomingConnection],
+                                                  closeable: Closeable) extends ServerBinding(_localAddress, _connectionStream) {
+    override def close() = closeable.close()
   }
 
   final case class IncomingConnection(remoteAddress: InetSocketAddress,

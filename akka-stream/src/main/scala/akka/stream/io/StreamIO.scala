@@ -3,6 +3,8 @@
  */
 package akka.stream.io
 
+import java.io.Closeable
+
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
 import java.net.InetSocketAddress
@@ -30,8 +32,15 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
     def inputStream: Publisher[ByteString] = processor
   }
 
-  case class TcpServerBinding(localAddress: InetSocketAddress,
-                              connectionStream: Publisher[IncomingTcpConnection])
+  abstract sealed case class TcpServerBinding(localAddress: InetSocketAddress,
+                                              connectionStream: Publisher[IncomingTcpConnection]) extends Closeable
+
+  /** INTERNAL API */
+  private[io] class InternalTcpServerBinding(_localAddress: InetSocketAddress,
+                                             _connectionStream: Publisher[IncomingTcpConnection],
+                                             closeable: Closeable) extends TcpServerBinding(_localAddress, _connectionStream) {
+    override def close() = closeable.close()
+  }
 
   case class IncomingTcpConnection(remoteAddress: InetSocketAddress,
                                    inputStream: Publisher[ByteString],

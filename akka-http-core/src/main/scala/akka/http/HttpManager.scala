@@ -60,14 +60,14 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
       val askTimeout = Timeout(effectiveSettings.bindTimeout + 5.seconds) // FIXME: how can we improve this?
       val tcpServerBindingFuture = IO(StreamTcp)(context.system).ask(tcpBind)(askTimeout)
       tcpServerBindingFuture onComplete {
-        case Success(StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
+        case Success(tcpServerBinding @ StreamTcp.TcpServerBinding(localAddress, connectionStream)) ⇒
           log.info("Bound to {}", endpoint)
           implicit val materializer = FlowMaterializer()
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, log)
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)
             .toPublisher()
-          commander ! Http.ServerBinding(localAddress, httpConnectionStream)
+          commander ! new Http.InternalServerBinding(localAddress, httpConnectionStream, tcpServerBinding)
 
         case Failure(error) ⇒
           log.warning("Bind to {} failed due to {}", endpoint, error)

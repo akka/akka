@@ -3,6 +3,8 @@
  */
 package akka.stream.io
 
+import java.io.Closeable
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.{ IO, Tcp }
 import akka.stream.scaladsl.Flow
@@ -14,7 +16,8 @@ import java.net.InetSocketAddress
 import java.nio.channels.ServerSocketChannel
 import org.reactivestreams.Processor
 import scala.collection.immutable.Queue
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.Duration
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString)
@@ -172,6 +175,12 @@ trait TcpHelper { this: TestKitBase ⇒
     def close(): Unit = tcpWriteSubscription.sendComplete()
   }
 
+  class EchoServer(termination: Future[Unit], closeable: Closeable) extends Closeable {
+    def close(): Unit = closeable.close()
+    def awaitTermination(atMost: Duration): Unit = Await.result(termination, atMost)
+    def terminationFuture: Future[Unit] = termination
+  }
+
   def connect(server: Server): (Processor[ByteString, ByteString], ServerConnection) = {
     val tcpProbe = TestProbe()
     tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(server.address))
@@ -193,8 +202,10 @@ trait TcpHelper { this: TestKitBase ⇒
     bindProbe.expectMsgType[StreamTcp.TcpServerBinding]
   }
 
-  def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): Future[Unit] =
-    Flow(bind(serverAddress).connectionStream).foreach { conn ⇒
+  def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
+    val binding = bind(serverAddress)
+    new EchoServer(Flow(binding.connectionStream).foreach { conn ⇒
       conn.inputStream.subscribe(conn.outputStream)
-    }
+    }, binding)
+  }
 }
