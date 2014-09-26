@@ -160,7 +160,8 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
-
+      server.close()
+      server.awaitTermination(3.seconds)
     }
 
     "work with a chain of echoes" in {
@@ -181,7 +182,8 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
-
+      server.close()
+      server.awaitTermination(3.seconds)
     }
 
   }
