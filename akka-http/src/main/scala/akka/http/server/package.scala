@@ -4,11 +4,11 @@
 
 package akka.http
 
-import akka.http.util.Deferrable
+import scala.concurrent.Future
 
 package object server {
 
-  type Route = RequestContext ⇒ Deferrable[RouteResult]
+  type Route = RequestContext ⇒ Future[RouteResult]
   type RouteGenerator[T] = T ⇒ Route
   type Directive0 = Directive[Unit]
   type Directive1[T] = Directive[Tuple1[T]]
