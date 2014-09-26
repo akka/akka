@@ -3,6 +3,8 @@
  */
 package akka.stream.io
 
+import java.io.Closeable
+
 import akka.actor._
 import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
@@ -47,9 +49,14 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     def getExposedPublisher = exposedPublisher
   }
 
+  private var finished = false
   override protected def pumpFinished(): Unit = {
-    incomingConnections.cancel()
-    context.stop(self)
+    if (!finished) {
+      finished = true
+      incomingConnections.cancel()
+      primaryOutputs.complete()
+      context.stop(self)
+    }
   }
 
   override protected def pumpFailed(e: Throwable): Unit = fail(e)
@@ -64,9 +71,13 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         listener = sender()
         nextPhase(runningPhase)
         listener ! ResumeAccepting(1)
-        requester ! StreamTcp.TcpServerBinding(
+        val target = self
+        requester ! new StreamTcp.InternalTcpServerBinding(
           localAddress,
-          primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]])
+          primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]],
+          new Closeable {
+            override def close() = target ! Unbind
+          })
         subreceive.become(running)
       case f: CommandFailed ⇒
         val ex = new TcpListenStreamException("Bind failed")
@@ -80,6 +91,12 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         pump()
       case f: CommandFailed ⇒
         fail(new TcpListenStreamException(s"Command [${f.cmd}] failed"))
+      case Unbind ⇒
+        cancel()
+        pump()
+      case Unbound ⇒ // If we're unbound then just shut down
+        closed = true
+        pump()
     }
 
     override val subreceive = new SubReceive(waitBound)
@@ -123,5 +140,4 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     incomingConnections.cancel()
     primaryOutputs.cancel(e)
   }
-
 }
