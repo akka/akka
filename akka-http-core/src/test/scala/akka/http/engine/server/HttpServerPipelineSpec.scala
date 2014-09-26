@@ -350,7 +350,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       expectRequest shouldEqual HttpRequest(HttpMethods.HEAD, uri = "http://example.com/", headers = List(Host("example.com")))
     }
 
-    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in new TestSetup {
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Strict)" in new TestSetup {
       override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
       send("""HEAD / HTTP/1.1
              |Host: example.com
@@ -373,7 +373,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       }
     }
 
-    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in new TestSetup {
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Default)" in new TestSetup {
       override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
       send("""HEAD / HTTP/1.1
              |Host: example.com
@@ -402,7 +402,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       }
     }
 
-    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in new TestSetup {
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with CloseDelimited)" in new TestSetup {
       override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
       send("""HEAD / HTTP/1.1
              |Host: example.com
@@ -433,7 +433,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       netOut.expectNoMsg(50.millis)
     }
 
-    "not emit entites when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in new TestSetup {
+    "not emit entities when responding to HEAD requests if transparent-head-requests is enabled (with Chunked)" in new TestSetup {
       override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
       send("""HEAD / HTTP/1.1
              |Host: example.com
@@ -455,14 +455,14 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
             """|HTTP/1.1 200 OK
                |Server: akka-http/test
                |Date: XXXX
-               |Content-Type: text/plain
                |Transfer-Encoding: chunked
+               |Content-Type: text/plain
                |
                |""".stripMarginWithNewline("\r\n")
       }
     }
 
-    "respect Connetion headers of HEAD requests if transparent-head-requests is enabled" in new TestSetup {
+    "respect Connection headers of HEAD requests if transparent-head-requests is enabled" in new TestSetup {
       override def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
       send("""HEAD / HTTP/1.1
              |Host: example.com

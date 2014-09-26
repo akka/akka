@@ -16,7 +16,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7233#section-2.3
   def `accept-ranges` = rule {
-    ("none" ~ push(Nil) | zeroOrMore(ws(',')) ~ oneOrMore(`range-unit`).separatedBy(listSep)) ~ EOI ~> (`Accept-Ranges`(_: _*))
+    ("none" ~ push(Nil) | zeroOrMore(ws(',')) ~ oneOrMore(`range-unit`).separatedBy(listSep)) ~ EOI ~> (`Accept-Ranges`(_))
   }
 
   // http://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
@@ -27,12 +27,12 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://www.w3.org/TR/cors/#access-control-allow-headers-response-header
   def `access-control-allow-headers` = rule {
-    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Headers`(_: _*))
+    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Headers`(_))
   }
 
   // http://www.w3.org/TR/cors/#access-control-allow-methods-response-header
   def `access-control-allow-methods` = rule {
-    zeroOrMore(httpMethodDef).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Methods`(_: _*))
+    zeroOrMore(httpMethodDef).separatedBy(listSep) ~ EOI ~> (`Access-Control-Allow-Methods`(_))
   }
 
   // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
@@ -43,7 +43,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://www.w3.org/TR/cors/#access-control-expose-headers-response-header
   def `access-control-expose-headers` = rule {
-    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Expose-Headers`(_: _*))
+    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Expose-Headers`(_))
   }
 
   // http://www.w3.org/TR/cors/#access-control-max-age-response-header
@@ -53,7 +53,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://www.w3.org/TR/cors/#access-control-request-headers-request-header
   def `access-control-request-headers` = rule {
-    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Request-Headers`(_: _*))
+    zeroOrMore(token).separatedBy(listSep) ~ EOI ~> (`Access-Control-Request-Headers`(_))
   }
 
   // http://www.w3.org/TR/cors/#access-control-request-method-request-header
@@ -63,7 +63,7 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
 
   // http://tools.ietf.org/html/rfc7231#section-7.4.1
   def allow = rule {
-    zeroOrMore(httpMethodDef).separatedBy(listSep) ~ EOI ~> (Allow(_: _*))
+    zeroOrMore(httpMethodDef).separatedBy(listSep) ~ EOI ~> (Allow(_))
   }
 
   // http://tools.ietf.org/html/rfc7235#section-4.2
