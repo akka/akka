@@ -66,6 +66,19 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "a response funky `Transfer-Encoding` header" in new Test {
+        override def parserSettings: ParserSettings =
+          super.parserSettings.withCustomStatusCodes(ServerOnTheMove)
+
+        """HTTP/1.1 331 Server on the move
+          |Transfer-Encoding: foo, chunked, bar
+          |Content-Length: 0
+          |
+          |""" should parseTo(HttpResponse(ServerOnTheMove, List(`Transfer-Encoding`(TransferEncodings.Extension("foo"),
+          TransferEncodings.chunked, TransferEncodings.Extension("bar")))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "a response with one header, a body, but no Content-Length header" in new Test {
         """HTTP/1.0 404 Not Found
           |Host: api.example.com
@@ -165,6 +178,16 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |HT""") should generalMultiParseTo(
             Right(baseResponse.withEntity(Chunked(`application/pdf`,
               publisher(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
+      "response with additional transfer encodings" in new Test {
+        """HTTP/1.1 200 OK
+          |Transfer-Encoding: fancy, chunked
+          |Content-Type: application/pdf
+          |
+          |""" should parseTo(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
+          entity = HttpEntity.Chunked(`application/pdf`, publisher())))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }

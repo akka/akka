@@ -133,6 +133,16 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
 
+      "with a funky `Transfer-Encoding` header" in new Test {
+        """GET / HTTP/1.1
+          |Transfer-Encoding: foo, chunked, bar
+          |Host: x
+          |
+          |""" should parseTo(HttpRequest(GET, "/", List(`Transfer-Encoding`(TransferEncodings.Extension("foo"),
+          TransferEncodings.chunked, TransferEncodings.Extension("bar")), Host("x"))))
+        closeAfterResponseCompletion shouldEqual Seq(false)
+      }
+
       "with several identical `Content-Type` headers" in new Test {
         """GET /data HTTP/1.1
           |Host: x
@@ -205,6 +215,17 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
                 publisher(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
+      }
+
+      "properly parse a chunked request with additional transfer encodings" in new Test {
+        """PATCH /data HTTP/1.1
+          |Transfer-Encoding: fancy, chunked
+          |Content-Type: application/pdf
+          |Host: ping
+          |
+          |""" should parseTo(HttpRequest(PATCH, "/data", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy")),
+          Host("ping")), HttpEntity.Chunked(`application/pdf`, publisher())))
+        closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
       "reject a message chunk with" - {
