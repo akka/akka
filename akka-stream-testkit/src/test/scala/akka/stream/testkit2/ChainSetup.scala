@@ -12,12 +12,12 @@ class ChainSetup[In, Out](
   stream: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out],
   val settings: MaterializerSettings,
   materializer: FlowMaterializer,
-  toPublisher: (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
+  toPublisher: (FlowWithSource[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
 
-  def this(stream: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out], settings: MaterializerSettings, toPublisher: (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+  def this(stream: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out], settings: MaterializerSettings, toPublisher: (FlowWithSource[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, FlowMaterializer(settings)(system), toPublisher)(system)
 
-  def this(stream: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out], settings: MaterializerSettings, materializerCreator: (MaterializerSettings, ActorRefFactory) ⇒ FlowMaterializer, toPublisher: (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+  def this(stream: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out], settings: MaterializerSettings, materializerCreator: (MaterializerSettings, ActorRefFactory) ⇒ FlowMaterializer, toPublisher: (FlowWithSource[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, materializerCreator(settings, system), toPublisher)(system)
 
   val upstream = StreamTestKit.PublisherProbe[In]()

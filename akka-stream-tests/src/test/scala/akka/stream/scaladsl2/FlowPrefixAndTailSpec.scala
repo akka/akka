@@ -25,7 +25,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     val testException = new Exception("test") with NoStackTrace
 
-    def newFutureSink = FutureSink[(immutable.Seq[Int], FlowWithSource[Int, Int])]
+    def newFutureSink = FutureSink[(immutable.Seq[Int], FlowWithSource[Int])]
 
     "work on empty input" in {
       val futureSink = newFutureSink
@@ -102,7 +102,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when no substream open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int])]()
 
       FlowFrom(publisher).prefixAndTail(3).publishTo(subscriber)
 
@@ -120,7 +120,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when substream is open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int])]()
 
       FlowFrom(publisher).prefixAndTail(1).publishTo(subscriber)
 
@@ -147,7 +147,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle master stream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int])]()
 
       FlowFrom(publisher).prefixAndTail(3).publishTo(subscriber)
 
@@ -165,7 +165,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle substream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int])]()
 
       FlowFrom(publisher).prefixAndTail(1).publishTo(subscriber)
 

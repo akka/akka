@@ -18,7 +18,7 @@ trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
-  def toPublisher[In, Out]: (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out] =
+  def toPublisher[In, Out]: (FlowWithSource[Out], FlowMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.toPublisher()(m)
 
   object Script {
