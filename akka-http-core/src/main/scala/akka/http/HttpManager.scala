@@ -67,7 +67,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
           val httpConnectionStream = Flow(connectionStream)
             .map(httpServerPipeline)
             .toPublisher()
-          commander ! new Http.InternalServerBinding(localAddress, httpConnectionStream, tcpServerBinding)
+          commander ! Http.ServerBinding(localAddress, httpConnectionStream, tcpServerBinding)
 
         case Failure(error) ⇒
           log.warning("Bind to {} failed due to {}", endpoint, error)

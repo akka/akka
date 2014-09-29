@@ -72,7 +72,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         nextPhase(runningPhase)
         listener ! ResumeAccepting(1)
         val target = self
-        requester ! new StreamTcp.InternalTcpServerBinding(
+        requester ! StreamTcp.TcpServerBinding(
           localAddress,
           primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]],
           new Closeable {
