@@ -23,7 +23,7 @@ import akka.stream.impl.ConflateImpl
 import akka.stream.impl.ExpandImpl
 import akka.stream.impl.BufferImpl
 import akka.stream.impl.BlackholeSubscriber
-import akka.stream.impl.MapFutureProcessorImpl
+import akka.stream.impl.MapAsyncProcessorImpl
 
 /**
  * INTERNAL API
@@ -37,8 +37,12 @@ private[akka] object Ast {
 
   case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
 
-  case class MapFuture(f: Any ⇒ Future[Any]) extends AstNode {
-    override def name = "mapFuture"
+  case class MapAsync(f: Any ⇒ Future[Any]) extends AstNode {
+    override def name = "mapAsync"
+  }
+
+  case class MapAsyncUnordered(f: Any ⇒ Future[Any]) extends AstNode {
+    override def name = "mapAsyncUnordered"
   }
 
   case class GroupBy(f: Any ⇒ Any) extends AstNode {
@@ -290,16 +294,17 @@ private[akka] object ActorProcessorFactory {
   def props(materializer: FlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings
     (op match {
-      case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
-      case t: TimerTransform ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
-      case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
-      case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
-      case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
-      case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
-      case ConcatAll         ⇒ Props(new ConcatAllImpl(materializer))
-      case cf: Conflate      ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
-      case ex: Expand        ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
-      case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
+      case t: Transform         ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
+      case t: TimerTransform    ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
+      case m: MapAsync          ⇒ Props(new MapAsyncProcessorImpl(settings, m.f))
+      case m: MapAsyncUnordered ⇒ Props(new MapAsyncUnorderedProcessorImpl(settings, m.f))
+      case g: GroupBy           ⇒ Props(new GroupByProcessorImpl(settings, g.f))
+      case tt: PrefixAndTail    ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
+      case s: SplitWhen         ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
+      case ConcatAll            ⇒ Props(new ConcatAllImpl(materializer))
+      case cf: Conflate         ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
+      case ex: Expand           ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
+      case bf: Buffer           ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
     }).withDispatcher(settings.dispatcher)
   }
 

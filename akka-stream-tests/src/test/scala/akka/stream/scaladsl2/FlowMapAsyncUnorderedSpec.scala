@@ -13,37 +13,30 @@ import akka.testkit.TestLatch
 import scala.concurrent.Await
 import scala.concurrent.Future
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class FlowMapFutureSpec extends AkkaSpec {
+class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()
 
-  "A Flow with mapFuture" must {
+  "A Flow with mapAsyncUnordered" must {
 
-    "produce future elements" in {
+    "produce future elements in the order they are ready" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 3).mapFuture(n ⇒ Future(n)).publishTo(c)
-      val sub = c.expectSubscription()
-      sub.request(2)
-      c.expectNext(1)
-      c.expectNext(2)
-      c.expectNoMsg(200.millis)
-      sub.request(2)
-      c.expectNext(3)
-      c.expectComplete()
-    }
-
-    "produce future elements in order" in {
-      val c = StreamTestKit.SubscriberProbe[Int]()
-      implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 50).mapFuture(n ⇒ Future {
-        Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
+      val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
+      val p = FlowFrom(1 to 4).mapAsyncUnordered(n ⇒ Future {
+        Await.ready(latch(n), 5.seconds)
         n
       }).publishTo(c)
       val sub = c.expectSubscription()
-      sub.request(1000)
-      for (n ← 1 to 50) c.expectNext(n)
+      sub.request(5)
+      latch(2).countDown()
+      c.expectNext(2)
+      latch(4).countDown()
+      c.expectNext(4)
+      latch(3).countDown()
+      c.expectNext(3)
+      latch(1).countDown()
+      c.expectNext(1)
       c.expectComplete()
     }
 
@@ -51,7 +44,7 @@ class FlowMapFutureSpec extends AkkaSpec {
       val probe = TestProbe()
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 20).mapFuture(n ⇒ Future {
+      val p = FlowFrom(1 to 20).mapAsyncUnordered(n ⇒ Future {
         probe.ref ! n
         n
       }).publishTo(c)
@@ -59,24 +52,25 @@ class FlowMapFutureSpec extends AkkaSpec {
       // nothing before requested
       probe.expectNoMsg(500.millis)
       sub.request(1)
-      probe.expectMsg(1)
+      val elem1 = probe.expectMsgType[Int]
       probe.expectNoMsg(500.millis)
       sub.request(2)
-      probe.receiveN(2).toSet should be(Set(2, 3))
+      val elem2 = probe.expectMsgType[Int]
+      val elem3 = probe.expectMsgType[Int]
       probe.expectNoMsg(500.millis)
-      sub.request(10)
-      probe.receiveN(10).toSet should be((4 to 13).toSet)
+      sub.request(100)
+      (probe.receiveN(17).toSet + elem1 + elem2 + elem3) should be((1 to 20).toSet)
       probe.expectNoMsg(200.millis)
 
-      for (n ← 1 to 13) c.expectNext(n)
-      c.expectNoMsg(200.millis)
+      c.probe.receiveN(20).toSet should be((1 to 20).map(StreamTestKit.OnNext.apply).toSet)
+      c.expectComplete()
     }
 
     "signal future failure" in {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapFuture(n ⇒ Future {
+      val p = FlowFrom(1 to 5).mapAsyncUnordered(n ⇒ Future {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
         else {
           Await.ready(latch, 10.seconds)
@@ -89,11 +83,11 @@ class FlowMapFutureSpec extends AkkaSpec {
       latch.countDown()
     }
 
-    "signal error from mapFuture" in {
+    "signal error from mapAsyncUnordered" in {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapFuture(n ⇒
+      val p = FlowFrom(1 to 5).mapAsync(n ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
         else {
           Future {

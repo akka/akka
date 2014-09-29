@@ -15,7 +15,7 @@ import scala.annotation.tailrec
 /**
  * INTERNAL API
  */
-private[akka] object MapFutureProcessorImpl {
+private[akka] object MapAsyncProcessorImpl {
 
   object FutureElement {
     implicit val ordering: Ordering[FutureElement] = new Ordering[FutureElement] {
@@ -32,14 +32,12 @@ private[akka] object MapFutureProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class MapFutureProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any]) extends ActorProcessorImpl(_settings) {
-  import MapFutureProcessorImpl._
+private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any])
+  extends ActorProcessorImpl(_settings) with Emit {
+  import MapAsyncProcessorImpl._
 
   // Execution context for pipeTo and friends
   import context.dispatcher
-
-  // TODO performance improvement: mutable buffer?
-  var emits = immutable.Seq.empty[Any]
 
   var submittedSeqNo = 0L
   var doneSeqNo = 0L
@@ -132,23 +130,6 @@ private[akka] class MapFutureProcessorImpl(_settings: MaterializerSettings, f: A
       }
       emitAndThen(running)
     }
-  }
-
-  // Save previous phase we should return to in a var to avoid allocation
-  var phaseAfterFlush: TransferPhase = _
-
-  // Enters flushing phase if there are emits pending
-  def emitAndThen(andThen: TransferPhase): Unit =
-    if (emits.nonEmpty) {
-      phaseAfterFlush = andThen
-      nextPhase(emitting)
-    } else nextPhase(andThen)
-
-  // Emits all pending elements, then returns to savedPhase
-  val emitting = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
-    primaryOutputs.enqueueOutputElement(emits.head)
-    emits = emits.tail
-    if (emits.isEmpty) nextPhase(phaseAfterFlush)
   }
 
   nextPhase(running)
