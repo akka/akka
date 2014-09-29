@@ -111,16 +111,21 @@ object Http extends ExtensionKey[HttpExt] {
   }
 
   sealed abstract case class ServerBinding(localAddress: InetSocketAddress,
-                                           connectionStream: Publisher[IncomingConnection]) extends model.japi.ServerBinding {
+                                           connectionStream: Publisher[IncomingConnection]) extends model.japi.ServerBinding with Closeable {
     /** Java API */
     def getConnectionStream: Publisher[japi.IncomingConnection] = connectionStream.asInstanceOf[Publisher[japi.IncomingConnection]]
   }
 
-  /** INTERNAL API */
-  private[http] final class InternalServerBinding(_localAddress: InetSocketAddress,
-                                                  _connectionStream: Publisher[IncomingConnection],
-                                                  closeable: Closeable) extends ServerBinding(_localAddress, _connectionStream) {
-    override def close() = closeable.close()
+  object ServerBinding {
+    def apply(localAddress: InetSocketAddress, connectionStream: Publisher[IncomingConnection]): ServerBinding =
+      new ServerBinding(localAddress, connectionStream) {
+        override def close() = ()
+      }
+
+    def apply(localAddress: InetSocketAddress, connectionStream: Publisher[IncomingConnection], closeable: Closeable): ServerBinding =
+      new ServerBinding(localAddress, connectionStream) {
+        override def close() = closeable.close()
+      }
   }
 
   final case class IncomingConnection(remoteAddress: InetSocketAddress,
