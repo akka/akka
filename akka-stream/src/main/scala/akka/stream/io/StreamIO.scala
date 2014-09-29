@@ -32,14 +32,19 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
     def inputStream: Publisher[ByteString] = processor
   }
 
-  abstract sealed case class TcpServerBinding(localAddress: InetSocketAddress,
+  sealed abstract case class TcpServerBinding(localAddress: InetSocketAddress,
                                               connectionStream: Publisher[IncomingTcpConnection]) extends Closeable
 
-  /** INTERNAL API */
-  private[io] class InternalTcpServerBinding(_localAddress: InetSocketAddress,
-                                             _connectionStream: Publisher[IncomingTcpConnection],
-                                             closeable: Closeable) extends TcpServerBinding(_localAddress, _connectionStream) {
-    override def close() = closeable.close()
+  object TcpServerBinding {
+    def apply(localAddress: InetSocketAddress, connectionStream: Publisher[IncomingTcpConnection]): TcpServerBinding =
+      new TcpServerBinding(localAddress, connectionStream) {
+        override def close() = ()
+      }
+
+    def apply(localAddress: InetSocketAddress, connectionStream: Publisher[IncomingTcpConnection], closeable: Closeable): TcpServerBinding =
+      new TcpServerBinding(localAddress, connectionStream) {
+        override def close() = closeable.close()
+      }
   }
 
   case class IncomingTcpConnection(remoteAddress: InetSocketAddress,
