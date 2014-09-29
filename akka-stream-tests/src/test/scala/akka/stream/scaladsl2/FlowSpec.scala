@@ -264,6 +264,39 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       c1.expectComplete
     }
 
+    "be materializable several times with fanout publisher" in {
+      val flow = FlowFrom(List(1, 2, 3)).map(_.toString)
+      val p1 = flow.toFanoutPublisher(2, 2)
+      val p2 = flow.toFanoutPublisher(2, 2)
+      val s1 = StreamTestKit.SubscriberProbe[String]()
+      val s2 = StreamTestKit.SubscriberProbe[String]()
+      val s3 = StreamTestKit.SubscriberProbe[String]()
+      p1.subscribe(s1)
+      p2.subscribe(s2)
+      p2.subscribe(s3)
+
+      val sub1 = s1.expectSubscription
+      val sub2 = s2.expectSubscription
+      val sub3 = s3.expectSubscription
+
+      sub1.request(3)
+      s1.expectNext("1")
+      s1.expectNext("2")
+      s1.expectNext("3")
+      s1.expectComplete
+
+      sub2.request(3)
+      sub3.request(3)
+      s2.expectNext("1")
+      s2.expectNext("2")
+      s2.expectNext("3")
+      s2.expectComplete
+      s3.expectNext("1")
+      s3.expectNext("2")
+      s3.expectNext("3")
+      s3.expectComplete
+    }
+
     "be covariant" in {
       val f1: FlowWithSource[Fruit, Fruit] = FlowFrom[Fruit](() ⇒ Some(new Apple))
       val p1: Publisher[Fruit] = FlowFrom[Fruit](() ⇒ Some(new Apple)).toPublisher()
