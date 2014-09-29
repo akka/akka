@@ -11,7 +11,7 @@ import scala.util.{ Failure, Success }
 
 import org.reactivestreams.{ Publisher, Subscriber }
 
-import akka.stream.impl.{ ActorPublisher, EmptyPublisher, ErrorPublisher, FuturePublisher, IterablePublisher, IteratorPublisher, SimpleCallbackPublisher, TickPublisher }
+import akka.stream.impl.{ ActorPublisher, EmptyPublisher, ErrorPublisher, FuturePublisher, IterablePublisher, IteratorPublisher, SimpleCallbackPublisher, TickPublisher, Stop }
 import akka.stream.impl2.ActorBasedFlowMaterializer
 
 object FlowFrom {
@@ -230,8 +230,8 @@ final case class ThunkSource[In](f: () ⇒ Option[In]) extends SimpleSource[In] 
     create(materializer, flowName).subscribe(flowSubscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] =
-    ActorPublisher[In](materializer.actorOf(SimpleCallbackPublisher.props(materializer.settings, f),
-      name = s"$flowName-0-thunk"))
+    ActorPublisher[In](materializer.actorOf(SimpleCallbackPublisher.props(materializer.settings,
+      () ⇒ f().getOrElse(throw Stop)), name = s"$flowName-0-thunk"))
 }
 
 /**

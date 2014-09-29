@@ -105,15 +105,15 @@ class FlowIterableSpec extends AkkaSpec {
       c.expectComplete()
     }
 
-    "produce elements with two transformation steps" ignore {
-      //      val p = FlowFrom(List(1, 2, 3, 4)).filter(_ % 2 == 0).map(_ * 2).toPublisher()
-      //      val c = StreamTestKit.SubscriberProbe[Int]()
-      //      p.subscribe(c)
-      //      val sub = c.expectSubscription()
-      //      sub.request(10)
-      //      c.expectNext(4)
-      //      c.expectNext(8)
-      //      c.expectComplete()
+    "produce elements with two transformation steps" in {
+      val p = FlowFrom(List(1, 2, 3, 4)).filter(_ % 2 == 0).map(_ * 2).toPublisher()
+      val c = StreamTestKit.SubscriberProbe[Int]()
+      p.subscribe(c)
+      val sub = c.expectSubscription()
+      sub.request(10)
+      c.expectNext(4)
+      c.expectNext(8)
+      c.expectComplete()
     }
 
     "allow cancel before receiving all elements" in {
