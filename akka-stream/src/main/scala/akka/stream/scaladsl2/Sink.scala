@@ -199,12 +199,12 @@ final case class OnCompleteSink[Out](callback: Try[Unit] ⇒ Unit) extends Simpl
   override def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
     FlowFrom(flowPublisher).transform("onCompleteSink", () ⇒ new Transformer[Out, Unit] {
       override def onNext(in: Out) = Nil
-      override def onError(e: Throwable) = {
-        callback(Failure(e))
-        throw e
-      }
+      override def onError(e: Throwable) = ()
       override def onTermination(e: Option[Throwable]) = {
-        callback(OnCompleteSink.SuccessUnit)
+        e match {
+          case None    ⇒ callback(OnCompleteSink.SuccessUnit)
+          case Some(e) ⇒ callback(Failure(e))
+        }
         Nil
       }
     }).consume()(materializer.withNamePrefix(flowName))
@@ -248,6 +248,7 @@ final case class FoldSink[U, Out](zero: U)(f: (U, Out) ⇒ U) extends SinkWithKe
     FlowFrom(flowPublisher).transform("fold", () ⇒ new Transformer[Out, U] {
       var state: U = zero
       override def onNext(in: Out): immutable.Seq[U] = { state = f(state, in); Nil }
+      override def onError(cause: Throwable) = ()
       override def onTermination(e: Option[Throwable]) = {
         e match {
           case None    ⇒ promise.success(state)
