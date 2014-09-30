@@ -244,17 +244,33 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "build unzip - zip" in {
+      FlowGraph { implicit b ⇒
+        val zip = Zip[Int, String]
+        val unzip = Unzip[Int, String]
+        val out = PublisherSink[(Int, String)]
+        import FlowGraphImplicits._
+        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.left ~> FlowFrom[Int].map(_ * 2) ~> zip.left
+        unzip.right ~> zip.right
+        zip.out ~> out
+      }.run()
+    }
+
     "distinguish between input and output ports" in {
       intercept[IllegalArgumentException] {
         FlowGraph { implicit b ⇒
           val zip = Zip[Int, String]
+          val unzip = Unzip[Int, String]
           val wrongOut = PublisherSink[(Int, Int)]
+          val whatever = PublisherSink[Any]
           import FlowGraphImplicits._
           "FlowFrom(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
           """FlowFrom(List("a", "b", "c")) ~> zip.left""" shouldNot compile
           """FlowFrom(List("a", "b", "c")) ~> zip.out""" shouldNot compile
           "zip.left ~> zip.right" shouldNot compile
           "FlowFrom(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
+          """FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in ~> whatever""" shouldNot compile
         }
       }.getMessage should include("empty")
     }

@@ -34,6 +34,14 @@ sealed trait JunctionOutPort[+T] {
 
 /**
  * INTERNAL API
+ */
+private[akka] object NoNext extends JunctionOutPort[Nothing] {
+  override private[akka] def vertex: FlowGraphInternal.Vertex =
+    throw new UnsupportedOperationException
+}
+
+/**
+ * INTERNAL API
  *
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface.
@@ -155,6 +163,52 @@ final class Zip[A, B](override val name: Option[String]) extends FlowGraphIntern
   override def maximumOutputCount: Int = 1
 
   override private[akka] def astNode = Ast.Zip
+}
+
+object Unzip {
+  /**
+   * Create a new anonymous `Unzip` vertex with the specified output types.
+   * Note that a `Unzip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def apply[A, B]: Unzip[A, B] = new Unzip[A, B](None)
+
+  /**
+   * Create a named `Unzip` vertex with the specified output types.
+   * Note that a `Unzip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def apply[A, B](name: String): Unzip[A, B] = new Unzip[A, B](Some(name))
+
+  class In[A, B] private[akka] (private[akka] val vertex: Unzip[A, B]) extends JunctionInPort[(A, B)] {
+    override type NextT = Nothing
+    override private[akka] def next = NoNext
+  }
+
+  class Left[A, B] private[akka] (private[akka] val vertex: Unzip[A, B]) extends JunctionOutPort[A] {
+    override private[akka] def port = 0
+  }
+  class Right[A, B] private[akka] (private[akka] val vertex: Unzip[A, B]) extends JunctionOutPort[B] {
+    override private[akka] def port = 1
+  }
+}
+
+/**
+ * Takes a stream of pair elements and splits each pair to two output streams.
+ */
+final class Unzip[A, B](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+  val in = new Unzip.In(this)
+  val left = new Unzip.Left(this)
+  val right = new Unzip.Right(this)
+
+  override def minimumInputCount: Int = 1
+  override def maximumInputCount: Int = 1
+  override def minimumOutputCount: Int = 2
+  override def maximumOutputCount: Int = 2
+
+  override private[akka] def astNode = Ast.Unzip
 }
 
 object Concat {
@@ -315,7 +369,11 @@ private[akka] object FlowGraphInternal {
   }
 
   // flow not part of equals/hashCode
-  case class EdgeLabel(qualifier: Int, inputPort: Int)(val flow: ProcessorFlow[Any, Any]) {
+  case class EdgeLabel(qualifier: Int)(
+    val flow: ProcessorFlow[Any, Any],
+    val inputPort: Int,
+    val outputPort: Int) {
+
     override def toString: String = flow.toString
   }
 
@@ -343,14 +401,14 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     val sourceVertex = SourceVertex(source)
     checkAddSourceSinkPrecondition(sourceVertex)
     checkJunctionInPortPrecondition(sink)
-    addGraphEdge(sourceVertex, sink.vertex, flow, sink.port)
+    addGraphEdge(sourceVertex, sink.vertex, flow, inputPort = sink.port, outputPort = UnlabeledPort)
     this
   }
 
   def addEdge[In, Out](source: UndefinedSource[In], flow: ProcessorFlow[In, Out], sink: JunctionInPort[Out]): this.type = {
     checkAddSourceSinkPrecondition(source)
     checkJunctionInPortPrecondition(sink)
-    addGraphEdge(source, sink.vertex, flow, sink.port)
+    addGraphEdge(source, sink.vertex, flow, inputPort = sink.port, outputPort = UnlabeledPort)
     this
   }
 
@@ -358,23 +416,21 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     val sinkVertex = SinkVertex(sink)
     checkAddSourceSinkPrecondition(sinkVertex)
     checkJunctionOutPortPrecondition(source)
-    // FIXME: output ports are not handled yet
-    addGraphEdge(source.vertex, sinkVertex, flow, UnlabeledPort)
+    addGraphEdge(source.vertex, sinkVertex, flow, inputPort = UnlabeledPort, outputPort = source.port)
     this
   }
 
   def addEdge[In, Out](source: JunctionOutPort[In], flow: ProcessorFlow[In, Out], sink: UndefinedSink[Out]): this.type = {
     checkAddSourceSinkPrecondition(sink)
     checkJunctionOutPortPrecondition(source)
-    // FIXME: output ports are not handled yet
-    addGraphEdge(source.vertex, sink, flow, UnlabeledPort)
+    addGraphEdge(source.vertex, sink, flow, inputPort = UnlabeledPort, outputPort = source.port)
     this
   }
 
   def addEdge[In, Out](source: JunctionOutPort[In], flow: ProcessorFlow[In, Out], sink: JunctionInPort[Out]): this.type = {
     checkJunctionOutPortPrecondition(source)
     checkJunctionInPortPrecondition(sink)
-    addGraphEdge(source.vertex, sink.vertex, flow, sink.port)
+    addGraphEdge(source.vertex, sink.vertex, flow, inputPort = sink.port, outputPort = source.port)
     this
   }
 
@@ -388,10 +444,9 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, LkDiEdge]
     this
   }
 
-  private def addGraphEdge[In, Out](from: Vertex, to: Vertex, flow: ProcessorFlow[In, Out], portQualifier: Int): Unit = {
+  private def addGraphEdge[In, Out](from: Vertex, to: Vertex, flow: ProcessorFlow[In, Out], inputPort: Int, outputPort: Int): Unit = {
     if (edgeQualifier == Int.MaxValue) throw new IllegalArgumentException(s"Too many edges")
-    val effectivePortQualifier = if (portQualifier == UnlabeledPort) edgeQualifier else portQualifier
-    val label = EdgeLabel(edgeQualifier, portQualifier)(flow.asInstanceOf[ProcessorFlow[Any, Any]])
+    val label = EdgeLabel(edgeQualifier)(flow.asInstanceOf[ProcessorFlow[Any, Any]], inputPort, outputPort)
     graph.addLEdge(from, to)(label)
     edgeQualifier += 1
   }
@@ -644,7 +699,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
                     val edgeSubscribers =
                       edge.from.incoming.toSeq.sortBy(_.label.asInstanceOf[EdgeLabel].inputPort).zip(subscribers)
                     val edgePublishers =
-                      edge.from.outgoing.toSeq.sortBy(_.label.asInstanceOf[EdgeLabel].inputPort).zip(publishers).toMap
+                      edge.from.outgoing.toSeq.sortBy(_.label.asInstanceOf[EdgeLabel].outputPort).zip(publishers).toMap
                     val publisher = edgePublishers(edge)
                     val materializedSink = connectToDownstream(publisher)
                     memo.copy(

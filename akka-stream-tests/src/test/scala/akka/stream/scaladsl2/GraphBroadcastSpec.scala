@@ -102,13 +102,13 @@ class GraphBroadcastSpec extends AkkaSpec {
       }.run()
 
       val sub1 = c1.expectSubscription()
-      sub1.cancel()
       val sub2 = c2.expectSubscription()
-      sub2.request(3)
-      c2.expectNext(1)
-      c2.expectNext(2)
-      c2.expectNext(3)
-      c2.expectComplete()
+      sub2.cancel()
+      sub1.request(3)
+      c1.expectNext(1)
+      c1.expectNext(2)
+      c1.expectNext(3)
+      c1.expectComplete()
     }
 
     "cancel upstream when downstreams cancel" in {

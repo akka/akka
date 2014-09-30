@@ -4,13 +4,12 @@
 package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.stream.MaterializerSettings
 import akka.stream.impl.{ BatchingInputBuffer, Pump, SimpleOutputs, SubReceive, TransferState, _ }
 import org.reactivestreams.{ Subscription, Subscriber, Publisher }
-
 import scala.collection.immutable
+import akka.actor.Props
 
 /**
  * INTERNAL API
@@ -212,6 +211,14 @@ private[akka] abstract class FanOut(val settings: MaterializerSettings, val outp
 /**
  * INTERNAL API
  */
+private[akka] object Broadcast {
+  def props(settings: MaterializerSettings, outputPorts: Int): Props =
+    Props(new Broadcast(settings, outputPorts))
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
   (0 until outputPorts) foreach outputBunch.markOutput
 
@@ -219,6 +226,14 @@ private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int
     val elem = primaryInputs.dequeueInputElement()
     outputBunch.enqueueMarked(elem)
   })
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object Balance {
+  def props(settings: MaterializerSettings, outputPorts: Int): Props =
+    Props(new Balance(settings, outputPorts))
 }
 
 /**
@@ -236,7 +251,15 @@ private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int) 
 /**
  * INTERNAL API
  */
-private[akka] class Unzip(_settings: MaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
+private[akka] object Unzip {
+  def props(settings: MaterializerSettings): Props =
+    Props(new Unzip(settings))
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_settings, outputPorts = 2) {
   (0 until outputPorts) foreach outputBunch.markOutput
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒

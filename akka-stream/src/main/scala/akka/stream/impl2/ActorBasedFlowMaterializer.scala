@@ -93,6 +93,10 @@ private[akka] object Ast {
     override def name = "zip"
   }
 
+  case object Unzip extends FanOutAstNode {
+    override def name = "unzip"
+  }
+
   case object Concat extends FanInAstNode {
     override def name = "concat"
   }
@@ -108,7 +112,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
                                       namePrefix: String)
   extends FlowMaterializer(settings) {
 
-  import akka.stream.impl2.Ast._
+  import Ast.AstNode
 
   def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
 
@@ -181,7 +185,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
     new MaterializedFlow(source, sourceValue, sink, sinkValue)
   }
 
-  private val identityTransform = Transform("identity", () ⇒
+  private val identityTransform = Ast.Transform("identity", () ⇒
     new Transformer[Any, Any] {
       override def onNext(element: Any) = List(element)
     })
@@ -214,11 +218,11 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       case fanin: Ast.FanInAstNode ⇒
         val impl = op match {
           case Ast.Merge ⇒
-            actorOf(Props(new FairMerge(settings, inputCount)).withDispatcher(settings.dispatcher), actorName)
+            actorOf(FairMerge.props(settings, inputCount).withDispatcher(settings.dispatcher), actorName)
           case Ast.Zip ⇒
-            actorOf(Props(new Zip(settings)).withDispatcher(settings.dispatcher), actorName)
+            actorOf(Zip.props(settings).withDispatcher(settings.dispatcher), actorName)
           case Ast.Concat ⇒
-            actorOf(Props(new Concat(settings)).withDispatcher(settings.dispatcher), actorName)
+            actorOf(Concat.props(settings).withDispatcher(settings.dispatcher), actorName)
         }
 
         val publisher = new ActorPublisher[Out](impl, equalityValue = None)
@@ -229,7 +233,9 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       case fanout: Ast.FanOutAstNode ⇒
         val impl = op match {
           case Ast.Broadcast ⇒
-            actorOf(Props(new Broadcast(settings, outputCount)).withDispatcher(settings.dispatcher), actorName)
+            actorOf(Broadcast.props(settings, outputCount).withDispatcher(settings.dispatcher), actorName)
+          case Ast.Unzip ⇒
+            actorOf(Unzip.props(settings).withDispatcher(settings.dispatcher), actorName)
         }
 
         val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl, equalityValue = None) {
@@ -240,12 +246,6 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         (List(subscriber), publishers)
     }
 
-  }
-
-  // FIXME remove
-  private def dummySubscriber[T]: Subscriber[T] = new BlackholeSubscriber[T](1)
-  private def dummyPublisher[T]: Publisher[T] = new Publisher[T] {
-    def subscribe(subscriber: Subscriber[_ >: T]): Unit = subscriber.onComplete()
   }
 
 }
