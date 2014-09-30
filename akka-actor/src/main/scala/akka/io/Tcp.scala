@@ -547,7 +547,7 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
 
     val WindowsConnectionAbortWorkaroundEnabled: Boolean = getString("windows-connection-abort-workaround-enabled") match {
       case "auto" ⇒ Helpers.isWindows
-      case _ => getBoolean("windows-connection-abort-workaround-enabled")
+      case _      ⇒ getBoolean("windows-connection-abort-workaround-enabled")
     }
 
     private[this] def getIntBytes(path: String): Int = {
