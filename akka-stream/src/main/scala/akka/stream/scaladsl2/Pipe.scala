@@ -226,9 +226,9 @@ private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends 
 
   override protected def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops)
 
-  def withDrain(out: Drain[Out]): SinkPipe[In] = SinkPipe(out, ops)
+  private[scaladsl2] def withDrain(out: Drain[Out]): SinkPipe[In] = SinkPipe(out, ops)
 
-  def withTap(in: Tap[In]): SourcePipe[Out] = SourcePipe(in, ops)
+  private[scaladsl2] def withTap(in: Tap[In]): SourcePipe[Out] = SourcePipe(in, ops)
 
   override def connect[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case p: Pipe[T, In] ⇒ Pipe(p.ops ++: ops)
@@ -240,6 +240,8 @@ private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends 
     case d: Drain[Out]     ⇒ this.withDrain(d)
     case _                 ⇒ throw new IllegalArgumentException(Pipe.OnlyPipesErrorMessage)
   }
+
+  private[scaladsl2] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)
 }
 
 /**
@@ -247,9 +249,9 @@ private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends 
  */
 private[scaladsl2] final case class SinkPipe[-In](output: Drain[_], ops: List[AstNode]) extends Sink[In] {
 
-  def withTap(in: Tap[In]): RunnablePipe = RunnablePipe(in, output, ops)
+  private[scaladsl2] def withTap(in: Tap[In]): RunnablePipe = RunnablePipe(in, output, ops)
 
-  def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
+  private[scaladsl2] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
 
   override def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] = {
     val subIn = SubscriberTap[In]()
@@ -266,9 +268,9 @@ private[scaladsl2] final case class SourcePipe[+Out](input: Tap[_], ops: List[As
 
   override protected def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, op :: ops)
 
-  def withDrain(out: Drain[Out]): RunnablePipe = RunnablePipe(input, out, ops)
+  private[scaladsl2] def withDrain(out: Drain[Out]): RunnablePipe = RunnablePipe(input, out, ops)
 
-  def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
+  private[scaladsl2] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
 
   override def connect[T](flow: Flow[Out, T]): Source[T] = flow match {
     case p: Pipe[Out, T] ⇒ appendPipe(p)
