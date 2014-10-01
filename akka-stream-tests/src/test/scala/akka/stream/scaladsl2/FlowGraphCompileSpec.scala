@@ -164,53 +164,65 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
-    "attachTap and attachDrain" in {
+    "attachSource and attachSink" in {
       val mg = FlowGraph { b ⇒
         val merge = Merge[String]
-        val undefinedSrc1 = UndefinedTap[String]
-        val undefinedSrc2 = UndefinedTap[String]
-        val undefinedDrain1 = UndefinedDrain[String]
+        val undefinedSource1 = UndefinedSource[String]
+        val undefinedSource2 = UndefinedSource[String]
+        val undefinedSink1 = UndefinedSink[String]
         b.
-          addEdge(undefinedSrc1, f1, merge).
-          addEdge(UndefinedTap[String]("src2"), f2, merge).
-          addEdge(merge, f3, undefinedDrain1)
+          addEdge(undefinedSource1, f1, merge).
+          addEdge(UndefinedSource[String]("src2"), f2, merge).
+          addEdge(merge, f3, undefinedSink1)
 
-        b.attachTap(undefinedSrc1, in1)
-        b.attachTap(UndefinedTap[String]("src2"), in2)
-        b.attachDrain(undefinedDrain1, out1)
+        b.attachSource(undefinedSource1, in1)
+        b.attachSource(UndefinedSource[String]("src2"), in2)
+        b.attachSink(undefinedSink1, out1)
 
       }.run()
       out1.publisher(mg) should not be (null)
     }
 
     "build partial flow graphs" in {
-      val undefinedSrc1 = UndefinedTap[String]
-      val undefinedSrc2 = UndefinedTap[String]
-      val undefinedDrain1 = UndefinedDrain[String]
+      val undefinedSource1 = UndefinedSource[String]
+      val undefinedSource2 = UndefinedSource[String]
+      val undefinedSink1 = UndefinedSink[String]
       val bcast = Broadcast[String]
 
       val partial1 = PartialFlowGraph { implicit b ⇒
         import FlowGraphImplicits._
         val merge = Merge[String]
-        undefinedSrc1 ~> f1 ~> merge ~> f2 ~> bcast ~> f3 ~> undefinedDrain1
-        undefinedSrc2 ~> f4 ~> merge
-
+        undefinedSource1 ~> f1 ~> merge ~> f2 ~> bcast ~> f3 ~> undefinedSink1
+        undefinedSource2 ~> f4 ~> merge
       }
-      partial1.undefinedTaps should be(Set(undefinedSrc1, undefinedSrc2))
-      partial1.undefinedDrains should be(Set(undefinedDrain1))
+      partial1.undefinedSources should be(Set(undefinedSource1, undefinedSource2))
+      partial1.undefinedSinks should be(Set(undefinedSink1))
 
       val partial2 = PartialFlowGraph(partial1) { implicit b ⇒
         import FlowGraphImplicits._
-        b.attachTap(undefinedSrc1, in1)
-        b.attachTap(undefinedSrc2, in2)
-        bcast ~> f5 ~> UndefinedDrain[String]("drain2")
+        b.attachSource(undefinedSource1, in1)
+        b.attachSource(undefinedSource2, in2)
+        bcast ~> f5 ~> UndefinedSink[String]("drain2")
       }
-      partial2.undefinedTaps should be(Set.empty)
-      partial2.undefinedDrains should be(Set(undefinedDrain1, UndefinedDrain[String]("drain2")))
+      partial2.undefinedSources should be(Set.empty)
+      partial2.undefinedSinks should be(Set(undefinedSink1, UndefinedSink[String]("drain2")))
 
-      FlowGraph(partial2) { implicit b ⇒
-        b.attachDrain(undefinedDrain1, out1)
-        b.attachDrain(UndefinedDrain[String]("drain2"), out2)
+      FlowGraph(partial2) { b ⇒
+        b.attachSink(undefinedSink1, out1)
+        b.attachSink(UndefinedSink[String]("drain2"), out2)
+      }.run()
+
+      FlowGraph(partial2) { b ⇒
+        b.attachSink(undefinedSink1, f1.connect(out1))
+        b.attachSink(UndefinedSink[String]("drain2"), f2.connect(out2))
+      }.run()
+
+      FlowGraph(partial1) { implicit b ⇒
+        import FlowGraphImplicits._
+        b.attachSink(undefinedSink1, f1.connect(out1))
+        b.attachSource(undefinedSource1, Source(List("a", "b", "c")).connect(f1))
+        b.attachSource(undefinedSource2, Source(List("d", "e", "f")).connect(f2))
+        bcast ~> f5 ~> out2
       }.run()
     }
 
@@ -293,8 +305,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
       FlowGraph { b ⇒
         val merge = Merge[Fruit]
         b.
-          addEdge(Source[Fruit](() ⇒ Some(new Apple)), merge).
-          addEdge(Source[Apple](() ⇒ Some(new Apple)), merge).
+          addEdge(Source[Fruit](() ⇒ Some(new Apple)), Flow[Fruit], merge).
+          addEdge(Source[Apple](() ⇒ Some(new Apple)), Flow[Apple], merge).
           addEdge(merge, Flow[Fruit].map(identity), out)
       }
     }
@@ -315,26 +327,70 @@ class FlowGraphCompileSpec extends AkkaSpec {
         inB ~> merge
         inA ~> Flow[Fruit].map(identity) ~> merge
         inB ~> Flow[Apple].map(identity) ~> merge
-        UndefinedTap[Apple] ~> merge
-        UndefinedTap[Apple] ~> Flow[Fruit].map(identity) ~> merge
-        UndefinedTap[Apple] ~> Flow[Apple].map(identity) ~> merge
+        UndefinedSource[Apple] ~> merge
+        UndefinedSource[Apple] ~> Flow[Fruit].map(identity) ~> merge
+        UndefinedSource[Apple] ~> Flow[Apple].map(identity) ~> merge
         merge ~> Flow[Fruit].map(identity) ~> outA
 
         Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> merge
         Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> outB
-        Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> UndefinedDrain[Fruit]
+        Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
         inB ~> Broadcast[Apple] ~> merge
 
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.right ~> whatever
-        unzip.left ~> UndefinedDrain[Any]
+        unzip.left ~> UndefinedSink[Any]
 
-        "UndefinedTap[Fruit] ~> Flow[Apple].map(identity) ~> merge" shouldNot compile
-        "UndefinedTap[Fruit] ~> Broadcast[Apple]" shouldNot compile
+        "UndefinedSource[Fruit] ~> Flow[Apple].map(identity) ~> merge" shouldNot compile
+        "UndefinedSource[Fruit] ~> Broadcast[Apple]" shouldNot compile
         "merge ~> Broadcast[Apple]" shouldNot compile
         "merge ~> Flow[Fruit].map(identity) ~> Broadcast[Apple]" shouldNot compile
         "inB ~> merge ~> Broadcast[Apple]" shouldNot compile
         "inA ~> Broadcast[Apple]" shouldNot compile
+      }
+    }
+
+    "build with plain flow without junctions" in {
+      FlowGraph { b ⇒
+        b.addEdge(in1, f1, out1)
+      }.run()
+      FlowGraph { b ⇒
+        b.addEdge(in1, f1, f2.connect(out1))
+      }.run()
+      FlowGraph { b ⇒
+        b.addEdge(in1.connect(f1), f2, out1)
+      }.run()
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        in1 ~> f1 ~> out1
+      }.run()
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        in1 ~> out1
+      }.run()
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        in1 ~> f1.connect(out1)
+      }.run()
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        in1.connect(f1) ~> out1
+      }.run()
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        in1.connect(f1) ~> f2.connect(out1)
+      }.run()
+    }
+
+    "build partial with only undefined sources and sinks" in {
+      PartialFlowGraph { b ⇒
+        b.addEdge(UndefinedSource[String], f1, UndefinedSink[String])
+      }
+      PartialFlowGraph { b ⇒
+        b.addEdge(UndefinedSource[String], f1, out1)
+      }
+      PartialFlowGraph { b ⇒
+        b.addEdge(in1, f1, UndefinedSink[String])
       }
     }
 
