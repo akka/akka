@@ -17,6 +17,9 @@ import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
+  private[http] val ASCII = Charset.forName("ASCII")
+  private[http] val ISO88591 = Charset.forName("ISO-8859-1")
+
   private[http] val EmptyByteArray = Array.empty[Byte]
 
   private[http] def actorSystem(implicit refFactory: ActorRefFactory): ExtendedActorSystem =

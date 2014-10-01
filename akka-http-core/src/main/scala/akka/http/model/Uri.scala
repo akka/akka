@@ -5,17 +5,17 @@
 package akka.http.model
 
 import language.implicitConversions
+import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import java.lang.{ StringBuilder ⇒ JStringBuilder, Iterable }
 import java.nio.charset.Charset
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable, LinearSeqOptimized }
 import scala.collection.immutable.LinearSeq
-import akka.parboiled2.{ CharUtils, CharPredicate, ParserInput, UTF8 }
+import akka.parboiled2.{ CharUtils, CharPredicate, ParserInput }
 import akka.http.model.parser.UriParser
 import akka.http.model.parser.CharacterClasses._
 import akka.http.util._
 import Uri._
-import java.net.{ Inet4Address, Inet6Address, InetAddress }
 
 /**
  * An immutable model of an internet URI as defined by http://tools.ietf.org/html/rfc3986.
@@ -657,13 +657,12 @@ object Uri {
             decodeBytes(i + 1, oredBytes | byte)
           } else oredBytes
 
-        if ((decodeBytes() >> 7) != 0) { // if non-ASCII chars are present we need to involve the charset for decoding
-          sb.append(new String(bytes, charset))
-        } else {
+        // if we have only ASCII chars and the charset is ASCII compatible we don't need to involve it in decoding
+        if (((decodeBytes() >> 7) == 0) && UriRendering.isAsciiCompatible(charset)) {
           @tailrec def appendBytes(i: Int = 0): Unit =
             if (i < bytesCount) { sb.append(bytes(i).toChar); appendBytes(i + 1) }
           appendBytes()
-        }
+        } else sb.append(new String(bytes, charset))
         decode(string, charset, lastPercentSignIndexPlus3)(sb)
 
       case x ⇒ decode(string, charset, ix + 1)(sb.append(x))
@@ -750,7 +749,7 @@ object UriRendering {
     def render[R <: Rendering](r: R, value: Authority): r.type = renderAuthority(r, value, "", UTF8)
   }
   implicit object PathRenderer extends Renderer[Path] {
-    def render[R <: Rendering](r: R, value: Path): r.type = renderPath(r, value, UTF8, encodeFirstSegmentColons = false)
+    def render[R <: Rendering](r: R, value: Path): r.type = renderPath(r, value, UTF8)
   }
   implicit object QueryRenderer extends Renderer[Query] {
     def render[R <: Rendering](r: R, value: Query): r.type = renderQuery(r, value, UTF8)
@@ -801,13 +800,14 @@ object UriRendering {
       else r
     }
 
-  def renderPath[R <: Rendering](r: R, path: Path, charset: Charset, encodeFirstSegmentColons: Boolean): r.type = path match {
-    case Path.Empty       ⇒ r
-    case Path.Slash(tail) ⇒ renderPath(r ~~ '/', tail, charset, encodeFirstSegmentColons = false)
-    case Path.Segment(head, tail) ⇒
-      val keep = if (encodeFirstSegmentColons) `pchar-base-nc` else `pchar-base`
-      renderPath(encode(r, head, charset, keep), tail, charset, encodeFirstSegmentColons = false)
-  }
+  def renderPath[R <: Rendering](r: R, path: Path, charset: Charset, encodeFirstSegmentColons: Boolean = false): r.type =
+    path match {
+      case Path.Empty       ⇒ r
+      case Path.Slash(tail) ⇒ renderPath(r ~~ '/', tail, charset)
+      case Path.Segment(head, tail) ⇒
+        val keep = if (encodeFirstSegmentColons) `pchar-base-nc` else `pchar-base`
+        renderPath(encode(r, head, charset, keep), tail, charset)
+    }
 
   def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset): r.type = {
     def enc(s: String): Unit = encode(r, s, charset, `strict-query-char-np`, replaceSpaces = true)
@@ -827,18 +827,24 @@ object UriRendering {
 
   private[http] def encode(r: Rendering, string: String, charset: Charset, keep: CharPredicate,
                            replaceSpaces: Boolean = false): r.type = {
-    @tailrec def rec(ix: Int = 0): r.type = {
+    val asciiCompatible = isAsciiCompatible(charset)
+    @tailrec def rec(ix: Int): r.type = {
       def appendEncoded(byte: Byte): Unit = r ~~ '%' ~~ CharUtils.upperHexDigit(byte >>> 4) ~~ CharUtils.upperHexDigit(byte)
       if (ix < string.length) {
-        string.charAt(ix) match {
-          case c if keep(c)         ⇒ r ~~ c
-          case ' ' if replaceSpaces ⇒ r ~~ '+'
-          case c if c <= 127        ⇒ appendEncoded(c.toByte)
-          case c                    ⇒ c.toString.getBytes(charset).foreach(appendEncoded)
+        val charSize = string.charAt(ix) match {
+          case c if keep(c)                     ⇒ { r ~~ c; 1 }
+          case ' ' if replaceSpaces             ⇒ { r ~~ '+'; 1 }
+          case c if c <= 127 && asciiCompatible ⇒ { appendEncoded(c.toByte); 1 }
+          case c ⇒
+            def append(s: String) = s.getBytes(charset).foreach(appendEncoded)
+            if (Character.isHighSurrogate(c)) { append(new String(Array(string codePointAt ix), 0, 1)); 2 }
+            else { append(c.toString); 1 }
         }
-        rec(ix + 1)
+        rec(ix + charSize)
       } else r
     }
-    rec()
+    rec(0)
   }
+
+  private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }

@@ -4,10 +4,13 @@
 
 package akka.http.model
 
+import java.nio.charset.Charset
+import java.net.InetAddress
+import akka.http.util.StringRendering
+import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.{ Matchers, WordSpec }
 import akka.parboiled2.UTF8
 import Uri._
-import java.net.InetAddress
 
 class UriSpec extends WordSpec with Matchers {
 
@@ -188,20 +191,33 @@ class UriSpec extends WordSpec with Matchers {
   "Uri.Path instances" should {
     import Path.Empty
     "be parsed and rendered correctly" in {
-      Path("") shouldEqual Empty
-      Path("/") shouldEqual Path./
-      Path("a") shouldEqual "a" :: Empty
-      Path("//") shouldEqual Path./ / ""
-      Path("a/") shouldEqual "a" :: Path./
-      Path("/a") shouldEqual Path / "a"
-      Path("/abc/de/f") shouldEqual Path / "abc" / "de" / "f"
-      Path("abc/de/f/") shouldEqual "abc" :: '/' :: "de" :: '/' :: "f" :: Path./
-      Path("abc///de") shouldEqual "abc" :: '/' :: '/' :: '/' :: "de" :: Empty
-      Path("/abc%2F") shouldEqual Path / "abc/"
-      Path("H%C3%A4ll%C3%B6") shouldEqual """Hällö""" :: Empty
-      Path("/%2F%5C") shouldEqual Path / """/\"""
-      Path("/:foo:/") shouldEqual Path / ":foo:" / ""
-      Path("%2520").head shouldEqual "%20"
+      def roundTripTo(p: Path, cs: Charset = UTF8) =
+        Matcher[String] { s ⇒
+          val rendering = UriRendering.renderPath(new StringRendering, p, cs).get
+          if (rendering != s) MatchResult(false, s"The path rendered to '$rendering' rather than '$s'", "<?>")
+          else if (Path(s, cs) != p) MatchResult(false, s"The string parsed to '${Path(s, cs)}' rather than '$p'", "<?>")
+          else MatchResult(true, "<?>", "<?>")
+        }
+
+      "" should roundTripTo(Empty)
+      "/" should roundTripTo(Path./)
+      "a" should roundTripTo("a" :: Empty)
+      "//" should roundTripTo(Path./ / "")
+      "a/" should roundTripTo("a" :: Path./)
+      "/a" should roundTripTo(Path / "a")
+      "/abc/de/f" should roundTripTo(Path / "abc" / "de" / "f")
+      "abc/de/f/" should roundTripTo("abc" :: '/' :: "de" :: '/' :: "f" :: Path./)
+      "abc///de" should roundTripTo("abc" :: '/' :: '/' :: '/' :: "de" :: Empty)
+      "/abc%2F" should roundTripTo(Path / "abc/")
+      "/:foo:/" should roundTripTo(Path / ":foo:" / "")
+      "/%2520" should roundTripTo(Path / "%20")
+      "/foo%20bar" should roundTripTo(Path / "foo bar")
+      "H%C3%A4ll%C3%B6" should roundTripTo("Hällö" :: Empty)
+      "/%2F%5C" should roundTripTo(Path / """/\""")
+      "/foo%F0%9F%92%A9bar" should roundTripTo(Path / "foo\ud83d\udca9bar")
+      "/%C3%89g%20get%20eti%C3%B0%20gler%20%C3%A1n%20%C3%BEess%20a%C3%B0%20mei%C3%B0a%20mig" should
+        roundTripTo(Path / "Ég get etið gler án þess að meiða mig")
+      "/%00%E4%00%F6%00%FC" should roundTripTo(Path / "äöü", Charset.forName("UTF-16BE"))
     }
     "support the `startsWith` predicate" in {
       Empty startsWith Empty shouldBe true
