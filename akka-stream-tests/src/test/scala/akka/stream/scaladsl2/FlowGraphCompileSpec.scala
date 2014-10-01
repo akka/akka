@@ -6,8 +6,16 @@ package akka.stream.scaladsl2
 import akka.stream.testkit.AkkaSpec
 import akka.stream.Transformer
 import akka.stream.OverflowStrategy
+import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.PublisherProbe
+
+object FlowGraphCompileSpec {
+  class Fruit
+  class Apple extends Fruit
+}
 
 class FlowGraphCompileSpec extends AkkaSpec {
+  import FlowGraphCompileSpec._
 
   implicit val mat = FlowMaterializer()
 
@@ -271,6 +279,50 @@ class FlowGraphCompileSpec extends AkkaSpec {
           merge ~> out2 // wrong
         }
       }.getMessage should include("at most 1 outgoing")
+    }
+
+    "build with variance" in {
+      val out = SubscriberSink(SubscriberProbe[Fruit]())
+      FlowGraph { b ⇒
+        val merge = Merge[Fruit]
+        b.
+          addEdge(FlowFrom[Fruit](() ⇒ Some(new Apple)), merge).
+          addEdge(FlowFrom[Apple](() ⇒ Some(new Apple)), merge).
+          addEdge(merge, FlowFrom[Fruit].map(identity), out)
+      }
+    }
+
+    "build with implicits and variance" in {
+      PartialFlowGraph { implicit b ⇒
+        val inA = PublisherSource(PublisherProbe[Fruit]())
+        val inB = PublisherSource(PublisherProbe[Apple]())
+        val outA = SubscriberSink(SubscriberProbe[Fruit]())
+        val outB = SubscriberSink(SubscriberProbe[Fruit]())
+        val merge = Merge[Fruit]
+        import FlowGraphImplicits._
+        FlowFrom[Fruit](() ⇒ Some(new Apple)) ~> merge
+        FlowFrom[Apple](() ⇒ Some(new Apple)) ~> merge
+        inA ~> merge
+        inB ~> merge
+        inA ~> FlowFrom[Fruit].map(identity) ~> merge
+        inB ~> FlowFrom[Apple].map(identity) ~> merge
+        UndefinedSource[Apple] ~> merge
+        UndefinedSource[Apple] ~> FlowFrom[Fruit].map(identity) ~> merge
+        UndefinedSource[Apple] ~> FlowFrom[Apple].map(identity) ~> merge
+        merge ~> FlowFrom[Fruit].map(identity) ~> outA
+
+        FlowFrom[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> merge
+        FlowFrom[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> outB
+        FlowFrom[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
+        inB ~> Broadcast[Apple] ~> merge
+
+        "UndefinedSource[Fruit] ~> FlowFrom[Apple].map(identity) ~> merge" shouldNot compile
+        "UndefinedSource[Fruit] ~> Broadcast[Apple]" shouldNot compile
+        "merge ~> Broadcast[Apple]" shouldNot compile
+        "merge ~> FlowFrom[Fruit].map(identity) ~> Broadcast[Apple]" shouldNot compile
+        "inB ~> merge ~> Broadcast[Apple]" shouldNot compile
+        "inA ~> Broadcast[Apple]" shouldNot compile
+      }
     }
 
   }
