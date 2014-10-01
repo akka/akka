@@ -13,10 +13,8 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, transformer: TransformerLike[Any, Any])
-  extends ActorProcessorImpl(_settings) {
+  extends ActorProcessorImpl(_settings) with Emit {
 
-  // TODO performance improvement: mutable buffer?
-  var emits = immutable.Seq.empty[Any]
   var errorEvent: Option[Throwable] = None
 
   override def preStart(): Unit = {
@@ -51,23 +49,6 @@ private[akka] class TransformProcessorImpl(_settings: MaterializerSettings, tran
   val terminate = TransferPhase(Always) { () ⇒
     emits = transformer.onTermination(errorEvent)
     emitAndThen(completedPhase)
-  }
-
-  // Save previous phase we should return to in a var to avoid allocation
-  var phaseAfterFlush: TransferPhase = _
-
-  // Enters flushing phase if there are emits pending
-  def emitAndThen(andThen: TransferPhase): Unit =
-    if (emits.nonEmpty) {
-      phaseAfterFlush = andThen
-      nextPhase(emitting)
-    } else nextPhase(andThen)
-
-  // Emits all pending elements, then returns to savedPhase
-  val emitting = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
-    primaryOutputs.enqueueOutputElement(emits.head)
-    emits = emits.tail
-    if (emits.isEmpty) nextPhase(phaseAfterFlush)
   }
 
   override def toString: String = s"Transformer(emits=$emits, transformer=$transformer)"

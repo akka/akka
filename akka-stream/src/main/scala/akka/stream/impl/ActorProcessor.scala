@@ -32,7 +32,7 @@ private[akka] object ActorProcessor {
       case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
       case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
-      case m: MapFuture      ⇒ Props(new MapFutureProcessorImpl(settings, m.f))
+      case m: MapFuture      ⇒ Props(new MapAsyncProcessorImpl(settings, m.f))
     }).withDispatcher(settings.dispatcher)
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
