@@ -118,7 +118,7 @@ class FanoutPublisherSink[Out](initialBufferSize: Int, maximumBufferSize: Int) e
   def publisher(m: MaterializedSink): Publisher[Out] = m.getSinkFor(this)
   override def attach(flowPublisher: Publisher[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] = {
     val fanoutActor = materializer.actorOf(
-      Props(new FanoutProcessorImpl(materializer.settings, initialBufferSize, maximumBufferSize)), "fanout")
+      Props(new FanoutProcessorImpl(materializer.settings, initialBufferSize, maximumBufferSize)), s"$flowName-fanoutPublisher")
     val fanoutProcessor = ActorProcessorFactory[Out, Out](fanoutActor)
     flowPublisher.subscribe(fanoutProcessor)
     fanoutProcessor
