@@ -8,6 +8,7 @@ import akka.stream.MaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.impl._
 import org.reactivestreams.{ Subscription, Subscriber }
+import akka.actor.Props
 
 /**
  * INTERNAL API
@@ -192,6 +193,14 @@ private[akka] abstract class FanIn(val settings: MaterializerSettings, val input
 /**
  * INTERNAL API
  */
+private[akka] object FairMerge {
+  def props(settings: MaterializerSettings, inputPorts: Int): Props =
+    Props(new FairMerge(settings, inputPorts))
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] class FairMerge(_settings: MaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
   (0 until inputPorts) foreach inputBunch.markInput
 
@@ -200,6 +209,14 @@ private[akka] class FairMerge(_settings: MaterializerSettings, _inputPorts: Int)
     primaryOutputs.enqueueOutputElement(elem)
   })
 
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object UnfairMerge {
+  def props(settings: MaterializerSettings, inputPorts: Int, preferred: Int): Props =
+    Props(new UnfairMerge(settings, inputPorts, preferred: Int))
 }
 
 /**
@@ -217,6 +234,14 @@ private[akka] class UnfairMerge(_settings: MaterializerSettings, _inputPorts: In
 /**
  * INTERNAL API
  */
+private[akka] object Zip {
+  def props(settings: MaterializerSettings): Props =
+    Props(new Zip(settings))
+}
+
+/**
+ * INTERNAL API
+ */
 private[akka] class Zip(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
   inputBunch.markInput(0)
   inputBunch.markInput(1)
@@ -226,6 +251,14 @@ private[akka] class Zip(_settings: MaterializerSettings) extends FanIn(_settings
     val elem1 = inputBunch.dequeue(1)
     primaryOutputs.enqueueOutputElement((elem0, elem1))
   })
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object Concat {
+  def props(settings: MaterializerSettings): Props =
+    Props(new Concat(settings))
 }
 
 /**
