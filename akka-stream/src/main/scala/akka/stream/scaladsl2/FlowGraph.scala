@@ -16,7 +16,7 @@ import akka.stream.impl2.Ast
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface. Edges may end at a `JunctionInPort`.
  */
-sealed trait JunctionInPort[T] {
+sealed trait JunctionInPort[-T] {
   private[akka] def port: Int = FlowGraphInternal.UnlabeledPort
   private[akka] def vertex: FlowGraphInternal.Vertex
   type NextT
@@ -27,7 +27,7 @@ sealed trait JunctionInPort[T] {
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface. Edges may start at a `JunctionOutPort`.
  */
-sealed trait JunctionOutPort[T] {
+sealed trait JunctionOutPort[+T] {
   private[akka] def port: Int = FlowGraphInternal.UnlabeledPort
   private[akka] def vertex: FlowGraphInternal.Vertex
 }
@@ -226,7 +226,7 @@ object UndefinedSink {
  * yet by using this placeholder instead of the real [[Sink]]. Later the placeholder can
  * be replaced with [[FlowGraphBuilder#attachSink]].
  */
-final class UndefinedSink[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+final class UndefinedSink[-T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
   override def minimumInputCount: Int = 1
   override def maximumInputCount: Int = 1
   override def minimumOutputCount: Int = 0
@@ -256,7 +256,7 @@ object UndefinedSource {
  * yet by using this placeholder instead of the real [[Source]]. Later the placeholder can
  * be replaced with [[FlowGraphBuilder#attachSource]].
  */
-final class UndefinedSource[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+final class UndefinedSource[+T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
   override def minimumInputCount: Int = 0
   override def maximumInputCount: Int = 0
   override def minimumOutputCount: Int = 1
