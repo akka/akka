@@ -315,6 +315,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val outA = SubscriberSink(SubscriberProbe[Fruit]())
         val outB = SubscriberSink(SubscriberProbe[Fruit]())
         val merge = Merge[Fruit]
+        val unzip = Unzip[Int, String]
+        val whatever = PublisherSink[Any]
         import FlowGraphImplicits._
         FlowFrom[Fruit](() ⇒ Some(new Apple)) ~> merge
         FlowFrom[Apple](() ⇒ Some(new Apple)) ~> merge
@@ -331,6 +333,10 @@ class FlowGraphCompileSpec extends AkkaSpec {
         FlowFrom[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> outB
         FlowFrom[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
         inB ~> Broadcast[Apple] ~> merge
+
+        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.right ~> whatever
+        unzip.left ~> UndefinedSink[Any]
 
         "UndefinedSource[Fruit] ~> FlowFrom[Apple].map(identity) ~> merge" shouldNot compile
         "UndefinedSource[Fruit] ~> Broadcast[Apple]" shouldNot compile

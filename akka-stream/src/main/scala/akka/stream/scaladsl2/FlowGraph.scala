@@ -27,7 +27,7 @@ sealed trait JunctionInPort[-T] {
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface. Edges may start at a `JunctionOutPort`.
  */
-sealed trait JunctionOutPort[+T] {
+sealed trait JunctionOutPort[T] {
   private[akka] def port: Int = FlowGraphInternal.UnlabeledPort
   private[akka] def vertex: FlowGraphInternal.Vertex
 }
