@@ -73,9 +73,24 @@ trait FlowOps[-In, +Out] {
    * element that will be emitted downstream. As many futures as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as from upstream.
+   *
+   * @see [[#mapAsyncUnordered]]
    */
-  def mapFuture[T](f: Out ⇒ Future[T]): Repr[In, T] =
-    andThen(MapFuture(f.asInstanceOf[Any ⇒ Future[Any]]))
+  def mapAsync[T](f: Out ⇒ Future[T]): Repr[In, T] =
+    andThen(MapAsync(f.asInstanceOf[Any ⇒ Future[Any]]))
+
+  /**
+   * Transform this stream by applying the given function to each of the elements
+   * as they pass through this processing step. The function returns a `Future` of the
+   * element that will be emitted downstream. As many futures as requested elements by
+   * downstream may run in parallel and each processed element will be emitted dowstream
+   * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
+   * in the same order as from upstream.
+   *
+   * @see [[#mapAsync]]
+   */
+  def mapAsyncUnordered[T](f: Out ⇒ Future[T]): Repr[In, T] =
+    andThen(MapAsyncUnordered(f.asInstanceOf[Any ⇒ Future[Any]]))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
