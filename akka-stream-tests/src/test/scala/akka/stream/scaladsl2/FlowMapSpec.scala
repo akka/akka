@@ -28,7 +28,7 @@ class FlowMapSpec extends AkkaSpec with ScriptedTest {
       val probe = StreamTestKit.SubscriberProbe[Int]()
       Source(List(1).iterator).
         map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).map(_ + 1).
-        toPublisher().subscribe(probe)
+        runWith(PublisherDrain()).subscribe(probe)
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {

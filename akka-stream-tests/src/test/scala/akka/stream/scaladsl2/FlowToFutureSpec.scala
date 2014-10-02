@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 import scala.util.Failure
 import akka.stream.MaterializerSettings
+import scala.concurrent.Future
 
 class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
@@ -19,16 +20,15 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  "A Flow with toFuture" must {
+  "A Flow with FutureDrain" must {
 
     "yield the first value" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureDrain[Int]
-      val m = Source(p).connect(f).run()
+      val f: Future[Int] = Source(p).map(identity).runWith(FutureDrain())
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
-      Await.result(f.future(m), 100.millis) should be(42)
+      Await.result(f, 100.millis) should be(42)
       proc.expectCancellation()
     }
 
@@ -37,37 +37,33 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
       val f = FutureDrain[Int]
       val s = SubscriberTap[Int]
       val m = s.connect(f).run()
-      p.subscribe(s.subscriber(m))
+      p.subscribe(m.materializedTap(s))
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
-      Await.result(f.future(m), 100.millis) should be(42)
+      Await.result(m.materializedDrain(f), 100.millis) should be(42)
       proc.expectCancellation()
     }
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureDrain[Int]
-      val m = Source(p).connect(f).run()
+      val f = Source(p).runWith(FutureDrain())
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex")
       proc.sendError(ex)
-      val future = f.future(m)
-      Await.ready(future, 100.millis)
-      future.value.get should be(Failure(ex))
+      Await.ready(f, 100.millis)
+      f.value.get should be(Failure(ex))
     }
 
     "yield NoSuchElementExcption for empty stream" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureDrain[Int]
-      val m = Source(p).connect(f).run()
+      val f = Source(p).runWith(FutureDrain())
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()
-      val future = f.future(m)
-      Await.ready(future, 100.millis)
-      future.value.get match {
+      Await.ready(f, 100.millis)
+      f.value.get match {
         case Failure(e: NoSuchElementException) ⇒ e.getMessage() should be("empty stream")
         case x                                  ⇒ fail("expected NoSuchElementException, got " + x)
       }

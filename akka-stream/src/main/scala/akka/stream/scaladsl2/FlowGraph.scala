@@ -836,7 +836,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
   /**
    * Materialize the `FlowGraph` and attach all sinks and sources.
    */
-  def run()(implicit materializer: FlowMaterializer): MaterializedFlowGraph = {
+  def run()(implicit materializer: FlowMaterializer): MaterializedMap = {
     val edges = graph.edges
     if (edges.size == 1) {
       val edge = edges.head
@@ -854,20 +854,20 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
   /**
    * Run FlowGraph that only contains one edge from a `Source` to a `Sink`.
    */
-  private def runSimple(tapVertex: TapVertex, drainVertex: DrainVertex, pipe: Pipe[Any, Nothing])(implicit materializer: FlowMaterializer): MaterializedFlowGraph = {
+  private def runSimple(tapVertex: TapVertex, drainVertex: DrainVertex, pipe: Pipe[Any, Nothing])(implicit materializer: FlowMaterializer): MaterializedMap = {
     val mf = pipe.withTap(tapVertex.tap).withDrain(drainVertex.drain).run()
-    val materializedSources: Map[TapWithKey[_, _], Any] = tapVertex match {
-      case TapVertex(tap: TapWithKey[_, _]) ⇒ Map(tap -> mf.getTapFor(tap))
-      case _                                ⇒ Map.empty
+    val materializedSources: Map[TapWithKey[_], Any] = tapVertex match {
+      case TapVertex(tap: TapWithKey[_]) ⇒ Map(tap -> mf.materializedTap(tap))
+      case _                             ⇒ Map.empty
     }
-    val materializedSinks: Map[DrainWithKey[_, _], Any] = drainVertex match {
-      case DrainVertex(drain: DrainWithKey[_, _]) ⇒ Map(drain -> mf.getDrainFor(drain))
-      case _                                      ⇒ Map.empty
+    val materializedSinks: Map[DrainWithKey[_], Any] = drainVertex match {
+      case DrainVertex(drain: DrainWithKey[_]) ⇒ Map(drain -> mf.materializedDrain(drain))
+      case _                                   ⇒ Map.empty
     }
     new MaterializedFlowGraph(materializedSources, materializedSinks)
   }
 
-  private def runGraph()(implicit materializer: FlowMaterializer): MaterializedFlowGraph = {
+  private def runGraph()(implicit materializer: FlowMaterializer): MaterializedMap = {
     import scalax.collection.GraphTraversal._
 
     // start with drains
@@ -877,7 +877,7 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
                     downstreamSubscriber: Map[graph.EdgeT, Subscriber[Any]] = Map.empty,
                     upstreamPublishers: Map[graph.EdgeT, Publisher[Any]] = Map.empty,
                     taps: Map[TapVertex, SinkPipe[Any]] = Map.empty,
-                    materializedDrains: Map[DrainWithKey[_, _], Any] = Map.empty)
+                    materializedDrains: Map[DrainWithKey[_], Any] = Map.empty)
 
     val result = startingNodes.foldLeft(Memo()) {
       case (memo, start) ⇒
@@ -892,12 +892,12 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
               val pipe = edge.label.pipe
 
               // returns the materialized drain, if any
-              def connectToDownstream(publisher: Publisher[Any]): Option[(DrainWithKey[_, _], Any)] = {
+              def connectToDownstream(publisher: Publisher[Any]): Option[(DrainWithKey[_], Any)] = {
                 val f = pipe.withTap(PublisherTap(publisher))
                 edge.to.value match {
-                  case DrainVertex(drain: DrainWithKey[_, _]) ⇒
+                  case DrainVertex(drain: DrainWithKey[_]) ⇒
                     val mf = f.withDrain(drain).run()
-                    Some(drain -> mf.getDrainFor(drain))
+                    Some(drain -> mf.materializedDrain(drain))
                   case DrainVertex(drain) ⇒
                     f.withDrain(drain).run()
                     None
@@ -948,12 +948,12 @@ class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraph
     }
 
     // connect all input taps as the last thing
-    val materializedTaps = result.taps.foldLeft(Map.empty[TapWithKey[_, _], Any]) {
+    val materializedTaps = result.taps.foldLeft(Map.empty[TapWithKey[_], Any]) {
       case (acc, (TapVertex(tap), pipe)) ⇒
         val mf = pipe.withTap(tap).run()
         tap match {
-          case tapKey: TapWithKey[_, _] ⇒ acc.updated(tapKey, mf.getTapFor(tapKey))
-          case _                        ⇒ acc
+          case tapKey: TapWithKey[_] ⇒ acc.updated(tapKey, mf.materializedTap(tapKey))
+          case _                     ⇒ acc
         }
     }
 
@@ -1018,29 +1018,22 @@ class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[Fl
 }
 
 /**
- * Returned by [[FlowGraph#run]] and can be used as parameter to the
- * accessor method to retrieve the materialized `Tap` or `Drain`, e.g.
- * [[SubscriberTap#subscriber]] or [[PublisherDrain#publisher]].
+ * Returned by [[FlowGraph#run]] and can be used to retrieve the materialized
+ * `Tap` inputs or `Drain` outputs.
  */
-class MaterializedFlowGraph(materializedTaps: Map[TapWithKey[_, _], Any], materializedDrains: Map[DrainWithKey[_, _], Any])
-  extends MaterializedTap with MaterializedDrain {
+private[scaladsl2] class MaterializedFlowGraph(materializedTaps: Map[TapWithKey[_], Any], materializedDrains: Map[DrainWithKey[_], Any])
+  extends MaterializedMap {
 
-  /**
-   * Do not call directly. Use accessor method in the concrete `Tap`, e.g. [[SubscriberTap#subscriber]].
-   */
-  override def getTapFor[T](key: TapWithKey[_, T]): T =
+  override def materializedTap(key: TapWithKey[_]): key.MaterializedType =
     materializedTaps.get(key) match {
-      case Some(matTap) ⇒ matTap.asInstanceOf[T]
+      case Some(matTap) ⇒ matTap.asInstanceOf[key.MaterializedType]
       case None ⇒
         throw new IllegalArgumentException(s"Tap key [$key] doesn't exist in this flow graph")
     }
 
-  /**
-   * Do not call directly. Use accessor method in the concrete `Drain`, e.g. [[PublisherDrain#publisher]].
-   */
-  def getDrainFor[T](key: DrainWithKey[_, T]): T =
+  def materializedDrain(key: DrainWithKey[_]): key.MaterializedType =
     materializedDrains.get(key) match {
-      case Some(matDrain) ⇒ matDrain.asInstanceOf[T]
+      case Some(matDrain) ⇒ matDrain.asInstanceOf[key.MaterializedType]
       case None ⇒
         throw new IllegalArgumentException(s"Drain key [$key] doesn't exist in this flow graph")
     }
