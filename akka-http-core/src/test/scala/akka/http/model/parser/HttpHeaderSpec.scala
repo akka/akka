@@ -150,6 +150,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Cache-Control`(`private`(), CacheDirective.custom("community", Some("<UCI>")))
       "Cache-Control: max-age=1234567890123456789" =!=
         `Cache-Control`(`max-age`(Int.MaxValue)).renderedTo("max-age=2147483647")
+      "Cache-Control: private, no-cache, no-cache=Set-Cookie, proxy-revalidate" =!=
+        `Cache-Control`(`private`(), `no-cache`, `no-cache`("Set-Cookie"), `proxy-revalidate`).renderedTo(
+          "private, no-cache, no-cache=\"Set-Cookie\", proxy-revalidate")
+      "Cache-Control: no-cache=Set-Cookie" =!=
+        `Cache-Control`(`no-cache`("Set-Cookie")).renderedTo("no-cache=\"Set-Cookie\"")
+      "Cache-Control: private=\"a,b\", no-cache" =!=
+        `Cache-Control`(`private`("a", "b"), `no-cache`)
     }
 
     "Connection" in {
