@@ -23,7 +23,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     "produce future elements" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 3).mapAsync(n ⇒ Future(n)).publishTo(c)
+      val p = Source(1 to 3).mapAsync(n ⇒ Future(n)).publishTo(c)
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)
@@ -37,7 +37,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     "produce future elements in order" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 50).mapAsync(n ⇒ Future {
+      val p = Source(1 to 50).mapAsync(n ⇒ Future {
         Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
         n
       }).publishTo(c)
@@ -51,7 +51,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val probe = TestProbe()
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 20).mapAsync(n ⇒ Future {
+      val p = Source(1 to 20).mapAsync(n ⇒ Future {
         probe.ref ! n
         n
       }).publishTo(c)
@@ -76,7 +76,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapAsync(n ⇒ Future {
+      val p = Source(1 to 5).mapAsync(n ⇒ Future {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
         else {
           Await.ready(latch, 10.seconds)
@@ -93,7 +93,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapAsync(n ⇒
+      val p = Source(1 to 5).mapAsync(n ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
         else {
           Future {

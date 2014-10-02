@@ -8,7 +8,7 @@ import scala.collection.immutable
 import akka.stream.impl.TransferPhase
 import akka.stream.impl.EmptyPublisher
 import akka.stream.impl.MultiStreamOutputProcessor
-import akka.stream.scaladsl2.FlowFrom
+import akka.stream.scaladsl2.Source
 
 /**
  * INTERNAL API
@@ -44,13 +44,13 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
   }
 
   def emitEmptyTail(): Unit = {
-    primaryOutputs.enqueueOutputElement((taken, FlowFrom(EmptyPublisher[Any])))
+    primaryOutputs.enqueueOutputElement((taken, Source(EmptyPublisher[Any])))
     nextPhase(completedPhase)
   }
 
   def emitNonEmptyTail(): Unit = {
     val substreamOutput = createSubstreamOutput()
-    val substreamFlow = FlowFrom(substreamOutput) // substreamOutput is a Publisher
+    val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
     primaryOutputs.enqueueOutputElement((taken, substreamFlow))
     primaryOutputs.complete()
     nextPhase(streamTailPhase(substreamOutput))
