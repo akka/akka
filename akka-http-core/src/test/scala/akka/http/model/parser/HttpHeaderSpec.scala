@@ -212,6 +212,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Cookie: a=1;b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       "Cookie: a=1 ;b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       "Cookie: a=1; b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2"))
+      "Cookie: a=1,b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       Cookie(HttpCookie("SID", "31d4d96e407aad42",
         domain = Some("example.com"),
         expires = Some(DateTime(2021, 6, 9, 10, 18, 14)),
