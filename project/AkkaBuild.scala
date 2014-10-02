@@ -1061,7 +1061,11 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.testkit.TestKitBase.expectMsg"),
 
       // Adding akka.japi.Option.getOrElse #15383
-      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Option.getOrElse")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.japi.Option.getOrElse"),
+
+      // Change to internal API to fix #15991
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite$"),
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite")
     )
   }
 
