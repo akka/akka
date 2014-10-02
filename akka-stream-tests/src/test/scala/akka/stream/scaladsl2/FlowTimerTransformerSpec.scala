@@ -16,7 +16,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
   "A Flow with TimerTransformer operations" must {
     "produce scheduled ticks as expected" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         timerTransform("timer", () ⇒ new TimerTransformer[Int, Int] {
           schedulePeriodically("tick", 100.millis)
           var tickCount = 0
@@ -41,7 +41,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
 
     "schedule ticks when last transformation step (consume)" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         timerTransform("timer", () ⇒ new TimerTransformer[Int, Int] {
           schedulePeriodically("tick", 100.millis)
           var tickCount = 0
@@ -65,7 +65,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
     "propagate error if onTimer throws an exception" in {
       val exception = new Exception("Expected exception to the rule") with NoStackTrace
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         timerTransform("timer", () ⇒ new TimerTransformer[Int, Int] {
           scheduleOnce("tick", 100.millis)
 

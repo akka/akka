@@ -19,26 +19,26 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
   "FlowGraphs" must {
 
     "support broadcast - merge layouts" in {
-      val resultFuture = FutureSink[Seq[Int]]
+      val resultFuture = FutureDrain[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
         val merge = Merge[Int]("merge")
 
-        FlowFrom(List(1, 2, 3)) ~> bcast
+        Source(List(1, 2, 3)) ~> bcast
         bcast ~> merge
-        bcast ~> FlowFrom[Int].map(_ + 3) ~> merge
-        merge ~> FlowFrom[Int].grouped(10) ~> resultFuture
+        bcast ~> Flow[Int].map(_ + 3) ~> merge
+        merge ~> Flow[Int].grouped(10) ~> resultFuture
       }.run()
 
-      Await.result(g.getSinkFor(resultFuture), 3.seconds).sorted should be(List(1, 2, 3, 4, 5, 6))
+      Await.result(g.getDrainFor(resultFuture), 3.seconds).sorted should be(List(1, 2, 3, 4, 5, 6))
     }
 
     "support wikipedia Topological_sorting 2" in {
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
-      val resultFuture2 = FutureSink[Seq[Int]]
-      val resultFuture9 = FutureSink[Seq[Int]]
-      val resultFuture10 = FutureSink[Seq[Int]]
+      val resultFuture2 = FutureDrain[Seq[Int]]
+      val resultFuture9 = FutureDrain[Seq[Int]]
+      val resultFuture10 = FutureDrain[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val b3 = Broadcast[Int]("b3")
@@ -48,9 +48,9 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         val m9 = Merge[Int]("m9")
         val m10 = Merge[Int]("m10")
         val m11 = Merge[Int]("m11")
-        val in3 = IterableSource(List(3))
-        val in5 = IterableSource(List(5))
-        val in7 = IterableSource(List(7))
+        val in3 = IterableTap(List(3))
+        val in5 = IterableTap(List(5))
+        val in7 = IterableTap(List(7))
 
         // First layer
         in7 ~> b7
@@ -65,24 +65,39 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
 
         // Second layer
         m11 ~> b11
-        b11 ~> FlowFrom[Int].grouped(1000) ~> resultFuture2 // Vertex 2 is omitted since it has only one in and out
+        b11 ~> Flow[Int].grouped(1000) ~> resultFuture2 // Vertex 2 is omitted since it has only one in and out
         b11 ~> m9
         b11 ~> m10
 
         m8 ~> m9
 
         // Third layer
-        m9 ~> FlowFrom[Int].grouped(1000) ~> resultFuture9
-        m10 ~> FlowFrom[Int].grouped(1000) ~> resultFuture10
+        m9 ~> Flow[Int].grouped(1000) ~> resultFuture9
+        m10 ~> Flow[Int].grouped(1000) ~> resultFuture10
 
       }.run()
 
-      Await.result(g.getSinkFor(resultFuture2), 3.seconds).sorted should be(List(5, 7))
-      Await.result(g.getSinkFor(resultFuture9), 3.seconds).sorted should be(List(3, 5, 7, 7))
-      Await.result(g.getSinkFor(resultFuture10), 3.seconds).sorted should be(List(3, 5, 7))
+      Await.result(g.getDrainFor(resultFuture2), 3.seconds).sorted should be(List(5, 7))
+      Await.result(g.getDrainFor(resultFuture9), 3.seconds).sorted should be(List(3, 5, 7, 7))
+      Await.result(g.getDrainFor(resultFuture10), 3.seconds).sorted should be(List(3, 5, 7))
 
     }
 
+    "allow adding of flows to sources and sinks to flows" in {
+      val resultFuture = FutureDrain[Seq[Int]]
+
+      val g = FlowGraph { implicit b ⇒
+        val bcast = Broadcast[Int]("broadcast")
+        val merge = Merge[Int]("merge")
+
+        Source(List(1, 2, 3)) ~> Flow[Int].map(_ * 2) ~> bcast
+        bcast ~> merge
+        bcast ~> Flow[Int].map(_ + 3) ~> merge
+        merge ~> Flow[Int].grouped(10).connect(resultFuture)
+      }.run()
+
+      Await.result(g.getDrainFor(resultFuture), 3.seconds) should contain theSameElementsAs (Seq(2, 4, 6, 5, 7, 9))
+    }
   }
 
 }

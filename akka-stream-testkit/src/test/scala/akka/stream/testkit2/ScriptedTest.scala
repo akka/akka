@@ -5,7 +5,7 @@ package akka.stream.testkit2
 
 import akka.actor.ActorSystem
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl2.{ FlowMaterializer, FlowWithSource, ProcessorFlow }
+import akka.stream.scaladsl2.{ FlowMaterializer, Source, Flow }
 import akka.stream.testkit.StreamTestKit._
 import org.reactivestreams.Publisher
 import org.scalatest.Matchers
@@ -18,7 +18,7 @@ trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
-  def toPublisher[In, Out]: (FlowWithSource[In, Out], FlowMaterializer) ⇒ Publisher[Out] =
+  def toPublisher[In, Out]: (Source[Out], FlowMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.toPublisher()(m)
 
   object Script {
@@ -81,7 +81,7 @@ trait ScriptedTest extends Matchers {
   }
 
   class ScriptRunner[In, Out](
-    op: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out],
+    op: Flow[In, In] ⇒ Flow[In, Out],
     settings: MaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
@@ -191,7 +191,7 @@ trait ScriptedTest extends Matchers {
   }
 
   def runScript[In, Out](script: Script[In, Out], settings: MaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: ProcessorFlow[In, In] ⇒ ProcessorFlow[In, Out])(implicit system: ActorSystem): Unit = {
+    op: Flow[In, In] ⇒ Flow[In, Out])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

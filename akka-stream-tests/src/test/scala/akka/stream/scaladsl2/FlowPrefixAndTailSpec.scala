@@ -25,12 +25,12 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     val testException = new Exception("test") with NoStackTrace
 
-    def newFutureSink = FutureSink[(immutable.Seq[Int], FlowWithSource[Int, Int])]
+    def newFutureDrain = FutureDrain[(immutable.Seq[Int], Source[Int])]
 
     "work on empty input" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom(Nil).prefixAndTail(10).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source(Nil).prefixAndTail(10).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(Nil)
       val tailSubscriber = SubscriberProbe[Int]
@@ -39,9 +39,9 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
     }
 
     "work on short input" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom(List(1, 2, 3)).prefixAndTail(10).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source(List(1, 2, 3)).prefixAndTail(10).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(List(1, 2, 3))
       val tailSubscriber = SubscriberProbe[Int]
@@ -50,48 +50,48 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
     }
 
     "work on longer inputs" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom((1 to 10).iterator).prefixAndTail(5).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source((1 to 10).iterator).prefixAndTail(5).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 5)
 
-      val futureSink2 = FutureSink[immutable.Seq[Int]]
-      val mf2 = tail.grouped(6).withSink(futureSink2).run()
-      val fut2 = futureSink2.future(mf2)
+      val futureDrain2 = FutureDrain[immutable.Seq[Int]]
+      val mf2 = tail.grouped(6).connect(futureDrain2).run()
+      val fut2 = futureDrain2.future(mf2)
       Await.result(fut2, 3.seconds) should be(6 to 10)
     }
 
     "handle zero take count" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom((1 to 10).iterator).prefixAndTail(0).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source((1 to 10).iterator).prefixAndTail(0).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      val futureSink2 = FutureSink[immutable.Seq[Int]]
-      val mf2 = tail.grouped(11).withSink(futureSink2).run()
-      val fut2 = futureSink2.future(mf2)
+      val futureDrain2 = FutureDrain[immutable.Seq[Int]]
+      val mf2 = tail.grouped(11).connect(futureDrain2).run()
+      val fut2 = futureDrain2.future(mf2)
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "handle negative take count" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom((1 to 10).iterator).prefixAndTail(-1).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source((1 to 10).iterator).prefixAndTail(-1).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      val futureSink2 = FutureSink[immutable.Seq[Int]]
-      val mf2 = tail.grouped(11).withSink(futureSink2).run()
-      val fut2 = futureSink2.future(mf2)
+      val futureDrain2 = FutureDrain[immutable.Seq[Int]]
+      val mf2 = tail.grouped(11).connect(futureDrain2).run()
+      val fut2 = futureDrain2.future(mf2)
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "work if size of take is equal to stream size" in {
-      val futureSink = newFutureSink
-      val mf = FlowFrom((1 to 10).iterator).prefixAndTail(10).withSink(futureSink).run()
-      val fut = futureSink.future(mf)
+      val futureDrain = newFutureDrain
+      val mf = Source((1 to 10).iterator).prefixAndTail(10).connect(futureDrain).run()
+      val fut = futureDrain.future(mf)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 10)
 
@@ -102,9 +102,9 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when no substream open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
 
-      FlowFrom(publisher).prefixAndTail(3).publishTo(subscriber)
+      Source(publisher).prefixAndTail(3).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -120,9 +120,9 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when substream is open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
 
-      FlowFrom(publisher).prefixAndTail(1).publishTo(subscriber)
+      Source(publisher).prefixAndTail(1).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -147,9 +147,9 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle master stream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
 
-      FlowFrom(publisher).prefixAndTail(3).publishTo(subscriber)
+      Source(publisher).prefixAndTail(3).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
@@ -165,9 +165,9 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle substream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], FlowWithSource[Int, Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
 
-      FlowFrom(publisher).prefixAndTail(1).publishTo(subscriber)
+      Source(publisher).prefixAndTail(1).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()

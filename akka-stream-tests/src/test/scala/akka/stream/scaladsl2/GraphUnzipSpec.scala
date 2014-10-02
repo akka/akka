@@ -22,9 +22,9 @@ class GraphUnzipSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
-        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.right ~> FlowFrom[String].buffer(16, OverflowStrategy.backpressure) ~> SubscriberSink(c2)
-        unzip.left ~> FlowFrom[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> SubscriberSink(c1)
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.right ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c2)
+        unzip.left ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> SubscriberDrain(c1)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -51,9 +51,9 @@ class GraphUnzipSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
-        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> SubscriberSink(c1)
-        unzip.right ~> SubscriberSink(c2)
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.left ~> SubscriberDrain(c1)
+        unzip.right ~> SubscriberDrain(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -72,9 +72,9 @@ class GraphUnzipSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
-        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> SubscriberSink(c1)
-        unzip.right ~> SubscriberSink(c2)
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        unzip.left ~> SubscriberDrain(c1)
+        unzip.right ~> SubscriberDrain(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -94,9 +94,9 @@ class GraphUnzipSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
-        FlowFrom(p1.getPublisher) ~> unzip.in
-        unzip.left ~> SubscriberSink(c1)
-        unzip.right ~> SubscriberSink(c2)
+        Source(p1.getPublisher) ~> unzip.in
+        unzip.left ~> SubscriberDrain(c1)
+        unzip.right ~> SubscriberDrain(c2)
       }.run()
 
       val p1Sub = p1.expectSubscription()
@@ -122,10 +122,10 @@ class GraphUnzipSpec extends AkkaSpec {
         val zip = Zip[Int, String]
         val unzip = Unzip[Int, String]
         import FlowGraphImplicits._
-        FlowFrom(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.left ~> zip.left
         unzip.right ~> zip.right
-        zip.out ~> SubscriberSink(c1)
+        zip.out ~> SubscriberDrain(c1)
       }.run()
 
       val sub1 = c1.expectSubscription()

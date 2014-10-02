@@ -16,15 +16,15 @@ object ImplicitFlowMaterializerSpec {
       .withInputBuffer(initialSize = 2, maxSize = 16)
       .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
-    val flow = FlowFrom(input).map(_.toUpperCase())
+    val flow = Source(input).map(_.toUpperCase())
 
     def receive = {
       case "run" ⇒
         // run takes an implicit FlowMaterializer parameter, which is provided by ImplicitFlowMaterializer
         import context.dispatcher
-        val foldSink = FoldSink[String, String]("")(_ + _)
-        val mf = flow.withSink(foldSink).run()
-        foldSink.future(mf) pipeTo sender()
+        val foldDrain = FoldDrain[String, String]("")(_ + _)
+        val mf = flow.connect(foldDrain).run()
+        foldDrain.future(mf) pipeTo sender()
     }
   }
 }

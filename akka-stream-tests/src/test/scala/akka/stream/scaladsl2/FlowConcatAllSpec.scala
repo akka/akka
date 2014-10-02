@@ -23,13 +23,13 @@ class FlowConcatAllSpec extends AkkaSpec {
     val testException = new Exception("test") with NoStackTrace
 
     "work in the happy case" in {
-      val s1 = FlowFrom((1 to 2).iterator)
-      val s2 = FlowFrom(List.empty[Int])
-      val s3 = FlowFrom(List(3))
-      val s4 = FlowFrom((4 to 6).iterator)
-      val s5 = FlowFrom((7 to 10).iterator)
+      val s1 = Source((1 to 2).iterator)
+      val s2 = Source(List.empty[Int])
+      val s3 = Source(List(3))
+      val s4 = Source((4 to 6).iterator)
+      val s5 = Source((7 to 10).iterator)
 
-      val main = FlowFrom(List(s1, s2, s3, s4, s5))
+      val main = Source(List(s1, s2, s3, s4, s5))
 
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       main.flatten(FlattenStrategy.concat).publishTo(subscriber)
@@ -42,7 +42,7 @@ class FlowConcatAllSpec extends AkkaSpec {
 
     "work together with SplitWhen" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom((1 to 10).iterator).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).publishTo(subscriber)
+      Source((1 to 10).iterator).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).publishTo(subscriber)
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
       subscriber.probe.receiveN(10) should be((1 to 10).map(StreamTestKit.OnNext(_)))
@@ -51,16 +51,16 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on onError on master stream cancel the current open substream and signal error" in {
-      val publisher = StreamTestKit.PublisherProbe[FlowWithSource[Int, Int]]()
+      val publisher = StreamTestKit.PublisherProbe[Source[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
+      Source(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
       downstream.request(1000)
 
       val substreamPublisher = StreamTestKit.PublisherProbe[Int]()
-      val substreamFlow = FlowFrom(substreamPublisher)
+      val substreamFlow = Source(substreamPublisher)
       upstream.expectRequest()
       upstream.sendNext(substreamFlow)
       val subUpstream = substreamPublisher.expectSubscription()
@@ -71,16 +71,16 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on onError on open substream, cancel the master stream and signal error " in {
-      val publisher = StreamTestKit.PublisherProbe[FlowWithSource[Int, Int]]()
+      val publisher = StreamTestKit.PublisherProbe[Source[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
+      Source(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
       downstream.request(1000)
 
       val substreamPublisher = StreamTestKit.PublisherProbe[Int]()
-      val substreamFlow = FlowFrom(substreamPublisher)
+      val substreamFlow = Source(substreamPublisher)
       upstream.expectRequest()
       upstream.sendNext(substreamFlow)
       val subUpstream = substreamPublisher.expectSubscription()
@@ -91,16 +91,16 @@ class FlowConcatAllSpec extends AkkaSpec {
     }
 
     "on cancellation cancel the current open substream and the master stream" in {
-      val publisher = StreamTestKit.PublisherProbe[FlowWithSource[Int, Int]]()
+      val publisher = StreamTestKit.PublisherProbe[Source[Int]]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
+      Source(publisher).flatten(FlattenStrategy.concat).publishTo(subscriber)
 
       val upstream = publisher.expectSubscription()
       val downstream = subscriber.expectSubscription()
       downstream.request(1000)
 
       val substreamPublisher = StreamTestKit.PublisherProbe[Int]()
-      val substreamFlow = FlowFrom(substreamPublisher)
+      val substreamFlow = Source(substreamPublisher)
       upstream.expectRequest()
       upstream.sendNext(substreamFlow)
       val subUpstream = substreamPublisher.expectSubscription()

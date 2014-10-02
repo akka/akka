@@ -40,8 +40,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
   "A Flow with transformRecover operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3).iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3).iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -68,8 +68,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3).iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3).iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -99,8 +99,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce dropping transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3, 4).iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3, 4).iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -127,8 +127,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce multi-step transformation as expected" in {
-      val p = FlowFrom(List("a", "bc", "def").iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a", "bc", "def").iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[String, Int] {
           var concat = ""
           override def onNext(element: Try[String]) = {
@@ -170,8 +170,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "invoke onComplete when done" in {
-      val p = FlowFrom(List("a").iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a").iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[String, String] {
           var s = ""
           override def onNext(element: Try[String]) = {
@@ -191,7 +191,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[Int, Int] {
           var s = ""
           override def onNext(element: Try[Int]) = {
@@ -215,7 +215,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "call onComplete after isComplete signaled completion" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[Int, Int] {
           var s = ""
           override def onNext(element: Try[Int]) = {
@@ -240,8 +240,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "report error when exception is thrown" in {
-      val p = FlowFrom(List(1, 2, 3).iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3).iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = {
             if (elem == 2) throw new IllegalArgumentException("two not allowed")
@@ -266,7 +266,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "report error after emitted elements" in {
       EventFilter[IllegalArgumentException]("two not allowed") intercept {
-        val p2 = FlowFrom(List(1, 2, 3).iterator).
+        val p2 = Source(List(1, 2, 3).iterator).
           mapConcat { elem ⇒
             if (elem == 2) throw new IllegalArgumentException("two not allowed")
             else (1 to 5).map(elem * 100 + _)
@@ -315,7 +315,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "transform errors in sequence with normal messages" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, String] {
           var s = ""
           override def onNext(element: Int) = {
@@ -348,7 +348,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "forward errors when received and thrown" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(in: Int) = List(in)
           override def onError(e: Throwable) = throw e
@@ -366,8 +366,8 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "support cancel as expected" in {
-      val p = FlowFrom(List(1, 2, 3).iterator).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3).iterator).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
           override def onError(e: Throwable) = List(-1)

@@ -26,13 +26,13 @@ class GraphConcatSpec extends TwoStreamsSetup {
         val concat1 = Concat[Int]("concat1")
         val concat2 = Concat[Int]("concat2")
 
-        FlowFrom(List.empty[Int].iterator) ~> concat1.first
-        FlowFrom((1 to 4).iterator) ~> concat1.second
+        Source(List.empty[Int].iterator) ~> concat1.first
+        Source((1 to 4).iterator) ~> concat1.second
 
         concat1.out ~> concat2.first
-        FlowFrom((5 to 10).iterator) ~> concat2.second
+        Source((5 to 10).iterator) ~> concat2.second
 
-        concat2.out ~> SubscriberSink(probe)
+        concat2.out ~> SubscriberDrain(probe)
       }.run()
 
       val subscription = probe.expectSubscription()
@@ -109,9 +109,9 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
       FlowGraph { implicit b ⇒
         val concat = Concat[Int]
-        FlowFrom(List(1, 2, 3)) ~> concat.first
-        FlowFrom(promise.future) ~> concat.second
-        concat.out ~> SubscriberSink(subscriber)
+        Source(List(1, 2, 3)) ~> concat.first
+        Source(promise.future) ~> concat.second
+        concat.out ~> SubscriberDrain(subscriber)
       }.run()
 
       val subscription = subscriber.expectSubscription()

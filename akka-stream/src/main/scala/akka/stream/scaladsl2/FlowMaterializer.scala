@@ -138,7 +138,7 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
-  def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow
+  def materialize[In, Out](tap: Tap[In], drain: Drain[Out], ops: List[Ast.AstNode]): MaterializedPipe
 
   /**
    * Create publishers and subscribers for fan-in and fan-out operations.

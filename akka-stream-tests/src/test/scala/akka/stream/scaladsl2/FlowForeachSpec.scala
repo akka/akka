@@ -16,9 +16,9 @@ class FlowForeachSpec extends AkkaSpec {
   "A Foreach" must {
 
     "call the procedure for each element" in {
-      val foreachSink = ForeachSink[Int](testActor ! _)
-      val mf = FlowFrom(1 to 3).withSink(foreachSink).run()
-      foreachSink.future(mf).onSuccess {
+      val foreachDrain = ForeachDrain[Int](testActor ! _)
+      val mf = Source(1 to 3).connect(foreachDrain).run()
+      foreachDrain.future(mf).onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg(1)
@@ -28,9 +28,9 @@ class FlowForeachSpec extends AkkaSpec {
     }
 
     "complete the future for an empty stream" in {
-      val foreachSink = ForeachSink[Int](testActor ! _)
-      val mf = FlowFrom(Nil).withSink(foreachSink).run()
-      foreachSink.future(mf).onSuccess {
+      val foreachDrain = ForeachDrain[Int](testActor ! _)
+      val mf = Source(Nil).connect(foreachDrain).run()
+      foreachDrain.future(mf).onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg("done")
@@ -38,9 +38,9 @@ class FlowForeachSpec extends AkkaSpec {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val foreachSink = ForeachSink[Int](testActor ! _)
-      val mf = FlowFrom(p).withSink(foreachSink).run()
-      foreachSink.future(mf).onFailure {
+      val foreachDrain = ForeachDrain[Int](testActor ! _)
+      val mf = Source(p).connect(foreachDrain).run()
+      foreachDrain.future(mf).onFailure {
         case ex ⇒ testActor ! ex
       }
       val proc = p.expectSubscription

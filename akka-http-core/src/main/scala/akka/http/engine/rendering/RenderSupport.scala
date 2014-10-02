@@ -40,7 +40,7 @@ private object RenderSupport {
     val messageBytes =
       if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()
       else {
-        // FIXME: This should be fixed by a CancelledSink once #15903 is done. Currently this is needed for the tests
+        // FIXME: This should be fixed by a CancelledDrain once #15903 is done. Currently this is needed for the tests
         entityBytes.subscribe(cancelledSusbcriber)
         messageStart
       }

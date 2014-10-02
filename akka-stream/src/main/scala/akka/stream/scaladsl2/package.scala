@@ -5,29 +5,29 @@ package akka.stream
 
 /**
  * Scala API: The flow DSL allows the formulation of stream transformations based on some
- * input. The starting point is called [[Source]] and can be a collection, an iterator,
+ * input. The starting point is called [[Tap]] and can be a collection, an iterator,
  * a block of code which is evaluated repeatedly or a [[org.reactivestreams.Publisher]].
- * A flow with an attached `Source` is a [[FlowWithSource]] and is constructed
- * with the `apply` methods in [[FlowFrom]].
+ * A flow with an attached input and open output, including `Tap` is a [[Source]], and is
+ * constructed with the `apply` methods in [[Source]].
  *
- * A flow may also be defined without an attached input `Source` and that is then
- * a [[ProcessorFlow]]. The `Source` can be attached later with [[ProcessorFlow#withSource]]
- * and it becomes a [[FlowWithSource]].
+ * A flow may also be defined without an attached input or output and that is then
+ * a [[Flow]]. The `Flow` can be connected to the `Source` later by using [[Source#connect]] with
+ * the flow as argument, and it remains a [[Source]].
  *
- * Transformations can appended to `FlowWithSource` and `ProcessorFlow` with the operations
+ * Transformations can be appended to `Source` and `Flow` with the operations
  * defined in [[FlowOps]]. Each DSL element produces a new flow that can be further transformed,
  * building up a description of the complete transformation pipeline.
  *
- * The output of the flow can be attached to a [[Sink]] with [[FlowWithSource#withSink]]
- * and if it also has an attached `Source` it becomes a [[RunnableFlow]]. In order to execute
- * this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.
+ * The termination point of a flow is called [[Drain]] and can for example be a `Future` or
+ * [[org.reactivestreams.Subscriber]]. A flow with an attached output and open input,
+ * including `Drain`, is a [[Sink]].
  *
- * You may also first attach the `Sink` to a `ProcessorFlow` with [[ProcessorFlow#withSink]]
- * and then it becomes a [[FlowWithSink]] and then attach the `Source` to make
- * it runnable.
+ * If a flow has both an attached input and an attached output it becomes a [[RunnableFlow]].
+ * In order to execute this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.
  *
- * Flows can be wired together before they are materialized by appending or prepending them, or
- * connecting them into a [[FlowGraph]] with fan-in and fan-out elements.
+ * You can create your `Source`, `Flow` and `Sink` in any order and then wire them together before
+ * they are materialized by connecting them using [[Flow#connect]], or connecting them into a
+ * [[FlowGraph]] with fan-in and fan-out elements.
  *
  * See <a href="https://github.com/reactive-streams/reactive-streams/">Reactive Streams</a> for
  * details on [[org.reactivestreams.Publisher]] and [[org.reactivestreams.Subscriber]].

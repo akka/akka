@@ -23,8 +23,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3)).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3)).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -46,8 +46,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3)).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3)).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -72,8 +72,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce dropping transformation as expected" in {
-      val p = FlowFrom(List(1, 2, 3, 4)).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3, 4)).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
           override def onNext(elem: Int) = {
@@ -99,8 +99,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce multi-step transformation as expected" in {
-      val p = FlowFrom(List("a", "bc", "def")).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a", "bc", "def")).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, Int] {
           var concat = ""
           override def onNext(elem: String) = {
@@ -138,8 +138,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "invoke onComplete when done" in {
-      val p = FlowFrom(List("a")).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a")).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
           override def onNext(element: String) = {
@@ -159,8 +159,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "invoke cleanup when done" in {
       val cleanupProbe = TestProbe()
-      val p = FlowFrom(List("a")).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a")).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
           override def onNext(element: String) = {
@@ -182,8 +182,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "invoke cleanup when done consume" in {
       val cleanupProbe = TestProbe()
-      val p = FlowFrom(List("a")).toPublisher()
-      FlowFrom(p).
+      val p = Source(List("a")).toPublisher()
+      Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = "x"
           override def onNext(element: String) = {
@@ -192,14 +192,14 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           }
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        withSink(BlackholeSink).run()
+        connect(BlackholeDrain).run()
       cleanupProbe.expectMsg("a")
     }
 
     "invoke cleanup when done after error" in {
       val cleanupProbe = TestProbe()
-      val p = FlowFrom(List("a", "b", "c")).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List("a", "b", "c")).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
           override def onNext(in: String) = {
@@ -227,7 +227,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "allow cancellation using isComplete" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var s = ""
           override def onNext(element: Int) = {
@@ -252,7 +252,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "call onComplete after isComplete signaled completion" in {
       val cleanupProbe = TestProbe()
       val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = FlowFrom(p).
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var s = ""
           override def onNext(element: Int) = {
@@ -279,8 +279,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "report error when exception is thrown" in {
-      val p = FlowFrom(List(1, 2, 3)).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3)).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = {
             if (elem == 2) {
@@ -304,8 +304,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "support cancel as expected" in {
-      val p = FlowFrom(List(1, 2, 3)).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List(1, 2, 3)).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
         }).
@@ -323,8 +323,8 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "support producing elements from empty inputs" in {
-      val p = FlowFrom(List.empty[Int]).toPublisher()
-      val p2 = FlowFrom(p).
+      val p = Source(List.empty[Int]).toPublisher()
+      val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = Nil
           override def onTermination(e: Option[Throwable]) = List(1, 2, 3)
@@ -343,7 +343,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "support converting onComplete into onError" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(List(5, 1, 2, 3)).transform("transform", () ⇒ new Transformer[Int, Int] {
+      Source(List(5, 1, 2, 3)).transform("transform", () ⇒ new Transformer[Int, Int] {
         var expectedNumberOfElements: Option[Int] = None
         var count = 0
         override def onNext(elem: Int) =
@@ -375,7 +375,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "be safe to reuse" in {
-      val flow = FlowFrom(1 to 3).transform("transform", () ⇒
+      val flow = Source(1 to 3).transform("transform", () ⇒
         new Transformer[Int, Int] {
           var count = 0
 

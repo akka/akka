@@ -14,7 +14,7 @@ class FlowDispatcherSpec extends AkkaSpec {
   "Flow with dispatcher setting" must {
     "use the specified dispatcher" in {
       val probe = TestProbe()
-      val p = FlowFrom(List(1, 2, 3)).map(i ⇒
+      val p = Source(List(1, 2, 3)).map(i ⇒
         { probe.ref ! Thread.currentThread().getName(); i }).
         consume()
       probe.receiveN(3) foreach {

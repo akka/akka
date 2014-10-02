@@ -14,32 +14,28 @@ class FlowAppendSpec extends AkkaSpec with River {
   val settings = MaterializerSettings(system)
   implicit val materializer = FlowMaterializer(settings)
 
-  "ProcessorFlow" should {
-    "append ProcessorFlow" in riverOf[String] { subscriber ⇒
-      FlowFrom[Int]
-        .append(otherFlow)
-        .withSource(IterableSource(elements))
-        .publishTo(subscriber)
+  "Flow" should {
+    "append Flow" in riverOf[String] { subscriber ⇒
+      val flow = Flow[Int].connect(otherFlow)
+      Source(elements).connect(flow).publishTo(subscriber)
     }
 
-    "append FlowWithSink" in riverOf[String] { subscriber ⇒
-      FlowFrom[Int]
-        .append(otherFlow.withSink(SubscriberSink(subscriber)))
-        .withSource(IterableSource(elements))
-        .run()
+    "append Sink" in riverOf[String] { subscriber ⇒
+      val sink = Flow[Int].connect(otherFlow.connect(SubscriberDrain(subscriber)))
+      Source(elements).connect(sink).run()
     }
   }
 
-  "FlowWithSource" should {
-    "append ProcessorFlow" in riverOf[String] { subscriber ⇒
-      FlowFrom(elements)
-        .append(otherFlow)
+  "Source" should {
+    "append Flow" in riverOf[String] { subscriber ⇒
+      Source(elements)
+        .connect(otherFlow)
         .publishTo(subscriber)
     }
 
-    "append FlowWithSink" in riverOf[String] { subscriber ⇒
-      FlowFrom(elements)
-        .append(otherFlow.withSink(SubscriberSink(subscriber)))
+    "append Sink" in riverOf[String] { subscriber ⇒
+      Source(elements)
+        .connect(otherFlow.connect(SubscriberDrain(subscriber)))
         .run()
     }
   }
@@ -49,7 +45,7 @@ class FlowAppendSpec extends AkkaSpec with River {
 trait River { self: Matchers ⇒
 
   val elements = (1 to 10)
-  val otherFlow = FlowFrom[Int].map(_.toString)
+  val otherFlow = Flow[Int].map(_.toString)
 
   def riverOf[T](flowConstructor: Subscriber[T] ⇒ Unit)(implicit system: ActorSystem) = {
     val subscriber = StreamTestKit.SubscriberProbe[T]()
