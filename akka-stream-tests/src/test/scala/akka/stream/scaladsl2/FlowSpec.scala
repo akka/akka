@@ -83,15 +83,14 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
   val identity2: Flow[Any, Any] ⇒ Flow[Any, Any] = in ⇒ identity(in)
 
   val toPublisher: (Source[Any], FlowMaterializer) ⇒ Publisher[Any] =
-    (f, m) ⇒ f.toPublisher()(m)
+    (f, m) ⇒ f.runWith(PublisherDrain())(m)
   def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (Source[Out], FlowMaterializer) ⇒ Publisher[Out] =
-    (f, m) ⇒ f.toFanoutPublisher(initialBufferSize, maximumBufferSize)(m)
+    (f, m) ⇒ f.runWith(FanoutPublisherDrain(initialBufferSize, maximumBufferSize))(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](flow: Flow[In, Out]): (Subscriber[In], Publisher[Out]) = {
     val tap = SubscriberTap[In]
     val drain = PublisherDrain[Out]
-    val mf = tap.connect(flow).connect(drain).run()
-    (tap.subscriber(mf), drain.publisher(mf))
+    flow.runWith(tap, drain)
   }
 
   "A Flow" must {
@@ -174,7 +173,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val c1 = StreamTestKit.SubscriberProbe[String]()
       flowOut.subscribe(c1)
 
-      val tap: Publisher[String] = Source(List("1", "2", "3")).toPublisher()
+      val tap: Publisher[String] = Source(List("1", "2", "3")).runWith(PublisherDrain())
       tap.subscribe(flowIn)
 
       val sub1 = c1.expectSubscription
@@ -195,7 +194,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val tap: Publisher[Int] = Source(List(1, 2, 3)).toPublisher()
+      val tap: Publisher[Int] = Source(List(1, 2, 3)).runWith(PublisherDrain())
       tap.subscribe(flowIn)
 
       c1.expectNext("1")
@@ -214,7 +213,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       sub1.request(3)
       c1.expectNoMsg(200.millis)
 
-      val tap: Publisher[Int] = Source(List(1, 2, 3)).toPublisher()
+      val tap: Publisher[Int] = Source(List(1, 2, 3)).runWith(PublisherDrain())
       tap.subscribe(flowIn)
 
       c1.expectNext("elem-1")
@@ -227,7 +226,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow: Flow[String, String] = Flow[String]
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val sink: Sink[String] = flow.connect(SubscriberDrain(c1))
-      val publisher: Publisher[String] = Source(List("1", "2", "3")).toPublisher()
+      val publisher: Publisher[String] = Source(List("1", "2", "3")).runWith(PublisherDrain())
       Source(publisher).connect(sink).run()
 
       val sub1 = c1.expectSubscription
@@ -241,8 +240,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "perform transformation operation" in {
       val flow = Flow[Int].map(i ⇒ { testActor ! i.toString; i.toString })
 
-      val publisher = Source(List(1, 2, 3)).toPublisher()
-      Source(publisher).connect(flow).consume()
+      val publisher = Source(List(1, 2, 3)).runWith(PublisherDrain())
+      Source(publisher).connect(flow).connect(BlackholeDrain).run()
 
       expectMsg("1")
       expectMsg("2")
@@ -253,7 +252,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Flow[Int].map(_.toString)
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val sink: Sink[Int] = flow.connect(SubscriberDrain(c1))
-      val publisher: Publisher[Int] = Source(List(1, 2, 3)).toPublisher()
+      val publisher: Publisher[Int] = Source(List(1, 2, 3)).runWith(PublisherDrain())
       Source(publisher).connect(sink).run()
 
       val sub1 = c1.expectSubscription
@@ -266,8 +265,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "be materializable several times with fanout publisher" in {
       val flow = Source(List(1, 2, 3)).map(_.toString)
-      val p1 = flow.toFanoutPublisher(2, 2)
-      val p2 = flow.toFanoutPublisher(2, 2)
+      val p1 = flow.runWith(FanoutPublisherDrain(2, 2))
+      val p2 = flow.runWith(FanoutPublisherDrain(2, 2))
       val s1 = StreamTestKit.SubscriberProbe[String]()
       val s2 = StreamTestKit.SubscriberProbe[String]()
       val s3 = StreamTestKit.SubscriberProbe[String]()
@@ -299,7 +298,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
     "be covariant" in {
       val f1: Source[Fruit] = Source[Fruit](() ⇒ Some(new Apple))
-      val p1: Publisher[Fruit] = Source[Fruit](() ⇒ Some(new Apple)).toPublisher()
+      val p1: Publisher[Fruit] = Source[Fruit](() ⇒ Some(new Apple)).runWith(PublisherDrain())
       val f2: Source[Source[Fruit]] = Source[Fruit](() ⇒ Some(new Apple)).splitWhen(_ ⇒ true)
       val f3: Source[(Boolean, Source[Fruit])] = Source[Fruit](() ⇒ Some(new Apple)).groupBy(_ ⇒ true)
       val f4: Source[(immutable.Seq[Fruit], Source[Fruit])] = Source[Fruit](() ⇒ Some(new Apple)).prefixAndTail(1)

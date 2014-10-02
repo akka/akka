@@ -27,6 +27,14 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * Connect this flow to a sink, concatenating the processing steps of both.
    */
   def connect(sink: Sink[Out]): Sink[In]
+
+  /**
+   *
+   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it. The returned tuple contains
+   * the materialized values of the `Tap` and `Drain`, e.g. the `Subscriber` of a [[SubscriberTap]] and
+   * and `Publisher` of a [[PublisherDrain]].
+   */
+  def runWith(tap: TapWithKey[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): (tap.MaterializedType, drain.MaterializedType)
 }
 
 object Flow {
@@ -41,15 +49,8 @@ object Flow {
  * Flow with attached input and output, can be executed.
  */
 trait RunnableFlow {
-  def run()(implicit materializer: FlowMaterializer): MaterializedFlow
+  def run()(implicit materializer: FlowMaterializer): MaterializedMap
 }
-
-/**
- * Returned by [[RunnableFlow#run]] and can be used as parameter to the
- * accessor method to retrieve the materialized `Tap` or `Drain`, e.g.
- * [[SubscriberTap#subscriber]] or [[PublisherDrain#publisher]].
- */
-trait MaterializedFlow extends MaterializedTap with MaterializedDrain
 
 /**
  * Scala API: Operations offered by Flows and Sources with a free output side: the DSL flows left-to-right only.
@@ -434,3 +435,4 @@ private[scaladsl2] object FlowOps {
     override def onNext(elem: Any) = List(elem)
   }
 }
+

@@ -25,7 +25,10 @@ import java.util.concurrent.atomic.AtomicReference
  * FlowMaterializers can be used but must then implement the functionality of these
  * Drain nodes themselves (or construct an ActorBasedFlowMaterializer).
  */
-trait Drain[-In] extends Sink[In]
+trait Drain[-In] extends Sink[In] {
+  override def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
+    tap.connect(this).run().materializedTap(tap)
+}
 
 /**
  * A drain that does not need to create a user-accessible object during materialization.
@@ -63,7 +66,10 @@ trait SimpleDrain[-In] extends Drain[In] {
  * to retrieve in order to access aspects of this drain (could be a completion Future
  * or a cancellation handle, etc.)
  */
-trait DrainWithKey[-In, T] extends Drain[In] {
+trait DrainWithKey[-In] extends Drain[In] {
+
+  type MaterializedType
+
   /**
    * Attach this drain to the given [[org.reactivestreams.Publisher]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this drain belongs to
@@ -75,12 +81,12 @@ trait DrainWithKey[-In, T] extends Drain[In] {
    * @param materializer a FlowMaterializer that may be used for creating flows
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
-  def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorBasedFlowMaterializer, flowName: String): T
+  def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType
   /**
    * This method is only used for Drains that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[In] @uncheckedVariance, T) =
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[In] @uncheckedVariance, MaterializedType) =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
    * This method indicates whether this Drain can create a Subscriber instead of being
@@ -102,20 +108,21 @@ trait DrainWithKey[-In, T] extends Drain[In] {
  */
 object PublisherDrain {
   private val instance = new PublisherDrain[Nothing]
-  def apply[T]: PublisherDrain[T] = instance.asInstanceOf[PublisherDrain[T]]
+  def apply[T](): PublisherDrain[T] = instance.asInstanceOf[PublisherDrain[T]]
   def withFanout[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherDrain[T] =
     new FanoutPublisherDrain[T](initialBufferSize, maximumBufferSize)
 }
 
-class PublisherDrain[In] extends DrainWithKey[In, Publisher[In]] {
+class PublisherDrain[In] extends DrainWithKey[In] {
+  type MaterializedType = Publisher[In]
   def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] = flowPublisher
-  def publisher(m: MaterializedDrain): Publisher[In] = m.getDrainFor(this)
 
   override def toString: String = "PublisherDrain"
 }
 
-class FanoutPublisherDrain[In](initialBufferSize: Int, maximumBufferSize: Int) extends DrainWithKey[In, Publisher[In]] {
-  def publisher(m: MaterializedDrain): Publisher[In] = m.getDrainFor(this)
+final case class FanoutPublisherDrain[In](initialBufferSize: Int, maximumBufferSize: Int) extends DrainWithKey[In] {
+  type MaterializedType = Publisher[In]
+
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] = {
     val fanoutActor = materializer.actorOf(
       Props(new FanoutProcessorImpl(materializer.settings, initialBufferSize, maximumBufferSize)), s"$flowName-fanoutPublisher")
@@ -123,12 +130,10 @@ class FanoutPublisherDrain[In](initialBufferSize: Int, maximumBufferSize: Int) e
     flowPublisher.subscribe(fanoutProcessor)
     fanoutProcessor
   }
-
-  override def toString: String = "Fanout"
 }
 
 object FutureDrain {
-  def apply[T]: FutureDrain[T] = new FutureDrain[T]
+  def apply[T](): FutureDrain[T] = new FutureDrain[T]
 }
 
 /**
@@ -138,7 +143,8 @@ object FutureDrain {
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-class FutureDrain[In] extends DrainWithKey[In, Future[In]] {
+class FutureDrain[In] extends DrainWithKey[In] {
+  type MaterializedType = Future[In]
   def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[In] = {
     val (sub, f) = create(materializer, flowName)
     flowPublisher.subscribe(sub)
@@ -158,8 +164,6 @@ class FutureDrain[In] extends DrainWithKey[In, Future[In]] {
     }
     (sub, p.future)
   }
-
-  def future(m: MaterializedDrain): Future[In] = m.getDrainFor(this)
 
   override def toString: String = "FutureDrain"
 }
@@ -207,7 +211,7 @@ final case class OnCompleteDrain[In](callback: Try[Unit] ⇒ Unit) extends Simpl
         }
         Nil
       }
-    }).consume()(materializer.withNamePrefix(flowName))
+    }).connect(BlackholeDrain).run()(materializer.withNamePrefix(flowName))
 }
 
 /**
@@ -215,7 +219,9 @@ final case class OnCompleteDrain[In](callback: Try[Unit] ⇒ Unit) extends Simpl
  * that will be completed with `Success` when reaching the normal end of the stream, or completed
  * with `Failure` if there is an error is signaled in the stream.
  */
-final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In, Future[Unit]] {
+final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In] {
+  type MaterializedType = Future[Unit]
+
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[Unit] = {
     val promise = Promise[Unit]()
     Source(flowPublisher).transform("foreach", () ⇒ new Transformer[In, Unit] {
@@ -228,10 +234,9 @@ final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In, Futur
         }
         Nil
       }
-    }).consume()(materializer.withNamePrefix(flowName))
+    }).connect(BlackholeDrain).run()(materializer.withNamePrefix(flowName))
     promise.future
   }
-  def future(m: MaterializedDrain): Future[Unit] = m.getDrainFor(this)
 }
 
 /**
@@ -241,7 +246,9 @@ final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In, Futur
  * function evaluation when the input stream ends, or completed with `Failure`
  * if there is an error is signaled in the stream.
  */
-final case class FoldDrain[U, In](zero: U)(f: (U, In) ⇒ U) extends DrainWithKey[In, Future[U]] {
+final case class FoldDrain[U, In](zero: U)(f: (U, In) ⇒ U) extends DrainWithKey[In] {
+  type MaterializedType = Future[U]
+
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[U] = {
     val promise = Promise[U]()
 
@@ -256,16 +263,9 @@ final case class FoldDrain[U, In](zero: U)(f: (U, In) ⇒ U) extends DrainWithKe
         }
         Nil
       }
-    }).consume()(materializer.withNamePrefix(flowName))
+    }).connect(BlackholeDrain).run()(materializer.withNamePrefix(flowName))
 
     promise.future
   }
-  def future(m: MaterializedDrain): Future[U] = m.getDrainFor(this)
 }
 
-trait MaterializedDrain {
-  /**
-   * Do not call directly. Use accessor method in the concrete `Drain`, e.g. [[PublisherDrain#publisher]].
-   */
-  def getDrainFor[T](drainKey: DrainWithKey[_, T]): T
-}

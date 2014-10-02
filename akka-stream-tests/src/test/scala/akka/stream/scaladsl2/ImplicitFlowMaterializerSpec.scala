@@ -23,8 +23,7 @@ object ImplicitFlowMaterializerSpec {
         // run takes an implicit FlowMaterializer parameter, which is provided by ImplicitFlowMaterializer
         import context.dispatcher
         val foldDrain = FoldDrain[String, String]("")(_ + _)
-        val mf = flow.connect(foldDrain).run()
-        foldDrain.future(mf) pipeTo sender()
+        flow.runWith(foldDrain) pipeTo sender()
     }
   }
 }

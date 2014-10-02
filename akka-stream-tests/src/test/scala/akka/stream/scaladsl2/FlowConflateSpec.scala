@@ -23,7 +23,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).publishTo(subscriber)
+      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -41,7 +41,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).publishTo(subscriber)
+      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -57,12 +57,10 @@ class FlowConflateSpec extends AkkaSpec {
 
     "work on a variable rate chain" in {
       val foldDrain = FoldDrain[Int, Int](0)(_ + _)
-      val mf = Source((1 to 1000).iterator)
+      val future = Source((1 to 1000).iterator)
         .conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
-        .connect(foldDrain)
-        .run()
-      val future = foldDrain.future(mf)
+        .runWith(FoldDrain[Int, Int](0)(_ + _))
       Await.result(future, 10.seconds) should be(500500)
     }
 
@@ -70,7 +68,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).publishTo(subscriber)
+      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()

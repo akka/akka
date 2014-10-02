@@ -34,17 +34,8 @@ trait Tap[+Out] extends Source[Out] {
 
   override def connect(sink: Sink[Out]): RunnableFlow = sourcePipe.connect(sink)
 
-  override def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
-    sourcePipe.toPublisher()(materializer)
-
-  override def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
-    sourcePipe.toFanoutPublisher(initialBufferSize, maximumBufferSize)(materializer)
-
-  override def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer): Unit =
-    sourcePipe.publishTo(subscriber)(materializer)
-
-  override def consume()(implicit materializer: FlowMaterializer): Unit =
-    sourcePipe.consume()
+  override def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
+    connect(drain).run().materializedDrain(drain)
 
   /** INTERNAL API */
   override protected def andThen[U](op: AstNode) = SourcePipe(this, List(op))
@@ -89,7 +80,10 @@ trait SimpleTap[+Out] extends Tap[Out] {
  * to retrieve in order to access aspects of this tap (could be a Subscriber, a
  * Future/Promise, etc.).
  */
-trait TapWithKey[+Out, T] extends Tap[Out] {
+trait TapWithKey[+Out] extends Tap[Out] {
+
+  type MaterializedType
+
   /**
    * Attach this tap to the given [[org.reactivestreams.Subscriber]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this tap belongs to
@@ -101,12 +95,12 @@ trait TapWithKey[+Out, T] extends Tap[Out] {
    * @param materializer a FlowMaterializer that may be used for creating flows
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
-  def attach(flowSubscriber: Subscriber[Out] @uncheckedVariance, materializer: ActorBasedFlowMaterializer, flowName: String): T
+  def attach(flowSubscriber: Subscriber[Out] @uncheckedVariance, materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType
   /**
    * This method is only used for Taps that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[Out] @uncheckedVariance, T) =
+  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[Out] @uncheckedVariance, MaterializedType) =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
   /**
    * This method indicates whether this Tap can create a Publisher instead of being
@@ -124,11 +118,12 @@ trait TapWithKey[+Out, T] extends Tap[Out] {
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-final case class SubscriberTap[Out]() extends TapWithKey[Out, Subscriber[Out]] {
+final case class SubscriberTap[Out]() extends TapWithKey[Out] {
+  type MaterializedType = Subscriber[Out]
+
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] =
     flowSubscriber
 
-  def subscriber(m: MaterializedTap): Subscriber[Out] = m.getTapFor(this)
 }
 
 /**
@@ -230,9 +225,3 @@ final case class TickTap[Out](initialDelay: FiniteDuration, interval: FiniteDura
       name = s"$flowName-0-tick"))
 }
 
-trait MaterializedTap {
-  /**
-   * Do not call directly. Use accessor method in the concrete `Tap`, e.g. [[SubscriberTap#subscriber]].
-   */
-  def getTapFor[T](tapKey: TapWithKey[_, T]): T
-}

@@ -18,7 +18,7 @@ private[scaladsl2] object Pipe {
 }
 
 /**
- * Flow with one open input and one open output..
+ * Flow with one open input and one open output.
  */
 private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
@@ -40,6 +40,11 @@ private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends 
     case _                 ⇒ throw new IllegalArgumentException(Pipe.OnlyPipesErrorMessage)
   }
 
+  override def runWith(tap: TapWithKey[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): (tap.MaterializedType, drain.MaterializedType) = {
+    val m = tap.connect(this).connect(drain).run()
+    (m.materializedTap(tap), m.materializedDrain(drain))
+  }
+
   private[scaladsl2] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)
 }
 
@@ -52,11 +57,9 @@ private[scaladsl2] final case class SinkPipe[-In](output: Drain[_], ops: List[As
 
   private[scaladsl2] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
 
-  override def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] = {
-    val subIn = SubscriberTap[In]()
-    val mf = withTap(subIn).run()
-    subIn.subscriber(mf)
-  }
+  override def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
+    tap.connect(this).run().materializedTap(tap)
+
 }
 
 /**
@@ -82,50 +85,29 @@ private[scaladsl2] final case class SourcePipe[+Out](input: Tap[_], ops: List[As
     case _                 ⇒ throw new IllegalArgumentException(Pipe.OnlyPipesErrorMessage)
   }
 
-  override def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
-    val pubOut = PublisherDrain[Out]
-    val mf = withDrain(pubOut).run()
-    pubOut.publisher(mf)
-  }
+  override def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
+    withDrain(drain).run().materializedDrain(drain)
 
-  override def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] = {
-    val pubOut = PublisherDrain.withFanout[Out](initialBufferSize, maximumBufferSize)
-    val mf = withDrain(pubOut).run()
-    pubOut.publisher(mf)
-  }
-
-  override def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer): Unit =
-    toPublisher().subscribe(subscriber)
-
-  override def consume()(implicit materializer: FlowMaterializer): Unit =
-    withDrain(BlackholeDrain).run()
 }
 
 /**
  * Pipe with attached input and output, can be executed.
  */
 private[scaladsl2] final case class RunnablePipe(input: Tap[_], output: Drain[_], ops: List[AstNode]) extends RunnableFlow {
-  def run()(implicit materializer: FlowMaterializer): MaterializedPipe =
+  def run()(implicit materializer: FlowMaterializer): MaterializedMap =
     materializer.materialize(input, output, ops)
 }
 
 /**
- * Returned by [[RunnablePipe#run]] and can be used as parameter to the
- * accessor method to retrieve the materialized `Tap` or `Drain`, e.g.
- * [[SubscriberTap#subscriber]] or [[PublisherDrain#publisher]].
+ * Returned by [[RunnablePipe#run]] and can be used as parameter to retrieve the materialized
+ * `Tap` input or `Drain` output.
  */
-private[stream] class MaterializedPipe(tapKey: AnyRef, matTap: Any, drainKey: AnyRef, matDrain: Any) extends MaterializedFlow {
-  /**
-   * Do not call directly. Use accessor method in the concrete `Tap`, e.g. [[SubscriberTap#subscriber]].
-   */
-  override def getTapFor[T](key: TapWithKey[_, T]): T =
-    if (key == tapKey) matTap.asInstanceOf[T]
+private[stream] class MaterializedPipe(tapKey: AnyRef, matTap: Any, drainKey: AnyRef, matDrain: Any) extends MaterializedMap {
+  override def materializedTap(key: TapWithKey[_]): key.MaterializedType =
+    if (key == tapKey) matTap.asInstanceOf[key.MaterializedType]
     else throw new IllegalArgumentException(s"Tap key [$key] doesn't match the tap [$tapKey] of this flow")
 
-  /**
-   * Do not call directly. Use accessor method in the concrete `Drain`, e.g. [[PublisherDrain#publisher]].
-   */
-  def getDrainFor[T](key: DrainWithKey[_, T]): T =
-    if (key == drainKey) matDrain.asInstanceOf[T]
+  override def materializedDrain(key: DrainWithKey[_]): key.MaterializedType =
+    if (key == drainKey) matDrain.asInstanceOf[key.MaterializedType]
     else throw new IllegalArgumentException(s"Drain key [$key] doesn't match the drain [$drainKey] of this flow")
 }

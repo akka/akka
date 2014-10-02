@@ -66,11 +66,11 @@ class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
       val foreachDrain = ForeachDrain[Int] {
         x ⇒ onCompleteProbe.ref ! ("foreach-" + x)
       }
-      val mf = Source(p).map { x ⇒
+      val future = Source(p).map { x ⇒
         onCompleteProbe.ref ! ("map-" + x)
         x
-      }.connect(foreachDrain).run()
-      foreachDrain.future(mf) onComplete { onCompleteProbe.ref ! _ }
+      }.runWith(foreachDrain)
+      future onComplete { onCompleteProbe.ref ! _ }
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)

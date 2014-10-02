@@ -24,7 +24,7 @@ class FlowExpandSpec extends AkkaSpec {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).publishTo(subscriber)
+      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -44,7 +44,7 @@ class FlowExpandSpec extends AkkaSpec {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).publishTo(subscriber)
+      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -64,13 +64,10 @@ class FlowExpandSpec extends AkkaSpec {
     }
 
     "work on a variable rate chain" in {
-      val foldDrain = FoldDrain[Set[Int], Int](Set.empty[Int])(_ + _)
-      val mf = Source((1 to 100).iterator)
+      val future = Source((1 to 100).iterator)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i))
-        .connect(foldDrain)
-        .run()
-      val future = foldDrain.future(mf)
+        .runWith(FoldDrain[Set[Int], Int](Set.empty[Int])(_ + _))
 
       Await.result(future, 10.seconds) should be(Set.empty[Int] ++ (1 to 100))
     }
@@ -79,7 +76,7 @@ class FlowExpandSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).publishTo(subscriber)
+      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).connect(SubscriberDrain(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()

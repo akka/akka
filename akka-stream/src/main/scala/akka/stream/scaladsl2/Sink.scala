@@ -13,6 +13,9 @@ import scala.annotation.unchecked.uncheckedVariance
  * Can be used as a `Subscriber`
  */
 trait Sink[-In] {
-  def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] =
-    Flow[In].connect(this).toSubscriber()
+  /**
+   * Connect this `Sink` to a `Tap` and run it. The returned value is the materialized value
+   * of the `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   */
+  def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType
 }

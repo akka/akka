@@ -62,11 +62,11 @@ class GraphBroadcastSpec extends AkkaSpec {
         bcast ~> Flow[Int].grouped(5) ~> f5
       }.run()
 
-      Await.result(g.getDrainFor(f1), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getDrainFor(f2), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getDrainFor(f3), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getDrainFor(f4), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getDrainFor(f5), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.materializedDrain(f1), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.materializedDrain(f2), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.materializedDrain(f3), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.materializedDrain(f4), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.materializedDrain(f5), 3.seconds) should be(List(1, 2, 3))
     }
 
     "produce to other even though downstream cancels" in {

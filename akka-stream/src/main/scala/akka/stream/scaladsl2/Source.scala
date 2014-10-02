@@ -30,13 +30,12 @@ trait Source[+Out] extends FlowOps[Out] {
    */
   def connect(sink: Sink[Out]): RunnableFlow
 
-  def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance]
+  /**
+   * Connect this `Source` to a `Drain` and run it. The returned value is the materialized value
+   * of the `Drain`, e.g. the `Publisher` of a [[PublisherDrain]].
+   */
+  def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType
 
-  def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance]
-
-  def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer)
-
-  def consume()(implicit materializer: FlowMaterializer): Unit
 }
 
 object Source {
@@ -48,7 +47,7 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def apply[T](publisher: Publisher[T]): Tap[T] = PublisherTap(publisher)
+  def apply[T](publisher: Publisher[T]): Source[T] = PublisherTap(publisher)
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -60,7 +59,7 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def apply[T](iterator: Iterator[T]): Tap[T] = IteratorTap(iterator)
+  def apply[T](iterator: Iterator[T]): Source[T] = IteratorTap(iterator)
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -71,14 +70,14 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Tap[T] = IterableTap(iterable)
+  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableTap(iterable)
 
   /**
    * Define the sequence of elements to be produced by the given closure.
    * The stream ends normally when evaluation of the closure returns a `None`.
    * The stream ends exceptionally when an exception is thrown from the closure.
    */
-  def apply[T](f: () ⇒ Option[T]): Tap[T] = ThunkTap(f)
+  def apply[T](f: () ⇒ Option[T]): Source[T] = ThunkTap(f)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -86,7 +85,7 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with an error if the `Future` is completed with a failure.
    */
-  def apply[T](future: Future[T]): Tap[T] = FutureTap(future)
+  def apply[T](future: Future[T]): Source[T] = FutureTap(future)
 
   /**
    * Elements are produced from the tick closure periodically with the specified interval.
@@ -95,6 +94,7 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Tap[T] =
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Source[T] =
     TickTap(initialDelay, interval, tick)
+
 }

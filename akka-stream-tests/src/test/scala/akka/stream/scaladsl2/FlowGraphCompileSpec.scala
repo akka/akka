@@ -190,7 +190,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         b.attachSink(undefinedSink1, out1)
 
       }.run()
-      out1.publisher(mg) should not be (null)
+      mg.materializedDrain(out1) should not be (null)
     }
 
     "build partial flow graphs" in {

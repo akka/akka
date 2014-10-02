@@ -16,7 +16,7 @@ class FlowDispatcherSpec extends AkkaSpec {
       val probe = TestProbe()
       val p = Source(List(1, 2, 3)).map(i ⇒
         { probe.ref ! Thread.currentThread().getName(); i }).
-        consume()
+        connect(BlackholeDrain).run()
       probe.receiveN(3) foreach {
         case s: String ⇒ s should startWith(system.name + "-akka.test.stream-dispatcher")
       }
