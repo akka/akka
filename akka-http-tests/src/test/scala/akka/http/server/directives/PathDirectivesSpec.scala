@@ -94,6 +94,11 @@ class PathDirectivesSpec extends RoutingSpec {
     "reject [/black]" in test()
   }
 
+  "pathPrefix(Map.empty)" should {
+    val test = testFor(pathPrefix(Map[String, Int]()) { echoCaptureAndUnmatchedPath })
+    "reject [/black]" in test()
+  }
+
   "pathPrefix(Segment)" should {
     val test = testFor(pathPrefix(Segment) { echoCaptureAndUnmatchedPath })
     "accept [/abc]" in test("abc:")

@@ -253,7 +253,8 @@ trait ImplicitPathMatcherConstruction {
    * the matcher consumes this path segment (prefix) and extracts the corresponding map value.
    */
   implicit def valueMap2PathMatcher[T](valueMap: Map[String, T]): PathMatcher1[T] =
-    valueMap.map { case (prefix, value) ⇒ stringExtractionPair2PathMatcher(prefix, value) }.reduceLeft(_ | _)
+    if (valueMap.isEmpty) PathMatchers.nothingMatcher
+    else valueMap.map { case (prefix, value) ⇒ stringExtractionPair2PathMatcher(prefix, value) }.reduceLeft(_ | _)
 }
 
 trait PathMatchers {
@@ -435,6 +436,14 @@ trait PathMatchers {
    * If the path has a trailing slash this slash will *not* be matched.
    */
   def Segments(maxSegments: Int): PathMatcher1[List[String]] = Segment.repeat(maxIterations = maxSegments, separator = Slash)
+
+  /**
+   * A PathMatcher that never matches anything.
+   */
+  def nothingMatcher[L: Tuple]: PathMatcher[L] =
+    new PathMatcher[L] {
+      def apply(p: Path) = Unmatched
+    }
 }
 
 object PathMatchers extends PathMatchers
