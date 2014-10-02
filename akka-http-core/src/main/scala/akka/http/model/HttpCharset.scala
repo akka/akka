@@ -100,8 +100,8 @@ object HttpCharsets extends ObjectRegistry[String, HttpCharset] {
   // format: OFF
   // Only those first 6 are standard charsets known to be supported on all platforms
   // by Javadoc of java.nio.charset.Charset
-  // see http://docs.oracle.com/javase/6/docs/api/java/nio/charset/Charset.html
-  val `US-ASCII`     = register("US-ASCII")("iso-ir-6", "ANSI_X3.4-1986", "ISO_646.irv:1991", "ASCII", "ISO646-US", "us", "IBM367", "cp367", "csASCII")
+  // IANA definition incl. aliases: http://www.iana.org/assignments/character-sets/character-sets.xhtml
+  val `US-ASCII`     = register("US-ASCII")("iso-ir-6", "ANSI_X3.4-1968", "ANSI_X3.4-1986", "ISO_646.irv:1991", "ASCII", "ISO646-US", "us", "IBM367", "cp367", "csASCII")
   val `ISO-8859-1`   = register("ISO-8859-1")("iso-ir-100", "ISO_8859-1", "latin1", "l1", "IBM819", "CP819", "csISOLatin1")
   val `UTF-8`        = register("UTF-8")("UTF8")
   val `UTF-16`       = register("UTF-16")("UTF16")
