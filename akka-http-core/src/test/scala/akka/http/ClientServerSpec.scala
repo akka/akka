@@ -11,7 +11,7 @@ import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-import akka.actor.ActorSystem
+import akka.actor.{ Status, ActorSystem }
 import akka.io.IO
 import akka.testkit.TestProbe
 import akka.stream.FlowMaterializer
@@ -54,6 +54,21 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       sub.cancel()
       // TODO: verify unbinding effect
+    }
+
+    "report failure if bind fails" in {
+      val (hostname, port) = temporaryServerHostnameAndPort()
+      val commander = TestProbe()
+      commander.send(IO(Http), Http.Bind(hostname, port))
+      val binding = commander.expectMsgType[Http.ServerBinding]
+      commander.send(IO(Http), Http.Bind(hostname, port))
+      commander.expectMsgType[Status.Failure]
+
+      // Clean up
+      val c = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      binding.connectionStream.subscribe(c)
+      val sub = c.expectSubscription()
+      sub.cancel()
     }
 
     "properly complete a simple request/response cycle" in new TestSetup {
