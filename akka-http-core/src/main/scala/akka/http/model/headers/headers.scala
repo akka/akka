@@ -5,7 +5,11 @@
 package akka.http.model
 package headers
 
+import java.lang.Iterable
 import java.net.InetSocketAddress
+import java.util
+import akka.http.model.japi
+import akka.http.model.japi.JavaMapping
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.util._
@@ -26,6 +30,8 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
   protected def companion: ModeledCompanion
 }
 
+import japi.JavaMapping.Implicits._
+
 // http://tools.ietf.org/html/rfc7230#section-6.1
 object Connection extends ModeledCompanion {
   def apply(first: String, more: String*): Connection = apply(immutable.Seq(first +: more: _*))
@@ -43,6 +49,9 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
       else has(item, ix + 1)
     else false
   protected def companion = Connection
+
+  /** Java API */
+  def getTokens: Iterable[String] = tokens.asJava
 }
 
 // http://tools.ietf.org/html/rfc7230#section-3.3.2
@@ -101,8 +110,6 @@ final case class RawHeader(name: String, value: String) extends japi.headers.Raw
   def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
 
-import japi.JavaMapping.Implicits._
-
 // http://tools.ietf.org/html/rfc7231#section-5.3.2
 object Accept extends ModeledCompanion {
   def apply(mediaRanges: MediaRange*): Accept = apply(immutable.Seq(mediaRanges: _*))
@@ -114,7 +121,7 @@ final case class Accept(mediaRanges: immutable.Seq[MediaRange]) extends japi.hea
   protected def companion = Accept
 
   /** Java API */
-  def getMediaRanges = mediaRanges.asJava
+  def getMediaRanges: Iterable[japi.MediaRange] = mediaRanges.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.3
@@ -129,7 +136,7 @@ final case class `Accept-Charset`(charsetRanges: immutable.Seq[HttpCharsetRange]
   protected def companion = `Accept-Charset`
 
   /** Java API */
-  def getCharsetRanges = charsetRanges.asJava
+  def getCharsetRanges: Iterable[japi.HttpCharsetRange] = charsetRanges.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.4
@@ -143,7 +150,7 @@ final case class `Accept-Encoding`(encodings: immutable.Seq[HttpEncodingRange]) 
   protected def companion = `Accept-Encoding`
 
   /** Java API */
-  def getEncodings = encodings.asJava
+  def getEncodings: Iterable[japi.headers.HttpEncodingRange] = encodings.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.3.5
@@ -158,7 +165,7 @@ final case class `Accept-Language`(languages: immutable.Seq[LanguageRange]) exte
   protected def companion = `Accept-Language`
 
   /** Java API */
-  def getLanguages = languages.asJava
+  def getLanguages: Iterable[japi.headers.LanguageRange] = languages.asJava
 }
 
 // http://tools.ietf.org/html/rfc7233#section-2.3
@@ -172,7 +179,7 @@ final case class `Accept-Ranges`(rangeUnits: immutable.Seq[RangeUnit]) extends j
   protected def companion = `Accept-Ranges`
 
   /** Java API */
-  def getRangeUnits = rangeUnits.asJava
+  def getRangeUnits: Iterable[japi.headers.RangeUnit] = rangeUnits.asJava
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-credentials-response-header
@@ -193,7 +200,7 @@ final case class `Access-Control-Allow-Headers`(headers: immutable.Seq[String]) 
   protected def companion = `Access-Control-Allow-Headers`
 
   /** Java API */
-  def getHeaders = headers.asJava
+  def getHeaders: Iterable[String] = headers.asJava
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-methods-response-header
@@ -207,7 +214,7 @@ final case class `Access-Control-Allow-Methods`(methods: immutable.Seq[HttpMetho
   protected def companion = `Access-Control-Allow-Methods`
 
   /** Java API */
-  def getMethods = methods.asJava
+  def getMethods: Iterable[japi.HttpMethod] = methods.asJava
 }
 
 // http://www.w3.org/TR/cors/#access-control-allow-origin-response-header
@@ -228,7 +235,7 @@ final case class `Access-Control-Expose-Headers`(headers: immutable.Seq[String])
   protected def companion = `Access-Control-Expose-Headers`
 
   /** Java API */
-  def getHeaders = headers.asJava
+  def getHeaders: Iterable[String] = headers.asJava
 }
 
 // http://www.w3.org/TR/cors/#access-control-max-age-response-header
@@ -249,7 +256,7 @@ final case class `Access-Control-Request-Headers`(headers: immutable.Seq[String]
   protected def companion = `Access-Control-Request-Headers`
 
   /** Java API */
-  def getHeaders = headers.asJava
+  def getHeaders: Iterable[String] = headers.asJava
 }
 
 // http://www.w3.org/TR/cors/#access-control-request-method-request-header
@@ -270,7 +277,7 @@ final case class Allow(methods: immutable.Seq[HttpMethod]) extends japi.headers.
   protected def companion = Allow
 
   /** Java API */
-  def getMethods = methods.asJava
+  def getMethods: Iterable[japi.HttpMethod] = methods.asJava
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.2
@@ -292,7 +299,7 @@ final case class `Cache-Control`(directives: immutable.Seq[CacheDirective]) exte
   protected def companion = `Cache-Control`
 
   /** Java API */
-  def getDirectives = directives.asJava
+  def getDirectives: Iterable[japi.headers.CacheDirective] = directives.asJava
 }
 
 // http://tools.ietf.org/html/rfc6266
@@ -302,7 +309,7 @@ final case class `Content-Disposition`(dispositionType: ContentDispositionType, 
   protected def companion = `Content-Disposition`
 
   /** Java API */
-  def getParams = params.asJava
+  def getParams: util.Map[String, String] = params.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-3.1.2.2
@@ -317,7 +324,7 @@ final case class `Content-Encoding`(encodings: immutable.Seq[HttpEncoding]) exte
   protected def companion = `Content-Encoding`
 
   /** Java API */
-  def getEncodings = encodings.asJava
+  def getEncodings: Iterable[japi.headers.HttpEncoding] = encodings.asJava
 }
 
 // http://tools.ietf.org/html/rfc7233#section-4.2
@@ -355,7 +362,7 @@ final case class Cookie(cookies: immutable.Seq[HttpCookie]) extends japi.headers
   protected def companion = Cookie
 
   /** Java API */
-  def getCookies = cookies.asJava
+  def getCookies: Iterable[japi.headers.HttpCookie] = cookies.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.1.2
@@ -430,7 +437,7 @@ final case class Link(values: immutable.Seq[LinkValue]) extends japi.headers.Lin
   protected def companion = Link
 
   /** Java API */
-  def getValues = values.asJava
+  def getValues: Iterable[japi.headers.LinkValue] = values.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.1.2
@@ -440,7 +447,7 @@ final case class Location(uri: Uri) extends japi.headers.Location with ModeledHe
   protected def companion = Location
 
   /** Java API */
-  def getUri = uri.asJava
+  def getUri: akka.http.model.japi.Uri = uri.asJava
 }
 
 // http://tools.ietf.org/html/rfc6454#section-7
@@ -452,7 +459,7 @@ final case class Origin(origins: immutable.Seq[HttpOrigin]) extends japi.headers
   protected def companion = Origin
 
   /** Java API */
-  def getOrigins = origins.asJava
+  def getOrigins: Iterable[japi.headers.HttpOrigin] = origins.asJava
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.3
@@ -467,7 +474,7 @@ final case class `Proxy-Authenticate`(challenges: immutable.Seq[HttpChallenge]) 
   protected def companion = `Proxy-Authenticate`
 
   /** Java API */
-  def getChallenges = challenges.asJava
+  def getChallenges: Iterable[japi.headers.HttpChallenge] = challenges.asJava
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.4
@@ -490,7 +497,7 @@ final case class Range(rangeUnit: RangeUnit, ranges: immutable.Seq[ByteRange]) e
   protected def companion = Range
 
   /** Java API */
-  def getRanges = ranges.asJava
+  def getRanges: Iterable[japi.headers.ByteRange] = ranges.asJava
 }
 
 object `Raw-Request-URI` extends ModeledCompanion
@@ -518,7 +525,7 @@ final case class Server(products: immutable.Seq[ProductVersion]) extends japi.he
   protected def companion = Server
 
   /** Java API */
-  def getProducts = products.asJava
+  def getProducts: Iterable[japi.headers.ProductVersion] = products.asJava
 }
 
 // https://tools.ietf.org/html/rfc6265
@@ -549,7 +556,7 @@ final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])
   protected def companion = `Transfer-Encoding`
 
   /** Java API */
-  def getEncodings = encodings.asJava
+  def getEncodings: Iterable[japi.TransferEncoding] = encodings.asJava
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.5.3
@@ -565,7 +572,7 @@ final case class `User-Agent`(products: immutable.Seq[ProductVersion]) extends j
   protected def companion = `User-Agent`
 
   /** Java API */
-  def getProducts = products.asJava
+  def getProducts: Iterable[japi.headers.ProductVersion] = products.asJava
 }
 
 // http://tools.ietf.org/html/rfc7235#section-4.1
@@ -580,7 +587,7 @@ final case class `WWW-Authenticate`(challenges: immutable.Seq[HttpChallenge]) ex
   protected def companion = `WWW-Authenticate`
 
   /** Java API */
-  def getChallenges = challenges.asJava
+  def getChallenges: Iterable[japi.headers.HttpChallenge] = challenges.asJava
 }
 
 // http://en.wikipedia.org/wiki/X-Forwarded-For
@@ -596,6 +603,6 @@ final case class `X-Forwarded-For`(addresses: immutable.Seq[RemoteAddress]) exte
   protected def companion = `X-Forwarded-For`
 
   /** Java API */
-  def getAddresses = addresses.asJava
+  def getAddresses: Iterable[japi.RemoteAddress] = addresses.asJava
 }
 
