@@ -7,6 +7,7 @@ import akka.stream.impl.TransferPhase
 import akka.stream.impl.MultiStreamInputProcessor
 import akka.stream.scaladsl2.Source
 import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.scaladsl2.PublisherDrain
 
 /**
  * INTERNAL API
@@ -17,8 +18,8 @@ private[akka] class ConcatAllImpl(materializer: FlowMaterializer)
   import MultiStreamInputProcessor._
 
   val takeNextSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
-    val flow = primaryInputs.dequeueInputElement().asInstanceOf[Source[Any]]
-    val publisher = flow.toPublisher()(materializer)
+    val source = primaryInputs.dequeueInputElement().asInstanceOf[Source[Any]]
+    val publisher = source.runWith(PublisherDrain())(materializer)
     // FIXME we can pass the flow to createSubstreamInput (but avoiding copy impl now)
     val inputs = createAndSubscribeSubstreamInput(publisher)
     nextPhase(streamSubstream(inputs))

@@ -59,7 +59,7 @@ class GraphBalanceSpec extends AkkaSpec {
         balance ~> Flow[Int].grouped(15) ~> f5
       }.run()
 
-      Set(f1, f2, f3, f4, f5) flatMap (sink ⇒ Await.result(sink.future(g), 3.seconds)) should be((0 to 14).toSet)
+      Set(f1, f2, f3, f4, f5) flatMap (sink ⇒ Await.result(g.materializedDrain(sink), 3.seconds)) should be((0 to 14).toSet)
     }
 
     "fairly balance between three outputs" in {
@@ -73,7 +73,7 @@ class GraphBalanceSpec extends AkkaSpec {
       }.run()
 
       Seq(f1, f2, f3) map { sink ⇒
-        Await.result(sink.future(g), 3.seconds) should be(numElementsForSink +- 1000)
+        Await.result(g.materializedDrain(sink), 3.seconds) should be(numElementsForSink +- 1000)
       }
     }
 

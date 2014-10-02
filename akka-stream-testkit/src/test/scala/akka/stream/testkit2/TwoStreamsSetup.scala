@@ -41,7 +41,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Source(elems).toPublisher()
+  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Source(elems).runWith(PublisherDrain())
 
   def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 
