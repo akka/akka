@@ -315,7 +315,7 @@ class SslTlsCipherActor(val requester: ActorRef, val sessionNegotioation: SslTls
 
   val decryptionPhase: TransferPhase = TransferPhase(canDecrypt) { () ⇒
     if (tracing) log.debug("### Decrypting")
-    if (inboundPlaintextOutput.NeedsDemand.isReady) {
+    if (inboundCipherTextInput.NeedsInput.isReady) {
       val elem = inboundCipherTextInput.dequeueInputElement().asInstanceOf[ByteString]
       enqueueCipherInputBytes(elem)
     }
