@@ -4,9 +4,8 @@
 
 package akka.http.server
 
+import akka.stream.scaladsl2.{ ForeachSink, FlowFrom, FlowMaterializer }
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
 import akka.http.util.FastFuture
 import akka.http.model.{ HttpRequest, HttpResponse }
 import akka.http.Http
@@ -49,15 +48,15 @@ trait ScalaRoutingDSL extends Directives {
         run(_ ⇒ handler)
 
       private def run(f: RoutingSetup ⇒ HttpRequest ⇒ Future[HttpResponse]): Unit =
-        Flow(binding.connectionStream).foreach {
+        FlowFrom(binding.connectionStream).runWithSink(ForeachSink {
           case connection @ Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             val setup = setupProvider(connection)
             setup.routingLog.log.debug("Accepted new connection from " + remoteAddress)
             val runner = f(setup)
-            Flow(requestProducer)
+            FlowFrom(requestProducer)
               .mapFuture(request ⇒ runner(request))
-              .produceTo(responseConsumer)(setup.flowMaterializer)
-        }
+              .publishTo(responseConsumer)(setup.flowMaterializer)
+        })
     }
   }
 

@@ -4,12 +4,14 @@
 
 package akka.http.marshalling
 
+import akka.stream.MaterializerSettings
+
 import scala.collection.immutable.ListMap
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.scaladsl2.FlowMaterializer
 import akka.http.util._
 import akka.http.model._
 import headers._

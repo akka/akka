@@ -9,10 +9,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
-import org.reactivestreams.Publisher
-import akka.stream.scaladsl.Flow
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.{ FlattenStrategy, FlowMaterializer }
+import akka.stream.scaladsl2._
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.util._
@@ -133,7 +130,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
       "response start" in new Test {
         Seq(start, "rest") should generalMultiParseTo(
-          Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher()))),
+          Right(baseResponse.withEntity(Chunked(`application/pdf`, source()))),
           Left("Illegal character 'r' in chunk start"))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
@@ -152,7 +149,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |0123456789""",
           """ABCDEF
             |dead""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher(
+            Right(baseResponse.withEntity(Chunked(`application/pdf`, source(
               Chunk(ByteString("abc")),
               Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
               Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
@@ -165,7 +162,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           """0
             |
             |""") should generalMultiParseTo(
-            Right(baseResponse.withEntity(Chunked(`application/pdf`, publisher(LastChunk)))))
+            Right(baseResponse.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -178,7 +175,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |
             |HT""") should generalMultiParseTo(
             Right(baseResponse.withEntity(Chunked(`application/pdf`,
-              publisher(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+              source(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -188,7 +185,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-Type: application/pdf
           |
           |""" should parseTo(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
-          entity = HttpEntity.Chunked(`application/pdf`, publisher())))
+          entity = HttpEntity.Chunked(`application/pdf`, source())))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
@@ -214,6 +211,21 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   private class Test {
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
+    class StrictEqualHttpResponse(val resp: HttpResponse) {
+      override def equals(other: scala.Any): Boolean = other match {
+        case other: StrictEqualHttpResponse ⇒
+          this.resp.copy(entity = HttpEntity.Empty) == other.resp.copy(entity = HttpEntity.Empty) &&
+            Await.result(this.resp.entity.toStrict(250.millis), 250.millis) ==
+            Await.result(other.resp.entity.toStrict(250.millis), 250.millis)
+      }
+
+      override def toString = resp.toString
+    }
+
+    def strictEqualify(x: Either[String, HttpResponse]): Either[String, StrictEqualHttpResponse] = {
+      x.right.map(new StrictEqualHttpResponse(_))
+    }
+
     def parseTo(expected: HttpResponse*): Matcher[String] = parseTo(GET, expected: _*)
     def parseTo(requestMethod: HttpMethod, expected: HttpResponse*): Matcher[String] =
       multiParseTo(requestMethod, expected: _*).compose(_ :: Nil)
@@ -234,31 +246,33 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def generalRawMultiParseTo(expected: Either[String, HttpResponse]*): Matcher[Seq[String]] =
       generalRawMultiParseTo(GET, expected: _*)
     def generalRawMultiParseTo(requestMethod: HttpMethod, expected: Either[String, HttpResponse]*): Matcher[Seq[String]] =
-      equal(expected).matcher[Seq[Either[String, HttpResponse]]] compose {
-        input: Seq[String] ⇒
-          val future =
-            Flow(input.toList)
-              .map(ByteString.apply)
-              .transform("parser", () ⇒ newParser(requestMethod))
-              .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
-              .headAndTail
-              .collect {
-                case (ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
-                  closeAfterResponseCompletion :+= close
-                  Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
-                case (x: ParseError, _) ⇒ Left(x)
-              }.map { x ⇒
-                Flow {
-                  x match {
-                    case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
-                    case Left(error)     ⇒ FastFuture.successful(Left(error.info.formatPretty))
+      equal(expected.map(strictEqualify))
+        .matcher[Seq[Either[String, StrictEqualHttpResponse]]] compose {
+          input: Seq[String] ⇒
+            val future =
+              FlowFrom(input.toList)
+                .map(ByteString.apply)
+                .transform("parser", () ⇒ newParser(requestMethod))
+                .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
+                .headAndTail
+                .collect {
+                  case (ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, close), entityParts) ⇒
+                    closeAfterResponseCompletion :+= close
+                    Right(HttpResponse(statusCode, headers, createEntity(entityParts), protocol))
+                  case (x: ParseError, _) ⇒ Left(x)
+                }.map { x ⇒
+                  FlowFrom {
+                    x match {
+                      case Right(response) ⇒ compactEntity(response.entity).fast.map(x ⇒ Right(response.withEntity(x)))
+                      case Left(error)     ⇒ FastFuture.successful(Left(error.info.formatPretty))
+                    }
                   }
-                }.toPublisher()
-              }
-              .flatten(FlattenStrategy.concat)
-              .grouped(1000).toFuture()
-          Await.result(future, 250.millis)
-      }
+                }
+                .flatten(FlattenStrategy.concat)
+                .map(strictEqualify)
+                .grouped(1000).runWithSink(FutureSink[Seq[Either[String, StrictEqualHttpResponse]]])
+            Await.result(future, 500.millis)
+        }
 
     def parserSettings: ParserSettings = ParserSettings(system)
     def newParser(requestMethod: HttpMethod = GET) = {
@@ -273,13 +287,14 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         case _                     ⇒ entity.toStrict(250.millis)
       }
 
-    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
-      Flow(data).grouped(1000).toFuture()
-        .fast.map(publisher(_: _*))
-        .fast.recover { case _: NoSuchElementException ⇒ publisher() }
+    private def compactEntityChunks(data: FlowWithSource[_, ChunkStreamPart]): Future[FlowWithSource[_, ChunkStreamPart]] = {
+      data.grouped(1000).runWithSink(FutureSink[Seq[ChunkStreamPart]])
+        .fast.map(source(_: _*))
+        .fast.recover { case _: NoSuchElementException ⇒ source() }
+    }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
 
-    def publisher[T](elems: T*): Publisher[T] = SynchronousPublisherFromIterable(elems.toList)
+    def source[T](elems: T*): FlowWithSource[_, T] = FlowFrom(elems.toList)
   }
 }

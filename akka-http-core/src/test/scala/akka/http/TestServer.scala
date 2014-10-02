@@ -6,8 +6,7 @@ package akka.http
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
-import akka.stream.scaladsl.Flow
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.{ SubscriberSink, ForeachSink, FlowFrom, FlowMaterializer }
 import akka.io.IO
 import akka.util.Timeout
 import akka.actor.ActorSystem
@@ -36,11 +35,11 @@ object TestServer extends App {
   val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
   bindingFuture foreach {
     case Http.ServerBinding(localAddress, connectionStream) ⇒
-      Flow(connectionStream).foreach {
+      FlowFrom(connectionStream).withSink(ForeachSink {
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Flow(requestPublisher).map(requestHandler).produceTo(responseSubscriber)
-      }
+          FlowFrom(requestPublisher).map(requestHandler).withSink(SubscriberSink(responseSubscriber)).run()
+      }).run()
   }
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")

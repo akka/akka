@@ -471,6 +471,9 @@ final case class FlowWithSource[-In, +Out](private[scaladsl2] val input: Source[
     pubOut.publisher(mf)
   }
 
+  def runWithSink[S](sink: SinkWithKey[Out, S])(implicit materializer: FlowMaterializer): S =
+    this.withSink(sink).run().getSinkFor(sink)
+
   def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer): Unit =
     toPublisher().subscribe(subscriber)
 

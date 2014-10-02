@@ -5,9 +5,8 @@
 package akka.http.model.japi;
 
 import akka.http.model.HttpEntity$;
-import akka.stream.FlowMaterializer;
+import akka.stream.scaladsl2.FlowWithSource;
 import akka.util.ByteString;
-import org.reactivestreams.Publisher;
 
 /**
  * Represents the entity of an Http message. An entity consists of the content-type of the data
@@ -74,5 +73,5 @@ public interface HttpEntity {
     /**
      * Returns a stream of data bytes this entity consists of.
      */
-    public abstract Publisher<ByteString> getDataBytes(FlowMaterializer materializer);
+    public abstract FlowWithSource<?, ByteString> getDataBytes();
 }

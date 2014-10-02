@@ -4,8 +4,8 @@
 
 package akka.http.model.japi;
 
+import akka.stream.scaladsl2.FlowWithSource;
 import akka.util.ByteString;
-import org.reactivestreams.Publisher;
 
 /**
  * Represents an entity without a predetermined content-length. Its length is implicitly
@@ -13,5 +13,5 @@ import org.reactivestreams.Publisher;
  * available for Http responses.
  */
 public abstract class HttpEntityCloseDelimited implements ResponseEntity {
-    public abstract Publisher<ByteString> data();
+    public abstract FlowWithSource<?, ByteString> data();
 }

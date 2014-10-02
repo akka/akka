@@ -7,6 +7,7 @@ package akka.http
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -14,9 +15,8 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
 import akka.io.IO
 import akka.testkit.TestProbe
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.{ FlowFrom, FutureSink, FlowMaterializer }
 import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.scaladsl.Flow
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.http.engine.client.ClientConnectionSettings
@@ -82,7 +82,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val chunks = List(Chunk("abc"), Chunk("defg"), Chunk("hijkl"), LastChunk)
       val chunkedContentType: ContentType = MediaTypes.`application/base64`
-      val chunkedEntity = HttpEntity.Chunked(chunkedContentType, SynchronousPublisherFromIterable(chunks))
+      val chunkedEntity = HttpEntity.Chunked(chunkedContentType, FlowFrom(chunks))
 
       val clientOutSub = clientOut.expectSubscription()
       clientOutSub.sendNext(HttpRequest(POST, "/chunked", List(Accept(MediaRanges.`*/*`)), chunkedEntity) -> 12345678)
@@ -92,7 +92,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       private val HttpRequest(POST, uri, List(`User-Agent`(_), Host(_, _), Accept(Vector(MediaRanges.`*/*`))),
         Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
       uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-      Await.result(Flow(chunkStream).grouped(4).toFuture(), 100.millis) shouldEqual chunks
+      val future = chunkStream.grouped(4).runWithSink(FutureSink[Seq[ChunkStreamPart]])
+      Await.result(future, 100.millis) shouldEqual chunks
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
@@ -101,7 +102,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       clientInSub.request(1)
       val (HttpResponse(StatusCodes.PartialContent, List(Date(_), Server(_), RawHeader("Age", "42")),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`), 12345678) = clientIn.expectNext()
-      Await.result(Flow(chunkStream2).grouped(1000).toFuture(), 100.millis) shouldEqual chunks
+      val future2 = chunkStream2.grouped(1000).runWithSink(FutureSink[Seq[ChunkStreamPart]])
+      Await.result(future2, 100.millis) shouldEqual chunks
     }
 
   }
@@ -132,8 +134,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       connection.remoteAddress.getHostName shouldEqual hostname
       val requestPublisherProbe = StreamTestKit.PublisherProbe[(HttpRequest, T)]()
       val responseSubscriberProbe = StreamTestKit.SubscriberProbe[(HttpResponse, T)]()
-      requestPublisherProbe.subscribe(connection.processor[T])
-      connection.processor[T].subscribe(responseSubscriberProbe)
+      requestPublisherProbe.subscribe(connection.requestSubscriber)
+      connection.responsePublisher.asInstanceOf[Publisher[(HttpResponse, T)]].subscribe(responseSubscriberProbe)
       requestPublisherProbe -> responseSubscriberProbe
     }
 

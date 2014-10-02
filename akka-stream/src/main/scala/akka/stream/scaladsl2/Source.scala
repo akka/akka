@@ -70,6 +70,16 @@ object FlowFrom {
   def apply[T](future: Future[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(FutureSource(future))
 
   /**
+   * Helper to create `Flow` with the given[[Source]].
+   *
+   * Construct a transformation starting with given source. The transformation steps
+   * are executed by a series of [[org.reactivestreams.Processor]] instances
+   * that mediate the flow of elements downstream and the propagation of
+   * back-pressure upstream.
+   */
+  def apply[T](source: Source[T]): FlowWithSource[T, T] = FlowFrom[T].withSource(source)
+
+  /**
    * Elements are produced from the tick closure periodically with the specified interval.
    * The tick element will be delivered to downstream consumers that has requested any elements.
    * If a consumer has not requested any elements at the point in time when the tick
