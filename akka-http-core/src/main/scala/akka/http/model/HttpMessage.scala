@@ -21,6 +21,7 @@ import FastFuture._
  */
 sealed trait HttpMessage extends japi.HttpMessage {
   type Self <: HttpMessage
+  def self: Self
 
   def isRequest: Boolean
   def isResponse: Boolean
@@ -134,6 +135,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest
+  def self = this
 
   override def isRequest = true
   override def isResponse = false
@@ -288,6 +290,7 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
                               entity: ResponseEntity = HttpEntity.Empty,
                               protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpResponse with HttpMessage {
   type Self = HttpResponse
+  def self = this
 
   override def isRequest = false
   override def isResponse = true
