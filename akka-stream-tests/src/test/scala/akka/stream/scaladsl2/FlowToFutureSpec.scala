@@ -23,8 +23,8 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first value" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureSink[Int]
-      val m = FlowFrom(p).withSink(f).run()
+      val f = FutureDrain[Int]
+      val m = Source(p).connect(f).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -34,9 +34,9 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first value when actively constructing" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureSink[Int]
-      val s = SubscriberSource[Int]
-      val m = FlowFrom[Int].withSource(s).withSink(f).run()
+      val f = FutureDrain[Int]
+      val s = SubscriberTap[Int]
+      val m = s.connect(f).run()
       p.subscribe(s.subscriber(m))
       val proc = p.expectSubscription
       proc.expectRequest()
@@ -47,8 +47,8 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureSink[Int]
-      val m = FlowFrom(p).withSink(f).run()
+      val f = FutureDrain[Int]
+      val m = Source(p).connect(f).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex")
@@ -60,8 +60,8 @@ class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
 
     "yield NoSuchElementExcption for empty stream" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = FutureSink[Int]
-      val m = FlowFrom(p).withSink(f).run()
+      val f = FutureDrain[Int]
+      val m = Source(p).connect(f).run()
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()

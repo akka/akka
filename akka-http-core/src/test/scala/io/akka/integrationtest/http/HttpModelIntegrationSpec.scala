@@ -62,7 +62,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
         entity = HttpEntity.Default(
           contentType = ContentTypes.`application/json`,
           contentLength = 5,
-          FlowFrom(List(ByteString("hello"))).toPublisher()))
+          Source(List(ByteString("hello"))).toPublisher()))
 
       // Our library uses a simple model of headers: a Seq[(String, String)].
       // The body is represented as an Array[Byte]. To get the headers in
@@ -141,7 +141,7 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // convert the body into a Publisher[ByteString].
 
       val byteStringBody = ByteString(byteArrayBody)
-      val publisherBody = FlowFrom(List(byteStringBody)).toPublisher()
+      val publisherBody = Source(List(byteStringBody)).toPublisher()
 
       // Finally we can create our HttpResponse.
 

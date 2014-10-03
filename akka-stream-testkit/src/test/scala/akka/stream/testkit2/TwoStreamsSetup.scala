@@ -30,8 +30,8 @@ abstract class TwoStreamsSetup extends AkkaSpec {
       import FlowGraphImplicits._
       val left = operationUnderTestLeft()
       val right = operationUnderTestRight()
-      val x = FlowFrom(p1) ~> left ~> FlowFrom[Outputs] ~> SubscriberSink(subscriber)
-      FlowFrom(p2) ~> right
+      val x = Source(p1) ~> left ~> Flow[Outputs] ~> SubscriberDrain(subscriber)
+      Source(p2) ~> right
     }.run()
 
     subscriber
@@ -41,7 +41,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = FlowFrom(elems).toPublisher()
+  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Source(elems).toPublisher()
 
   def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 

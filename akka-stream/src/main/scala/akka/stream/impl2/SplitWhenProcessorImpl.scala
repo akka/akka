@@ -6,7 +6,7 @@ package akka.stream.impl2
 import akka.stream.MaterializerSettings
 import akka.stream.impl.TransferPhase
 import akka.stream.impl.MultiStreamOutputProcessor
-import akka.stream.scaladsl2.FlowFrom
+import akka.stream.scaladsl2.Source
 
 /**
  * INTERNAL API
@@ -24,7 +24,7 @@ private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val 
 
   def openSubstream(elem: Any): TransferPhase = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
     val substreamOutput = createSubstreamOutput()
-    val substreamFlow = FlowFrom(substreamOutput) // substreamOutput is a Publisher
+    val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
     primaryOutputs.enqueueOutputElement(substreamFlow)
     currentSubstream = substreamOutput
     nextPhase(serveSubstreamFirst(currentSubstream, elem))
