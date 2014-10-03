@@ -1,11 +1,8 @@
 package akka.stream.scaladsl2
 
-import akka.stream.MaterializerSettings
-
-import scala.concurrent.duration._
-import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.stream.testkit2.TwoStreamsSetup
 import akka.stream.scaladsl2.FlowGraphImplicits._
+import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit2.TwoStreamsSetup
 
 class GraphZipSpec extends TwoStreamsSetup {
 

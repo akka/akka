@@ -11,9 +11,10 @@ import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.Function;
 import akka.japi.Procedure;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SubscriberDrain;
+import akka.stream.scaladsl2.FlowMaterializer;
 import scala.concurrent.Future;
 
 import java.io.BufferedReader;
@@ -34,18 +35,18 @@ public abstract class JavaTestServer {
         ServerBinding binding = (ServerBinding) result;
         System.out.println("Bound to " + binding.localAddress());
 
-        Flow.create(binding.getConnectionStream()).foreach(new Procedure<IncomingConnection>() {
+        Source.from(binding.getConnectionStream()).foreach(new akka.stream.javadsl.japi.Procedure<IncomingConnection>() {
           @Override
           public void apply(IncomingConnection conn) throws Exception {
             System.out.println("New incoming connection from " + conn.remoteAddress());
 
-            Flow.create(conn.getRequestPublisher()).map(new Function<HttpRequest, HttpResponse>() {
+            Source.from(conn.getRequestPublisher()).map(new akka.stream.javadsl.japi.Function<HttpRequest, HttpResponse>() {
               @Override
               public HttpResponse apply(HttpRequest request) throws Exception {
                 System.out.println("Handling request to " + request.getUri());
                 return JavaApiTestCases.handleRequest(request);
               }
-            }).produceTo(conn.getResponseSubscriber(), materializer);
+            }).runWith(SubscriberDrain.create(conn.getResponseSubscriber()), materializer);
           }
         }, materializer);
       }

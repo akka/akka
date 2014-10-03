@@ -1,7 +1,7 @@
 package akka.stream.scaladsl2
 
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl2.FlowGraphImplicits._
+import FlowGraphImplicits._
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
 import scala.concurrent.Await

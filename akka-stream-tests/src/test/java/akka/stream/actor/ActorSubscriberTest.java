@@ -1,31 +1,31 @@
 package akka.stream.actor;
 
-import org.junit.Ignore;
-import org.reactivestreams.Subscriber;
-import org.junit.ClassRule;
-import org.junit.Test;
-import java.util.Arrays;
-
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
-import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Drain;
+import akka.stream.javadsl.Source;
+import akka.stream.javadsl.SubscriberDrain;
+import akka.stream.scaladsl2.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
-import akka.japi.Procedure;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.reactivestreams.Subscriber;
 
-import static akka.stream.actor.ActorSubscriberMessage.OnNext;
+import java.util.Arrays;
+
 import static akka.stream.actor.ActorSubscriberMessage.OnError;
+import static akka.stream.actor.ActorSubscriberMessage.OnNext;
 
 @Ignore
 public class ActorSubscriberTest {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
-      AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
 
   public static class TestSubscriber extends UntypedActorSubscriber {
 
@@ -60,17 +60,18 @@ public class ActorSubscriberTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final MaterializerSettings settings = MaterializerSettings.create(system.settings().config()).withDispatcher("akka.test.stream-dispatcher");
+  final MaterializerSettings settings = new MaterializerSettings(2, 4, 2, 4, "akka.test.stream-dispatcher");
   final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustHaveJavaAPI() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final ActorRef ref = system.actorOf(Props.create(TestSubscriber.class, probe.getRef()).withDispatcher(
-        "akka.test.stream-dispatcher"));
+    final ActorRef ref = system.actorOf(Props.create(TestSubscriber.class, probe.getRef()).withDispatcher("akka.test.stream-dispatcher"));
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.util.Iterator<Integer> input = Arrays.asList(1, 2, 3).iterator();
-    Flow.create(input).produceTo(subscriber, materializer);
+
+    Source.from(input).runWith(SubscriberDrain.create(subscriber), materializer);
+
     ref.tell("run", null);
     probe.expectMsgEquals(1);
     probe.expectMsgEquals(2);

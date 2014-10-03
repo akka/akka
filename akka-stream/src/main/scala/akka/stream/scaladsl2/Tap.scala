@@ -6,14 +6,15 @@ package akka.stream.scaladsl2
 import akka.stream.impl._
 import akka.stream.impl2.ActorBasedFlowMaterializer
 import akka.stream.impl2.Ast.AstNode
-import akka.stream.{ scaladsl2, Transformer, OverflowStrategy, TimerTransformer }
-import org.reactivestreams.{ Publisher, Subscriber }
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.Future
-import scala.util.{ Failure, Success }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * This trait is a marker for a pluggable stream tap. Concrete instances should

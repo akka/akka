@@ -3,11 +3,9 @@
  */
 package akka.stream.scaladsl2
 
+import akka.stream.{ OverflowStrategy, Transformer }
 import akka.stream.testkit.AkkaSpec
-import akka.stream.Transformer
-import akka.stream.OverflowStrategy
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
-import akka.stream.testkit.StreamTestKit.PublisherProbe
+import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 
 object FlowGraphCompileSpec {
   class Fruit
@@ -277,7 +275,6 @@ class FlowGraphCompileSpec extends AkkaSpec {
           val unzip = Unzip[Int, String]
           val wrongOut = PublisherDrain[(Int, Int)]
           val whatever = PublisherDrain[Any]
-          import FlowGraphImplicits._
           "Flow(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.left""" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.out""" shouldNot compile

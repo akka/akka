@@ -3,27 +3,20 @@
  */
 package akka.stream.impl
 
-import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
-import scala.util.Try
-import org.reactivestreams.{ Publisher, Subscriber }
-import Ast.{ AstNode, Transform }
-import akka.stream.{ OverflowStrategy, FlowMaterializer, Transformer }
-import akka.stream.{ FlattenStrategy, FlowMaterializer, Transformer }
-import akka.stream.scaladsl.Flow
-import scala.util.Success
-import scala.util.Failure
-import akka.stream.scaladsl.Duct
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
-import akka.stream.TimerTransformer
+import akka.stream.scaladsl.{ Duct, Flow }
+import akka.stream.{ FlattenStrategy, FlowMaterializer, OverflowStrategy, TimerTransformer, Transformer }
 import akka.util.Collections.EmptyImmutableSeq
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import scala.collection.immutable
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API
  */
 private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]) extends Flow[O] with Builder[O] {
-  import Ast._
 
   type Thing[T] = Flow[T]
 
@@ -31,9 +24,6 @@ private[akka] case class FlowImpl[I, O](publisherNode: Ast.PublisherNode[I], ops
   override protected def andThen[U](op: Ast.AstNode): Flow[U] = this.copy(ops = op :: ops)
 
   override def append[U](duct: Duct[_ >: O, U]): Flow[U] =
-    copy(ops = duct.ops ++: ops)
-
-  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: O, U]): Flow[U] =
     copy(ops = duct.ops ++: ops)
 
   override def toFuture()(implicit materializer: FlowMaterializer): Future[O] = {
@@ -84,9 +74,6 @@ private[akka] case class DuctImpl[In, Out](ops: List[Ast.AstNode]) extends Duct[
   override protected def andThen[U](op: Ast.AstNode): Duct[In, U] = this.copy(ops = op :: ops)
 
   override def append[U](duct: Duct[_ >: Out, U]): Duct[In, U] =
-    copy(ops = duct.ops ++: ops)
-
-  override def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U] =
     copy(ops = duct.ops ++: ops)
 
   override def produceTo[U >: Out](subscriber: Subscriber[U])(implicit materializer: FlowMaterializer): Subscriber[In] =
@@ -147,8 +134,9 @@ private[akka] object Builder {
  * Builder of `Flow` or `Duct` things
  */
 private[akka] trait Builder[Out] {
-  import Builder._
   import akka.stream.impl.Ast._
+  import akka.stream.impl.Builder._
+
   import scala.language.higherKinds
 
   type Thing[T]

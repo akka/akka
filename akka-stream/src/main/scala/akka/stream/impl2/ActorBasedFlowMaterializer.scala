@@ -5,25 +5,17 @@ package akka.stream.impl2
 
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.actor._
+import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
+import akka.stream.impl.{ ActorProcessor, ActorPublisher, BufferImpl, ConflateImpl, ExpandImpl, ExposedPublisher, MapAsyncProcessorImpl, TimerTransformerProcessorsImpl, TransformProcessorImpl }
+import akka.stream.scaladsl2._
+import akka.stream.{ MaterializerSettings, OverflowStrategy, TimerTransformer, Transformer }
+import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ Future, Await }
-import org.reactivestreams.{ Processor, Publisher, Subscriber }
-import akka.actor._
-import akka.pattern.ask
-import akka.stream.{ MaterializerSettings, Transformer }
-import akka.stream.impl.{ ActorProcessor, ActorPublisher, ExposedPublisher, TransformProcessorImpl }
-import akka.stream.scaladsl2._
-import akka.stream.TimerTransformer
-import akka.stream.impl.TimerTransformerProcessorsImpl
-import akka.stream.OverflowStrategy
-import akka.stream.impl.ConflateImpl
-import akka.stream.impl.ExpandImpl
-import akka.stream.impl.BufferImpl
-import akka.stream.impl.BlackholeSubscriber
-import akka.stream.impl.MapAsyncProcessorImpl
+import scala.concurrent.{ Await, Future }
 
 /**
  * INTERNAL API

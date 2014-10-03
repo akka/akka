@@ -295,11 +295,6 @@ trait Duct[In, +Out] {
   def append[U](duct: Duct[_ >: Out, U]): Duct[In, U]
 
   /**
-   * INTERNAL API
-   */
-  private[akka] def appendJava[U](duct: akka.stream.javadsl.Duct[_ >: Out, U]): Duct[In, U]
-
-  /**
    * Materialize this `Duct` by attaching it to the specified downstream `subscriber`
    * and return a `Subscriber` representing the input side of the `Duct`.
    * The returned `Subscriber` can later be connected to an upstream `Publisher`.
