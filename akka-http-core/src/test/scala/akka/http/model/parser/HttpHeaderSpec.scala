@@ -254,6 +254,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "If-Modified-Since" in {
       "If-Modified-Since: Wed, 13 Jul 2011 08:12:31 GMT" =!= `If-Modified-Since`(DateTime(2011, 7, 13, 8, 12, 31))
+      "If-Modified-Since: 0" =!= `If-Modified-Since`(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
     }
 
     "If-None-Match" in {
