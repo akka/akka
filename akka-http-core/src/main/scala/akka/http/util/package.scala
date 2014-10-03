@@ -53,7 +53,7 @@ package object util {
         })
   }
 
-  // FIXME: This should be fixed by a CancelledSink once #15903 is done. Currently this is needed for the tests
+  // FIXME: This should be fixed by a CancelledDrain once #15903 is done. Currently this is needed for the tests
   private[http] def cancelledSusbcriber[T]: Subscriber[T] = new Subscriber[T] {
     override def onSubscribe(s: Subscription): Unit = s.cancel()
     override def onError(t: Throwable): Unit = ()
