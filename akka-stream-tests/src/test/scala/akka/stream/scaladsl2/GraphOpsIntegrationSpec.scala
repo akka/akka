@@ -6,9 +6,54 @@ import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.scaladsl2.FlowGraphImplicits._
+import akka.util.ByteString
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.OnNext
+
+object GraphOpsIntegrationSpec {
+
+  object Lego {
+    def apply(pipeline: Flow[String, String]): Lego = {
+      val in = UndefinedSource[String]
+      val out = UndefinedSink[ByteString]
+      val graph = PartialFlowGraph { implicit builder ⇒
+        val balance = Balance[String]
+        val merge = Merge[String]
+        in ~> Flow[String].map(_.trim) ~> balance
+        balance ~> pipeline ~> merge
+        balance ~> pipeline ~> merge
+        balance ~> pipeline ~> merge
+        merge ~> Flow[String].map(_.trim).map(ByteString.fromString) ~> out
+      }
+      new Lego(in, out, graph)
+    }
+  }
+
+  class Lego private (
+    private val in: UndefinedSource[String],
+    private val out: UndefinedSink[ByteString],
+    private val graph: PartialFlowGraph) {
+
+    def connect(that: Lego, adapter: Flow[ByteString, String]): Lego = {
+      val newGraph = PartialFlowGraph { builder ⇒
+        builder.importPartialFlowGraph(this.graph)
+        builder.importPartialFlowGraph(that.graph)
+        builder.connect(this.out, adapter, that.in)
+      }
+      new Lego(this.in, that.out, newGraph)
+    }
+
+    def run(source: Source[String], sink: Sink[ByteString])(implicit materializer: FlowMaterializer): Unit =
+      FlowGraph(graph) { builder ⇒
+        builder.attachSource(in, source)
+        builder.attachSink(out, sink)
+      }.run()
+
+  }
+}
 
 class GraphOpsIntegrationSpec extends AkkaSpec {
+  import GraphOpsIntegrationSpec._
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -164,6 +209,23 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       s2.expectNext("ELEM-2")
       s2.expectNext("ELEM-3")
       s2.expectComplete()
+    }
+
+    "be possible to use as lego bricks" in {
+      val lego1 = Lego(Flow[String].filter(_.length > 3).map(s ⇒ s" $s "))
+      val lego2 = Lego(Flow[String].map(_.toUpperCase))
+      val lego3 = lego1.connect(lego2, Flow[ByteString].map(_.utf8String))
+      val source = PublisherTap(Source(List("green ", "blue", "red", "yellow", "black")).toPublisher)
+      val s = SubscriberProbe[ByteString]
+      val sink = SubscriberDrain(s)
+      lego3.run(source, sink)
+      val sub = s.expectSubscription()
+      sub.request(100)
+      val result = (s.probe.receiveN(4) collect {
+        case OnNext(b: ByteString) ⇒ b.utf8String
+      }).sorted
+      result should be(Vector("BLACK", "BLUE", "GREEN", "YELLOW"))
+      s.expectComplete()
     }
 
   }
