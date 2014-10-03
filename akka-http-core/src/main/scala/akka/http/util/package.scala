@@ -30,6 +30,10 @@ package object util {
   private[http] implicit def enhanceConfig(config: Config): EnhancedConfig = new EnhancedConfig(config)
   private[http] implicit def enhanceString_(s: String): EnhancedString = new EnhancedString(s)
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
+  private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
+    new EnhancedByteStringTraversableOnce(byteStrings)
+  private[http] implicit def enhanceTransformer[T, U](transformer: Transformer[T, U]): EnhancedTransformer[T, U] =
+    new EnhancedTransformer(transformer)
 
   private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
     def headAndTail(implicit fm: FlowMaterializer): Flow[(T, Publisher[T])] =
