@@ -404,5 +404,32 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }
     }
 
+    "support interconnect between two partial flow graphs" in {
+      val output1 = UndefinedSink[String]
+      val output2 = UndefinedSink[String]
+      val partial1 = PartialFlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val bcast = Broadcast[String]
+        in1 ~> bcast ~> output1
+        bcast ~> output2
+      }
+
+      val input1 = UndefinedSource[String]
+      val input2 = UndefinedSource[String]
+      val partial2 = PartialFlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val merge = Merge[String]
+        input1 ~> merge ~> out1
+        input2 ~> merge
+      }
+
+      FlowGraph { b ⇒
+        b.importPartialFlowGraph(partial1)
+        b.importPartialFlowGraph(partial2)
+        b.connect(output1, f1, input1)
+        b.connect(output2, f2, input2)
+      }.run()
+    }
+
   }
 }
