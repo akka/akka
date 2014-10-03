@@ -34,6 +34,26 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       Await.result(g.getDrainFor(resultFuture), 3.seconds).sorted should be(List(1, 2, 3, 4, 5, 6))
     }
 
+    "support balance - merge (parallelization) layouts" in {
+      val elements = 0 to 10
+      val in = Source(elements)
+      val f = Flow[Int]
+      val out = FutureDrain[Seq[Int]]
+
+      val g = FlowGraph { implicit b ⇒
+        val balance = Balance[Int]
+        val merge = Merge[Int]
+
+        in ~> balance ~> f ~> merge
+        balance ~> f ~> merge
+        balance ~> f ~> merge
+        balance ~> f ~> merge
+        balance ~> f ~> merge ~> Flow[Int].grouped(elements.size * 2) ~> out
+      }.run()
+
+      Await.result(out.future(g), 3.seconds).sorted should be(elements)
+    }
+
     "support wikipedia Topological_sorting 2" in {
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val resultFuture2 = FutureDrain[Seq[Int]]

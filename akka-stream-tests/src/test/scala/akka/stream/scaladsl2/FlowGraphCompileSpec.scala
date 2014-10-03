@@ -58,6 +58,16 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "build simple balance" in {
+      FlowGraph { b ⇒
+        val balance = Balance[String]
+        b.
+          addEdge(in1, f1, balance).
+          addEdge(balance, f2, out1).
+          addEdge(balance, f3, out2)
+      }
+    }
+
     "build simple merge - broadcast" in {
       FlowGraph { b ⇒
         val merge = Merge[String]

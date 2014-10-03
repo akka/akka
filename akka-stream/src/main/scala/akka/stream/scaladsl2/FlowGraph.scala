@@ -68,6 +68,7 @@ object Merge {
    */
   def apply[T](name: String): Merge[T] = new Merge[T](Some(name))
 }
+
 /**
  * Merge several streams, taking elements as they arrive from input streams
  * (picking randomly when several have elements ready).
@@ -101,6 +102,7 @@ object Broadcast {
    */
   def apply[T](name: String): Broadcast[T] = new Broadcast[T](Some(name))
 }
+
 /**
  * Fan-out the stream to several streams. Each element is produced to
  * the other streams. It will not shutdown until the subscriptions for at least
@@ -114,6 +116,38 @@ final class Broadcast[T](override val name: Option[String]) extends FlowGraphInt
   override def maximumOutputCount: Int = Int.MaxValue
 
   override private[akka] def astNode = Ast.Broadcast
+}
+
+object Balance {
+  /**
+   * Create a new anonymous `Balance` vertex with the specified input type.
+   * Note that a `Balance` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   */
+  def apply[T]: Balance[T] = new Balance[T](None)
+  /**
+   * Create a named `Balance` vertex with the specified input type.
+   * Note that a `Balance` with a specific name can only be used at one place (one vertex)
+   * in the `FlowGraph`. Calling this method several times with the same name
+   * returns instances that are `equal`.
+   */
+  def apply[T](name: String): Balance[T] = new Balance[T](Some(name))
+}
+
+/**
+ * Fan-out the stream to several streams. Each element is produced to
+ * one of the other streams. It will not shutdown until the subscriptions for at least
+ * two downstream subscribers have been established.
+ */
+final class Balance[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex with Junction[T] {
+  override private[akka] def vertex = this
+  override def minimumInputCount: Int = 1
+  override def maximumInputCount: Int = 1
+  override def minimumOutputCount: Int = 2
+  override def maximumOutputCount: Int = Int.MaxValue
+
+  override private[akka] def astNode = Ast.Balance
 }
 
 object Zip {
