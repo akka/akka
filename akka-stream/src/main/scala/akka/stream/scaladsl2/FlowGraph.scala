@@ -15,7 +15,7 @@ import akka.stream.impl2.Ast
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface. Edges may end at a `JunctionInPort`.
  */
-sealed trait JunctionInPort[-T] {
+trait JunctionInPort[-T] {
   private[akka] def port: Int = FlowGraphInternal.UnlabeledPort
   private[akka] def vertex: FlowGraphInternal.Vertex
   type NextT
@@ -26,7 +26,7 @@ sealed trait JunctionInPort[-T] {
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
  * this marker interface. Edges may start at a `JunctionOutPort`.
  */
-sealed trait JunctionOutPort[T] {
+trait JunctionOutPort[T] {
   private[akka] def port: Int = FlowGraphInternal.UnlabeledPort
   private[akka] def vertex: FlowGraphInternal.Vertex
 }
@@ -450,7 +450,7 @@ private[akka] object FlowGraphInternal {
     final override private[scaladsl2] def newInstance() = this.copy()
   }
 
-  sealed trait InternalVertex extends Vertex {
+  trait InternalVertex extends Vertex {
     def name: Option[String]
 
     def minimumInputCount: Int

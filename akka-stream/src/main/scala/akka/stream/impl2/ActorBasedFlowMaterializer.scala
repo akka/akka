@@ -109,6 +109,10 @@ private[akka] object Ast {
     override def name = "concat"
   }
 
+  case class FlexiMergeNode(merger: FlexiMerge[Any]) extends FanInAstNode {
+    override def name = merger.name.getOrElse("")
+  }
+
 }
 
 /**
