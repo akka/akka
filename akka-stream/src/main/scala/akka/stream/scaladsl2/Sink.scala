@@ -21,6 +21,12 @@ trait Sink[-In] {
   def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
     tap.connect(this).run().materializedTap(tap)
 
+  /**
+   * Connect this `Sink` to a `Tap` and run it. The returned value is the materialized value
+   * of the `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   */
+  def runWith(tap: SimpleTap[In])(implicit materializer: FlowMaterializer): Unit =
+    tap.connect(this).run()
 }
 
 object Sink {
@@ -47,7 +53,7 @@ object Sink {
    * A `Sink` that immediately cancels its upstream after materialization.
    */
   def cancelled[T]: Drain[T] = CancelDrain
-  
+
   private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
     val in = block(builder)
     builder.partialBuild().toSink(in)

@@ -25,8 +25,7 @@ import java.util.concurrent.atomic.AtomicReference
  * FlowMaterializers can be used but must then implement the functionality of these
  * Drain nodes themselves (or construct an ActorBasedFlowMaterializer).
  */
-trait Drain[-In] extends Sink[In] {
-}
+trait Drain[-In] extends Sink[In]
 
 /**
  * A drain that does not need to create a user-accessible object during materialization.
@@ -116,6 +115,7 @@ object PublisherDrain {
 
 class PublisherDrain[In] extends DrainWithKey[In] {
   type MaterializedType = Publisher[In]
+
   def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[In] = flowPublisher
 
   override def toString: String = "PublisherDrain"
@@ -145,7 +145,9 @@ object FutureDrain {
  * (failing the Future with a NoSuchElementException).
  */
 class FutureDrain[In] extends DrainWithKey[In] {
+
   type MaterializedType = Future[In]
+
   def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[In] = {
     val (sub, f) = create(materializer, flowName)
     flowPublisher.subscribe(sub)
@@ -201,6 +203,7 @@ object OnCompleteDrain {
  * or [[scala.util.Failure]].
  */
 final case class OnCompleteDrain[In](callback: Try[Unit] ⇒ Unit) extends SimpleDrain[In] {
+
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
     Source(flowPublisher).transform("onCompleteDrain", () ⇒ new Transformer[In, Unit] {
       override def onNext(in: In) = Nil
@@ -221,6 +224,7 @@ final case class OnCompleteDrain[In](callback: Try[Unit] ⇒ Unit) extends Simpl
  * with `Failure` if there is an error is signaled in the stream.
  */
 final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In] {
+
   type MaterializedType = Future[Unit]
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[Unit] = {
@@ -248,6 +252,7 @@ final case class ForeachDrain[In](f: In ⇒ Unit) extends DrainWithKey[In] {
  * if there is an error is signaled in the stream.
  */
 final case class FoldDrain[U, In](zero: U)(f: (U, In) ⇒ U) extends DrainWithKey[In] {
+
   type MaterializedType = Future[U]
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): Future[U] = {

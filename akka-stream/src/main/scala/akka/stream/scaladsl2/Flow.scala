@@ -38,6 +38,30 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
     val m = tap.connect(this).connect(drain).run()
     (m.materializedTap(tap), m.materializedDrain(drain))
   }
+
+  /**
+   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   *
+   * The returned value will contain the materialized value of the `DrainWithKey`, e.g. `Publisher` of a [[PublisherDrain]].
+   */
+  def runWith(tap: SimpleTap[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
+    tap.connect(this).runWith(drain)
+
+  /**
+   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   *
+   * The returned value will contain the materialized value of the `TapWithKey`, e.g. `Subscriber` of a [[SubscriberTap]].
+   */
+  def runWith(tap: TapWithKey[In], drain: SimpleDrain[Out])(implicit materializer: FlowMaterializer): tap.MaterializedType =
+    tap.connect(this).connect(drain).run().materializedTap(tap)
+
+  /**
+   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   *
+   * As both `Tap` and `Drain` are "simple", no value is returned from this `runWith` overload.
+   */
+  def runWith(tap: SimpleTap[In], drain: SimpleDrain[Out])(implicit materializer: FlowMaterializer): Unit =
+    tap.connect(this).connect(drain).run()
 }
 
 object Flow {
@@ -404,9 +428,10 @@ trait FlowOps[+Out] {
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[Source]].
    */
-  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U] = strategy match {
-    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
-    case _                              ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getSimpleName}]")
+  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): Repr[U] = strategy match {
+    case _: akka.stream.FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case _: akka.stream.scaladsl2.FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll) // TODO remove duality here?
+    case _ ⇒ throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }
 
   /**

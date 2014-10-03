@@ -10,6 +10,7 @@ import akka.stream.impl2.{ ActorBasedFlowMaterializer, Ast, FlowNameCounter, Str
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Publisher
 
+// TODO: Find this guy a better place to live than scaladsl, as it's exposed in javadsl too
 object FlowMaterializer {
 
   /**

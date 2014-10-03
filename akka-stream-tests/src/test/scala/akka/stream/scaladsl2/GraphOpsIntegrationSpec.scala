@@ -1,14 +1,13 @@
 package akka.stream.scaladsl2
 
+import akka.stream.MaterializerSettings
+import akka.stream.scaladsl2.FlowGraphImplicits._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.{ OverflowStrategy, MaterializerSettings }
-import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
+import akka.stream.testkit.StreamTestKit.{ OnNext, SubscriberProbe }
+import akka.util.ByteString
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.scaladsl2.FlowGraphImplicits._
-import akka.util.ByteString
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
-import akka.stream.testkit.StreamTestKit.OnNext
 
 object GraphOpsIntegrationSpec {
 
@@ -53,7 +52,7 @@ object GraphOpsIntegrationSpec {
 }
 
 class GraphOpsIntegrationSpec extends AkkaSpec {
-  import GraphOpsIntegrationSpec._
+  import akka.stream.scaladsl2.GraphOpsIntegrationSpec._
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
