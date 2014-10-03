@@ -66,7 +66,9 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   // but more lenient where we have already seen differing implementations in the field
   // ******************************************************************************************
 
-  def `HTTP-date`: Rule1[DateTime] = rule { (`IMF-fixdate` | `asctime-date`) ~ OWS }
+  def `HTTP-date`: Rule1[DateTime] = rule {
+    (`IMF-fixdate` | `asctime-date` | '0' ~ push(DateTime.MinValue)) ~ OWS
+  }
 
   def `IMF-fixdate` = rule { // mixture of the spec-ed `IMF-fixdate` and `rfc850-date`
     (`day-name` | `day-name-l`) ~ ", " ~ (date1 | date2) ~ ' ' ~ `time-of-day` ~ ' ' ~ ("GMT" | "UTC") ~> {
