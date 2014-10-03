@@ -15,11 +15,11 @@ class FlowPublishToSubscriberSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  "A Flow with SubscriberSink" must {
+  "A Flow with SubscriberDrain" must {
 
     "publish elements to the subscriber" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(List(1, 2, 3)).withSink(SubscriberSink(c)).run()
+      Source(List(1, 2, 3)).connect(SubscriberDrain(c)).run()
       val s = c.expectSubscription()
       s.request(3)
       c.expectNext(1)

@@ -29,7 +29,7 @@ class FlowDropSpec extends AkkaSpec with ScriptedTest {
 
     "not drop anything for negative n" in {
       val probe = StreamTestKit.SubscriberProbe[Int]()
-      FlowFrom(List(1, 2, 3)).drop(-1).publishTo(probe)
+      Source(List(1, 2, 3)).drop(-1).publishTo(probe)
       probe.expectSubscription().request(10)
       probe.expectNext(1)
       probe.expectNext(2)

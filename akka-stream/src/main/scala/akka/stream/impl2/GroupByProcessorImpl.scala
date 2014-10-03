@@ -5,7 +5,7 @@ package akka.stream.impl2
 
 import akka.stream.MaterializerSettings
 import akka.stream.impl.TransferPhase
-import akka.stream.scaladsl2.FlowFrom
+import akka.stream.scaladsl2.Source
 import akka.stream.impl.MultiStreamOutputProcessor
 
 /**
@@ -45,7 +45,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       nextPhase(waitNext)
     } else {
       val substreamOutput = createSubstreamOutput()
-      val substreamFlow = FlowFrom(substreamOutput) // substreamOutput is a Publisher
+      val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
       primaryOutputs.enqueueOutputElement((key, substreamFlow))
       keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))

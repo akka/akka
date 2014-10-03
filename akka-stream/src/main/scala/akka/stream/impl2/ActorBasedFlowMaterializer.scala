@@ -132,57 +132,57 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   }
 
   // Ops come in reverse order
-  override def materialize[In, Out](source: Source[In], sink: Sink[Out], ops: List[Ast.AstNode]): MaterializedFlow = {
+  override def materialize[In, Out](tap: Tap[In], drain: Drain[Out], ops: List[Ast.AstNode]): MaterializedPipe = {
     val flowName = createFlowName()
 
-    def attachSink(pub: Publisher[Out]) = sink match {
-      case s: SimpleSink[Out]     ⇒ s.attach(pub, this, flowName)
-      case s: SinkWithKey[Out, _] ⇒ s.attach(pub, this, flowName)
-      case _                      ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
+    def attachDrain(pub: Publisher[Out]) = drain match {
+      case s: SimpleDrain[Out]     ⇒ s.attach(pub, this, flowName)
+      case s: DrainWithKey[Out, _] ⇒ s.attach(pub, this, flowName)
+      case _                       ⇒ throw new MaterializationException("unknown Drain type " + drain.getClass)
     }
-    def attachSource(sub: Subscriber[In]) = source match {
-      case s: SimpleSource[In]     ⇒ s.attach(sub, this, flowName)
-      case s: SourceWithKey[In, _] ⇒ s.attach(sub, this, flowName)
-      case _                       ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
+    def attachTap(sub: Subscriber[In]) = tap match {
+      case s: SimpleTap[In]     ⇒ s.attach(sub, this, flowName)
+      case s: TapWithKey[In, _] ⇒ s.attach(sub, this, flowName)
+      case _                    ⇒ throw new MaterializationException("unknown Tap type " + drain.getClass)
     }
-    def createSink() = sink.asInstanceOf[Sink[In]] match {
-      case s: SimpleSink[In]     ⇒ s.create(this, flowName) -> (())
-      case s: SinkWithKey[In, _] ⇒ s.create(this, flowName)
-      case _                     ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
+    def createDrain() = drain.asInstanceOf[Drain[In]] match {
+      case s: SimpleDrain[In]     ⇒ s.create(this, flowName) -> (())
+      case s: DrainWithKey[In, _] ⇒ s.create(this, flowName)
+      case _                      ⇒ throw new MaterializationException("unknown Drain type " + drain.getClass)
     }
-    def createSource() = source.asInstanceOf[Source[Out]] match {
-      case s: SimpleSource[Out]     ⇒ s.create(this, flowName) -> (())
-      case s: SourceWithKey[Out, _] ⇒ s.create(this, flowName)
-      case _                        ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
+    def createTap() = tap.asInstanceOf[Tap[Out]] match {
+      case s: SimpleTap[Out]     ⇒ s.create(this, flowName) -> (())
+      case s: TapWithKey[Out, _] ⇒ s.create(this, flowName)
+      case _                     ⇒ throw new MaterializationException("unknown Tap type " + drain.getClass)
     }
     def isActive(s: AnyRef) = s match {
-      case source: SimpleSource[_]     ⇒ source.isActive
-      case source: SourceWithKey[_, _] ⇒ source.isActive
-      case sink: SimpleSink[_]         ⇒ sink.isActive
-      case sink: SinkWithKey[_, _]     ⇒ sink.isActive
-      case _: Source[_]                ⇒ throw new MaterializationException("unknown Source type " + sink.getClass)
-      case _: Sink[_]                  ⇒ throw new MaterializationException("unknown Sink type " + sink.getClass)
+      case tap: SimpleTap[_]         ⇒ tap.isActive
+      case tap: TapWithKey[_, _]     ⇒ tap.isActive
+      case drain: SimpleDrain[_]     ⇒ drain.isActive
+      case drain: DrainWithKey[_, _] ⇒ drain.isActive
+      case _: Tap[_]                 ⇒ throw new MaterializationException("unknown Tap type " + drain.getClass)
+      case _: Drain[_]               ⇒ throw new MaterializationException("unknown Drain type " + drain.getClass)
     }
 
-    val (sourceValue, sinkValue) =
+    val (tapValue, drainValue) =
       if (ops.isEmpty) {
-        if (isActive(sink)) {
-          val (sub, value) = createSink()
-          (attachSource(sub), value)
-        } else if (isActive(source)) {
-          val (pub, value) = createSource()
-          (value, attachSink(pub))
+        if (isActive(drain)) {
+          val (sub, value) = createDrain()
+          (attachTap(sub), value)
+        } else if (isActive(tap)) {
+          val (pub, value) = createTap()
+          (value, attachDrain(pub))
         } else {
           val id: Processor[In, Out] = processorForNode(identityTransform, flowName, 1).asInstanceOf[Processor[In, Out]]
-          (attachSource(id), attachSink(id))
+          (attachTap(id), attachDrain(id))
         }
       } else {
         val opsSize = ops.size
         val last = processorForNode(ops.head, flowName, opsSize).asInstanceOf[Processor[Any, Out]]
         val first = processorChain(last, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Any]]
-        (attachSource(first), attachSink(last))
+        (attachTap(first), attachDrain(last))
       }
-    new MaterializedFlow(source, sourceValue, sink, sinkValue)
+    new MaterializedPipe(tap, tapValue, drain, drainValue)
   }
 
   private val identityTransform = Ast.Transform("identity", () ⇒

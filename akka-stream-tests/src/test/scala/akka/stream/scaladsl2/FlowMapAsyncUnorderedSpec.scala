@@ -23,7 +23,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
       val latch = (1 to 4).map(_ -> TestLatch(1)).toMap
-      val p = FlowFrom(1 to 4).mapAsyncUnordered(n ⇒ Future {
+      val p = Source(1 to 4).mapAsyncUnordered(n ⇒ Future {
         Await.ready(latch(n), 5.seconds)
         n
       }).publishTo(c)
@@ -44,7 +44,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val probe = TestProbe()
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 20).mapAsyncUnordered(n ⇒ Future {
+      val p = Source(1 to 20).mapAsyncUnordered(n ⇒ Future {
         probe.ref ! n
         n
       }).publishTo(c)
@@ -70,7 +70,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapAsyncUnordered(n ⇒ Future {
+      val p = Source(1 to 5).mapAsyncUnordered(n ⇒ Future {
         if (n == 3) throw new RuntimeException("err1") with NoStackTrace
         else {
           Await.ready(latch, 10.seconds)
@@ -87,7 +87,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val latch = TestLatch(1)
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = FlowFrom(1 to 5).mapAsync(n ⇒
+      val p = Source(1 to 5).mapAsync(n ⇒
         if (n == 3) throw new RuntimeException("err2") with NoStackTrace
         else {
           Future {

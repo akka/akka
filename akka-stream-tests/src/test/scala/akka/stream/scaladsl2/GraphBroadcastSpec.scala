@@ -22,9 +22,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
-        FlowFrom(List(1, 2, 3)) ~> bcast
-        bcast ~> FlowFrom[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberSink(c1)
-        bcast ~> FlowFrom[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberSink(c2)
+        Source(List(1, 2, 3)) ~> bcast
+        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c1)
+        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -46,27 +46,27 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "work with n-way broadcast" in {
-      val f1 = FutureSink[Seq[Int]]
-      val f2 = FutureSink[Seq[Int]]
-      val f3 = FutureSink[Seq[Int]]
-      val f4 = FutureSink[Seq[Int]]
-      val f5 = FutureSink[Seq[Int]]
+      val f1 = FutureDrain[Seq[Int]]
+      val f2 = FutureDrain[Seq[Int]]
+      val f3 = FutureDrain[Seq[Int]]
+      val f4 = FutureDrain[Seq[Int]]
+      val f5 = FutureDrain[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
-        FlowFrom(List(1, 2, 3)) ~> bcast
-        bcast ~> FlowFrom[Int].grouped(5) ~> f1
-        bcast ~> FlowFrom[Int].grouped(5) ~> f2
-        bcast ~> FlowFrom[Int].grouped(5) ~> f3
-        bcast ~> FlowFrom[Int].grouped(5) ~> f4
-        bcast ~> FlowFrom[Int].grouped(5) ~> f5
+        Source(List(1, 2, 3)) ~> bcast
+        bcast ~> Flow[Int].grouped(5) ~> f1
+        bcast ~> Flow[Int].grouped(5) ~> f2
+        bcast ~> Flow[Int].grouped(5) ~> f3
+        bcast ~> Flow[Int].grouped(5) ~> f4
+        bcast ~> Flow[Int].grouped(5) ~> f5
       }.run()
 
-      Await.result(g.getSinkFor(f1), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getSinkFor(f2), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getSinkFor(f3), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getSinkFor(f4), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.getSinkFor(f5), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.getDrainFor(f1), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.getDrainFor(f2), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.getDrainFor(f3), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.getDrainFor(f4), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.getDrainFor(f5), 3.seconds) should be(List(1, 2, 3))
     }
 
     "produce to other even though downstream cancels" in {
@@ -75,9 +75,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
-        FlowFrom(List(1, 2, 3)) ~> bcast
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c1)
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c2)
+        Source(List(1, 2, 3)) ~> bcast
+        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
+        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -96,9 +96,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
-        FlowFrom(List(1, 2, 3)) ~> bcast
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c1)
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c2)
+        Source(List(1, 2, 3)) ~> bcast
+        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
+        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -118,9 +118,9 @@ class GraphBroadcastSpec extends AkkaSpec {
 
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
-        FlowFrom(p1.getPublisher) ~> bcast
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c1)
-        bcast ~> FlowFrom[Int] ~> SubscriberSink(c2)
+        Source(p1.getPublisher) ~> bcast
+        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
+        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
       }.run()
 
       val bsub = p1.expectSubscription()
