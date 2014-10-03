@@ -5,7 +5,8 @@ package akka.stream.scaladsl2
 
 import akka.stream.impl._
 import akka.stream.impl2.ActorBasedFlowMaterializer
-import akka.stream.{ Transformer, OverflowStrategy, TimerTransformer }
+import akka.stream.impl2.Ast.AstNode
+import akka.stream.{ scaladsl2, Transformer, OverflowStrategy, TimerTransformer }
 import org.reactivestreams.{ Publisher, Subscriber }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
@@ -24,12 +25,35 @@ import scala.annotation.unchecked.uncheckedVariance
  * FlowMaterializers can be used but must then implement the functionality of these
  * Tap nodes themselves (or construct an ActorBasedFlowMaterializer).
  */
-trait Tap[+Out] extends Source[Out]
+trait Tap[+Out] extends Source[Out] {
+  override type Repr[+O] = SourcePipe[O]
+
+  private def sourcePipe = Pipe.empty[Out].withTap(this)
+
+  override def connect[T](flow: Flow[Out, T]): Source[T] = sourcePipe.connect(flow)
+
+  override def connect(sink: Sink[Out]): RunnableFlow = sourcePipe.connect(sink)
+
+  override def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
+    sourcePipe.toPublisher()(materializer)
+
+  override def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
+    sourcePipe.toFanoutPublisher(initialBufferSize, maximumBufferSize)(materializer)
+
+  override def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer): Unit =
+    sourcePipe.publishTo(subscriber)(materializer)
+
+  override def consume()(implicit materializer: FlowMaterializer): Unit =
+    sourcePipe.consume()
+
+  /** INTERNAL API */
+  override protected def andThen[U](op: AstNode) = SourcePipe(this, List(op))
+}
 
 /**
  * A tap that does not need to create a user-accessible object during materialization.
  */
-trait SimpleTap[+Out] extends Tap[Out] with TapOps[Out] {
+trait SimpleTap[+Out] extends Tap[Out] {
   /**
    * Attach this tap to the given [[org.reactivestreams.Subscriber]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this tap belongs to
@@ -65,7 +89,7 @@ trait SimpleTap[+Out] extends Tap[Out] with TapOps[Out] {
  * to retrieve in order to access aspects of this tap (could be a Subscriber, a
  * Future/Promise, etc.).
  */
-trait TapWithKey[+Out, T] extends TapOps[Out] {
+trait TapWithKey[+Out, T] extends Tap[Out] {
   /**
    * Attach this tap to the given [[org.reactivestreams.Subscriber]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this tap belongs to
@@ -211,69 +235,4 @@ trait MaterializedTap {
    * Do not call directly. Use accessor method in the concrete `Tap`, e.g. [[SubscriberTap#subscriber]].
    */
   def getTapFor[T](tapKey: TapWithKey[_, T]): T
-}
-
-trait TapOps[+Out] extends Tap[Out] {
-  override type Repr[+O] = SourcePipe[O]
-
-  private def sourcePipe = Pipe.empty[Out].withTap(this)
-
-  override def connect[T](flow: Flow[Out, T]): Source[T] = sourcePipe.connect(flow)
-
-  override def connect(sink: Sink[Out]): RunnableFlow = sourcePipe.connect(sink)
-
-  override def toPublisher()(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
-    sourcePipe.toPublisher()(materializer)
-
-  override def toFanoutPublisher(initialBufferSize: Int, maximumBufferSize: Int)(implicit materializer: FlowMaterializer): Publisher[Out @uncheckedVariance] =
-    sourcePipe.toFanoutPublisher(initialBufferSize, maximumBufferSize)(materializer)
-
-  override def publishTo(subscriber: Subscriber[Out @uncheckedVariance])(implicit materializer: FlowMaterializer): Unit =
-    sourcePipe.publishTo(subscriber)(materializer)
-
-  override def consume()(implicit materializer: FlowMaterializer): Unit =
-    sourcePipe.consume()
-
-  override def map[T](f: Out ⇒ T): Repr[T] = sourcePipe.map(f)
-
-  override def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] = sourcePipe.mapConcat(f)
-
-  override def mapAsync[T](f: Out ⇒ Future[T]): Repr[T] = sourcePipe.mapAsync(f)
-
-  override def mapAsyncUnordered[T](f: Out ⇒ Future[T]): Repr[T] = sourcePipe.mapAsyncUnordered(f)
-
-  override def filter(p: Out ⇒ Boolean): Repr[Out] = sourcePipe.filter(p)
-
-  override def collect[T](pf: PartialFunction[Out, T]): Repr[T] = sourcePipe.collect(pf)
-
-  override def grouped(n: Int): Repr[immutable.Seq[Out]] = sourcePipe.grouped(n)
-
-  override def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = sourcePipe.groupedWithin(n, d)
-
-  override def drop(n: Int): Repr[Out] = sourcePipe.drop(n)
-
-  override def dropWithin(d: FiniteDuration): Repr[Out] = sourcePipe.dropWithin(d)
-
-  override def take(n: Int): Repr[Out] = sourcePipe.take(n)
-
-  override def takeWithin(d: FiniteDuration): Repr[Out] = sourcePipe.takeWithin(d)
-
-  override def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Repr[S] = sourcePipe.conflate(seed, aggregate)
-
-  override def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Repr[U] = sourcePipe.expand(seed, extrapolate)
-
-  override def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = sourcePipe.buffer(size, overflowStrategy)
-
-  override def transform[T](name: String, mkTransformer: () ⇒ Transformer[Out, T]): Repr[T] = sourcePipe.transform(name, mkTransformer)
-
-  override def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U])] = sourcePipe.prefixAndTail(n)
-
-  override def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, Source[U])] = sourcePipe.groupBy(f)
-
-  override def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U]] = sourcePipe.splitWhen(p)
-
-  override def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U] = sourcePipe.flatten(strategy)
-
-  override def timerTransform[U](name: String, mkTransformer: () ⇒ TimerTransformer[Out, U]): Repr[U] =
-    sourcePipe.timerTransform(name, mkTransformer)
 }

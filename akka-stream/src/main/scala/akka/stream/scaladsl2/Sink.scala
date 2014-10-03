@@ -13,5 +13,6 @@ import scala.annotation.unchecked.uncheckedVariance
  * Can be used as a `Subscriber`
  */
 trait Sink[-In] {
-  def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance]
+  def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] =
+    Flow[In].connect(this).toSubscriber()
 }
