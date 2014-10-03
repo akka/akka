@@ -1458,7 +1458,7 @@ object Dependencies {
   val httpCore = Seq(
     // FIXME switch back to project dependency
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
-    Test.junit, Test.scalatest)
+    Test.junitIntf, Test.junit, Test.scalatest)
 
   val http = deps(scalaXml)
 
@@ -1481,11 +1481,9 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     Test.scalatest, Test.scalacheck, Test.junit)
 
-  val streamTest = Seq(
-    Test.scalatest, Test.scalacheck, Test.junit, Test.junitIntf, Test.commonsIo)
+  val streamTest = Seq(Test.scalatest, Test.scalacheck, Test.junit, Test.junitIntf, Test.commonsIo)
 
-  val streamTck = Seq(
-    Test.scalatest, Test.scalacheck, Test.junit, Test.reactiveStreamsTck)
+  val streamTck = Seq(Test.scalatest, Test.scalacheck, Test.junit, Test.reactiveStreamsTck)
 
   val mailboxes = Seq(Test.scalatest, Test.junit)
 
