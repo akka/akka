@@ -11,7 +11,7 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.FlowMaterializer
 import akka.http.model._
 import akka.http.util._
 import headers._
@@ -20,12 +20,8 @@ import FastFuture._
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
-
+  implicit val materializer = FlowMaterializer()
   import system.dispatcher
-
-  val materializerSettings = MaterializerSettings(system)
-
-  implicit val materializer = FlowMaterializer(materializerSettings)
 
   "The PredefinedFromEntityUnmarshallers." - {
     "stringUnmarshaller should unmarshal `text/plain` content in UTF-8 to Strings" in {

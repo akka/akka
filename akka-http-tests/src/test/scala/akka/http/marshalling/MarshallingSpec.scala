@@ -9,7 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.FlowMaterializer
 import akka.http.util._
 import akka.http.model._
 import headers._
@@ -18,11 +18,8 @@ import MediaTypes._
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers {
   implicit val system = ActorSystem(getClass.getSimpleName)
+  implicit val materializer = FlowMaterializer()
   import system.dispatcher
-
-  val materializerSettings = MaterializerSettings(system)
-
-  implicit val materializer = FlowMaterializer(materializerSettings)
 
   "The PredefinedToEntityMarshallers." - {
     "StringMarshaller should marshal strings to `text/plain` content in UTF-8" in {
