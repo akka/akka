@@ -30,7 +30,7 @@ trait Drain[-In] extends Sink[In]
 /**
  * A drain that does not need to create a user-accessible object during materialization.
  */
-trait SimpleDrain[-In] extends Drain[In] with DrainOps[In] {
+trait SimpleDrain[-In] extends Drain[In] {
   /**
    * Attach this drain to the given [[org.reactivestreams.Publisher]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this drain belongs to
@@ -63,7 +63,7 @@ trait SimpleDrain[-In] extends Drain[In] with DrainOps[In] {
  * to retrieve in order to access aspects of this drain (could be a completion Future
  * or a cancellation handle, etc.)
  */
-trait DrainWithKey[-In, T] extends DrainOps[In] {
+trait DrainWithKey[-In, T] extends Drain[In] {
   /**
    * Attach this drain to the given [[org.reactivestreams.Publisher]]. Using the given
    * [[FlowMaterializer]] is completely optional, especially if this drain belongs to
@@ -268,9 +268,4 @@ trait MaterializedDrain {
    * Do not call directly. Use accessor method in the concrete `Drain`, e.g. [[PublisherDrain#publisher]].
    */
   def getDrainFor[T](drainKey: DrainWithKey[_, T]): T
-}
-
-trait DrainOps[-In] extends Drain[In] {
-  override def toSubscriber()(implicit materializer: FlowMaterializer): Subscriber[In @uncheckedVariance] =
-    Flow[In].connect(this).toSubscriber()
 }
