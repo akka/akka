@@ -23,7 +23,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Source(List(1, 2, 3)).toPublisher()
+      val p = Source(List(1, 2, 3)).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -32,7 +32,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             List(tot)
           }
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -46,7 +46,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Source(List(1, 2, 3)).toPublisher()
+      val p = Source(List(1, 2, 3)).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -55,7 +55,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             Vector.fill(elem)(tot)
           }
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -72,7 +72,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce dropping transformation as expected" in {
-      val p = Source(List(1, 2, 3, 4)).toPublisher()
+      val p = Source(List(1, 2, 3, 4)).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -85,7 +85,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             }
           }
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -99,7 +99,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Source(List("a", "bc", "def")).toPublisher()
+      val p = Source(List("a", "bc", "def")).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, Int] {
           var concat = ""
@@ -115,7 +115,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             List(tot)
           }
         }).
-        toFanoutPublisher(2, 2)
+        runWith(FanoutPublisherDrain(2, 2))
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c1)
       val sub1 = c1.expectSubscription()
@@ -138,7 +138,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "invoke onComplete when done" in {
-      val p = Source(List("a")).toPublisher()
+      val p = Source(List("a")).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
@@ -148,7 +148,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           }
           override def onTermination(e: Option[Throwable]) = List(s + "B")
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
@@ -159,7 +159,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "invoke cleanup when done" in {
       val cleanupProbe = TestProbe()
-      val p = Source(List("a")).toPublisher()
+      val p = Source(List("a")).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
@@ -170,7 +170,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           override def onTermination(e: Option[Throwable]) = List(s + "B")
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
@@ -182,7 +182,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "invoke cleanup when done consume" in {
       val cleanupProbe = TestProbe()
-      val p = Source(List("a")).toPublisher()
+      val p = Source(List("a")).runWith(PublisherDrain())
       Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = "x"
@@ -198,7 +198,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "invoke cleanup when done after error" in {
       val cleanupProbe = TestProbe()
-      val p = Source(List("a", "b", "c")).toPublisher()
+      val p = Source(List("a", "b", "c")).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[String, String] {
           var s = ""
@@ -214,7 +214,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           override def onTermination(e: Option[Throwable]) = List(s + "B")
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
@@ -236,7 +236,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           }
           override def isComplete = s == "1"
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val proc = p.expectSubscription
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -263,7 +263,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           override def onTermination(e: Option[Throwable]) = List(s.length + 10)
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val proc = p.expectSubscription
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -279,7 +279,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "report error when exception is thrown" in {
-      val p = Source(List(1, 2, 3)).toPublisher()
+      val p = Source(List(1, 2, 3)).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = {
@@ -290,7 +290,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
             }
           }
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -304,12 +304,12 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "support cancel as expected" in {
-      val p = Source(List(1, 2, 3)).toPublisher()
+      val p = Source(List(1, 2, 3)).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -323,13 +323,13 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     }
 
     "support producing elements from empty inputs" in {
-      val p = Source(List.empty[Int]).toPublisher()
+      val p = Source(List.empty[Int]).runWith(PublisherDrain())
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = Nil
           override def onTermination(e: Option[Throwable]) = List(1, 2, 3)
         }).
-        toPublisher()
+        runWith(PublisherDrain())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -363,7 +363,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
               case _ ⇒ Nil
             }
         }
-      }).publishTo(subscriber)
+      }).connect(SubscriberDrain(subscriber)).run()
 
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
@@ -386,13 +386,13 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
         })
 
       val s1 = StreamTestKit.SubscriberProbe[Int]()
-      flow.publishTo(s1)
+      flow.connect(SubscriberDrain(s1)).run()
       s1.expectSubscription().request(3)
       s1.expectNext(1, 2, 3)
       s1.expectComplete()
 
       val s2 = StreamTestKit.SubscriberProbe[Int]()
-      flow.publishTo(s2)
+      flow.connect(SubscriberDrain(s2)).run()
       s2.expectSubscription().request(3)
       s2.expectNext(1, 2, 3)
       s2.expectComplete()
