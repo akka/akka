@@ -33,7 +33,7 @@ private[akka] object MapAsyncProcessorImpl {
  * INTERNAL API
  */
 private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any])
-  extends ActorProcessorImpl(_settings) with Emit {
+  extends ActorProcessorImpl(_settings) {
   import MapAsyncProcessorImpl._
 
   // Execution context for pipeTo and friends
@@ -83,13 +83,17 @@ private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: An
         // emit that element and all elements from the buffer that are in order
         // until next missing sequence number
         doneSeqNo = seqNo
+
+        // Futures are spawned based on downstream demand and therefore we know at this point
+        // that the elements can be emitted immediately to downstream
+        if (!primaryOutputs.demandAvailable) throw new IllegalStateException
+
         if (orderedBuffer.isEmpty) {
-          emits = List(element)
+          primaryOutputs.enqueueOutputElement(element)
         } else {
-          val fromBuffer = drainBuffer()
-          emits = element :: fromBuffer
+          primaryOutputs.enqueueOutputElement(element)
+          drainBuffer() foreach primaryOutputs.enqueueOutputElement
         }
-        emitAndThen(running)
         pump()
       } else {
         assert(seqNo > doneSeqNo, s"Unexpected sequence number [$seqNo], expected seqNo > $doneSeqNo")
@@ -114,7 +118,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: An
 
   val running: TransferPhase = TransferPhase(RunningPhaseCondition) { () ⇒
     if (primaryInputs.inputsDepleted) {
-      emitAndThen(completedPhase)
+      nextPhase(completedPhase)
     } else if (primaryInputs.inputsAvailable && primaryOutputs.demandCount - gap > 0) {
       val elem = primaryInputs.dequeueInputElement()
       submittedSeqNo += 1
@@ -128,7 +132,6 @@ private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: An
           // f threw, propagate error immediately
           fail(err)
       }
-      emitAndThen(running)
     }
   }
 
