@@ -4,14 +4,15 @@
 package akka.stream.scaladsl2
 
 import org.reactivestreams.{ Subscriber, Publisher }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import scala.language.higherKinds
 import scala.language.implicitConversions
+import akka.stream.impl.SynchronousPublisherFromIterable
+import akka.stream.impl.EmptyPublisher
+import akka.stream.impl.ErrorPublisher
 
 /**
  * A `Source` is a set of stream processing steps that has one open output and an attached input.
@@ -117,5 +118,22 @@ object Source {
    */
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Source[T] =
     TickTap(initialDelay, interval, tick)
+
+  /**
+   * Create a `Source` with one element.
+   * Every connected `Sink` of this stream will see an individual stream consisting of one element.
+   */
+  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
+
+  /**
+   * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
+   * for every connected `Sink`.
+   */
+  def empty[T](): Source[T] = apply(EmptyPublisher[T])
+
+  /**
+   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
+   */
+  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
 
 }
