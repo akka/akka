@@ -67,7 +67,7 @@ class FlowExpandSpec extends AkkaSpec {
       val future = Source((1 to 100).iterator)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i))
-        .runWith(FoldDrain[Set[Int], Int](Set.empty[Int])(_ + _))
+        .fold(Set.empty[Int])(_ + _)
 
       Await.result(future, 10.seconds) should be(Set.empty[Int] ++ (1 to 100))
     }
