@@ -17,9 +17,9 @@ import MediaTypes._
 trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
   implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
-    Unmarshaller { entity ⇒
-      if (entity.isKnownEmpty) FastFuture.successful(ByteString.empty)
-      else Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).toFuture()
+    Unmarshaller {
+      case HttpEntity.Strict(_, data) ⇒ FastFuture.successful(data)
+      case entity                     ⇒ Flow(entity.dataBytes(fm)).fold(ByteString.empty)(_ ++ _).toFuture()
     }
 
   implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,
@@ -55,6 +55,19 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), entity.contentType.charset.nioCharset)
         FastFuture.successful(XML.withSAXParser(parser).load(reader)) // blocking call! Ideally we'd have a `loadToFuture`
       } else UnmarshallingError.UnsupportedContentType(nodeSeqMediaTypes map (ContentTypeRange(_)))
+    }
+
+  implicit def urlEncodedFormDataUnmarshaller(implicit fm: FlowMaterializer,
+                                              ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
+    stringUnmarshaller mapWithInput { (entity, string) ⇒
+      try {
+        val nioCharset = entity.contentType.definedCharset.getOrElse(HttpCharsets.`UTF-8`).nioCharset
+        val query = Uri.Query(string, nioCharset)
+        FormData(query)
+      } catch {
+        case ex: IllegalUriException ⇒
+          throw new IllegalArgumentException(ex.info.formatPretty.replace("Query,", "form content,"))
+      }
     }
 }
 
