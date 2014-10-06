@@ -49,7 +49,7 @@ object FlowSpec {
     namePrefix: String,
     brokenMessage: Any) extends ActorBasedFlowMaterializer(settings, supervisor, flowNameCounter, namePrefix) {
 
-    override protected def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+    override def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
       val props = op match {
         case t: Transform ⇒ Props(new BrokenTransformProcessorImpl(settings, t.mkTransformer(), brokenMessage))
         case o            ⇒ ActorProcessorFactory.props(this, o)
@@ -556,20 +556,18 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         try {
           system.eventStream.publish(Mute(filters))
 
-          EventFilter[akka.actor.PostRestartException](occurrences = 1) intercept {
-            upstream.expectRequest(upstreamSubscription, 1)
-            upstreamSubscription.sendNext("a3")
-            upstreamSubscription.expectCancellation()
+          upstream.expectRequest(upstreamSubscription, 1)
+          upstreamSubscription.sendNext("a3")
+          upstreamSubscription.expectCancellation()
 
-            // IllegalStateException terminated abruptly
-            checkError(downstream)
-            checkError(downstream2)
+          // IllegalStateException terminated abruptly
+          checkError(downstream)
+          checkError(downstream2)
 
-            val downstream3 = StreamTestKit.SubscriberProbe[Any]()
-            publisher.subscribe(downstream3)
-            // IllegalStateException terminated abruptly
-            checkError(downstream3)
-          }
+          val downstream3 = StreamTestKit.SubscriberProbe[Any]()
+          publisher.subscribe(downstream3)
+          // IllegalStateException terminated abruptly
+          checkError(downstream3)
         } finally {
           system.eventStream.publish(UnMute(filters))
         }

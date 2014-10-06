@@ -3,11 +3,12 @@
  */
 package akka.stream.tck
 
+import akka.stream.MaterializerSettings
+import akka.stream.Transformer
+import akka.stream.impl2.ActorBasedFlowMaterializer
+import akka.stream.impl2.Ast
+import akka.stream.scaladsl2.FlowMaterializer
 import java.util.concurrent.atomic.AtomicInteger
-
-import akka.stream._
-import akka.stream.impl.ActorBasedFlowMaterializer
-import akka.stream.impl.Ast
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 

@@ -3,10 +3,10 @@
  */
 package akka.stream.tck
 
-import akka.stream.scaladsl.Flow
-import org.reactivestreams._
-
 import scala.collection.immutable
+import akka.stream.scaladsl2.PublisherDrain
+import akka.stream.scaladsl2.Source
+import org.reactivestreams._
 
 class IterablePublisherTest extends AkkaPublisherVerification[Int] {
 
@@ -17,7 +17,7 @@ class IterablePublisherTest extends AkkaPublisherVerification[Int] {
       else
         0 until elements.toInt
 
-    Flow(iterable).toPublisher()
+    Source(iterable).runWith(PublisherDrain())
   }
 
 }

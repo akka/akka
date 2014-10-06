@@ -226,7 +226,6 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
       if (downstreamDemand < 0) {
         // Long has overflown
         val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
-        subscriber.onError(demandOverflowException)
         cancel(demandOverflowException)
       }
 
@@ -293,7 +292,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
 
   override def postRestart(reason: Throwable): Unit = {
     super.postRestart(reason)
-    throw new IllegalStateException("This actor cannot be restarted")
+    throw new IllegalStateException("This actor cannot be restarted", reason)
   }
 
 }
