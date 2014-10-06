@@ -56,11 +56,10 @@ class FlowConflateSpec extends AkkaSpec {
     }
 
     "work on a variable rate chain" in {
-      val foldDrain = FoldDrain[Int, Int](0)(_ + _)
       val future = Source((1 to 1000).iterator)
         .conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
-        .runWith(FoldDrain[Int, Int](0)(_ + _))
+        .fold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
     }
 
