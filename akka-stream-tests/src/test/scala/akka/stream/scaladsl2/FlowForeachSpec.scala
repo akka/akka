@@ -26,7 +26,7 @@ class FlowForeachSpec extends AkkaSpec {
     }
 
     "complete the future for an empty stream" in {
-      val mf = Source(Nil).foreach(testActor ! _) onSuccess {
+      Source.empty.foreach(testActor ! _) onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg("done")
@@ -34,7 +34,7 @@ class FlowForeachSpec extends AkkaSpec {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val mf = Source(p).foreach(testActor ! _) onFailure {
+      Source(p).foreach(testActor ! _) onFailure {
         case ex ⇒ testActor ! ex
       }
       val proc = p.expectSubscription

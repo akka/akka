@@ -4,7 +4,6 @@
 package akka.stream.scaladsl2
 
 import scala.collection.immutable
-import akka.stream.impl.EmptyPublisher
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import org.reactivestreams.Publisher
 import scala.concurrent.Await
@@ -29,7 +28,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "work on empty input" in {
       val futureDrain = newFutureDrain
-      val fut = Source(Nil).prefixAndTail(10).runWith(futureDrain)
+      val fut = Source.empty.prefixAndTail(10).runWith(futureDrain)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(Nil)
       val tailSubscriber = SubscriberProbe[Int]
