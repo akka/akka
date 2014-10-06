@@ -7,6 +7,7 @@ package akka.http.marshalling
 import java.nio.CharBuffer
 import scala.concurrent.ExecutionContext
 import scala.xml.NodeSeq
+import akka.http.model.parser.CharacterClasses
 import akka.http.model.MediaTypes._
 import akka.http.model._
 import akka.http.util.{ FastFuture, StringRendering }
@@ -57,7 +58,8 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
 
   implicit val FormDataMarshaller: ToEntityMarshaller[FormData] =
     Marshaller.withOpenCharset(`application/x-www-form-urlencoded`) { (formData, charset) ⇒
-      val string = UriRendering.renderQuery(new StringRendering, Uri.Query(formData.fields: _*), charset.nioCharset).get
+      val query = Uri.Query(formData.fields: _*)
+      val string = UriRendering.renderQuery(new StringRendering, query, charset.nioCharset, CharacterClasses.unreserved).get
       HttpEntity(ContentType(`application/x-www-form-urlencoded`, charset), string)
     }
 

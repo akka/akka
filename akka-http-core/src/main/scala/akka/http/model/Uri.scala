@@ -809,8 +809,9 @@ object UriRendering {
         renderPath(encode(r, head, charset, keep), tail, charset)
     }
 
-  def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset): r.type = {
-    def enc(s: String): Unit = encode(r, s, charset, `strict-query-char-np`, replaceSpaces = true)
+  def renderQuery[R <: Rendering](r: R, query: Query, charset: Charset,
+                                  keep: CharPredicate = `strict-query-char-np`): r.type = {
+    def enc(s: String): Unit = encode(r, s, charset, keep, replaceSpaces = true)
     @tailrec def append(q: Query): r.type =
       q match {
         case Query.Empty ⇒ r
