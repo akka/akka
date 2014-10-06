@@ -25,7 +25,7 @@ private[akka] object MapAsyncUnorderedProcessorImpl {
  * INTERNAL API
  */
 private[akka] class MapAsyncUnorderedProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any])
-  extends ActorProcessorImpl(_settings) with Emit {
+  extends ActorProcessorImpl(_settings) {
   import MapAsyncUnorderedProcessorImpl._
 
   // Execution context for pipeTo and friends
@@ -37,9 +37,12 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: MaterializerSettin
 
   def futureReceive: Receive = {
     case FutureElement(element) ⇒
+      // Futures are spawned based on downstream demand and therefore we know at this point
+      // that the element can be emitted immediately to downstream
+      if (!primaryOutputs.demandAvailable) throw new IllegalStateException
+
       inProgressCount -= 1
-      emits = List(element)
-      emitAndThen(running)
+      primaryOutputs.enqueueOutputElement(element)
       pump()
 
     case FutureFailure(cause) ⇒
@@ -59,7 +62,7 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: MaterializerSettin
 
   val running: TransferPhase = TransferPhase(RunningPhaseCondition) { () ⇒
     if (primaryInputs.inputsDepleted) {
-      emitAndThen(completedPhase)
+      nextPhase(completedPhase)
     } else if (primaryInputs.inputsAvailable && primaryOutputs.demandCount - inProgressCount > 0) {
       val elem = primaryInputs.dequeueInputElement()
       inProgressCount += 1
@@ -72,7 +75,6 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: MaterializerSettin
           // f threw, propagate error immediately
           fail(err)
       }
-      emitAndThen(running)
     }
   }
 
