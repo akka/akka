@@ -36,6 +36,27 @@ trait Source[+Out] extends FlowOps[Out] {
    */
   def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType
 
+  /**
+   * Shortcut for running this `Source` with a fold function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is an error is signaled in the stream.
+   */
+  def fold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] =
+    runWith(FoldDrain(zero)(f))
+
+  /**
+   * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
+   * for each received element.
+   * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is an error is signaled in
+   * the stream.
+   */
+  def foreach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] =
+    runWith(ForeachDrain(f))
+
 }
 
 object Source {
