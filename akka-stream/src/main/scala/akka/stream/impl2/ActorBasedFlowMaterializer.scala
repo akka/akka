@@ -194,7 +194,10 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       override def onNext(element: Any) = List(element)
     })
 
-  protected def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
+  /**
+   * INTERNAL API
+   */
+  private[akka] def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
     val impl = actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.name}")
     ActorProcessorFactory(impl)
   }
@@ -283,6 +286,8 @@ private[akka] object StreamSupervisor {
 
 private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Actor {
   import StreamSupervisor._
+
+  override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive = {
     case Materialize(props, name) ⇒
