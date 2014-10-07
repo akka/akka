@@ -240,6 +240,9 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
             actorOf(Zip.props(settings).withDispatcher(settings.dispatcher), actorName)
           case Ast.Concat ⇒
             actorOf(Concat.props(settings).withDispatcher(settings.dispatcher), actorName)
+          case Ast.FlexiMergeNode(merger) ⇒
+            actorOf(FlexiMergeImpl.props(settings, inputCount, merger.createMergeLogic()).
+              withDispatcher(settings.dispatcher), actorName)
         }
 
         val publisher = new ActorPublisher[Out](impl, equalityValue = None)
