@@ -52,8 +52,8 @@ object Flow {
    */
   def apply[T](f: () ⇒ Option[T]): Flow[T] =
     FlowImpl(ThunkPublisherNode(() ⇒ f() match {
-      case Some(t) => t
-      case _ => throw Stop
+      case Some(t) ⇒ t
+      case _       ⇒ throw Stop
     }), Nil)
 
   /**
