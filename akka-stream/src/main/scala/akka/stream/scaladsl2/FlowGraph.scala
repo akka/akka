@@ -86,6 +86,53 @@ final class Merge[T](override val name: Option[String]) extends FlowGraphInterna
   override private[akka] def astNode = Ast.Merge
 }
 
+object MergePreferred {
+  /**
+   * Port number to use for a preferred input.
+   */
+  val PreferredPort = Int.MinValue
+
+  /**
+   * Create a new anonymous `MergePreferred` vertex with the specified output type.
+   * Note that a `MergePreferred` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   */
+  def apply[T]: MergePreferred[T] = new MergePreferred[T](None)
+  /**
+   * Create a named `MergePreferred` vertex with the specified output type.
+   * Note that a `MergePreferred` with a specific name can only be used at one place (one vertex)
+   * in the `FlowGraph`. Calling this method several times with the same name
+   * returns instances that are `equal`.
+   */
+  def apply[T](name: String): MergePreferred[T] = new MergePreferred[T](Some(name))
+
+  class Preferred[A] private[akka] (private[akka] val vertex: MergePreferred[A]) extends JunctionInPort[A] {
+    override private[akka] def port = PreferredPort
+    type NextT = A
+    override private[akka] def next = vertex
+  }
+}
+/**
+ * Merge several streams, taking elements as they arrive from input streams
+ * (picking from preferred when several have elements ready).
+ *
+ * When building the [[FlowGraph]] you must connect one or more input pipes/taps
+ * and one output pipe/drain to the `Merge` vertex.
+ */
+final class MergePreferred[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex with Junction[T] {
+
+  val preferred = new MergePreferred.Preferred(this)
+
+  override private[akka] val vertex = this
+  override val minimumInputCount: Int = 2
+  override val maximumInputCount: Int = Int.MaxValue
+  override val minimumOutputCount: Int = 1
+  override val maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = Ast.MergePreferred
+}
+
 object Broadcast {
   /**
    * Create a new anonymous `Broadcast` vertex with the specified input type.
@@ -774,6 +821,13 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           require(
             node.outDegree <= v.maximumOutputCount,
             s"$v must have at most ${v.maximumOutputCount} outgoing edges")
+          v.astNode match {
+            case Ast.MergePreferred ⇒
+              require(
+                node.incoming.count(_.label.inputPort == MergePreferred.PreferredPort) <= 1,
+                s"$v must have at most one preferred edge")
+            case _ ⇒ // no Ast specific checks for other Ast nodes
+          }
         case _ ⇒ // no check for other node types
       }
     }

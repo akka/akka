@@ -103,8 +103,8 @@ private[akka] object FanIn {
       dequeue(id)
     }
     def dequeueAndPrefer(preferred: Int): Any = {
-      val id = idToDequeue()
       preferredId = preferred
+      val id = idToDequeue()
       dequeue(id)
     }
 
@@ -215,8 +215,10 @@ private[akka] class FairMerge(_settings: MaterializerSettings, _inputPorts: Int)
  * INTERNAL API
  */
 private[akka] object UnfairMerge {
-  def props(settings: MaterializerSettings, inputPorts: Int, preferred: Int): Props =
-    Props(new UnfairMerge(settings, inputPorts, preferred: Int))
+  val DefaultPreferred = 0
+
+  def props(settings: MaterializerSettings, inputPorts: Int): Props =
+    Props(new UnfairMerge(settings, inputPorts, DefaultPreferred))
 }
 
 /**
