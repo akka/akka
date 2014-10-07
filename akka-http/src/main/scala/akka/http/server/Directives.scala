@@ -19,7 +19,7 @@ trait Directives extends RouteConcatenation
   //with FileAndResourceDirectives
   //with FormFieldDirectives
   //with FutureDirectives
-  //with HeaderDirectives
+  with HeaderDirectives
   with HostDirectives
   //with MarshallingDirectives
   with MethodDirectives
