@@ -9,7 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.reflect.{ classTag, ClassTag }
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.FlowMaterializer
 import akka.util.ByteString
 import akka.http.util._
 import headers._

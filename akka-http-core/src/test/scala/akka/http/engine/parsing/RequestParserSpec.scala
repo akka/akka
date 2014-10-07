@@ -9,10 +9,7 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
-import org.reactivestreams.Publisher
-import akka.stream.scaladsl.Flow
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.{ FlattenStrategy, FlowMaterializer }
+import akka.stream.scaladsl2._
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.util._
@@ -168,7 +165,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
         "request start" in new Test {
           Seq(start, "rest") should generalMultiParseTo(
-            Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, publisher()))),
+            Right(baseRequest.withEntity(HttpEntity.Chunked(`application/pdf`, source()))),
             Left(ParseError(400: StatusCode, ErrorInfo("Illegal character 'r' in chunk start"))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
@@ -187,7 +184,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               |0123456789""",
             """ABCDEF
               |dead""") should generalMultiParseTo(
-              Right(baseRequest.withEntity(Chunked(`application/pdf`, publisher(
+              Right(baseRequest.withEntity(Chunked(`application/pdf`, source(
                 Chunk(ByteString("abc")),
                 Chunk(ByteString("0123456789ABCDEF"), "some=stuff;bla"),
                 Chunk(ByteString("0123456789ABCDEF"), "foo=bar"),
@@ -200,7 +197,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             """0
               |
               |""") should generalMultiParseTo(
-              Right(baseRequest.withEntity(Chunked(`application/pdf`, publisher(LastChunk)))))
+              Right(baseRequest.withEntity(Chunked(`application/pdf`, source(LastChunk)))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
 
@@ -213,7 +210,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               |
               |GE""") should generalMultiParseTo(
               Right(baseRequest.withEntity(Chunked(`application/pdf`,
-                publisher(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+                source(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
       }
@@ -225,7 +222,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Host: ping
           |
           |""" should parseTo(HttpRequest(PATCH, "/data", List(`Transfer-Encoding`(TransferEncodings.Extension("fancy")),
-          Host("ping")), HttpEntity.Chunked(`application/pdf`, publisher())))
+          Host("ping")), HttpEntity.Chunked(`application/pdf`, source())))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -238,7 +235,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |
             |"""
         val baseRequest = HttpRequest(PATCH, "/data", List(Host("ping"), Connection("lalelu")),
-          HttpEntity.Chunked(`application/octet-stream`, publisher()))
+          HttpEntity.Chunked(`application/octet-stream`, source()))
 
         "an illegal char after chunk size" in new Test {
           Seq(start,
@@ -360,6 +357,21 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   private class Test {
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
+    class StrictEqualHttpRequest(val req: HttpRequest) {
+      override def equals(other: scala.Any): Boolean = other match {
+        case other: StrictEqualHttpRequest ⇒
+          this.req.copy(entity = HttpEntity.Empty) == other.req.copy(entity = HttpEntity.Empty) &&
+            Await.result(this.req.entity.toStrict(250.millis), 250.millis) ==
+            Await.result(other.req.entity.toStrict(250.millis), 250.millis)
+      }
+
+      override def toString = req.toString
+    }
+
+    def strictEqualify(x: Either[ParseError, HttpRequest]): Either[ParseError, StrictEqualHttpRequest] = {
+      x.right.map(new StrictEqualHttpRequest(_))
+    }
+
     def parseTo(expected: HttpRequest*): Matcher[String] =
       multiParseTo(expected: _*).compose(_ :: Nil)
 
@@ -382,48 +394,49 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       generalRawMultiParseTo(newParser, expected: _*)
     def generalRawMultiParseTo(parser: HttpRequestParser,
                                expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
-      equal(expected).matcher[Seq[Either[ParseError, HttpRequest]]] compose { input: Seq[String] ⇒
-        val future =
-          Flow(input.toList)
-            .map(ByteString.apply)
-            .transform("parser", () ⇒ parser)
-            .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
-            .headAndTail
-            .collect {
-              case (ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, close), entityParts) ⇒
-                closeAfterResponseCompletion :+= close
-                Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-              case (x: ParseError, _) ⇒ Left(x)
-            }
-            .map { x ⇒
-              Flow {
-                x match {
-                  case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
-                  case Left(error)    ⇒ Future.successful(Left(error))
+      equal(expected.map(strictEqualify))
+        .matcher[Seq[Either[ParseError, StrictEqualHttpRequest]]] compose { input: Seq[String] ⇒
+          val future =
+            Source(input.toList)
+              .map(ByteString.apply)
+              .transform("parser", () ⇒ parser)
+              .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
+              .headAndTail
+              .collect {
+                case (ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, close), entityParts) ⇒
+                  closeAfterResponseCompletion :+= close
+                  Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
+                case (x: ParseError, _) ⇒ Left(x)
+              }
+              .map { x ⇒
+                Source {
+                  x match {
+                    case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
+                    case Left(error)    ⇒ Future.successful(Left(error))
+                  }
                 }
-              }.toPublisher()
-            }
-            .flatten(FlattenStrategy.concat)
-            .grouped(1000).toFuture()
-        Await.result(future, 250.millis)
-      }
+              }
+              .flatten(FlattenStrategy.concat)
+              .map(strictEqualify)
+              .grouped(1000).runWith(FutureDrain())
+          Await.result(future, 250.millis)
+        }
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
     protected def newParser = new HttpRequestParser(parserSettings, false)()
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
-        case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = compacted))
+        case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = source(compacted: _*)))
         case _          ⇒ entity.toStrict(250.millis)
       }
 
-    private def compactEntityChunks(data: Publisher[ChunkStreamPart]): Future[Publisher[ChunkStreamPart]] =
-      Flow(data).grouped(1000).toFuture()
-        .fast.map(publisher(_: _*))
-        .fast.recover { case _: NoSuchElementException ⇒ publisher() }
+    private def compactEntityChunks(data: Source[ChunkStreamPart]): Future[Seq[ChunkStreamPart]] =
+      data.grouped(1000).runWith(FutureDrain())
+        .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
   }
 
-  def publisher[T](elems: T*): Publisher[T] = SynchronousPublisherFromIterable(elems.toList)
+  def source[T](elems: T*): Source[T] = Source(elems.toList)
 }

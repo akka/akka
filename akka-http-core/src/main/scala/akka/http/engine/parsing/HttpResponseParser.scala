@@ -4,11 +4,9 @@
 
 package akka.http.engine.parsing
 
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import akka.http.model.parser.CharacterClasses
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.Source
 import akka.util.ByteString
 import akka.http.model._
 import headers._
@@ -18,7 +16,7 @@ import HttpResponseParser.NoMethod
  * INTERNAL API
  */
 private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))(implicit fm: FlowMaterializer)
+                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
   extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
   import settings._
 
@@ -75,7 +73,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Publisher[ParserOutput.ResponseOutput] ⇒ ResponseEntity,
+    def emitResponseStart(createEntity: Source[ParserOutput.ResponseOutput] ⇒ ResponseEntity,
                           headers: List[HttpHeader] = headers) =
       emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
@@ -100,7 +98,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = Flow(entityParts).collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }.toPublisher()
+              val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             parseToCloseBody(input, bodyStart)

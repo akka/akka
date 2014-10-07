@@ -4,15 +4,15 @@
 
 package akka.http.engine.rendering
 
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 import akka.parboiled2.CharUtils
+import akka.stream.impl2.ActorBasedFlowMaterializer
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.scaladsl2._
+import akka.stream.Transformer
 import akka.http.model._
 import akka.http.util._
+import org.reactivestreams.Subscriber
 
 /**
  * INTERNAL API
@@ -30,20 +30,26 @@ private object RenderSupport {
 
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
+  // This hooks into the materialization to cancel the not needed second source. This helper class
+  // allows us to not take a FlowMaterializer but delegate the cancellation to the point when the whole stream
+  // materializes
+  private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleTap[T] {
+    override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
+      first.connect(SubscriberDrain(flowSubscriber)).run()(materializer)
+      second.connect(Sink.cancelled).run()(materializer)
+    }
+  }
+
   def renderEntityContentType(r: Rendering, entity: HttpEntity): Unit =
     if (entity.contentType != ContentTypes.NoContentType)
       r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Publisher[ByteString],
-                        skipEntity: Boolean = false)(implicit fm: FlowMaterializer): List[Publisher[ByteString]] = {
-    val messageStart = SynchronousPublisherFromIterable(r.get :: Nil)
+  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString],
+                        skipEntity: Boolean = false): List[Source[ByteString]] = {
+    val messageStart = Source(r.get :: Nil)
     val messageBytes =
-      if (!skipEntity) Flow(messageStart).concat(entityBytes).toPublisher()
-      else {
-        // FIXME: This should be fixed by a CancelledDrain once #15903 is done. Currently this is needed for the tests
-        entityBytes.subscribe(cancelledSusbcriber)
-        messageStart
-      }
+      if (!skipEntity) messageStart ++ entityBytes
+      else CancelSecond(messageStart, entityBytes)
     messageBytes :: Nil
   }
 
