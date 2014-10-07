@@ -3,7 +3,8 @@
  */
 package akka.stream.tck
 
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.PublisherDrain
+import akka.stream.scaladsl2.Source
 import org.reactivestreams._
 
 class SimpleCallbackPublisherTest extends AkkaPublisherVerification[Int] {
@@ -11,7 +12,7 @@ class SimpleCallbackPublisherTest extends AkkaPublisherVerification[Int] {
   def createPublisher(elements: Long): Publisher[Int] = {
     val iter = Iterator from 0
     val iter2 = if (elements > 0) iter take elements.toInt else iter
-    Flow(() ⇒ if (iter2.hasNext) Some(iter2.next()) else None).toPublisher()
+    Source(() ⇒ if (iter2.hasNext) Some(iter2.next()) else None).runWith(PublisherDrain())
   }
 
 }
