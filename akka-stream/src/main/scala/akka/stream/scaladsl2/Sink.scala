@@ -43,6 +43,11 @@ object Sink {
   def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
     createSinkFromBuilder(new FlowGraphBuilder(graph.graph), block)
 
+  /**
+   * A `Sink` that immediately cancels its upstream after materialization.
+   */
+  def cancelled[T]: Drain[T] = CancelDrain
+  
   private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
     val in = block(builder)
     builder.partialBuild().toSink(in)

@@ -11,9 +11,8 @@ import akka.http.engine.client._
 import akka.http.engine.server.{ HttpServerPipeline, ServerSettings }
 import akka.io.IO
 import akka.pattern.ask
-import akka.stream.FlowMaterializer
+import akka.stream.scaladsl2.{ PublisherDrain, Source, FlowMaterializer }
 import akka.stream.io.StreamTcp
-import akka.stream.scaladsl.Flow
 import akka.util.Timeout
 
 /**
@@ -64,9 +63,9 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
           log.info("Bound to {}", endpoint)
           implicit val materializer = FlowMaterializer()
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, log)
-          val httpConnectionStream = Flow(connectionStream)
+          val httpConnectionStream = Source(connectionStream)
             .map(httpServerPipeline)
-            .toPublisher()
+            .runWith(PublisherDrain())
           commander ! Http.ServerBinding(localAddress, httpConnectionStream, tcpServerBinding)
 
         case Failure(error) ⇒

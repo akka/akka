@@ -4,23 +4,21 @@
 
 package akka.http.coding
 
-import java.io.{ OutputStream, ByteArrayOutputStream }
-
 import akka.http.model._
 import akka.http.util.StreamUtils
-import akka.stream.{ Transformer, FlowMaterializer }
+import akka.stream.Transformer
 import akka.util.ByteString
 import headers.HttpEncoding
 
 trait Decoder {
   def encoding: HttpEncoding
 
-  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T#Self =
+  def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
     if (message.headers exists Encoder.isContentEncodingHeader)
       decodeData(message).withHeaders(message.headers filterNot Encoder.isContentEncodingHeader)
     else message.self
 
-  def decodeData[T](t: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T =
+  def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
     mapper.transformDataBytes(t, newDecodeTransfomer)
 
   def newDecompressor: Decompressor
