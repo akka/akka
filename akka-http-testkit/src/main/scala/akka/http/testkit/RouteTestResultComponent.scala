@@ -5,12 +5,10 @@
 package akka.http.testkit
 
 import java.util.concurrent.CountDownLatch
-import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext }
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2._
 import akka.http.model.HttpEntity.ChunkStreamPart
 import akka.http.server._
 import akka.http.model._
@@ -82,21 +80,21 @@ trait RouteTestResultComponent {
 
         case HttpEntity.Default(contentType, contentLength, data) ⇒
           val dataChunks = awaitAllElements(data);
-          { () ⇒ HttpEntity.Default(contentType, contentLength, Flow(dataChunks).toPublisher()) }
+          { () ⇒ HttpEntity.Default(contentType, contentLength, Source(dataChunks)) }
 
         case HttpEntity.CloseDelimited(contentType, data) ⇒
           val dataChunks = awaitAllElements(data);
-          { () ⇒ HttpEntity.CloseDelimited(contentType, Flow(dataChunks).toPublisher()) }
+          { () ⇒ HttpEntity.CloseDelimited(contentType, Source(dataChunks)) }
 
         case HttpEntity.Chunked(contentType, chunks) ⇒
           val dataChunks = awaitAllElements(chunks);
-          { () ⇒ HttpEntity.Chunked(contentType, Flow(dataChunks).toPublisher()) }
+          { () ⇒ HttpEntity.Chunked(contentType, Source(dataChunks)) }
       }
 
     private def failNeitherCompletedNorRejected(): Nothing =
       failTest("Request was neither completed nor rejected within " + timeout)
 
-    private def awaitAllElements[T](data: Publisher[T]): immutable.Seq[T] =
-      Await.result(Flow(data).grouped(Int.MaxValue).toFuture(), timeout)
+    private def awaitAllElements[T](data: Source[T]): immutable.Seq[T] =
+      Await.result(data.grouped(Int.MaxValue).runWith(FutureDrain()), timeout)
   }
 }

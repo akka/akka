@@ -8,8 +8,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
-import akka.stream.{ FlattenStrategy, FlowMaterializer }
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2._
 import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.actorSystem
 import akka.http.util.FastFuture._
@@ -28,19 +27,18 @@ trait MultipartMarshallers {
     Base64.custom.encodeToString(array, false)
   }
 
-  implicit def multipartByteRangesMarshaller(implicit fm: FlowMaterializer, refFactory: ActorRefFactory): ToEntityMarshaller[MultipartByteRanges] =
-    multipartPartsMarshaller[MultipartByteRanges](`multipart/byteranges`)
-  implicit def multipartContentMarshaller(implicit fm: FlowMaterializer, refFactory: ActorRefFactory): ToEntityMarshaller[MultipartContent] =
-    multipartPartsMarshaller[MultipartContent](`multipart/mixed`)
+  implicit def multipartByteRangesMarshaller(implicit refFactory: ActorRefFactory): ToEntityMarshaller[MultipartByteRanges] =
+    multipartPartsMarshaller[MultipartByteRanges](`multipart/byteranges`)(refFactory)
+  implicit def multipartContentMarshaller(implicit refFactory: ActorRefFactory): ToEntityMarshaller[MultipartContent] =
+    multipartPartsMarshaller[MultipartContent](`multipart/mixed`)(refFactory)
 
-  private def multipartPartsMarshaller[T <: MultipartParts](mediaType: MultipartMediaType)(implicit fm: FlowMaterializer,
-                                                                                           refFactory: ActorRefFactory): ToEntityMarshaller[T] = {
+  private def multipartPartsMarshaller[T <: MultipartParts](mediaType: MultipartMediaType)(implicit refFactory: ActorRefFactory): ToEntityMarshaller[T] = {
     val boundary = randomBoundary
     val mediaTypeWithBoundary = mediaType withBoundary boundary
     Marshaller.withOpenCharset(mediaTypeWithBoundary) { (value, charset) ⇒
       val log = actorSystem(refFactory).log
       val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-      val chunks = Flow(value.parts).transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat).toPublisher()
+      val chunks = value.parts.transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat)
       HttpEntity.Chunked(ContentType(mediaTypeWithBoundary), chunks)
     }
   }

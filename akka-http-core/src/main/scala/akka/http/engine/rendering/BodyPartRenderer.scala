@@ -5,16 +5,14 @@
 package akka.http.engine.rendering
 
 import java.nio.charset.Charset
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.engine.rendering.RenderSupport._
 import akka.http.util._
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.scaladsl2.Source
+import akka.stream.Transformer
 import akka.util.ByteString
 import HttpEntity._
 
@@ -24,11 +22,11 @@ import HttpEntity._
 private[http] class BodyPartRenderer(boundary: String,
                                      nioCharset: Charset,
                                      partHeadersSizeHint: Int,
-                                     log: LoggingAdapter)(implicit fm: FlowMaterializer) extends Transformer[BodyPart, Publisher[ChunkStreamPart]] {
+                                     log: LoggingAdapter) extends Transformer[BodyPart, Source[ChunkStreamPart]] {
 
   private[this] var firstBoundaryRendered = false
 
-  def onNext(bodyPart: BodyPart): List[Publisher[ChunkStreamPart]] = {
+  def onNext(bodyPart: BodyPart): List[Source[ChunkStreamPart]] = {
     val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
 
     def renderBoundary(): Unit = {
@@ -60,12 +58,12 @@ private[http] class BodyPartRenderer(boundary: String,
         case Nil ⇒ r ~~ CrLf
       }
 
-    def bodyPartChunks(data: Publisher[ByteString]): List[Publisher[ChunkStreamPart]] = {
-      val entityChunks = Flow(data).map[ChunkStreamPart](Chunk(_)).toPublisher()
-      Flow[ChunkStreamPart](Chunk(r.get) :: Nil).concat(entityChunks).toPublisher() :: Nil
+    def bodyPartChunks(data: Source[ByteString]): List[Source[ChunkStreamPart]] = {
+      val entityChunks = data.map[ChunkStreamPart](Chunk(_))
+      (Source(Chunk(r.get) :: Nil) ++ entityChunks) :: Nil
     }
 
-    def completePartRendering(): List[Publisher[ChunkStreamPart]] =
+    def completePartRendering(): List[Source[ChunkStreamPart]] =
       bodyPart.entity match {
         case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
         case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
@@ -80,7 +78,7 @@ private[http] class BodyPartRenderer(boundary: String,
     completePartRendering()
   }
 
-  override def onTermination(e: Option[Throwable]): List[Publisher[ChunkStreamPart]] =
+  override def onTermination(e: Option[Throwable]): List[Source[ChunkStreamPart]] =
     if (e.isEmpty && firstBoundaryRendered) {
       val r = new ByteStringRendering(boundary.length + 4)
       r ~~ CrLf ~~ '-' ~~ '-' ~~ boundary ~~ '-' ~~ '-'
@@ -88,6 +86,6 @@ private[http] class BodyPartRenderer(boundary: String,
     } else Nil
 
   private def chunkStream(byteString: ByteString) =
-    SynchronousPublisherFromIterable[ChunkStreamPart](Chunk(byteString) :: Nil) :: Nil
+    Source[ChunkStreamPart](Chunk(byteString) :: Nil) :: Nil
 }
 

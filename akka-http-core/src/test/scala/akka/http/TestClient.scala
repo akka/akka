@@ -5,14 +5,14 @@
 package akka.http
 
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.reactivestreams.Subscriber
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FutureDrain, SubscriberDrain, Source, FlowMaterializer }
 import akka.io.IO
 import akka.http.model.HttpMethods._
 import akka.http.model._
@@ -37,8 +37,10 @@ object TestClient extends App {
   } yield response.header[headers.Server]
 
   def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
-    Flow(List(HttpRequest() -> 'NoContext)).produceTo(connection.processor)
-    Flow(connection.processor).map(_._1).toFuture()
+    Source(List(HttpRequest() -> 'NoContext))
+      .connect(SubscriberDrain(connection.requestSubscriber))
+      .run()
+    Source(connection.responsePublisher).map(_._1).runWith(FutureDrain())
   }
 
   result onComplete {

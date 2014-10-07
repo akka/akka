@@ -5,8 +5,7 @@
 package akka.http.util
 
 import akka.stream.impl.ErrorPublisher
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.Transformer
 import akka.util.ByteString
 import org.reactivestreams.Publisher
 

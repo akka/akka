@@ -4,15 +4,12 @@
 
 package akka.http.model.japi;
 
-import akka.http.model.*;
 import akka.http.util.ObjectRegistry;
 import akka.japi.Option;
-import org.reactivestreams.Publisher;
-import scala.None;
 import scala.None$;
-import scala.NotImplementedError;
 import scala.collection.immutable.Map$;
 import scala.collection.immutable.Seq;
+import akka.stream.scaladsl2.Source;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -30,12 +27,12 @@ public abstract class Util {
     @SuppressWarnings("unchecked") // no support for covariance of Publisher in Java
     // needed to provide covariant conversions that the Java interfaces don't provide automatically.
     // The alternative would be having to cast around everywhere instead of doing it here in a central place.
-    public static <U, T extends U> Publisher<U> convertPublisher(Publisher<T> p) {
-        return (Publisher<U>)(Publisher) p;
+    public static <U, T extends U> Source<U> convertPublisher(Source<T> p) {
+        return (Source<U>)(Source) p;
     }
     @SuppressWarnings("unchecked")
-    public static <T, U extends T> Publisher<U> upcastPublisher(Publisher<T> p) {
-        return (Publisher<U>)(Publisher) p;
+    public static <T, U extends T> Source<U> upcastSource(Source<T> p) {
+        return (Source<U>)(Source) p;
     }
     @SuppressWarnings("unchecked")
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {

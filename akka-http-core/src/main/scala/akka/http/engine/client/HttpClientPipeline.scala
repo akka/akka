@@ -5,11 +5,12 @@
 package akka.http.engine.client
 
 import java.net.InetSocketAddress
+import akka.util.ByteString
+
 import scala.collection.immutable.Queue
-import akka.stream.{ FlattenStrategy, FlowMaterializer }
+import akka.stream.scaladsl2._
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
-import akka.stream.scaladsl.{ Flow, Duct }
 import akka.http.Http
 import akka.http.model.{ HttpMethod, HttpRequest, ErrorInfo, HttpResponse }
 import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
@@ -34,34 +35,49 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
   val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.OutgoingTcpConnection): Http.OutgoingConnection = {
+    import FlowGraphImplicits._
+
     val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
 
-    val (contextBypassSubscriber, contextBypassPublisher) =
-      Duct[(HttpRequest, Any)].map(_._2).build()
+    val userIn = SubscriberTap[(HttpRequest, Any)]()
+    val userOut = PublisherDrain[(HttpResponse, Any)]()
 
-    val requestSubscriber =
-      Duct[(HttpRequest, Any)]
-        .broadcast(contextBypassSubscriber)
-        .map(requestMethodByPass)
-        .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
-        .flatten(FlattenStrategy.concat)
-        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
-        .produceTo(tcpConn.outputStream)
+    val netOut = SubscriberDrain(tcpConn.outputStream)
+    val netIn = PublisherTap(tcpConn.inputStream)
 
-    val responsePublisher =
-      Flow(tcpConn.inputStream)
-        .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
-        .splitWhen(_.isInstanceOf[MessageStart])
-        .headAndTail
-        .collect {
-          case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
-            HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
-        }
-        .zip(contextBypassPublisher)
-        .toPublisher()
+    val pipeline = FlowGraph { implicit b ⇒
+      val bypassFanout = Broadcast[(HttpRequest, Any)]("bypassFanout")
+      val bypassFanin = Zip[HttpResponse, Any]("bypassFanin")
 
-    val processor = HttpClientProcessor(requestSubscriber, responsePublisher)
-    Http.OutgoingConnection(tcpConn.remoteAddress, tcpConn.localAddress, processor)
+      val requestPipeline =
+        Flow[(HttpRequest, Any)]
+          .map(requestMethodByPass)
+          .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
+          .flatten(FlattenStrategy.concat)
+          .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
+
+      val responsePipeline =
+        Flow[ByteString]
+          .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
+          .splitWhen(_.isInstanceOf[MessageStart])
+          .headAndTail
+          .collect {
+            case (ResponseStart(statusCode, protocol, headers, createEntity, _), entityParts) ⇒
+              HttpResponse(statusCode, headers, createEntity(entityParts), protocol)
+          }
+
+      //FIXME: the graph is unnecessary after fixing #15957
+      userIn ~> bypassFanout ~> requestPipeline ~> netOut
+      bypassFanout ~> Flow[(HttpRequest, Any)].map(_._2) ~> bypassFanin.right
+      netIn ~> responsePipeline ~> bypassFanin.left
+      bypassFanin.out ~> userOut
+    }.run()
+
+    Http.OutgoingConnection(
+      tcpConn.remoteAddress,
+      tcpConn.localAddress,
+      pipeline.materializedDrain(userOut),
+      pipeline.materializedTap(userIn))
   }
 
   class RequestMethodByPass(serverAddress: InetSocketAddress)

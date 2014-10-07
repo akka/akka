@@ -7,7 +7,6 @@ package akka.http.server
 import scala.concurrent.ExecutionContext
 import akka.actor.{ ActorSystem, ActorContext }
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
 import akka.http.model.HttpRequest
 import akka.http.Http
 
@@ -33,12 +32,10 @@ class RoutingSetup(
   val settings: RoutingSettings,
   val exceptionHandler: ExceptionHandler,
   val rejectionHandler: RejectionHandler,
-  val flowMaterializer: FlowMaterializer,
   val executionContext: ExecutionContext,
   val routingLog: RoutingLog) {
 
   // enable `import setup._` to properly bring implicits in scope
-  implicit def materializer: FlowMaterializer = flowMaterializer
   implicit def executor: ExecutionContext = executionContext
 }
 
@@ -46,14 +43,12 @@ object RoutingSetup {
   implicit def apply(implicit routingSettings: RoutingSettings,
                      exceptionHandler: ExceptionHandler = null,
                      rejectionHandler: RejectionHandler = null,
-                     flowMaterializer: FlowMaterializer,
                      executionContext: ExecutionContext,
                      routingLog: RoutingLog): RoutingSetup =
     new RoutingSetup(
       routingSettings,
       if (exceptionHandler ne null) exceptionHandler else ExceptionHandler.default(routingSettings),
       if (rejectionHandler ne null) rejectionHandler else RejectionHandler.default(executionContext),
-      flowMaterializer,
       executionContext,
       routingLog)
 }

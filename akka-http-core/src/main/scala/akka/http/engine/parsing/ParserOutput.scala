@@ -4,9 +4,9 @@
 
 package akka.http.engine.parsing
 
-import org.reactivestreams.Publisher
 import akka.http.model._
 import akka.util.ByteString
+import akka.stream.scaladsl2.Source
 
 /**
  * INTERNAL API
@@ -27,14 +27,14 @@ private[http] object ParserOutput {
     uri: Uri,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Publisher[RequestOutput] ⇒ RequestEntity,
+    createEntity: Source[RequestOutput] ⇒ RequestEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Publisher[ResponseOutput] ⇒ ResponseEntity,
+    createEntity: Source[ResponseOutput] ⇒ ResponseEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput

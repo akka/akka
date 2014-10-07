@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import akka.stream.impl.{ ErrorPublisher, EmptyPublisher, SynchronousPublisherFromIterable }
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
@@ -58,6 +59,22 @@ trait Source[+Out] extends FlowOps[Out] {
    */
   def foreach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] =
     runWith(ForeachDrain(f))
+
+  /**
+   * Concatenates a second source so that the first element
+   * emitted by that source is emitted after the last element of this
+   * source.
+   */
+  def concat[Out2 >: Out](second: Source[Out2]): Source[Out2] = Source.concat(this, second)
+
+  /**
+   * Concatenates a second source so that the first element
+   * emitted by that source is emitted after the last element of this
+   * source.
+   *
+   * This is a shorthand for [[concat]]
+   */
+  def ++[Out2 >: Out](second: Source[Out2]): Source[Out2] = concat(second)
 
 }
 
@@ -155,4 +172,10 @@ object Source {
     val out = block(builder)
     builder.partialBuild().toSource(out)
   }
+  /**
+   * Concatenates two sources so that the first element
+   * emitted by the second source is emitted after the last element of the first
+   * source.
+   */
+  def concat[T](source1: Source[T], source2: Source[T]): Source[T] = ConcatTap(source1, source2)
 }

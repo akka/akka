@@ -7,7 +7,6 @@ package akka.http.server
 import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.util.{ FastFuture, identityFunc }
 import akka.http.model._
@@ -20,17 +19,14 @@ private[http] class RequestContextImpl(
   val request: HttpRequest,
   val unmatchedPath: Uri.Path,
   val executionContext: ExecutionContext,
-  val flowMaterializer: FlowMaterializer,
   val log: LoggingAdapter,
   finish: RouteResult ⇒ Future[RouteResult] = FastFuture.successful) extends RequestContext {
 
-  def this(request: HttpRequest, log: LoggingAdapter)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
-    this(request, request.uri.path, ec, fm, log)
+  def this(request: HttpRequest, log: LoggingAdapter)(implicit ec: ExecutionContext) =
+    this(request, request.uri.path, ec, log)
 
-  def reconfigure(executionContext: ExecutionContext,
-                  flowMaterializer: FlowMaterializer,
-                  log: LoggingAdapter): RequestContext =
-    copy(executionContext = executionContext, flowMaterializer = flowMaterializer, log = log)
+  def reconfigure(executionContext: ExecutionContext, log: LoggingAdapter): RequestContext =
+    copy(executionContext = executionContext, log = log)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
@@ -107,8 +103,7 @@ private[http] class RequestContextImpl(
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
                    executionContext: ExecutionContext = executionContext,
-                   flowMaterializer: FlowMaterializer = flowMaterializer,
                    log: LoggingAdapter = log,
                    finish: RouteResult ⇒ Future[RouteResult] = finish) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, flowMaterializer, log, finish)
+    new RequestContextImpl(request, unmatchedPath, executionContext, log, finish)
 }

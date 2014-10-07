@@ -5,15 +5,15 @@
 package akka.http
 
 import language.implicitConversions
+import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
+import akka.stream.scaladsl2.{ Flow, Source, FlattenStrategy }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.actor._
-import akka.stream.scaladsl.Flow
-import akka.stream.{ Transformer, FlattenStrategy, FlowMaterializer }
+import akka.stream.Transformer
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -38,15 +38,20 @@ package object util {
   private[http] implicit def enhanceTransformer[T, U](transformer: Transformer[T, U]): EnhancedTransformer[T, U] =
     new EnhancedTransformer(transformer)
 
-  private[http] implicit class FlowWithHeadAndTail[T](val underlying: Flow[Publisher[T]]) extends AnyVal {
-    def headAndTail(implicit fm: FlowMaterializer): Flow[(T, Publisher[T])] =
-      underlying.map { p ⇒
-        Flow(p).prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) }.toPublisher()
-      }.flatten(FlattenStrategy.Concat())
+  private[http] implicit class SourceWithHeadAndTail[T](val underlying: Source[Source[T]]) extends AnyVal {
+    def headAndTail: Source[(T, Source[T])] =
+      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+        .flatten(FlattenStrategy.concat)
   }
 
-  private[http] implicit class FlowWithPrintEvent[T](val underlying: Flow[T]) {
-    def printEvent(marker: String): Flow[T] =
+  private[http] implicit class FlowWithHeadAndTail[In, Out](val underlying: Flow[In, Source[Out]]) extends AnyVal {
+    def headAndTail: Flow[In, (Out, Source[Out])] =
+      underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
+        .flatten(FlattenStrategy.concat)
+  }
+
+  private[http] implicit class SourceWithPrintEvent[T](val underlying: Source[T]) {
+    def printEvent(marker: String): Source[T] =
       underlying.transform("transform",
         () ⇒ new Transformer[T, T] {
           def onNext(element: T) = {
@@ -58,14 +63,6 @@ package object util {
             Nil
           }
         })
-  }
-
-  // FIXME: This should be fixed by a CancelledDrain once #15903 is done. Currently this is needed for the tests
-  private[http] def cancelledSusbcriber[T]: Subscriber[T] = new Subscriber[T] {
-    override def onSubscribe(s: Subscription): Unit = s.cancel()
-    override def onError(t: Throwable): Unit = ()
-    override def onComplete(): Unit = ()
-    override def onNext(t: T): Unit = ()
   }
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =

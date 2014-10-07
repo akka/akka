@@ -9,13 +9,12 @@ import akka.http.util.FastFuture
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable }
-import org.reactivestreams.Publisher
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.{ Transformer, TimerTransformer, FlowMaterializer }
-import akka.stream.scaladsl.Flow
+import akka.stream.{ TimerTransformer, Transformer }
+import akka.stream.scaladsl2._
 import akka.stream.impl.{ EmptyPublisher, SynchronousPublisherFromIterable }
 import akka.http.util._
 import japi.JavaMapping.Implicits._
@@ -39,7 +38,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
   /**
    * A stream of the data of this entity.
    */
-  def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString]
+  def dataBytes: Source[ByteString]
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
@@ -63,7 +62,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       }
-    Flow(dataBytes).timerTransform("toStrict", transformer).toFuture()
+    dataBytes.timerTransform("toStrict", transformer).runWith(FutureDrain())
   }
 
   /**
@@ -74,7 +73,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
    * This method may only throw an exception if the `transformer` function throws an exception while creating the transformer.
    * Any other errors are reported through the new entity data stream.
    */
-  def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): HttpEntity
+  def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): HttpEntity
 
   /**
    * Creates a copy of this HttpEntity with the `contentType` overridden with the given one.
@@ -82,7 +81,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
   def withContentType(contentType: ContentType): HttpEntity
 
   /** Java API */
-  def getDataBytes(materializer: FlowMaterializer): Publisher[ByteString] = dataBytes(materializer)
+  def getDataBytes: Source[ByteString] = dataBytes
 
   // default implementations, should be overridden
   def isCloseDelimited: Boolean = false
@@ -99,13 +98,13 @@ sealed trait BodyPartEntity extends HttpEntity with japi.BodyPartEntity {
 sealed trait RequestEntity extends HttpEntity with japi.RequestEntity with ResponseEntity {
   def withContentType(contentType: ContentType): RequestEntity
 
-  override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): RequestEntity
+  override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): RequestEntity
 }
 /* An entity that can be used for responses */
 sealed trait ResponseEntity extends HttpEntity with japi.ResponseEntity {
   def withContentType(contentType: ContentType): ResponseEntity
 
-  override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): ResponseEntity
+  override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): ResponseEntity
 }
 /* An entity that can be used for requests, responses, and body parts */
 sealed trait UniversalEntity extends japi.UniversalEntity with MessageEntity with BodyPartEntity {
@@ -122,7 +121,7 @@ object HttpEntity {
     if (bytes.length == 0) empty(contentType) else apply(contentType, ByteString(bytes))
   def apply(contentType: ContentType, data: ByteString): Strict =
     if (data.isEmpty) empty(contentType) else Strict(contentType, data)
-  def apply(contentType: ContentType, contentLength: Long, data: Publisher[ByteString]): UniversalEntity =
+  def apply(contentType: ContentType, contentLength: Long, data: Source[ByteString]): UniversalEntity =
     if (contentLength == 0) empty(contentType) else Default(contentType, contentLength, data)
 
   def apply(contentType: ContentType, file: File): UniversalEntity = {
@@ -148,19 +147,19 @@ object HttpEntity {
 
     def isKnownEmpty: Boolean = data.isEmpty
 
-    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = SynchronousPublisherFromIterable(data :: Nil)
+    def dataBytes: Source[ByteString] = Source(data :: Nil)
 
     override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
       FastFuture.successful(this)
 
-    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): MessageEntity = {
+    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): MessageEntity = {
       try {
         val t = transformer()
         val newData = (t.onNext(data) ++ t.onTermination(None)).join
         copy(data = newData)
       } catch {
         case NonFatal(ex) ⇒
-          Chunked(contentType, StreamUtils.failedPublisher(ex))
+          Chunked(contentType, Source.failed(ex))
       }
     }
 
@@ -173,17 +172,17 @@ object HttpEntity {
    */
   final case class Default(contentType: ContentType,
                            contentLength: Long,
-                           data: Publisher[ByteString])
+                           data: Source[ByteString])
     extends japi.HttpEntityDefault with UniversalEntity {
 
     require(contentLength > 0, "contentLength must be positive (use `HttpEntity.empty(contentType)` for empty entities)")
     def isKnownEmpty = false
     override def isDefault: Boolean = true
 
-    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = data
+    def dataBytes: Source[ByteString] = data
 
-    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): Chunked = {
-      val chunks = Flow(data).transform("transformDataBytes-Default", () ⇒ transformer().map(Chunk(_): ChunkStreamPart)).toPublisher()
+    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): Chunked = {
+      val chunks = data.transform("transformDataBytes-Default", () ⇒ transformer().map(Chunk(_): ChunkStreamPart))
 
       HttpEntity.Chunked(contentType, chunks)
     }
@@ -199,11 +198,11 @@ object HttpEntity {
    */
   private[http] sealed trait WithoutKnownLength extends HttpEntity {
     def contentType: ContentType
-    def data: Publisher[ByteString]
+    def data: Source[ByteString]
 
     def isKnownEmpty = data eq EmptyPublisher
 
-    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] = data
+    def dataBytes: Source[ByteString] = data
   }
 
   /**
@@ -211,7 +210,7 @@ object HttpEntity {
    * The content-length of such responses is unknown at the time the response headers have been received.
    * Note that this type of HttpEntity can only be used for HttpResponses.
    */
-  final case class CloseDelimited(contentType: ContentType, data: Publisher[ByteString])
+  final case class CloseDelimited(contentType: ContentType, data: Source[ByteString])
     extends japi.HttpEntityCloseDelimited with ResponseEntity with WithoutKnownLength {
     type Self = CloseDelimited
 
@@ -219,42 +218,42 @@ object HttpEntity {
     def withContentType(contentType: ContentType): CloseDelimited =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): CloseDelimited =
+    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): CloseDelimited =
       HttpEntity.CloseDelimited(contentType,
-        Flow(data).transform("transformDataBytes-CloseDelimited", transformer).toPublisher())
+        data.transform("transformDataBytes-CloseDelimited", transformer))
   }
 
   /**
    * The model for the entity of a BodyPart with an indefinite length.
    * Note that this type of HttpEntity can only be used for BodyParts.
    */
-  final case class IndefiniteLength(contentType: ContentType, data: Publisher[ByteString])
+  final case class IndefiniteLength(contentType: ContentType, data: Source[ByteString])
     extends japi.HttpEntityIndefiniteLength with BodyPartEntity with WithoutKnownLength {
 
     override def isIndefiniteLength: Boolean = true
     def withContentType(contentType: ContentType): IndefiniteLength =
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
-    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): IndefiniteLength =
+    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): IndefiniteLength =
       HttpEntity.IndefiniteLength(contentType,
-        Flow(data).transform("transformDataBytes-IndefiniteLength", transformer).toPublisher())
+        data.transform("transformDataBytes-IndefiniteLength", transformer))
   }
 
   /**
    * The model for the entity of a chunked HTTP message (with `Transfer-Encoding: chunked`).
    */
-  final case class Chunked(contentType: ContentType, chunks: Publisher[ChunkStreamPart])
+  final case class Chunked(contentType: ContentType, chunks: Source[ChunkStreamPart])
     extends japi.HttpEntityChunked with MessageEntity {
 
     def isKnownEmpty = chunks eq EmptyPublisher
     override def isChunked: Boolean = true
 
-    def dataBytes(implicit fm: FlowMaterializer): Publisher[ByteString] =
-      Flow(chunks).map(_.data).filter(_.nonEmpty).toPublisher()
+    def dataBytes: Source[ByteString] =
+      chunks.map(_.data).filter(_.nonEmpty)
 
-    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString])(implicit materializer: FlowMaterializer): Chunked = {
+    override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): Chunked = {
       val newChunks =
-        Flow(chunks).transform("transformDataBytes-Chunked", () ⇒ new Transformer[ChunkStreamPart, ChunkStreamPart] {
+        chunks.transform("transformDataBytes-Chunked", () ⇒ new Transformer[ChunkStreamPart, ChunkStreamPart] {
           val byteTransformer = transformer()
           var sentLastChunk = false
 
@@ -276,7 +275,7 @@ object HttpEntity {
             if (remaining.nonEmpty) Chunk(remaining.join) :: Nil
             else Nil
           }
-        }).toPublisher()
+        })
 
       HttpEntity.Chunked(contentType, newChunks)
     }
@@ -285,17 +284,17 @@ object HttpEntity {
       if (contentType == this.contentType) this else copy(contentType = contentType)
 
     /** Java API */
-    def getChunks: Publisher[japi.ChunkStreamPart] = chunks.asInstanceOf[Publisher[japi.ChunkStreamPart]]
+    def getChunks: Source[japi.ChunkStreamPart] = chunks.asInstanceOf[Source[japi.ChunkStreamPart]]
   }
   object Chunked {
     /**
      * Returns a ``Chunked`` entity where one Chunk is produced for every non-empty ByteString of the given
      * ``Publisher[ByteString]``.
      */
-    def fromData(contentType: ContentType, chunks: Publisher[ByteString])(implicit fm: FlowMaterializer): Chunked =
-      Chunked(contentType, Flow(chunks).collect[ChunkStreamPart] {
+    def fromData(contentType: ContentType, chunks: Source[ByteString]): Chunked =
+      Chunked(contentType, chunks.collect[ChunkStreamPart] {
         case b: ByteString if b.nonEmpty ⇒ Chunk(b)
-      }.toPublisher())
+      })
   }
 
   /**

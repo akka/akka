@@ -7,7 +7,7 @@ package akka.http.coding
 import java.io.ByteArrayOutputStream
 import akka.http.model._
 import akka.http.util.StreamUtils
-import akka.stream.{ Transformer, FlowMaterializer }
+import akka.stream.Transformer
 import akka.util.ByteString
 import headers._
 
@@ -16,12 +16,12 @@ trait Encoder {
 
   def messageFilter: HttpMessage ⇒ Boolean
 
-  def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T#Self =
+  def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self =
     if (messageFilter(message) && !message.headers.exists(Encoder.isContentEncodingHeader))
       encodeData(message).withHeaders(`Content-Encoding`(encoding) +: message.headers)
     else message.self
 
-  def encodeData[T](t: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T =
+  def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
     mapper.transformDataBytes(t, newEncodeTransformer)
 
   def newCompressor: Compressor
