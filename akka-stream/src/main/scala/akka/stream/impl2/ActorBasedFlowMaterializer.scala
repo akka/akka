@@ -85,6 +85,10 @@ private[akka] object Ast {
     override def name = "merge"
   }
 
+  case object MergePreferred extends FanInAstNode {
+    override def name = "mergePreferred"
+  }
+
   case object Broadcast extends FanOutAstNode {
     override def name = "broadcast"
   }
@@ -223,6 +227,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         val impl = op match {
           case Ast.Merge ⇒
             actorOf(FairMerge.props(settings, inputCount).withDispatcher(settings.dispatcher), actorName)
+          case Ast.MergePreferred ⇒
+            actorOf(UnfairMerge.props(settings, inputCount).withDispatcher(settings.dispatcher), actorName)
           case Ast.Zip ⇒
             actorOf(Zip.props(settings).withDispatcher(settings.dispatcher), actorName)
           case Ast.Concat ⇒
