@@ -229,3 +229,22 @@ final case class TickTap[Out](initialDelay: FiniteDuration, interval: FiniteDura
       name = s"$flowName-0-tick"))
 }
 
+/**
+ * This tap takes two Sources and concatenates them together by draining the elements coming from the first Source
+ * completely, then draining the elements arriving from the second Source. If the first Source is infinite then the
+ * second Source will be never drained.
+ */
+final case class ConcatTap[Out](source1: Source[Out], source2: Source[Out]) extends SimpleTap[Out] {
+
+  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
+    val concatter = Concat[Out]
+    val concatGraph = FlowGraph { builder ⇒
+      builder
+        .addEdge(source1, Pipe.empty[Out], concatter.first)
+        .addEdge(source2, Pipe.empty[Out], concatter.second)
+        .addEdge(concatter.out, SubscriberDrain(flowSubscriber))
+    }.run()(materializer)
+  }
+
+  override def isActive: Boolean = false
+}

@@ -5,7 +5,6 @@
 package akka.http.coding
 
 import akka.http.model._
-import akka.stream.FlowMaterializer
 import akka.util.ByteString
 import headers.HttpEncodings
 
@@ -15,10 +14,10 @@ import headers.HttpEncodings
 object NoEncoding extends Decoder with Encoder {
   val encoding = HttpEncodings.identity
 
-  override def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T#Self = message.self
-  override def encodeData[T](t: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T = t
-  override def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T#Self = message.self
-  override def decodeData[T](t: T)(implicit mapper: DataMapper[T], materializer: FlowMaterializer): T = t
+  override def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
+  override def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
+  override def decode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
+  override def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T = t
 
   val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false
 

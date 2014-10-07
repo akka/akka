@@ -270,3 +270,18 @@ final case class FoldDrain[U, In](zero: U)(f: (U, In) ⇒ U) extends DrainWithKe
   }
 }
 
+/**
+ * A drain that immediately cancels its upstream upon materialization.
+ */
+final case object CancelDrain extends SimpleDrain[Any] {
+
+  override def attach(flowPublisher: Publisher[Any], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
+    flowPublisher.subscribe(new Subscriber[Any] {
+      override def onError(t: Throwable): Unit = ()
+      override def onSubscribe(s: Subscription): Unit = s.cancel()
+      override def onComplete(): Unit = ()
+      override def onNext(t: Any): Unit = ()
+    })
+  }
+}
+

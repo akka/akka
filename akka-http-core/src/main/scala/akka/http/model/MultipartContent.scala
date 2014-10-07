@@ -5,30 +5,28 @@
 package akka.http.model
 
 import java.io.File
-import org.reactivestreams.Publisher
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.{ FutureDrain, FlowMaterializer, Source }
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.http.util.FastFuture
 import FastFuture._
 import headers._
 
 trait MultipartParts {
-  def parts: Publisher[BodyPart]
+  def parts: Source[BodyPart]
 }
 
 /**
  * Basic model for multipart content as defined in RFC 2046.
  * If you are looking for a model for `multipart/form-data` you should be using [[MultipartFormData]].
  */
-final case class MultipartContent(parts: Publisher[BodyPart]) extends MultipartParts
+final case class MultipartContent(parts: Source[BodyPart]) extends MultipartParts
 
 object MultipartContent {
-  val Empty = MultipartContent(SynchronousPublisherFromIterable[BodyPart](Nil))
+  val Empty = MultipartContent(Source[BodyPart](Nil))
 
-  def apply(parts: BodyPart*): MultipartContent = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+  def apply(parts: BodyPart*): MultipartContent = apply(Source[BodyPart](parts.toList))
 
   def apply(files: Map[String, FormFile]): MultipartContent =
     apply(files.map(e ⇒ BodyPart(e._2, e._1))(collection.breakOut): _*)
@@ -38,13 +36,13 @@ object MultipartContent {
  * Model for multipart/byteranges content as defined in RFC 2046.
  * If you are looking for a model for `multipart/form-data` you should be using [[MultipartFormData]].
  */
-final case class MultipartByteRanges(parts: Publisher[BodyPart]) extends MultipartParts
+final case class MultipartByteRanges(parts: Source[BodyPart]) extends MultipartParts
 
 object MultipartByteRanges {
-  val Empty = MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](Nil))
+  val Empty = MultipartByteRanges(Source[BodyPart](Nil))
 
   def apply(parts: BodyPart*): MultipartByteRanges =
-    if (parts.isEmpty) Empty else MultipartByteRanges(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+    if (parts.isEmpty) Empty else MultipartByteRanges(Source[BodyPart](parts.toList))
 }
 
 /**
@@ -52,19 +50,19 @@ object MultipartByteRanges {
  * All parts must contain a Content-Disposition header with a type form-data
  * and a name parameter that is unique.
  */
-case class MultipartFormData(parts: Publisher[BodyPart]) extends MultipartParts {
+case class MultipartFormData(parts: Source[BodyPart]) extends MultipartParts {
   /**
    * Turns this instance into its strict specialization using the given `maxFieldCount` as the field number cut-off
    * hint.
    */
   def toStrict(maxFieldCount: Int = 1000)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[StrictMultipartFormData] =
-    Flow(parts).grouped(maxFieldCount).toFuture().fast.map(new StrictMultipartFormData(_))
+    parts.grouped(maxFieldCount).runWith(FutureDrain()).fast.map(new StrictMultipartFormData(_))
 }
 
 /**
  * A specialized `MultipartFormData` that allows full random access to its parts.
  */
-class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends MultipartFormData(SynchronousPublisherFromIterable(fields)) {
+class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends MultipartFormData(Source(fields)) {
   /**
    * Returns the BodyPart with the given name, if found.
    */
@@ -77,7 +75,7 @@ class StrictMultipartFormData(val fields: immutable.Seq[BodyPart]) extends Multi
 object MultipartFormData {
   val Empty = MultipartFormData()
 
-  def apply(parts: BodyPart*): MultipartFormData = apply(SynchronousPublisherFromIterable[BodyPart](parts.toList))
+  def apply(parts: BodyPart*): MultipartFormData = apply(Source[BodyPart](parts.toList))
 
   def apply(fields: Map[String, BodyPart]): MultipartFormData = apply {
     fields.map {
