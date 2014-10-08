@@ -1,5 +1,6 @@
 package akka.stream.actor;
 
+import org.junit.Ignore;
 import org.reactivestreams.Publisher;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -17,6 +18,7 @@ import akka.japi.Procedure;
 
 import static akka.stream.actor.ActorPublisherMessage.Request;
 
+@Ignore
 public class ActorPublisherTest {
 
   @ClassRule
