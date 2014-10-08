@@ -5,6 +5,8 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.stream.impl.fusing.{ ActorInterpreter, Op }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
@@ -41,6 +43,8 @@ private[akka] object Ast {
 
   case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
 
+  case class Fusable(ops: immutable.Seq[Op[_, _, _, _, _]], name: String) extends AstNode
+
   case class MapAsync(f: Any ⇒ Future[Any]) extends AstNode {
     override def name = "mapAsync"
   }
@@ -63,18 +67,6 @@ private[akka] object Ast {
 
   case object ConcatAll extends AstNode {
     override def name = "concatFlatten"
-  }
-
-  case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any) extends AstNode {
-    override def name = "conflate"
-  }
-
-  case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any)) extends AstNode {
-    override def name = "expand"
-  }
-
-  case class Buffer(size: Int, overflowStrategy: OverflowStrategy) extends AstNode {
-    override def name = "buffer"
   }
 
   sealed trait JunctionAstNode {
@@ -326,6 +318,7 @@ private[akka] object ActorProcessorFactory {
   def props(materializer: FlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings
     (op match {
+      case Fusable(ops, _)      ⇒ Props(new ActorInterpreter(materializer.settings, ops))
       case t: Transform         ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
       case t: TimerTransform    ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
       case m: MapAsync          ⇒ Props(new MapAsyncProcessorImpl(settings, m.f))
@@ -334,9 +327,6 @@ private[akka] object ActorProcessorFactory {
       case tt: PrefixAndTail    ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
       case s: SplitWhen         ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
       case ConcatAll            ⇒ Props(new ConcatAllImpl(materializer))
-      case cf: Conflate         ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
-      case ex: Expand           ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
-      case bf: Buffer           ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
     }).withDispatcher(settings.dispatcher)
   }
 
