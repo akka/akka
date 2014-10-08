@@ -3,6 +3,7 @@ package akka.stream.javadsl;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import org.reactivestreams.Subscriber;
@@ -21,6 +22,7 @@ import akka.stream.MaterializerSettings;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 
+@Ignore
 public class DuctTest {
 
   @ClassRule

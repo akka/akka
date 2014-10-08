@@ -1,5 +1,6 @@
 package akka.stream.actor;
 
+import org.junit.Ignore;
 import org.reactivestreams.Subscriber;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -19,6 +20,7 @@ import akka.japi.Procedure;
 import static akka.stream.actor.ActorSubscriberMessage.OnNext;
 import static akka.stream.actor.ActorSubscriberMessage.OnError;
 
+@Ignore
 public class ActorSubscriberTest {
 
   @ClassRule
