@@ -349,7 +349,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Content-length: 92233720368547758080
             |Host: x
             |
-            |""" should parseToError(400: StatusCode, ErrorInfo("Illegal `Content-Length` header value"))
+            |""" should parseToError(400: StatusCode, ErrorInfo("`Content-Length` header value must not exceed 63-bit integer range"))
         }
       }
     }
