@@ -821,16 +821,16 @@ object AkkaBuild extends Build {
 
     // add arguments for tests excluded by tag
     testOptions in Test <++= excludeTestTags map { tags =>
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-l", tags.mkString(" ")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument(TestFrameworks.ScalaTest, "-l", tags.mkString(" ")))
     },
 
     // add arguments for running only tests by tag
     testOptions in Test <++= onlyTestTags map { tags =>
-      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
+      if (tags.isEmpty) Seq.empty else Seq(Tests.Argument(TestFrameworks.ScalaTest, "-n", tags.mkString(" ")))
     },
 
     // show full stack traces and test case durations
-    testOptions in Test += Tests.Argument("-oDF"),
+    testOptions in Test += Tests.Argument(TestFrameworks.ScalaTest, "-oDF"),
 
     // don't save test output to a file
     testListeners in (Test, test) := Seq(TestLogger(streams.value.log, {_ => streams.value.log }, logBuffered.value)),
@@ -1242,7 +1242,7 @@ object Dependencies {
       val pojosr       = "com.googlecode.pojosr"       % "de.kalpatec.pojosr.framework" % "0.2.1"            % "test" // ApacheV2
       val tinybundles  = "org.ops4j.pax.tinybundles"   % "tinybundles"                  % "1.0.0"            % "test" // ApacheV2
       val log4j        = "log4j"                       % "log4j"                        % "1.2.14"           % "test" // ApacheV2
-      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.10"             % "test" // MIT
+      val junitIntf    = "com.novocode"                % "junit-interface"              % "0.11"             % "test" // MIT
       // dining hakkers integration test using pax-exam
       // mirrored in OSGi sample
       val karafExam    = "org.apache.karaf.tooling.exam" % "org.apache.karaf.tooling.exam.container" % "2.3.1" % "test" // ApacheV2
