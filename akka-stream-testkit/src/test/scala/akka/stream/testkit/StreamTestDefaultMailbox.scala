@@ -26,7 +26,7 @@ private[akka] case class StreamTestDefaultMailbox() extends MailboxType with Pro
         val actorClass = r.underlying.props.actorClass
         assert(actorClass != classOf[Actor], s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")
         // StreamTcpManager is allowed to use another dispatcher
-        assert(!actorClass.getName.startsWith("akka.stream.") || actorClass == classOf[StreamTcpManager],
+        assert(!actorClass.getName.startsWith("akka.stream.") || actorClass == classOf[StreamTcpManager] || actorClass == classOf[akka.stream.io2.StreamTcpManager],
           s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
             "Did you forget to define `props.withDispatcher` when creating the actor? " +
             "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
