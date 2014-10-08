@@ -72,6 +72,18 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             HttpEntity(`application/octet-stream`, "filecontent"),
             List(RawHeader("Content-Transfer-Encoding", "binary"))))
       }
+      "with illegal headers" in (
+        Unmarshal(HttpEntity(`multipart/form-data` withBoundary "XYZABC",
+          """--XYZABC
+            |Date: unknown
+            |content-disposition: form-data; name=email
+            |
+            |test@there.com
+            |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[MultipartContent] should haveParts(
+          BodyPart(
+            HttpEntity(ContentTypes.`text/plain(UTF-8)`, "test@there.com"),
+            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")),
+              RawHeader("date", "unknown")))))
     }
 
     "multipartContentUnmarshaller should reject illegal multipart content" in {
