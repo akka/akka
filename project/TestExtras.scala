@@ -18,8 +18,9 @@ object TestExtras {
 
   object JUnitFileReporting {
     val settings = Seq(
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-a"),
+      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v"),
       // we can enable junit-style reports everywhere with this
-      testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a", "-u", (target.value / "test-reports").getAbsolutePath),
       testOptions += Tests.Argument(TestFrameworks.ScalaTest, "-u", (target.value / "test-reports").getAbsolutePath)
     )
   }
