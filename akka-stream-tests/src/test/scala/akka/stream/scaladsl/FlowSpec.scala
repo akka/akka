@@ -5,15 +5,16 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.stream.impl.fusing.{ Op, ActorInterpreter }
+
 import scala.collection.immutable
 import scala.concurrent.duration._
 
 import akka.actor.{ Props, ActorRefFactory, ActorRef }
 import akka.stream.{ TransformerLike, MaterializerSettings }
 import akka.stream.FlowMaterializer
-import akka.stream.impl.{ ActorProcessorFactory, StreamSupervisor, ActorBasedFlowMaterializer }
-import akka.stream.impl.Ast.{ Transform, AstNode }
-import akka.stream.impl.TransformProcessorImpl
+import akka.stream.impl.{ ActorProcessorFactory, TransformProcessorImpl, StreamSupervisor, ActorBasedFlowMaterializer }
+import akka.stream.impl.Ast.{ Transform, Fusable, AstNode }
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.testkit.ChainSetup
 import akka.testkit._
@@ -45,6 +46,23 @@ object FlowSpec {
     }
   }
 
+  class BrokenActorInterpreter(
+    _settings: MaterializerSettings,
+    _ops: Seq[Op[_, _, _, _, _]],
+    brokenMessage: Any)
+    extends ActorInterpreter(_settings, _ops) {
+
+    import akka.stream.actor.ActorSubscriberMessage._
+
+    override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
+      msg match {
+        case OnNext(m) if m == brokenMessage ⇒
+          throw new NullPointerException(s"I'm so broken [$m]")
+        case _ ⇒ super.aroundReceive(receive, msg)
+      }
+    }
+  }
+
   class BrokenFlowMaterializer(
     settings: MaterializerSettings,
     supervisor: ActorRef,
@@ -55,6 +73,7 @@ object FlowSpec {
     override def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
       val props = op match {
         case t: Transform ⇒ Props(new BrokenTransformProcessorImpl(settings, t.mkTransformer(), brokenMessage))
+        case f: Fusable   ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage)).withDispatcher(settings.dispatcher)
         case o            ⇒ ActorProcessorFactory.props(this, o)
       }
       val impl = actorOf(props, s"$flowName-$n-${op.name}")
@@ -144,10 +163,8 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "deliver error signal when publisher immediately fails" in {
       new ChainSetup(identity, settings, toPublisher) {
         object WeirdError extends RuntimeException("weird test exception")
-        EventFilter[WeirdError.type](occurrences = 1) intercept {
-          upstreamSubscription.sendError(WeirdError)
-          downstream.expectError(WeirdError)
-        }
+        upstreamSubscription.sendError(WeirdError)
+        downstream.expectError(WeirdError)
       }
     }
 
@@ -521,12 +538,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstreamSubscription.request(1)
         upstreamSubscription.expectRequest(1)
 
-        EventFilter[TestException.type](occurrences = 2) intercept {
-          upstreamSubscription.sendNext(5)
-          upstreamSubscription.expectRequest(1)
-          upstreamSubscription.expectCancellation()
-          downstream.expectError(TestException)
-        }
+        upstreamSubscription.sendNext(5)
+        upstreamSubscription.expectRequest(1)
+        upstreamSubscription.expectCancellation()
+        downstream.expectError(TestException)
 
         val downstream2 = StreamTestKit.SubscriberProbe[String]()
         publisher.subscribe(downstream2)
