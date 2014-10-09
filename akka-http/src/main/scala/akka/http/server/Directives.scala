@@ -29,7 +29,7 @@ trait Directives extends RouteConcatenation
   //with RangeDirectives
   //with RespondWithDirectives
   with RouteDirectives
-//with SchemeDirectives
+  with SchemeDirectives
 //with SecurityDirectives
 
 object Directives extends Directives
