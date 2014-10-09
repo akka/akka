@@ -35,5 +35,6 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
 
   case object DummyDecompressor extends Decompressor {
     def decompress(buffer: ByteString): ByteString = buffer ++ ByteString("compressed")
+    def finish(): ByteString = ByteString.empty
   }
 }
