@@ -10,7 +10,7 @@ import akka.http.util._
 import HttpMethods.POST
 
 import java.io.{ InputStream, OutputStream, ByteArrayInputStream, ByteArrayOutputStream }
-import java.util.zip.{ DataFormatException, GZIPInputStream, GZIPOutputStream }
+import java.util.zip.{ ZipException, DataFormatException, GZIPInputStream, GZIPOutputStream }
 
 import akka.util.ByteString
 
@@ -50,6 +50,10 @@ class GzipSpec extends WordSpec with CodecSpecSupport {
     "throw an error on corrupt input" in {
       val ex = the[DataFormatException] thrownBy ourGunzip(corruptGzipContent)
       ex.getMessage should equal("invalid literal/length code")
+    }
+    "throw early if header is corrupt" in {
+      val ex = the[ZipException] thrownBy ourGunzip(ByteString(0, 1, 2, 3, 4))
+      ex.getMessage should equal("Not in GZIP format")
     }
     "not throw an error if a subsequent block is corrupt" in {
       pending // FIXME: should we read as long as possible and only then report an error, that seems somewhat arbitrary
