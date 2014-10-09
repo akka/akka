@@ -11,7 +11,7 @@ import headers.HttpEncodings
 /**
  * An encoder and decoder for the HTTP 'identity' encoding.
  */
-object NoEncoding extends Decoder with Encoder {
+object NoCoding extends Coder {
   val encoding = HttpEncodings.identity
 
   override def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
@@ -21,11 +21,11 @@ object NoEncoding extends Decoder with Encoder {
 
   val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false
 
-  def newCompressor = NoEncodingCompressor
-  def newDecompressor = NoEncodingDecompressor
+  def newCompressor = NoCodingCompressor
+  def newDecompressor = NoCodingDecompressor
 }
 
-object NoEncodingCompressor extends Compressor {
+object NoCodingCompressor extends Compressor {
   def compress(input: ByteString): ByteString = input
   def flush() = ByteString.empty
   def finish() = ByteString.empty
@@ -33,6 +33,6 @@ object NoEncodingCompressor extends Compressor {
   def compressAndFlush(input: ByteString): ByteString = input
   def compressAndFinish(input: ByteString): ByteString = input
 }
-object NoEncodingDecompressor extends Decompressor {
+object NoCodingDecompressor extends Decompressor {
   def decompress(input: ByteString): ByteString = input
 }

@@ -13,7 +13,7 @@ import akka.http.util._
 import akka.http.model._
 import headers.HttpEncodings
 
-class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Decoder with Encoder {
+class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder {
   val encoding = HttpEncodings.deflate
   def newCompressor = new DeflateCompressor
   def newDecompressor = new DeflateDecompressor
