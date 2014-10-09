@@ -35,4 +35,5 @@ object NoCodingCompressor extends Compressor {
 }
 object NoCodingDecompressor extends Decompressor {
   def decompress(input: ByteString): ByteString = input
+  def finish(): ByteString = ByteString.empty
 }
