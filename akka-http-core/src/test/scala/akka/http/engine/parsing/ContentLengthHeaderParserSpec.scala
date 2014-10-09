@@ -13,14 +13,14 @@ class ContentLengthHeaderParserSpec extends WordSpec with Matchers {
 
   "specialized ContentLength parser" should {
     "accept zero" in {
-      parse("0") === 0L
+      parse("0") shouldEqual 0L
     }
     "accept positive value" in {
-      parse("43234398") === 43234398L
+      parse("43234398") shouldEqual 43234398L
     }
     "accept positive value > Int.MaxValue <= Long.MaxValue" in {
-      parse("274877906944") === 274877906944L
-      parse("9223372036854775807") === 9223372036854775807L // Long.MaxValue
+      parse("274877906944") shouldEqual 274877906944L
+      parse("9223372036854775807") shouldEqual 9223372036854775807L // Long.MaxValue
     }
     "don't accept positive value > Long.MaxValue" in {
       a[ParsingException] should be thrownBy parse("9223372036854775808") // Long.MaxValue + 1

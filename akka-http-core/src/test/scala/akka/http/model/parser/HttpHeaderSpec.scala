@@ -150,6 +150,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Cache-Control`(`private`(), CacheDirective.custom("community", Some("<UCI>")))
       "Cache-Control: max-age=1234567890123456789" =!=
         `Cache-Control`(`max-age`(Int.MaxValue)).renderedTo("max-age=2147483647")
+      "Cache-Control: private, no-cache, no-cache=Set-Cookie, proxy-revalidate" =!=
+        `Cache-Control`(`private`(), `no-cache`, `no-cache`("Set-Cookie"), `proxy-revalidate`).renderedTo(
+          "private, no-cache, no-cache=\"Set-Cookie\", proxy-revalidate")
+      "Cache-Control: no-cache=Set-Cookie" =!=
+        `Cache-Control`(`no-cache`("Set-Cookie")).renderedTo("no-cache=\"Set-Cookie\"")
+      "Cache-Control: private=\"a,b\", no-cache" =!=
+        `Cache-Control`(`private`("a", "b"), `no-cache`)
     }
 
     "Connection" in {
@@ -205,6 +212,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Cookie: a=1;b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       "Cookie: a=1 ;b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       "Cookie: a=1; b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2"))
+      "Cookie: a=1,b=2" =!= Cookie(HttpCookie("a", "1"), HttpCookie("b", "2")).renderedTo("a=1; b=2")
       Cookie(HttpCookie("SID", "31d4d96e407aad42",
         domain = Some("example.com"),
         expires = Some(DateTime(2021, 6, 9, 10, 18, 14)),
@@ -246,6 +254,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "If-Modified-Since" in {
       "If-Modified-Since: Wed, 13 Jul 2011 08:12:31 GMT" =!= `If-Modified-Since`(DateTime(2011, 7, 13, 8, 12, 31))
+      "If-Modified-Since: 0" =!= `If-Modified-Since`(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
     }
 
     "If-None-Match" in {
