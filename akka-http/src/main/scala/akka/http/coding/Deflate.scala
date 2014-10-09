@@ -91,10 +91,10 @@ class DeflateCompressor extends Compressor {
 class DeflateDecompressor extends Decompressor {
   protected lazy val inflater = new Inflater()
 
-  def decompress(buffer: ByteString): ByteString =
+  def decompress(input: ByteString): ByteString =
     try {
-      inflater.setInput(buffer.toArray)
-      drain(new Array[Byte](buffer.length * 2))
+      inflater.setInput(input.toArray)
+      drain(new Array[Byte](input.length * 2))
     } catch {
       case e: DataFormatException ⇒
         throw new ZipException(e.getMessage.toOption getOrElse "Invalid ZLIB data format")
@@ -105,5 +105,10 @@ class DeflateDecompressor extends Decompressor {
     if (len > 0) drain(buffer, result ++ ByteString.fromArray(buffer, 0, len))
     else if (inflater.needsDictionary) throw new ZipException("ZLIB dictionary missing")
     else result
+  }
+
+  def finish(): ByteString = {
+    inflater.end()
+    ByteString.empty
   }
 }

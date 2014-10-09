@@ -63,10 +63,16 @@ class GzipCompressor extends DeflateCompressor {
 class GzipDecompressor extends DeflateDecompressor {
   override protected lazy val inflater = new Inflater(true) // disable ZLIB headers
   override def decompress(input: ByteString): ByteString = DecompressionStateMachine.run(input)
+  override def finish(): ByteString =
+    if (DecompressionStateMachine.isFinished) ByteString.empty
+    else fail("Truncated GZIP stream")
 
   import GzipDecompressor._
+
   object DecompressionStateMachine extends StateMachine {
-    def initialState = readHeaders
+    def isFinished: Boolean = currentState == finished
+
+    def initialState = finished
 
     private def readHeaders(data: ByteString): Action =
       try {
@@ -106,12 +112,13 @@ class GzipDecompressor extends DeflateDecompressor {
 
         inflater.reset()
         checkSum.reset()
-        ContinueWith(initialState, remainingData) // start over to support multiple concatenated gzip streams
+        ContinueWith(finished, remainingData) // start over to support multiple concatenated gzip streams
       } catch {
         case ByteReader.NeedMoreData ⇒ SuspendAndRetryWithMoreData
       }
 
-    private def fail(msg: String) = throw new ZipException(msg)
+    lazy val finished: ByteString ⇒ Action =
+      data ⇒ if (data.nonEmpty) ContinueWith(readHeaders, data) else SuspendAndRetryWithMoreData
 
     private def crc16(data: ByteString) = {
       val crc = new CRC32
@@ -119,6 +126,8 @@ class GzipDecompressor extends DeflateDecompressor {
       crc.getValue.toInt & 0xFFFF
     }
   }
+
+  private def fail(msg: String) = throw new ZipException(msg)
 }
 
 /** INTERNAL API */
@@ -176,6 +185,7 @@ private[http] object GzipDecompressor {
     def initialState: State
 
     private[this] var state: State = initialState
+    def currentState: State = state
 
     /** Run the state machine with the current input */
     final def run(input: ByteString): ByteString = {
@@ -191,7 +201,8 @@ private[http] object GzipDecompressor {
           case EmitAndSuspend(output) ⇒ result ++ output
           case ContinueWith(next, remainingInput) ⇒
             state = next
-            rec(remainingInput, result)
+            if (remainingInput.nonEmpty) rec(remainingInput, result)
+            else result
           case EmitAndContinueWith(output, next, remainingInput) ⇒
             state = next
             rec(remainingInput, result ++ output)

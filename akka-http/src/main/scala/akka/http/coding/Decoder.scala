@@ -27,7 +27,7 @@ trait Decoder {
     val decompressor = newDecompressor
 
     def decodeChunk(bytes: ByteString): ByteString = decompressor.decompress(bytes)
-    def finish(): ByteString = ByteString.empty
+    def finish(): ByteString = decompressor.finish()
 
     StreamUtils.byteStringTransformer(decodeChunk, finish)
   }
@@ -36,5 +36,11 @@ trait Decoder {
 /** A stateful object representing ongoing decompression. */
 abstract class Decompressor {
   /** Decompress the buffer and return decompressed data. */
-  def decompress(buffer: ByteString): ByteString
+  def decompress(input: ByteString): ByteString
+
+  /** Flushes potential remaining data from any internal buffers and may report on truncation errors */
+  def finish(): ByteString
+
+  /** Combines decompress and finish */
+  def decompressAndFinish(input: ByteString): ByteString = decompress(input) ++ finish()
 }

@@ -67,6 +67,14 @@ class CodingDirectivesSpec extends RoutingSpec {
         responseAs[String] shouldEqual "The request's encoding is corrupt:\nNot in GZIP format"
       }
     }
+    "reject truncated gzip request content" in {
+      Post("/", helloGzipped.dropRight(2)) ~> `Content-Encoding`(gzip) ~> {
+        decodeRequest(Gzip) { echoRequestContent }
+      } ~> check {
+        status shouldEqual BadRequest
+        responseAs[String] shouldEqual "The request's encoding is corrupt:\nTruncated GZIP stream"
+      }
+    }
     "reject requests with content encoded with 'deflate'" in {
       Post("/", "Hello") ~> `Content-Encoding`(deflate) ~> {
         decodeRequest(Gzip) { completeOk }
