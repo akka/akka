@@ -92,12 +92,6 @@ case class UnsatisfiableRangeRejection(unsatisfiableRanges: Seq[ByteRange], actu
 case class TooManyRangesRejection(maxRanges: Int) extends Rejection
 
 /**
- * Rejection created by decoding filters.
- * Signals that the request was rejected because the requests content is corrupted.
- */
-case class CorruptRequestEncodingRejection(msg: String) extends Rejection
-
-/**
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because there was an error while unmarshalling the request content
  */

@@ -4,12 +4,15 @@
 
 package akka.http.util
 
+import akka.http.model.RequestEntity
 import akka.stream.impl.ErrorPublisher
 import akka.stream.Transformer
 import akka.util.ByteString
 import org.reactivestreams.Publisher
 
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -46,8 +49,30 @@ private[http] object StreamUtils {
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     ErrorPublisher(ex).asInstanceOf[Publisher[T]]
+
+  def mapErrorTransformer[T](f: Throwable ⇒ Throwable): Transformer[T, T] =
+    new Transformer[T, T] {
+      def onNext(element: T): immutable.Seq[T] = immutable.Seq(element)
+      override def onError(cause: scala.Throwable): Unit = throw f(cause)
+    }
+
+  def mapEntityError(f: Throwable ⇒ Throwable)(implicit mat: FlowMaterializer): RequestEntity ⇒ RequestEntity =
+    _.transformDataBytes(() ⇒ mapErrorTransformer(f))
 }
 
+/**
+ * INTERNAL API
+ */
 private[http] class EnhancedTransformer[T, U](val t: Transformer[T, U]) extends AnyVal {
   def map[V](f: U ⇒ V): Transformer[T, V] = StreamUtils.mapTransformer(t, f)
+}
+
+/**
+ * INTERNAL API
+ */
+private[http] class EnhancedByteStringPublisher(val byteStringStream: Publisher[ByteString]) extends AnyVal {
+  def join(implicit materializer: FlowMaterializer): Future[ByteString] =
+    Flow(byteStringStream).fold(ByteString.empty)(_ ++ _).toFuture()
+  def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
+    join.map(_.utf8String)
 }
