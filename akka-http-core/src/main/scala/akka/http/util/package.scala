@@ -35,6 +35,8 @@ package object util {
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
   private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
     new EnhancedByteStringTraversableOnce(byteStrings)
+  private[http] implicit def enhanceByteStrings(byteStrings: Source[ByteString]): EnhancedByteStringSource =
+    new EnhancedByteStringSource(byteStrings)
   private[http] implicit def enhanceTransformer[T, U](transformer: Transformer[T, U]): EnhancedTransformer[T, U] =
     new EnhancedTransformer(transformer)
 

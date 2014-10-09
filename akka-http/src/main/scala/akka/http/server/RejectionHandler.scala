@@ -40,9 +40,6 @@ object RejectionHandler {
       case AuthorizationFailedRejection :: _ ⇒
       complete(Forbidden, "The supplied authentication is not authorized to access this resource")
 
-    case CorruptRequestEncodingRejection(msg) :: _ ⇒
-      complete(BadRequest, "The requests encoding is corrupt:\n" + msg)
-
     case MalformedFormFieldRejection(name, msg, _) :: _ ⇒
       complete(BadRequest, "The form field '" + name + "' was malformed:\n" + msg)
 
