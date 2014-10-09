@@ -13,7 +13,7 @@ import headers.HttpEncodings
 
 import scala.util.control.{ NonFatal, NoStackTrace }
 
-class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Decoder with Encoder {
+class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Coder {
   val encoding = HttpEncodings.gzip
   def newCompressor = new GzipCompressor
   def newDecompressor = new GzipDecompressor
