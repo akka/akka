@@ -51,7 +51,10 @@ object Flow {
    * The stream ends exceptionally when an exception is thrown from the `Callable`.
    */
   def apply[T](f: () ⇒ Option[T]): Flow[T] =
-    FlowImpl(ThunkPublisherNode(() ⇒ f().getOrElse(throw Stop)), Nil)
+    FlowImpl(ThunkPublisherNode(() ⇒ f() match {
+      case Some(t) => t
+      case _ => throw Stop
+    }), Nil)
 
   /**
    * Start a new `Flow` from the given `Future`. The stream will consist of
