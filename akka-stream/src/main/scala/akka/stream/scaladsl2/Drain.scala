@@ -26,8 +26,6 @@ import java.util.concurrent.atomic.AtomicReference
  * Drain nodes themselves (or construct an ActorBasedFlowMaterializer).
  */
 trait Drain[-In] extends Sink[In] {
-  override def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
-    tap.connect(this).run().materializedTap(tap)
 }
 
 /**
@@ -46,19 +44,20 @@ trait SimpleDrain[-In] extends Drain[In] {
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
   def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorBasedFlowMaterializer, flowName: String): Unit
+
   /**
    * This method is only used for Drains that return true from [[#isActive]], which then must
    * implement it.
    */
   def create(materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[In] @uncheckedVariance =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
+
   /**
    * This method indicates whether this Drain can create a Subscriber instead of being
    * attached to a Publisher. This is only used if the Flow does not contain any
    * operations.
    */
   def isActive: Boolean = false
-
 }
 
 /**
@@ -82,12 +81,14 @@ trait DrainWithKey[-In] extends Drain[In] {
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
   def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType
+
   /**
    * This method is only used for Drains that return true from [[#isActive]], which then must
    * implement it.
    */
   def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[In] @uncheckedVariance, MaterializedType) =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
+
   /**
    * This method indicates whether this Drain can create a Subscriber instead of being
    * attached to a Publisher. This is only used if the Flow does not contain any

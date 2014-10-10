@@ -34,11 +34,8 @@ trait Tap[+Out] extends Source[Out] {
 
   override def connect(sink: Sink[Out]): RunnableFlow = sourcePipe.connect(sink)
 
-  override def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
-    connect(drain).run().materializedDrain(drain)
-
   /** INTERNAL API */
-  override protected def andThen[U](op: AstNode) = SourcePipe(this, List(op))
+  override private[scaladsl2] def andThen[U](op: AstNode) = SourcePipe(this, List(op))
 }
 
 /**
@@ -57,12 +54,14 @@ trait SimpleTap[+Out] extends Tap[Out] {
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
   def attach(flowSubscriber: Subscriber[Out] @uncheckedVariance, materializer: ActorBasedFlowMaterializer, flowName: String): Unit
+
   /**
    * This method is only used for Taps that return true from [[#isActive]], which then must
    * implement it.
    */
   def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] @uncheckedVariance =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
+
   /**
    * This method indicates whether this Tap can create a Publisher instead of being
    * attached to a Subscriber. This is only used if the Flow does not contain any
@@ -96,12 +95,14 @@ trait TapWithKey[+Out] extends Tap[Out] {
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
   def attach(flowSubscriber: Subscriber[Out] @uncheckedVariance, materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType
+
   /**
    * This method is only used for Taps that return true from [[#isActive]], which then must
    * implement it.
    */
   def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[Out] @uncheckedVariance, MaterializedType) =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
+
   /**
    * This method indicates whether this Tap can create a Publisher instead of being
    * attached to a Subscriber. This is only used if the Flow does not contain any
