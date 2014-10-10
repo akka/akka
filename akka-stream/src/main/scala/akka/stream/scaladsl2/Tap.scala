@@ -185,8 +185,8 @@ final case class ThunkTap[Out](f: () ⇒ Option[Out]) extends SimpleTap[Out] {
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Out] =
     ActorPublisher[Out](materializer.actorOf(SimpleCallbackPublisher.props(materializer.settings,
       () ⇒ f() match {
-        case Some(out) => out
-        case _ => throw Stop
+        case Some(out) ⇒ out
+        case _         ⇒ throw Stop
       }), name = s"$flowName-0-thunk"))
 }
 
