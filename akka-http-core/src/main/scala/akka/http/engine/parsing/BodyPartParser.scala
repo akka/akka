@@ -4,13 +4,12 @@
 
 package akka.http.engine.parsing
 
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
-import akka.stream.scaladsl.Flow
-import akka.stream.{ FlowMaterializer, Transformer }
+import akka.stream.Transformer
+import akka.stream.scaladsl2.Source
 import akka.util.ByteString
 import akka.http.model._
 import akka.http.util._
@@ -24,7 +23,7 @@ import headers._
 private[http] final class BodyPartParser(defaultContentType: ContentType,
                                          boundary: String,
                                          log: LoggingAdapter,
-                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)(implicit fm: FlowMaterializer)
+                                         settings: BodyPartParser.Settings = BodyPartParser.defaultSettings)
   extends Transformer[ByteString, BodyPartParser.Output] {
   import BodyPartParser._
   import settings._
@@ -144,7 +143,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
                   emitPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
                     (headers, ct, bytes) ⇒
                       emit(BodyPartStart(headers, entityParts ⇒ HttpEntity.IndefiniteLength(ct,
-                        Flow(entityParts).collect { case EntityPart(data) ⇒ data }.toPublisher())))
+                        entityParts.collect { case EntityPart(data) ⇒ data })))
                       emit(bytes)
                   },
                   emitFinalPartChunk: (List[HttpHeader], ContentType, ByteString) ⇒ Unit = {
@@ -217,7 +216,7 @@ private[http] object BodyPartParser {
   val boundaryCharNoSpace = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=?"
 
   sealed trait Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Publisher[Output] ⇒ BodyPartEntity) extends Output
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output] ⇒ BodyPartEntity) extends Output
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends Output
 
