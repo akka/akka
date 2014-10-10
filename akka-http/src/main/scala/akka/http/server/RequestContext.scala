@@ -7,7 +7,6 @@ package akka.http.server
 import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
 import akka.http.marshalling.ToResponseMarshallable
 import akka.http.model._
 
@@ -29,11 +28,6 @@ trait RequestContext {
   def executionContext: ExecutionContext
 
   /**
-   * The default FlowMaterializer to be used for stream-based logic related to this request.
-   */
-  def flowMaterializer: FlowMaterializer
-
-  /**
    * The default LoggingAdapter to be used for logging messages related to this request.
    */
   def log: LoggingAdapter
@@ -41,9 +35,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the given fields updated.
    */
-  def reconfigure(executionContext: ExecutionContext = executionContext,
-                  flowMaterializer: FlowMaterializer = flowMaterializer,
-                  log: LoggingAdapter = log): RequestContext
+  def reconfigure(executionContext: ExecutionContext = executionContext, log: LoggingAdapter = log): RequestContext
 
   /**
    * Completes the request with the given ToResponseMarshallable.

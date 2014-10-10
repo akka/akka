@@ -4,17 +4,17 @@
 
 package akka.http.engine.server
 
-import org.reactivestreams.Publisher
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
-import akka.stream.{ FlattenStrategy, Transformer, FlowMaterializer }
-import akka.stream.scaladsl.{ Flow, Duct }
+import akka.stream.Transformer
+import akka.stream.scaladsl2._
 import akka.http.engine.parsing.HttpRequestParser
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse, HttpMethods }
 import akka.http.engine.parsing.ParserOutput._
 import akka.http.Http
 import akka.http.util._
+import akka.util.ByteString
 
 /**
  * INTERNAL API
@@ -30,39 +30,50 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
   val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
 
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    val (applicationBypassSubscriber, applicationBypassPublisher) =
-      Duct[(RequestOutput, Publisher[RequestOutput])]
-        .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-        .build()
+    import FlowGraphImplicits._
 
-    val requestPublisher =
-      Flow(tcpConn.inputStream)
-        .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader))
-        // this will create extra single element `[MessageEnd]` substreams, that will
-        // be filtered out by the above `collect` for the applicationBypass and the
-        // below `collect` for the actual request handling
-        // TODO: replace by better combinator, maybe `splitAfter(_ == MessageEnd)`?
-        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-        .headAndTail
-        .broadcast(applicationBypassSubscriber)
-        .collect {
-          case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
-            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-            HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
-        }
-        .toPublisher()
+    val networkIn = PublisherTap(tcpConn.inputStream)
+    val networkOut = SubscriberDrain(tcpConn.outputStream)
 
-    val responseSubscriber =
-      Duct[HttpResponse]
-        .merge(applicationBypassPublisher)
-        .transform("applyApplicationBypass", () ⇒ applyApplicationBypass)
-        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
-        .flatten(FlattenStrategy.concat)
-        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
-        .produceTo(tcpConn.outputStream)
+    val userIn = PublisherDrain[HttpRequest]()
+    val userOut = SubscriberTap[HttpResponse]()
 
-    Http.IncomingConnection(tcpConn.remoteAddress, requestPublisher, responseSubscriber)
+    val pipeline = FlowGraph { implicit b ⇒
+      val bypassFanout = Broadcast[(RequestOutput, Source[RequestOutput])]("bypassFanout")
+      val bypassFanin = Merge[Any]("merge")
+
+      val rootParsePipeline =
+        Flow[ByteString]
+          .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader))
+          .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
+          .headAndTail
+
+      val rendererPipeline =
+        Flow[Any]
+          .transform("applyApplicationBypass", () ⇒ applyApplicationBypass)
+          .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+          .flatten(FlattenStrategy.concat)
+          .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
+
+      val requestTweaking = Flow[(RequestOutput, Source[RequestOutput])].collect {
+        case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
+          val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
+          val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+          HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
+      }
+
+      val bypass =
+        Flow[(RequestOutput, Source[RequestOutput])]
+          .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
+
+      //FIXME: the graph is unnecessary after fixing #15957
+      networkIn ~> rootParsePipeline ~> bypassFanout ~> requestTweaking ~> userIn
+      bypassFanout ~> bypass ~> bypassFanin
+      userOut ~> bypassFanin ~> rendererPipeline ~> networkOut
+
+    }.run()
+
+    Http.IncomingConnection(tcpConn.remoteAddress, pipeline.materializedDrain(userIn), pipeline.materializedTap(userOut))
   }
 
   /**

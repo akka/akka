@@ -66,17 +66,14 @@ object Http extends ExtensionKey[HttpExt] {
   //
   //  case object SetupRequestChannel extends SetupOutgoingChannel
 
-  sealed trait OutgoingChannel {
-    def processor[T]: HttpClientProcessor[T]
-  }
-
   /**
    * An `OutgoingHttpChannel` with a single outgoing HTTP connection as the underlying transport.
    */
+  // FIXME: hook up with new style IO
   final case class OutgoingConnection(remoteAddress: InetSocketAddress,
                                       localAddress: InetSocketAddress,
-                                      untypedProcessor: HttpClientProcessor[Any]) extends OutgoingChannel {
-    def processor[T] = untypedProcessor.asInstanceOf[HttpClientProcessor[T]]
+                                      responsePublisher: Publisher[(HttpResponse, Any)],
+                                      requestSubscriber: Subscriber[(HttpRequest, Any)]) {
   }
 
   // PREVIEW OF COMING API HERE:
