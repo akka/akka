@@ -3,17 +3,16 @@
  */
 package akka.stream.scaladsl2
 
-import akka.stream.impl.{ ErrorPublisher, EmptyPublisher, SynchronousPublisherFromIterable }
-import org.reactivestreams.{ Subscriber, Publisher }
-import scala.annotation.unchecked.uncheckedVariance
+import akka.stream.impl.EmptyPublisher
+import akka.stream.impl.ErrorPublisher
+import akka.stream.impl.SynchronousPublisherFromIterable
+import org.reactivestreams.Publisher
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import scala.language.implicitConversions
-import akka.stream.impl.SynchronousPublisherFromIterable
-import akka.stream.impl.EmptyPublisher
-import akka.stream.impl.ErrorPublisher
 
 /**
  * A `Source` is a set of stream processing steps that has one open output and an attached input.

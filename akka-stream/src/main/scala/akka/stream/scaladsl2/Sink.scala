@@ -21,6 +21,12 @@ trait Sink[-In] {
   def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
     tap.connect(this).run().materializedTap(tap)
 
+  /**
+   * Connect this `Sink` to a `Tap` and run it. The returned value is the materialized value
+   * of the `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   */
+  def runWith(tap: SimpleTap[In])(implicit materializer: FlowMaterializer): Unit =
+    tap.connect(this).run()
 }
 
 object Sink {
