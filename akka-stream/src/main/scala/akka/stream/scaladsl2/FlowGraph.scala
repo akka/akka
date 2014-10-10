@@ -84,6 +84,8 @@ final class Merge[T](override val name: Option[String]) extends FlowGraphInterna
   override val maximumOutputCount: Int = 1
 
   override private[akka] def astNode = Ast.Merge
+
+  final override private[scaladsl2] def newInstance() = new Merge[T](None)
 }
 
 object MergePreferred {
@@ -131,6 +133,8 @@ final class MergePreferred[T](override val name: Option[String]) extends FlowGra
   override val maximumOutputCount: Int = 1
 
   override private[akka] def astNode = Ast.MergePreferred
+
+  final override private[scaladsl2] def newInstance() = new MergePreferred[T](None)
 }
 
 object Broadcast {
@@ -163,6 +167,8 @@ final class Broadcast[T](override val name: Option[String]) extends FlowGraphInt
   override def maximumOutputCount: Int = Int.MaxValue
 
   override private[akka] def astNode = Ast.Broadcast
+
+  final override private[scaladsl2] def newInstance() = new Broadcast[T](None)
 }
 
 object Balance {
@@ -195,6 +201,8 @@ final class Balance[T](override val name: Option[String]) extends FlowGraphInter
   override def maximumOutputCount: Int = Int.MaxValue
 
   override private[akka] def astNode = Ast.Balance
+
+  final override private[scaladsl2] def newInstance() = new Balance[T](None)
 }
 
 object Zip {
@@ -243,6 +251,8 @@ final class Zip[A, B](override val name: Option[String]) extends FlowGraphIntern
   override def maximumOutputCount: Int = 1
 
   override private[akka] def astNode = Ast.Zip
+
+  final override private[scaladsl2] def newInstance() = new Zip[A, B](name = None)
 }
 
 object Unzip {
@@ -289,6 +299,8 @@ final class Unzip[A, B](override val name: Option[String]) extends FlowGraphInte
   override def maximumOutputCount: Int = 2
 
   override private[akka] def astNode = Ast.Unzip
+
+  final override private[scaladsl2] def newInstance() = new Unzip[A, B](name = None)
 }
 
 object Concat {
@@ -337,6 +349,8 @@ final class Concat[T](override val name: Option[String]) extends FlowGraphIntern
   override def maximumOutputCount: Int = 1
 
   override private[akka] def astNode = Ast.Concat
+
+  final override private[scaladsl2] def newInstance() = new Concat[T](name = None)
 }
 
 object UndefinedSink {
@@ -361,12 +375,15 @@ object UndefinedSink {
  * be replaced with [[FlowGraphBuilder#attachDrain]].
  */
 final class UndefinedSink[-T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+
   override def minimumInputCount: Int = 1
   override def maximumInputCount: Int = 1
   override def minimumOutputCount: Int = 0
   override def maximumOutputCount: Int = 0
 
   override private[akka] def astNode = throw new UnsupportedOperationException("Undefined sinks cannot be materialized")
+
+  final override private[scaladsl2] def newInstance() = new UndefinedSink[T](name = None)
 }
 
 object UndefinedSource {
@@ -397,28 +414,40 @@ final class UndefinedSource[+T](override val name: Option[String]) extends FlowG
   override def maximumOutputCount: Int = 1
 
   override private[akka] def astNode = throw new UnsupportedOperationException("Undefined sources cannot be materialized")
+
+  final override private[scaladsl2] def newInstance() = new UndefinedSource[T](name = None)
 }
 
 /**
  * INTERNAL API
  */
 private[akka] object FlowGraphInternal {
-  val OnlyPipesErrorMessage = "Only pipes are supported currently!"
+  def throwUnsupportedValue(x: Any): Nothing =
+    throw new IllegalArgumentException(s"Unsupported value [$x] of type [${x.getClass.getName}]. Only Pipes and Graphs are supported!")
 
   def UnlabeledPort = -1
 
-  sealed trait Vertex
+  sealed trait Vertex {
+    // must return a new instance that is uniquely identifiable (i.e. no name for hashCode or equality)
+    private[scaladsl2] def newInstance(): Vertex
+  }
+
   case class TapVertex(tap: Tap[_]) extends Vertex {
     override def toString = tap.toString
     // these are unique keys, case class equality would break them
     final override def equals(other: Any): Boolean = super.equals(other)
     final override def hashCode: Int = super.hashCode
+
+    final override private[scaladsl2] def newInstance() = this.copy()
   }
+
   case class DrainVertex(drain: Drain[_]) extends Vertex {
     override def toString = drain.toString
     // these are unique keys, case class equality would break them
     final override def equals(other: Any): Boolean = super.equals(other)
     final override def hashCode: Int = super.hashCode
+
+    final override private[scaladsl2] def newInstance() = this.copy()
   }
 
   sealed trait InternalVertex extends Vertex {
@@ -466,6 +495,13 @@ private[akka] object FlowGraphInternal {
 
 }
 
+object FlowGraphBuilder {
+  private[scaladsl2] def apply[T](partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ T): T = {
+    val builder = new FlowGraphBuilder(partialFlowGraph.graph)
+    block(builder)
+  }
+}
+
 /**
  * Builder of [[FlowGraph]] and [[PartialFlowGraph]].
  * Syntactic sugar is provided by [[FlowGraphImplicits]].
@@ -498,27 +534,45 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
     this
   }
 
+  def addEdge[T](source: UndefinedSource[T], junctionIn: JunctionInPort[T]): this.type = addEdge(source, Pipe.empty[T], junctionIn)
+
   def addEdge[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], junctionIn: JunctionInPort[Out]): this.type = {
     checkJunctionInPortPrecondition(junctionIn)
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(source, junctionIn.vertex, pipe, inputPort = junctionIn.port, outputPort = UnlabeledPort)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case gflow: GraphFlow[In, _, _, Out] ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(source, tOut)
+        addEdge(tIn, junctionIn)
+        connect(tOut, gflow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](junctionOut: JunctionOutPort[T], sink: UndefinedSink[T]): this.type =
+    addEdge(junctionOut, Pipe.empty[T], sink)
 
   def addEdge[In, Out](junctionOut: JunctionOutPort[In], flow: Flow[In, Out], sink: UndefinedSink[Out]): this.type = {
     checkJunctionOutPortPrecondition(junctionOut)
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(junctionOut.vertex, sink, pipe, inputPort = UnlabeledPort, outputPort = junctionOut.port)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case gflow: GraphFlow[In, _, _, Out] ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(junctionOut, tOut)
+        addEdge(tIn, sink)
+        connect(tOut, gflow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](junctionOut: JunctionOutPort[T], junctionIn: JunctionInPort[T]): this.type =
+    addEdge(junctionOut, Pipe.empty[T], junctionIn)
 
   def addEdge[In, Out](junctionOut: JunctionOutPort[In], flow: Flow[In, Out], junctionIn: JunctionInPort[Out]): this.type = {
     checkJunctionOutPortPrecondition(junctionOut)
@@ -526,11 +580,18 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(junctionOut.vertex, junctionIn.vertex, pipe, inputPort = junctionIn.port, outputPort = junctionOut.port)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case gflow: GraphFlow[In, _, _, Out] ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(junctionOut, tOut)
+        addEdge(tIn, junctionIn)
+        connect(tOut, gflow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](source: Source[T], junctionIn: JunctionInPort[T]): this.type = addEdge(source, Pipe.empty[T], junctionIn)
 
   def addEdge[In, Out](source: Source[In], flow: Flow[In, Out], junctionIn: JunctionInPort[Out]): this.type = {
     (source, flow) match {
@@ -538,31 +599,38 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
         addTapPipeEdge(tap, pipe, junctionIn)
       case (spipe: SourcePipe[In], pipe: Pipe[In, Out]) ⇒
         addTapPipeEdge(spipe.input, Pipe(spipe.ops).appendPipe(pipe), junctionIn)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case (gsource: GraphSource[_, In], _) ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(gsource, tOut)
+        addEdge(tIn, junctionIn)
+        connect(tOut, flow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
 
-  def addEdge[In, Out](junctionOut: JunctionOutPort[In], sink: Sink[In]): this.type = {
-    sink match {
-      case drain: Drain[In]   ⇒ addPipeDrainEdge(junctionOut, Pipe.empty[In], drain)
-      case pipe: SinkPipe[In] ⇒ addPipeDrainEdge(junctionOut, Pipe(pipe.ops), pipe.output)
-      case _                  ⇒ throw new IllegalArgumentException(OnlyPipesErrorMessage)
-    }
-    this
-  }
+  def addEdge[T](junctionOut: JunctionOutPort[T], sink: Sink[T]): this.type =
+    addEdge(junctionOut, Pipe.empty[T], sink)
 
   def addEdge[In, Out](junctionOut: JunctionOutPort[In], flow: Flow[In, Out], sink: Sink[Out]): this.type = {
     (flow, sink) match {
       case (pipe: Pipe[In, Out], drain: Drain[Out]) ⇒
         addPipeDrainEdge(junctionOut, pipe, drain)
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
-        addEdge(junctionOut, pipe.connect(spipe))
-      case _ ⇒ throw new IllegalArgumentException(OnlyPipesErrorMessage)
+        addPipeDrainEdge(junctionOut, pipe.appendPipe(Pipe(spipe.ops)), spipe.output)
+      case (_, gsink: GraphSink[Out, _]) ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(tIn, gsink)
+        addEdge(junctionOut, tOut)
+        connect(tOut, flow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](source: Source[T], sink: Sink[T]): this.type = addEdge(source, Pipe.empty[T], sink)
 
   def addEdge[In, Out](source: Source[In], flow: Flow[In, Out], sink: Sink[Out]): this.type = {
     (source, flow, sink) match {
@@ -581,22 +649,36 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
         val tap = sourcePipe.input
         val newPipe = Pipe(sourcePipe.ops).connect(pipe)
         addEdge(tap, newPipe, drain) // recursive, but now it is a Tap-Pipe-Drain
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case (_, gflow: GraphFlow[In, _, _, Out], _) ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(source, tOut)
+        addEdge(tIn, sink)
+        connect(tOut, gflow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
 
     this
   }
+
+  def addEdge[T](source: UndefinedSource[T], sink: UndefinedSink[T]): this.type = addEdge(source, Pipe.empty[T], sink)
 
   def addEdge[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], sink: UndefinedSink[Out]): this.type = {
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(source, sink, pipe, inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case gflow: GraphFlow[In, _, _, Out] ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(source, tOut)
+        addEdge(tIn, sink)
+        connect(tOut, gflow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](source: UndefinedSource[T], sink: Sink[T]): this.type = addEdge(source, Pipe.empty[T], sink)
 
   def addEdge[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], sink: Sink[Out]): this.type = {
     (flow, sink) match {
@@ -604,10 +686,22 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
         addGraphEdge(source, DrainVertex(drain), pipe, inputPort = UnlabeledPort, outputPort = UnlabeledPort)
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
         addGraphEdge(source, DrainVertex(spipe.output), pipe.appendPipe(Pipe(spipe.ops)), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case _ ⇒ throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case (gflow: GraphFlow[In, _, _, Out], _) ⇒
+        val tOut = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(source, tOut)
+        addEdge(tIn, sink)
+        connect(tOut, gflow, tIn)
+      case (_, gSink: GraphSink[Out, _]) ⇒
+        val oOut = UndefinedSink[Out]
+        addEdge(source, flow, oOut)
+        gSink.importAndConnect(this, oOut)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
+
+  def addEdge[T](source: Source[T], sink: UndefinedSink[T]): this.type = addEdge(source, Pipe.empty[T], sink)
 
   def addEdge[In, Out](source: Source[In], flow: Flow[In, Out], sink: UndefinedSink[Out]): this.type = {
     (flow, source) match {
@@ -615,18 +709,36 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
         addGraphEdge(TapVertex(tap), sink, pipe, inputPort = UnlabeledPort, outputPort = UnlabeledPort)
       case (pipe: Pipe[In, Out], spipe: SourcePipe[Out]) ⇒
         addGraphEdge(TapVertex(spipe.input), sink, Pipe(spipe.ops).appendPipe(pipe), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case _ ⇒ throw new IllegalArgumentException(OnlyPipesErrorMessage)
+      case (_, gsource: GraphSource[_, In]) ⇒
+        val tOut1 = UndefinedSource[In]
+        val tOut2 = UndefinedSink[In]
+        val tIn = UndefinedSource[Out]
+        addEdge(tOut1, tOut2)
+        gsource.importAndConnect(this, tOut1)
+        addEdge(tIn, sink)
+        connect(tOut2, flow, tIn)
+      case x ⇒ throwUnsupportedValue(x)
     }
     this
   }
 
-  private def addGraphEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
+  private def uncheckedAddGraphEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
     if (edgeQualifier == Int.MaxValue) throw new IllegalArgumentException(s"Too many edges")
-    checkAddTapDrainPrecondition(from)
-    checkAddTapDrainPrecondition(to)
     val label = EdgeLabel(edgeQualifier)(pipe.asInstanceOf[Pipe[Any, Nothing]], inputPort, outputPort)
     graph.addLEdge(from, to)(label)
     edgeQualifier += 1
+  }
+
+  private def addGraphEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
+    checkAddTapDrainPrecondition(from)
+    checkAddTapDrainPrecondition(to)
+    uncheckedAddGraphEdge(from, to, pipe, inputPort, outputPort)
+  }
+
+  private def addOrReplaceGraphEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
+    checkAddOrReplaceTapDrainPrecondition(from)
+    checkAddOrReplaceTapDrainPrecondition(to)
+    uncheckedAddGraphEdge(from, to, pipe, inputPort, outputPort)
   }
 
   def attachSink[Out](token: UndefinedSink[Out], sink: Sink[Out]): this.type = {
@@ -640,7 +752,9 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           case spipe: SinkPipe[Out] ⇒
             val pipe = edge.label.pipe.appendPipe(Pipe(spipe.ops))
             addGraphEdge(edge.from.value, DrainVertex(spipe.output), pipe, edge.label.inputPort, edge.label.outputPort)
-          case _ ⇒ throw new IllegalArgumentException(OnlyPipesErrorMessage)
+          case gsink: GraphSink[Out, _] ⇒
+            gsink.importAndConnect(this, token)
+          case x ⇒ throwUnsupportedValue(x)
         }
 
       case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSink [${token}]")
@@ -659,8 +773,9 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           case spipe: SourcePipe[In] ⇒
             val pipe = Pipe(spipe.ops).appendPipe(edge.label.pipe)
             addGraphEdge(TapVertex(spipe.input), edge.to.value, pipe, edge.label.inputPort, edge.label.outputPort)
-          case _ ⇒
-            throw new IllegalArgumentException(OnlyPipesErrorMessage)
+          case gsource: GraphSource[_, In] ⇒
+            gsource.importAndConnect(this, token)
+          case x ⇒ throwUnsupportedValue(x)
         }
 
       case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSource [${token}]")
@@ -685,9 +800,10 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
         val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]]).appendPipe(inEdge.label.pipe)
         graph.remove(out)
         graph.remove(in)
-        addGraphEdge(outEdge.from.value, inEdge.to.value, newPipe, inEdge.label.inputPort, outEdge.label.outputPort)
-      case _ ⇒
-        throw new IllegalArgumentException(OnlyPipesErrorMessage)
+        addOrReplaceGraphEdge(outEdge.from.value, inEdge.to.value, newPipe, inEdge.label.inputPort, outEdge.label.outputPort)
+      case gflow: GraphFlow[A, _, _, B] ⇒
+        gflow.importAndConnect(this, out, in)
+      case x ⇒ throwUnsupportedValue(x)
     }
 
     this
@@ -716,6 +832,17 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
       addGraphEdge(edge.from.value, edge.to.value, edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
     }
 
+  private[scaladsl2] def remapPartialFlowGraph(partialFlowGraph: PartialFlowGraph, vertexMapping: Map[Vertex, Vertex]): this.type = {
+    val mapping = collection.mutable.Map.empty[Vertex, Vertex] ++ vertexMapping
+    def get(vertex: Vertex): Vertex = mapping.getOrElseUpdate(vertex, vertex.newInstance())
+
+    partialFlowGraph.graph.edges.foreach { edge ⇒
+      addGraphEdge(get(edge.from.value), get(edge.to.value), edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
+    }
+
+    this
+  }
+
   /**
    * Flow graphs with cycles are in general dangerous as it can result in deadlocks.
    * Therefore, cycles in the graph are by default disallowed. `IllegalArgumentException` will
@@ -729,8 +856,17 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
   private def checkAddTapDrainPrecondition(vertex: Vertex): Unit = {
     vertex match {
       case node @ (_: UndefinedSource[_] | _: UndefinedSink[_]) ⇒
-        require(graph.find(node) == None, s"[$node] instance is already used in this flow graph")
+        require(!graph.contains(node), s"[$node] instance is already used in this flow graph")
       case _ ⇒ // ok
+    }
+  }
+
+  private def checkAddOrReplaceTapDrainPrecondition(vertex: Vertex): Unit = {
+    vertex match {
+      // it is ok to add or replace edges with new or existing undefined sources or sinks
+      case node @ (_: UndefinedSource[_] | _: UndefinedSink[_]) ⇒
+      // all other nodes must already exist in the graph
+      case node ⇒ require(graph.contains(node), s"[$node] instance is not in this flow graph")
     }
   }
 
@@ -741,7 +877,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           case Some(node) ⇒
             require(
               (node.inDegree + 1) <= iv.maximumInputCount,
-              s"${node.value} must have at most ${iv.maximumInputCount} incoming edges")
+              s"${node.value} must have at most ${iv.maximumInputCount} incoming edges, , has ${node.inDegree}\n${graph.edges}")
           case _ ⇒ // ok
         }
       case _ ⇒ // ok, no checks here
@@ -755,7 +891,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           case Some(node) ⇒
             require(
               (node.outDegree + 1) <= iv.maximumOutputCount,
-              s"${node.value} must have at most ${iv.maximumOutputCount} outgoing edges")
+              s"${node.value} must have at most ${iv.maximumOutputCount} outgoing edges, has ${node.outDegree}\n${graph.edges}")
           case _ ⇒ // ok
         }
       case _ ⇒ // ok, no checks here
@@ -884,13 +1020,13 @@ object FlowGraph {
  * Build a `FlowGraph` by starting with one of the `apply` methods in
  * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) {
+class FlowGraph private[akka] (private[akka] val graph: ImmutableGraph[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]) extends RunnableFlow {
   import FlowGraphInternal._
 
   /**
    * Materialize the `FlowGraph` and attach all sinks and sources.
    */
-  def run()(implicit materializer: FlowMaterializer): MaterializedMap = {
+  override def run()(implicit materializer: FlowMaterializer): MaterializedMap = {
     val edges = graph.edges
     if (edges.size == 1) {
       val edge = edges.head
@@ -1046,7 +1182,6 @@ object PartialFlowGraph {
     block(builder)
     builder.partialBuild()
   }
-
 }
 
 /**
@@ -1069,6 +1204,48 @@ class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[Fl
       case n: UndefinedSink[_] ⇒ n
     }.toSet
 
+  /**
+   * Creates a [[Source]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSink]] and
+   * no [[UndefinedSource]] in the graph, and you need to provide it as a parameter.
+   */
+  def toSource[O](out: UndefinedSink[O]): Source[O] = {
+    require(graph.contains(out), s"Couldn't create Source with [$out], no matching UndefinedSink")
+    checkUndefinedSinksAndSources(sources = Nil, sinks = List(out), description = "Source")
+    GraphSource(this, out, Pipe.empty[O])
+  }
+
+  /**
+   * Creates a [[Flow]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
+   * one [[UndefinedSink]] in the graph, and you need to provide them as parameters.
+   */
+  def toFlow[I, O](in: UndefinedSource[I], out: UndefinedSink[O]): Flow[I, O] = {
+    checkUndefinedSinksAndSources(sources = List(in), sinks = List(out), description = "Flow")
+    GraphFlow(Pipe.empty[I], in, this, out, Pipe.empty[O])
+  }
+
+  /**
+   * Creates a [[Sink]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
+   * no [[UndefinedSink]] in the graph, and you need to provide it as a parameter.
+   */
+  def toSink[I](in: UndefinedSource[I]): Sink[I] = {
+    checkUndefinedSinksAndSources(sources = List(in), sinks = Nil, description = "Sink")
+    GraphSink(Pipe.empty[I], in, this)
+  }
+
+  private def checkUndefinedSinksAndSources(sources: List[UndefinedSource[_]], sinks: List[UndefinedSink[_]], description: String): Unit = {
+    def expected(name: String, num: Int): String = s"Couldn't create $description, expected $num undefined $name${if (num == 1) "" else "s"}, but found"
+    def checkNodes(nodes: List[Vertex], nodeDescription: String): Int = (0 /: nodes) {
+      case (size, node) ⇒
+        require(graph.contains(node), s"Couldn't create $description with [$node], no matching $nodeDescription")
+        size + 1
+    }
+    val numSources = checkNodes(sources, "UndefinedSource")
+    val numSinks = checkNodes(sinks, "UndefinedSink")
+    val uSources = undefinedSources
+    require(uSources.size == numSources, s"${expected("source", numSources)} ${uSources}")
+    val uSinks = undefinedSinks
+    require(uSinks.size == numSinks, s"${expected("sink", numSinks)} ${uSinks}")
+  }
 }
 
 /**
@@ -1104,19 +1281,25 @@ object FlowGraphImplicits {
       new SourceNextStep(source, flow, builder)
 
     def ~>(junctionIn: JunctionInPort[Out])(implicit builder: FlowGraphBuilder): JunctionOutPort[junctionIn.NextT] = {
-      builder.addEdge(source, Pipe.empty[Out], junctionIn)
+      builder.addEdge(source, junctionIn)
       junctionIn.next
     }
 
     def ~>(sink: Sink[Out])(implicit builder: FlowGraphBuilder): Unit =
-      builder.addEdge(source, Pipe.empty[Out], sink)
+      builder.addEdge(source, sink)
   }
 
   class SourceNextStep[In, Out](source: Source[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
+    def ~>[O](otherflow: Flow[Out, O])(implicit builder: FlowGraphBuilder): SourceNextStep[In, O] =
+      new SourceNextStep(source, flow.connect(otherflow), builder)
+
     def ~>(junctionIn: JunctionInPort[Out]): JunctionOutPort[junctionIn.NextT] = {
       builder.addEdge(source, flow, junctionIn)
       junctionIn.next
     }
+
+    def ~>(sink: UndefinedSink[Out])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(source, flow, sink)
 
     def ~>(sink: Sink[Out]): Unit =
       builder.addEdge(source, flow, sink)
@@ -1130,7 +1313,7 @@ object FlowGraphImplicits {
       builder.addEdge(junction, Pipe.empty[In], sink)
 
     def ~>(junctionIn: JunctionInPort[In])(implicit builder: FlowGraphBuilder): JunctionOutPort[junctionIn.NextT] = {
-      builder.addEdge(junction, Pipe.empty[In], junctionIn)
+      builder.addEdge(junction, junctionIn)
       junctionIn.next
     }
 
@@ -1157,7 +1340,7 @@ object FlowGraphImplicits {
       new UndefinedSourceNextStep(source, flow, builder)
 
     def ~>(junctionIn: JunctionInPort[In])(implicit builder: FlowGraphBuilder): JunctionOutPort[junctionIn.NextT] = {
-      builder.addEdge(source, Pipe.empty[In], junctionIn)
+      builder.addEdge(source, junctionIn)
       junctionIn.next
     }
 
@@ -1168,6 +1351,16 @@ object FlowGraphImplicits {
       builder.addEdge(source, flow, junctionIn)
       junctionIn.next
     }
-  }
 
+    def ~>[T](otherFlow: Flow[Out, T])(implicit builder: FlowGraphBuilder): UndefinedSourceNextStep[In, T] =
+      new UndefinedSourceNextStep(source, flow.connect(otherFlow), builder)
+
+    def ~>(sink: Sink[Out]): Unit = {
+      builder.addEdge(source, flow, sink)
+    }
+
+    def ~>(sink: UndefinedSink[Out]): Unit = {
+      builder.addEdge(source, flow, sink)
+    }
+  }
 }
