@@ -10,7 +10,7 @@ import akka.http.util._
 import HttpMethods.POST
 
 import java.io.{ InputStream, OutputStream, ByteArrayInputStream, ByteArrayOutputStream }
-import java.util.zip.{ DataFormatException, GZIPInputStream, GZIPOutputStream }
+import java.util.zip.{ ZipException, DataFormatException, GZIPInputStream, GZIPOutputStream }
 
 import akka.util.ByteString
 
@@ -50,6 +50,14 @@ class GzipSpec extends WordSpec with CodecSpecSupport {
     "throw an error on corrupt input" in {
       val ex = the[DataFormatException] thrownBy ourGunzip(corruptGzipContent)
       ex.getMessage should equal("invalid literal/length code")
+    }
+    "throw an error on truncated input" in {
+      val ex = the[ZipException] thrownBy ourGunzip(streamGzip(smallTextBytes).dropRight(5))
+      ex.getMessage should equal("Truncated GZIP stream")
+    }
+    "throw early if header is corrupt" in {
+      val ex = the[ZipException] thrownBy ourGunzip(ByteString(0, 1, 2, 3, 4))
+      ex.getMessage should equal("Not in GZIP format")
     }
     "not throw an error if a subsequent block is corrupt" in {
       pending // FIXME: should we read as long as possible and only then report an error, that seems somewhat arbitrary
@@ -96,7 +104,7 @@ class GzipSpec extends WordSpec with CodecSpecSupport {
 
   def gzip(s: String) = ourGzip(ByteString(s, "UTF8"))
   def ourGzip(bytes: ByteString): ByteString = Gzip.newCompressor.compressAndFinish(bytes)
-  def ourGunzip(bytes: ByteString): ByteString = Gzip.newDecompressor.decompress(bytes)
+  def ourGunzip(bytes: ByteString): ByteString = Gzip.newDecompressor.decompressAndFinish(bytes)
 
   lazy val corruptGzipContent = {
     val content = gzip("Hello").toArray
