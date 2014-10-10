@@ -35,7 +35,8 @@ trait Source[+Out] extends FlowOps[Out] {
    * Connect this `Source` to a `Drain` and run it. The returned value is the materialized value
    * of the `Drain`, e.g. the `Publisher` of a [[PublisherDrain]].
    */
-  def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType
+  def runWith(drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
+    connect(drain).run().materializedDrain(drain)
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -136,4 +137,22 @@ object Source {
    */
   def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
 
+  /**
+   * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
+   * returns the `UndefinedSink`.
+   */
+  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
+    createSourceFromBuilder(new FlowGraphBuilder(), block)
+
+  /**
+   * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
+   * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
+   */
+  def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
+    createSourceFromBuilder(new FlowGraphBuilder(graph.graph), block)
+
+  private def createSourceFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] = {
+    val out = block(builder)
+    builder.partialBuild().toSource(out)
+  }
 }
