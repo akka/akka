@@ -34,7 +34,10 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * the materialized values of the `Tap` and `Drain`, e.g. the `Subscriber` of a [[SubscriberTap]] and
    * and `Publisher` of a [[PublisherDrain]].
    */
-  def runWith(tap: TapWithKey[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): (tap.MaterializedType, drain.MaterializedType)
+  def runWith(tap: TapWithKey[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): (tap.MaterializedType, drain.MaterializedType) = {
+    val m = tap.connect(this).connect(drain).run()
+    (m.materializedTap(tap), m.materializedDrain(drain))
+  }
 }
 
 object Flow {
@@ -43,6 +46,26 @@ object Flow {
    * Example usage: `Flow[Int]`
    */
   def apply[T]: Flow[T, T] = Pipe.empty[T]
+
+  /**
+   * Creates a `Flow` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
+   * returns the `UndefinedSource` and `UndefinedSink`.
+   */
+  def apply[I, O]()(block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] =
+    createFlowFromBuilder(new FlowGraphBuilder(), block)
+
+  /**
+   * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
+   * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
+   */
+  def apply[I, O](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] =
+    createFlowFromBuilder(new FlowGraphBuilder(graph.graph), block)
+
+  private def createFlowFromBuilder[I, O](builder: FlowGraphBuilder,
+                                          block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] = {
+    val (in, out) = block(builder)
+    builder.partialBuild().toFlow(in, out)
+  }
 }
 
 /**
@@ -415,7 +438,7 @@ trait FlowOps[+Out] {
 
   /** INTERNAL API */
   // Storing ops in reverse order
-  protected def andThen[U](op: AstNode): Repr[U]
+  private[scaladsl2] def andThen[U](op: AstNode): Repr[U]
 }
 
 /**
