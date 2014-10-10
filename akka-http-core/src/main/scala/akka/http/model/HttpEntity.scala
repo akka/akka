@@ -4,8 +4,6 @@
 
 package akka.http.model
 
-import akka.http.util.FastFuture
-
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable }
@@ -265,7 +263,7 @@ object HttpEntity {
               sentLastChunk = true
               Chunk(byteTransformer.onTermination(None).join) :: l :: Nil
           }
-
+          override def onError(cause: scala.Throwable): Unit = byteTransformer.onError(cause)
           override def onTermination(e: Option[Throwable]): immutable.Seq[ChunkStreamPart] = {
             val remaining =
               if (e.isEmpty && !sentLastChunk) byteTransformer.onTermination(None)
@@ -275,6 +273,8 @@ object HttpEntity {
             if (remaining.nonEmpty) Chunk(remaining.join) :: Nil
             else Nil
           }
+
+          override def cleanup(): Unit = byteTransformer.cleanup()
         })
 
       HttpEntity.Chunked(contentType, newChunks)
