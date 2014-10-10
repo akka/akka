@@ -4,7 +4,7 @@ import akka.stream.{ OverflowStrategy, MaterializerSettings }
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.scaladsl2.FlowGraphImplicits._
+import FlowGraphImplicits._
 
 class GraphBroadcastSpec extends AkkaSpec {
 

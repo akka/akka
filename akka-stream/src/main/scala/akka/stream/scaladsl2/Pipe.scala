@@ -4,13 +4,11 @@
 package akka.stream.scaladsl2
 
 import akka.stream.impl2.Ast.AstNode
-import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
-import scala.language.higherKinds
-import scala.language.existentials
+import scala.language.{ existentials, higherKinds }
 
-private[scaladsl2] object Pipe {
+private[stream] object Pipe {
   private val emptyInstance = Pipe[Any, Any](ops = Nil)
   def empty[T]: Pipe[T, T] = emptyInstance.asInstanceOf[Pipe[T, T]]
 }
@@ -18,14 +16,14 @@ private[scaladsl2] object Pipe {
 /**
  * Flow with one open input and one open output.
  */
-private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
+private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
 
   override private[scaladsl2] def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops)
 
-  private[scaladsl2] def withDrain(out: Drain[Out]): SinkPipe[In] = SinkPipe(out, ops)
+  private[stream] def withDrain(out: Drain[Out]): SinkPipe[In] = SinkPipe(out, ops)
 
-  private[scaladsl2] def withTap(in: Tap[In]): SourcePipe[Out] = SourcePipe(in, ops)
+  private[stream] def withTap(in: Tap[In]): SourcePipe[Out] = SourcePipe(in, ops)
 
   override def connect[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case p: Pipe[T, In]              ⇒ Pipe(p.ops ++: ops)
@@ -40,30 +38,33 @@ private[scaladsl2] final case class Pipe[-In, +Out](ops: List[AstNode]) extends 
     case x                     ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
-  private[scaladsl2] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)
+  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)
 }
 
 /**
  *  Pipe with open input and attached output. Can be used as a `Subscriber`.
  */
-private[scaladsl2] final case class SinkPipe[-In](output: Drain[_], ops: List[AstNode]) extends Sink[In] {
+private[stream] final case class SinkPipe[-In](output: Drain[_], ops: List[AstNode]) extends Sink[In] {
 
-  private[scaladsl2] def withTap(in: Tap[In]): RunnablePipe = RunnablePipe(in, output, ops)
+  private[stream] def withTap(in: Tap[In]): RunnablePipe = RunnablePipe(in, output, ops)
 
-  private[scaladsl2] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
+  private[stream] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
+  override def runWith(tap: SimpleTap[In])(implicit materializer: FlowMaterializer): Unit =
+    tap.connect(this).run()
+
 }
 
 /**
  * Pipe with open output and attached input. Can be used as a `Publisher`.
  */
-private[scaladsl2] final case class SourcePipe[+Out](input: Tap[_], ops: List[AstNode]) extends Source[Out] {
+private[stream] final case class SourcePipe[+Out](input: Tap[_], ops: List[AstNode]) extends Source[Out] {
   override type Repr[+O] = SourcePipe[O]
 
   override private[scaladsl2] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, op :: ops)
 
-  private[scaladsl2] def withDrain(out: Drain[Out]): RunnablePipe = RunnablePipe(input, out, ops)
+  private[stream] def withDrain(out: Drain[Out]): RunnablePipe = RunnablePipe(input, out, ops)
 
-  private[scaladsl2] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
+  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
 
   override def connect[T](flow: Flow[Out, T]): Source[T] = flow match {
     case p: Pipe[Out, T]            ⇒ appendPipe(p)

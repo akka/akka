@@ -1,10 +1,10 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.scaladsl2
+package akka.stream.javadsl
 
-import akka.stream.scaladsl2
 import akka.stream.FlattenStrategy
+import akka.stream.javadsl
 
 object FlattenStrategy {
 
@@ -13,7 +13,8 @@ object FlattenStrategy {
    * emitting its elements directly to the output until it completes and then taking the next stream. This has the
    * consequence that if one of the input stream is infinite, no other streams after that will be consumed from.
    */
-  def concat[T]: FlattenStrategy[scaladsl2.Source[T], T] = Concat[T]()
+  def concat[T]: FlattenStrategy[javadsl.Source[T], T] =
+    akka.stream.scaladsl2.FlattenStrategy.Concat[T]().asInstanceOf[FlattenStrategy[javadsl.Source[T], T]]
+  // TODO so in theory this should be safe, but let's rethink the design later
 
-  private[akka] case class Concat[T]() extends FlattenStrategy[scaladsl2.Source[T], T]
 }
