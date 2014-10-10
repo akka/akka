@@ -5,6 +5,8 @@
 package akka.http.server
 package directives
 
+import akka.stream.FlowMaterializer
+
 import scala.collection.immutable
 import akka.http.server.util.Tuple
 import akka.http.model._
@@ -38,6 +40,11 @@ trait BasicDirectives {
 
   def mapHttpResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
     mapRequestContext(_ withHttpResponseHeadersMapped f)
+
+  /** Injects the RequestContext into the inner block to produce a directive */
+  def withRequestContext[L: Tuple](inner: RequestContext ⇒ Directive[L]): Directive[L] = new Directive[L] {
+    def tapply(f: L ⇒ Route): Route = ctx ⇒ inner(ctx).tapply(f)(ctx)
+  }
 
   /**
    * A Directive0 that always passes the request on to its inner route

@@ -14,6 +14,7 @@ import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.actor._
 import akka.stream.Transformer
+import org.reactivestreams.Publisher
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -35,6 +36,10 @@ package object util {
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
   private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
     new EnhancedByteStringTraversableOnce(byteStrings)
+  private[http] implicit def enhanceByteStrings(byteStrings: Publisher[ByteString]): EnhancedByteStringPublisher =
+    new EnhancedByteStringPublisher(byteStrings)
+  private[http] implicit def enhanceByteStrings(byteStrings: Source[ByteString]): EnhancedByteStringSource =
+    new EnhancedByteStringSource(byteStrings)
   private[http] implicit def enhanceTransformer[T, U](transformer: Transformer[T, U]): EnhancedTransformer[T, U] =
     new EnhancedTransformer(transformer)
 

@@ -47,7 +47,7 @@ object Sink {
    * A `Sink` that immediately cancels its upstream after materialization.
    */
   def cancelled[T]: Drain[T] = CancelDrain
-  
+
   private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
     val in = block(builder)
     builder.partialBuild().toSink(in)

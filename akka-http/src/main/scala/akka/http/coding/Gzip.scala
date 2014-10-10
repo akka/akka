@@ -4,7 +4,6 @@
 
 package akka.http.coding
 
-import java.io.OutputStream
 import java.util.zip.{ Inflater, CRC32, ZipException, Deflater }
 import akka.util.ByteString
 
@@ -12,9 +11,9 @@ import scala.annotation.tailrec
 import akka.http.model._
 import headers.HttpEncodings
 
-import scala.util.control.NoStackTrace
+import scala.util.control.{ NonFatal, NoStackTrace }
 
-class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Decoder with Encoder {
+class Gzip(val messageFilter: HttpMessage ⇒ Boolean) extends Coder {
   val encoding = HttpEncodings.gzip
   def newCompressor = new GzipCompressor
   def newDecompressor = new GzipDecompressor
@@ -64,15 +63,19 @@ class GzipCompressor extends DeflateCompressor {
 class GzipDecompressor extends DeflateDecompressor {
   override protected lazy val inflater = new Inflater(true) // disable ZLIB headers
   override def decompress(input: ByteString): ByteString = DecompressionStateMachine.run(input)
+  override def finish(): ByteString =
+    if (DecompressionStateMachine.isFinished) ByteString.empty
+    else fail("Truncated GZIP stream")
 
   import GzipDecompressor._
+
   object DecompressionStateMachine extends StateMachine {
-    def initialState = readHeaders
+    def isFinished: Boolean = currentState == finished
+
+    def initialState = finished
 
     private def readHeaders(data: ByteString): Action =
-      // header has at least size 3
-      if (data.size < 4) SuspendAndRetryWithMoreData
-      else try {
+      try {
         val reader = new ByteReader(data)
         import reader._
 
@@ -109,12 +112,13 @@ class GzipDecompressor extends DeflateDecompressor {
 
         inflater.reset()
         checkSum.reset()
-        ContinueWith(initialState, remainingData) // start over to support multiple concatenated gzip streams
+        ContinueWith(finished, remainingData) // start over to support multiple concatenated gzip streams
       } catch {
         case ByteReader.NeedMoreData ⇒ SuspendAndRetryWithMoreData
       }
 
-    private def fail(msg: String) = Fail(new ZipException(msg))
+    lazy val finished: ByteString ⇒ Action =
+      data ⇒ if (data.nonEmpty) ContinueWith(readHeaders, data) else SuspendAndRetryWithMoreData
 
     private def crc16(data: ByteString) = {
       val crc = new CRC32
@@ -122,6 +126,8 @@ class GzipDecompressor extends DeflateDecompressor {
       crc.getValue.toInt & 0xFFFF
     }
   }
+
+  private def fail(msg: String) = throw new ZipException(msg)
 }
 
 /** INTERNAL API */
@@ -174,35 +180,40 @@ private[http] object GzipDecompressor {
     case class ContinueWith(nextState: State, remainingInput: ByteString) extends Action
     /** Emit some output and then proceed to the nextState and immediately run it with the remainingInput */
     case class EmitAndContinueWith(output: ByteString, nextState: State, remainingInput: ByteString) extends Action
-    /** Fail with the given exception and go into the failed state which will throw for any new data */
-    case class Fail(cause: Throwable) extends Action
 
     type State = ByteString ⇒ Action
     def initialState: State
 
     private[this] var state: State = initialState
+    def currentState: State = state
 
     /** Run the state machine with the current input */
-    @tailrec final def run(input: ByteString, result: ByteString = ByteString.empty): ByteString =
-      state(input) match {
-        case SuspendAndRetryWithMoreData ⇒
-          val oldState = state
-          state = { newData ⇒
-            state = oldState
-            oldState(input ++ newData)
-          }
-          result
-        case EmitAndSuspend(output) ⇒ result ++ output
-        case ContinueWith(next, remainingInput) ⇒
-          state = next
-          run(remainingInput, result)
-        case EmitAndContinueWith(output, next, remainingInput) ⇒
-          state = next
-          run(remainingInput, result ++ output)
-        case Fail(cause) ⇒
+    final def run(input: ByteString): ByteString = {
+      @tailrec def rec(input: ByteString, result: ByteString = ByteString.empty): ByteString =
+        state(input) match {
+          case SuspendAndRetryWithMoreData ⇒
+            val oldState = state
+            state = { newData ⇒
+              state = oldState
+              oldState(input ++ newData)
+            }
+            result
+          case EmitAndSuspend(output) ⇒ result ++ output
+          case ContinueWith(next, remainingInput) ⇒
+            state = next
+            if (remainingInput.nonEmpty) rec(remainingInput, result)
+            else result
+          case EmitAndContinueWith(output, next, remainingInput) ⇒
+            state = next
+            rec(remainingInput, result ++ output)
+        }
+      try rec(input)
+      catch {
+        case NonFatal(e) ⇒
           state = failState
-          throw cause
+          throw e
       }
+    }
 
     private def failState: State = _ ⇒ throw new IllegalStateException("Trying to reuse failed decompressor.")
   }
