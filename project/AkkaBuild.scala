@@ -39,7 +39,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "0.6-SNAPSHOT"
+  val streamAndHttpVersion = "0.9-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -381,6 +381,7 @@ object AkkaBuild extends Build {
       defaultSettings ++ formatSettings ++ scaladocSettings ++
         javadocSettings ++ OSGi.httpTestkit ++
         Seq(
+          version := streamAndHttpVersion,
           libraryDependencies ++= Dependencies.httpTestkit,
           // FIXME include mima when akka-http-2.3.x is released
           //previousArtifact := akkaPreviousArtifact("akka-http-testkit")
@@ -396,6 +397,7 @@ object AkkaBuild extends Build {
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
+          version := streamAndHttpVersion,
           publishArtifact := false,
           libraryDependencies ++= Dependencies.httpTests,
           scalacOptions in Compile  += "-language:_"
