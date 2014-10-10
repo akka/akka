@@ -24,7 +24,7 @@ trait CodingDirectives {
    */
   def encodeResponse(encoder: Encoder): Directive0 =
     responseEncodingAccepted(encoder.encoding) &
-      withFlowMaterializer(implicit materializer ⇒ mapHttpResponse(encoder.encode(_))) &
+      mapHttpResponse(encoder.encode(_)) &
       cancelRejections(classOf[UnacceptedResponseEncodingRejection])
 
   /**
@@ -57,13 +57,12 @@ trait CodingDirectives {
    */
   def decodeRequest(decoder: Decoder): Directive0 = {
     def applyDecoder =
-      withFlowMaterializer(implicit materializer ⇒
-        mapRequest(decoder.decode(_).mapEntity(StreamUtils.mapEntityError {
-          case NonFatal(e) ⇒
-            new IllegalRequestException(
-              StatusCodes.BadRequest,
-              ErrorInfo(s"The request's encoding is corrupt:\n${e.getMessage}"))
-        })))
+      mapRequest(decoder.decode(_).mapEntity(StreamUtils.mapEntityError {
+        case NonFatal(e) ⇒
+          new IllegalRequestException(
+            StatusCodes.BadRequest,
+            ErrorInfo(s"The request's encoding is corrupt:\n${e.getMessage}"))
+      }))
 
     requestEntityEmpty | (
       requestEncodedWith(decoder.encoding) &

@@ -46,10 +46,6 @@ trait BasicDirectives {
     def tapply(f: L ⇒ Route): Route = ctx ⇒ inner(ctx).tapply(f)(ctx)
   }
 
-  /** Injects the RequestContext's FlowMaterializer into the inner block to produce a directive */
-  def withFlowMaterializer[L: Tuple](inner: FlowMaterializer ⇒ Directive[L]): Directive[L] =
-    withRequestContext(ctx ⇒ inner(ctx.flowMaterializer))
-
   /**
    * A Directive0 that always passes the request on to its inner route
    * (i.e. does nothing with the request or the response).

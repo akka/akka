@@ -7,12 +7,8 @@ package directives
 
 import org.scalatest.Tag
 import org.scalatest.matchers.Matcher
-
 import akka.util.ByteString
-import akka.stream.scaladsl.Flow
-
 import akka.http.util._
-
 import akka.http.model._
 import HttpEntity.{ ChunkStreamPart, Chunk }
 import headers._
@@ -20,8 +16,8 @@ import HttpCharsets._
 import HttpEncodings._
 import MediaTypes._
 import StatusCodes._
-
 import akka.http.coding._
+import akka.stream.scaladsl2.Source
 
 class CodingDirectivesSpec extends RoutingSpec {
 
@@ -161,7 +157,7 @@ class CodingDirectivesSpec extends RoutingSpec {
         text.grouped(8).map { chars ⇒
           Chunk(chars.mkString): ChunkStreamPart
         }
-      val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Flow(textChunks).toPublisher())
+      val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Source(textChunks))
 
       Post() ~> `Accept-Encoding`(gzip) ~> {
         encodeResponse(Gzip) {

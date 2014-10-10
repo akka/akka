@@ -9,10 +9,11 @@ import akka.stream.impl.ErrorPublisher
 import akka.stream.Transformer
 import akka.util.ByteString
 import org.reactivestreams.Publisher
-
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.control.NonFatal
+import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.scaladsl2.Source
 
 /**
  * INTERNAL API
@@ -56,7 +57,7 @@ private[http] object StreamUtils {
       override def onError(cause: scala.Throwable): Unit = throw f(cause)
     }
 
-  def mapEntityError(f: Throwable ⇒ Throwable)(implicit mat: FlowMaterializer): RequestEntity ⇒ RequestEntity =
+  def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
     _.transformDataBytes(() ⇒ mapErrorTransformer(f))
 }
 
@@ -71,8 +72,19 @@ private[http] class EnhancedTransformer[T, U](val t: Transformer[T, U]) extends 
  * INTERNAL API
  */
 private[http] class EnhancedByteStringPublisher(val byteStringStream: Publisher[ByteString]) extends AnyVal {
+  // FIXME remove this implicit conversion?
   def join(implicit materializer: FlowMaterializer): Future[ByteString] =
-    Flow(byteStringStream).fold(ByteString.empty)(_ ++ _).toFuture()
+    Source(byteStringStream).fold(ByteString.empty)(_ ++ _)
+  def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
+    join.map(_.utf8String)
+}
+
+/**
+ * INTERNAL API
+ */
+private[http] class EnhancedByteStringSource(val byteStringStream: Source[ByteString]) extends AnyVal {
+  def join(implicit materializer: FlowMaterializer): Future[ByteString] =
+    byteStringStream.fold(ByteString.empty)(_ ++ _)
   def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
 }
