@@ -521,7 +521,7 @@ In order to help developers build correct and high quality storage plugins, we p
 
 The TCK is usable from Java as well as Scala projects, for Scala you need to include the akka-persistence-tck-experimental dependency::
 
-  "com.typesafe.akka" %% "akka-persistence-tck-experimental" % "2.3.5" % "test"
+  "com.typesafe.akka" %% "akka-persistence-tck-experimental" % "@version@" % "test"
 
 To include the Journal TCK tests in your test suite simply extend the provided ``JournalSpec``:
 
