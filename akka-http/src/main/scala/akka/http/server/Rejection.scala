@@ -7,6 +7,8 @@ package akka.http.server
 import akka.http.model._
 import akka.http.model.headers.{ ByteRange, HttpEncoding }
 
+import scala.collection.immutable
+
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
  * up over the course of a Route evaluation and finally converted to [[spray.http.HttpResponse]]s by the
@@ -179,7 +181,7 @@ case class ValidationRejection(message: String, cause: Option[Throwable] = None)
  * MethodRejection added by the ``get`` directive is cancelled by the ``put`` directive (since the HTTP method
  * did indeed match eventually).
  */
-case class TransformationRejection(transform: List[Rejection] ⇒ List[Rejection]) extends Rejection
+case class TransformationRejection(transform: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]) extends Rejection
 
 /**
  * A Throwable wrapping a Rejection.
