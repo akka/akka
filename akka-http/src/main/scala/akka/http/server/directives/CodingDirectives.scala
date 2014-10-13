@@ -24,7 +24,7 @@ trait CodingDirectives {
    */
   def encodeResponse(encoder: Encoder): Directive0 =
     responseEncodingAccepted(encoder.encoding) &
-      mapHttpResponse(encoder.encode(_)) &
+      mapResponse(encoder.encode(_)) &
       cancelRejections(classOf[UnacceptedResponseEncodingRejection])
 
   /**

@@ -70,7 +70,7 @@ object MiscDirectives extends MiscDirectives {
     extract(_.request.entity.isKnownEmpty).flatMap(if (_) reject else pass)
 
   private val _rejectEmptyResponse: Directive0 =
-    mapRouteResponse {
+    mapRouteResult {
       case Complete(response) if response.entity.isKnownEmpty ⇒ rejected(Nil)
       case x ⇒ x
     }
