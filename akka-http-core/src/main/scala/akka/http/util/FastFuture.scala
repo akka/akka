@@ -19,77 +19,59 @@ import scala.concurrent._
 class FastFuture[A](val future: Future[A]) extends AnyVal {
   import FastFuture._
 
-  def map[B](f: A ⇒ B)(implicit ec: ExecutionContext): Future[B] = {
-    def strictMap(a: A) =
-      try FulfilledFuture(f(a))
-      catch { case NonFatal(e) ⇒ ErrorFuture(e) }
+  def map[B](f: A ⇒ B)(implicit ec: ExecutionContext): Future[B] =
+    transformWith(a ⇒ FastFuture.successful(f(a)), FastFuture.propagateError)
 
-    future match {
-      case FulfilledFuture(a) ⇒ strictMap(a)
-      case x: ErrorFuture     ⇒ x
-      case _ ⇒ future.value match {
-        case None             ⇒ future map f
-        case Some(Success(a)) ⇒ strictMap(a)
-        case Some(Failure(e)) ⇒ ErrorFuture(e)
-      }
-    }
-  }
-
-  def flatMap[B](f: A ⇒ Future[B])(implicit ec: ExecutionContext): Future[B] = {
-    def strictFlatMap(a: A) =
-      try f(a)
-      catch { case NonFatal(e) ⇒ ErrorFuture(e) }
-
-    future match {
-      case FulfilledFuture(a) ⇒ strictFlatMap(a)
-      case x: ErrorFuture     ⇒ x
-      case _ ⇒ future.value match {
-        case None             ⇒ future flatMap f
-        case Some(Success(a)) ⇒ strictFlatMap(a)
-        case Some(Failure(e)) ⇒ ErrorFuture(e)
-      }
-    }
-  }
+  def flatMap[B](f: A ⇒ Future[B])(implicit ec: ExecutionContext): Future[B] =
+    transformWith(f, FastFuture.propagateError)
 
   def filter(pred: A ⇒ Boolean)(implicit executor: ExecutionContext): Future[A] =
     flatMap {
       r ⇒ if (pred(r)) future else throw new NoSuchElementException("Future.filter predicate is not satisfied")
     }
 
-  def foreach(f: A ⇒ Unit)(implicit ec: ExecutionContext): Unit = {
-    def strictForeach(a: A) =
-      try f(a)
-      catch { case NonFatal(e) ⇒ ec.reportFailure(e) } // behave as if the `foreach` had been scheduled
+  def foreach(f: A ⇒ Unit)(implicit ec: ExecutionContext): Unit = map(f)
 
-    future match {
-      case FulfilledFuture(a) ⇒ strictForeach(a)
-      case x: ErrorFuture     ⇒ // nothing to do
-      case _ ⇒ future.value match {
-        case None             ⇒ future.foreach(f)
-        case Some(Success(a)) ⇒ strictForeach(a)
-        case Some(Failure(e)) ⇒ // nothing to do
-      }
-    }
-  }
+  def transformWith[B](f: Try[A] ⇒ Future[B])(implicit executor: ExecutionContext): Future[B] =
+    transformWith(a ⇒ f(Success(a)), e ⇒ f(Failure(e)))
 
-  def recover[B >: A](pf: PartialFunction[Throwable, B])(implicit ec: ExecutionContext): Future[B] = {
-    def strictRecover(t: Throwable) =
-      try if (pf isDefinedAt t) FulfilledFuture(pf(t)) else future
+  def transformWith[B](s: A ⇒ Future[B], f: Throwable ⇒ Future[B])(implicit executor: ExecutionContext): Future[B] = {
+    def strictTransform(a: A) =
+      try s(a)
+      catch { case NonFatal(e) ⇒ ErrorFuture(e) }
+    def strictTransformError(e: Throwable) =
+      try f(e)
       catch { case NonFatal(e) ⇒ ErrorFuture(e) }
 
     future match {
-      case FulfilledFuture(_) ⇒ future
-      case ErrorFuture(e)     ⇒ strictRecover(e)
+      case FulfilledFuture(a) ⇒ strictTransform(a)
+      case ErrorFuture(e)     ⇒ strictTransformError(e)
       case _ ⇒ future.value match {
-        case None             ⇒ future recover pf
-        case Some(Success(a)) ⇒ FulfilledFuture(a)
-        case Some(Failure(e)) ⇒ strictRecover(e)
+        case None ⇒
+          val p = Promise[B]
+          future.onComplete {
+            case Success(a) ⇒ p completeWith strictTransform(a)
+            case Failure(e) ⇒ p completeWith strictTransformError(e)
+          }
+          p.future
+        case Some(Success(a)) ⇒ strictTransform(a)
+        case Some(Failure(e)) ⇒ strictTransformError(e)
       }
     }
   }
+
+  def recover[B >: A](pf: PartialFunction[Throwable, B])(implicit ec: ExecutionContext): Future[B] =
+    transformWith(a ⇒ Future.successful(a), t ⇒ if (pf isDefinedAt t) Future.successful(pf(t)) else future)
+
+  def recoverWith[B >: A](pf: PartialFunction[Throwable, Future[B]])(implicit ec: ExecutionContext): Future[B] =
+    transformWith(a ⇒ Future.successful(a), t ⇒ if (pf isDefinedAt t) pf(t) else future)
 }
 
 object FastFuture {
+  def apply[T](value: Try[T]): Future[T] = value match {
+    case Success(t) ⇒ FulfilledFuture(t)
+    case Failure(e) ⇒ ErrorFuture(e)
+  }
   def successful[T](value: T): Future[T] = FulfilledFuture(value)
   def failed(error: Throwable): Future[Nothing] = ErrorFuture(error)
 
@@ -130,4 +112,6 @@ object FastFuture {
       val fb = fn(a.asInstanceOf[A])
       for (r ← fr.fast; b ← fb.fast) yield r += b
     }.fast.map(_.result())
+
+  private val propagateError: Throwable ⇒ Future[Nothing] = e ⇒ failed(e)
 }
