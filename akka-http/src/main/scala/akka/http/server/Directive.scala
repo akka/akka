@@ -7,6 +7,8 @@ package akka.http.server
 import akka.http.server.directives.RouteDirectives
 import akka.http.server.util._
 
+import scala.collection.immutable
+
 trait ConjunctionMagnet[L] {
   type Out
   def apply(underlying: Directive[L]): Out
@@ -55,7 +57,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) { self ⇒
   def tapply(f: L ⇒ Route): Route
 
   def |[R >: L](that: Directive[R]): Directive[R] =
-    recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ::: _) & that)(that.ev)
+    recover(rejections ⇒ directives.BasicDirectives.mapRejections(rejections ++ _) & that)(that.ev)
 
   /**
    * Joins two directives into one which extracts the concatenation of its base directive extractions.
@@ -85,7 +87,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) { self ⇒
         self.tapply { values ⇒ ctx ⇒ if (predicate(values)) f(values)(ctx) else ctx.reject(rejections: _*) }
     }
 
-  def recover[R >: L: Tuple](recovery: List[Rejection] ⇒ Directive[R]): Directive[R] =
+  def recover[R >: L: Tuple](recovery: immutable.Seq[Rejection] ⇒ Directive[R]): Directive[R] =
     new Directive[R] {
       def tapply(f: R ⇒ Route) = { ctx ⇒
         @volatile var rejectedFromInnerRoute = false
@@ -98,7 +100,7 @@ abstract class Directive[L](implicit val ev: Tuple[L]) { self ⇒
       }
     }
 
-  def recoverPF[R >: L: Tuple](recovery: PartialFunction[List[Rejection], Directive[R]]): Directive[R] =
+  def recoverPF[R >: L: Tuple](recovery: PartialFunction[immutable.Seq[Rejection], Directive[R]]): Directive[R] =
     recover { rejections ⇒
       if (recovery isDefinedAt rejections) recovery(rejections)
       else RouteDirectives.reject(rejections: _*)
