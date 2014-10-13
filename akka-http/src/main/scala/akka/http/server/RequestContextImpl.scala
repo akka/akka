@@ -38,7 +38,7 @@ private[http] class RequestContextImpl(
       .fast.flatMap(finish)(executionContext)
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
-    finish(RouteResult.rejected(rejections.toList))
+    finish(RouteResult.rejected(rejections.toVector))
 
   override def fail(error: Throwable): Future[RouteResult] =
     finish(RouteResult.failure(error))
@@ -75,12 +75,12 @@ private[http] class RequestContextImpl(
   override def withHttpResponseHeadersMapped(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestContext =
     withHttpResponseMapped(_ mapHeaders f)
 
-  override def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext =
+  override def withRejectionsMapped(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): RequestContext =
     withRouteResponseMappedPF {
       case RouteResult.Rejected(rejs) ⇒ RouteResult.rejected(f(rejs))
     }
 
-  override def withRejectionHandling(f: List[Rejection] ⇒ Future[RouteResult]): RequestContext =
+  override def withRejectionHandling(f: immutable.Seq[Rejection] ⇒ Future[RouteResult]): RequestContext =
     withRouteResponseHandling {
       case RouteResult.Rejected(rejs) ⇒
         // `finish` is *not* chained in here, because the user already applied it when creating the result of f
