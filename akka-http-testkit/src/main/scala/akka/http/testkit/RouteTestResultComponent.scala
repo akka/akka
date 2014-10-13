@@ -63,7 +63,6 @@ trait RouteTestResultComponent {
           result = rr match {
             case RouteResult.Complete(response)   ⇒ Some(Right(response))
             case RouteResult.Rejected(rejections) ⇒ Some(Left(RejectionHandler.applyTransformations(rejections)))
-            case RouteResult.Failure(error)       ⇒ sys.error("Route produced exception: " + error)
           }
           latch.countDown()
         } else failTest("Route completed/rejected more than once")

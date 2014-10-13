@@ -13,15 +13,11 @@ trait ExecutionDirectives {
    * [[akka.http.server.ExceptionHandler]].
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
-    mapInnerRoute { inner ⇒
-      ctx ⇒
-        def handleError = handler andThen (_(ctx.withContentNegotiationDisabled))
-        try inner {
-          ctx withRouteResponseHandling {
-            case RouteResult.Failure(error) if handler isDefinedAt error ⇒ handleError(error)
-          }
-        }
-        catch handleError
+    Directive.mapResult { (ctx, result) ⇒
+      def handleError = handler andThen (_(ctx.withContentNegotiationDisabled))
+      result.recoverWith {
+        case error if handler isDefinedAt error ⇒ handleError(error)
+      }(ctx.executionContext)
     }
 
   /**
@@ -29,17 +25,16 @@ trait ExecutionDirectives {
    * [[akka.http.server.RejectionHandler]].
    */
   def handleRejections(handler: RejectionHandler): Directive0 =
-    mapRequestContext { ctx ⇒
-      ctx withRejectionHandling { rejections ⇒
-        val filteredRejections = RejectionHandler.applyTransformations(rejections)
-        if (handler isDefinedAt filteredRejections)
-          handler(filteredRejections) {
-            ctx.withContentNegotiationDisabled withRejectionHandling { r ⇒
+    Directive.mapResult { (ctx, result) ⇒
+      result.recoverRejectionsWith {
+        case rejections ⇒
+          val filteredRejections = RejectionHandler.applyTransformations(rejections)
+          if (handler isDefinedAt filteredRejections)
+            handler(filteredRejections)(ctx.withContentNegotiationDisabled).recoverRejections { r ⇒
               sys.error(s"The RejectionHandler for $rejections must not itself produce rejections (received $r)!")
-            }
-          }
-        else ctx.reject(filteredRejections: _*)
-      }
+            }(ctx.executionContext)
+          else ctx.reject(filteredRejections: _*)
+      }(ctx.executionContext)
     }
 }
 

@@ -4,7 +4,9 @@
 
 package akka.http.server
 
-import akka.http.model.HttpMethods._
+import akka.http.model
+import model.HttpMethods._
+import model.StatusCodes
 import akka.http.server.PathMatchers.{ Segment, IntNumber }
 
 class BasicRouteSpecs extends RoutingSpec {
@@ -72,6 +74,23 @@ class BasicRouteSpecs extends RoutingSpec {
           complete(s"$str ${i + i2} $str2")
         }
       } ~> check { responseAs[String] shouldEqual "The cat 84 The cat" }
+    }
+  }
+  "Route disjunction" should {
+    "work" in {
+      val route = sealRoute((path("abc") | path("def")) {
+        completeOk
+      })
+
+      Get("/abc") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      Get("/def") ~> route ~> check {
+        status shouldEqual StatusCodes.OK
+      }
+      Get("/ghi") ~> route ~> check {
+        status shouldEqual StatusCodes.NotFound
+      }
     }
   }
   "Case class extraction with Directive.as" should {

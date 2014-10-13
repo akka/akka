@@ -4,6 +4,8 @@
 
 package akka.http.server
 
+import scala.concurrent.Future
+
 import akka.http.server.directives.RouteDirectives
 import akka.http.server.util._
 
@@ -87,19 +89,22 @@ abstract class Directive[L](implicit val ev: Tuple[L]) { self ⇒
         self.tapply { values ⇒ ctx ⇒ if (predicate(values)) f(values)(ctx) else ctx.reject(rejections: _*) }
     }
 
+  /**
+   * Creates a new directive that is able to recover from rejections that were produced by `this` Directive
+   * **before the inner route was applied**.
+   */
   def recover[R >: L: Tuple](recovery: immutable.Seq[Rejection] ⇒ Directive[R]): Directive[R] =
     new Directive[R] {
-      def tapply(f: R ⇒ Route) = { ctx ⇒
-        @volatile var rejectedFromInnerRoute = false
-        self.tapply({ list ⇒ c ⇒ rejectedFromInnerRoute = true; f(list)(c) }) {
-          ctx.withRejectionHandling { rejections ⇒
-            if (rejectedFromInnerRoute) ctx.reject(rejections: _*)
-            else recovery(rejections).tapply(f)(ctx)
-          }
-        }
+      def tapply(inner: R ⇒ Route) = { ctx ⇒
+        self.tapply(list ⇒ c ⇒ inner(list)(c))(ctx).recoverRejectionsWith {
+          rejections ⇒ recovery(rejections).tapply(inner)(ctx)
+        }(ctx.executionContext)
       }
     }
 
+  /**
+   * Variant of `recover` that only recovers from rejections handled by the given PartialFunction.
+   */
   def recoverPF[R >: L: Tuple](recovery: PartialFunction[immutable.Seq[Rejection], Directive[R]]): Directive[R] =
     recover { rejections ⇒
       if (recovery isDefinedAt rejections) recovery(rejections)
@@ -143,4 +148,12 @@ object Directive {
     def filter(predicate: T ⇒ Boolean, rejections: Rejection*): Directive1[T] =
       underlying.tfilter({ case Tuple1(value) ⇒ predicate(value) }, rejections: _*)
   }
+
+  /**
+   * Creates a Directive0 that maps the result produced by the inner route with the given function.
+   */
+  def mapResult(f: (RequestContext, Future[RouteResult]) ⇒ Future[RouteResult]): Directive0 =
+    new Directive0 {
+      def tapply(inner: Unit ⇒ Route): Route = ctx ⇒ f(ctx, inner(())(ctx))
+    }
 }
