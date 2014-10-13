@@ -24,31 +24,29 @@ trait BasicDirectives {
   def mapRequest(f: HttpRequest ⇒ HttpRequest): Directive0 =
     mapRequestContext(_ withRequestMapped f)
 
-  def mapRouteResponse(f: RouteResult ⇒ RouteResult): Directive0 =
+  def mapRouteResult(f: RouteResult ⇒ RouteResult): Directive0 =
     Directive.mapResult { (ctx, result) ⇒
       result.fast.map(f)(ctx.executionContext)
     }
 
-  def mapRouteResponsePF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
-    mapRouteResponse { r ⇒
-      if (f isDefinedAt r) f(r) else r
-    }
+  def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
+    mapRouteResult(f.applyOrElse(_, akka.http.util.identityFunc[RouteResult]))
 
   def mapRejections(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): Directive0 =
     Directive.mapResult { (ctx, result) ⇒
       result.recoverRejections(rejs ⇒ RouteResult.rejected(f(rejs)))(ctx.executionContext)
     }
 
-  def mapHttpResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
+  def mapResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
     Directive.mapResult { (ctx, result) ⇒
       result.mapResponse(r ⇒ RouteResult.complete(f(r)))(ctx.executionContext)
     }
 
-  def mapHttpResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
-    mapHttpResponse(_.mapEntity(f))
+  def mapResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
+    mapResponse(_.mapEntity(f))
 
-  def mapHttpResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
-    mapHttpResponse(_.mapHeaders(f))
+  def mapResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
+    mapResponse(_.mapHeaders(f))
 
   /**
    * A Directive0 that always passes the request on to its inner route
