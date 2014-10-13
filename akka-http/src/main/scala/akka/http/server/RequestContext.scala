@@ -107,12 +107,12 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the given rejection transformation function chained into the response chain.
    */
-  def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext
+  def withRejectionsMapped(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): RequestContext
 
   /**
    * Returns a copy of this context with the given rejection handling function chained into the response chain.
    */
-  def withRejectionHandling(f: List[Rejection] ⇒ Future[RouteResult]): RequestContext
+  def withRejectionHandling(f: immutable.Seq[Rejection] ⇒ Future[RouteResult]): RequestContext
 
   /**
    * Returns a copy of this context with the given exception handling function chained into the response chain.

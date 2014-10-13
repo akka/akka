@@ -27,7 +27,7 @@ trait BasicDirectives {
   def mapRouteResponsePF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
     mapRequestContext(_ withRouteResponseMappedPF f)
 
-  def mapRejections(f: List[Rejection] ⇒ List[Rejection]): Directive0 =
+  def mapRejections(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): Directive0 =
     mapRequestContext(_ withRejectionsMapped f)
 
   def mapHttpResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =

@@ -83,7 +83,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
     case _                                      ⇒ Nil
   }
 
-  def rejections: List[Rejection] = result.rejections
+  def rejections: immutable.Seq[Rejection] = result.rejections
   def rejection: Rejection = {
     val r = rejections
     if (r.size == 1) r.head else failTest("Expected a single rejection but got %s (%s)".format(r.size, r))
