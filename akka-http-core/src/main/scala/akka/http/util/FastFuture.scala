@@ -20,10 +20,10 @@ class FastFuture[A](val future: Future[A]) extends AnyVal {
   import FastFuture._
 
   def map[B](f: A ⇒ B)(implicit ec: ExecutionContext): Future[B] =
-    transformWith(a ⇒ FastFuture.successful(f(a)), FastFuture.propagateError)
+    transformWith(a ⇒ FastFuture.successful(f(a)), FastFuture.failed)
 
   def flatMap[B](f: A ⇒ Future[B])(implicit ec: ExecutionContext): Future[B] =
-    transformWith(f, FastFuture.propagateError)
+    transformWith(f, FastFuture.failed)
 
   def filter(pred: A ⇒ Boolean)(implicit executor: ExecutionContext): Future[A] =
     flatMap {
@@ -36,35 +36,32 @@ class FastFuture[A](val future: Future[A]) extends AnyVal {
     transformWith(a ⇒ f(Success(a)), e ⇒ f(Failure(e)))
 
   def transformWith[B](s: A ⇒ Future[B], f: Throwable ⇒ Future[B])(implicit executor: ExecutionContext): Future[B] = {
-    def strictTransform(a: A) =
-      try s(a)
-      catch { case NonFatal(e) ⇒ ErrorFuture(e) }
-    def strictTransformError(e: Throwable) =
-      try f(e)
+    def strictTransform[T](x: T, f: T ⇒ Future[B]) =
+      try f(x)
       catch { case NonFatal(e) ⇒ ErrorFuture(e) }
 
     future match {
-      case FulfilledFuture(a) ⇒ strictTransform(a)
-      case ErrorFuture(e)     ⇒ strictTransformError(e)
+      case FulfilledFuture(a) ⇒ strictTransform(a, s)
+      case ErrorFuture(e)     ⇒ strictTransform(e, f)
       case _ ⇒ future.value match {
         case None ⇒
-          val p = Promise[B]
+          val p = Promise[B]()
           future.onComplete {
-            case Success(a) ⇒ p completeWith strictTransform(a)
-            case Failure(e) ⇒ p completeWith strictTransformError(e)
+            case Success(a) ⇒ p completeWith strictTransform(a, s)
+            case Failure(e) ⇒ p completeWith strictTransform(e, f)
           }
           p.future
-        case Some(Success(a)) ⇒ strictTransform(a)
-        case Some(Failure(e)) ⇒ strictTransformError(e)
+        case Some(Success(a)) ⇒ strictTransform(a, s)
+        case Some(Failure(e)) ⇒ strictTransform(e, f)
       }
     }
   }
 
   def recover[B >: A](pf: PartialFunction[Throwable, B])(implicit ec: ExecutionContext): Future[B] =
-    transformWith(a ⇒ Future.successful(a), t ⇒ if (pf isDefinedAt t) Future.successful(pf(t)) else future)
+    transformWith(FastFuture.successful, t ⇒ if (pf isDefinedAt t) FastFuture.successful(pf(t)) else future)
 
   def recoverWith[B >: A](pf: PartialFunction[Throwable, Future[B]])(implicit ec: ExecutionContext): Future[B] =
-    transformWith(a ⇒ Future.successful(a), t ⇒ if (pf isDefinedAt t) pf(t) else future)
+    transformWith(FastFuture.successful, t ⇒ pf.applyOrElse(t, (_: Throwable) ⇒ future))
 }
 
 object FastFuture {
@@ -72,8 +69,9 @@ object FastFuture {
     case Success(t) ⇒ FulfilledFuture(t)
     case Failure(e) ⇒ ErrorFuture(e)
   }
-  def successful[T](value: T): Future[T] = FulfilledFuture(value)
-  def failed(error: Throwable): Future[Nothing] = ErrorFuture(error)
+  private[this] val _successful: Any ⇒ Future[Any] = FulfilledFuture.apply
+  def successful[T]: T ⇒ Future[T] = _successful.asInstanceOf[T ⇒ Future[T]]
+  val failed: Throwable ⇒ Future[Nothing] = ErrorFuture.apply
 
   private case class FulfilledFuture[+A](a: A) extends Future[A] {
     def value = Some(Success(a))
@@ -112,6 +110,4 @@ object FastFuture {
       val fb = fn(a.asInstanceOf[A])
       for (r ← fr.fast; b ← fb.fast) yield r += b
     }.fast.map(_.result())
-
-  private val propagateError: Throwable ⇒ Future[Nothing] = e ⇒ failed(e)
 }
