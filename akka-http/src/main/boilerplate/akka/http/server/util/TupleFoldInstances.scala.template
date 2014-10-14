@@ -1,0 +1,22 @@
+/*
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package akka.http.server.util
+
+import TupleOps.FoldLeft
+import TupleOps.FoldLeft.Aux
+import Poly2.Case
+
+private[util] abstract class TupleFoldInstances {
+
+  [2..22#implicit def t1[In, [2..#T0#], X, T1, Op](implicit fold: Aux[In, Tuple0[[2..#T0#]], Op, X], f: Case[X, T1, Op]): Aux[In, Tuple1[[#T1#]], Op, f.Out] =
+    new FoldLeft[In, Tuple1[[#T1#]], Op] {
+      type Out = f.Out
+      def apply(zero: In, tuple: Tuple1[[#T1#]]) = {
+        val ([#v1#]) = tuple
+        f(fold(zero, Tuple0([2..#v0#])), v1)
+      }
+    }#
+  ]
+}
