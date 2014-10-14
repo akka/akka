@@ -4,7 +4,14 @@
 
 package akka.http
 
-import scala.concurrent.Future
+import scala.collection.immutable
+
+import scala.concurrent.{ ExecutionContext, Future }
+
+import akka.http.util.FastFuture
+import FastFuture._
+
+import akka.http.model.HttpResponse
 
 package object server {
 
@@ -21,4 +28,24 @@ package object server {
   def Route(f: Route): Route = f
 
   def FIXME = throw new RuntimeException("Not yet implemented")
+
+  private[http] implicit class EnhanceFutureRouteResult(val result: Future[RouteResult]) extends AnyVal {
+    def mapResponse(f: HttpResponse ⇒ RouteResult)(implicit ec: ExecutionContext): Future[RouteResult] =
+      mapResponseWith(response ⇒ FastFuture.successful(f(response)))
+
+    def mapResponseWith(f: HttpResponse ⇒ Future[RouteResult])(implicit ec: ExecutionContext): Future[RouteResult] =
+      result.fast.flatMap {
+        case RouteResult.Complete(response) ⇒ f(response)
+        case r: RouteResult.Rejected        ⇒ FastFuture.successful(r)
+      }
+
+    def recoverRejections(f: immutable.Seq[Rejection] ⇒ RouteResult)(implicit ec: ExecutionContext): Future[RouteResult] =
+      recoverRejectionsWith(rej ⇒ FastFuture.successful(f(rej)))
+
+    def recoverRejectionsWith(f: immutable.Seq[Rejection] ⇒ Future[RouteResult])(implicit ec: ExecutionContext): Future[RouteResult] =
+      result.fast.flatMap {
+        case c: RouteResult.Complete          ⇒ FastFuture.successful(c)
+        case RouteResult.Rejected(rejections) ⇒ f(rejections)
+      }
+  }
 }

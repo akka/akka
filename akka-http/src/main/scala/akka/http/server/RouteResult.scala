@@ -4,6 +4,8 @@
 
 package akka.http.server
 
+import scala.collection.immutable
+
 import akka.http.model.HttpResponse
 
 /**
@@ -16,9 +18,7 @@ sealed trait RouteResult
 
 object RouteResult {
   final case class Complete private[RouteResult] (response: HttpResponse) extends RouteResult
-  final case class Failure private[RouteResult] (exception: Throwable) extends RouteResult
-  final case class Rejected private[RouteResult] (rejections: List[Rejection]) extends RouteResult
+  final case class Rejected private[RouteResult] (rejections: immutable.Seq[Rejection]) extends RouteResult
   private[http] def complete(response: HttpResponse) = Complete(response)
-  private[http] def failure(exception: Throwable) = Failure(exception)
-  private[http] def rejected(rejections: List[Rejection]) = Rejected(rejections)
+  private[http] def rejected(rejections: immutable.Seq[Rejection]) = Rejected(rejections)
 }

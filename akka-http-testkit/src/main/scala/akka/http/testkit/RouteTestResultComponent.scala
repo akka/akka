@@ -21,12 +21,12 @@ trait RouteTestResultComponent {
    * A receptacle for the response or rejections created by a route.
    */
   class RouteTestResult(timeout: FiniteDuration)(implicit fm: FlowMaterializer) {
-    private[this] var result: Option[Either[List[Rejection], HttpResponse]] = None
+    private[this] var result: Option[Either[immutable.Seq[Rejection], HttpResponse]] = None
     private[this] val latch = new CountDownLatch(1)
 
     def handled: Boolean = synchronized { result.isDefined && result.get.isRight }
 
-    def rejections: List[Rejection] = synchronized {
+    def rejections: immutable.Seq[Rejection] = synchronized {
       result match {
         case Some(Left(rejections)) ⇒ rejections
         case Some(Right(response))  ⇒ failTest("Request was not rejected, response was " + response)
@@ -63,7 +63,6 @@ trait RouteTestResultComponent {
           result = rr match {
             case RouteResult.Complete(response)   ⇒ Some(Right(response))
             case RouteResult.Rejected(rejections) ⇒ Some(Left(RejectionHandler.applyTransformations(rejections)))
-            case RouteResult.Failure(error)       ⇒ sys.error("Route produced exception: " + error)
           }
           latch.countDown()
         } else failTest("Route completed/rejected more than once")
