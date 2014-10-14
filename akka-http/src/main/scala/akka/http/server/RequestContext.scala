@@ -4,7 +4,6 @@
 
 package akka.http.server
 
-import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
 import akka.http.marshalling.ToResponseMarshallable
@@ -73,56 +72,6 @@ trait RequestContext {
    * Returns a copy of this context with the unmatchedPath transformed by the given function.
    */
   def withUnmatchedPathMapped(f: Uri.Path ⇒ Uri.Path): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withRouteResponseMapped(f: RouteResult ⇒ RouteResult): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withRouteResponseMappedPF(f: PartialFunction[RouteResult, RouteResult]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withRouteResponseFlatMapped(f: RouteResult ⇒ Future[RouteResult]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withHttpResponseMapped(f: HttpResponse ⇒ HttpResponse): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withHttpResponseEntityMapped(f: ResponseEntity ⇒ ResponseEntity): RequestContext
-
-  /**
-   * Returns a copy of this context with the given response transformation function chained into the response chain.
-   */
-  def withHttpResponseHeadersMapped(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given rejection transformation function chained into the response chain.
-   */
-  def withRejectionsMapped(f: List[Rejection] ⇒ List[Rejection]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given rejection handling function chained into the response chain.
-   */
-  def withRejectionHandling(f: List[Rejection] ⇒ Future[RouteResult]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given exception handling function chained into the response chain.
-   */
-  def withExceptionHandling(pf: PartialFunction[Throwable, Future[RouteResult]]): RequestContext
-
-  /**
-   * Returns a copy of this context with the given function handling a part of the response space.
-   */
-  def withRouteResponseHandling(pf: PartialFunction[RouteResult, Future[RouteResult]]): RequestContext
 
   /**
    * Removes a potentially existing Accept header from the request headers.

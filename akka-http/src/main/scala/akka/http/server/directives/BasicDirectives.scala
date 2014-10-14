@@ -5,6 +5,9 @@
 package akka.http.server
 package directives
 
+import akka.http.util.FastFuture
+import FastFuture._
+
 import scala.collection.immutable
 import akka.http.server.util.Tuple
 import akka.http.model._
@@ -21,23 +24,29 @@ trait BasicDirectives {
   def mapRequest(f: HttpRequest ⇒ HttpRequest): Directive0 =
     mapRequestContext(_ withRequestMapped f)
 
-  def mapRouteResponse(f: RouteResult ⇒ RouteResult): Directive0 =
-    mapRequestContext(_ withRouteResponseMapped f)
+  def mapRouteResult(f: RouteResult ⇒ RouteResult): Directive0 =
+    Directive.mapResult { (ctx, result) ⇒
+      result.fast.map(f)(ctx.executionContext)
+    }
 
-  def mapRouteResponsePF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
-    mapRequestContext(_ withRouteResponseMappedPF f)
+  def mapRouteResultPF(f: PartialFunction[RouteResult, RouteResult]): Directive0 =
+    mapRouteResult(f.applyOrElse(_, akka.http.util.identityFunc[RouteResult]))
 
-  def mapRejections(f: List[Rejection] ⇒ List[Rejection]): Directive0 =
-    mapRequestContext(_ withRejectionsMapped f)
+  def mapRejections(f: immutable.Seq[Rejection] ⇒ immutable.Seq[Rejection]): Directive0 =
+    Directive.mapResult { (ctx, result) ⇒
+      result.recoverRejections(rejs ⇒ RouteResult.rejected(f(rejs)))(ctx.executionContext)
+    }
 
-  def mapHttpResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
-    mapRequestContext(_ withHttpResponseMapped f)
+  def mapResponse(f: HttpResponse ⇒ HttpResponse): Directive0 =
+    Directive.mapResult { (ctx, result) ⇒
+      result.mapResponse(r ⇒ RouteResult.complete(f(r)))(ctx.executionContext)
+    }
 
-  def mapHttpResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
-    mapRequestContext(_ withHttpResponseEntityMapped f)
+  def mapResponseEntity(f: ResponseEntity ⇒ ResponseEntity): Directive0 =
+    mapResponse(_.mapEntity(f))
 
-  def mapHttpResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
-    mapRequestContext(_ withHttpResponseHeadersMapped f)
+  def mapResponseHeaders(f: immutable.Seq[HttpHeader] ⇒ immutable.Seq[HttpHeader]): Directive0 =
+    mapResponse(_.mapHeaders(f))
 
   /**
    * A Directive0 that always passes the request on to its inner route
