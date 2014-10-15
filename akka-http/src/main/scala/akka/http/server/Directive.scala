@@ -5,11 +5,9 @@
 package akka.http.server
 
 import scala.concurrent.Future
-
+import scala.collection.immutable
 import akka.http.server.directives.RouteDirectives
 import akka.http.server.util._
-
-import scala.collection.immutable
 
 trait ConjunctionMagnet[L] {
   type Out
@@ -17,11 +15,11 @@ trait ConjunctionMagnet[L] {
 }
 
 object ConjunctionMagnet {
-  implicit def fromDirective[L, R](other: Directive[R])(implicit join: Join[L, R]) =
+  implicit def fromDirective[L, R](other: Directive[R])(implicit join: TupleOps.Join[L, R]) =
     new ConjunctionMagnet[L] {
       type Out = Directive[join.Out]
       def apply(underlying: Directive[L]): Out =
-        new Directive[join.Out]()(join.OutIsTuple) {
+        new Directive[join.Out]()(Tuple.yes /* we know that join will only ever produce tuples*/ ) {
           def tapply(f: join.Out ⇒ Route) =
             underlying.tapply { prefix ⇒
               other.tapply { suffix ⇒

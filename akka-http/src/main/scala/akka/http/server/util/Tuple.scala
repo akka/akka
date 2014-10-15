@@ -10,6 +10,11 @@ package akka.http.server.util
 sealed trait Tuple[T]
 
 object Tuple {
+  /**
+   * Used to provide "is-Tuple" evidence where we know that a given value must be a tuple.
+   */
+  def yes[T]: Tuple[T] = null
+
   implicit def forNothing[A]: Tuple[Nothing] = null
   implicit def forUnit[A]: Tuple[Unit] = null
   implicit def forTuple1[A]: Tuple[Tuple1[A]] = null
