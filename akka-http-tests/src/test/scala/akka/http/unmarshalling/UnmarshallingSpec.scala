@@ -151,7 +151,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       //
       //      "reject illegal multipart content" in {
       //        val Left(MalformedContent(msg, _)) = HttpEntity(`multipart/form-data` withBoundary "XYZABC", "--noboundary--").as[MultipartFormData]
-      //        msg === "Missing start boundary"
+      //        msg shouldEqual "Missing start boundary"
       //      }
       //      "reject illegal form-data content" in {
       //        val Left(MalformedContent(msg, _)) = HttpEntity(`multipart/form-data` withBoundary "XYZABC",
@@ -160,7 +160,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       //            |
       //            |test@there.com
       //            |--XYZABC--""".stripMargin).as[MultipartFormData]
-      //        msg === "Illegal multipart/form-data content: unnamed body part (no Content-Disposition header or no 'name' parameter)"
+      //        msg shouldEqual "Illegal multipart/form-data content: unnamed body part (no Content-Disposition header or no 'name' parameter)"
       //      }
     }
   }

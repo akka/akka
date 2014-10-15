@@ -15,13 +15,13 @@ class EncoderSpec extends WordSpec with CodecSpecSupport {
   "An Encoder" should {
     "not transform the message if messageFilter returns false" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText.getBytes("UTF8")))
-      DummyEncoder.encode(request) === request
+      DummyEncoder.encode(request) shouldEqual request
     }
     "correctly transform the HttpMessage if messageFilter returns true" in {
       val request = HttpRequest(POST, entity = HttpEntity(smallText))
       val encoded = DummyEncoder.encode(request)
-      encoded.headers === List(`Content-Encoding`(DummyEncoder.encoding))
-      encoded.entity === HttpEntity(dummyCompress(smallText))
+      encoded.headers shouldEqual List(`Content-Encoding`(DummyEncoder.encoding))
+      encoded.entity shouldEqual HttpEntity(dummyCompress(smallText))
     }
   }
 
