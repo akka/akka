@@ -7,7 +7,8 @@ package akka.http.server
 import java.util.UUID
 import scala.util.matching.Regex
 import scala.annotation.tailrec
-import akka.http.server.util.{ Tuple, Join }
+import akka.http.server.util.Tuple
+import akka.http.server.util.TupleOps._
 import akka.http.model.Uri.Path
 import akka.http.util._
 import directives.NameReceptacle
@@ -21,7 +22,7 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
 
   def / : PathMatcher[L] = this ~ PathMatchers.Slash
 
-  def /[R](other: PathMatcher[R])(implicit prepender: Join[L, R]): PathMatcher[prepender.Out] =
+  def /[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] =
     this ~ PathMatchers.Slash ~ other
 
   def |[R >: L: Tuple](other: PathMatcher[_ <: R]): PathMatcher[R] =
@@ -30,7 +31,7 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
     }
 
   def ~[R](other: PathMatcher[R])(implicit join: Join[L, R]): PathMatcher[join.Out] = {
-    import join.OutIsTuple
+    implicit def joinProducesTuple = Tuple.yes[join.Out]
     transform(_.andThen((restL, valuesL) ⇒ other(restL).map(join(valuesL, _))))
   }
 
