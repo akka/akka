@@ -216,7 +216,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
   def qValueForCharset(charset: HttpCharset, ranges: Seq[HttpCharsetRange] = acceptedCharsetRanges): Float =
     ranges match {
       case Nil ⇒ 1.0f // http://tools.ietf.org/html/rfc7231#section-5.3.1
-      case x   ⇒ x collectFirst { case r if r matches charset ⇒ r.qValue } getOrElse (if (charset == `ISO-8859-1`) 1f else 0f)
+      case x   ⇒ x collectFirst { case r if r matches charset ⇒ r.qValue } getOrElse 0f
     }
 
   /**

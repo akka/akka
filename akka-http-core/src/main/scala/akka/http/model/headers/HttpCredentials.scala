@@ -8,7 +8,6 @@ package headers
 import akka.parboiled2.util.Base64
 import akka.http.model.HttpCharsets._
 import akka.http.util.{ Rendering, ValueRenderable }
-
 import akka.http.model.japi.JavaMapping.Implicits._
 
 sealed abstract class HttpCredentials extends japi.headers.HttpCredentials with ValueRenderable {
@@ -23,7 +22,7 @@ sealed abstract class HttpCredentials extends japi.headers.HttpCredentials with 
 final case class BasicHttpCredentials(username: String, password: String) extends japi.headers.BasicHttpCredentials {
   val cookie = {
     val userPass = username + ':' + password
-    val bytes = userPass.getBytes(`ISO-8859-1`.nioCharset)
+    val bytes = userPass.getBytes(`UTF-8`.nioCharset)
     Base64.rfc2045.encodeToChar(bytes, false)
   }
   def render[R <: Rendering](r: R): r.type = r ~~ "Basic " ~~ cookie
@@ -36,7 +35,7 @@ final case class BasicHttpCredentials(username: String, password: String) extend
 object BasicHttpCredentials {
   def apply(credentials: String): BasicHttpCredentials = {
     val bytes = Base64.rfc2045.decodeFast(credentials)
-    val userPass = new String(bytes, `ISO-8859-1`.nioCharset)
+    val userPass = new String(bytes, `UTF-8`.nioCharset)
     userPass.indexOf(':') match {
       case -1 ⇒ apply(userPass, "")
       case ix ⇒ apply(userPass.substring(0, ix), userPass.substring(ix + 1))

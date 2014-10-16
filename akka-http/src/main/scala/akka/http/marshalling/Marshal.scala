@@ -68,7 +68,6 @@ class Marshal[A](val value: A) {
           else charsetRanges match { // ranges are sorted by descending q-value,
             case (HttpCharsetRange.One(cs, qValue)) :: _ ⇒ // so we only need to look at the first one
               if (qValue == 1f) withCharset(cs) // if the client has high preference for this charset, pick it
-              else if (qValueCS(`ISO-8859-1`) == 1f) withCharset(`ISO-8859-1`) // give some more preference to `ISO-8859-1`
               else if (qValue > 0f) withCharset(cs) // ok, simply choose the first one if the client doesn't reject it
               else acc
             case _ ⇒ acc
