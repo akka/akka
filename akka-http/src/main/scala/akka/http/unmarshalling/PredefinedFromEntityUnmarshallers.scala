@@ -53,7 +53,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
         }
         val reader = new InputStreamReader(new ByteArrayInputStream(bytes), entity.contentType.charset.nioCharset)
         FastFuture.successful(XML.withSAXParser(parser).load(reader)) // blocking call! Ideally we'd have a `loadToFuture`
-      } else UnmarshallingError.UnsupportedContentType(nodeSeqMediaTypes map (ContentTypeRange(_)))
+      } else FastFuture.failed(UnmarshallingError.UnsupportedContentType(nodeSeqMediaTypes map (ContentTypeRange(_))))
     }
 
   implicit def urlEncodedFormDataUnmarshaller(implicit fm: FlowMaterializer,

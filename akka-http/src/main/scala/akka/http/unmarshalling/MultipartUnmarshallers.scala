@@ -28,7 +28,7 @@ trait MultipartUnmarshallers {
     Unmarshaller { entity ⇒
       if (mediaRange matches entity.contentType.mediaType) {
         entity.contentType.mediaType.params.get("boundary") match {
-          case None ⇒ UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter")
+          case None ⇒ FastFuture.failed(UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter"))
           case Some(boundary) ⇒
             val bodyParts = entity.dataBytes
               .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, actorSystem(refFactory).log))
@@ -41,7 +41,7 @@ trait MultipartUnmarshallers {
               }
             FastFuture.successful(create(bodyParts))
         }
-      } else UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil)
+      } else FastFuture.failed(UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil))
     }
 
   implicit def defaultMultipartFormDataUnmarshaller(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =

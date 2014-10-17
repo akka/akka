@@ -5,17 +5,25 @@
 package akka.http.unmarshalling
 
 import scala.concurrent.ExecutionContext
+import akka.http.util.FastFuture
 
-trait GenericUnmarshallers extends UnmarshallerLifting {
+trait GenericUnmarshallers extends LowerPriorityGenericUnmarshallers {
 
   implicit def targetOptionUnmarshaller[A, B](implicit um: Unmarshaller[A, B], ec: ExecutionContext): Unmarshaller[A, Option[B]] =
     um map (Some(_)) withDefaultValue None
+}
+
+sealed trait LowerPriorityGenericUnmarshallers {
+
+  implicit def messageUnmarshallerFromEntityUnmarshaller[T](implicit um: FromEntityUnmarshaller[T]): FromMessageUnmarshaller[T] =
+    Unmarshaller { request ⇒ um(request.entity) }
+
+  implicit def liftToSourceOptionUnmarshaller[A, B](um: Unmarshaller[A, B])(implicit ec: ExecutionContext): Unmarshaller[Option[A], B] =
+    sourceOptionUnmarshaller(um, ec)
 
   implicit def sourceOptionUnmarshaller[A, B](implicit um: Unmarshaller[A, B], ec: ExecutionContext): Unmarshaller[Option[A], B] =
     Unmarshaller {
       case Some(a) ⇒ um(a)
-      case None    ⇒ UnmarshallingError.ContentExpected
+      case None    ⇒ FastFuture.failed(UnmarshallingError.ContentExpected)
     }
 }
-
-object GenericUnmarshallers extends GenericUnmarshallers
