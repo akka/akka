@@ -54,7 +54,7 @@ class DemoActorWrapper extends Actor {
   object DemoActor {
     /**
      * Create Props for an actor of this type.
-     * @param magciNumber The magic number to be passed to this actor’s constructor.
+     * @param magicNumber The magic number to be passed to this actor’s constructor.
      * @return a Props for creating this actor, which can then be further configured
      *         (e.g. calling `.withDispatcher()` on it)
      */
