@@ -6,6 +6,7 @@ package akka.http.marshalling
 
 import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
+import scala.util.control.NonFatal
 import scala.xml.NodeSeq
 import akka.http.util.FastFuture
 import akka.http.model._
@@ -39,11 +40,10 @@ sealed abstract class SingleMarshallerMarshallers {
   implicit def singleMarshallerMarshallers[A, B](implicit m: Marshaller[A, B]): Marshallers[A, B] = Marshallers(m)
 }
 
-sealed trait Marshaller[-A, +B] { outer ⇒
-  def apply(value: A): Future[Marshalling[B]]
+sealed trait Marshaller[-A, +B] extends (A ⇒ Future[Marshalling[B]]) {
 
   def map[C](f: B ⇒ C)(implicit ec: ExecutionContext): Marshaller[A, C] =
-    Marshaller[A, C](value ⇒ outer(value).fast.map(_ map f))
+    Marshaller[A, C](value ⇒ this(value).fast.map(_ map f))
 
   /**
    * Reuses this Marshaller's logic to produce a new Marshaller from another type `C` which overrides
@@ -52,14 +52,14 @@ sealed trait Marshaller[-A, +B] { outer ⇒
   def wrap[C, D >: B](mediaType: MediaType)(f: C ⇒ A)(implicit ec: ExecutionContext, mto: MediaTypeOverrider[D]): Marshaller[C, D] =
     Marshaller { value ⇒
       import Marshalling._
-      outer(f(value)).fast.map {
+      this(f(value)).fast.map {
         case WithFixedCharset(_, cs, marshal) ⇒ WithFixedCharset(mediaType, cs, () ⇒ mto(marshal(), mediaType))
         case WithOpenCharset(_, marshal)      ⇒ WithOpenCharset(mediaType, cs ⇒ mto(marshal(cs), mediaType))
         case Opaque(marshal)                  ⇒ Opaque(() ⇒ mto(marshal(), mediaType))
       }
     }
 
-  def compose[C](f: C ⇒ A): Marshaller[C, B] = Marshaller { value ⇒ outer(f(value)) }
+  override def compose[C](f: C ⇒ A): Marshaller[C, B] = Marshaller(super.compose(f))
 }
 
 object Marshaller
@@ -70,7 +70,9 @@ object Marshaller
 
   def apply[A, B](f: A ⇒ Future[Marshalling[B]]): Marshaller[A, B] =
     new Marshaller[A, B] {
-      def apply(value: A) = f(value)
+      def apply(value: A) =
+        try f(value)
+        catch { case NonFatal(e) ⇒ FastFuture.failed(e) }
     }
 
   def withFixedCharset[A, B](mediaType: MediaType, charset: HttpCharset)(marshal: A ⇒ B): Marshaller[A, B] =
