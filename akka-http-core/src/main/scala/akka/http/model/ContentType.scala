@@ -29,7 +29,7 @@ final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCh
     case Some(cs) ⇒ r ~~ mediaType ~~ ContentType.`; charset=` ~~ cs
     case _        ⇒ r ~~ mediaType
   }
-  def charset: HttpCharset = definedCharset getOrElse HttpCharsets.`ISO-8859-1`
+  def charset: HttpCharset = definedCharset getOrElse HttpCharsets.`UTF-8`
 
   def isCharsetDefined = definedCharset.isDefined
   def noCharsetDefined = definedCharset.isEmpty
@@ -42,7 +42,7 @@ final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCh
     if (isCharsetDefined) copy(definedCharset = None) else this
 
   /** Java API */
-  def getDefinedCharset: japi.HttpCharset = definedCharset.getOrElse(null)
+  def getDefinedCharset: japi.HttpCharset = definedCharset.orNull
 }
 
 object ContentType {
