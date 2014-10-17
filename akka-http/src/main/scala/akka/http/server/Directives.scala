@@ -24,7 +24,7 @@ trait Directives extends RouteConcatenation
   //with MarshallingDirectives
   with MethodDirectives
   with MiscDirectives
-  //with ParameterDirectives
+  with ParameterDirectives
   with PathDirectives
   //with RangeDirectives
   //with RespondWithDirectives
