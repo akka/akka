@@ -7,12 +7,12 @@ package directives
 
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
-
+import akka.http.marshalling.ToResponseMarshaller
+import akka.http.server.util.Tupler
 import akka.http.util.FastFuture
 import FastFuture._
 
-import akka.http.marshalling.ToResponseMarshaller
-import akka.http.server.util.Tupler
+// format: OFF
 
 trait FutureDirectives {
 
@@ -21,9 +21,9 @@ trait FutureDirectives {
    * completion with the future's value as an extraction of type ``Try[T]``.
    */
   def onComplete[T](future: ⇒ Future[T]): Directive1[Try[T]] =
-    new Directive1[Try[T]] {
-      def tapply(f: Tuple1[Try[T]] ⇒ Route): Route = ctx ⇒
-        future.fast.transformWith(t ⇒ f(Tuple1(t))(ctx))(ctx.executionContext)
+    Directive { inner ⇒ ctx ⇒
+        import ctx.executionContext
+        future.fast.transformWith(t ⇒ inner(Tuple1(t))(ctx))
     }
 
   /**
@@ -34,7 +34,7 @@ trait FutureDirectives {
    * If type ``T`` is already a Tuple it is directly expanded into the respective
    * number of extractions.
    */
-  def onSuccess(magnet: OnSuccessMagnet): Directive[magnet.Out] = magnet.get
+  def onSuccess(magnet: OnSuccessMagnet): Directive[magnet.Out] = magnet.directive
 
   /**
    * "Unwraps" a ``Future[T]`` and runs its inner route when the future has failed
@@ -43,34 +43,40 @@ trait FutureDirectives {
    * (This directive therefore requires a marshaller for the futures type to be
    * implicitly available.)
    */
-  def completeOrRecoverWith(magnet: CompleteOrRecoverWithMagnet): Directive1[Throwable] = magnet
+  def completeOrRecoverWith(magnet: CompleteOrRecoverWithMagnet): Directive1[Throwable] = magnet.directive
 }
 
 object FutureDirectives extends FutureDirectives
 
 trait OnSuccessMagnet {
   type Out
-  def get: Directive[Out]
+  def directive: Directive[Out]
 }
 
 object OnSuccessMagnet {
   implicit def apply[T](future: ⇒ Future[T])(implicit tupler: Tupler[T]) =
-    new Directive[tupler.Out]()(tupler.OutIsTuple) with OnSuccessMagnet {
+    new OnSuccessMagnet {
       type Out = tupler.Out
-      def get = this
-      def tapply(f: Out ⇒ Route) = ctx ⇒ future.fast.flatMap(t ⇒ f(tupler(t))(ctx))(ctx.executionContext)
+      val directive = Directive[tupler.Out] { inner ⇒ ctx ⇒
+        import ctx.executionContext
+        future.fast.flatMap(t ⇒ inner(tupler(t))(ctx))
+      }(tupler.OutIsTuple)
     }
 }
 
-trait CompleteOrRecoverWithMagnet extends Directive1[Throwable]
+trait CompleteOrRecoverWithMagnet {
+  def directive: Directive1[Throwable]
+}
 
 object CompleteOrRecoverWithMagnet {
   implicit def apply[T](future: ⇒ Future[T])(implicit m: ToResponseMarshaller[T]) =
     new CompleteOrRecoverWithMagnet {
-      def tapply(f: Tuple1[Throwable] ⇒ Route) = ctx ⇒
+      val directive = Directive[Tuple1[Throwable]] { inner ⇒ ctx ⇒
+        import ctx.executionContext
         future.fast.transformWith {
           case Success(res)   ⇒ ctx.complete(res)
-          case Failure(error) ⇒ f(Tuple1(error))(ctx)
-        }(ctx.executionContext)
+          case Failure(error) ⇒ inner(Tuple1(error))(ctx)
+        }
+      }
     }
 }

@@ -24,7 +24,7 @@ trait RequestContext {
   /**
    * The default ExecutionContext to be used for scheduling asynchronous logic related to this request.
    */
-  def executionContext: ExecutionContext
+  implicit def executionContext: ExecutionContext
 
   /**
    * The default LoggingAdapter to be used for logging messages related to this request.
@@ -57,6 +57,11 @@ trait RequestContext {
    * Returns a copy of this context with the new HttpRequest.
    */
   def withRequest(req: HttpRequest): RequestContext
+
+  /**
+   * Returns a copy of this context with the new HttpRequest.
+   */
+  def withExecutionContext(ec: ExecutionContext): RequestContext
 
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.

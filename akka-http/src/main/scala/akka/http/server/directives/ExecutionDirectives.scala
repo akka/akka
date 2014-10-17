@@ -5,6 +5,9 @@
 package akka.http.server
 package directives
 
+import akka.http.util.FastFuture
+import FastFuture._
+
 trait ExecutionDirectives {
   import BasicDirectives._
 
@@ -13,11 +16,11 @@ trait ExecutionDirectives {
    * [[akka.http.server.ExceptionHandler]].
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
-    Directive.mapResult { (ctx, result) ⇒
-      def handleError = handler andThen (_(ctx.withContentNegotiationDisabled))
-      result.recoverWith {
-        case error if handler isDefinedAt error ⇒ handleError(error)
-      }(ctx.executionContext)
+    withRequestContext flatMap { ctx ⇒
+      import ctx.executionContext
+      mapRouteResultFuture {
+        _.fast.recoverWith(handler andThen (_(ctx.withContentNegotiationDisabled)))
+      }
     }
 
   /**
@@ -25,16 +28,16 @@ trait ExecutionDirectives {
    * [[akka.http.server.RejectionHandler]].
    */
   def handleRejections(handler: RejectionHandler): Directive0 =
-    Directive.mapResult { (ctx, result) ⇒
-      result.recoverRejectionsWith {
-        case rejections ⇒
-          val filteredRejections = RejectionHandler.applyTransformations(rejections)
-          if (handler isDefinedAt filteredRejections)
-            handler(filteredRejections)(ctx.withContentNegotiationDisabled).recoverRejections { r ⇒
-              sys.error(s"The RejectionHandler for $rejections must not itself produce rejections (received $r)!")
-            }(ctx.executionContext)
-          else ctx.reject(filteredRejections: _*)
-      }(ctx.executionContext)
+    withRequestContext flatMap { ctx ⇒
+      recoverRejectionsWith { rejections ⇒
+        val filteredRejections = RejectionHandler.applyTransformations(rejections)
+        if (handler isDefinedAt filteredRejections) {
+          val errorMsg = "The RejectionHandler for %s must not itself produce rejections (received %s)!"
+          recoverRejections(r ⇒ sys.error(errorMsg.format(filteredRejections, r))) {
+            handler(filteredRejections)
+          }(ctx.withContentNegotiationDisabled)
+        } else FastFuture.successful(RouteResult.Rejected(filteredRejections))
+      }
     }
 }
 

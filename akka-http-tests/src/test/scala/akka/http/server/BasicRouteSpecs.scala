@@ -77,7 +77,7 @@ class BasicRouteSpecs extends RoutingSpec {
     }
   }
   "Route disjunction" should {
-    "work" in {
+    "work in the happy case" in {
       val route = sealRoute((path("abc") | path("def")) {
         completeOk
       })
@@ -90,6 +90,15 @@ class BasicRouteSpecs extends RoutingSpec {
       }
       Get("/ghi") ~> route ~> check {
         status shouldEqual StatusCodes.NotFound
+      }
+    }
+    "don't apply alternative if inner route rejects" in {
+      object MyRejection extends Rejection
+      val route = (path("abc") | post) {
+        reject(MyRejection)
+      }
+      Get("/abc") ~> route ~> check {
+        rejection shouldEqual MyRejection
       }
     }
   }
