@@ -10,7 +10,7 @@ import directives._
 
 trait Directives extends RouteConcatenation
   with BasicDirectives
-  //with CacheConditionDirectives
+  with CacheConditionDirectives
   //with ChunkingDirectives
   //with CookieDirectives
   //with DebuggingDirectives
