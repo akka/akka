@@ -30,38 +30,38 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
 
   /**
    *
-   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it. The returned tuple contains
-   * the materialized values of the `Tap` and `Drain`, e.g. the `Subscriber` of a [[SubscriberTap]] and
-   * and `Publisher` of a [[PublisherDrain]].
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
+   * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a [[SubscriberSource]] and
+   * and `Publisher` of a [[PublisherSink]].
    */
-  def runWith(tap: TapWithKey[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): (tap.MaterializedType, drain.MaterializedType) = {
-    val m = tap.connect(this).connect(drain).run()
-    (m.materializedTap(tap), m.materializedDrain(drain))
+  def runWith(source: KeyedSource[In], sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): (source.MaterializedType, sink.MaterializedType) = {
+    val m = source.connect(this).connect(sink).run()
+    (m.get(source), m.get(sink))
   }
 
   /**
-   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
    *
-   * The returned value will contain the materialized value of the `DrainWithKey`, e.g. `Publisher` of a [[PublisherDrain]].
+   * The returned value will contain the materialized value of the `KeyedSink`, e.g. `Publisher` of a [[PublisherSink]].
    */
-  def runWith(tap: SimpleTap[In], drain: DrainWithKey[Out])(implicit materializer: FlowMaterializer): drain.MaterializedType =
-    tap.connect(this).runWith(drain)
+  def runWith(source: Source[In], sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
+    source.connect(this).runWith(sink)
 
   /**
-   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
    *
-   * The returned value will contain the materialized value of the `TapWithKey`, e.g. `Subscriber` of a [[SubscriberTap]].
+   * The returned value will contain the materialized value of the `SourceWithKey`, e.g. `Subscriber` of a [[SubscriberSource]].
    */
-  def runWith(tap: TapWithKey[In], drain: SimpleDrain[Out])(implicit materializer: FlowMaterializer): tap.MaterializedType =
-    tap.connect(this).connect(drain).run().materializedTap(tap)
+  def runWith(source: KeyedSource[In], sink: Sink[Out])(implicit materializer: FlowMaterializer): source.MaterializedType =
+    source.connect(this).connect(sink).run().get(source)
 
   /**
-   * Connect the `Tap` to this `Flow` and then connect it to the `Drain` and run it.
+   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
    *
-   * As both `Tap` and `Drain` are "simple", no value is returned from this `runWith` overload.
+   * As both `Source` and `Sink` are "simple", no value is returned from this `runWith` overload.
    */
-  def runWith(tap: SimpleTap[In], drain: SimpleDrain[Out])(implicit materializer: FlowMaterializer): Unit =
-    tap.connect(this).connect(drain).run()
+  def runWith(source: Source[In], sink: Sink[Out])(implicit materializer: FlowMaterializer): Unit =
+    source.connect(this).connect(sink).run()
 }
 
 object Flow {

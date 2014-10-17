@@ -31,8 +31,8 @@ class FlowSplitWhenSpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(splitWhen: Int = 3, elementCount: Int = 6) {
-    val tap = Source((1 to elementCount).iterator)
-    val groupStream = tap.splitWhen(_ == splitWhen).runWith(PublisherDrain())
+    val source = Source((1 to elementCount).iterator)
+    val groupStream = source.splitWhen(_ == splitWhen).runWith(Sink.publisher)
     val masterSubscriber = StreamTestKit.SubscriberProbe[Source[Int]]()
 
     groupStream.subscribe(masterSubscriber)
@@ -53,7 +53,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
   "splitWhen" must {
 
     "work in the happy case" in new SubstreamsSupport(elementCount = 4) {
-      val s1 = StreamPuppet(getSubFlow().runWith(PublisherDrain()))
+      val s1 = StreamPuppet(getSubFlow().runWith(Sink.publisher))
       masterSubscriber.expectNoMsg(100.millis)
 
       s1.request(2)
@@ -62,7 +62,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
       s1.request(1)
       s1.expectComplete()
 
-      val s2 = StreamPuppet(getSubFlow().runWith(PublisherDrain()))
+      val s2 = StreamPuppet(getSubFlow().runWith(Sink.publisher))
 
       s2.request(1)
       s2.expectNext(3)
@@ -77,9 +77,9 @@ class FlowSplitWhenSpec extends AkkaSpec {
     }
 
     "support cancelling substreams" in new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
-      val s1 = StreamPuppet(getSubFlow().runWith(PublisherDrain()))
+      val s1 = StreamPuppet(getSubFlow().runWith(Sink.publisher))
       s1.cancel()
-      val s2 = StreamPuppet(getSubFlow().runWith(PublisherDrain()))
+      val s2 = StreamPuppet(getSubFlow().runWith(Sink.publisher))
 
       s2.request(4)
       s2.expectNext(5)
@@ -94,7 +94,7 @@ class FlowSplitWhenSpec extends AkkaSpec {
     }
 
     "support cancelling the master stream" in new SubstreamsSupport(splitWhen = 5, elementCount = 8) {
-      val s1 = StreamPuppet(getSubFlow().runWith(PublisherDrain()))
+      val s1 = StreamPuppet(getSubFlow().runWith(Sink.publisher))
       masterSubscription.cancel()
       s1.request(4)
       s1.expectNext(1)

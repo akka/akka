@@ -14,7 +14,7 @@ class SourceSpec extends AkkaSpec {
 
   "Singleton Source" must {
     "produce element" in {
-      val p = Source.singleton(1).runWith(PublisherDrain())
+      val p = Source.singleton(1).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -24,7 +24,7 @@ class SourceSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = Source.singleton(1).runWith(PublisherDrain())
+      val p = Source.singleton(1).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -44,7 +44,7 @@ class SourceSpec extends AkkaSpec {
 
   "Empty Source" must {
     "complete immediately" in {
-      val p = Source.empty.runWith(PublisherDrain())
+      val p = Source.empty.runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectComplete()
@@ -58,7 +58,7 @@ class SourceSpec extends AkkaSpec {
   "Failed Source" must {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
-      val p = Source.failed(ex).runWith(PublisherDrain())
+      val p = Source.failed(ex).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectError(ex)

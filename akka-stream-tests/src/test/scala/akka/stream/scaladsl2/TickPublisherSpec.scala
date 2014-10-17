@@ -17,7 +17,7 @@ class TickPublisherSpec extends AkkaSpec {
     "produce ticks" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next()).connect(SubscriberDrain(c)).run()
+      Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next()).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectNoMsg(600.millis)
@@ -33,7 +33,7 @@ class TickPublisherSpec extends AkkaSpec {
     "drop ticks when not requested" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).connect(SubscriberDrain(c)).run()
+      Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick-1")
@@ -50,7 +50,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "produce ticks with multiple subscribers" in {
       val tickGen = Iterator from 1
-      val p = Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).runWith(PublisherDrain())
+      val p = Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
       p.subscribe(c1)
@@ -74,7 +74,7 @@ class TickPublisherSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).connect(SubscriberDrain(c)).run()
+      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")
@@ -83,8 +83,8 @@ class TickPublisherSpec extends AkkaSpec {
     // FIXME enable this test again when zip is back
     "be usable with zip for a simple form of rate limiting" ignore {
       //      val c = StreamTestKit.SubscriberProbe[Int]()
-      //      val rate = Source(1.second, 1.second, () ⇒ "tick").runWith(PublisherDrain())
-      //      Source(1 to 100).zip(rate).map { case (n, _) ⇒ n }.connect(SubscriberDrain(c)).run()
+      //      val rate = Source(1.second, 1.second, () ⇒ "tick").runWith(Sink.publisher)
+      //      Source(1 to 100).zip(rate).map { case (n, _) ⇒ n }.connect(Sink(c)).run()
       //      val sub = c.expectSubscription()
       //      sub.request(1000)
       //      c.expectNext(1)
