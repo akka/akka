@@ -55,7 +55,7 @@ trait ScalaRoutingDSL extends Directives {
             val runner = f(setup)
             Source(requestProducer)
               .mapAsync(request ⇒ runner(request))
-              .connect(SubscriberDrain(responseConsumer)).run()(fm)
+              .connect(Sink(responseConsumer)).run()(fm)
         }
     }
   }

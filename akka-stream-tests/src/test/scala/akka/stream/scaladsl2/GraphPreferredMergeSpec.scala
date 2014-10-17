@@ -25,17 +25,17 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
 
       val preferred = Source(Stream.fill(numElements)(1))
       val aux1, aux2, aux3 = Source(Stream.fill(numElements)(2))
-      val drain = FutureDrain[Seq[Int]]
+      val sink = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val merge = MergePreferred[Int]
-        preferred ~> merge.preferred ~> Flow[Int].grouped(numElements * 2) ~> drain
+        preferred ~> merge.preferred ~> Flow[Int].grouped(numElements * 2) ~> sink
         aux1 ~> merge
         aux2 ~> merge
         aux3 ~> merge
       }.run()
 
-      Await.result(g.materializedDrain(drain), 3.seconds).filter(_ == 1).size should be(numElements)
+      Await.result(g.get(sink), 3.seconds).filter(_ == 1).size should be(numElements)
     }
 
     "disallow multiple preferred inputs" in {
@@ -45,7 +45,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
         val g = FlowGraph { implicit b ⇒
           val merge = MergePreferred[Int]
 
-          s1 ~> merge.preferred ~> FutureDrain[Int]
+          s1 ~> merge.preferred ~> Sink.future[Int]
           s2 ~> merge.preferred
           s3 ~> merge
         }

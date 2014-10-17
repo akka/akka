@@ -22,7 +22,7 @@ class GraphZipSpec extends TwoStreamsSetup {
         Source(1 to 4) ~> zip.left
         Source(List("A", "B", "C", "D", "E", "F")) ~> zip.right
 
-        zip.out ~> SubscriberDrain(probe)
+        zip.out ~> Sink(probe)
       }.run()
 
       val subscription = probe.expectSubscription()

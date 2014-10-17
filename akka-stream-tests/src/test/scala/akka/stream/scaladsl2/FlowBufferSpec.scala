@@ -22,14 +22,14 @@ class FlowBufferSpec extends AkkaSpec {
 
     "pass elements through normally in backpressured mode" in {
       val future: Future[Seq[Int]] = Source((1 to 1000).iterator).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
-        runWith(FutureDrain())
+        runWith(Sink.future)
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
     "pass elements through normally in backpressured mode with buffer size one" in {
-      val futureDrain = FutureDrain[Seq[Int]]
+      val futureSink = Sink.future[Seq[Int]]
       val future = Source((1 to 1000).iterator).buffer(1, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
-        runWith(FutureDrain())
+        runWith(Sink.future)
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
@@ -42,7 +42,7 @@ class FlowBufferSpec extends AkkaSpec {
         .buffer(5, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(128, overflowStrategy = OverflowStrategy.backpressure)
         .grouped(1001)
-        .runWith(FutureDrain())
+        .runWith(Sink.future)
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
@@ -50,7 +50,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).connect(SubscriberDrain(subscriber)).run()
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.backpressure).connect(Sink(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -70,7 +70,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).connect(SubscriberDrain(subscriber)).run()
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropHead).connect(Sink(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -98,7 +98,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).connect(SubscriberDrain(subscriber)).run()
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropTail).connect(Sink(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -129,7 +129,7 @@ class FlowBufferSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).connect(SubscriberDrain(subscriber)).run()
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.dropBuffer).connect(Sink(subscriber)).run()
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -160,7 +160,7 @@ class FlowBufferSpec extends AkkaSpec {
         val publisher = StreamTestKit.PublisherProbe[Int]
         val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-        Source(publisher).buffer(1, overflowStrategy = strategy).connect(SubscriberDrain(subscriber)).run()
+        Source(publisher).buffer(1, overflowStrategy = strategy).connect(Sink(subscriber)).run()
 
         val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
         val sub = subscriber.expectSubscription()
