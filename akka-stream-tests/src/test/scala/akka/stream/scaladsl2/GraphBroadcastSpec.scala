@@ -23,8 +23,8 @@ class GraphBroadcastSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
         Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c1)
-        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c2)
+        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c1)
+        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -46,11 +46,11 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "work with n-way broadcast" in {
-      val f1 = FutureDrain[Seq[Int]]
-      val f2 = FutureDrain[Seq[Int]]
-      val f3 = FutureDrain[Seq[Int]]
-      val f4 = FutureDrain[Seq[Int]]
-      val f5 = FutureDrain[Seq[Int]]
+      val f1 = Sink.future[Seq[Int]]
+      val f2 = Sink.future[Seq[Int]]
+      val f3 = Sink.future[Seq[Int]]
+      val f4 = Sink.future[Seq[Int]]
+      val f5 = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
@@ -62,11 +62,11 @@ class GraphBroadcastSpec extends AkkaSpec {
         bcast ~> Flow[Int].grouped(5) ~> f5
       }.run()
 
-      Await.result(g.materializedDrain(f1), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.materializedDrain(f2), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.materializedDrain(f3), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.materializedDrain(f4), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.materializedDrain(f5), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.get(f1), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.get(f2), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.get(f3), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.get(f4), 3.seconds) should be(List(1, 2, 3))
+      Await.result(g.get(f5), 3.seconds) should be(List(1, 2, 3))
     }
 
     "produce to other even though downstream cancels" in {
@@ -76,8 +76,8 @@ class GraphBroadcastSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
         Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
-        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
+        bcast ~> Flow[Int] ~> Sink(c1)
+        bcast ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -97,8 +97,8 @@ class GraphBroadcastSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
         Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
-        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
+        bcast ~> Flow[Int] ~> Sink(c1)
+        bcast ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -119,8 +119,8 @@ class GraphBroadcastSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
         Source(p1.getPublisher) ~> bcast
-        bcast ~> Flow[Int] ~> SubscriberDrain(c1)
-        bcast ~> Flow[Int] ~> SubscriberDrain(c2)
+        bcast ~> Flow[Int] ~> Sink(c1)
+        bcast ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val bsub = p1.expectSubscription()

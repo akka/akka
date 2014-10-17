@@ -23,8 +23,8 @@ class GraphUnzipSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.right ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> SubscriberDrain(c2)
-        unzip.left ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> SubscriberDrain(c1)
+        unzip.right ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
+        unzip.left ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> Sink(c1)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -52,8 +52,8 @@ class GraphUnzipSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> SubscriberDrain(c1)
-        unzip.right ~> SubscriberDrain(c2)
+        unzip.left ~> Sink(c1)
+        unzip.right ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -73,8 +73,8 @@ class GraphUnzipSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> SubscriberDrain(c1)
-        unzip.right ~> SubscriberDrain(c2)
+        unzip.left ~> Sink(c1)
+        unzip.right ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -95,8 +95,8 @@ class GraphUnzipSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val unzip = Unzip[Int, String]("unzip")
         Source(p1.getPublisher) ~> unzip.in
-        unzip.left ~> SubscriberDrain(c1)
-        unzip.right ~> SubscriberDrain(c2)
+        unzip.left ~> Sink(c1)
+        unzip.right ~> Sink(c2)
       }.run()
 
       val p1Sub = p1.expectSubscription()
@@ -125,7 +125,7 @@ class GraphUnzipSpec extends AkkaSpec {
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.left ~> zip.left
         unzip.right ~> zip.right
-        zip.out ~> SubscriberDrain(c1)
+        zip.out ~> Sink(c1)
       }.run()
 
       val sub1 = c1.expectSubscription()

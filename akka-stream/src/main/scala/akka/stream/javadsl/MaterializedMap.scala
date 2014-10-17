@@ -10,33 +10,27 @@ import akka.stream.scaladsl2
  * Java API
  *
  * Returned by [[RunnableFlow#run]] and can be used as parameter to the
- * accessor method to retrieve the materialized `Tap` or `Drain`, e.g.
- * [[akka.stream.scaladsl2.SubscriberTap#subscriber]] or [[akka.stream.scaladsl2.PublisherDrain#publisher]].
+ * accessor method to retrieve the materialized `Source` or `Sink`, e.g.
+ * [[akka.stream.scaladsl2.SubscriberSource#subscriber]] or [[akka.stream.scaladsl2.PublisherSink#publisher]].
  */
-trait MaterializedMap extends javadsl.MaterializedTap with javadsl.MaterializedDrain
-
-/** Java API */
-trait MaterializedTap {
+trait MaterializedMap {
   /**
-   * Retrieve a materialized `Tap`, e.g. the `Subscriber` of a [[akka.stream.scaladsl2.SubscriberTap]].
+   * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[akka.stream.scaladsl2.SubscriberSource]].
    */
-  def materializedTap[T](key: javadsl.TapWithKey[_, T]): T
-}
+  def get[T](key: javadsl.KeyedSource[_, T]): T
 
-/** Java API */
-trait MaterializedDrain {
   /**
-   * Retrieve a materialized `Drain`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherDrain]].
+   * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
    */
-  def materializedDrain[D](key: javadsl.DrainWithKey[_, D]): D
+  def get[D](key: javadsl.KeyedSink[_, D]): D
 }
 
 /** INTERNAL API */
 private[akka] class MaterializedMapAdapter(delegate: scaladsl2.MaterializedMap) extends MaterializedMap {
 
-  override def materializedTap[T](key: javadsl.TapWithKey[_, T]): T =
-    delegate.materializedTap(key.asScala).asInstanceOf[T]
+  override def get[T](key: javadsl.KeyedSource[_, T]): T =
+    delegate.get(key.asScala).asInstanceOf[T]
 
-  override def materializedDrain[D](key: javadsl.DrainWithKey[_, D]): D =
-    delegate.materializedDrain(key.asScala).asInstanceOf[D]
+  override def get[D](key: javadsl.KeyedSink[_, D]): D =
+    delegate.get(key.asScala).asInstanceOf[D]
 }

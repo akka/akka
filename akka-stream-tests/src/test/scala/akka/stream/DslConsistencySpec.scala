@@ -4,6 +4,7 @@
 package akka.stream
 
 import java.lang.reflect.Method
+import java.lang.reflect.Modifier
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
@@ -61,6 +62,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
               (for {
                 c ← classes
                 m ← c.getMethods
+                if !Modifier.isStatic(m.getModifiers)
                 if !ignore(m.getName)
                 if !m.getName.contains("$")
                 if !materializing(m)
@@ -75,6 +77,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
               (for {
                 c ← classes
                 m ← c.getMethods
+                if !Modifier.isStatic(m.getModifiers)
                 if !ignore(m.getName)
                 if !m.getName.contains("$")
                 if materializing(m)

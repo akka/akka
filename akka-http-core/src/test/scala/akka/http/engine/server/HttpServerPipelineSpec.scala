@@ -39,7 +39,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNoMsg(50.millis)
@@ -75,7 +75,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
@@ -111,7 +111,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(ByteString("abcdef"))
@@ -133,7 +133,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
@@ -181,7 +181,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(ByteString("abcdef"))
@@ -217,7 +217,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
@@ -253,7 +253,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(ByteString("abcdef"))
@@ -275,7 +275,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))
@@ -297,7 +297,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Default(_, 12, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ByteString]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(ByteString("abcdef"))
@@ -319,7 +319,7 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
       inside(expectRequest) {
         case HttpRequest(HttpMethods.POST, _, _, HttpEntity.Chunked(_, data), _) ⇒
           val dataProbe = StreamTestKit.SubscriberProbe[ChunkStreamPart]
-          data.connect(SubscriberDrain(dataProbe)).run()
+          data.connect(Sink(dataProbe)).run()
           val sub = dataProbe.expectSubscription()
           sub.request(10)
           dataProbe.expectNext(Chunk(ByteString("abcdef")))

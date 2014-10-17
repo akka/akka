@@ -5,18 +5,17 @@ package akka.stream.scaladsl2
 
 /**
  * Returned by [[RunnableFlow#run]] and [[FlowGraph#run]] and can be used to retrieve the materialized
- * `Tap` inputs or `Drain` outputs, e.g. [[SubscriberTap]] or [[PublisherDrain]].
+ * `Source` inputs or `Sink` outputs, e.g. [[SubscriberSource]] or [[PublisherSink]].
  */
 trait MaterializedMap {
 
   /**
-   * Retrieve a materialized `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def materializedTap(key: TapWithKey[_]): key.MaterializedType
+  def get(key: KeyedSource[_]): key.MaterializedType
 
   /**
-   * Retrieve a materialized `Drain`, e.g. the `Publisher` of a [[PublisherDrain]].
+   * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[PublisherSink]].
    */
-  def materializedDrain(key: DrainWithKey[_]): key.MaterializedType
-
+  def get(key: KeyedSink[_]): key.MaterializedType
 }

@@ -11,7 +11,7 @@ import akka.http.engine.client._
 import akka.http.engine.server.{ HttpServerPipeline, ServerSettings }
 import akka.io.IO
 import akka.pattern.ask
-import akka.stream.scaladsl2.{ PublisherDrain, Source, FlowMaterializer }
+import akka.stream.scaladsl2.{ Sink, Source, FlowMaterializer }
 import akka.stream.io.StreamTcp
 import akka.util.Timeout
 
@@ -65,7 +65,7 @@ private[http] class HttpManager(httpSettings: HttpExt#Settings) extends Actor wi
           val httpServerPipeline = new HttpServerPipeline(effectiveSettings, log)
           val httpConnectionStream = Source(connectionStream)
             .map(httpServerPipeline)
-            .runWith(PublisherDrain())
+            .runWith(Sink.publisher)
           commander ! Http.ServerBinding(localAddress, httpConnectionStream, tcpServerBinding)
 
         case Failure(error) ⇒

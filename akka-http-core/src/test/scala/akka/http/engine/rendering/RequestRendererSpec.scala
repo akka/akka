@@ -223,7 +223,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
         val byteStringSource :: Nil = renderer.onNext(RequestRenderingContext(request, serverAddress))
-        val future = byteStringSource.grouped(1000).runWith(FutureDrain()).map(_.reduceLeft(_ ++ _).utf8String)
+        val future = byteStringSource.grouped(1000).runWith(Sink.future).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)
       }
   }

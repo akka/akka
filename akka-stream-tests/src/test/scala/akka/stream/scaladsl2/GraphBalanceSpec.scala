@@ -24,8 +24,8 @@ class GraphBalanceSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
         Source(List(1, 2, 3)) ~> balance
-        balance ~> SubscriberDrain(c1)
-        balance ~> SubscriberDrain(c2)
+        balance ~> Sink(c1)
+        balance ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -43,11 +43,11 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "work with 5-way balance" in {
-      val f1 = FutureDrain[Seq[Int]]
-      val f2 = FutureDrain[Seq[Int]]
-      val f3 = FutureDrain[Seq[Int]]
-      val f4 = FutureDrain[Seq[Int]]
-      val f5 = FutureDrain[Seq[Int]]
+      val f1 = Sink.future[Seq[Int]]
+      val f2 = Sink.future[Seq[Int]]
+      val f3 = Sink.future[Seq[Int]]
+      val f4 = Sink.future[Seq[Int]]
+      val f5 = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
@@ -59,12 +59,12 @@ class GraphBalanceSpec extends AkkaSpec {
         balance ~> Flow[Int].grouped(15) ~> f5
       }.run()
 
-      Set(f1, f2, f3, f4, f5) flatMap (sink ⇒ Await.result(g.materializedDrain(sink), 3.seconds)) should be((0 to 14).toSet)
+      Set(f1, f2, f3, f4, f5) flatMap (sink ⇒ Await.result(g.get(sink), 3.seconds)) should be((0 to 14).toSet)
     }
 
     "fairly balance between three outputs" in {
       val numElementsForSink = 10000
-      val f1, f2, f3 = FoldDrain[Int, Int](0)(_ + _)
+      val f1, f2, f3 = Sink.fold[Int, Int](0)(_ + _)
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
         Source(Stream.fill(10000 * 3)(1)) ~> balance ~> f1
@@ -73,7 +73,7 @@ class GraphBalanceSpec extends AkkaSpec {
       }.run()
 
       Seq(f1, f2, f3) map { sink ⇒
-        Await.result(g.materializedDrain(sink), 3.seconds) should be(numElementsForSink +- 1000)
+        Await.result(g.get(sink), 3.seconds) should be(numElementsForSink +- 1000)
       }
     }
 
@@ -84,8 +84,8 @@ class GraphBalanceSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
         Source(List(1, 2, 3)) ~> balance
-        balance ~> Flow[Int] ~> SubscriberDrain(c1)
-        balance ~> Flow[Int] ~> SubscriberDrain(c2)
+        balance ~> Flow[Int] ~> Sink(c1)
+        balance ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -105,8 +105,8 @@ class GraphBalanceSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
         Source(List(1, 2, 3)) ~> balance
-        balance ~> Flow[Int] ~> SubscriberDrain(c1)
-        balance ~> Flow[Int] ~> SubscriberDrain(c2)
+        balance ~> Flow[Int] ~> Sink(c1)
+        balance ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -127,8 +127,8 @@ class GraphBalanceSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance")
         Source(p1.getPublisher) ~> balance
-        balance ~> Flow[Int] ~> SubscriberDrain(c1)
-        balance ~> Flow[Int] ~> SubscriberDrain(c2)
+        balance ~> Flow[Int] ~> Sink(c1)
+        balance ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val bsub = p1.expectSubscription()

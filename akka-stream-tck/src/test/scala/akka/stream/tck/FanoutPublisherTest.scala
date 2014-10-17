@@ -4,7 +4,7 @@
 package akka.stream.tck
 
 import scala.collection.immutable
-import akka.stream.scaladsl2.FanoutPublisherDrain
+import akka.stream.scaladsl2.Sink
 import akka.stream.scaladsl2.Source
 import org.reactivestreams.Publisher
 
@@ -15,7 +15,7 @@ class FanoutPublisherTest extends AkkaPublisherVerification[Int] {
       if (elements == 0) new immutable.Iterable[Int] { override def iterator = Iterator from 0 }
       else 0 until elements.toInt
 
-    Source(iterable).runWith(FanoutPublisherDrain(initialBufferSize = 2, maximumBufferSize = 4))
+    Source(iterable).runWith(Sink.fanoutPublisher(initialBufferSize = 2, maximumBufferSize = 4))
   }
 
 }

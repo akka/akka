@@ -19,9 +19,9 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val tap1 = Source((0 to 3).iterator)
-      val tap2 = Source((4 to 9).iterator)
-      val tap3 = Source(List.empty[Int].iterator)
+      val source1 = Source((0 to 3).iterator)
+      val source2 = Source((4 to 9).iterator)
+      val source3 = Source(List.empty[Int].iterator)
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph { implicit b ⇒
@@ -29,9 +29,9 @@ class GraphMergeSpec extends TwoStreamsSetup {
         val m2 = Merge[Int]("m2")
         val m3 = Merge[Int]("m3")
 
-        tap1 ~> m1 ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(_ + 1) ~> SubscriberDrain(probe)
-        tap2 ~> m1
-        tap3 ~> m2
+        source1 ~> m1 ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
+        source2 ~> m1
+        source3 ~> m2
 
       }.run()
 
@@ -48,24 +48,24 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "work with n-way merge" in {
-      val tap1 = Source(List(1))
-      val tap2 = Source(List(2))
-      val tap3 = Source(List(3))
-      val tap4 = Source(List(4))
-      val tap5 = Source(List(5))
-      val tap6 = Source(List.empty[Int])
+      val source1 = Source(List(1))
+      val source2 = Source(List(2))
+      val source3 = Source(List(3))
+      val source4 = Source(List(4))
+      val source5 = Source(List(5))
+      val source6 = Source(List.empty[Int])
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph { implicit b ⇒
         val merge = Merge[Int]("merge")
 
-        tap1 ~> merge ~> Flow[Int] ~> SubscriberDrain(probe)
-        tap2 ~> merge
-        tap3 ~> merge
-        tap4 ~> merge
-        tap5 ~> merge
-        tap6 ~> merge
+        source1 ~> merge ~> Flow[Int] ~> Sink(probe)
+        source2 ~> merge
+        source3 ~> merge
+        source4 ~> merge
+        source5 ~> merge
+        source6 ~> merge
 
       }.run()
 

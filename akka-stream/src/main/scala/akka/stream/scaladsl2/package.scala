@@ -5,10 +5,9 @@ package akka.stream
 
 /**
  * Scala API: The flow DSL allows the formulation of stream transformations based on some
- * input. The starting point is called [[Tap]] and can be a collection, an iterator,
+ * input. The starting point is called [[Source]] and can be a collection, an iterator,
  * a block of code which is evaluated repeatedly or a [[org.reactivestreams.Publisher]].
- * A flow with an attached input and open output, including `Tap` is a [[Source]], and is
- * constructed with the `apply` methods in [[Source]].
+ * A flow with an attached input and open output, is also a [[Source]].
  *
  * A flow may also be defined without an attached input or output and that is then
  * a [[Flow]]. The `Flow` can be connected to the `Source` later by using [[Source#connect]] with
@@ -18,9 +17,9 @@ package akka.stream
  * defined in [[FlowOps]]. Each DSL element produces a new flow that can be further transformed,
  * building up a description of the complete transformation pipeline.
  *
- * The termination point of a flow is called [[Drain]] and can for example be a `Future` or
- * [[org.reactivestreams.Subscriber]]. A flow with an attached output and open input,
- * including `Drain`, is a [[Sink]].
+ * The termination point of a flow is called [[Sink]] and can for example be a `Future` or
+ * [[org.reactivestreams.Subscriber]]. A flow with an attached output and open input
+ * is also a [[Sink]].
  *
  * If a flow has both an attached input and an attached output it becomes a [[RunnableFlow]].
  * In order to execute this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.

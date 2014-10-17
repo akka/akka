@@ -7,7 +7,7 @@ package akka.http.model
 import java.io.File
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
-import akka.stream.scaladsl2.{ FutureDrain, FlowMaterializer, Source }
+import akka.stream.scaladsl2.{ FlowMaterializer, Sink, Source }
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.http.util.FastFuture
 import FastFuture._
@@ -56,7 +56,7 @@ case class MultipartFormData(parts: Source[BodyPart]) extends MultipartParts {
    * hint.
    */
   def toStrict(maxFieldCount: Int = 1000)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[StrictMultipartFormData] =
-    parts.grouped(maxFieldCount).runWith(FutureDrain()).fast.map(new StrictMultipartFormData(_))
+    parts.grouped(maxFieldCount).runWith(Sink.future).fast.map(new StrictMultipartFormData(_))
 }
 
 /**

@@ -42,18 +42,18 @@ abstract class Source[+Out] extends javadsl.SourceOps[Out] {
   def connect(sink: javadsl.Sink[Out]): javadsl.RunnableFlow
 
   /**
-   * Connect this `Source` to a `Drain` and run it. The returned value is the materialized value
-   * of the `Drain`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherDrain]].
+   * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
+   * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
    *
-   * @tparam D materialized type of the given Drain
+   * @tparam S materialized type of the given Sink
    */
-  def runWith[D](drain: DrainWithKey[Out, D], materializer: FlowMaterializer): D
+  def runWith[S](sink: KeyedSink[Out, S], materializer: FlowMaterializer): S
 
   /**
-   * Connect this `Source` to a `Drain` and run it. The returned value is the materialized value
-   * of the `Drain`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherDrain]].
+   * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
+   * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
    */
-  def runWith(drain: SimpleDrain[Out], materializer: FlowMaterializer): Unit
+  def runWith(sink: SimpleSink[Out], materializer: FlowMaterializer): Unit
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -123,7 +123,7 @@ object Source {
    * steps.
    */
   def from[O](iterator: java.util.Iterator[O]): javadsl.Source[O] =
-    SourceAdapter(scaladsl2.IteratorTap(iterator.asScala))
+    SourceAdapter(scaladsl2.Source(iterator.asScala))
 
   /**
    * Java API
@@ -176,18 +176,8 @@ object Source {
 /** INTERNAL API */
 private[akka] object SourceAdapter {
 
-  def apply[O](tap: scaladsl2.Tap[O]): javadsl.Source[O] =
-    new SourceAdapter[O] { def delegate = scaladsl2.Pipe.empty[O].withTap(tap) }
-
   def apply[O](source: scaladsl2.Source[O]): javadsl.Source[O] =
-    source match {
-      case pipe: scaladsl2.SourcePipe[O] ⇒ apply(pipe)
-      case _                             ⇒ apply(source.asInstanceOf[scaladsl2.Tap[O]])
-    }
-
-  def apply[O](pipe: scaladsl2.SourcePipe[O]): javadsl.Source[O] =
-    new SourceAdapter[O] { def delegate = pipe }
-
+    new SourceAdapter[O] { def delegate = source }
 }
 
 /** INTERNAL API */
@@ -209,20 +199,20 @@ private[akka] abstract class SourceAdapter[+Out] extends Source[Out] {
   override def connect(sink: javadsl.Sink[Out]): javadsl.RunnableFlow =
     new RunnableFlowAdapter(delegate.connect(sink.asScala))
 
-  override def runWith[D](drain: DrainWithKey[Out, D], materializer: FlowMaterializer): D =
-    asScala.runWith(drain.asScala)(materializer).asInstanceOf[D]
+  override def runWith[D](sink: KeyedSink[Out, D], materializer: FlowMaterializer): D =
+    asScala.runWith(sink.asScala)(materializer).asInstanceOf[D]
 
-  override def runWith(drain: SimpleDrain[Out], materializer: FlowMaterializer): Unit =
-    delegate.connect(drain.asScala).run()(materializer)
+  override def runWith(sink: SimpleSink[Out], materializer: FlowMaterializer): Unit =
+    delegate.connect(sink.asScala).run()(materializer)
 
   override def fold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
-    runWith(FoldDrain.create(zero, f), materializer)
+    runWith(Sink.fold(zero, f), materializer)
 
   override def concat[Out2 >: Out](second: javadsl.Source[Out2]): javadsl.Source[Out2] =
     delegate.concat(second.asScala).asJava
 
   override def foreach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
-    runWith(ForeachDrain.create(f), materializer)
+    runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //
 

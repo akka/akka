@@ -5,21 +5,20 @@ package akka.stream.testkit2
 
 import akka.actor.ActorSystem
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl2.{ FlowMaterializer, Source, Flow }
+import akka.stream.scaladsl2.{ FlowMaterializer, Sink, Source, Flow }
 import akka.stream.testkit.StreamTestKit._
 import org.reactivestreams.Publisher
 import org.scalatest.Matchers
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.scaladsl2.PublisherDrain
 
 trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
 
   def toPublisher[In, Out]: (Source[Out], FlowMaterializer) ⇒ Publisher[Out] =
-    (f, m) ⇒ f.runWith(PublisherDrain())(m)
+    (f, m) ⇒ f.runWith(Sink.publisher)(m)
 
   object Script {
     def apply[In, Out](phases: (Seq[In], Seq[Out])*): Script[In, Out] = {

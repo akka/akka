@@ -44,7 +44,6 @@ private[scaladsl2] case class GraphFlow[-In, CIn, COut, +Out](inPipe: Pipe[In, C
   }
 
   override def connect(sink: Sink[Out]) = sink match {
-    case drain: Drain[Out] ⇒ connect(Pipe.empty.withDrain(drain)) // recursive, but now it is a SinkPipe
     case sinkPipe: SinkPipe[Out] ⇒
       val newGraph = PartialFlowGraph(this.graph) { builder ⇒
         builder.attachSink(out, outPipe.connect(sinkPipe))
@@ -56,6 +55,7 @@ private[scaladsl2] case class GraphFlow[-In, CIn, COut, +Out](inPipe: Pipe[In, C
         b.connect(out, outPipe.connect(gSink.inPipe), oIn)
       }
       GraphSink(inPipe, in, newGraph)
+    case sink: Sink[Out] ⇒ connect(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
 
   override private[scaladsl2] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
@@ -87,8 +87,6 @@ private[scaladsl2] case class GraphSource[COut, +Out](graph: PartialFlowGraph, o
   }
 
   override def connect(sink: Sink[Out]): RunnableFlow = sink match {
-    case drain: Drain[Out] ⇒
-      connect(Pipe.empty.withDrain(drain)) // recursive, but now it is a SinkPipe
     case sinkPipe: SinkPipe[Out] ⇒
       FlowGraph(this.graph) { implicit builder ⇒
         builder.attachSink(out, outPipe.connect(sinkPipe))
@@ -98,6 +96,8 @@ private[scaladsl2] case class GraphSource[COut, +Out](graph: PartialFlowGraph, o
         val oIn = gSink.remap(b)
         b.connect(out, outPipe.connect(gSink.inPipe), oIn)
       }
+    case sink: Sink[Out] ⇒
+      connect(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
 
   override private[scaladsl2] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))

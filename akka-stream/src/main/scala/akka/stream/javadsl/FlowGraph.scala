@@ -70,8 +70,8 @@ object Merge {
  * Merge several streams, taking elements as they arrive from input streams
  * (picking randomly when several have elements ready).
  *
- * When building the [[FlowGraph]] you must connect one or more input pipes/taps
- * and one output pipe/sink to the `Merge` vertex.
+ * When building the [[FlowGraph]] you must connect one or more input sources
+ * and one output sink to the `Merge` vertex.
  */
 class Merge[T] private (delegate: scaladsl2.Merge[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl2.Merge[T] = delegate
@@ -115,8 +115,8 @@ object MergePreferred {
  * Merge several streams, taking elements as they arrive from input streams
  * (picking from preferred when several have elements ready).
  *
- * When building the [[FlowGraph]] you must connect one or more input pipes/taps
- * and one output pipe/drain to the `Merge` vertex.
+ * When building the [[FlowGraph]] you must connect one or more input streams
+ * and one output sink to the `Merge` vertex.
  */
 class MergePreferred[T](delegate: scaladsl2.MergePreferred[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl2.MergePreferred[T] = delegate
@@ -249,8 +249,8 @@ object UndefinedSource {
 
 /**
  * It is possible to define a [[akka.stream.javadsl.PartialFlowGraph]] with input pipes that are not connected
- * yet by using this placeholder instead of the real [[Tap]]. Later the placeholder can
- * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachTap]].
+ * yet by using this placeholder instead of the real [[Source]]. Later the placeholder can
+ * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachSource]].
  */
 final class UndefinedSource[+T](delegate: scaladsl2.UndefinedSource[T]) {
   def asScala: scaladsl2.UndefinedSource[T] = delegate
@@ -292,8 +292,8 @@ object UndefinedSink {
 
 /**
  * It is possible to define a [[akka.stream.javadsl.PartialFlowGraph]] with input pipes that are not connected
- * yet by using this placeholder instead of the real [[Tap]]. Later the placeholder can
- * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachTap]].
+ * yet by using this placeholder instead of the real [[Sink]]. Later the placeholder can
+ * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachSink]].
  */
 final class UndefinedSink[-T](delegate: scaladsl2.UndefinedSink[T]) {
   def asScala: scaladsl2.UndefinedSink[T] = delegate

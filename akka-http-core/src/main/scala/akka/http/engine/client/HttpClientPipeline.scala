@@ -39,11 +39,11 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
 
     val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
 
-    val userIn = SubscriberTap[(HttpRequest, Any)]()
-    val userOut = PublisherDrain[(HttpResponse, Any)]()
+    val userIn = Source.subscriber[(HttpRequest, Any)]
+    val userOut = Sink.publisher[(HttpResponse, Any)]
 
-    val netOut = SubscriberDrain(tcpConn.outputStream)
-    val netIn = PublisherTap(tcpConn.inputStream)
+    val netOut = Sink(tcpConn.outputStream)
+    val netIn = Source(tcpConn.inputStream)
 
     val pipeline = FlowGraph { implicit b ⇒
       val bypassFanout = Broadcast[(HttpRequest, Any)]("bypassFanout")
@@ -76,8 +76,8 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
     Http.OutgoingConnection(
       tcpConn.remoteAddress,
       tcpConn.localAddress,
-      pipeline.materializedDrain(userOut),
-      pipeline.materializedTap(userIn))
+      pipeline.get(userOut),
+      pipeline.get(userIn))
   }
 
   class RequestMethodByPass(serverAddress: InetSocketAddress)

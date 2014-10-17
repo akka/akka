@@ -201,13 +201,13 @@ trait TcpHelper { this: TestKitBase ⇒
 
   def connect(serverAddress: InetSocketAddress): (Subscriber[ByteString], Publisher[ByteString]) = {
     val tcpProbe = TestProbe()
-    val outbound = SubscriberTap[ByteString]
-    val inbound = PublisherDrain[ByteString]
+    val outbound = Source.subscriber[ByteString]
+    val inbound = Sink.publisher[ByteString]
     tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(outbound, inbound, serverAddress))
 
     val outgoingConnection = tcpProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
 
-    (outgoingConnection.outbound.materializedTap(outbound), outgoingConnection.inbound.materializedDrain(inbound))
+    (outgoingConnection.outbound.get(outbound), outgoingConnection.inbound.get(inbound))
   }
 
   def bind(connectionHandler: Sink[StreamTcp.IncomingTcpConnection],
@@ -218,10 +218,10 @@ trait TcpHelper { this: TestKitBase ⇒
   }
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
-    val foreachDrain = ForeachDrain[IncomingTcpConnection] { conn ⇒
+    val foreachSink = Sink.foreach[IncomingTcpConnection] { conn ⇒
       conn.inbound.connect(conn.outbound).run()
     }
-    val binding = bind(Flow[IncomingTcpConnection].connect(foreachDrain), serverAddress)
-    new EchoServer(binding.connection.materializedDrain(foreachDrain), binding)
+    val binding = bind(Flow[IncomingTcpConnection].connect(foreachSink), serverAddress)
+    new EchoServer(binding.connection.get(foreachSink), binding)
   }
 }

@@ -63,7 +63,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
   "FlowGraphs" must {
 
     "support broadcast - merge layouts" in {
-      val resultFuture = FutureDrain[Seq[Int]]
+      val resultFuture = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
@@ -75,14 +75,14 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         merge ~> Flow[Int].grouped(10) ~> resultFuture
       }.run()
 
-      Await.result(g.materializedDrain(resultFuture), 3.seconds).sorted should be(List(1, 2, 3, 4, 5, 6))
+      Await.result(g.get(resultFuture), 3.seconds).sorted should be(List(1, 2, 3, 4, 5, 6))
     }
 
     "support balance - merge (parallelization) layouts" in {
       val elements = 0 to 10
       val in = Source(elements)
       val f = Flow[Int]
-      val out = FutureDrain[Seq[Int]]
+      val out = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]
@@ -95,14 +95,14 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         balance ~> f ~> merge ~> Flow[Int].grouped(elements.size * 2) ~> out
       }.run()
 
-      Await.result(g.materializedDrain(out), 3.seconds).sorted should be(elements)
+      Await.result(g.get(out), 3.seconds).sorted should be(elements)
     }
 
     "support wikipedia Topological_sorting 2" in {
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
-      val resultFuture2 = FutureDrain[Seq[Int]]
-      val resultFuture9 = FutureDrain[Seq[Int]]
-      val resultFuture10 = FutureDrain[Seq[Int]]
+      val resultFuture2 = Sink.future[Seq[Int]]
+      val resultFuture9 = Sink.future[Seq[Int]]
+      val resultFuture10 = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val b3 = Broadcast[Int]("b3")
@@ -112,9 +112,9 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         val m9 = Merge[Int]("m9")
         val m10 = Merge[Int]("m10")
         val m11 = Merge[Int]("m11")
-        val in3 = IterableTap(List(3))
-        val in5 = IterableTap(List(5))
-        val in7 = IterableTap(List(7))
+        val in3 = Source(List(3))
+        val in5 = Source(List(5))
+        val in7 = Source(List(7))
 
         // First layer
         in7 ~> b7
@@ -141,14 +141,14 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
 
       }.run()
 
-      Await.result(g.materializedDrain(resultFuture2), 3.seconds).sorted should be(List(5, 7))
-      Await.result(g.materializedDrain(resultFuture9), 3.seconds).sorted should be(List(3, 5, 7, 7))
-      Await.result(g.materializedDrain(resultFuture10), 3.seconds).sorted should be(List(3, 5, 7))
+      Await.result(g.get(resultFuture2), 3.seconds).sorted should be(List(5, 7))
+      Await.result(g.get(resultFuture9), 3.seconds).sorted should be(List(3, 5, 7, 7))
+      Await.result(g.get(resultFuture10), 3.seconds).sorted should be(List(3, 5, 7))
 
     }
 
     "allow adding of flows to sources and sinks to flows" in {
-      val resultFuture = FutureDrain[Seq[Int]]
+      val resultFuture = Sink.future[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
@@ -160,16 +160,16 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         merge ~> Flow[Int].grouped(10).connect(resultFuture)
       }.run()
 
-      Await.result(g.materializedDrain(resultFuture), 3.seconds) should contain theSameElementsAs (Seq(2, 4, 6, 5, 7, 9))
+      Await.result(g.get(resultFuture), 3.seconds) should contain theSameElementsAs (Seq(2, 4, 6, 5, 7, 9))
     }
 
     "be able to run plain flow" in {
-      val p = Source(List(1, 2, 3)).runWith(PublisherDrain())
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val s = SubscriberProbe[Int]
       val flow = Flow[Int].map(_ * 2)
       FlowGraph { implicit builder ⇒
         import FlowGraphImplicits._
-        PublisherTap(p) ~> flow ~> SubscriberDrain(s)
+        Source(p) ~> flow ~> Sink(s)
       }.run()
       val sub = s.expectSubscription()
       sub.request(10)
@@ -193,8 +193,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val s2 = SubscriberProbe[String]
       FlowGraph(partial) { builder ⇒
         builder.attachSource(input1, Source(List(0, 1, 2).map(_ + 1)))
-        builder.attachSink(output1, Flow[Int].filter(n ⇒ (n % 2) != 0).connect(SubscriberDrain(s1)))
-        builder.attachSink(output2, Flow[String].map(_.toUpperCase).connect(SubscriberDrain(s2)))
+        builder.attachSink(output1, Flow[Int].filter(n ⇒ (n % 2) != 0).connect(Sink(s1)))
+        builder.attachSink(output2, Flow[String].map(_.toUpperCase).connect(Sink(s2)))
       }.run()
 
       val sub1 = s1.expectSubscription()
@@ -216,7 +216,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val lego3 = lego1.connect(lego2, Flow[ByteString].map(_.utf8String))
       val source = Source(List("green ", "blue", "red", "yellow", "black"))
       val s = SubscriberProbe[ByteString]
-      val sink = SubscriberDrain(s)
+      val sink = Sink(s)
       lego3.run(source, sink)
       val sub = s.expectSubscription()
       sub.request(100)

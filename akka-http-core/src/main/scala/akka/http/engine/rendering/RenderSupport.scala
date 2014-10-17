@@ -33,9 +33,9 @@ private object RenderSupport {
   // This hooks into the materialization to cancel the not needed second source. This helper class
   // allows us to not take a FlowMaterializer but delegate the cancellation to the point when the whole stream
   // materializes
-  private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleTap[T] {
+  private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleActorFlowSource[T] {
     override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
-      first.connect(SubscriberDrain(flowSubscriber)).run()(materializer)
+      first.connect(Sink(flowSubscriber)).run()(materializer)
       second.connect(Sink.cancelled).run()(materializer)
     }
   }

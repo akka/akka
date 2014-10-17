@@ -30,10 +30,10 @@ class FlowGraphCompileSpec extends AkkaSpec {
   val f5 = Flow[String].transform("f5", op[String, String])
   val f6 = Flow[String].transform("f6", op[String, String])
 
-  val in1 = IterableTap(List("a", "b", "c"))
-  val in2 = IterableTap(List("d", "e", "f"))
-  val out1 = PublisherDrain[String]
-  val out2 = FutureDrain[String]
+  val in1 = Source(List("a", "b", "c"))
+  val in2 = Source(List("d", "e", "f"))
+  val out1 = Sink.publisher[String]
+  val out2 = Sink.future[String]
 
   "FlowGraph" should {
     "build simple merge" in {
@@ -153,12 +153,12 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val m9 = Merge[String]
         val m10 = Merge[String]
         val m11 = Merge[String]
-        val in3 = IterableTap(List("b"))
-        val in5 = IterableTap(List("b"))
-        val in7 = IterableTap(List("a"))
-        val out2 = PublisherDrain[String]
-        val out9 = PublisherDrain[String]
-        val out10 = PublisherDrain[String]
+        val in3 = Source(List("b"))
+        val in5 = Source(List("b"))
+        val in7 = Source(List("a"))
+        val out2 = Sink.publisher[String]
+        val out9 = Sink.publisher[String]
+        val out10 = Sink.publisher[String]
         def f(s: String) = Flow[String].transform(s, op[String, String])
         import FlowGraphImplicits._
 
@@ -188,7 +188,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         b.attachSink(undefinedSink1, out1)
 
       }.run()
-      mg.materializedDrain(out1) should not be (null)
+      mg.get(out1) should not be (null)
     }
 
     "build partial flow graphs" in {
@@ -210,19 +210,19 @@ class FlowGraphCompileSpec extends AkkaSpec {
         import FlowGraphImplicits._
         b.attachSource(undefinedSource1, in1)
         b.attachSource(undefinedSource2, in2)
-        bcast ~> f5 ~> UndefinedSink[String]("drain2")
+        bcast ~> f5 ~> UndefinedSink[String]("sink2")
       }
       partial2.undefinedSources should be(Set.empty)
-      partial2.undefinedSinks should be(Set(undefinedSink1, UndefinedSink[String]("drain2")))
+      partial2.undefinedSinks should be(Set(undefinedSink1, UndefinedSink[String]("sink2")))
 
       FlowGraph(partial2) { b ⇒
         b.attachSink(undefinedSink1, out1)
-        b.attachSink(UndefinedSink[String]("drain2"), out2)
+        b.attachSink(UndefinedSink[String]("sink2"), out2)
       }.run()
 
       FlowGraph(partial2) { b ⇒
         b.attachSink(undefinedSink1, f1.connect(out1))
-        b.attachSink(UndefinedSink[String]("drain2"), f2.connect(out2))
+        b.attachSink(UndefinedSink[String]("sink2"), f2.connect(out2))
       }.run()
 
       FlowGraph(partial1) { implicit b ⇒
@@ -248,7 +248,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
     "chain input and output ports" in {
       FlowGraph { implicit b ⇒
         val zip = Zip[Int, String]
-        val out = PublisherDrain[(Int, String)]
+        val out = Sink.publisher[(Int, String)]
         import FlowGraphImplicits._
         Source(List(1, 2, 3)) ~> zip.left ~> out
         Source(List("a", "b", "c")) ~> zip.right
@@ -259,7 +259,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
       FlowGraph { implicit b ⇒
         val zip = Zip[Int, String]
         val unzip = Unzip[Int, String]
-        val out = PublisherDrain[(Int, String)]
+        val out = Sink.publisher[(Int, String)]
         import FlowGraphImplicits._
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
         unzip.left ~> Flow[Int].map(_ * 2) ~> zip.left
@@ -273,8 +273,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         FlowGraph { implicit b ⇒
           val zip = Zip[Int, String]
           val unzip = Unzip[Int, String]
-          val wrongOut = PublisherDrain[(Int, Int)]
-          val whatever = PublisherDrain[Any]
+          val wrongOut = Sink.publisher[(Int, Int)]
+          val whatever = Sink.publisher[Any]
           "Flow(List(1, 2, 3)) ~> zip.left ~> wrongOut" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.left""" shouldNot compile
           """Flow(List("a", "b", "c")) ~> zip.out""" shouldNot compile
@@ -308,7 +308,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build with variance" in {
-      val out = SubscriberDrain(SubscriberProbe[Fruit]())
+      val out = Sink(SubscriberProbe[Fruit]())
       FlowGraph { b ⇒
         val merge = Merge[Fruit]
         b.
@@ -320,13 +320,13 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
     "build with implicits and variance" in {
       PartialFlowGraph { implicit b ⇒
-        val inA = PublisherTap(PublisherProbe[Fruit]())
-        val inB = PublisherTap(PublisherProbe[Apple]())
-        val outA = SubscriberDrain(SubscriberProbe[Fruit]())
-        val outB = SubscriberDrain(SubscriberProbe[Fruit]())
+        val inA = Source(PublisherProbe[Fruit]())
+        val inB = Source(PublisherProbe[Apple]())
+        val outA = Sink(SubscriberProbe[Fruit]())
+        val outB = Sink(SubscriberProbe[Fruit]())
         val merge = Merge[Fruit]
         val unzip = Unzip[Int, String]
-        val whatever = PublisherDrain[Any]
+        val whatever = Sink.publisher[Any]
         import FlowGraphImplicits._
         Source[Fruit](() ⇒ Some(new Apple)) ~> merge
         Source[Apple](() ⇒ Some(new Apple)) ~> merge

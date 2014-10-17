@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl2.FlowMaterializer
-import akka.stream.scaladsl2.PublisherDrain
+import akka.stream.scaladsl2.Sink
 import akka.stream.scaladsl2.Source
 import akka.stream.testkit.AkkaSpec
 import org.reactivestreams.Publisher
@@ -62,7 +62,7 @@ trait AkkaSubscriberVerificationLike {
       if (elements == Long.MaxValue) 1 to Int.MaxValue
       else 0 until elements.toInt
 
-    Source(iterable).runWith(PublisherDrain())
+    Source(iterable).runWith(Sink.publisher)
   }
 
   @AfterClass

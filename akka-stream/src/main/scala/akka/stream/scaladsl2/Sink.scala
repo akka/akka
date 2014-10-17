@@ -4,10 +4,7 @@
 package akka.stream.scaladsl2
 
 import org.reactivestreams.Subscriber
-
-import scala.concurrent.Future
-import scala.language.implicitConversions
-import scala.annotation.unchecked.uncheckedVariance
+import scala.util.Try
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
@@ -15,25 +12,25 @@ import scala.annotation.unchecked.uncheckedVariance
  */
 trait Sink[-In] {
   /**
-   * Connect this `Sink` to a `Tap` and run it. The returned value is the materialized value
-   * of the `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
+   * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def runWith(tap: TapWithKey[In])(implicit materializer: FlowMaterializer): tap.MaterializedType =
-    tap.connect(this).run().materializedTap(tap)
+  def runWith(source: KeyedSource[In])(implicit materializer: FlowMaterializer): source.MaterializedType =
+    source.connect(this).run().get(source)
 
   /**
-   * Connect this `Sink` to a `Tap` and run it. The returned value is the materialized value
-   * of the `Tap`, e.g. the `Subscriber` of a [[SubscriberTap]].
+   * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
+   * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def runWith(tap: SimpleTap[In])(implicit materializer: FlowMaterializer): Unit =
-    tap.connect(this).run()
+  def runWith(source: Source[In])(implicit materializer: FlowMaterializer): Unit =
+    source.connect(this).run()
 }
 
 object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def apply[T](subscriber: Subscriber[T]): Drain[T] = SubscriberDrain(subscriber)
+  def apply[T](subscriber: Subscriber[T]): Sink[T] = SubscriberSink(subscriber)
 
   /**
    * Creates a `Sink` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
@@ -49,13 +46,69 @@ object Sink {
   def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
     createSinkFromBuilder(new FlowGraphBuilder(graph.graph), block)
 
-  /**
-   * A `Sink` that immediately cancels its upstream after materialization.
-   */
-  def cancelled[T]: Drain[T] = CancelDrain
-
   private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
     val in = block(builder)
     builder.partialBuild().toSink(in)
   }
+
+  /**
+   * A `Sink` that immediately cancels its upstream after materialization.
+   */
+  def cancelled[T]: Sink[T] = CancelSink
+
+  /**
+   * A `Sink` that materializes into a `Future` of the first value received.
+   */
+  def future[T]: FutureSink[T] = FutureSink[T]
+
+  /**
+   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
+   * that can handle one [[org.reactivestreams.Subscriber]].
+   */
+  def publisher[T]: PublisherSink[T] = PublisherSink[T]
+
+  /**
+   * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
+   * that can handle more than one [[org.reactivestreams.Subscriber]].
+   */
+  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
+    FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
+
+  /**
+   * A `Sink` that will consume the stream and discard the elements.
+   */
+  def ignore: Sink[Any] = BlackholeSink
+
+  /**
+   * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
+   * into a [[scala.concurrent.Future]] will be completed with `Success` when reaching the
+   * normal end of the stream, or completed with `Failure` if there is an error is signaled in
+   * the stream..
+   */
+  def foreach[T](f: T ⇒ Unit): ForeachSink[T] = ForeachSink(f)
+
+  /**
+   * A `Sink` that will invoke the given function for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[scala.concurrent.Future]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is an error is signaled in the stream.
+   */
+  def fold[U, T](zero: U)(f: (U, T) ⇒ U): FoldSink[U, T] = FoldSink(zero)(f)
+
+  /**
+   * A `Sink` that when the flow is completed, either through an error or normal
+   * completion, apply the provided function with [[scala.util.Success]]
+   * or [[scala.util.Failure]].
+   */
+  def onComplete[T](callback: Try[Unit] ⇒ Unit): Sink[T] = OnCompleteSink[T](callback)
+}
+
+/**
+ * A `Sink` that will create an object during materialization that the user will need
+ * to retrieve in order to access aspects of this sink (could be a completion Future
+ * or a cancellation handle, etc.)
+ */
+trait KeyedSink[-In] extends Sink[In] {
+  type MaterializedType
 }

@@ -5,9 +5,8 @@ import akka.actor.ActorSystem;
 import akka.actor.Props;
 import akka.stream.MaterializerSettings;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
-import akka.stream.javadsl.Drain;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.SubscriberDrain;
 import akka.stream.scaladsl2.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -70,7 +69,7 @@ public class ActorSubscriberTest {
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.util.Iterator<Integer> input = Arrays.asList(1, 2, 3).iterator();
 
-    Source.from(input).runWith(SubscriberDrain.create(subscriber), materializer);
+    Source.from(input).runWith(Sink.subscriber(subscriber), materializer);
 
     ref.tell("run", null);
     probe.expectMsgEquals(1);

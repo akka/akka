@@ -18,7 +18,7 @@ class FlowThunkSpec extends AkkaSpec {
     "produce elements" in {
 
       val iter = List(1, 2, 3).iterator
-      val p = Source(() ⇒ if (iter.hasNext) Some(iter.next()) else None).map(_ + 10).runWith(PublisherDrain())
+      val p = Source(() ⇒ if (iter.hasNext) Some(iter.next()) else None).map(_ + 10).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -32,7 +32,7 @@ class FlowThunkSpec extends AkkaSpec {
     }
 
     "complete empty" in {
-      val p = Source(() ⇒ None).runWith(PublisherDrain())
+      val p = Source(() ⇒ None).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -44,7 +44,7 @@ class FlowThunkSpec extends AkkaSpec {
     "allow cancel before receiving all elements" in {
       val count = 100000
       val iter = (1 to count).iterator
-      val p = Source(() ⇒ if (iter.hasNext) Some(iter.next()) else None).runWith(PublisherDrain())
+      val p = Source(() ⇒ if (iter.hasNext) Some(iter.next()) else None).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
