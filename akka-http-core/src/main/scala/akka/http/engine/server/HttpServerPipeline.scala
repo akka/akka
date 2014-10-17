@@ -32,11 +32,11 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
   def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
     import FlowGraphImplicits._
 
-    val networkIn = PublisherTap(tcpConn.inputStream)
-    val networkOut = SubscriberDrain(tcpConn.outputStream)
+    val networkIn = Source(tcpConn.inputStream)
+    val networkOut = Sink(tcpConn.outputStream)
 
-    val userIn = PublisherDrain[HttpRequest]()
-    val userOut = SubscriberTap[HttpResponse]()
+    val userIn = Sink.publisher[HttpRequest]
+    val userOut = Source.subscriber[HttpResponse]
 
     val pipeline = FlowGraph { implicit b ⇒
       val bypassFanout = Broadcast[(RequestOutput, Source[RequestOutput])]("bypassFanout")
@@ -73,7 +73,7 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
 
     }.run()
 
-    Http.IncomingConnection(tcpConn.remoteAddress, pipeline.materializedDrain(userIn), pipeline.materializedTap(userOut))
+    Http.IncomingConnection(tcpConn.remoteAddress, pipeline.get(userIn), pipeline.get(userOut))
   }
 
   /**

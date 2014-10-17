@@ -18,7 +18,6 @@ import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.Function1;
 import scala.Option;
 import scala.collection.immutable.Seq;
 import scala.concurrent.Await;
@@ -26,7 +25,6 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
-import scala.util.Success;
 import scala.util.Try;
 
 import java.util.*;
@@ -317,10 +315,10 @@ public class FlowTest {
     final Flow<String, String> f2 = Flow.of(String.class).transform("f2", this.<String, String>op()); // javadsl
     final Flow<String, String> f3 = Flow.of(String.class).transform("f2", this.<String, String>op()); // javadsl
 
-    final IterableTap<String> in1 = IterableTap.create(Arrays.asList("a", "b", "c"));
-    final IterableTap<String> in2 = IterableTap.create(Arrays.asList("d", "e", "f"));
+    final Source<String> in1 = Source.from(Arrays.asList("a", "b", "c"));
+    final Source<String> in2 = Source.from(Arrays.asList("d", "e", "f"));
 
-    final PublisherDrain<String> publisher = PublisherDrain.create();
+    final KeyedSink<String, Publisher<String>> publisher = Sink.publisher();
 
     // this is red in intellij, but actually valid, scalac generates bridge methods for Java, so inference *works*
     final Merge<String> merge = Merge.<String>create();
@@ -333,8 +331,8 @@ public class FlowTest {
       run(materializer);
 
     // collecting
-    final Publisher<String> pub = m.materializedDrain(publisher);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(FutureDrain.<List<String>>create(), materializer);
+    final Publisher<String> pub = m.get(publisher);
+    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>future(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -411,7 +409,7 @@ public class FlowTest {
     final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input)
-      .runWith(OnCompleteDrain.<String>create(
+      .runWith(Sink.<String>onComplete(
                  new OnComplete<BoxedUnit>() {
                    @Override public void onComplete(Throwable failure, BoxedUnit success) throws Throwable {
                      probe.getRef().tell(success, ActorRef.noSender());
@@ -431,7 +429,7 @@ public class FlowTest {
       public String apply(String arg0) throws Exception {
         throw new RuntimeException("simulated err");
       }
-    }).runWith(FutureDrain.<String>create(), materializer)
+    }).runWith(Sink.<String>future(), materializer)
       .onComplete(new OnSuccess<Try<String>>() {
         @Override public void onSuccess(Try<String> e) throws Throwable {
           if (e == null) {
@@ -449,7 +447,7 @@ public class FlowTest {
   public void mustBeAbleToUseToFuture() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
-    Future<String> future = Source.from(input).runWith(FutureDrain.<String>create(), materializer);
+    Future<String> future = Source.from(input).runWith(Sink.<String>future(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
@@ -461,11 +459,11 @@ public class FlowTest {
     Future<Pair<List<Integer>, Source<Integer>>> future = Source
       .from(input)
       .prefixAndTail(3)
-      .runWith(FutureDrain.<Pair<List<Integer>, Source<Integer>>>create(), materializer);
+      .runWith(Sink.<Pair<List<Integer>, Source<Integer>>>future(), materializer);
     Pair<List<Integer>, Source<Integer>> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(FutureDrain.<List<Integer>>create(), materializer);
+    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>future(), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }
@@ -484,7 +482,7 @@ public class FlowTest {
       .from(mainInputs)
       .flatten(akka.stream.javadsl.FlattenStrategy.<Integer>concat())
       .grouped(6)
-      .runWith(FutureDrain.<List<Integer>>create(), materializer);
+      .runWith(Sink.<List<Integer>>future(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
 
@@ -497,7 +495,7 @@ public class FlowTest {
     final List<String> input = Arrays.asList("A", "B", "C");
     Future<List<String>> future = Source.from(input)
       .buffer(2, OverflowStrategy.backpressure()).grouped(4)
-      .runWith(FutureDrain.<List<String>>create(), materializer);
+      .runWith(Sink.<List<String>>future(), materializer);
 
     List<String> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(input, result);
@@ -543,7 +541,7 @@ public class FlowTest {
         public Pair<String, String> apply(String in) throws Exception {
           return new Pair<String, String>(in, in);
         }
-      }).runWith(FutureDrain.<String>create(), materializer);
+      }).runWith(Sink.<String>future(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }

@@ -95,7 +95,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |test@there.com
           |-----""".stripMarginWithNewline("\r\n")))
         .to[MultipartContent], 1.second)
-      Await.result(mpc.parts.runWith(FutureDrain()).failed, 1.second).getMessage shouldEqual
+      Await.result(mpc.parts.runWith(Sink.future).failed, 1.second).getMessage shouldEqual
         "multipart part must not contain more than one Content-Type header"
     }
 
@@ -173,14 +173,14 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   def haveParts[T <: MultipartParts](parts: BodyPart*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[BodyPart]] compose { x ⇒
       Await.result(x
-        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(FutureDrain()))
+        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(Sink.future))
         .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second)
     }
 
   def haveFormData(fields: (String, BodyPart)*): Matcher[Future[MultipartFormData]] =
     equal(fields).matcher[Seq[(String, BodyPart)]] compose { x ⇒
       Await.result(x
-        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(FutureDrain()))
+        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(Sink.future))
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
         .fast.map {
           _ map { part ⇒

@@ -6,7 +6,7 @@ package akka.http
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
-import akka.stream.scaladsl2.{ SubscriberDrain, Source, FlowMaterializer }
+import akka.stream.scaladsl2.{ Sink, Source, FlowMaterializer }
 import akka.io.IO
 import akka.util.Timeout
 import akka.actor.ActorSystem
@@ -38,7 +38,7 @@ object TestServer extends App {
       Source(connectionStream).foreach {
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Source(requestPublisher).map(requestHandler).connect(SubscriberDrain(responseSubscriber)).run()
+          Source(requestPublisher).map(requestHandler).connect(Sink(responseSubscriber)).run()
       }
   }
 

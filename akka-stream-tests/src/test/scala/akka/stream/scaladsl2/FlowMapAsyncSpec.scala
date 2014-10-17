@@ -23,7 +23,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     "produce future elements" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 3).mapAsync(n ⇒ Future(n)).connect(SubscriberDrain(c)).run()
+      val p = Source(1 to 3).mapAsync(n ⇒ Future(n)).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)
@@ -40,7 +40,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val p = Source(1 to 50).mapAsync(n ⇒ Future {
         Thread.sleep(ThreadLocalRandom.current().nextInt(1, 10))
         n
-      }).connect(SubscriberDrain(c)).run()
+      }).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(1000)
       for (n ← 1 to 50) c.expectNext(n)
@@ -54,7 +54,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val p = Source(1 to 20).mapAsync(n ⇒ Future {
         probe.ref ! n
         n
-      }).connect(SubscriberDrain(c)).run()
+      }).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       // nothing before requested
       probe.expectNoMsg(500.millis)
@@ -82,7 +82,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
           Await.ready(latch, 10.seconds)
           n
         }
-      }).connect(SubscriberDrain(c)).run()
+      }).connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -101,7 +101,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
             n
           }
         }).
-        connect(SubscriberDrain(c)).run()
+        connect(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")

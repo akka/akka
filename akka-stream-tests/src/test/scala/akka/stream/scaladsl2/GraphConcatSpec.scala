@@ -32,7 +32,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
         concat1.out ~> concat2.first
         Source((5 to 10).iterator) ~> concat2.second
 
-        concat2.out ~> SubscriberDrain(probe)
+        concat2.out ~> Sink(probe)
       }.run()
 
       val subscription = probe.expectSubscription()
@@ -111,7 +111,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
         val concat = Concat[Int]
         Source(List(1, 2, 3)) ~> concat.first
         Source(promise.future) ~> concat.second
-        concat.out ~> SubscriberDrain(subscriber)
+        concat.out ~> Sink(subscriber)
       }.run()
 
       val subscription = subscriber.expectSubscription()
