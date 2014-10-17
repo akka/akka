@@ -8,21 +8,21 @@ import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 
 object GraphFlowSpec {
-  val tap1 = Source(0 to 3)
+  val source1 = Source(0 to 3)
   val inMerge = Merge[Int]("m1")
   val outMerge = Merge[String]("m3")
 
   val partialGraph = PartialFlowGraph { implicit b ⇒
     import FlowGraphImplicits._
-    val tap2 = Source(4 to 9)
-    val tap3 = Source.empty[Int]
-    val tap4 = Source.empty[String]
+    val source2 = Source(4 to 9)
+    val source3 = Source.empty[Int]
+    val source4 = Source.empty[String]
     val m2 = Merge[Int]("m2")
 
     inMerge ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(i ⇒ (i + 1).toString) ~> outMerge
-    tap2 ~> inMerge
-    tap3 ~> m2
-    tap4 ~> outMerge
+    source2 ~> inMerge
+    source3 ~> m2
+    source4 ~> outMerge
   }
 
   val stdRequests = 10
@@ -54,7 +54,7 @@ class GraphFlowSpec extends AkkaSpec {
 
   "FlowGraphs" when {
     "turned into flows" should {
-      "work with a Tap and Drain" in {
+      "work with a Source and Sink" in {
         val in = UndefinedSource[Int]
         val out = UndefinedSink[Int]
         val probe = StreamTestKit.SubscriberProbe[Int]()
@@ -66,7 +66,7 @@ class GraphFlowSpec extends AkkaSpec {
           in -> out
         }
 
-        tap1.connect(flow).connect(Sink(probe)).run()
+        source1.connect(flow).connect(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -84,7 +84,7 @@ class GraphFlowSpec extends AkkaSpec {
           in -> out
         }
 
-        tap1.connect(flow).map(_.toInt).connect(Sink(probe)).run()
+        source1.connect(flow).map(_.toInt).connect(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -111,7 +111,7 @@ class GraphFlowSpec extends AkkaSpec {
           in2 -> out2
         }
 
-        tap1.connect(flow1).connect(flow2).connect(Sink(probe)).run()
+        source1.connect(flow1).connect(flow2).connect(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -137,13 +137,13 @@ class GraphFlowSpec extends AkkaSpec {
     }
 
     "turned into sources" should {
-      "work with a Drain" in {
+      "work with a Sink" in {
         val out = UndefinedSink[Int]
         val probe = StreamTestKit.SubscriberProbe[Int]()
 
         val source = Source(partialGraph) { implicit b ⇒
           import FlowGraphImplicits._
-          tap1 ~> inMerge
+          source1 ~> inMerge
           outMerge ~> Flow[String].map(_.toInt) ~> out
           out
         }
@@ -160,7 +160,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         val source = Source[String](partialGraph) { implicit b ⇒
           import FlowGraphImplicits._
-          tap1 ~> inMerge
+          source1 ~> inMerge
           outMerge ~> out
           out
         }
@@ -180,7 +180,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         val source = Source(partialGraph) { implicit b ⇒
           import FlowGraphImplicits._
-          tap1 ~> inMerge
+          source1 ~> inMerge
           outMerge ~> out1
           out1
         }
@@ -217,7 +217,7 @@ class GraphFlowSpec extends AkkaSpec {
       }
     }
     "turned into sinks" should {
-      "work with a Tap" in {
+      "work with a Source" in {
         val in = UndefinedSource[Int]
         val probe = StreamTestKit.SubscriberProbe[Int]()
 
@@ -228,7 +228,7 @@ class GraphFlowSpec extends AkkaSpec {
           in
         }
 
-        tap1.connect(sink).run()
+        source1.connect(sink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -246,7 +246,7 @@ class GraphFlowSpec extends AkkaSpec {
         }
 
         val iSink = Flow[Int].map(_.toString).connect(sink)
-        tap1.connect(iSink).run()
+        source1.connect(iSink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -272,7 +272,7 @@ class GraphFlowSpec extends AkkaSpec {
           in2
         }
 
-        tap1.connect(flow).connect(sink).run()
+        source1.connect(flow).connect(sink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -281,8 +281,8 @@ class GraphFlowSpec extends AkkaSpec {
     "used together" should {
       "materialize properly" in {
         val probe = StreamTestKit.SubscriberProbe[Int]()
-        val inSource = SubscriberTap[Int]
-        val outSink = PublisherDrain[Int]
+        val inSource = Source.subscriber[Int]
+        val outSink = Sink.publisher[Int]
 
         val flow = Flow(partialGraph) { implicit b ⇒
           import FlowGraphImplicits._
@@ -312,9 +312,9 @@ class GraphFlowSpec extends AkkaSpec {
           source ~> Flow[String].map(_.toInt) ~> flow ~> Flow[Int].map(_.toString) ~> sink
         }.run()
 
-        val subscriber = mm.materializedTap(inSource)
-        val publisher = mm.materializedDrain(outSink)
-        tap1.runWith(PublisherDrain()).subscribe(subscriber)
+        val subscriber = mm.get(inSource)
+        val publisher = mm.get(outSink)
+        source1.runWith(Sink.publisher).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, stdRequests, stdResult)

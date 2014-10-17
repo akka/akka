@@ -219,7 +219,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
   val in1 = Source(List("a", "b", "c", "d"))
   val in2 = Source(List("e", "f"))
 
-  val out1 = PublisherDrain[String]
+  val out1 = Sink.publisher[String]
 
   "FlexiMerge" must {
 
@@ -231,7 +231,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -249,7 +249,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -263,7 +263,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "build simple zip merge" in {
-      val output = PublisherDrain[(Int, String)]
+      val output = Sink.publisher[(Int, String)]
       val m = FlowGraph { implicit b ⇒
         val merge = new Zip[Int, String]
         Source(List(1, 2, 3, 4)) ~> merge.input1
@@ -272,7 +272,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[(Int, String)]
-      val p = m.materializedDrain(output)
+      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -283,7 +283,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "build simple ordered merge 1" in {
-      val output = PublisherDrain[Int]
+      val output = Sink.publisher[Int]
       val m = FlowGraph { implicit b ⇒
         val merge = new OrderedMerge
         Source(List(3, 5, 6, 7, 8)) ~> merge.input1
@@ -292,7 +292,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[Int]
-      val p = m.materializedDrain(output)
+      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(100)
@@ -302,7 +302,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "build simple ordered merge 2" in {
-      val output = PublisherDrain[Int]
+      val output = Sink.publisher[Int]
       val m = FlowGraph { implicit b ⇒
         val merge = new OrderedMerge
         Source(List(3, 5, 6, 7, 8)) ~> merge.input1
@@ -311,7 +311,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[Int]
-      val p = m.materializedDrain(output)
+      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(100)
@@ -340,7 +340,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
 
       val autoPublisher = new AutoPublisher(publisher)
@@ -376,7 +376,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
 
       val autoPublisher1 = new AutoPublisher(publisher1)
@@ -409,7 +409,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -433,7 +433,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       s.expectErrorOrSubscriptionFollowedByError().getMessage should be("ERROR")
     }
@@ -448,7 +448,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -467,7 +467,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -486,7 +486,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.materializedDrain(out1)
+      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)

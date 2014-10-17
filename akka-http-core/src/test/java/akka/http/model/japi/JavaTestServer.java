@@ -12,8 +12,8 @@ import akka.dispatch.Foreach;
 import akka.japi.Function;
 import akka.japi.Procedure;
 import akka.stream.javadsl.Flow;
+import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.javadsl.SubscriberDrain;
 import akka.stream.scaladsl2.FlowMaterializer;
 import scala.concurrent.Future;
 
@@ -46,7 +46,7 @@ public abstract class JavaTestServer {
                 System.out.println("Handling request to " + request.getUri());
                 return JavaApiTestCases.handleRequest(request);
               }
-            }).runWith(SubscriberDrain.create(conn.getResponseSubscriber()), materializer);
+            }).runWith(Sink.subscriber(conn.getResponseSubscriber()), materializer);
           }
         }, materializer);
       }

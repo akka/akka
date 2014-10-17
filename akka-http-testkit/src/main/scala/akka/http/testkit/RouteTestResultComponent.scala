@@ -94,6 +94,6 @@ trait RouteTestResultComponent {
       failTest("Request was neither completed nor rejected within " + timeout)
 
     private def awaitAllElements[T](data: Source[T]): immutable.Seq[T] =
-      Await.result(data.grouped(Int.MaxValue).runWith(FutureDrain()), timeout)
+      Await.result(data.grouped(Int.MaxValue).runWith(Sink.future), timeout)
   }
 }

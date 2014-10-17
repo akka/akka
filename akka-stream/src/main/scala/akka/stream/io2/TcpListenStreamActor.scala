@@ -41,26 +41,26 @@ private[akka] object TcpListenStreamActor {
       }
     }
 
-    val sink = new SimpleDrain[ByteString] {
+    val sink = new SimpleActorFlowSink[ByteString] {
       override def attach(flowPublisher: Publisher[ByteString], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
         val p = processor(materializer, flowName)
         flowPublisher.subscribe(p)
       }
 
-      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[ByteString] =
-        processor(materializer, flowName)
+      override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
+        (processor(materializer, flowName), ())
 
       override def isActive: Boolean = true
     }
 
-    val source = new SimpleTap[ByteString] {
+    val source = new SimpleActorFlowSource[ByteString] {
       override def attach(flowSubscriber: Subscriber[ByteString], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
         val p = processor(materializer, flowName)
         p.subscribe(flowSubscriber)
       }
 
-      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[ByteString] =
-        processor(materializer, flowName)
+      override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
+        (processor(materializer, flowName), ())
 
       override def isActive = true
     }
