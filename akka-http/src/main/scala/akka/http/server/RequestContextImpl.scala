@@ -28,19 +28,20 @@ private[http] class RequestContextImpl(
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
-      .fast.map(res ⇒ RouteResult.complete(res))(executionContext)
-      .fast.recover {
-        case RejectionError(rej) ⇒ RouteResult.rejected(rej :: Nil)
-      }(executionContext)
+      .fast.map(res ⇒ RouteResult.Complete(res))(executionContext)
+      .fast.recover { case RejectionError(rej) ⇒ RouteResult.Rejected(rej :: Nil) }(executionContext)
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
-    FastFuture.successful(RouteResult.rejected(rejections.toVector))
+    FastFuture.successful(RouteResult.Rejected(rejections.toVector))
 
   override def fail(error: Throwable): Future[RouteResult] =
     FastFuture.failed(error)
 
   override def withRequest(req: HttpRequest): RequestContext =
     copy(request = req)
+
+  override def withExecutionContext(ec: ExecutionContext): RequestContext =
+    copy(executionContext = ec)
 
   override def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
