@@ -409,12 +409,11 @@ public class FlowTest {
     final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input)
-      .runWith(Sink.<String>onComplete(
-                 new OnComplete<BoxedUnit>() {
-                   @Override public void onComplete(Throwable failure, BoxedUnit success) throws Throwable {
-                     probe.getRef().tell(success, ActorRef.noSender());
-                   }
-                 }),
+      .runWith(Sink.<String>onComplete(new Procedure<BoxedUnit>() {
+                 @Override public void apply(BoxedUnit param) throws Exception {
+                   probe.getRef().tell(param, ActorRef.noSender());
+                 }
+               }),
                materializer);
 
     probe.expectMsgClass(BoxedUnit.class);

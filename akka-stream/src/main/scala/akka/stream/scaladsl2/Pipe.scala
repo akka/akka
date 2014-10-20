@@ -81,7 +81,7 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
 /**
  * Pipe with attached input and output, can be executed.
  */
-private[scaladsl2] final case class RunnablePipe(input: Source[_], output: Sink[_], ops: List[AstNode]) extends RunnableFlow {
+private[stream] final case class RunnablePipe(input: Source[_], output: Sink[_], ops: List[AstNode]) extends RunnableFlow {
   def run()(implicit materializer: FlowMaterializer): MaterializedMap =
     materializer.materialize(input, output, ops)
 }
