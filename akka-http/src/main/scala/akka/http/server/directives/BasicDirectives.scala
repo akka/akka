@@ -136,18 +136,18 @@ trait BasicDirectives {
   /**
    * Extracts the [[ExecutionContext]] from the [[RequestContext]].
    */
-  def withExecutionContext: Directive1[ExecutionContext] = BasicDirectives._withExecutionContext
+  def extractExecutionContext: Directive1[ExecutionContext] = BasicDirectives._extractExecutionContext
 
   /**
    * Extracts the [[RequestContext]] itself.
    */
-  def withRequestContext: Directive1[RequestContext] = BasicDirectives._withRequestContext
+  def extractRequestContext: Directive1[RequestContext] = BasicDirectives._extractRequestContext
 }
 
 object BasicDirectives extends BasicDirectives {
   private val _unmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
   private val _requestInstance: Directive1[HttpRequest] = extract(_.request)
   private val _requestUri: Directive1[Uri] = extract(_.request.uri)
-  private val _withExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
-  private val _withRequestContext: Directive1[RequestContext] = extract(akka.http.util.identityFunc)
+  private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
+  private val _extractRequestContext: Directive1[RequestContext] = extract(akka.http.util.identityFunc)
 }
