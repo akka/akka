@@ -3,12 +3,13 @@
  */
 package akka.stream.javadsl
 
-import akka.stream.javadsl
-import akka.stream.scaladsl2
-
 import akka.stream._
 import akka.stream.scaladsl2
 import akka.stream.scaladsl2
+import akka.stream.scaladsl2
+import impl2.Ast
+
+import akka.stream._
 
 // elements //
 
@@ -164,8 +165,7 @@ object Broadcast {
  * two downstream subscribers have been established.
  */
 class Broadcast[T](delegate: scaladsl2.Broadcast[T]) extends javadsl.Junction[T] {
-  /** Convert this element to it's `scaladsl2` equivalent. */
-  def asScala: scaladsl2.Broadcast[T] = delegate
+  override def asScala: scaladsl2.Broadcast[T] = delegate
 }
 
 object Balance {
@@ -211,7 +211,169 @@ class Balance[T](delegate: scaladsl2.Balance[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl2.Balance[T] = delegate
 }
 
-// TODO implement: Concat, Zip, Unzip and friends
+object Zip {
+
+  /**
+   * Create a new anonymous `Zip` vertex with the specified input types.
+   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def create[A, B](): Zip[A, B] = create(name = null)
+
+  /**
+   * Create a new anonymous `Zip` vertex with the specified input types.
+   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   */
+  def create[A, B](left: Class[A], right: Class[B]): Zip[A, B] = create[A, B](name = null)
+
+  /**
+   * Create a named `Zip` vertex with the specified input types.
+   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def create[A, B](name: String): Zip[A, B] =
+    new Zip(new scaladsl2.Zip[A, B](Option(name)) {
+      override private[akka] def astNode: Ast.FanInAstNode = Ast.Zip(impl2.Zip.AsJavaPair)
+    })
+
+  /**
+   * Create a named `Zip` vertex with the specified input types.
+   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def create[A, B](name: String, left: Class[A], right: Class[A]): Zip[A, B] =
+    create[A, B](name)
+
+  class Left[A, B](private val zip: Zip[A, B]) extends JunctionInPort[A] {
+    override def asScala: scaladsl2.JunctionInPort[A] = zip.asScala.left
+  }
+  class Right[A, B](private val zip: Zip[A, B]) extends JunctionInPort[B] {
+    override def asScala: scaladsl2.JunctionInPort[B] = zip.asScala.right
+  }
+  class Out[A, B](private val zip: Zip[A, B]) extends JunctionOutPort[akka.japi.Pair[A, B]] {
+    // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
+    override def asScala: scaladsl2.JunctionOutPort[akka.japi.Pair[A, B]] =
+      zip.asScala.out.asInstanceOf[scaladsl2.JunctionOutPort[akka.japi.Pair[A, B]]]
+  }
+}
+
+/**
+ * Takes two streams and outputs an output stream formed from the two input streams
+ * by combining corresponding elements in pairs. If one of the two streams is
+ * longer than the other, its remaining elements are ignored.
+ */
+final class Zip[A, B] private (delegate: scaladsl2.Zip[A, B]) {
+
+  /** Convert this element to it's `scaladsl2` equivalent. */
+  def asScala = delegate
+
+  val left = new Zip.Left(this)
+  val right = new Zip.Right(this)
+  val out = new Zip.Out(this)
+}
+
+object Unzip {
+  def create[A, B](): Unzip[A, B] =
+    create(null)
+
+  def create[A, B](name: String): Unzip[A, B] =
+    new Unzip[A, B](new scaladsl2.Unzip[A, B](Option(name)))
+
+  def create[A, B](left: Class[A], right: Class[B]): Unzip[A, B] =
+    create[A, B]()
+
+  def create[A, B](name: String, left: Class[A], right: Class[B]): Unzip[A, B] =
+    create[A, B](name)
+
+  class In[A, B](private val unzip: Unzip[A, B]) extends JunctionInPort[akka.japi.Pair[A, B]] {
+    // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
+    override def asScala: scaladsl2.JunctionInPort[akka.japi.Pair[A, B]] =
+      unzip.asScala.in.asInstanceOf[scaladsl2.JunctionInPort[akka.japi.Pair[A, B]]]
+  }
+  class Left[A, B](private val unzip: Unzip[A, B]) extends JunctionOutPort[A] {
+    override def asScala: scaladsl2.JunctionOutPort[A] =
+      unzip.asScala.left
+  }
+  class Right[A, B](private val unzip: Unzip[A, B]) extends JunctionOutPort[B] {
+    override def asScala: scaladsl2.JunctionOutPort[B] =
+      unzip.asScala.right
+  }
+}
+
+final class Unzip[A, B] private (delegate: scaladsl2.Unzip[A, B]) {
+
+  /** Convert this element to it's `scaladsl2` equivalent. */
+  def asScala = delegate
+
+  val in = new Unzip.In(this)
+  val left = new Unzip.Left(this)
+  val right = new Unzip.Right(this)
+}
+
+object Concat {
+  /**
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   */
+  def create[T](): Concat[T] = new Concat(scaladsl2.Concat[T])
+
+  /**
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   */
+  def create[T](clazz: Class[T]): Concat[T] = create()
+
+  /**
+   * Create a named `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def create[T](name: String): Concat[T] = new Concat(scaladsl2.Concat[T](name))
+
+  /**
+   * Create a named `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.*
+   */
+  def create[T](name: String, clazz: Class[T]): Concat[T] = create(name)
+
+  class First[T] private[akka] (delegate: scaladsl2.Concat.First[T]) extends JunctionInPort[T] {
+    override def asScala: scaladsl2.JunctionInPort[T] = delegate
+  }
+  class Second[T] private[akka] (delegate: scaladsl2.Concat.Second[T]) extends JunctionInPort[T] {
+    override def asScala: scaladsl2.JunctionInPort[T] = delegate
+  }
+  class Out[T] private[akka] (delegate: scaladsl2.Concat.Out[T]) extends JunctionOutPort[T] {
+    override def asScala: scaladsl2.JunctionOutPort[T] = delegate
+  }
+
+}
+
+/**
+ * Takes two streams and outputs an output stream formed from the two input streams
+ * by consuming one stream first emitting all of its elements, then consuming the
+ * second stream emitting all of its elements.
+ */
+class Concat[T] private (delegate: scaladsl2.Concat[T]) {
+
+  /** Convert this element to it's `scaladsl2` equivalent. */
+  def asScala = delegate
+
+  val first = new Concat.First[T](delegate.first)
+  val second = new Concat.Second[T](delegate.second)
+  val out = new Concat.Out[T](delegate.out)
+}
 
 // undefined elements //
 
@@ -350,6 +512,11 @@ class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
     this
   }
 
+  def addEdge[In](source: javadsl.Source[In], junctionIn: javadsl.JunctionInPort[In]): FlowGraphBuilder = {
+    b.addEdge(source.asScala, junctionIn.asScala)
+    this
+  }
+
   def addEdge[In, Out](junctionOut: javadsl.JunctionOutPort[In], sink: Sink[In]): FlowGraphBuilder = {
     b.addEdge(junctionOut.asScala, sink.asScala)
     this
@@ -474,6 +641,7 @@ class PartialFlowGraph(delegate: scaladsl2.PartialFlowGraph) {
 
 class FlowGraph(delegate: scaladsl2.FlowGraph) extends RunnableFlow {
 
+  /** Convert this element to it's `scaladsl2` equivalent. */
   def asScala: scaladsl2.FlowGraph = delegate
 
   override def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap =
