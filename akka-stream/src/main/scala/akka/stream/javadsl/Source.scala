@@ -5,11 +5,14 @@ package akka.stream.javadsl
 
 import java.util.concurrent.Callable
 
+import akka.actor.ActorRef
+import akka.actor.Props
 import akka.japi.Util
 import akka.stream._
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scaladsl2.FlowMaterializer
+import scaladsl2.PropsSource
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
@@ -124,6 +127,14 @@ object Source {
     new Source(scaladsl2.Source(graph.asScala)(x ⇒ block.apply(x.asJava).asScala))
 
   /**
+   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorPublisher]].
+   */
+  def from[T](props: Props): KeyedSource[T, ActorRef] =
+    new KeyedSource(scaladsl2.Source.apply(props))
+
+  /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
@@ -174,7 +185,7 @@ class Source[+Out](delegate: scaladsl2.Source[Out]) {
     new Source(delegate.connect(flow.asScala))
 
   /**
-   * Connect this source to a sink, concatenating the processing steps of both.
+   * Connect this `Source` to a `Sink`, concatenating the processing steps of both.
    */
   def connect(sink: javadsl.Sink[Out]): javadsl.RunnableFlow =
     new RunnableFlowAdapter(delegate.connect(sink.asScala))
@@ -183,6 +194,7 @@ class Source[+Out](delegate: scaladsl2.Source[Out]) {
 
   /**
    * Connect this `Source` to a `KeyedSink` and run it.
+   *
    * The returned value is the materialized value of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
    *
    * @tparam S materialized type of the given Sink
@@ -191,8 +203,8 @@ class Source[+Out](delegate: scaladsl2.Source[Out]) {
     asScala.runWith(sink.asScala)(materializer).asInstanceOf[S]
 
   /**
-   * Connect this `Source` to a `Sink` and run it.
-   * The returned value is the materialized value of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
+   * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
+   * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
    */
   def runWith(sink: Sink[Out], materializer: FlowMaterializer): Unit =
     delegate.connect(sink.asScala).run()(materializer)
