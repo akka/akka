@@ -9,9 +9,6 @@ import static akka.pattern.Patterns.ask;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
-import akka.japi.Function;
-import akka.japi.Procedure;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.scaladsl2.FlowMaterializer;
@@ -46,7 +43,7 @@ public abstract class JavaTestServer {
                 System.out.println("Handling request to " + request.getUri());
                 return JavaApiTestCases.handleRequest(request);
               }
-            }).runWith(Sink.subscriber(conn.getResponseSubscriber()), materializer);
+            }).runWith(Sink.create(conn.getResponseSubscriber()), materializer);
           }
         }, materializer);
       }
