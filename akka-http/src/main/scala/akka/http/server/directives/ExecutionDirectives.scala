@@ -16,7 +16,7 @@ trait ExecutionDirectives {
    * [[akka.http.server.ExceptionHandler]].
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
-    withRequestContext flatMap { ctx ⇒
+    extractRequestContext flatMap { ctx ⇒
       import ctx.executionContext
       mapRouteResultFuture {
         _.fast.recoverWith(handler andThen (_(ctx.withContentNegotiationDisabled)))
@@ -28,7 +28,7 @@ trait ExecutionDirectives {
    * [[akka.http.server.RejectionHandler]].
    */
   def handleRejections(handler: RejectionHandler): Directive0 =
-    withRequestContext flatMap { ctx ⇒
+    extractRequestContext flatMap { ctx ⇒
       recoverRejectionsWith { rejections ⇒
         val filteredRejections = RejectionHandler.applyTransformations(rejections)
         if (handler isDefinedAt filteredRejections) {
