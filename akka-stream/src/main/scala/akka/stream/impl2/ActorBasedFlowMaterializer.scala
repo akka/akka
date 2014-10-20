@@ -9,6 +9,7 @@ import akka.actor._
 import akka.pattern.ask
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.{ ActorProcessor, ActorPublisher, BufferImpl, ConflateImpl, ExpandImpl, ExposedPublisher, MapAsyncProcessorImpl, TimerTransformerProcessorsImpl, TransformProcessorImpl }
+import akka.stream.impl2.Zip.ZipAs
 import akka.stream.scaladsl2._
 import akka.stream.{ MaterializerSettings, OverflowStrategy, TimerTransformer, Transformer }
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
@@ -89,7 +90,7 @@ private[akka] object Ast {
     override def name = "balance"
   }
 
-  case object Zip extends FanInAstNode {
+  final case class Zip(as: ZipAs) extends FanInAstNode {
     override def name = "zip"
   }
 
@@ -225,8 +226,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
             actorOf(FairMerge.props(settings, inputCount).withDispatcher(settings.dispatcher), actorName)
           case Ast.MergePreferred ⇒
             actorOf(UnfairMerge.props(settings, inputCount).withDispatcher(settings.dispatcher), actorName)
-          case Ast.Zip ⇒
-            actorOf(Zip.props(settings).withDispatcher(settings.dispatcher), actorName)
+          case zip: Ast.Zip ⇒
+            actorOf(Zip.props(settings, zip.as).withDispatcher(settings.dispatcher), actorName)
           case Ast.Concat ⇒
             actorOf(Concat.props(settings).withDispatcher(settings.dispatcher), actorName)
           case Ast.FlexiMergeNode(merger) ⇒

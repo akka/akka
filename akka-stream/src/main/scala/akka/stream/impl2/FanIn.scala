@@ -7,9 +7,11 @@ import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.stream.MaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import akka.stream.impl._
+import akka.stream.impl2.Zip.ZipAs
 import org.reactivestreams.{ Subscription, Subscriber }
 import akka.actor.Props
 import akka.stream.scaladsl2.FlexiMerge
+import scala.language.higherKinds
 
 /**
  * INTERNAL API
@@ -282,20 +284,41 @@ private[akka] class UnfairMerge(_settings: MaterializerSettings, _inputPorts: In
  * INTERNAL API
  */
 private[akka] object Zip {
-  def props(settings: MaterializerSettings): Props =
-    Props(new Zip(settings))
+  def props(settings: MaterializerSettings, zipAs: ZipAs): Props =
+    Props(new Zip(settings, zipAs))
+
+  /**
+   * INTERNAL API
+   *
+   * Allows to zip to different tuple implementations (e.g. Scala's `Tuple2` or Java's `Pair`),
+   * while sharing the same `Zip` implementation.
+   */
+  private[akka] sealed trait ZipAs {
+    type Zipped[A, B]
+    def apply[A, B](first: A, second: B): Zipped[A, B]
+  }
+  /** INTERNAL API */
+  private[akka] object AsJavaPair extends ZipAs {
+    override type Zipped[A, B] = akka.japi.Pair[A, B]
+    override def apply[A, B](first: A, second: B) = akka.japi.Pair(first, second)
+  }
+  /** INTERNAL API */
+  private[akka] object AsScalaTuple2 extends ZipAs {
+    override type Zipped[A, B] = (A, B)
+    override def apply[A, B](first: A, second: B) = first → second
+  }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Zip(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
+private[akka] class Zip(_settings: MaterializerSettings, zip: ZipAs) extends FanIn(_settings, inputPorts = 2) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
     val elem0 = inputBunch.dequeue(0)
     val elem1 = inputBunch.dequeue(1)
-    primaryOutputs.enqueueOutputElement((elem0, elem1))
+    primaryOutputs.enqueueOutputElement(zip(elem0, elem1))
   })
 }
 
