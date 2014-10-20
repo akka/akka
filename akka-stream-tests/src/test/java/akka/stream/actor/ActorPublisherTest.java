@@ -16,7 +16,6 @@ import org.reactivestreams.Publisher;
 
 import static akka.stream.actor.ActorPublisherMessage.Request;
 
-@Ignore
 public class ActorPublisherTest {
 
   @ClassRule
