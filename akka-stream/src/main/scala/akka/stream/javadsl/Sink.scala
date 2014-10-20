@@ -3,9 +3,12 @@
  */
 package akka.stream.javadsl
 
+import akka.actor.ActorRef
+import akka.actor.Props
 import akka.stream.javadsl
 import akka.stream.scaladsl2
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 import scaladsl2.FlowMaterializer
 
 import scala.concurrent.Future
@@ -48,6 +51,14 @@ object Sink {
    */
   def create[T](graph: PartialFlowGraph, block: japi.Function[FlowGraphBuilder, UndefinedSource[T]]): Sink[T] =
     new Sink[T](scaladsl2.Sink.apply(graph.asScala) { b ⇒ block.apply(b.asJava).asScala })
+
+  /**
+   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorSubscriber]].
+   */
+  def create[T](props: Props): KeyedSink[T, ActorRef] =
+    new KeyedSink(scaladsl2.Sink.apply(props))
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
@@ -126,9 +137,9 @@ class Sink[-In](delegate: scaladsl2.Sink[In]) {
   // RUN WITH //
 
   /**
-   * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSource` and run it.
-   * The returned tuple contains the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a
-   * [[akka.stream.scaladsl2.SubscriberSource]] and and `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
+   * Connect the `KeyedSource` to this `Sink` and run it.
+   *
+   * The returned value is the materialized value of the `KeyedSource`, e.g. the `Subscriber` of a `Source.subscriber()`.
    *
    * @tparam T materialized type of given Source
    */
@@ -136,8 +147,7 @@ class Sink[-In](delegate: scaladsl2.Sink[In]) {
     asScala.runWith(source.asScala)(materializer).asInstanceOf[T]
 
   /**
-   * Connect this `Source` to a `Source` and run it. The returned value is the materialized value
-   * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
+   * Connect this `Sink` to a `Source` and run it.
    */
   def runWith(source: javadsl.Source[In], materializer: FlowMaterializer): Unit =
     asScala.runWith(source.asScala)(materializer)
