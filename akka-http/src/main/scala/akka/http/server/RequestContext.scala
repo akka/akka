@@ -64,6 +64,11 @@ trait RequestContext {
   def withExecutionContext(ec: ExecutionContext): RequestContext
 
   /**
+   * Returns a copy of this context with the new LoggingAdapter.
+   */
+  def withLog(log: LoggingAdapter): RequestContext
+
+  /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.
    */
   def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext

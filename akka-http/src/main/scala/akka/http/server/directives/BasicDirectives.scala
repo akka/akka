@@ -5,6 +5,8 @@
 package akka.http.server
 package directives
 
+import akka.event.LoggingAdapter
+
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import akka.http.server.util.Tuple
@@ -139,6 +141,18 @@ trait BasicDirectives {
   def extractExecutionContext: Directive1[ExecutionContext] = BasicDirectives._extractExecutionContext
 
   /**
+   * Runs its inner route with the given alternative [[LoggingAdapter]].
+   */
+  def withLog(log: LoggingAdapter): Directive0 =
+    mapRequestContext(_ withLog log)
+
+  /**
+   * Extracts the [[LoggingAdapter]] from the [[RequestContext]].
+   */
+  def extractLog: Directive1[LoggingAdapter] =
+    BasicDirectives._extractLog
+
+  /**
    * Extracts the [[RequestContext]] itself.
    */
   def extractRequestContext: Directive1[RequestContext] = BasicDirectives._extractRequestContext
@@ -149,5 +163,6 @@ object BasicDirectives extends BasicDirectives {
   private val _requestInstance: Directive1[HttpRequest] = extract(_.request)
   private val _requestUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
+  private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractRequestContext: Directive1[RequestContext] = extract(akka.http.util.identityFunc)
 }
