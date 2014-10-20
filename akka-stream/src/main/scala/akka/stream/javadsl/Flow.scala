@@ -23,7 +23,11 @@ object Flow {
 
   /** Create a `Flow` which can process elements of type `T`. */
   def create[T](): javadsl.Flow[T, T] =
-    new javadsl.Flow[T, T](scaladsl2.Pipe.empty[T])
+    Flow.adapt[T, T](scaladsl2.Pipe.empty[T])
+
+  /** Create a `Flow` which can process elements of type `T`. */
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T] =
+    create[T]()
 
   /**
    * Creates a `Flow` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
@@ -41,7 +45,7 @@ object Flow {
    * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def apply[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
+  def create[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
     val sFlow = scaladsl2.Flow(graph.asScala) { b ⇒
       val pair = block.apply(b.asJava)
       pair.first.asScala → pair.second.asScala
@@ -49,13 +53,9 @@ object Flow {
     new Flow[I, O](sFlow)
   }
 
-  /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T] =
-    create[T]()
-
 }
 
-/** Java API */
+/** Create a `Flow` which can process elements of type `T`. */
 class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
   import scala.collection.JavaConverters._
   import akka.stream.scaladsl2.JavaConverters._
@@ -83,7 +83,7 @@ class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
    *
    * The returned tuple contains the materialized values of the `KeyedSource` and `KeyedSink`,
-   * e.g. the `Subscriber` of a `SubscriberSource` and `Publisher` of a `PublisherSink`.
+   * e.g. the `Subscriber` of a `Source.subscriber()` and `Publisher` of a `Sink.publisher()`.
    *
    * @tparam T materialized type of given KeyedSource
    * @tparam U materialized type of given KeyedSink
@@ -96,8 +96,7 @@ class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `KeyedSink` and run it.
    *
-   * The returned value will contain the materialized value of the `KeyedSink`,
-   * e.g. `Publisher` of a `Sink.publisher()`.
+   * The returned value will contain the materialized value of the `KeyedSink`, e.g. `Publisher` of a `Sink.publisher()`.
    *
    * @tparam T materialized type of given KeyedSink
    */
@@ -107,8 +106,7 @@ class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `Sink` and run it.
    *
-   * The returned value will contain the materialized value of the `KeyedSource`,
-   * e.g. `Subscriber` of a `Source.from(publisher)`.
+   * The returned value will contain the materialized value of the `KeyedSource`, e.g. `Subscriber` of a `Source.from(publisher)`.
    *
    * @tparam T materialized type of given KeyedSource
    */
