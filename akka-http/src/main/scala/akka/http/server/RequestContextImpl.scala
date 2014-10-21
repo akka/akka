@@ -43,6 +43,9 @@ private[http] class RequestContextImpl(
   override def withExecutionContext(ec: ExecutionContext): RequestContext =
     copy(executionContext = ec)
 
+  override def withLog(log: LoggingAdapter): RequestContext =
+    copy(log = log)
+
   override def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
 
