@@ -5,12 +5,13 @@
 package akka.http.server
 package directives
 
-import akka.http.model.HttpMethod
+import akka.http.model.{ StatusCodes, HttpMethod }
 import akka.http.model.HttpMethods._
 
 trait MethodDirectives {
   import BasicDirectives._
   import RouteDirectives._
+  import ParameterDirectives._
 
   /**
    * A route filter that rejects all non-DELETE requests.
@@ -66,17 +67,14 @@ trait MethodDirectives {
    *  - Supporting older browsers that lack support for certain HTTP methods. E.g. IE8 does not support PATCH
    */
   def overrideMethodWithParameter(paramName: String): Directive0 =
-    FIXME /* // TODO: reactive after ParameterDirectives have been ported
-
-    import ParameterDirectives._
     parameter(paramName?) flatMap {
       case Some(method) ⇒
         getForKey(method.toUpperCase) match {
           case Some(m) ⇒ mapRequest(_.copy(method = m))
           case _       ⇒ complete(StatusCodes.NotImplemented)
         }
-      case _ ⇒ noop
-    }*/
+      case _ ⇒ pass
+    }
 }
 
 object MethodDirectives extends MethodDirectives {
