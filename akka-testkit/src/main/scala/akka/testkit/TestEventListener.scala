@@ -179,7 +179,7 @@ object EventFilter {
    * Create a filter for Warning events. Give up to one of <code>start</code> and <code>pattern</code>:
    *
    * {{{
-   * EventFilter.warning()                                         // filter only on exception type
+   * EventFilter.warning()                                         // filter only on warning event
    * EventFilter.warning(source = obj)                             // filter on event source
    * EventFilter.warning(start = "Expected")                       // filter on start of message
    * EventFilter.warning(source = obj, pattern = "weird.*message") // filter on pattern and message
@@ -198,7 +198,7 @@ object EventFilter {
    * Create a filter for Info events. Give up to one of <code>start</code> and <code>pattern</code>:
    *
    * {{{
-   * EventFilter.info()                                         // filter only on exception type
+   * EventFilter.info()                                         // filter only on info event
    * EventFilter.info(source = obj)                             // filter on event source
    * EventFilter.info(start = "Expected")                       // filter on start of message
    * EventFilter.info(source = obj, pattern = "weird.*message") // filter on pattern and message
@@ -217,7 +217,7 @@ object EventFilter {
    * Create a filter for Debug events. Give up to one of <code>start</code> and <code>pattern</code>:
    *
    * {{{
-   * EventFilter.debug()                                         // filter only on exception type
+   * EventFilter.debug()                                         // filter only on debug type
    * EventFilter.debug(source = obj)                             // filter on event source
    * EventFilter.debug(start = "Expected")                       // filter on start of message
    * EventFilter.debug(source = obj, pattern = "weird.*message") // filter on pattern and message
