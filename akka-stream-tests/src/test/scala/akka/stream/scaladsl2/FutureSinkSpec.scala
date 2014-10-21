@@ -12,7 +12,7 @@ import scala.util.Failure
 import akka.stream.MaterializerSettings
 import scala.concurrent.Future
 
-class FlowToFutureSpec extends AkkaSpec with ScriptedTest {
+class FutureSinkSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)

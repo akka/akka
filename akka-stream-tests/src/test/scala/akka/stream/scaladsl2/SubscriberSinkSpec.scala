@@ -7,7 +7,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.stream.MaterializerSettings
 
-class FlowPublishToSubscriberSpec extends AkkaSpec {
+class SubscriberSinkSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -15,7 +15,7 @@ class FlowPublishToSubscriberSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  "A Flow with Sink" must {
+  "A Flow with SubscriberSink" must {
 
     "publish elements to the subscriber" in {
       val c = StreamTestKit.SubscriberProbe[Int]()

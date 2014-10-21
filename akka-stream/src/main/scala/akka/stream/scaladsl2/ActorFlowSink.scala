@@ -64,19 +64,18 @@ trait SimpleActorFlowSink[-In] extends ActorFlowSink[In] {
  */
 trait KeyedActorFlowSink[-In] extends ActorFlowSink[In] with KeyedSink[In]
 
+private[scaladsl2] object PublisherSink {
+  def apply[T](): PublisherSink[T] = new PublisherSink[T]
+  def withFanout[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
+    new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
+}
+
 /**
  * Holds the downstream-most [[org.reactivestreams.Publisher]] interface of the materialized flow.
  * The stream will not have any subscribers attached at this point, which means that after prefetching
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-private[scaladsl2] object PublisherSink {
-  private val instance = new PublisherSink[Nothing]
-  def apply[T](): PublisherSink[T] = instance.asInstanceOf[PublisherSink[T]]
-  def withFanout[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
-    new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
-}
-
 private[scaladsl2] class PublisherSink[In] extends KeyedActorFlowSink[In] {
   type MaterializedType = Publisher[In]
 

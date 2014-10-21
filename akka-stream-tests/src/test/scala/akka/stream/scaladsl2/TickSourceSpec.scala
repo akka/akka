@@ -9,7 +9,7 @@ import akka.stream.testkit.StreamTestKit
 import scala.util.control.NoStackTrace
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TickPublisherSpec extends AkkaSpec {
+class TickSourceSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()
 
@@ -80,18 +80,24 @@ class TickPublisherSpec extends AkkaSpec {
       c.expectError.getMessage should be("tick err")
     }
 
-    // FIXME enable this test again when zip is back
-    "be usable with zip for a simple form of rate limiting" ignore {
-      //      val c = StreamTestKit.SubscriberProbe[Int]()
-      //      val rate = Source(1.second, 1.second, () ⇒ "tick").runWith(Sink.publisher)
-      //      Source(1 to 100).zip(rate).map { case (n, _) ⇒ n }.connect(Sink(c)).run()
-      //      val sub = c.expectSubscription()
-      //      sub.request(1000)
-      //      c.expectNext(1)
-      //      c.expectNoMsg(200.millis)
-      //      c.expectNext(2)
-      //      c.expectNoMsg(200.millis)
-      //      sub.cancel()
+    "be usable with zip for a simple form of rate limiting" in {
+      val c = StreamTestKit.SubscriberProbe[Int]()
+
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val zip = Zip[Int, String]
+        Source(1 to 100) ~> zip.left
+        Source(1.second, 1.second, () ⇒ "tick") ~> zip.right
+        zip.out ~> Flow[(Int, String)].map { case (n, _) ⇒ n } ~> Sink(c)
+      }.run()
+
+      val sub = c.expectSubscription()
+      sub.request(1000)
+      c.expectNext(1)
+      c.expectNoMsg(200.millis)
+      c.expectNext(2)
+      c.expectNoMsg(200.millis)
+      sub.cancel()
     }
 
   }
