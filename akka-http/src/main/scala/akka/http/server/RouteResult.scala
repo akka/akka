@@ -17,8 +17,6 @@ import akka.http.model.HttpResponse
 sealed trait RouteResult
 
 object RouteResult {
-  final case class Complete private[RouteResult] (response: HttpResponse) extends RouteResult
-  final case class Rejected private[RouteResult] (rejections: immutable.Seq[Rejection]) extends RouteResult
-  private[http] def complete(response: HttpResponse) = Complete(response)
-  private[http] def rejected(rejections: immutable.Seq[Rejection]) = Rejected(rejections)
+  final case class Complete(response: HttpResponse) extends RouteResult
+  final case class Rejected(rejections: immutable.Seq[Rejection]) extends RouteResult
 }

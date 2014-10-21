@@ -5,15 +5,10 @@
 package akka.http.server
 package directives
 
-import scala.reflect.{ classTag, ClassTag }
 import akka.http.model._
-import akka.parboiled2.CharPredicate
 import headers._
-import MediaTypes._
-import RouteResult._
 
 trait MiscDirectives {
-  import BasicDirectives._
   import RouteDirectives._
 
   /**
@@ -21,9 +16,7 @@ trait MiscDirectives {
    * its inner Route. If the condition fails the route is rejected with a [[spray.routing.ValidationRejection]].
    */
   def validate(check: ⇒ Boolean, errorMsg: String): Directive0 =
-    new Directive0 {
-      def tapply(f: Unit ⇒ Route) = if (check) f() else reject(ValidationRejection(errorMsg))
-    }
+    Directive { inner ⇒ if (check) inner() else reject(ValidationRejection(errorMsg)) }
 
   /**
    * Directive extracting the IP of the client from either the X-Forwarded-For, Remote-Address or X-Real-IP header
@@ -54,9 +47,7 @@ object MiscDirectives extends MiscDirectives {
   import BasicDirectives._
   import HeaderDirectives._
   import RouteDirectives._
-  import CharPredicate._
-
-  private val validJsonpChars = AlphaNum ++ '.' ++ '_' ++ '$'
+  import RouteResult._
 
   private val _clientIP: Directive1[RemoteAddress] =
     headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) ⇒ address } |
@@ -71,7 +62,7 @@ object MiscDirectives extends MiscDirectives {
 
   private val _rejectEmptyResponse: Directive0 =
     mapRouteResult {
-      case Complete(response) if response.entity.isKnownEmpty ⇒ rejected(Nil)
+      case Complete(response) if response.entity.isKnownEmpty ⇒ Rejected(Nil)
       case x ⇒ x
     }
 }

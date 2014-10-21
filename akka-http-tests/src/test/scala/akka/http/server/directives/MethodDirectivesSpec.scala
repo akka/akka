@@ -35,19 +35,19 @@ class MethodDirectivesSpec extends RoutingSpec {
   }
 
   "overrideMethodWithParameter" should {
-    "change the request method" in pendingUntilFixed {
+    "change the request method" in {
       Get("/?_method=put") ~> overrideMethodWithParameter("_method") {
         get { complete("GET") } ~
           put { complete("PUT") }
       } ~> check { responseAs[String] shouldEqual "PUT" }
     }
-    "not affect the request when not specified" in pendingUntilFixed {
+    "not affect the request when not specified" in {
       Get() ~> overrideMethodWithParameter("_method") {
         get { complete("GET") } ~
           put { complete("PUT") }
       } ~> check { responseAs[String] shouldEqual "GET" }
     }
-    "complete with 501 Not Implemented when not a valid method" in pendingUntilFixed {
+    "complete with 501 Not Implemented when not a valid method" in {
       Get("/?_method=hallo") ~> overrideMethodWithParameter("_method") {
         get { complete("GET") } ~
           put { complete("PUT") }
