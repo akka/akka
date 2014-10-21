@@ -15,7 +15,7 @@
 {% set css_files = css_files + ['_static/prettify.css'] %}
 {% set css_files = css_files + ['_static/base.css'] %}
 {% set css_files = css_files + ['_static/docs.css'] %}
-{% set css_files = css_files + ['http://fonts.googleapis.com/css?family=Exo:300,400,600,700'] %}
+{% set css_files = css_files + ['http://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600,700'] %}
 
 {# do not display relbars #}
 {% block relbar1 %}{% endblock %}
@@ -44,7 +44,7 @@
     <div class="navbar-inner">
       <div class="container">
         <div class="navbar-logo">
-          <a href="http://akka.io"><img src="{{ pathto('_static/logo-small.png', 1) }}" /></a>
+          <a href="http://akka.io"><img class="svg-logo" src="{{ pathto('_static/akka_full_color.svg', 1) }}" /></a>
         </div>    
         <ul class="nav">
           <li><a href="http://akka.io/docs">Documentation</a></li>
@@ -137,7 +137,7 @@
       <li><a href="mailto:info@typesafe.com">Contact</a></li>
     </ul>
     <ul>
-      <li><img src="{{ pathto('_static/watermark.png', 1) }}" align="center"/></li>
+      <li><img src="{{ pathto('_static/akka_icon_reverse.svg', 1) }}" align="center"/></li>
     </ul>
   </div>
   <div class="container copyright">
