@@ -10,9 +10,9 @@ import directives._
 
 trait Directives extends RouteConcatenation
   with BasicDirectives
-  //with CacheConditionDirectives
+  with CacheConditionDirectives
   //with ChunkingDirectives
-  //with CookieDirectives
+  with CookieDirectives
   //with DebuggingDirectives
   with CodingDirectives
   with ExecutionDirectives
@@ -27,7 +27,7 @@ trait Directives extends RouteConcatenation
   with ParameterDirectives
   with PathDirectives
   //with RangeDirectives
-  //with RespondWithDirectives
+  with RespondWithDirectives
   with RouteDirectives
   with SchemeDirectives
 //with SecurityDirectives
