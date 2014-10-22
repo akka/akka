@@ -277,7 +277,7 @@ purposes, for example.
 Persistent Views
 ================
 
-Persistent views can be implemented by extending the ``UntypedPersistentView`` trait  and implementing the ``onReceive``
+Persistent views can be implemented by extending the ``UntypedPersistentView`` abstract class and implementing the ``onReceive``
 and the ``persistenceId`` methods.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#view
