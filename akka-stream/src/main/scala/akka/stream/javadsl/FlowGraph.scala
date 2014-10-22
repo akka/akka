@@ -7,6 +7,8 @@ import akka.stream.javadsl
 import akka.stream.scaladsl2
 
 import akka.stream._
+import akka.stream.scaladsl2
+import akka.stream.scaladsl2
 
 // elements //
 
@@ -325,6 +327,9 @@ class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
     this(new scaladsl2.FlowGraphBuilder())
   }
 
+  /** Converts this Java DSL element to it's Scala DSL counterpart. */
+  def asScala: scaladsl2.FlowGraphBuilder = b
+
   def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]) = {
     b.addEdge(source.asScala, flow.asScala, junctionIn.asScala)
     this
@@ -426,7 +431,7 @@ class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
 
   /** Build the [[FlowGraph]] and materialize it. */
   def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap =
-    new MaterializedMapAdapter(b.build().run()(materializer))
+    new MaterializedMap(b.build().run()(materializer))
 
 }
 
@@ -471,10 +476,8 @@ class FlowGraph(delegate: scaladsl2.FlowGraph) extends RunnableFlow {
 
   def asScala: scaladsl2.FlowGraph = delegate
 
-  // TODO IMPLEMENT
-
   override def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap =
-    new MaterializedMapAdapter(delegate.run()(materializer))
+    new MaterializedMap(delegate.run()(materializer))
 
 }
 

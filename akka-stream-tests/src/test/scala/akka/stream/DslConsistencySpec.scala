@@ -86,7 +86,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
             for (c ← classes; op ← materializingOps)
               assertHasMethod(c, op)
           }
-      }
 
+      }
   }
+
 }

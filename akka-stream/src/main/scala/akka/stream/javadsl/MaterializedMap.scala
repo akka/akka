@@ -13,24 +13,17 @@ import akka.stream.scaladsl2
  * accessor method to retrieve the materialized `Source` or `Sink`, e.g.
  * [[akka.stream.scaladsl2.SubscriberSource#subscriber]] or [[akka.stream.scaladsl2.PublisherSink#publisher]].
  */
-trait MaterializedMap {
+class MaterializedMap(delegate: scaladsl2.MaterializedMap) {
   /**
    * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[akka.stream.scaladsl2.SubscriberSource]].
    */
-  def get[T](key: javadsl.KeyedSource[_, T]): T
+  def get[T](key: javadsl.KeyedSource[_, T]): T =
+    delegate.get(key.asScala).asInstanceOf[T]
 
   /**
    * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl2.PublisherSink]].
    */
-  def get[D](key: javadsl.KeyedSink[_, D]): D
-}
-
-/** INTERNAL API */
-private[akka] class MaterializedMapAdapter(delegate: scaladsl2.MaterializedMap) extends MaterializedMap {
-
-  override def get[T](key: javadsl.KeyedSource[_, T]): T =
-    delegate.get(key.asScala).asInstanceOf[T]
-
-  override def get[D](key: javadsl.KeyedSink[_, D]): D =
+  def get[D](key: javadsl.KeyedSink[_, D]): D =
     delegate.get(key.asScala).asInstanceOf[D]
+
 }
