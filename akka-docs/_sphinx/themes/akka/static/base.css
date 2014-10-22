@@ -1,4 +1,4 @@
-body { background-image: url(dark-blue-bg.png); color: rgba(0, 0, 0, 0.6); }
+body { color: rgba(0, 0, 0, 0.6); }
 .navbar { background: #ffffff; position: relative; z-index: 150; margin-bottom: 0px; border-top: solid 5px #15A9CE; height: 75px;}
 .navbar .nav { float: right; }
 .navbar-logo { float: left;  }
