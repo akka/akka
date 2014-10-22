@@ -11,7 +11,6 @@ import akka.stream.scaladsl2.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Subscriber;
 
@@ -20,7 +19,6 @@ import java.util.Arrays;
 import static akka.stream.actor.ActorSubscriberMessage.OnError;
 import static akka.stream.actor.ActorSubscriberMessage.OnNext;
 
-@Ignore
 public class ActorSubscriberTest {
 
   @ClassRule
@@ -69,7 +67,7 @@ public class ActorSubscriberTest {
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
     final java.util.Iterator<Integer> input = Arrays.asList(1, 2, 3).iterator();
 
-    Source.from(input).runWith(Sink.subscriber(subscriber), materializer);
+    Source.from(input).runWith(Sink.create(subscriber), materializer);
 
     ref.tell("run", null);
     probe.expectMsgEquals(1);
