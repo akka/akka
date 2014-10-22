@@ -27,7 +27,8 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
     def aroundReceive(receive: Receive, message: Any): Unit
 
     protected def process(receive: Receive, message: Any) =
-      receive.applyOrElse(message, unhandled)
+      // calls `Recovery.super.aroundReceive` to allow Processor to be used as a stackable modification
+      Recovery.super.aroundReceive(receive, message)
 
     protected def processPersistent(receive: Receive, persistent: Persistent) =
       withCurrentPersistent(persistent)(runReceive(receive))
@@ -45,7 +46,8 @@ trait Recovery extends Actor with Snapshotter with Stash with StashFactory {
    * through withCurrentPersistent().
    */
   private[persistence] def runReceive(receive: Receive)(msg: Persistent): Unit =
-    receive.applyOrElse(msg, unhandled)
+    // calls `Recovery.super.aroundReceive` to allow Processor to be used as a stackable modification
+    Recovery.super.aroundReceive(receive, msg)
 
   /**
    * INTERNAL API.
