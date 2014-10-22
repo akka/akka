@@ -31,6 +31,13 @@ object OverflowStrategy {
   private[akka] final case object Backpressure extends OverflowStrategy
 
   /**
+   * INTERNAL API
+   */
+  private[akka] final case object Error extends OverflowStrategy {
+    final case class BufferOverflowException(msg: String) extends RuntimeException(msg)
+  }
+
+  /**
    * If the buffer is full when a new element arrives, drops the oldest element from the buffer to make space for
    * the new element.
    */
@@ -52,4 +59,10 @@ object OverflowStrategy {
    * space becomes available in the buffer.
    */
   def backpressure: OverflowStrategy = Backpressure
+
+  /**
+   * If the buffer is full when a new element is available this strategy backpressures the upstream publisher until
+   * space becomes available in the buffer.
+   */
+  def error: OverflowStrategy = Error
 }
