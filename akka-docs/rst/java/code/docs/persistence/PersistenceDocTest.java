@@ -39,7 +39,7 @@ public class PersistenceDocTest {
 
     static Object o1 = new Object() {
         //#definition
-        class MyProcessor extends UntypedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             public void onReceive(Object message) throws Exception {
                 if (message instanceof Persistent) {
                     // message successfully written to journal
@@ -69,7 +69,7 @@ public class PersistenceDocTest {
 
             public MyActor() {
                 //#usage
-                processor = getContext().actorOf(Props.create(MyProcessor.class), "myProcessor");
+                processor = getContext().actorOf(Props.create(MyPersistentActor.class), "myUntypedActor");
 
                 processor.tell(Persistent.create("foo"), null);
                 processor.tell("bar", null);
@@ -89,7 +89,7 @@ public class PersistenceDocTest {
     };
 
     static Object o2 = new Object() {
-        abstract class MyProcessor1 extends UntypedPersistentActor {
+        abstract class MyPersistentActor1 extends UntypedPersistentActor {
             //#recover-on-start-disabled
             @Override
             public void preStart() {}
@@ -101,7 +101,7 @@ public class PersistenceDocTest {
             //#recover-on-restart-disabled
         }
 
-        abstract class MyProcessor2 extends UntypedPersistentActor {
+        abstract class MyPersistentActor2 extends UntypedPersistentActor {
             //#recover-on-start-custom
             @Override
             public void preStart() {
@@ -110,7 +110,7 @@ public class PersistenceDocTest {
             //#recover-on-start-custom
         }
 
-        abstract class MyProcessor3 extends UntypedPersistentActor {
+        abstract class MyPersistentActor3 extends UntypedPersistentActor {
             //#deletion
             @Override
             public void preRestart(Throwable reason, Option<Object> message) {
@@ -122,7 +122,7 @@ public class PersistenceDocTest {
             //#deletion
         }
 
-        class MyProcessor4 extends UntypedPersistentActor implements ProcessorMethods {
+        class MyPersistentActor4 extends UntypedPersistentActor implements ProcessorMethods {
             //#persistence-id-override
             @Override
             public String persistenceId() {
@@ -135,7 +135,7 @@ public class PersistenceDocTest {
             public void onReceiveCommand(Object message) throws Exception {}
         }
         
-        class MyProcessor5 extends UntypedPersistentActor {
+        class MyPersistentActor5 extends UntypedPersistentActor {
             @Override
             public String persistenceId() { return "persistence-id"; }
 
@@ -266,11 +266,11 @@ public class PersistenceDocTest {
 
     static Object o3 = new Object() {
         //#channel-example
-        class MyProcessor extends UntypedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             private final ActorRef destination;
             private final ActorRef channel;
 
-            public MyProcessor() {
+            public MyPersistentActor() {
                 this.destination = getContext().actorOf(Props.create(MyDestination.class));
                 this.channel = getContext().actorOf(Channel.props(), "myChannel");
             }
@@ -298,11 +298,11 @@ public class PersistenceDocTest {
         }
         //#channel-example
 
-        class MyProcessor2 extends UntypedProcessor {
+        class MyPersistentActor2 extends UntypedPersistentActor {
             private final ActorRef destination;
             private final ActorRef channel;
 
-            public MyProcessor2(ActorRef destination) {
+            public MyPersistentActor2(ActorRef destination) {
                 this.destination = getContext().actorOf(Props.create(MyDestination.class));
                 //#channel-id-override
                 this.channel = getContext().actorOf(Channel.props("my-stable-channel-id"));
@@ -350,7 +350,7 @@ public class PersistenceDocTest {
 
     static Object o4 = new Object() {
         //#save-snapshot
-        class MyProcessor extends UntypedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             private Object state;
 
             @Override
@@ -371,7 +371,7 @@ public class PersistenceDocTest {
 
     static Object o5 = new Object() {
         //#snapshot-offer
-        class MyProcessor extends UntypedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             private Object state;
 
             @Override
@@ -390,7 +390,7 @@ public class PersistenceDocTest {
             ActorRef processor;
 
             public MyActor() {
-                processor = getContext().actorOf(Props.create(MyProcessor.class));
+                processor = getContext().actorOf(Props.create(MyPersistentActor.class));
             }
 
             public void onReceive(Object message) throws Exception {
@@ -407,7 +407,7 @@ public class PersistenceDocTest {
 
     static Object o6 = new Object() {
         //#batch-write
-        class MyProcessor extends UntypedProcessor {
+        class MyPersistentActor extends UntypedPersistentActor {
             public void onReceive(Object message) throws Exception {
                 if (message instanceof Persistent) {
                     Persistent p = (Persistent)message;
@@ -419,7 +419,7 @@ public class PersistenceDocTest {
 
         class Example {
             final ActorSystem system = ActorSystem.create("example");
-            final ActorRef processor = system.actorOf(Props.create(MyProcessor.class));
+            final ActorRef processor = system.actorOf(Props.create(MyPersistentActor.class));
 
             public void batchWrite() {
               processor.tell(PersistentBatch.create(asList(
@@ -433,7 +433,7 @@ public class PersistenceDocTest {
     };
 
     static Object o7 = new Object() {
-        abstract class MyProcessor extends UntypedProcessor {
+        abstract class MyPersistentActor extends UntypedPersistentActor {
             ActorRef destination;
 
             public void foo() {
