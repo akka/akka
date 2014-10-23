@@ -154,7 +154,7 @@ object AkkaBuild extends Build {
       // to fix scaladoc generation
       fullClasspath in doc in Compile <<= fullClasspath in Compile,
       libraryDependencies ++= Dependencies.actor,
-      previousArtifact := akkaPreviousArtifact("akka-actor")
+      previousArtifact := akkaPreviousArtifact("akka-actor").value
     )
   )
 
@@ -173,7 +173,7 @@ object AkkaBuild extends Build {
     base = file("akka-dataflow"),
     dependencies = Seq(testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams  ++ OSGi.dataflow ++ cpsPlugin ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-dataflow")
+      previousArtifact := akkaPreviousArtifact("akka-dataflow").value
     )
   )
 
@@ -184,7 +184,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.testkit ++ Seq(
       libraryDependencies ++= Dependencies.testkit,
       initialCommands += "import akka.testkit._",
-      previousArtifact := akkaPreviousArtifact("akka-testkit")
+      previousArtifact := akkaPreviousArtifact("akka-testkit").value
     )
   )
 
@@ -217,7 +217,7 @@ object AkkaBuild extends Build {
       libraryDependencies ++= Dependencies.remote,
       // disable parallel tests
       parallelExecution in Test := false,
-      previousArtifact := akkaPreviousArtifact("akka-remote")
+      previousArtifact := akkaPreviousArtifact("akka-remote").value
     )
   )
 
@@ -226,7 +226,7 @@ object AkkaBuild extends Build {
     base = file("akka-multi-node-testkit"),
     dependencies = Seq(remote, testkit),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ Seq(
-      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
+      previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit").value
     )
   )
 
@@ -259,7 +259,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       },
       scalatestOptions in MultiJvm := defaultMultiJvmScalatestOptions,
-      previousArtifact := akkaPreviousArtifact("akka-cluster")
+      previousArtifact := akkaPreviousArtifact("akka-cluster").value
     )
   ) configs (MultiJvm)
 
@@ -269,7 +269,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.slf4j ++ Seq(
       libraryDependencies ++= Dependencies.slf4j,
-      previousArtifact := akkaPreviousArtifact("akka-slf4j")
+      previousArtifact := akkaPreviousArtifact("akka-slf4j").value
     )
   )
 
@@ -279,7 +279,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams ++ javadocSettings ++ OSGi.agent ++ Seq(
       libraryDependencies ++= Dependencies.agent,
-      previousArtifact := akkaPreviousArtifact("akka-agent")
+      previousArtifact := akkaPreviousArtifact("akka-agent").value
     )
   )
 
@@ -289,7 +289,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.transactor ++ Seq(
       libraryDependencies ++= Dependencies.transactor,
-      previousArtifact := akkaPreviousArtifact("akka-transactor")
+      previousArtifact := akkaPreviousArtifact("akka-transactor").value
     )
   )
 
@@ -301,7 +301,7 @@ object AkkaBuild extends Build {
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
       libraryDependencies ++= Dependencies.persistence,
-      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental")
+      previousArtifact := akkaPreviousArtifact("akka-persistence-experimental").value
     )
   )
 
@@ -345,7 +345,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, testkit % "compile;test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.mailboxesCommon ++ Seq(
       libraryDependencies ++= Dependencies.mailboxes,
-      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common"),
+      previousArtifact := akkaPreviousArtifact("akka-mailboxes-common").value,
       publishArtifact in Test := true
     )
   )
@@ -356,7 +356,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(mailboxesCommon % "compile;test->test", testkit % "test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.fileMailbox ++ Seq(
       libraryDependencies ++= Dependencies.fileMailbox,
-      previousArtifact := akkaPreviousArtifact("akka-file-mailbox")
+      previousArtifact := akkaPreviousArtifact("akka-file-mailbox").value
     )
   )
 
@@ -366,7 +366,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.zeroMQ ++ Seq(
       libraryDependencies ++= Dependencies.zeroMQ,
-      previousArtifact := akkaPreviousArtifact("akka-zeromq")
+      previousArtifact := akkaPreviousArtifact("akka-zeromq").value
     )
   )
 
@@ -376,7 +376,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, testkit % "test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettingsNoVerificationOfDiagrams ++ javadocSettings ++ Seq(
       libraryDependencies ++= Dependencies.kernel,
-      previousArtifact := akkaPreviousArtifact("akka-kernel")
+      previousArtifact := akkaPreviousArtifact("akka-kernel").value
     )
   )
 
@@ -387,7 +387,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.camel ++ Seq(
       libraryDependencies ++= Dependencies.camel,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-      previousArtifact := akkaPreviousArtifact("akka-camel")
+      previousArtifact := akkaPreviousArtifact("akka-camel").value
     )
   )
 
@@ -1075,13 +1075,24 @@ object AkkaBuild extends Build {
     binaryIssueFilters ++= mimaIgnoredProblems
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0", 
-      crossVersion: String = "2.10"): Option[sbt.ModuleID] =
+  def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
-      val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
-      Some(organization % fullId % version) // the artifact to compare binary compatibility with
+      // Note: This is a little gross because we don't have a 2.3.0 release on Scala 2.11.x
+      // This should be expanded if there are more deviations.
+      val version: String = 
+        scalaBinaryVersion.value match {
+          case "2.11" => "2.3.2"
+          case _ =>      "2.3.0"
+        }
+      val fullId = crossVersion.value match {
+         case _ : CrossVersion.Binary => id + "_" + scalaBinaryVersion.value
+         case _ : CrossVersion.Full => id + "_" + scalaVersion.value
+         case CrossVersion.Disabled => id 
+       }
+      Some(organization.value % fullId % version) // the artifact to compare binary compatibility with
     }
     else None
+  }
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
