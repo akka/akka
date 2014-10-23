@@ -3,7 +3,8 @@
  */
 package akka.stream.impl
 
-import akka.stream.{ OverflowStrategy, MaterializerSettings }
+import akka.stream.MaterializerSettings
+import akka.stream.OverflowStrategy
 
 class ConflateImpl(_settings: MaterializerSettings, seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any) extends ActorProcessorImpl(_settings) {
   var conflated: Any = null
@@ -61,9 +62,10 @@ class BufferImpl(_settings: MaterializerSettings, size: Int, overflowStrategy: O
   val buffer = FixedSizeBuffer(size)
 
   val dropAction: () ⇒ Unit = overflowStrategy match {
-    case DropHead     ⇒ buffer.dropHead
-    case DropTail     ⇒ buffer.dropTail
-    case DropBuffer   ⇒ buffer.clear
+    case DropHead   ⇒ buffer.dropHead
+    case DropTail   ⇒ buffer.dropTail
+    case DropBuffer ⇒ buffer.clear
+    case Error ⇒ () ⇒ fail(new Error.BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
     case Backpressure ⇒ () ⇒ nextPhase(bufferFull)
   }
 
