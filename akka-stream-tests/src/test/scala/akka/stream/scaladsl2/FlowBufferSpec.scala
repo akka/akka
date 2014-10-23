@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import akka.stream.OverflowStrategy.Error.BufferOverflowException
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -151,6 +152,32 @@ class FlowBufferSpec extends AkkaSpec {
       subscriber.expectNext(-1)
 
       sub.cancel()
+    }
+
+    "error upstream if buffer is full and configured so" in {
+      val publisher = StreamTestKit.PublisherProbe[Int]
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.error).connect(Sink(subscriber)).run()
+
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
+
+      // Fill up buffer
+      for (i ← 1 to 100) autoPublisher.sendNext(i)
+
+      // drain
+      for (i ← 1 to 10) {
+        sub.request(1)
+        subscriber.expectNext(i)
+      }
+
+      // overflow the buffer
+      for (i ← 101 to 111) autoPublisher.sendNext(i)
+
+      autoPublisher.subscription.expectCancellation()
+      val error = new BufferOverflowException("Buffer overflow (max capacity was: 100)!")
+      subscriber.expectError(error)
     }
 
     for (strategy ← List(OverflowStrategy.dropHead, OverflowStrategy.dropTail, OverflowStrategy.dropBuffer)) {
