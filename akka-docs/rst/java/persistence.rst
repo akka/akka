@@ -535,7 +535,7 @@ has, and also performs some longer operations on the Journal while printing it's
 to provide a proper benchmarking environment it can be used to get a rough feel about your journals performance in the most
 typical scenarios.
 
-In order to include the ``SnapshotStore`` TCK tests in your test suite simply extend the ``SnapshotStoreSpec:
+In order to include the ``SnapshotStore`` TCK tests in your test suite simply extend the ``SnapshotStoreSpec``:
 
 .. includecode:: ./code/docs/persistence/PersistencePluginDocTest.java#snapshot-store-tck-java
 
