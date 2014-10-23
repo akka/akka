@@ -3,13 +3,20 @@
  */
 package akka.stream.impl2
 
-import java.util.concurrent.atomic.AtomicReference
-import akka.actor.{ Actor, ActorLogging, ActorRef }
-import akka.stream.MaterializerSettings
-import akka.stream.impl.{ BatchingInputBuffer, Pump, SimpleOutputs, SubReceive, TransferState, _ }
-import org.reactivestreams.{ Subscription, Subscriber, Publisher }
-import scala.collection.immutable
 import akka.actor.Props
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.stream.MaterializerSettings
+import akka.stream.impl.BatchingInputBuffer
+import akka.stream.impl.Pump
+import akka.stream.impl.SimpleOutputs
+import akka.stream.impl.SubReceive
+import akka.stream.impl.TransferState
+import akka.stream.impl._
+import org.reactivestreams.Subscription
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -263,9 +270,20 @@ private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_setti
   (0 until outputPorts) foreach outputBunch.markOutput
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
-    val (elem0, elem1) = primaryInputs.dequeueInputElement().asInstanceOf[(Any, Any)]
-    outputBunch.enqueue(0, elem0)
-    outputBunch.enqueue(1, elem1)
+    primaryInputs.dequeueInputElement() match {
+      case (a, b) ⇒
+        outputBunch.enqueue(0, a)
+        outputBunch.enqueue(1, b)
+
+      case t: akka.japi.Pair[_, _] ⇒
+        outputBunch.enqueue(0, t.first)
+        outputBunch.enqueue(1, t.second)
+
+      case t ⇒
+        throw new IllegalArgumentException(
+          s"Unable to unzip elements of type {t.getClass.getName}, " +
+            s"can only handle Tuple2 and akka.japi.Pair!")
+    }
   })
 }
 

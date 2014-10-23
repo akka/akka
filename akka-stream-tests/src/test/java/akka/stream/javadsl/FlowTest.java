@@ -112,7 +112,7 @@ public class FlowTest {
   public void mustBeAbleToUseTransform() {
     final JavaTestKit probe = new JavaTestKit(system);
     final JavaTestKit probe2 = new JavaTestKit(system);
-    final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
+    final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
     Source.from(input).transform("publish", new Creator<Transformer<Integer, Integer>>() {
       @Override
@@ -165,7 +165,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseTransformRecover() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
+    final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     Source.from(input).map(new Function<Integer, Integer>() {
       public Integer apply(Integer elem) {
         if (elem == 4) {
@@ -224,7 +224,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseGroupBy() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("Aaa", "Abb", "Bcc", "Cdd", "Cee");
+    final Iterable<String> input = Arrays.asList("Aaa", "Abb", "Bcc", "Cdd", "Cee");
     Source.from(input).groupBy(new Function<String, String>() {
       public String apply(String elem) {
         return elem.substring(0, 1);
@@ -258,7 +258,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseSplitWhen() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C", "\n", "D", "\n", "E", "F");
+    final Iterable<String> input = Arrays.asList("A", "B", "C", "\n", "D", "\n", "E", "F");
     Source.from(input).splitWhen(new Predicate<String>() {
       public boolean test(String elem) {
         return elem.equals("\n");
@@ -338,44 +338,100 @@ public class FlowTest {
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
   }
 
-  // FIXME, implement the remaining junctions
-//  @Test
-//  public void mustBeAbleToUseZip() {
-//    final JavaTestKit probe = new JavaTestKit(system);
-//    final java.lang.Iterable<String> input1 = Arrays.asList("A", "B", "C");
-//    final java.lang.Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
-//
-//      Source.from(input1).zip(Flow.of(input2).toPublisher(materializer))
-//        .foreach(new Procedure<Pair<String, Integer>>() {
-//          public void apply(Pair<String, Integer> elem) {
-//            probe.getRef().tell(elem, ActorRef.noSender());
-//          }
-//        }, materializer);
-//
-//    List<Object> output = Arrays.asList(probe.receiveN(3));
-//    @SuppressWarnings("unchecked")
-//    List<Pair<String, Integer>> expected = Arrays.asList(
-// new Pair<String, Integer>("A", 1),
-// new Pair<String, Integer>("B", 2),
-// new Pair<String, Integer>("C", 3));
-//    assertEquals(expected, output);
-//  }
-//
-//  @Test
-//  public void mustBeAbleToUseConcat() {
-//    final JavaTestKit probe = new JavaTestKit(system);
-//    final java.lang.Iterable<String> input1 = Arrays.asList("A", "B", "C");
-//    final java.lang.Iterable<String> input2 = Arrays.asList("D", "E", "F");
-//    Flow.of(input1).concat(Flow.of(input2).toPublisher(materializer)).foreach(new Procedure<String>() {
-//      public void apply(String elem) {
-//        probe.getRef().tell(elem, ActorRef.noSender());
-//      }
-//    }, materializer);
-//
-//    List<Object> output = Arrays.asList(probe.receiveN(6));
-//    assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
-//  }
-//
+  @Test
+  public void mustBeAbleToUseZip() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<Integer> input2 = Arrays.asList(1, 2, 3);
+
+    final Source<String> in1 = Source.from(input1);
+    final Source<Integer> in2 = Source.from(input2);
+    final Zip<String, Integer> zip = Zip.create();
+    final KeyedSink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink.foreach(new Procedure<Pair<String, Integer>>() {
+      @Override
+      public void apply(Pair<String, Integer> param) throws Exception {
+        probe.getRef().tell(param, ActorRef.noSender());
+      }
+    });
+
+    FlowGraph.
+      builder().
+      addEdge(in1, zip.left()).
+      addEdge(in2, zip.right()).
+      addEdge(zip.out(), out).
+      run(materializer);
+
+    List<Object> output = Arrays.asList(probe.receiveN(3));
+    @SuppressWarnings("unchecked")
+    List<Pair<String, Integer>> expected = Arrays.asList(
+      new Pair<String, Integer>("A", 1),
+      new Pair<String, Integer>("B", 2),
+      new Pair<String, Integer>("C", 3));
+    assertEquals(expected, output);
+  }
+
+  @Test
+  public void mustBeAbleToUseUnzip() {
+    final JavaTestKit probe1 = new JavaTestKit(system);
+    final JavaTestKit probe2 = new JavaTestKit(system);
+
+    @SuppressWarnings("unchecked")
+    final List<Pair<String, Integer>> input = Arrays.asList(
+      new Pair<String, Integer>("A", 1),
+      new Pair<String, Integer>("B", 2),
+      new Pair<String, Integer>("C", 3));
+
+    final Iterable<String> expected1 = Arrays.asList("A", "B", "C");
+    final Iterable<Integer> expected2 = Arrays.asList(1, 2, 3);
+
+    final Source<Pair<String, Integer>> in = Source.from(input);
+    final Unzip<String, Integer> unzip = Unzip.create();
+
+    final KeyedSink<String, Future<BoxedUnit>> out1 = Sink.foreach(new Procedure<String>() {
+      @Override
+      public void apply(String param) throws Exception {
+        probe1.getRef().tell(param, ActorRef.noSender());
+      }
+    });
+    final KeyedSink<Integer, Future<BoxedUnit>> out2 = Sink.foreach(new Procedure<Integer>() {
+      @Override
+      public void apply(Integer param) throws Exception {
+        probe2.getRef().tell(param, ActorRef.noSender());
+      }
+    });
+
+    FlowGraph.
+      builder().
+      addEdge(in, unzip.in()).
+      addEdge(unzip.left(), out1).
+      addEdge(unzip.right(), out2).
+      run(materializer);
+
+    List<Object> output1 = Arrays.asList(probe1.receiveN(3));
+    List<Object> output2 = Arrays.asList(probe2.receiveN(3));
+    assertEquals(expected1, output1);
+    assertEquals(expected2, output2);
+  }
+
+  @Test
+  public void mustBeAbleToUseConcat() {
+    final JavaTestKit probe = new JavaTestKit(system);
+    final Iterable<String> input1 = Arrays.asList("A", "B", "C");
+    final Iterable<String> input2 = Arrays.asList("D", "E", "F");
+
+    final Source<String> in1 = Source.from(input1);
+    final Source<String> in2 = Source.from(input2);
+
+    in1.concat(in2).foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
+
+    List<Object> output = Arrays.asList(probe.receiveN(6));
+    assertEquals(Arrays.asList("A", "B", "C", "D", "E", "F"), output);
+  }
+
   @Test
   public void mustBeAbleToUseCallableInput() {
     final JavaTestKit probe = new JavaTestKit(system);
@@ -406,7 +462,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseOnCompleteSuccess() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
+    final Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input)
       .runWith(Sink.<String>onComplete(new Procedure<BoxedUnit>() {
@@ -422,7 +478,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseOnCompleteError() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
+    final Iterable<String> input = Arrays.asList("A", "B", "C");
 
     Source.from(input).map(new Function<String, String>() {
       public String apply(String arg0) throws Exception {
@@ -445,7 +501,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseToFuture() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("A", "B", "C");
+    final Iterable<String> input = Arrays.asList("A", "B", "C");
     Future<String> future = Source.from(input).runWith(Sink.<String>future(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
@@ -454,7 +510,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
+    final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
     Future<Pair<List<Integer>, Source<Integer>>> future = Source
       .from(input)
       .prefixAndTail(3)
@@ -470,8 +526,8 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseConcatAllWithSources() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
-    final java.lang.Iterable<Integer> input2 = Arrays.asList(4, 5);
+    final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
+    final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
     final List<Source<Integer>> mainInputs = Arrays.asList(
       Source.from(input1),
@@ -573,7 +629,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseMapFuture() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
+    final Iterable<String> input = Arrays.asList("a", "b", "c");
     Source.from(input).mapAsync(new Function<String, Future<String>>() {
       public Future<String> apply(String elem) {
         return Futures.successful(elem.toUpperCase());

@@ -3,6 +3,10 @@
  */
 package akka.stream.scaladsl2
 
+import akka.stream.impl2
+import akka.stream.impl2.Ast.FanInAstNode
+import impl2.Ast
+
 import scala.language.existentials
 import scalax.collection.edge.{ LkBase, LkDiEdge }
 import scalax.collection.mutable.Graph
@@ -240,7 +244,7 @@ object Zip {
  * by combining corresponding elements in pairs. If one of the two streams is
  * longer than the other, its remaining elements are ignored.
  */
-final class Zip[A, B](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
+private[akka] class Zip[A, B](override val name: Option[String]) extends FlowGraphInternal.InternalVertex {
   val left = new Zip.Left(this)
   val right = new Zip.Right(this)
   val out = new Zip.Out(this)
@@ -250,7 +254,7 @@ final class Zip[A, B](override val name: Option[String]) extends FlowGraphIntern
   override def minimumOutputCount: Int = 1
   override def maximumOutputCount: Int = 1
 
-  override private[akka] def astNode = Ast.Zip
+  override private[akka] def astNode: FanInAstNode = Ast.Zip(impl2.Zip.AsScalaTuple2)
 
   final override private[scaladsl2] def newInstance() = new Zip[A, B](name = None)
 }
