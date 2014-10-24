@@ -426,6 +426,23 @@ final class UndefinedSource[+T](override val name: Option[String]) extends FlowG
  * INTERNAL API
  */
 private[akka] object FlowGraphInternal {
+
+  /**
+   * INTERNAL API
+   * Workaround for issue #16109. Reflection, used by scalax.graph, is not thread
+   * safe. Initialize one graph before it is used for real.
+   */
+  private[akka] val reflectionIssueWorkaround = {
+    val graph = ImmutableGraph.empty[FlowGraphInternal.Vertex, FlowGraphInternal.EdgeType]
+    val builder = new FlowGraphBuilder(graph)
+    val merge = Merge[String]
+    builder.
+      addEdge(Source.empty[String], merge).
+      addEdge(Source.empty[String], merge).
+      addEdge(merge, Sink.ignore)
+    builder.build()
+  }
+
   def throwUnsupportedValue(x: Any): Nothing =
     throw new IllegalArgumentException(s"Unsupported value [$x] of type [${x.getClass.getName}]. Only Pipes and Graphs are supported!")
 
