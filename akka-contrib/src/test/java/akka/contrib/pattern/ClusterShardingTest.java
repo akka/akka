@@ -48,12 +48,13 @@ public class ClusterShardingTest {
 
       @Override
       public String shardId(Object message) {
+        int numberOfShards = 100;
         if (message instanceof Counter.EntryEnvelope) {
           long id = ((Counter.EntryEnvelope) message).id;
-          return String.valueOf(id % 10);
+          return String.valueOf(id % numberOfShards);
         } else if (message instanceof Counter.Get) {
           long id = ((Counter.Get) message).counterId;
-          return String.valueOf(id % 10);
+          return String.valueOf(id % numberOfShards);
         } else {
           return null;
         }
@@ -63,17 +64,17 @@ public class ClusterShardingTest {
     //#counter-extractor
 
     //#counter-start
-    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", Props.create(Counter.class), false,
-              messageExtractor);
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", 
+      Props.create(Counter.class), false, messageExtractor);
     //#counter-start
 
     //#counter-usage
     ActorRef counterRegion = ClusterSharding.get(system).shardRegion("Counter");
-    counterRegion.tell(new Counter.Get(100), getSelf());
+    counterRegion.tell(new Counter.Get(123), getSelf());
 
-    counterRegion.tell(new Counter.EntryEnvelope(100,
+    counterRegion.tell(new Counter.EntryEnvelope(123,
         Counter.CounterOp.INCREMENT), getSelf());
-    counterRegion.tell(new Counter.Get(100), getSelf());
+    counterRegion.tell(new Counter.Get(123), getSelf());
     //#counter-usage
   }
 
