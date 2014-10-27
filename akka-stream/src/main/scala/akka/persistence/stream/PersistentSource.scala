@@ -3,100 +3,98 @@
  */
 package akka.persistence.stream
 
-import scala.util.control.NonFatal
-import scala.concurrent.duration._
-
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import akka.actor._
 import akka.persistence._
-import akka.stream._
-import akka.stream.impl._
-import akka.stream.impl.Ast.PublisherNode
-import akka.stream.scaladsl.Flow
+import akka.stream.MaterializerSettings
+import akka.stream.impl.ActorPublisher
+import akka.stream.impl.ActorSubscription
+import akka.stream.impl.Cancel
+import akka.stream.impl.ExposedPublisher
+import akka.stream.impl.RequestMore
+import akka.stream.impl.SoftShutdown
+import akka.stream.impl.Stop
+import akka.stream.impl.SubscribePending
+import akka.stream.impl.SubscriberManagement
+import akka.stream.impl2.ActorBasedFlowMaterializer
+import akka.stream.scaladsl2.KeyedActorFlowSource
+import org.reactivestreams.Subscriber
+
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 // ------------------------------------------------------------------------------------------------
-// FIXME: move this file to akka-persistence-experimental once going back to project dependencies
+// FIXME: #15964 move this file to akka-persistence-experimental once going back to project dependencies
 // ------------------------------------------------------------------------------------------------
 
-object PersistentFlow {
-  /**
-   * Starts a new event flow from the given [[akka.persistence.PersistentActor]],
-   * identified by `persistenceId`. Events are pulled from the peristent actor's
-   * journal (using a [[akka.persistence.PersistentView]]) in accordance with the
-   * demand coming from the downstream transformation steps.
-   *
-   * Elements pulled from the peristent actor's journal are buffered in memory so that
-   * fine-grained demands (requests) from downstream can be served efficiently.
-   */
-  def fromPersistentActor(persistenceId: String): Flow[Any] =
-    fromPersistentActor(persistenceId, PersistentPublisherSettings())
+/**
+ * Constructs a `Source` from the given [[akka.persistence.PersistentActor]],
+ * identified by `persistenceId`. Events are pulled from the persistent actor's
+ * journal (using a [[akka.persistence.PersistentView]]) in accordance with the
+ * demand coming from the downstream transformation steps.
+ *
+ * Elements pulled from the persistent actor's journal are buffered in memory so that
+ * fine-grained demands (requests) from downstream can be served efficiently.
+ *
+ * Reads from the journal are done in (coarse-grained) batches of configurable
+ * size (which correspond to the configurable maximum buffer size).
+ *
+ * @see [[akka.persistence.stream.PersistentSourceSettings]]
+ */
+final case class PersistentSource[Out](persistenceId: String, sourceSettings: PersistentSourceSettings = PersistentSourceSettings()) extends KeyedActorFlowSource[Out] {
+  override type MaterializedType = ActorRef
 
-  /**
-   * Starts a new event flow from the given [[akka.persistence.PersistentActor]],
-   * identified by `persistenceId`. Events are pulled from the peristent actor's
-   * journal (using a [[akka.persistence.PersistentView]]) in accordance with the
-   * demand coming from the downstream transformation steps.
-   *
-   * Elements pulled from the peristent actor's journal are buffered in memory so that
-   * fine-grained demands (requests) from downstream can be served efficiently.
-   *
-   * Reads from the journal are done in (coarse-grained) batches of configurable
-   * size (which correspond to the configurable maximum buffer size).
-   *
-   * @see [[akka.persistence.PersistentPublisherSettings]]
-   */
-  def fromPersistentActor(persistenceId: String, publisherSettings: PersistentPublisherSettings): Flow[Any] =
-    FlowImpl(PersistentPublisherNode(persistenceId, publisherSettings), Nil)
+  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val (publisher, publisherRef) = create(materializer, flowName)
+    publisher.subscribe(flowSubscriber)
+    publisherRef
+  }
+  override def isActive: Boolean = true
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val publisherRef = materializer.actorOf(PersistentSourceImpl.props(persistenceId, sourceSettings, materializer.settings), name = s"$flowName-0-persistent-source")
+    (ActorPublisher[Out](publisherRef), publisherRef)
+  }
 }
 
 /**
- * Configuration object for a persistent stream publisher.
+ * Configuration object for a `PersistentSource`.
  *
  * @param fromSequenceNr Sequence number where the published stream shall start (inclusive).
  *                       Default is `1L`.
- * @param maxBufferSize Maximum number of persistent events to be buffered in memory (per publisher).
+ * @param maxBufferSize Maximum number of persistent events to be buffered in memory (per Source).
  *                      Default is `100`.
  * @param idle Optional duration to wait if no more persistent events can be pulled from the journal
  *             before attempting the next pull. Default is `None` which causes the publisher to take
  *             the value defined by the `akka.persistence.view.auto-update-interval` configuration
  *             key. If defined, the `idle` value is taken directly.
  */
-case class PersistentPublisherSettings(fromSequenceNr: Long = 1L, maxBufferSize: Int = 100, idle: Option[FiniteDuration] = None) {
+case class PersistentSourceSettings(fromSequenceNr: Long = 1L, maxBufferSize: Int = 100, idle: Option[FiniteDuration] = None) {
   require(fromSequenceNr > 0L, "fromSequenceNr must be > 0")
 }
 
-private object PersistentPublisher {
-  def props(persistenceId: String, publisherSettings: PersistentPublisherSettings, settings: MaterializerSettings): Props =
-    Props(classOf[PersistentPublisherImpl], persistenceId, publisherSettings, settings).withDispatcher(settings.dispatcher)
+private object PersistentSourceImpl {
+  def props(persistenceId: String, sourceSettings: PersistentSourceSettings, settings: MaterializerSettings): Props =
+    Props(classOf[PersistentSourceImpl], persistenceId, sourceSettings, settings).withDispatcher(settings.dispatcher)
 }
 
-private case class PersistentPublisherNode(persistenceId: String, publisherSettings: PersistentPublisherSettings) extends PublisherNode[Any] {
-  def createPublisher(materializer: ActorBasedFlowMaterializer, flowName: String): Publisher[Any] =
-    ActorPublisher[Any](materializer.actorOf(PersistentPublisher.props(persistenceId, publisherSettings, materializer.settings),
-      name = s"$flowName-0-persistentPublisher"))
-}
-
-private class PersistentPublisherImpl(persistenceId: String, publisherSettings: PersistentPublisherSettings, materializerSettings: MaterializerSettings)
+private class PersistentSourceImpl(persistenceId: String, sourceSettings: PersistentSourceSettings, materializerSettings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[Any]
   with SoftShutdown {
 
-  import ActorBasedFlowMaterializer._
-  import PersistentPublisherBuffer._
+  import PersistentSourceBuffer._
 
   type S = ActorSubscription[Any]
 
-  private val buffer = context.actorOf(Props(classOf[PersistentPublisherBuffer], persistenceId, publisherSettings, self).
-    withDispatcher(context.props.dispatcher), "publisherBuffer")
+  private val buffer = context.actorOf(Props(classOf[PersistentSourceBuffer], persistenceId, sourceSettings, self).
+    withDispatcher(context.props.dispatcher), "persistent-source-buffer")
 
   private var pub: ActorPublisher[Any] = _
   private var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
   final def receive = {
-    case ExposedPublisher(pub) ⇒
-      this.pub = pub.asInstanceOf[ActorPublisher[Any]]
+    case ExposedPublisher(publisher) ⇒
+      pub = publisher.asInstanceOf[ActorPublisher[Any]]
       context.become(waitingForSubscribers)
   }
 
@@ -117,8 +115,8 @@ private class PersistentPublisherImpl(persistenceId: String, publisherSettings: 
       try {
         ps.foreach(pushToDownstream)
       } catch {
-        case Stop        ⇒ { completeDownstream(); shutdownReason = None }
-        case NonFatal(e) ⇒ { abortDownstream(e); shutdownReason = Some(e) }
+        case Stop        ⇒ completeDownstream(); shutdownReason = None
+        case NonFatal(e) ⇒ abortDownstream(e); shutdownReason = Some(e)
       }
   }
 
@@ -150,7 +148,7 @@ private class PersistentPublisherImpl(persistenceId: String, publisherSettings: 
   }
 }
 
-private object PersistentPublisherBuffer {
+private object PersistentSourceBuffer {
   case class Request(n: Long)
   case class Response(events: Vector[Any])
 
@@ -159,13 +157,13 @@ private object PersistentPublisherBuffer {
 }
 
 /**
- * A view that buffers up to `publisherSettings.maxBufferSize` persistent events in memory.
+ * A view that buffers up to `sourceSettings.maxBufferSize` persistent events in memory.
  * Downstream demands (requests) are served if the buffer is non-empty either while filling
  * the buffer or after having filled the buffer. When the buffer becomes empty new persistent
- * events are loaded from the journal (in batches up to `publisherSettings.maxBufferSize`).
+ * events are loaded from the journal (in batches up to `sourceSettings.maxBufferSize`).
  */
-private class PersistentPublisherBuffer(override val persistenceId: String, publisherSettings: PersistentPublisherSettings, publisher: ActorRef) extends PersistentView {
-  import PersistentPublisherBuffer._
+private class PersistentSourceBuffer(override val persistenceId: String, sourceSettings: PersistentSourceSettings, publisher: ActorRef) extends PersistentView {
+  import PersistentSourceBuffer._
   import context.dispatcher
 
   private var replayed = 0L
@@ -216,13 +214,13 @@ private class PersistentPublisherBuffer(override val persistenceId: String, publ
   }
 
   override def lastSequenceNr: Long =
-    math.max(publisherSettings.fromSequenceNr - 1L, super.lastSequenceNr)
+    math.max(sourceSettings.fromSequenceNr - 1L, super.lastSequenceNr)
 
   override def autoUpdateInterval: FiniteDuration =
-    publisherSettings.idle.getOrElse(super.autoUpdateInterval)
+    sourceSettings.idle.getOrElse(super.autoUpdateInterval)
 
   override def autoUpdateReplayMax: Long =
-    publisherSettings.maxBufferSize
+    sourceSettings.maxBufferSize
 
   override def autoUpdate: Boolean =
     false
