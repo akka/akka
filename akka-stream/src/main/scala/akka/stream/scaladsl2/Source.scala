@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import akka.actor.Props
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousPublisherFromIterable }
 import org.reactivestreams.Publisher
 import scala.collection.immutable
@@ -134,23 +135,6 @@ object Source {
     TickSource(initialDelay, interval, tick)
 
   /**
-   * Create a `Source` with one element.
-   * Every connected `Sink` of this stream will see an individual stream consisting of one element.
-   */
-  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
-
-  /**
-   * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
-   * for every connected `Sink`.
-   */
-  def empty[T](): Source[T] = apply(EmptyPublisher[T])
-
-  /**
-   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
-   */
-  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
-
-  /**
    * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSink`.
    */
@@ -168,6 +152,30 @@ object Source {
     val out = block(builder)
     builder.partialBuild().toSource(out)
   }
+
+  /**
+   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorPublisher]].
+   */
+  def apply[T](props: Props): PropsSource[T] = PropsSource(props)
+
+  /**
+   * Create a `Source` with one element.
+   * Every connected `Sink` of this stream will see an individual stream consisting of one element.
+   */
+  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
+
+  /**
+   * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
+   * for every connected `Sink`.
+   */
+  def empty[T](): Source[T] = apply(EmptyPublisher[T])
+
+  /**
+   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
+   */
+  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
 
   /**
    * Concatenates two sources so that the first element

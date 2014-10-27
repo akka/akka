@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import akka.actor.ActorRef
 import akka.actor.Props
 
 import scala.collection.immutable
@@ -251,4 +252,26 @@ private[scaladsl2] final case object CancelSink extends SimpleActorFlowSink[Any]
       override def onNext(t: Any): Unit = ()
     })
   }
+}
+
+/**
+ * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
+ * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
+ */
+private[scaladsl2] final case class PropsSink[In](props: Props) extends KeyedActorFlowSink[In] {
+
+  type MaterializedType = ActorRef
+
+  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): ActorRef = {
+    val (subscriber, subscriberRef) = create(materializer, flowName)
+    flowPublisher.subscribe(subscriber)
+    subscriberRef
+  }
+
+  override def isActive: Boolean = true
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val subscriberRef = materializer.actorOf(props, name = s"$flowName-props")
+    (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
+  }
+
 }
