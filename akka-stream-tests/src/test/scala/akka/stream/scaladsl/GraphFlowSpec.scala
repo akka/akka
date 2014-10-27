@@ -202,7 +202,12 @@ class GraphFlowSpec extends AkkaSpec {
         val out = UndefinedSink[Int]
         val probe = StreamTestKit.SubscriberProbe[Int]()
 
-        val source = Source[Int]() { implicit b ⇒
+        val source1 = Source[Int]() { implicit b ⇒
+          import FlowGraphImplicits._
+          Source(1 to 5) ~> Flow[Int].map(_ * 2) ~> out
+          out
+        }
+        val source2 = Source[Int]() { implicit b ⇒
           import FlowGraphImplicits._
           Source(1 to 5) ~> Flow[Int].map(_ * 2) ~> out
           out
@@ -211,8 +216,8 @@ class GraphFlowSpec extends AkkaSpec {
         FlowGraph { implicit b ⇒
           import FlowGraphImplicits._
           val merge = Merge[Int]("merge")
-          source ~> merge ~> Sink(probe)
-          source ~> Flow[Int].map(_ * 10) ~> merge
+          source1 ~> merge ~> Sink(probe)
+          source2 ~> Flow[Int].map(_ * 10) ~> merge
         }.run()
 
         validateProbe(probe, 10, Set(2, 4, 6, 8, 10, 20, 40, 60, 80, 100))
