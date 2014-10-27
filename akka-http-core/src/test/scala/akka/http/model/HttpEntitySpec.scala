@@ -14,7 +14,8 @@ import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
 import org.scalatest.matchers.Matcher
 import akka.util.ByteString
 import akka.actor.ActorSystem
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlowMaterializer
 import akka.stream.Transformer
 import akka.http.model.HttpEntity._
 

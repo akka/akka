@@ -9,7 +9,7 @@ import akka.japi.Option;
 import scala.None$;
 import scala.collection.immutable.Map$;
 import scala.collection.immutable.Seq;
-import akka.stream.scaladsl2.Source;
+import akka.stream.scaladsl.Source;
 
 import java.util.Arrays;
 import java.util.Map;
