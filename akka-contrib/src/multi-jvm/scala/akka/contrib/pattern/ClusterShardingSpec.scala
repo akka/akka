@@ -108,15 +108,35 @@ object ClusterShardingSpec extends MultiNodeConfig {
   }
   //#counter-actor
 
+  val idExtractor: ShardRegion.IdExtractor = {
+    case EntryEnvelope(id, payload) ⇒ (id.toString, payload)
+    case msg @ Get(id)              ⇒ (id.toString, msg)
+  }
+
+  val numberOfShards = 12
+
+  val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
+    case EntryEnvelope(id, _) ⇒ (id % numberOfShards).toString
+    case Get(id)              ⇒ (id % numberOfShards).toString
+  }
+
+}
+
+// only used in documentation
+object ClusterShardingDocCode {
+  import ClusterShardingSpec._
+
   //#counter-extractor
   val idExtractor: ShardRegion.IdExtractor = {
     case EntryEnvelope(id, payload) ⇒ (id.toString, payload)
     case msg @ Get(id)              ⇒ (id.toString, msg)
   }
 
+  val numberOfShards = 100
+
   val shardResolver: ShardRegion.ShardResolver = msg ⇒ msg match {
-    case EntryEnvelope(id, _) ⇒ (id % 12).toString
-    case Get(id)              ⇒ (id % 12).toString
+    case EntryEnvelope(id, _) ⇒ (id % numberOfShards).toString
+    case Get(id)              ⇒ (id % numberOfShards).toString
   }
   //#counter-extractor
 
@@ -496,16 +516,16 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
     runOn(fifth) {
       //#counter-usage
       val counterRegion: ActorRef = ClusterSharding(system).shardRegion("Counter")
-      counterRegion ! Get(100)
+      counterRegion ! Get(123)
       expectMsg(0)
 
-      counterRegion ! EntryEnvelope(100, Increment)
-      counterRegion ! Get(100)
+      counterRegion ! EntryEnvelope(123, Increment)
+      counterRegion ! Get(123)
       expectMsg(1)
       //#counter-usage
 
-      ClusterSharding(system).shardRegion("AnotherCounter") ! EntryEnvelope(100, Decrement)
-      ClusterSharding(system).shardRegion("AnotherCounter") ! Get(100)
+      ClusterSharding(system).shardRegion("AnotherCounter") ! EntryEnvelope(123, Decrement)
+      ClusterSharding(system).shardRegion("AnotherCounter") ! Get(123)
       expectMsg(-1)
     }
 

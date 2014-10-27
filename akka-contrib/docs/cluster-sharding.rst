@@ -18,7 +18,7 @@ it might be easier to run them on a :ref:`cluster-singleton` node.
 In this context sharding means that actors with an identifier, so called entries,
 can be automatically distributed across multiple nodes in the cluster. Each entry
 actor runs only at one place, and messages can be sent to the entry without requiring
-the sender() to know the location of the destination actor. This is achieved by sending
+the sender to know the location of the destination actor. This is achieved by sending
 the messages via a ``ShardRegion`` actor provided by this extension, which knows how
 to route the message with the entry id to the final destination.
 
@@ -53,16 +53,27 @@ This example illustrates two different ways to define the entry identifier in th
    sent to the entry actor is wrapped in the envelope.
 
 Note how these two messages types are handled in the ``entryId`` and ``entryMessage`` methods shown above.
+The message sent to the entry actor is what ``entryMessage`` returns and that makes it possible to unwrap envelopes
+if needed.
 
 A shard is a group of entries that will be managed together. The grouping is defined by the
-``shardResolver`` function shown above. Creating a good sharding algorithm is an interesting challenge
-in itself. Try to produce a uniform distribution, i.e. same amount of entries in each shard.
-As a rule of thumb, the number of shards should be a factor ten greater than the planned maximum number
-of cluster nodes.
+``shardResolver`` function shown above. For a specific entry identifier the shard identifier must always 
+be the same. Otherwise the entry actor might accidentily be started in several places at the same time.
 
-Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor for a
-named entry type can be retrieved with ``ClusterSharding.shardRegion``. The ``ShardRegion`` will
-lookup the location of the shard for the entry if it does not already know its location. It will
+Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
+i.e. same amount of entries in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
+than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
+will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
+overhead, and increased latency because the corrdinator is involved in the routing of the first message for each
+shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
+all nodes in the cluster.
+
+A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the the entry identifier modulo 
+number of shards.
+
+Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
+named entry type is returned by ``ClusterSharding.start`` and it can also be retrieved with ``ClusterSharding.shardRegion``.
+The ``ShardRegion`` will lookup the location of the shard for the entry if it does not already know its location. It will
 delegate the message to the right node and it will create the entry actor on demand, i.e. when the
 first message for a specific entry is delivered.
 
@@ -99,16 +110,27 @@ This example illustrates two different ways to define the entry identifier in th
    sent to the entry actor is wrapped in the envelope.
 
 Note how these two messages types are handled in the ``idExtractor`` function shown above.
+The message sent to the entry actor is the second part of the tuple return by the ``idExtractor`` and that makes it 
+possible to unwrap envelopes if needed.
 
 A shard is a group of entries that will be managed together. The grouping is defined by the
-``shardResolver`` function shown above. Creating a good sharding algorithm is an interesting challenge
-in itself. Try to produce a uniform distribution, i.e. same amount of entries in each shard.
-As a rule of thumb, the number of shards should be a factor ten greater than the planned maximum number
-of cluster nodes.
+``shardResolver`` function shown above. For a specific entry identifier the shard identifier must always 
+be the same. 
 
-Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor for a
-named entry type can be retrieved with ``ClusterSharding.shardRegion``. The ``ShardRegion`` will
-lookup the location of the shard for the entry if it does not already know its location. It will
+Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution, 
+i.e. same amount of entries in each shard. As a rule of thumb, the number of shards should be a factor ten greater 
+than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes 
+will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
+overhead, and increased latency because the corrdinator is involved in the routing of the first message for each
+shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
+all nodes in the cluster.
+
+A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the the entry identifier modulo 
+number of shards.
+
+Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
+named entry type is returned by ``ClusterSharding.start`` and it can also be retrieved with ``ClusterSharding.shardRegion``.
+The ``ShardRegion`` will lookup the location of the shard for the entry if it does not already know its location. It will
 delegate the message to the right node and it will create the entry actor on demand, i.e. when the
 first message for a specific entry is delivered.
 
@@ -200,11 +222,11 @@ actor will take over and the state is recovered. During such a failure period sh
 with known location are still available, while messages for new (unknown) shards
 are buffered until the new ``ShardCoordinator`` becomes available.
 
-As long as a sender() uses the same ``ShardRegion`` actor to deliver messages to an entry
+As long as a sender uses the same ``ShardRegion`` actor to deliver messages to an entry
 actor the order of the messages is preserved. As long as the buffer limit is not reached
 messages are delivered on a best effort basis, with at-most once delivery semantics,
 in the same way as ordinary message sending. Reliable end-to-end messaging, with
-at-least-once semantics can be added by using channels in ``akka-persistence``.
+at-least-once semantics can be added by using ``AtLeastOnceDelivery``  in ``akka-persistence``.
 
 Some additional latency is introduced for messages targeted to new or previously
 unused shards due to the round-trip to the coordinator. Rebalancing of shards may
