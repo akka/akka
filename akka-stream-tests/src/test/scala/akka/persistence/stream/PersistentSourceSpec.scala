@@ -3,20 +3,25 @@
  */
 package akka.persistence.stream
 
-import scala.concurrent.duration._
-
-import akka.actor._
-import akka.persistence._
-import akka.stream._
-import akka.stream.scaladsl._
-import akka.stream.testkit._
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.persistence.RecoveryCompleted
+import akka.stream.scaladsl2.FlowGraph
+import akka.stream.scaladsl2.FlowGraphImplicits
+import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.scaladsl2.Merge
+import akka.stream.scaladsl2.Sink
+import akka.stream.scaladsl2.Source
+import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 
+import scala.concurrent.duration._
+
 // ------------------------------------------------------------------------------------------------
-// FIXME: move this file to akka-persistence-experimental once going back to project dependencies
+// FIXME: #15964 move this file to akka-persistence-experimental once going back to project dependencies
 // ------------------------------------------------------------------------------------------------
 
-object PersistentPublisherSpec {
+object PersistentSourceSpec {
   class TestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
     override def receiveCommand = {
       case cmd ⇒ persist(cmd) { event ⇒ probe ! s"${event}-${lastSequenceNr}" }
@@ -28,12 +33,12 @@ object PersistentPublisherSpec {
   }
 }
 
-class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "ViewPublisherSpec", serialization = "off")) with PersistenceSpec {
-  import PersistentPublisherSpec._
+class PersistentSourceSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "PersistentSourceSpec", serialization = "off")) with PersistenceSpec {
+  import PersistentSourceSpec._
 
   val numMessages = 10
 
-  val publisherSettings = PersistentPublisherSettings(idle = Some(100.millis))
+  val sourceSettings = PersistentSourceSettings(idle = Some(100.millis))
   implicit val materializer = FlowMaterializer()
 
   var persistentActor1: ActorRef = _
@@ -69,11 +74,12 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
     super.afterEach()
   }
 
-  "A view publisher" must {
+  "A PersistentSource" must {
+
     "pull existing events from a persistent actor's journal" in {
       val streamProbe = TestProbe()
 
-      PersistentFlow.fromPersistentActor(persistenceId(1), publisherSettings).foreach {
+      PersistentSource[String](persistenceId(1), sourceSettings).foreach {
         case event ⇒ streamProbe.ref ! event
       }
 
@@ -81,10 +87,11 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
         streamProbe.expectMsg(s"a$i")
       }
     }
+
     "pull existing events and new from a persistent actor's journal" in {
       val streamProbe = TestProbe()
 
-      PersistentFlow.fromPersistentActor(persistenceId(1), publisherSettings).foreach {
+      PersistentSource[String](persistenceId(1), sourceSettings).foreach {
         case event ⇒ streamProbe.ref ! event
       }
 
@@ -98,11 +105,12 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       streamProbe.expectMsg(s"a${numMessages + 1}")
       streamProbe.expectMsg(s"a${numMessages + 2}")
     }
+
     "pull existing events from a persistent actor's journal starting form a specified sequence number" in {
       val streamProbe = TestProbe()
       val fromSequenceNr = 5L
 
-      PersistentFlow.fromPersistentActor(persistenceId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr)).foreach {
+      PersistentSource[String](persistenceId(1), sourceSettings.copy(fromSequenceNr = fromSequenceNr)).foreach {
         case event ⇒ streamProbe.ref ! event
       }
 
@@ -110,16 +118,14 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
         streamProbe.expectMsg(s"a$i")
       }
     }
-  }
 
-  "A view publisher" can {
-    "have several subscribers" in {
+    "work with FanoutPublisher" in {
       val streamProbe1 = TestProbe()
       val streamProbe2 = TestProbe()
 
-      val publisher = PersistentFlow.fromPersistentActor(persistenceId(1), publisherSettings).toPublisher()
+      val publisher = PersistentSource[String](persistenceId(1), sourceSettings).runWith(Sink.fanoutPublisher(4, 16))
 
-      Flow(publisher).foreach {
+      Source[String](publisher).foreach {
         case event ⇒ streamProbe1.ref ! event
       }
 
@@ -129,7 +135,7 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       }
 
       // subscribe another subscriber
-      Flow(publisher).foreach {
+      Source[String](publisher).foreach {
         case event ⇒ streamProbe2.ref ! event
       }
 
@@ -140,23 +146,28 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
         streamProbe2.expectMsg(s"a${numMessages + i}")
       }
     }
-  }
 
-  "A subscriber" can {
-    "consume from several view publishers" in {
+    "work in FlowGraph" in {
       val streamProbe1 = TestProbe()
       val streamProbe2 = TestProbe()
 
       val fromSequenceNr1 = 7L
       val fromSequenceNr2 = 3L
 
-      val publisher1 = PersistentFlow.fromPersistentActor(persistenceId(1), publisherSettings.copy(fromSequenceNr = fromSequenceNr1)).toPublisher()
-      val publisher2 = PersistentFlow.fromPersistentActor(persistenceId(2), publisherSettings.copy(fromSequenceNr = fromSequenceNr2)).toPublisher()
+      val source1 = PersistentSource[String](persistenceId(1), sourceSettings.copy(fromSequenceNr = fromSequenceNr1))
+      val source2 = PersistentSource[String](persistenceId(2), sourceSettings.copy(fromSequenceNr = fromSequenceNr2))
 
-      Flow(publisher1).merge(publisher2).foreach {
-        case event: String if (event.startsWith("a")) ⇒ streamProbe1.ref ! event
-        case event: String if (event.startsWith("b")) ⇒ streamProbe2.ref ! event
+      val sink = Sink.foreach[String] {
+        case event: String if event.startsWith("a") ⇒ streamProbe1.ref ! event
+        case event: String if event.startsWith("b") ⇒ streamProbe2.ref ! event
       }
+
+      FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val merge = Merge[String]
+        source1 ~> merge ~> sink
+        source2 ~> merge
+      }.run()
 
       1 to numMessages foreach { i ⇒
         if (i >= fromSequenceNr1) streamProbe1.expectMsg(s"a$i")
@@ -164,4 +175,5 @@ class PersistentPublisherSpec extends AkkaSpec(PersistenceSpec.config("leveldb",
       }
     }
   }
+
 }
