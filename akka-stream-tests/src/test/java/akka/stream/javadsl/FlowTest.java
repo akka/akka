@@ -4,7 +4,6 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
-import akka.dispatch.OnComplete;
 import akka.dispatch.OnSuccess;
 import akka.japi.Pair;
 import akka.japi.Util;
