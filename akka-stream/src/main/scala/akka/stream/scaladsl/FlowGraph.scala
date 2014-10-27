@@ -5,13 +5,19 @@ package akka.stream.scaladsl
 
 import akka.stream.impl.Ast.FanInAstNode
 import akka.stream.impl.Ast
+import java.util
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
 import scala.language.existentials
-import scalax.collection.edge.{ LkBase, LkDiEdge }
-import scalax.collection.mutable.Graph
+import scalax.collection.edge.LkBase
+import scalax.collection.edge.LkDiEdge
 import scalax.collection.immutable.{ Graph ⇒ ImmutableGraph }
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Publisher
 import akka.stream.FlowMaterializer
+import scalax.collection.mutable.Graph
 
 /**
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
@@ -455,18 +461,44 @@ private[akka] object FlowGraphInternal {
 
   case class SourceVertex(source: Source[_]) extends Vertex {
     override def toString = source.toString
-    // these are unique keys, case class equality would break them
-    final override def equals(other: Any): Boolean = super.equals(other)
-    final override def hashCode: Int = super.hashCode
+
+    /**
+     * These are unique keys, case class equality would break them.
+     * In the case of KeyedSources we MUST compare by object equality, in order to avoid ambigiousities in materialization.
+     */
+    final override def equals(other: Any): Boolean = other match {
+      case v: SourceVertex ⇒ (source, v.source) match {
+        case (k1: KeyedSource[_], k2: KeyedSource[_]) ⇒ k1 == k2
+        case _                                        ⇒ super.equals(other)
+      }
+      case _ ⇒ false
+    }
+    final override def hashCode: Int = source match {
+      case k: KeyedSource[_] ⇒ k.hashCode
+      case _                 ⇒ super.hashCode
+    }
 
     final override private[scaladsl] def newInstance() = this.copy()
   }
 
   case class SinkVertex(sink: Sink[_]) extends Vertex {
     override def toString = sink.toString
-    // these are unique keys, case class equality would break them
-    final override def equals(other: Any): Boolean = super.equals(other)
-    final override def hashCode: Int = super.hashCode
+
+    /**
+     * These are unique keys, case class equality would break them.
+     * In the case of KeyedSources we MUST compare by object equality, in order to avoid ambigiousities in materialization.
+     */
+    final override def equals(other: Any): Boolean = other match {
+      case v: SinkVertex ⇒ (sink, v.sink) match {
+        case (k1: KeyedSink[_], k2: KeyedSink[_]) ⇒ k1 == k2
+        case _                                    ⇒ super.equals(other)
+      }
+      case _ ⇒ false
+    }
+    final override def hashCode: Int = sink match {
+      case k: KeyedSink[_] ⇒ k.hashCode
+      case _               ⇒ super.hashCode
+    }
 
     final override private[scaladsl] def newInstance() = this.copy()
   }
@@ -873,9 +905,23 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
   }
 
   private def checkAddSourceSinkPrecondition(vertex: Vertex): Unit = {
+    checkAmbigiousKeyedElement(vertex)
+
     vertex match {
       case node @ (_: UndefinedSource[_] | _: UndefinedSink[_]) ⇒
         require(!graph.contains(node), s"[$node] instance is already used in this flow graph")
+      case _ ⇒ // ok
+    }
+  }
+
+  private def checkAmbigiousKeyedElement(vertex: Vertex): Unit = {
+    def warningMessage(el: Any): String =
+      s"An `${el}` instance MUST NOT be used more than once in a `FlowGraph` to avoid ambiguity. " +
+        s"Use individual instances instead the same one multiple times instead. Nodes are: ${graph.nodes}"
+
+    vertex match {
+      case v: SourceVertex if v.source.isInstanceOf[KeyedSource[_]] ⇒ require(!graph.contains(v), warningMessage(v.source))
+      case v: SinkVertex if v.sink.isInstanceOf[KeyedSink[_]] ⇒ require(!graph.contains(v), warningMessage(v.sink))
       case _ ⇒ // ok
     }
   }
@@ -896,7 +942,7 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
           case Some(node) ⇒
             require(
               (node.inDegree + 1) <= iv.maximumInputCount,
-              s"${node.value} must have at most ${iv.maximumInputCount} incoming edges, , has ${node.inDegree}\n${graph.edges}")
+              s"${node.value} must have at most ${iv.maximumInputCount} incoming edges, has ${node.inDegree}\n${graph.edges}")
           case _ ⇒ // ok
         }
       case _ ⇒ // ok, no checks here
