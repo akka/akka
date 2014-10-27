@@ -68,13 +68,13 @@ private object RenderSupport {
     def onNext(elem: ByteString): List[ByteString] = {
       sent += elem.length
       if (sent > length)
-        throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity chunk stream amounts to more bytes")
+        throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity data stream amounts to more bytes")
       elem :: Nil
     }
 
     override def onTermination(e: Option[Throwable]): List[ByteString] = {
       if (sent < length)
-        throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity chunk stream amounts to ${length - sent} bytes less")
+        throw new InvalidContentLengthException(s"HTTP message had declared Content-Length $length but entity data stream amounts to ${length - sent} bytes less")
       Nil
     }
   }
