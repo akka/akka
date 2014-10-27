@@ -8,7 +8,8 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
-import akka.stream.scaladsl2._
+import akka.stream.FlattenStrategy
+import akka.stream.scaladsl._
 import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.actorSystem
 import akka.http.util.FastFuture._

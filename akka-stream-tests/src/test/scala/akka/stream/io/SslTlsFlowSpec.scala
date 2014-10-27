@@ -5,7 +5,6 @@ package akka.stream.io
 
 import java.io.{ OutputStreamWriter, BufferedWriter, InputStreamReader, BufferedReader }
 import java.net.InetSocketAddress
-
 import akka.actor.{ ActorSystem, Props }
 import akka.stream.io.SslTlsCipher.SessionNegotiation
 import akka.stream.io.StreamTcp.{ OutgoingTcpConnection, TcpServerBinding }
@@ -17,9 +16,10 @@ import java.security.{ KeyStore, SecureRandom }
 import java.util.concurrent.atomic.AtomicInteger
 import javax.net.ssl._
 import sun.rmi.transport.tcp.TCPConnection
-
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 object SslTlsFlowSpec {
 
@@ -116,10 +116,11 @@ class SslTlsFlowSpec extends AkkaSpec("akka.actor.default-mailbox.mailbox-type =
   }
 
   def replyFirstLineInUpperCase(scipher: SslTlsCipher): Unit = {
-    val ssessionf = Flow(scipher.sessionInbound).toFuture()
+    val ssessionf = Source(scipher.sessionInbound).runWith(Sink.future)
     val ssession = Await.result(ssessionf, duration)
     val sdata = ssession.data
-    Flow(sdata).map(bs ⇒ ByteString(bs.decodeString("utf-8").split('\n').head.toUpperCase + '\n')).produceTo(scipher.plainTextOutbound)
+    Source(sdata).map(bs ⇒ ByteString(bs.decodeString("utf-8").split('\n').head.toUpperCase + '\n')).
+      connect(Sink(scipher.plainTextOutbound)).run()
   }
 
   def replyFirstLineInUpperCase(clientConnection: JavaSslConnection): Unit = {
@@ -127,11 +128,11 @@ class SslTlsFlowSpec extends AkkaSpec("akka.actor.default-mailbox.mailbox-type =
   }
 
   def sendLineAndReceiveResponse(ccipher: SslTlsCipher, message: String): String = {
-    val csessionf = Flow(ccipher.sessionInbound).toFuture()
-    Flow(List(ByteString(message + '\n'))).produceTo(ccipher.plainTextOutbound)
+    val csessionf = Source(ccipher.sessionInbound).runWith(Sink.future)
+    Source(List(ByteString(message + '\n'))).connect(Sink(ccipher.plainTextOutbound)).run()
     val csession = Await.result(csessionf, duration)
     val cdata = csession.data
-    Await.result(Flow(cdata).map(_.decodeString("utf-8").split('\n').head).toFuture(), duration)
+    Await.result(Source(cdata).map(_.decodeString("utf-8").split('\n').head).runWith(Sink.future), duration)
   }
 
   def sendLineAndReceiveResponse(connection: JavaSslConnection, message: String): String = {
@@ -147,7 +148,7 @@ class SslTlsFlowSpec extends AkkaSpec("akka.actor.default-mailbox.mailbox-type =
 
   def connectIncomingConnection(serverBinding: TcpServerBinding, scipher: SslTlsCipher): Unit = {
     // connect the incoming tcp stream to the server cipher
-    Flow(serverBinding.connectionStream).foreach {
+    Source(serverBinding.connectionStream).foreach {
       case StreamTcp.IncomingTcpConnection(remoteAddress, inputStream, outputStream) ⇒
         scipher.cipherTextOutbound.subscribe(outputStream)
         inputStream.subscribe(scipher.cipherTextInbound)

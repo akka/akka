@@ -3,14 +3,14 @@
  */
 package akka.stream.extra
 
-import akka.stream.scaladsl.{ Duct, Flow }
 import scala.collection.immutable
 import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
-
 import scala.language.implicitConversions
 import scala.language.existentials
 import akka.stream.Transformer
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Flow
 
 /**
  * Provides operations needed to implement the `timed` DSL
@@ -24,7 +24,7 @@ private[akka] trait TimedOps {
    *
    * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
    */
-  def timed[I, O](flow: Flow[I], measuredOps: Flow[I] ⇒ Flow[O], onComplete: FiniteDuration ⇒ Unit): Flow[O] = {
+  def timed[I, O](flow: Source[I], measuredOps: Source[I] ⇒ Source[O], onComplete: FiniteDuration ⇒ Unit): Source[O] = {
     val ctx = new TimedFlowContext
 
     val startWithTime = flow.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
@@ -37,12 +37,12 @@ private[akka] trait TimedOps {
    *
    * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
    */
-  def timed[I, O, Out](duct: Duct[I, O], measuredOps: Duct[I, O] ⇒ Duct[O, Out], onComplete: FiniteDuration ⇒ Unit): Duct[O, Out] = {
-    // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
+  def timed[I, O, Out](flow: Flow[I, O], measuredOps: Flow[I, O] ⇒ Flow[O, Out], onComplete: FiniteDuration ⇒ Unit): Flow[O, Out] = {
+    // todo is there any other way to provide this for Flow, without duplicating impl? (they don't share any super-type)
     val ctx = new TimedFlowContext
 
-    val startWithTime: Duct[I, O] = duct.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
-    val userFlow: Duct[O, Out] = measuredOps(startWithTime)
+    val startWithTime: Flow[I, O] = flow.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
+    val userFlow: Flow[O, Out] = measuredOps(startWithTime)
     userFlow.transform("stopTimed", () ⇒ new StopTimed(ctx, onComplete))
   }
 
@@ -60,16 +60,16 @@ private[akka] trait TimedIntervalBetweenOps {
   /**
    * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
    */
-  def timedIntervalBetween[O](flow: Flow[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[O] = {
+  def timedIntervalBetween[O](flow: Source[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O] = {
     flow.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
   }
 
   /**
    * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
    */
-  def timedIntervalBetween[I, O](duct: Duct[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Duct[I, O] = {
+  def timedIntervalBetween[I, O](flow: Flow[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O] = {
     // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
-    duct.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
+    flow.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
   }
 }
 

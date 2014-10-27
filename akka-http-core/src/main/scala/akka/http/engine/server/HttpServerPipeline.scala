@@ -6,8 +6,10 @@ package akka.http.engine.server
 
 import akka.event.LoggingAdapter
 import akka.stream.io.StreamTcp
+import akka.stream.FlattenStrategy
+import akka.stream.FlowMaterializer
 import akka.stream.Transformer
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.http.engine.parsing.HttpRequestParser
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.model.{ StatusCode, ErrorInfo, HttpRequest, HttpResponse, HttpMethods }

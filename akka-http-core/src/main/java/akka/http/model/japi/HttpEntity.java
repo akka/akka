@@ -5,7 +5,7 @@
 package akka.http.model.japi;
 
 import akka.http.model.HttpEntity$;
-import akka.stream.scaladsl2.Source;
+import akka.stream.scaladsl.Source;
 import akka.util.ByteString;
 
 /**
