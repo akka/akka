@@ -3,10 +3,13 @@
  */
 package akka.stream
 
-import akka.actor._
+import scala.collection.immutable
+
+import akka.actor.{ ActorContext, ActorRefFactory, ActorSystem, ExtendedActorSystem }
 import akka.stream.impl.{ ActorBasedFlowMaterializer, Ast, FlowNameCounter, StreamSupervisor }
 import com.typesafe.config.Config
-import org.reactivestreams.{ Publisher, Subscriber }
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 object FlowMaterializer {
 
@@ -124,26 +127,25 @@ object FlowMaterializer {
 abstract class FlowMaterializer(val settings: MaterializerSettings) {
 
   /**
-   * The `namePrefix` is used as the first part of the names of the actors running
-   * the processing steps.
+   * The `namePrefix` shall be used for deriving the names of processing
+   * entities that are created during materialization. This is meant to aid
+   * logging and error reporting both during materialization and while the
+   * stream is running.
    */
   def withNamePrefix(name: String): FlowMaterializer
 
+  // FIXME this is scaladsl specific
   /**
-   * INTERNAL API
-   * ops are stored in reverse order
+   * This method interprets the given Flow description and creates the running
+   * stream. The result can be highly implementation specific, ranging from
+   * local actor chains to remote-deployed processing networks.
    */
-  private[akka] def toPublisher[I, O](publisherNode: Ast.PublisherNode[I], ops: List[Ast.AstNode]): Publisher[O]
+  def materialize[In, Out](source: scaladsl.Source[In], sink: scaladsl.Sink[Out], ops: List[Ast.AstNode]): scaladsl.MaterializedMap
 
   /**
-   * INTERNAL API
+   * Create publishers and subscribers for fan-in and fan-out operations.
    */
-  private[akka] def ductProduceTo[In, Out](subscriber: Subscriber[Out], ops: List[Ast.AstNode]): Subscriber[In]
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] def ductBuild[In, Out](ops: List[Ast.AstNode]): (Subscriber[In], Publisher[Out])
+  def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
 
 }
 
@@ -189,6 +191,12 @@ object MaterializerSettings {
   def create(config: Config): MaterializerSettings =
     apply(config)
 }
+
+/**
+ * This exception or subtypes thereof should be used to signal materialization
+ * failures.
+ */
+class MaterializationException(msg: String, cause: Throwable = null) extends RuntimeException(msg, cause)
 
 /**
  * The buffers employed by the generated Processors can be configured by

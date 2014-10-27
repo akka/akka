@@ -15,10 +15,11 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.{ Status, ActorSystem }
 import akka.io.IO
 import akka.testkit.TestProbe
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.http.engine.client.ClientConnectionSettings
 import akka.http.engine.server.ServerSettings
 import akka.http.model._

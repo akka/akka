@@ -5,7 +5,8 @@
 package akka.http.unmarshalling
 
 import akka.actor.ActorRefFactory
-import akka.stream.scaladsl2._
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl._
 import akka.http.engine.parsing.BodyPartParser
 import akka.http.model._
 import akka.http.util._

@@ -3,7 +3,6 @@
  */
 package akka.stream.javadsl
 
-import akka.stream.FlattenStrategy
 import akka.stream.javadsl
 
 object FlattenStrategy {
@@ -13,8 +12,8 @@ object FlattenStrategy {
    * emitting its elements directly to the output until it completes and then taking the next stream. This has the
    * consequence that if one of the input stream is infinite, no other streams after that will be consumed from.
    */
-  def concat[T]: FlattenStrategy[javadsl.Source[T], T] =
-    akka.stream.scaladsl2.FlattenStrategy.Concat[T]().asInstanceOf[FlattenStrategy[javadsl.Source[T], T]]
+  def concat[T]: akka.stream.FlattenStrategy[javadsl.Source[T], T] =
+    akka.stream.FlattenStrategy.Concat[T]().asInstanceOf[akka.stream.FlattenStrategy[javadsl.Source[T], T]]
   // TODO so in theory this should be safe, but let's rethink the design later
 
 }

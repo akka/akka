@@ -5,13 +5,13 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
+import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
+import org.reactivestreams.{ Publisher, Subscriber }
 
 /**
  * INTERNAL API

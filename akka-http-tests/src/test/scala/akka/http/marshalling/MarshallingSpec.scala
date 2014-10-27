@@ -9,7 +9,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.http.util._
 import akka.http.model._
 import headers._
