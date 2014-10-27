@@ -3,37 +3,18 @@
  */
 package akka.stream.impl
 
-import org.reactivestreams.{ Publisher, Subscriber, Subscription, Processor }
+import java.util.Arrays
+
 import akka.actor._
-import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings, TimerTransformer }
+import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
-import java.util.Arrays
+import org.reactivestreams.{ Subscriber, Subscription, Processor }
 
 /**
  * INTERNAL API
  */
 private[akka] object ActorProcessor {
-
-  import Ast._
-  def props(settings: MaterializerSettings, op: AstNode): Props =
-    (op match {
-      case fb: FanoutBox     ⇒ Props(new FanoutProcessorImpl(settings, fb.initialBufferSize, fb.maximumBufferSize))
-      case t: TimerTransform ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
-      case t: Transform      ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
-      case s: SplitWhen      ⇒ Props(new SplitWhenProcessorImpl(settings, s.p))
-      case g: GroupBy        ⇒ Props(new GroupByProcessorImpl(settings, g.f))
-      case m: Merge          ⇒ Props(new MergeImpl(settings, m.other))
-      case z: Zip            ⇒ Props(new ZipImpl(settings, z.other))
-      case c: Concat         ⇒ Props(new ConcatImpl(settings, c.next))
-      case b: Broadcast      ⇒ Props(new BroadcastImpl(settings, b.other))
-      case cf: Conflate      ⇒ Props(new ConflateImpl(settings, cf.seed, cf.aggregate))
-      case ex: Expand        ⇒ Props(new ExpandImpl(settings, ex.seed, ex.extrapolate))
-      case bf: Buffer        ⇒ Props(new BufferImpl(settings, bf.size, bf.overflowStrategy))
-      case tt: PrefixAndTail ⇒ Props(new PrefixAndTailImpl(settings, tt.n))
-      case ConcatAll         ⇒ Props(new ConcatAllImpl(settings))
-      case m: MapFuture      ⇒ Props(new MapAsyncProcessorImpl(settings, m.f))
-    }).withDispatcher(settings.dispatcher)
 
   def apply[I, O](impl: ActorRef): ActorProcessor[I, O] = {
     val p = new ActorProcessor[I, O](impl)

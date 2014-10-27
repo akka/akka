@@ -9,10 +9,9 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.japi.Util
 import akka.stream._
+import akka.stream.scaladsl.PropsSource
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
-import scaladsl2.FlowMaterializer
-import scaladsl2.PropsSource
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
@@ -24,14 +23,14 @@ import scala.language.implicitConversions
 /** Java API */
 object Source {
 
-  import scaladsl2.JavaConverters._
+  import scaladsl.JavaConverters._
 
-  /** Adapt [[scaladsl2.Source]] for use within JavaDSL */
-  def adapt[O](source: scaladsl2.Source[O]): Source[O] =
+  /** Adapt [[scaladsl.Source]] for use within JavaDSL */
+  def adapt[O](source: scaladsl.Source[O]): Source[O] =
     new Source(source)
 
-  /** Adapt [[scaladsl2.SourcePipe]] for use within JavaDSL */
-  def adapt[O](source: scaladsl2.SourcePipe[O]): Source[O] =
+  /** Adapt [[scaladsl.SourcePipe]] for use within JavaDSL */
+  def adapt[O](source: scaladsl.SourcePipe[O]): Source[O] =
     new Source(source)
 
   /**
@@ -39,7 +38,7 @@ object Source {
    * for every connected `Sink`.
    */
   def empty[O](): Source[O] =
-    new Source(scaladsl2.Source.empty())
+    new Source(scaladsl.Source.empty())
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -50,7 +49,7 @@ object Source {
    * back-pressure upstream.
    */
   def from[O](publisher: Publisher[O]): javadsl.Source[O] =
-    new Source(scaladsl2.Source.apply(publisher))
+    new Source(scaladsl.Source.apply(publisher))
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -71,7 +70,7 @@ object Source {
    * steps.
    */
   def from[O](iterator: java.util.Iterator[O]): javadsl.Source[O] =
-    new Source(scaladsl2.Source(iterator.asScala))
+    new Source(scaladsl.Source(iterator.asScala))
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -90,7 +89,7 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O] =
-    new Source(scaladsl2.Source(akka.stream.javadsl.japi.Util.immutableIterable(iterable)))
+    new Source(scaladsl.Source(akka.stream.javadsl.japi.Util.immutableIterable(iterable)))
 
   /**
    * Define the sequence of elements to be produced by the given closure.
@@ -98,7 +97,7 @@ object Source {
    * The stream ends exceptionally when an exception is thrown from the closure.
    */
   def from[O](f: japi.Creator[akka.japi.Option[O]]): javadsl.Source[O] =
-    new Source(scaladsl2.Source(() ⇒ f.create().asScala))
+    new Source(scaladsl.Source(() ⇒ f.create().asScala))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -107,7 +106,7 @@ object Source {
    * The stream terminates with an error if the `Future` is completed with a failure.
    */
   def from[O](future: Future[O]): javadsl.Source[O] =
-    new Source(scaladsl2.Source(future))
+    new Source(scaladsl.Source(future))
 
   /**
    * Elements are produced from the tick closure periodically with the specified interval.
@@ -117,14 +116,14 @@ object Source {
    * receive new tick elements as soon as it has requested more elements.
    */
   def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.Source[O] =
-    new Source(scaladsl2.Source(initialDelay, interval, () ⇒ tick.call()))
+    new Source(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
    */
   def from[T](graph: PartialFlowGraph, block: japi.Function[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
-    new Source(scaladsl2.Source(graph.asScala)(x ⇒ block.apply(x.asJava).asScala))
+    new Source(scaladsl.Source(graph.asScala)(x ⇒ block.apply(x.asJava).asScala))
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -132,26 +131,26 @@ object Source {
    * be [[akka.stream.actor.ActorPublisher]].
    */
   def from[T](props: Props): KeyedSource[T, ActorRef] =
-    new KeyedSource(scaladsl2.Source.apply(props))
+    new KeyedSource(scaladsl.Source.apply(props))
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
   def singleton[T](element: T): Source[T] =
-    new Source(scaladsl2.Source.singleton(element))
+    new Source(scaladsl.Source.singleton(element))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T] =
-    new Source(scaladsl2.Source.failed(cause))
+    new Source(scaladsl.Source.failed(cause))
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def subscriber[T](): KeyedSource[Subscriber[T], T] =
-    new KeyedSource(scaladsl2.Source.subscriber)
+    new KeyedSource(scaladsl.Source.subscriber)
 
   /**
    * Concatenates two sources so that the first element
@@ -159,7 +158,7 @@ object Source {
    * source.
    */
   def concat[T](first: Source[T], second: Source[T]): Source[T] =
-    new KeyedSource(scaladsl2.Source.concat(first.asScala, second.asScala))
+    new KeyedSource(scaladsl.Source.concat(first.asScala, second.asScala))
 }
 
 /**
@@ -168,13 +167,13 @@ object Source {
  * A `Source` is a set of stream processing steps that has one open output and an attached input.
  * Can be used as a `Publisher`
  */
-class Source[+Out](delegate: scaladsl2.Source[Out]) {
-  import akka.stream.scaladsl2.JavaConverters._
+class Source[+Out](delegate: scaladsl.Source[Out]) {
+  import akka.stream.scaladsl.JavaConverters._
 
   import scala.collection.JavaConverters._
 
   /** Converts this Java DSL element to it's Scala DSL counterpart. */
-  def asScala: scaladsl2.Source[Out] = delegate
+  def asScala: scaladsl.Source[Out] = delegate
 
   // CONNECT //
 
@@ -501,6 +500,6 @@ class Source[+Out](delegate: scaladsl2.Source[Out]) {
  * A `Source` that will create an object during materialization that the user will need
  * to retrieve in order to access aspects of this source (could be a Subscriber, a Future/Promise, etc.).
  */
-final class KeyedSource[+Out, T](delegate: scaladsl2.Source[Out]) extends Source[Out](delegate) {
-  override def asScala: scaladsl2.KeyedActorFlowSource[Out] = super.asScala.asInstanceOf[scaladsl2.KeyedActorFlowSource[Out]]
+final class KeyedSource[+Out, T](delegate: scaladsl.Source[Out]) extends Source[Out](delegate) {
+  override def asScala: scaladsl.KeyedActorFlowSource[Out] = super.asScala.asInstanceOf[scaladsl.KeyedActorFlowSource[Out]]
 }

@@ -5,7 +5,7 @@
 package akka.http.model.japi;
 
 import akka.util.ByteString;
-import akka.stream.scaladsl2.Source;
+import akka.stream.scaladsl.Source;
 
 /**
  * Represents an entity without a predetermined content-length to use in a BodyParts.

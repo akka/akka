@@ -7,7 +7,7 @@ import akka.stream.MaterializerSettings;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
-import akka.stream.scaladsl2.FlowMaterializer;
+import akka.stream.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;

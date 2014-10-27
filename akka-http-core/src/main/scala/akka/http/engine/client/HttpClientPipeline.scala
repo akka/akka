@@ -8,8 +8,10 @@ import java.net.InetSocketAddress
 import akka.util.ByteString
 
 import scala.collection.immutable.Queue
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.event.LoggingAdapter
+import akka.stream.FlowMaterializer
+import akka.stream.FlattenStrategy
 import akka.stream.io.StreamTcp
 import akka.http.Http
 import akka.http.model.{ HttpMethod, HttpRequest, ErrorInfo, HttpResponse }

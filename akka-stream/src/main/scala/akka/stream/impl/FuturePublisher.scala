@@ -3,21 +3,21 @@
  */
 package akka.stream.impl
 
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Status
 import akka.actor.SupervisorStrategy
-import akka.pattern.pipe
 import akka.stream.MaterializerSettings
 import akka.stream.ReactiveStreamsConstants
+import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
-
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
 
 /**
  * INTERNAL API

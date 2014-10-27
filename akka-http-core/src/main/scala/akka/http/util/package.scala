@@ -8,7 +8,8 @@ import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import akka.stream.scaladsl2.{ Flow, Source, FlattenStrategy }
+import akka.stream.FlattenStrategy
+import akka.stream.scaladsl.{ Flow, Source }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString

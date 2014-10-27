@@ -4,7 +4,7 @@
 package akka.stream.io2
 
 import akka.io.{ IO, Tcp }
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import scala.util.control.NoStackTrace
 import akka.actor._
 import akka.stream.impl._
@@ -12,6 +12,9 @@ import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
 import org.reactivestreams.Processor
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 /**
  * INTERNAL API

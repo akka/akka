@@ -5,9 +5,9 @@ package akka.stream.actor
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
-import akka.stream.scaladsl2.FlowMaterializer
-import akka.stream.scaladsl2.Sink
-import akka.stream.scaladsl2.Source
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 

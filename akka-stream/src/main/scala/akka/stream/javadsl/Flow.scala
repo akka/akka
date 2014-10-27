@@ -6,8 +6,7 @@ package akka.stream.javadsl
 import akka.stream._
 
 import akka.japi.Util
-import akka.stream.scaladsl2
-import scaladsl2.FlowMaterializer
+import akka.stream.scaladsl
 
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
@@ -15,15 +14,15 @@ import scala.concurrent.duration.FiniteDuration
 
 object Flow {
 
-  import akka.stream.scaladsl2.JavaConverters._
+  import akka.stream.scaladsl.JavaConverters._
 
-  /** Adapt [[scaladsl2.Flow]] for use within Java DSL */
-  def adapt[I, O](flow: scaladsl2.Flow[I, O]): javadsl.Flow[I, O] =
+  /** Adapt [[scaladsl.Flow]] for use within Java DSL */
+  def adapt[I, O](flow: scaladsl.Flow[I, O]): javadsl.Flow[I, O] =
     new Flow(flow)
 
   /** Create a `Flow` which can process elements of type `T`. */
   def create[T](): javadsl.Flow[T, T] =
-    Flow.adapt[T, T](scaladsl2.Pipe.empty[T])
+    Flow.adapt[T, T](scaladsl.Pipe.empty[T])
 
   /** Create a `Flow` which can process elements of type `T`. */
   def of[T](clazz: Class[T]): javadsl.Flow[T, T] =
@@ -34,7 +33,7 @@ object Flow {
    * returns the `UndefinedSource` and `UndefinedSink`.
    */
   def apply[I, O](block: japi.Function[FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl2.Flow() { b ⇒
+    val sFlow = scaladsl.Flow() { b ⇒
       val pair = block.apply(b.asJava)
       pair.first.asScala → pair.second.asScala
     }
@@ -46,7 +45,7 @@ object Flow {
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
   def create[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl2.Flow(graph.asScala) { b ⇒
+    val sFlow = scaladsl.Flow(graph.asScala) { b ⇒
       val pair = block.apply(b.asJava)
       pair.first.asScala → pair.second.asScala
     }
@@ -56,12 +55,12 @@ object Flow {
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
+class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
   import scala.collection.JavaConverters._
-  import akka.stream.scaladsl2.JavaConverters._
+  import akka.stream.scaladsl.JavaConverters._
 
   /** Converts this Flow to it's Scala DSL counterpart */
-  def asScala: scaladsl2.Flow[In, Out] = delegate
+  def asScala: scaladsl.Flow[In, Out] = delegate
 
   // CONNECT //
 
@@ -384,11 +383,11 @@ class Flow[-In, +Out](delegate: scaladsl2.Flow[In, Out]) {
  * Flow with attached input and output, can be executed.
  */
 trait RunnableFlow {
-  def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap
+  def run(materializer: FlowMaterializer): javadsl.MaterializedMap
 }
 
 /** INTERNAL API */
-private[akka] class RunnableFlowAdapter(runnable: scaladsl2.RunnableFlow) extends RunnableFlow {
-  override def run(materializer: scaladsl2.FlowMaterializer): MaterializedMap =
+private[akka] class RunnableFlowAdapter(runnable: scaladsl.RunnableFlow) extends RunnableFlow {
+  override def run(materializer: FlowMaterializer): MaterializedMap =
     new MaterializedMap(runnable.run()(materializer))
 }

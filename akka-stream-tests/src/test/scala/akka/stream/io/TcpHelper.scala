@@ -4,7 +4,6 @@
 package akka.stream.io
 
 import java.io.Closeable
-
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.{ IO, Tcp }
 import akka.stream.scaladsl.Flow
@@ -18,6 +17,7 @@ import org.reactivestreams.Processor
 import scala.collection.immutable.Queue
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
+import akka.stream.scaladsl.Source
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString)
@@ -204,7 +204,7 @@ trait TcpHelper { this: TestKitBase ⇒
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
     val binding = bind(serverAddress)
-    new EchoServer(Flow(binding.connectionStream).foreach { conn ⇒
+    new EchoServer(Source(binding.connectionStream).foreach { conn ⇒
       conn.inputStream.subscribe(conn.outputStream)
     }, binding)
   }

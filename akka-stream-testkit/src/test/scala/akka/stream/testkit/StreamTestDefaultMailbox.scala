@@ -23,14 +23,21 @@ private[akka] case class StreamTestDefaultMailbox() extends MailboxType with Pro
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = {
     owner match {
       case Some(r: ActorRefWithCell) ⇒
-        val actorClass = r.underlying.props.actorClass
-        assert(actorClass != classOf[Actor], s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")
-        // StreamTcpManager is allowed to use another dispatcher
-        assert(!actorClass.getName.startsWith("akka.stream.") || actorClass == classOf[StreamTcpManager] || actorClass == classOf[akka.stream.io2.StreamTcpManager],
-          s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
-            "Did you forget to define `props.withDispatcher` when creating the actor? " +
-            "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
-            """dispatcher using `MaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
+        try {
+          val actorClass = r.underlying.props.actorClass
+          assert(actorClass != classOf[Actor], s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")
+          // StreamTcpManager is allowed to use another dispatcher
+          assert(!actorClass.getName.startsWith("akka.stream.") || actorClass == classOf[StreamTcpManager] || actorClass == classOf[akka.stream.io2.StreamTcpManager],
+            s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
+              "Did you forget to define `props.withDispatcher` when creating the actor? " +
+              "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
+              """dispatcher using `MaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
+        } catch {
+          // this logging should not be needed when issue #15947 has been fixed
+          case e: AssertionError ⇒
+            system.foreach(_.log.error(e, s"StreamTestDefaultMailbox assertion failed: ${e.getMessage}"))
+            throw e
+        }
       case _ ⇒
     }
     new UnboundedMailbox.MessageQueue

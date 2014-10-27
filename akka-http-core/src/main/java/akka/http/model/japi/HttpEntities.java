@@ -7,7 +7,7 @@ package akka.http.model.japi;
 import java.io.File;
 
 import akka.util.ByteString;
-import akka.stream.scaladsl2.Source;
+import akka.stream.scaladsl.Source;
 import akka.http.model.HttpEntity$;
 
 /** Constructors for HttpEntity instances */

@@ -1,18 +1,27 @@
-/**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
- */
 package akka.stream.testkit
 
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Flow
+import akka.actor.{ ActorRefFactory, ActorSystem }
+import akka.stream.MaterializerSettings
+import akka.stream.scaladsl._
+import org.reactivestreams.Publisher
+import akka.stream.FlowMaterializer
 
-class ChainSetup[I, O](stream: Flow[I] ⇒ Flow[O], val settings: MaterializerSettings)(implicit val system: ActorSystem) {
-  val upstream = StreamTestKit.PublisherProbe[I]()
-  val downstream = StreamTestKit.SubscriberProbe[O]()
+class ChainSetup[In, Out](
+  stream: Flow[In, In] ⇒ Flow[In, Out],
+  val settings: MaterializerSettings,
+  materializer: FlowMaterializer,
+  toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
 
-  private val s = stream(Flow(upstream))
-  val publisher = s.toPublisher()(FlowMaterializer(settings))
+  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: MaterializerSettings, toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+    this(stream, settings, FlowMaterializer(settings)(system), toPublisher)(system)
+
+  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: MaterializerSettings, materializerCreator: (MaterializerSettings, ActorRefFactory) ⇒ FlowMaterializer, toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+    this(stream, settings, materializerCreator(settings, system), toPublisher)(system)
+
+  val upstream = StreamTestKit.PublisherProbe[In]()
+  val downstream = StreamTestKit.SubscriberProbe[Out]()
+  private val s = Source(upstream).connect(stream(Flow[In]))
+  val publisher = toPublisher(s, materializer)
   val upstreamSubscription = upstream.expectSubscription()
   publisher.subscribe(downstream)
   val downstreamSubscription = downstream.expectSubscription()

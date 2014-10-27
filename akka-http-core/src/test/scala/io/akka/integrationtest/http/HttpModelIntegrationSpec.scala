@@ -12,8 +12,9 @@ import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.model.parser.HeaderParser
 import akka.http.model._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import headers._
+import akka.stream.FlowMaterializer
 
 /**
  * Integration test for external HTTP libraries that are built on top of
@@ -43,7 +44,6 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
   override def afterAll() = system.shutdown()
 
   implicit val materializer = FlowMaterializer()
-  implicit val materializer1 = akka.stream.FlowMaterializer() // Needed by HttpEntity.toStrict
 
   "External HTTP libraries" should {
 

@@ -7,11 +7,8 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
 import akka.japi.Pair;
 import akka.japi.Util;
-import akka.stream.MaterializerSettings;
-import akka.stream.OverflowStrategy;
-import akka.stream.Transformer;
+import akka.stream.*;
 import akka.stream.javadsl.japi.*;
-import akka.stream.scaladsl2.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
@@ -35,26 +32,26 @@ import static org.junit.Assert.assertEquals;
 public class FlowTest {
 
   @ClassRule
-  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
+  public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
+      AkkaSpec.testConf());
 
   final ActorSystem system = actorSystemResource.getSystem();
 
   final MaterializerSettings settings = new MaterializerSettings(2, 4, 2, 4, "akka.test.stream-dispatcher");
-  final FlowMaterializer materializer = akka.stream.scaladsl2.FlowMaterializer.create(settings, system);
+  final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final String[] lookup = {"a", "b", "c", "d", "e", "f"};
+    final String[] lookup = { "a", "b", "c", "d", "e", "f" };
     final java.util.Iterator<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5).iterator();
     final Source<Integer> ints = Source.from(input);
 
-    ints.drop(2).take(3).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS))
-      .map(new Function<Integer, String>() {
-        public String apply(Integer elem) {
-          return lookup[elem];
-        }
-      }).filter(new Predicate<String>() {
+    ints.drop(2).take(3).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS)).map(new Function<Integer, String>() {
+      public String apply(Integer elem) {
+        return lookup[elem];
+      }
+    }).filter(new Predicate<String>() {
       public boolean test(String elem) {
         return !elem.equals("c");
       }
@@ -63,20 +60,19 @@ public class FlowTest {
         return elem;
       }
     }).groupedWithin(100, FiniteDuration.create(50, TimeUnit.MILLISECONDS))
-      .mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
-        public java.util.List<String> apply(java.util.List<String> elem) {
-          return elem;
-        }
-      }).fold("", new Function2<String, String, String>() {
-      public String apply(String acc, String elem) {
-        return acc + elem;
-      }
-    }, materializer)
-      .foreach(new Foreach<String>() { // Scala Future
-        public void each(String elem) {
-          probe.getRef().tell(elem, ActorRef.noSender());
-        }
-      }, system.dispatcher());
+        .mapConcat(new Function<java.util.List<String>, java.util.List<String>>() {
+          public java.util.List<String> apply(java.util.List<String> elem) {
+            return elem;
+          }
+        }).fold("", new Function2<String, String, String>() {
+          public String apply(String acc, String elem) {
+            return acc + elem;
+          }
+        }, materializer).foreach(new Foreach<String>() { // Scala Future
+              public void each(String elem) {
+                probe.getRef().tell(elem, ActorRef.noSender());
+              }
+            }, system.dispatcher());
 
     probe.expectMsgEquals("de");
 
@@ -88,15 +84,15 @@ public class FlowTest {
     final java.util.Iterator<String> input = Arrays.asList("a", "b", "c").iterator();
     Source<String> ints = Source.from(input);
 
-    Future<BoxedUnit> completion = ints
-      .foreach(new Procedure<String>() {
-        public void apply(String elem) {
-          probe.getRef().tell(elem, ActorRef.noSender());
-        }
-      }, materializer);
+    Future<BoxedUnit> completion = ints.foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    }, materializer);
 
     completion.onSuccess(new OnSuccess<BoxedUnit>() {
-      @Override public void onSuccess(BoxedUnit elem) throws Throwable {
+      @Override
+      public void onSuccess(BoxedUnit elem) throws Throwable {
         probe.getRef().tell(String.valueOf(elem), ActorRef.noSender());
       }
     }, system.dispatcher());
@@ -124,7 +120,7 @@ public class FlowTest {
           public scala.collection.immutable.Seq<Integer> onNext(Integer element) {
             sum += element;
             count += 1;
-            return Util.immutableSeq(new Integer[]{element, element});
+            return Util.immutableSeq(new Integer[] { element, element });
           }
 
           @Override
@@ -229,9 +225,11 @@ public class FlowTest {
         return elem.substring(0, 1);
       }
     }).foreach(new Procedure<Pair<String, Source<String>>>() {
-      @Override public void apply(final Pair<String, Source<String>> pair) throws Exception {
+      @Override
+      public void apply(final Pair<String, Source<String>> pair) throws Exception {
         pair.second().foreach(new Procedure<String>() {
-          @Override public void apply(String elem) throws Exception {
+          @Override
+          public void apply(String elem) throws Exception {
             probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
           }
         }, materializer);
@@ -263,19 +261,19 @@ public class FlowTest {
         return elem.equals("\n");
       }
     }).foreach(new Procedure<Source<String>>() {
-      @Override public void apply(Source<String> subStream) throws Exception {
-        subStream
-          .filter(new Predicate<String>() {
-            @Override public boolean test(String elem) {
-              return !elem.equals("\n");
-            }
-          })
-          .grouped(10)
-          .foreach(new Procedure<List<String>>() {
-            @Override public void apply(List<String> chunk) throws Exception {
-              probe.getRef().tell(chunk, ActorRef.noSender());
-            }
-          }, materializer);
+      @Override
+      public void apply(Source<String> subStream) throws Exception {
+        subStream.filter(new Predicate<String>() {
+          @Override
+          public boolean test(String elem) {
+            return !elem.equals("\n");
+          }
+        }).grouped(10).foreach(new Procedure<List<String>>() {
+          @Override
+          public void apply(List<String> chunk) throws Exception {
+            probe.getRef().tell(chunk, ActorRef.noSender());
+          }
+        }, materializer);
       }
     }, materializer);
 
@@ -297,7 +295,8 @@ public class FlowTest {
 
   public <In, Out> Creator<Transformer<In, Out>> op() {
     return new akka.stream.javadsl.japi.Creator<Transformer<In, Out>>() {
-      @Override public Transformer<In, Out> create() throws Exception {
+      @Override
+      public Transformer<In, Out> create() throws Exception {
         return new Transformer<In, Out>() {
           @Override
           public Seq<Out> onNext(In element) {
@@ -320,18 +319,13 @@ public class FlowTest {
     final KeyedSink<String, Publisher<String>> publisher = Sink.publisher();
 
     // this is red in intellij, but actually valid, scalac generates bridge methods for Java, so inference *works*
-    final Merge<String> merge = Merge.<String>create();
-    MaterializedMap m = FlowGraph.
-      builder().
-      addEdge(in1, f1, merge).
-      addEdge(in2, f2, merge).
-      addEdge(merge, f3, publisher).
-      build().
-      run(materializer);
+    final Merge<String> merge = Merge.<String> create();
+    MaterializedMap m = FlowGraph.builder().addEdge(in1, f1, merge).addEdge(in2, f2, merge)
+        .addEdge(merge, f3, publisher).build().run(materializer);
 
     // collecting
     final Publisher<String> pub = m.get(publisher);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>future(), materializer);
+    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>> future(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -346,26 +340,20 @@ public class FlowTest {
     final Source<String> in1 = Source.from(input1);
     final Source<Integer> in2 = Source.from(input2);
     final Zip<String, Integer> zip = Zip.create();
-    final KeyedSink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink.foreach(new Procedure<Pair<String, Integer>>() {
-      @Override
-      public void apply(Pair<String, Integer> param) throws Exception {
-        probe.getRef().tell(param, ActorRef.noSender());
-      }
-    });
+    final KeyedSink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink
+        .foreach(new Procedure<Pair<String, Integer>>() {
+          @Override
+          public void apply(Pair<String, Integer> param) throws Exception {
+            probe.getRef().tell(param, ActorRef.noSender());
+          }
+        });
 
-    FlowGraph.
-      builder().
-      addEdge(in1, zip.left()).
-      addEdge(in2, zip.right()).
-      addEdge(zip.out(), out).
-      run(materializer);
+    FlowGraph.builder().addEdge(in1, zip.left()).addEdge(in2, zip.right()).addEdge(zip.out(), out).run(materializer);
 
     List<Object> output = Arrays.asList(probe.receiveN(3));
     @SuppressWarnings("unchecked")
-    List<Pair<String, Integer>> expected = Arrays.asList(
-      new Pair<String, Integer>("A", 1),
-      new Pair<String, Integer>("B", 2),
-      new Pair<String, Integer>("C", 3));
+    List<Pair<String, Integer>> expected = Arrays.asList(new Pair<String, Integer>("A", 1), new Pair<String, Integer>(
+        "B", 2), new Pair<String, Integer>("C", 3));
     assertEquals(expected, output);
   }
 
@@ -375,10 +363,8 @@ public class FlowTest {
     final JavaTestKit probe2 = new JavaTestKit(system);
 
     @SuppressWarnings("unchecked")
-    final List<Pair<String, Integer>> input = Arrays.asList(
-      new Pair<String, Integer>("A", 1),
-      new Pair<String, Integer>("B", 2),
-      new Pair<String, Integer>("C", 3));
+    final List<Pair<String, Integer>> input = Arrays.asList(new Pair<String, Integer>("A", 1),
+        new Pair<String, Integer>("B", 2), new Pair<String, Integer>("C", 3));
 
     final Iterable<String> expected1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> expected2 = Arrays.asList(1, 2, 3);
@@ -399,12 +385,8 @@ public class FlowTest {
       }
     });
 
-    FlowGraph.
-      builder().
-      addEdge(in, unzip.in()).
-      addEdge(unzip.left(), out1).
-      addEdge(unzip.right(), out2).
-      run(materializer);
+    FlowGraph.builder().addEdge(in, unzip.in()).addEdge(unzip.left(), out1).addEdge(unzip.right(), out2)
+        .run(materializer);
 
     List<Object> output1 = Arrays.asList(probe1.receiveN(3));
     List<Object> output2 = Arrays.asList(probe2.receiveN(3));
@@ -463,13 +445,12 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
 
-    Source.from(input)
-      .runWith(Sink.<String>onComplete(new Procedure<BoxedUnit>() {
-                 @Override public void apply(BoxedUnit param) throws Exception {
-                   probe.getRef().tell(param, ActorRef.noSender());
-                 }
-               }),
-               materializer);
+    Source.from(input).runWith(Sink.<String> onComplete(new Procedure<BoxedUnit>() {
+      @Override
+      public void apply(BoxedUnit param) throws Exception {
+        probe.getRef().tell(param, ActorRef.noSender());
+      }
+    }), materializer);
 
     probe.expectMsgClass(BoxedUnit.class);
   }
@@ -483,16 +464,16 @@ public class FlowTest {
       public String apply(String arg0) throws Exception {
         throw new RuntimeException("simulated err");
       }
-    }).runWith(Sink.<String>future(), materializer)
-      .onComplete(new OnSuccess<Try<String>>() {
-        @Override public void onSuccess(Try<String> e) throws Throwable {
-          if (e == null) {
-            probe.getRef().tell("done", ActorRef.noSender());
-          } else {
-            probe.getRef().tell(e.failed().get().getMessage(), ActorRef.noSender());
-          }
+    }).runWith(Sink.<String> future(), materializer).onComplete(new OnSuccess<Try<String>>() {
+      @Override
+      public void onSuccess(Try<String> e) throws Throwable {
+        if (e == null) {
+          probe.getRef().tell("done", ActorRef.noSender());
+        } else {
+          probe.getRef().tell(e.failed().get().getMessage(), ActorRef.noSender());
         }
-      }, system.dispatcher());
+      }
+    }, system.dispatcher());
 
     probe.expectMsgEquals("simulated err");
   }
@@ -501,7 +482,7 @@ public class FlowTest {
   public void mustBeAbleToUseToFuture() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
-    Future<String> future = Source.from(input).runWith(Sink.<String>future(), materializer);
+    Future<String> future = Source.from(input).runWith(Sink.<String> future(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
@@ -510,14 +491,13 @@ public class FlowTest {
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
-    Future<Pair<List<Integer>, Source<Integer>>> future = Source
-      .from(input)
-      .prefixAndTail(3)
-      .runWith(Sink.<Pair<List<Integer>, Source<Integer>>>future(), materializer);
-    Pair<List<Integer>, Source<Integer>> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
+    Future<Pair<List<Integer>, Source<Integer>>> future = Source.from(input).prefixAndTail(3)
+        .runWith(Sink.<Pair<List<Integer>, Source<Integer>>> future(), materializer);
+    Pair<List<Integer>, Source<Integer>> result = Await.result(future,
+        probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>future(), materializer);
+    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>> future(), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }
@@ -528,15 +508,11 @@ public class FlowTest {
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-    final List<Source<Integer>> mainInputs = Arrays.asList(
-      Source.from(input1),
-      Source.from(input2));
+    final List<Source<Integer>> mainInputs = Arrays.asList(Source.from(input1), Source.from(input2));
 
-    Future<List<Integer>> future = Source
-      .from(mainInputs)
-      .flatten(akka.stream.javadsl.FlattenStrategy.<Integer>concat())
-      .grouped(6)
-      .runWith(Sink.<List<Integer>>future(), materializer);
+    Future<List<Integer>> future = Source.from(mainInputs)
+        .flatten(akka.stream.javadsl.FlattenStrategy.<Integer> concat()).grouped(6)
+        .runWith(Sink.<List<Integer>> future(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
 
@@ -547,9 +523,8 @@ public class FlowTest {
   public void mustBeAbleToUseBuffer() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    Future<List<String>> future = Source.from(input)
-      .buffer(2, OverflowStrategy.backpressure()).grouped(4)
-      .runWith(Sink.<List<String>>future(), materializer);
+    Future<List<String>> future = Source.from(input).buffer(2, OverflowStrategy.backpressure()).grouped(4)
+        .runWith(Sink.<List<String>> future(), materializer);
 
     List<String> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(input, result);
@@ -558,7 +533,7 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseConflate() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-//    final List<String> input = Arrays.asList("A", "B", "C"); // test was fleaky // TODO FIXME, test was fleaky!
+    //    final List<String> input = Arrays.asList("A", "B", "C"); // test was fleaky // TODO FIXME, test was fleaky!
     final List<String> input = Arrays.asList("C");
     Future<String> future = Source.from(input).conflate(new Function<String, String>() {
       @Override
@@ -584,18 +559,17 @@ public class FlowTest {
   public void mustBeAbleToUseExpand() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
-    Future<String> future = Source.from(input)
-      .expand(new Function<String, String>() {
-        @Override
-        public String apply(String in) throws Exception {
-          return in;
-        }
-      }, new Function<String, Pair<String, String>>() {
-        @Override
-        public Pair<String, String> apply(String in) throws Exception {
-          return new Pair<String, String>(in, in);
-        }
-      }).runWith(Sink.<String>future(), materializer);
+    Future<String> future = Source.from(input).expand(new Function<String, String>() {
+      @Override
+      public String apply(String in) throws Exception {
+        return in;
+      }
+    }, new Function<String, Pair<String, String>>() {
+      @Override
+      public Pair<String, String> apply(String in) throws Exception {
+        return new Pair<String, String>(in, in);
+      }
+    }).runWith(Sink.<String> future(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
@@ -612,11 +586,11 @@ public class FlowTest {
       }
     };
     Source.from(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick)
-      .foreach(new Procedure<String>() {
-        public void apply(String elem) {
-          probe.getRef().tell(elem, ActorRef.noSender());
-        }
-      }, materializer);
+        .foreach(new Procedure<String>() {
+          public void apply(String elem) {
+            probe.getRef().tell(elem, ActorRef.noSender());
+          }
+        }, materializer);
     probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick-1");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));

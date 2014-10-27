@@ -4,7 +4,8 @@
 package akka.stream.extra
 
 import akka.stream.{ MaterializerSettings, FlowMaterializer }
-import akka.stream.scaladsl.{ Duct, Flow }
+import akka.stream.scaladsl.{ Source, Flow }
+import akka.stream.scaladsl.Sink
 import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -19,7 +20,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  "Timed Flow" must {
+  "Timed Source" must {
 
     import akka.stream.extra.Implicits.TimedFlowDsl
 
@@ -69,19 +70,16 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
     "have a Java API" in pending
   }
 
-  "Timed Duct" must {
-    import akka.stream.extra.Implicits.TimedDuctDsl
+  "Timed Flow" must {
+    import akka.stream.extra.Implicits.TimedFlowDsl
 
     "measure time it between elements matching a predicate" in {
       val probe = TestProbe()
 
-      val duct: Duct[Int, Long] = Duct[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
+      val flow: Flow[Int, Long] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
       val c1 = StreamTestKit.SubscriberProbe[Long]()
-      val c2: Subscriber[Int] = duct.produceTo(c1)
-
-      val p = Flow(List(1, 2, 3)).toPublisher()
-      p.subscribe(c2)
+      Source(List(1, 2, 3)).connect(flow).connect(Sink(c1)).run()
 
       val s = c1.expectSubscription()
       s.request(100)
@@ -98,21 +96,21 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val probe = TestProbe()
 
       // making sure the types come out as expected
-      val duct: Duct[Int, String] =
-        Duct[Int].
+      val flow: Flow[Int, String] =
+        Flow[Int].
           timed(_.
             map(_.toDouble).
             map(_.toInt).
             map(_.toString), duration ⇒ probe.ref ! duration).
           map { s: String ⇒ s + "!" }
 
-      val (ductIn: Subscriber[Int], ductOut: Publisher[String]) = duct.build()
+      val (flowIn: Subscriber[Int], flowOut: Publisher[String]) = flow.runWith(Source.subscriber[Int], Sink.publisher[String])
 
       val c1 = StreamTestKit.SubscriberProbe[String]()
-      val c2 = ductOut.subscribe(c1)
+      val c2 = flowOut.subscribe(c1)
 
-      val p = Flow(0 to 100).toPublisher()
-      p.subscribe(ductIn)
+      val p = Source(0 to 100).runWith(Sink.publisher)
+      p.subscribe(flowIn)
 
       val s = c1.expectSubscription()
       s.request(200)

@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import org.reactivestreams.Publisher

@@ -5,17 +5,21 @@ package akka.stream.testkit
 
 import akka.actor.ActorSystem
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Sink, Source, Flow }
 import akka.stream.testkit.StreamTestKit._
+import org.reactivestreams.Publisher
 import org.scalatest.Matchers
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
+import akka.stream.FlowMaterializer
 
 trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
+
+  def toPublisher[In, Out]: (Source[Out], FlowMaterializer) ⇒ Publisher[Out] =
+    (f, m) ⇒ f.runWith(Sink.publisher)(m)
 
   object Script {
     def apply[In, Out](phases: (Seq[In], Seq[Out])*): Script[In, Out] = {
@@ -77,23 +81,23 @@ trait ScriptedTest extends Matchers {
   }
 
   class ScriptRunner[In, Out](
-    op: Flow[In] ⇒ Flow[Out],
+    op: Flow[In, In] ⇒ Flow[In, Out],
     settings: MaterializerSettings,
     script: Script[In, Out],
     maximumOverrun: Int,
     maximumRequest: Int,
     maximumBuffer: Int)(implicit _system: ActorSystem)
-    extends ChainSetup(op, settings) {
+    extends ChainSetup(op, settings, toPublisher) {
 
     var _debugLog = Vector.empty[String]
     var currentScript = script
     var remainingDemand = script.expectedOutputs.size + ThreadLocalRandom.current().nextInt(1, maximumOverrun)
     debugLog(s"starting with remainingDemand=$remainingDemand")
-    var pendingRequests: Long = 0
-    var outstandingDemand: Long = 0
+    var pendingRequests = 0L
+    var outstandingDemand = 0L
     var completed = false
 
-    def getNextDemand(): Long = {
+    def getNextDemand(): Int = {
       val max = Math.min(remainingDemand, maximumRequest)
       if (max == 1) {
         remainingDemand = 0
@@ -107,7 +111,7 @@ trait ScriptedTest extends Matchers {
 
     def debugLog(msg: String): Unit = _debugLog :+= msg
 
-    def request(demand: Long): Unit = {
+    def request(demand: Int): Unit = {
       debugLog(s"test environment requests $demand")
       downstreamSubscription.request(demand)
       outstandingDemand += demand
@@ -187,7 +191,7 @@ trait ScriptedTest extends Matchers {
   }
 
   def runScript[In, Out](script: Script[In, Out], settings: MaterializerSettings, maximumOverrun: Int = 3, maximumRequest: Int = 3, maximumBuffer: Int = 3)(
-    op: Flow[In] ⇒ Flow[Out])(implicit system: ActorSystem): Unit = {
+    op: Flow[In, In] ⇒ Flow[In, Out])(implicit system: ActorSystem): Unit = {
     new ScriptRunner(op, settings, script, maximumOverrun, maximumRequest, maximumBuffer).run()
   }
 

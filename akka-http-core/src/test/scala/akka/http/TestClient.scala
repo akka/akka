@@ -12,7 +12,8 @@ import scala.util.{ Failure, Success }
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import akka.stream.scaladsl2.{ FlowMaterializer, Sink, Source }
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.io.IO
 import akka.http.model.HttpMethods._
 import akka.http.model._

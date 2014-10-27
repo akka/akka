@@ -11,8 +11,8 @@ import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import akka.util.ByteString
-import akka.stream.{ TimerTransformer, Transformer }
-import akka.stream.scaladsl2._
+import akka.stream.{ FlowMaterializer, TimerTransformer, Transformer }
+import akka.stream.scaladsl._
 import akka.stream.impl.{ EmptyPublisher, SynchronousPublisherFromIterable }
 import akka.http.util._
 import japi.JavaMapping.Implicits._

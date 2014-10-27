@@ -9,7 +9,9 @@ import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlattenStrategy
+import akka.stream.FlowMaterializer
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.util._

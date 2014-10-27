@@ -35,18 +35,18 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       (classOf[scala.Function1[_, _]],                  classOf[akka.stream.javadsl.japi.Function[_, _]]) ::
       (classOf[scala.Function1[_, _]],                  classOf[akka.stream.javadsl.japi.Creator[_]]) ::
       (classOf[scala.Function2[_, _, _]],               classOf[akka.stream.javadsl.japi.Function2[_, _, _]]) ::
-      (classOf[akka.stream.scaladsl2.Source[_]],        classOf[akka.stream.javadsl.Source[_]]) ::
-      (classOf[akka.stream.scaladsl2.Sink[_]],          classOf[akka.stream.javadsl.Sink[_]]) ::
-      (classOf[akka.stream.scaladsl2.Flow[_, _]],       classOf[akka.stream.javadsl.Flow[_, _]]) ::
-      (classOf[akka.stream.scaladsl2.FlowGraph],        classOf[akka.stream.javadsl.FlowGraph]) ::
-      (classOf[akka.stream.scaladsl2.PartialFlowGraph], classOf[akka.stream.javadsl.PartialFlowGraph]) ::
+      (classOf[akka.stream.scaladsl.Source[_]],        classOf[akka.stream.javadsl.Source[_]]) ::
+      (classOf[akka.stream.scaladsl.Sink[_]],          classOf[akka.stream.javadsl.Sink[_]]) ::
+      (classOf[akka.stream.scaladsl.Flow[_, _]],       classOf[akka.stream.javadsl.Flow[_, _]]) ::
+      (classOf[akka.stream.scaladsl.FlowGraph],        classOf[akka.stream.javadsl.FlowGraph]) ::
+      (classOf[akka.stream.scaladsl.PartialFlowGraph], classOf[akka.stream.javadsl.PartialFlowGraph]) ::
       Nil
   // format: ON
 
   "Java DSL" must provide {
     "Source" which {
       "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl2.Source.getClass
+        val sClass = akka.stream.scaladsl.Source.getClass
         val jClass = akka.stream.javadsl.Source.getClass
 
         runSpec(sClass, jClass)
@@ -54,7 +54,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     }
     "Flow" which {
       "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl2.Flow.getClass
+        val sClass = akka.stream.scaladsl.Flow.getClass
         val jClass = akka.stream.javadsl.Flow.getClass
 
         runSpec(sClass, jClass)
@@ -62,7 +62,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     }
     "Sink" which {
       "allows creating the same Sources as Scala DSL" in {
-        val sClass = akka.stream.scaladsl2.Sink.getClass
+        val sClass = akka.stream.scaladsl.Sink.getClass
         val jClass = akka.stream.javadsl.Sink.getClass
 
         runSpec(sClass, jClass)

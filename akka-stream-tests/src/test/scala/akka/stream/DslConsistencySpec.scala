@@ -11,20 +11,20 @@ import org.scalatest.WordSpec
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DslConsistencySpec extends WordSpec with Matchers {
 
-  val sFlowClass = classOf[akka.stream.scaladsl2.Flow[_, _]]
+  val sFlowClass = classOf[akka.stream.scaladsl.Flow[_, _]]
   val jFlowClass = classOf[akka.stream.javadsl.Flow[_, _]]
 
-  val sSourceClass = classOf[akka.stream.scaladsl2.Source[_]]
+  val sSourceClass = classOf[akka.stream.scaladsl.Source[_]]
   val jSourceClass = classOf[akka.stream.javadsl.Source[_]]
 
-  val sSinkClass = classOf[akka.stream.scaladsl2.Sink[_]]
+  val sSinkClass = classOf[akka.stream.scaladsl.Sink[_]]
   val jSinkClass = classOf[akka.stream.javadsl.Sink[_]]
 
   val jFlowGraphClass = classOf[akka.stream.javadsl.FlowGraph]
-  val sFlowGraphClass = classOf[akka.stream.scaladsl2.FlowGraph]
+  val sFlowGraphClass = classOf[akka.stream.scaladsl.FlowGraph]
 
   val jPartialFlowGraphClass = classOf[akka.stream.javadsl.PartialFlowGraph]
-  val sPartialFlowGraphClass = classOf[akka.stream.scaladsl2.PartialFlowGraph]
+  val sPartialFlowGraphClass = classOf[akka.stream.scaladsl.PartialFlowGraph]
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++

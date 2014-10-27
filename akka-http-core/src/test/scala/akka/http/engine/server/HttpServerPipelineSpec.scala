@@ -11,7 +11,8 @@ import akka.http.model._
 import akka.http.model.headers.{ ProductVersion, Server, Host }
 import akka.http.util._
 import akka.http.Http
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlowMaterializer
 import akka.stream.io.StreamTcp
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.util.ByteString

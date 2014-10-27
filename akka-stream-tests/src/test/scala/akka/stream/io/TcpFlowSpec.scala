@@ -8,6 +8,8 @@ import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 class TcpFlowSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
@@ -46,9 +48,9 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       serverConnection.read(256)
-      Flow(tcpProcessor).consume()
+      Source(tcpProcessor).connect(Sink.ignore).run()
 
-      Flow(testInput).toPublisher().subscribe(tcpProcessor)
+      Source(testInput).runWith(Sink.publisher).subscribe(tcpProcessor)
       serverConnection.waitRead() should be(expectedOutput)
 
     }
@@ -63,7 +65,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       for (in ← testInput) serverConnection.write(in)
       new TcpWriteProbe(tcpProcessor) // Just register an idle upstream
 
-      val resultFuture = Flow(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
+      val resultFuture = Source(tcpProcessor).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
       serverConnection.confirmedClose()
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
 
@@ -156,8 +158,8 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toPublisher().subscribe(conn.outputStream)
-      val resultFuture = Flow(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
+      Source(testInput).connect(Sink(conn.outputStream)).run()
+      val resultFuture = Source(conn.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
       server.close()
@@ -176,10 +178,10 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Flow(testInput).toPublisher().subscribe(conn1.outputStream)
+      Source(testInput).connect(Sink(conn1.outputStream)).run()
       conn1.inputStream.subscribe(conn2.outputStream)
       conn2.inputStream.subscribe(conn3.outputStream)
-      val resultFuture = Flow(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in).toFuture()
+      val resultFuture = Source(conn3.inputStream).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
       server.close()

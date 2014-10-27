@@ -6,7 +6,7 @@ package akka.http.engine.parsing
 
 import akka.http.model._
 import akka.util.ByteString
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API

@@ -11,7 +11,8 @@ import akka.http.engine.client._
 import akka.http.engine.server.{ HttpServerPipeline, ServerSettings }
 import akka.io.IO
 import akka.pattern.ask
-import akka.stream.scaladsl2.{ Sink, Source, FlowMaterializer }
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.io.StreamTcp
 import akka.util.Timeout
 

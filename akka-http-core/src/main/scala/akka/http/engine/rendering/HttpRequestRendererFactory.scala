@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 import akka.stream.Transformer
 import akka.http.model._
 import akka.http.util._

@@ -8,7 +8,7 @@ import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.io.IO
-import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.util.Timeout
 import akka.pattern.ask
 import akka.http.Http

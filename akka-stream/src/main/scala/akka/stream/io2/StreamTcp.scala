@@ -9,13 +9,17 @@ import akka.io.Inet.SocketOption
 import akka.io.{ Tcp, IO }
 import akka.japi.Util
 import akka.stream.MaterializerSettings
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.util.ByteString
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.URLEncoder
 import scala.collection._
 import scala.concurrent.duration.{ Duration, FiniteDuration }
+import akka.stream.scaladsl.MaterializedMap
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.FlowMaterializer
 
 object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
 

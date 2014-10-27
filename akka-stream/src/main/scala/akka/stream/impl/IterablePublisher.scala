@@ -3,13 +3,13 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Actor, ActorRef, Props, SupervisorStrategy, Terminated }
-import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
-import org.reactivestreams.{ Subscriber, Subscription }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+
+import akka.actor.{ Actor, ActorRef, Props, SupervisorStrategy, Terminated }
+import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
+import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API

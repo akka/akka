@@ -4,11 +4,9 @@
 package akka.stream.io2
 
 import java.io.Closeable
-
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.{ IO, Tcp }
 import akka.stream.io2.StreamTcp.IncomingTcpConnection
-import akka.stream.scaladsl2._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.MaterializerSettings
 import akka.testkit.{ TestKitBase, TestProbe }
@@ -19,6 +17,10 @@ import org.reactivestreams.{ Subscriber, Publisher }
 import scala.collection.immutable.Queue
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import akka.stream.scaladsl.Sink
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Flow
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString)
@@ -134,7 +136,9 @@ trait TcpHelper { this: TestKitBase ⇒
     val serverRef = system.actorOf(testServerProps(address, serverProbe.ref))
     serverProbe.expectMsgType[Tcp.Bound]
 
-    def waitAccept(): ServerConnection = new ServerConnection(serverProbe.expectMsgType[ActorRef])
+    def waitAccept(): ServerConnection = {
+      new ServerConnection(serverProbe.expectMsgType[ActorRef])
+    }
     def close(): Unit = serverRef ! ServerClose
   }
 

@@ -3,8 +3,9 @@
  */
 package akka.stream.impl
 
-import akka.stream.MaterializerSettings
 import scala.collection.immutable
+import akka.stream.MaterializerSettings
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
@@ -40,13 +41,14 @@ private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeM
   }
 
   def emitEmptyTail(): Unit = {
-    primaryOutputs.enqueueOutputElement((taken, EmptyPublisher))
+    primaryOutputs.enqueueOutputElement((taken, Source(EmptyPublisher[Any])))
     nextPhase(completedPhase)
   }
 
   def emitNonEmptyTail(): Unit = {
     val substreamOutput = createSubstreamOutput()
-    primaryOutputs.enqueueOutputElement((taken, substreamOutput))
+    val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
+    primaryOutputs.enqueueOutputElement((taken, substreamFlow))
     primaryOutputs.complete()
     nextPhase(streamTailPhase(substreamOutput))
   }

@@ -9,7 +9,7 @@ import scala.collection.mutable.ListBuffer
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
 import akka.stream.Transformer
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.model._
 import akka.http.util._

@@ -7,7 +7,8 @@ package akka.http.util
 import akka.http.model.RequestEntity
 import akka.stream.impl.ErrorPublisher
 import akka.stream.Transformer
-import akka.stream.scaladsl2.{ Source, FlowMaterializer }
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import org.reactivestreams.Publisher
 

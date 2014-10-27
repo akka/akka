@@ -3,14 +3,15 @@
  */
 package akka.stream.impl
 
-import akka.actor.{ Terminated, Props, ActorRef }
 import akka.stream.MaterializerSettings
-import akka.stream.impl.MultiStreamOutputProcessor.SubstreamKey
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any) extends MultiStreamOutputProcessor(settings) {
+private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any)
+  extends MultiStreamOutputProcessor(settings) {
+
   import MultiStreamOutputProcessor._
 
   var keyToSubstreamOutput = collection.mutable.Map.empty[Any, SubstreamOutput]
@@ -42,7 +43,8 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
       nextPhase(waitNext)
     } else {
       val substreamOutput = createSubstreamOutput()
-      primaryOutputs.enqueueOutputElement((key, substreamOutput))
+      val substreamFlow = Source(substreamOutput) // substreamOutput is a Publisher
+      primaryOutputs.enqueueOutputElement((key, substreamFlow))
       keyToSubstreamOutput(key) = substreamOutput
       nextPhase(dispatchToSubstream(elem, substreamOutput))
     }

@@ -15,7 +15,8 @@ import akka.event.NoLogging
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousPublisherFromIterable
 import HttpEntity._
 import HttpMethods._

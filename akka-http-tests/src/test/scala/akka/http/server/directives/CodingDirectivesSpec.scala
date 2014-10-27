@@ -9,7 +9,7 @@ import org.scalatest.Tag
 import org.scalatest.matchers.Matcher
 
 import akka.util.ByteString
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 
 import akka.http.util._
 

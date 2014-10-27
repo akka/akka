@@ -11,7 +11,7 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.engine.rendering.RenderSupport._
 import akka.http.util._
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 import akka.stream.Transformer
 import akka.util.ByteString
 import HttpEntity._

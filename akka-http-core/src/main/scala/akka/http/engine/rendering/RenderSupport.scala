@@ -5,10 +5,10 @@
 package akka.http.engine.rendering
 
 import akka.parboiled2.CharUtils
-import akka.stream.impl2.ActorBasedFlowMaterializer
+import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.stream.Transformer
 import akka.http.model._
 import akka.http.util._
