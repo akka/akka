@@ -87,6 +87,7 @@ private[scaladsl] final case class SubscriberSource[Out]() extends KeyedActorFlo
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] =
     flowSubscriber
+
 }
 
 /**
