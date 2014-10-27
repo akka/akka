@@ -377,8 +377,9 @@ object ForkJoinExecutorConfigurator {
                                threadFactory: ForkJoinPool.ForkJoinWorkerThreadFactory,
                                unhandledExceptionHandler: Thread.UncaughtExceptionHandler)
     extends ForkJoinPool(parallelism, threadFactory, unhandledExceptionHandler, true) with LoadMetrics {
-    override def execute(r: Runnable): Unit =
-      if (r eq null) throw new NullPointerException else super.execute(new AkkaForkJoinTask(r))
+    override def execute(r: Runnable): Unit = super.execute(
+      if ((r eq null) || r.isInstanceOf[ForkJoinTask[_]]) r.asInstanceOf[ForkJoinTask[_]]
+      else new AkkaForkJoinTask(r))
 
     def atFullThrottle(): Boolean = this.getActiveThreadCount() >= this.getParallelism()
   }
@@ -391,6 +392,9 @@ object ForkJoinExecutorConfigurator {
     override def getRawResult(): Unit = ()
     override def setRawResult(unit: Unit): Unit = ()
     final override def exec(): Boolean = try { runnable.run(); true } catch {
+      case ie: InterruptedException ⇒
+        Thread.currentThread.interrupt()
+        false
       case anything: Throwable ⇒
         val t = Thread.currentThread
         t.getUncaughtExceptionHandler match {
