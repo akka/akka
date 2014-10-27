@@ -6,8 +6,14 @@ package akka.stream.actor
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl2.Broadcast
+import akka.stream.scaladsl2.Flow
+import akka.stream.scaladsl2.FlowGraph
+import akka.stream.scaladsl2.FlowGraphImplicits
+import akka.stream.scaladsl2.Merge
+import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.scaladsl2.Sink
+import akka.stream.scaladsl2.Source
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.EventFilter
@@ -107,9 +113,9 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p.subscribe(c)
-      val sub = c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(s)
+      val sub = s.expectSubscription
       sub.request(2)
       probe.expectMsg(TotalDemand(2))
       sub.request(3)
@@ -121,68 +127,67 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p.subscribe(c)
-      val sub = c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(s)
+      val sub = s.expectSubscription
       sub.request(2)
       ref ! Produce("elem-1")
       ref ! Produce("elem-2")
       ref ! Produce("elem-3")
-      c.expectNext("elem-1")
-      c.expectNext("elem-2")
-      c.expectNoMsg(300.millis)
+      s.expectNext("elem-1")
+      s.expectNext("elem-2")
+      s.expectNoMsg(300.millis)
       sub.cancel()
     }
 
     "signal error" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
       ref ! Err("wrong")
-      c.expectSubscription
-      c.expectError.getMessage should be("wrong")
+      s.expectSubscription
+      s.expectError.getMessage should be("wrong")
     }
 
     "signal error before subscribe" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Err("early err")
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
-      c.expectError.getMessage should be("early err")
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectError.getMessage should be("early err")
     }
 
     "drop onNext elements after cancel" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p.subscribe(c)
-      val sub = c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(s)
+      val sub = s.expectSubscription
       sub.request(2)
       ref ! Produce("elem-1")
       sub.cancel()
       ref ! Produce("elem-2")
-      c.expectNext("elem-1")
-      c.expectNoMsg(300.millis)
-      sub.cancel()
+      s.expectNext("elem-1")
+      s.expectNoMsg(300.millis)
     }
 
     "remember requested after restart" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       val p = ActorPublisher[String](ref)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p.subscribe(c)
-      val sub = c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      p.subscribe(s)
+      val sub = s.expectSubscription
       sub.request(3)
       probe.expectMsg(TotalDemand(3))
       ref ! Produce("elem-1")
       ref ! Boom
       ref ! Produce("elem-2")
-      c.expectNext("elem-1")
-      c.expectNext("elem-2")
+      s.expectNext("elem-1")
+      s.expectNext("elem-2")
       sub.request(5)
       probe.expectMsg(TotalDemand(6))
       sub.cancel()
@@ -191,54 +196,59 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     "signal onComplete" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
-      val sub = c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      val sub = s.expectSubscription
       sub.request(3)
       ref ! Produce("elem-1")
       ref ! Complete
-      c.expectNext("elem-1")
-      c.expectComplete
+      s.expectNext("elem-1")
+      s.expectComplete
     }
 
     "signal immediate onComplete" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
       ref ! Complete
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
-      c.expectComplete
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectComplete
     }
 
     "only allow one subscriber" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
-      c.expectSubscription
-      val c2 = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c2)
-      c2.expectError.getClass should be(classOf[IllegalStateException])
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectSubscription
+      val s2 = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s2)
+      s2.expectError.getClass should be(classOf[IllegalStateException])
     }
 
     "signal onCompete when actor is stopped" in {
       val probe = TestProbe()
       val ref = system.actorOf(testPublisherProps(probe.ref))
-      val c = StreamTestKit.SubscriberProbe[String]()
-      ActorPublisher[String](ref).subscribe(c)
-      c.expectSubscription
+      val s = StreamTestKit.SubscriberProbe[String]()
+      ActorPublisher[String](ref).subscribe(s)
+      s.expectSubscription
       ref ! PoisonPill
-      c.expectComplete
+      s.expectComplete
     }
 
     "work together with Flow and ActorSubscriber" in {
       implicit val materializer = FlowMaterializer()
       val probe = TestProbe()
-      val snd = system.actorOf(senderProps)
-      val rcv = system.actorOf(receiverProps(probe.ref))
-      Flow(ActorPublisher[Int](snd)).collect {
+
+      val source = Source[Int](senderProps)
+      val sink = Sink[String](receiverProps(probe.ref))
+
+      val mat = source.collect {
         case n if n % 2 == 0 ⇒ "elem-" + n
-      }.produceTo(ActorSubscriber(rcv))
+      }.connect(sink).run()
+
+      val snd = mat.get(source)
+      val rcv = mat.get(sink)
 
       (1 to 3) foreach { snd ! _ }
       probe.expectMsg("elem-2")
@@ -253,6 +263,46 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       watch(snd)
       rcv ! PoisonPill
       expectTerminated(snd)
+    }
+
+    "work in a FlowGraph" in {
+      implicit val materializer = FlowMaterializer()
+      val probe1 = TestProbe()
+      val probe2 = TestProbe()
+
+      val senderRef1 = system.actorOf(senderProps)
+      val source1 = Source(ActorPublisher[Int](senderRef1))
+      val source2 = Source[Int](senderProps)
+
+      val sink1 = Sink(ActorSubscriber[String](system.actorOf(receiverProps(probe1.ref))))
+      val sink2 = Sink[String](receiverProps(probe2.ref))
+
+      val mat = FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+
+        val merge = Merge[Int]
+        val bcast = Broadcast[String]
+
+        source1 ~> merge
+        source2 ~> merge
+
+        merge ~> Flow[Int].map(_.toString) ~> bcast
+
+        bcast ~> Flow[String].map(_ + "mark") ~> sink1
+        bcast ~> sink2
+      }.run()
+
+      val senderRef2 = mat.get(source2)
+
+      (0 to 10).foreach {
+        senderRef1 ! _
+        senderRef2 ! _
+      }
+
+      (0 to 10).foreach { msg ⇒
+        probe1.expectMsg(msg.toString + "mark")
+        probe2.expectMsg(msg.toString)
+      }
     }
 
   }
