@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl2
 
+import akka.actor.Props
 import org.reactivestreams.Subscriber
 import scala.util.Try
 
@@ -50,6 +51,13 @@ object Sink {
     val in = block(builder)
     builder.partialBuild().toSink(in)
   }
+
+  /**
+   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
+   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
+   * be [[akka.stream.actor.ActorSubscriber]].
+   */
+  def apply[T](props: Props): PropsSink[T] = PropsSink[T](props)
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.

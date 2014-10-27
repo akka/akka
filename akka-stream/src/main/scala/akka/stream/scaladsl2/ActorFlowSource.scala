@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl2
 
+import akka.actor.ActorRef
+import akka.actor.Props
 import akka.stream.impl._
 import akka.stream.impl2.ActorBasedFlowMaterializer
 import akka.stream.impl2.Ast.AstNode
@@ -207,4 +209,23 @@ private[scaladsl2] final case class ConcatSource[Out](source1: Source[Out], sour
   }
 
   override def isActive: Boolean = false
+}
+
+/**
+ * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
+ * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
+ */
+private[scaladsl2] final case class PropsSource[Out](props: Props) extends KeyedActorFlowSource[Out] {
+  override type MaterializedType = ActorRef
+
+  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val (publisher, publisherRef) = create(materializer, flowName)
+    publisher.subscribe(flowSubscriber)
+    publisherRef
+  }
+  override def isActive: Boolean = true
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val publisherRef = materializer.actorOf(props, name = s"$flowName-0-props")
+    (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
+  }
 }
