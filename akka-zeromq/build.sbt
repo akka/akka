@@ -13,4 +13,4 @@ OSGi.zeroMQ
 
 libraryDependencies ++= Dependencies.zeroMQ
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-zeromq")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-zeromq").value

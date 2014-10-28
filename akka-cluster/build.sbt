@@ -16,7 +16,7 @@ OSGi.cluster
 
 libraryDependencies ++= Dependencies.cluster
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-cluster").value
 
 // disable parallel tests
 parallelExecution in Test := false

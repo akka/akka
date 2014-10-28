@@ -9,4 +9,4 @@ Unidoc.scaladocSettings
 
 Unidoc.javadocSettings
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-multi-node-testkit").value

@@ -13,4 +13,4 @@ OSGi.agent
 
 libraryDependencies ++= Dependencies.agent
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-agent")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-agent").value
