@@ -22,7 +22,7 @@ trait MiscDirectives {
    * Directive extracting the IP of the client from either the X-Forwarded-For, Remote-Address or X-Real-IP header
    * (in that order of priority).
    */
-  def clientIP: Directive1[RemoteAddress] = MiscDirectives._clientIP
+  def extractClientIP: Directive1[RemoteAddress] = MiscDirectives._extractClientIP
 
   /**
    * Rejects the request if its entity is not empty.
@@ -49,7 +49,7 @@ object MiscDirectives extends MiscDirectives {
   import RouteDirectives._
   import RouteResult._
 
-  private val _clientIP: Directive1[RemoteAddress] =
+  private val _extractClientIP: Directive1[RemoteAddress] =
     headerValuePF { case `X-Forwarded-For`(Seq(address, _*)) ⇒ address } |
       headerValuePF { case `Remote-Address`(address) ⇒ address } |
       headerValuePF { case h if h.is("x-real-ip") ⇒ RemoteAddress(h.value) }

@@ -50,13 +50,13 @@ private[http] class RequestContextImpl(
   override def withSettings(settings: RoutingSettings): RequestContext =
     copy(settings = settings)
 
-  override def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext =
+  override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
 
   override def withUnmatchedPath(path: Uri.Path): RequestContext =
     copy(unmatchedPath = path)
 
-  override def withUnmatchedPathMapped(f: Uri.Path ⇒ Uri.Path): RequestContext =
+  override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
   override def withContentNegotiationDisabled: RequestContext =

@@ -8,9 +8,9 @@ package directives
 import akka.http.model.StatusCodes._
 
 class SchemeDirectivesSpec extends RoutingSpec {
-  "the schemeName directive" should {
+  "the extractScheme directive" should {
     "extract the Uri scheme" in {
-      Put("http://localhost/", "Hello") ~> schemeName { echoComplete } ~> check { responseAs[String] shouldEqual "http" }
+      Put("http://localhost/", "Hello") ~> extractScheme { echoComplete } ~> check { responseAs[String] shouldEqual "http" }
     }
   }
 

@@ -7,7 +7,7 @@ package akka.http.server.directives
 import akka.http.server._
 
 class PathDirectivesSpec extends RoutingSpec {
-  val echoUnmatchedPath = unmatchedPath { echoComplete }
+  val echoUnmatchedPath = extractUnmatchedPath { echoComplete }
   def echoCaptureAndUnmatchedPath[T]: T ⇒ Route =
     capture ⇒ ctx ⇒ ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
 

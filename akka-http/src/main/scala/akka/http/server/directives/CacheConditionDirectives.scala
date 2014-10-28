@@ -35,7 +35,7 @@ trait CacheConditionDirectives {
     def complete304(): Route = addResponseHeaders(complete(HttpResponse(NotModified)))
     def complete412(): Route = _.complete(PreconditionFailed)
 
-    requestInstance.flatMap { request ⇒
+    extractRequest.flatMap { request ⇒
       import request._
       mapInnerRoute { route ⇒
         def innerRouteWithRangeHeaderFilteredOut: Route =

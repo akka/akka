@@ -7,10 +7,10 @@ package directives
 
 class BasicDirectivesSpec extends RoutingSpec {
 
-  "The `rewriteUnmatchedPath` directive" should {
-    "rewrite the unmatched path" in {
+  "The `mapUnmatchedPath` directive" should {
+    "map the unmatched path" in {
       Get("/abc") ~> {
-        rewriteUnmatchedPath(_ / "def") {
+        mapUnmatchedPath(_ / "def") {
           path("abc" / "def") { completeOk }
         }
       } ~> check { response shouldEqual Ok }

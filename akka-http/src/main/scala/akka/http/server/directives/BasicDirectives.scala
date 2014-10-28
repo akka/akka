@@ -23,7 +23,7 @@ trait BasicDirectives {
     mapInnerRoute { inner ⇒ ctx ⇒ inner(f(ctx)) }
 
   def mapRequest(f: HttpRequest ⇒ HttpRequest): Directive0 =
-    mapRequestContext(_ withRequestMapped f)
+    mapRequestContext(_ mapRequest f)
 
   def mapRouteResultFuture(f: Future[RouteResult] ⇒ Future[RouteResult]): Directive0 =
     Directive { inner ⇒ ctx ⇒ f(inner(())(ctx)) }
@@ -111,23 +111,23 @@ trait BasicDirectives {
   /**
    * Transforms the unmatchedPath of the RequestContext using the given function.
    */
-  def rewriteUnmatchedPath(f: Uri.Path ⇒ Uri.Path): Directive0 =
-    mapRequestContext(_ withUnmatchedPathMapped f)
+  def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): Directive0 =
+    mapRequestContext(_ mapUnmatchedPath f)
 
   /**
    * Extracts the unmatched path from the RequestContext.
    */
-  def unmatchedPath: Directive1[Uri.Path] = BasicDirectives._unmatchedPath
+  def extractUnmatchedPath: Directive1[Uri.Path] = BasicDirectives._extractUnmatchedPath
 
   /**
    * Extracts the complete request.
    */
-  def requestInstance: Directive1[HttpRequest] = BasicDirectives._requestInstance
+  def extractRequest: Directive1[HttpRequest] = BasicDirectives._extractRequest
 
   /**
    * Extracts the complete request URI.
    */
-  def requestUri: Directive1[Uri] = BasicDirectives._requestUri
+  def extractUri: Directive1[Uri] = BasicDirectives._extractUri
 
   /**
    * Runs its inner route with the given alternative [[ExecutionContext]].
@@ -177,9 +177,9 @@ trait BasicDirectives {
 }
 
 object BasicDirectives extends BasicDirectives {
-  private val _unmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
-  private val _requestInstance: Directive1[HttpRequest] = extract(_.request)
-  private val _requestUri: Directive1[Uri] = extract(_.request.uri)
+  private val _extractUnmatchedPath: Directive1[Uri.Path] = extract(_.unmatchedPath)
+  private val _extractRequest: Directive1[HttpRequest] = extract(_.request)
+  private val _extractUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
