@@ -153,6 +153,24 @@ trait BasicDirectives {
     BasicDirectives._extractLog
 
   /**
+   * Runs its inner route with the given alternative [[RoutingSettings]].
+   */
+  def withSettings(settings: RoutingSettings): Directive0 =
+    mapRequestContext(_ withSettings settings)
+
+  /**
+   * Runs the inner route with settings mapped by the given function.
+   */
+  def mapSettings(f: RoutingSettings ⇒ RoutingSettings): Directive0 =
+    mapRequestContext(ctx ⇒ ctx.withSettings(f(ctx.settings)))
+
+  /**
+   * Extracts the [[RoutingSettings]] from the [[RequestContext]].
+   */
+  def extractSettings: Directive1[RoutingSettings] =
+    BasicDirectives._extractSettings
+
+  /**
    * Extracts the [[RequestContext]] itself.
    */
   def extractRequestContext: Directive1[RequestContext] = BasicDirectives._extractRequestContext
@@ -164,5 +182,6 @@ object BasicDirectives extends BasicDirectives {
   private val _requestUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
+  private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(akka.http.util.identityFunc)
 }

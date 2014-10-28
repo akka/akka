@@ -32,9 +32,17 @@ trait RequestContext {
   def log: LoggingAdapter
 
   /**
+   * The default RoutingSettings to be used for configuring directives.
+   */
+  def settings: RoutingSettings
+
+  /**
    * Returns a copy of this context with the given fields updated.
    */
-  def reconfigure(executionContext: ExecutionContext = executionContext, log: LoggingAdapter = log): RequestContext
+  def reconfigure(
+    executionContext: ExecutionContext = executionContext,
+    log: LoggingAdapter = log,
+    settings: RoutingSettings = settings): RequestContext
 
   /**
    * Completes the request with the given ToResponseMarshallable.
@@ -67,6 +75,11 @@ trait RequestContext {
    * Returns a copy of this context with the new LoggingAdapter.
    */
   def withLog(log: LoggingAdapter): RequestContext
+
+  /**
+   * Returns a copy of this context with the new RoutingSettings.
+   */
+  def withSettings(settings: RoutingSettings): RequestContext
 
   /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.

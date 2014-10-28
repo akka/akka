@@ -126,7 +126,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
             request.withEffectiveUri(
               securedConnection = defaultHostInfo.securedConnection,
               defaultHostHeader = defaultHostInfo.host)
-          val ctx = new RequestContextImpl(effectiveRequest, setup.routingLog.requestLog(effectiveRequest))
+          val ctx = new RequestContextImpl(effectiveRequest, setup.routingLog.requestLog(effectiveRequest), setup.settings)
           val sealedExceptionHandler = {
             import setup._
             if (exceptionHandler.isDefault) exceptionHandler
