@@ -15,4 +15,4 @@ libraryDependencies ++= Dependencies.remote
 
 parallelExecution in Test := false
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-remote")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-remote").value

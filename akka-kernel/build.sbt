@@ -11,4 +11,4 @@ Unidoc.javadocSettings
 
 libraryDependencies ++= Dependencies.kernel
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-kernel")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-kernel").value
