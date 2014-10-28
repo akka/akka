@@ -64,7 +64,7 @@ trait ScalaRoutingDSL extends Directives {
     import setup._
     val sealedRoute = sealRoute(route)(setup)
     request ⇒
-      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request))).fast.map {
+      sealedRoute(new RequestContextImpl(request, routingLog.requestLog(request), setup.settings)).fast.map {
         case RouteResult.Complete(response) ⇒ response
         case RouteResult.Rejected(rejected) ⇒ throw new IllegalStateException(s"Unhandled rejections '$rejected', unsealed RejectionHandler?!")
       }
