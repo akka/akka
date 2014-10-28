@@ -10,7 +10,7 @@ import scala.collection.immutable
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.stream.Transformer
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Source
 import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._

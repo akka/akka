@@ -6,7 +6,8 @@ package akka.http
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
-import akka.stream.scaladsl2.{ Sink, Source, FlowMaterializer }
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.io.IO
 import akka.util.Timeout
 import akka.actor.ActorSystem

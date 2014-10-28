@@ -5,7 +5,8 @@
 package akka.http.server
 
 import scala.concurrent.{ ExecutionContext, Future }
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
+import akka.stream.FlowMaterializer
 import akka.http.util.FastFuture
 import akka.http.model.{ HttpRequest, HttpResponse }
 import akka.http.Http

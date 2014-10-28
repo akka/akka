@@ -3,12 +3,13 @@
  */
 package akka.stream.io2
 
-import akka.stream.scaladsl2._
+import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
-
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.Sink
 
 class TcpFlowSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io2.TcpHelper._
