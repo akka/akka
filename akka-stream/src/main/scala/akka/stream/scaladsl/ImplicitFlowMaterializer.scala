@@ -4,8 +4,8 @@
 package akka.stream.scaladsl
 
 import akka.actor.Actor
-import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
+import akka.stream.FlowMaterializer
 
 /**
  * Mix this trait into your [[akka.actor.Actor]] if you need an implicit

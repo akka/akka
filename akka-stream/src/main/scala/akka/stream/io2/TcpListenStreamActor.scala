@@ -9,13 +9,17 @@ import akka.actor._
 import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
 import akka.stream.impl._
-import akka.stream.impl2.ActorBasedFlowMaterializer
+import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.io2.StreamTcp.IncomingTcpConnection
 import akka.stream.io2.TcpListenStreamActor.TCPSinkSource
-import akka.stream.scaladsl2._
 import akka.util.ByteString
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NoStackTrace
+import akka.stream.scaladsl.Sink
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.SimpleActorFlowSource
+import akka.stream.scaladsl.SimpleActorFlowSink
 
 /**
  * INTERNAL API

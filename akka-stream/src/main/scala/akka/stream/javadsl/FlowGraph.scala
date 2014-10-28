@@ -4,35 +4,33 @@
 package akka.stream.javadsl
 
 import akka.stream._
-import akka.stream.scaladsl2
-import akka.stream.scaladsl2
-import akka.stream.scaladsl2
-import impl2.Ast
+import akka.stream.scaladsl
+import akka.stream.impl.Ast
 
 import akka.stream._
 
 // elements //
 
 trait JunctionInPort[-T] {
-  /** Convert this element to it's `scaladsl2` equivalent. */
-  def asScala: scaladsl2.JunctionInPort[T]
+  /** Convert this element to it's `scaladsl` equivalent. */
+  def asScala: scaladsl.JunctionInPort[T]
 }
 trait JunctionOutPort[T] {
-  /** Convert this element to it's `scaladsl2` equivalent. */
-  def asScala: scaladsl2.JunctionOutPort[T]
+  /** Convert this element to it's `scaladsl` equivalent. */
+  def asScala: scaladsl.JunctionOutPort[T]
 }
 abstract class Junction[T] extends JunctionInPort[T] with JunctionOutPort[T] {
-  /** Convert this element to it's `scaladsl2` equivalent. */
-  def asScala: scaladsl2.Junction[T]
+  /** Convert this element to it's `scaladsl` equivalent. */
+  def asScala: scaladsl.Junction[T]
 }
 
 /** INTERNAL API */
 private object JunctionPortAdapter {
-  def apply[T](delegate: scaladsl2.JunctionInPort[T]): javadsl.JunctionInPort[T] =
-    new JunctionInPort[T] { override def asScala: scaladsl2.JunctionInPort[T] = delegate }
+  def apply[T](delegate: scaladsl.JunctionInPort[T]): javadsl.JunctionInPort[T] =
+    new JunctionInPort[T] { override def asScala: scaladsl.JunctionInPort[T] = delegate }
 
-  def apply[T](delegate: scaladsl2.JunctionOutPort[T]): javadsl.JunctionOutPort[T] =
-    new JunctionOutPort[T] { override def asScala: scaladsl2.JunctionOutPort[T] = delegate }
+  def apply[T](delegate: scaladsl.JunctionOutPort[T]): javadsl.JunctionOutPort[T] =
+    new JunctionOutPort[T] { override def asScala: scaladsl.JunctionOutPort[T] = delegate }
 }
 
 object Merge {
@@ -42,7 +40,7 @@ object Merge {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Merge[T] = new Merge(new scaladsl2.Merge[T](None))
+  def create[T](): Merge[T] = new Merge(new scaladsl.Merge[T](None))
 
   /**
    * Create a new anonymous `Merge` vertex with the specified output type.
@@ -58,7 +56,7 @@ object Merge {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Merge[T] = new Merge(new scaladsl2.Merge[T](Some(name)))
+  def create[T](name: String): Merge[T] = new Merge(new scaladsl.Merge[T](Some(name)))
 
   /**
    * Create a named `Merge` vertex with the specified output type.
@@ -76,8 +74,8 @@ object Merge {
  * When building the [[FlowGraph]] you must connect one or more input sources
  * and one output sink to the `Merge` vertex.
  */
-class Merge[T] private (delegate: scaladsl2.Merge[T]) extends javadsl.Junction[T] {
-  override def asScala: scaladsl2.Merge[T] = delegate
+class Merge[T] private (delegate: scaladsl.Merge[T]) extends javadsl.Junction[T] {
+  override def asScala: scaladsl.Merge[T] = delegate
 }
 
 object MergePreferred {
@@ -87,7 +85,7 @@ object MergePreferred {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): MergePreferred[T] = new MergePreferred(new scaladsl2.MergePreferred[T](None))
+  def create[T](): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](None))
 
   /**
    * Create a new anonymous `MergePreferred` vertex with the specified output type.
@@ -95,7 +93,7 @@ object MergePreferred {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): MergePreferred[T] = new MergePreferred(new scaladsl2.MergePreferred[T](None))
+  def create[T](clazz: Class[T]): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](None))
 
   /**
    * Create a named `MergePreferred` vertex with the specified output type.
@@ -103,7 +101,7 @@ object MergePreferred {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): MergePreferred[T] = new MergePreferred(new scaladsl2.MergePreferred[T](Some(name)))
+  def create[T](name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](Some(name)))
 
   /**
    * Create a named `MergePreferred` vertex with the specified output type.
@@ -111,7 +109,7 @@ object MergePreferred {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): MergePreferred[T] = new MergePreferred(new scaladsl2.MergePreferred[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](Some(name)))
 }
 
 /**
@@ -121,8 +119,8 @@ object MergePreferred {
  * When building the [[FlowGraph]] you must connect one or more input streams
  * and one output sink to the `Merge` vertex.
  */
-class MergePreferred[T](delegate: scaladsl2.MergePreferred[T]) extends javadsl.Junction[T] {
-  override def asScala: scaladsl2.MergePreferred[T] = delegate
+class MergePreferred[T](delegate: scaladsl.MergePreferred[T]) extends javadsl.Junction[T] {
+  override def asScala: scaladsl.MergePreferred[T] = delegate
 }
 
 object Broadcast {
@@ -132,7 +130,7 @@ object Broadcast {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Broadcast[T] = new Broadcast(new scaladsl2.Broadcast(None))
+  def create[T](): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(None))
 
   /**
    * Create a new anonymous `Broadcast` vertex with the specified input type.
@@ -148,7 +146,7 @@ object Broadcast {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Broadcast[T] = new Broadcast(new scaladsl2.Broadcast(Some(name)))
+  def create[T](name: String): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(Some(name)))
 
   /**
    * Create a named `Broadcast` vertex with the specified input type.
@@ -164,8 +162,8 @@ object Broadcast {
  * the other streams. It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
  */
-class Broadcast[T](delegate: scaladsl2.Broadcast[T]) extends javadsl.Junction[T] {
-  override def asScala: scaladsl2.Broadcast[T] = delegate
+class Broadcast[T](delegate: scaladsl.Broadcast[T]) extends javadsl.Junction[T] {
+  override def asScala: scaladsl.Broadcast[T] = delegate
 }
 
 object Balance {
@@ -175,7 +173,7 @@ object Balance {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Balance[T] = new Balance(new scaladsl2.Balance(None))
+  def create[T](): Balance[T] = new Balance(new scaladsl.Balance(None))
 
   /**
    * Create a new anonymous `Balance` vertex with the specified input type.
@@ -191,7 +189,7 @@ object Balance {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Balance[T] = new Balance(new scaladsl2.Balance(Some(name)))
+  def create[T](name: String): Balance[T] = new Balance(new scaladsl.Balance(Some(name)))
 
   /**
    * Create a named `Balance` vertex with the specified input type.
@@ -207,8 +205,8 @@ object Balance {
  * one of the other streams. It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
  */
-class Balance[T](delegate: scaladsl2.Balance[T]) extends javadsl.Junction[T] {
-  override def asScala: scaladsl2.Balance[T] = delegate
+class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
+  override def asScala: scaladsl.Balance[T] = delegate
 }
 
 object Zip {
@@ -236,8 +234,8 @@ object Zip {
    * is called and those instances are not `equal`.*
    */
   def create[A, B](name: String): Zip[A, B] =
-    new Zip(new scaladsl2.Zip[A, B](Option(name)) {
-      override private[akka] def astNode: Ast.FanInAstNode = Ast.Zip(impl2.Zip.AsJavaPair)
+    new Zip(new scaladsl.Zip[A, B](Option(name)) {
+      override private[akka] def astNode: Ast.FanInAstNode = Ast.Zip(impl.Zip.AsJavaPair)
     })
 
   /**
@@ -250,15 +248,15 @@ object Zip {
     create[A, B](name)
 
   class Left[A, B](private val zip: Zip[A, B]) extends JunctionInPort[A] {
-    override def asScala: scaladsl2.JunctionInPort[A] = zip.asScala.left
+    override def asScala: scaladsl.JunctionInPort[A] = zip.asScala.left
   }
   class Right[A, B](private val zip: Zip[A, B]) extends JunctionInPort[B] {
-    override def asScala: scaladsl2.JunctionInPort[B] = zip.asScala.right
+    override def asScala: scaladsl.JunctionInPort[B] = zip.asScala.right
   }
   class Out[A, B](private val zip: Zip[A, B]) extends JunctionOutPort[akka.japi.Pair[A, B]] {
     // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
-    override def asScala: scaladsl2.JunctionOutPort[akka.japi.Pair[A, B]] =
-      zip.asScala.out.asInstanceOf[scaladsl2.JunctionOutPort[akka.japi.Pair[A, B]]]
+    override def asScala: scaladsl.JunctionOutPort[akka.japi.Pair[A, B]] =
+      zip.asScala.out.asInstanceOf[scaladsl.JunctionOutPort[akka.japi.Pair[A, B]]]
   }
 }
 
@@ -267,9 +265,9 @@ object Zip {
  * by combining corresponding elements in pairs. If one of the two streams is
  * longer than the other, its remaining elements are ignored.
  */
-final class Zip[A, B] private (delegate: scaladsl2.Zip[A, B]) {
+final class Zip[A, B] private (delegate: scaladsl.Zip[A, B]) {
 
-  /** Convert this element to it's `scaladsl2` equivalent. */
+  /** Convert this element to it's `scaladsl` equivalent. */
   def asScala = delegate
 
   val left = new Zip.Left(this)
@@ -282,7 +280,7 @@ object Unzip {
     create(null)
 
   def create[A, B](name: String): Unzip[A, B] =
-    new Unzip[A, B](new scaladsl2.Unzip[A, B](Option(name)))
+    new Unzip[A, B](new scaladsl.Unzip[A, B](Option(name)))
 
   def create[A, B](left: Class[A], right: Class[B]): Unzip[A, B] =
     create[A, B]()
@@ -292,22 +290,22 @@ object Unzip {
 
   class In[A, B](private val unzip: Unzip[A, B]) extends JunctionInPort[akka.japi.Pair[A, B]] {
     // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
-    override def asScala: scaladsl2.JunctionInPort[akka.japi.Pair[A, B]] =
-      unzip.asScala.in.asInstanceOf[scaladsl2.JunctionInPort[akka.japi.Pair[A, B]]]
+    override def asScala: scaladsl.JunctionInPort[akka.japi.Pair[A, B]] =
+      unzip.asScala.in.asInstanceOf[scaladsl.JunctionInPort[akka.japi.Pair[A, B]]]
   }
   class Left[A, B](private val unzip: Unzip[A, B]) extends JunctionOutPort[A] {
-    override def asScala: scaladsl2.JunctionOutPort[A] =
+    override def asScala: scaladsl.JunctionOutPort[A] =
       unzip.asScala.left
   }
   class Right[A, B](private val unzip: Unzip[A, B]) extends JunctionOutPort[B] {
-    override def asScala: scaladsl2.JunctionOutPort[B] =
+    override def asScala: scaladsl.JunctionOutPort[B] =
       unzip.asScala.right
   }
 }
 
-final class Unzip[A, B] private (delegate: scaladsl2.Unzip[A, B]) {
+final class Unzip[A, B] private (delegate: scaladsl.Unzip[A, B]) {
 
-  /** Convert this element to it's `scaladsl2` equivalent. */
+  /** Convert this element to it's `scaladsl` equivalent. */
   def asScala = delegate
 
   val in = new Unzip.In(this)
@@ -322,7 +320,7 @@ object Concat {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Concat[T] = new Concat(scaladsl2.Concat[T])
+  def create[T](): Concat[T] = new Concat(scaladsl.Concat[T])
 
   /**
    * Create a new anonymous `Concat` vertex with the specified input types.
@@ -338,7 +336,7 @@ object Concat {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.*
    */
-  def create[T](name: String): Concat[T] = new Concat(scaladsl2.Concat[T](name))
+  def create[T](name: String): Concat[T] = new Concat(scaladsl.Concat[T](name))
 
   /**
    * Create a named `Concat` vertex with the specified input types.
@@ -348,14 +346,14 @@ object Concat {
    */
   def create[T](name: String, clazz: Class[T]): Concat[T] = create(name)
 
-  class First[T] private[akka] (delegate: scaladsl2.Concat.First[T]) extends JunctionInPort[T] {
-    override def asScala: scaladsl2.JunctionInPort[T] = delegate
+  class First[T] private[akka] (delegate: scaladsl.Concat.First[T]) extends JunctionInPort[T] {
+    override def asScala: scaladsl.JunctionInPort[T] = delegate
   }
-  class Second[T] private[akka] (delegate: scaladsl2.Concat.Second[T]) extends JunctionInPort[T] {
-    override def asScala: scaladsl2.JunctionInPort[T] = delegate
+  class Second[T] private[akka] (delegate: scaladsl.Concat.Second[T]) extends JunctionInPort[T] {
+    override def asScala: scaladsl.JunctionInPort[T] = delegate
   }
-  class Out[T] private[akka] (delegate: scaladsl2.Concat.Out[T]) extends JunctionOutPort[T] {
-    override def asScala: scaladsl2.JunctionOutPort[T] = delegate
+  class Out[T] private[akka] (delegate: scaladsl.Concat.Out[T]) extends JunctionOutPort[T] {
+    override def asScala: scaladsl.JunctionOutPort[T] = delegate
   }
 
 }
@@ -365,9 +363,9 @@ object Concat {
  * by consuming one stream first emitting all of its elements, then consuming the
  * second stream emitting all of its elements.
  */
-class Concat[T] private (delegate: scaladsl2.Concat[T]) {
+class Concat[T] private (delegate: scaladsl.Concat[T]) {
 
-  /** Convert this element to it's `scaladsl2` equivalent. */
+  /** Convert this element to it's `scaladsl` equivalent. */
   def asScala = delegate
 
   val first = new Concat.First[T](delegate.first)
@@ -384,7 +382,7 @@ object UndefinedSource {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): UndefinedSource[T] = new UndefinedSource[T](new scaladsl2.UndefinedSource[T](None))
+  def create[T](): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](None))
 
   /**
    * Create a new anonymous `Undefinedsource` vertex with the specified input type.
@@ -392,7 +390,7 @@ object UndefinedSource {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): UndefinedSource[T] = new UndefinedSource[T](new scaladsl2.UndefinedSource[T](None))
+  def create[T](clazz: Class[T]): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](None))
 
   /**
    * Create a named `Undefinedsource` vertex with the specified input type.
@@ -400,7 +398,7 @@ object UndefinedSource {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl2.UndefinedSource[T](Some(name)))
+  def create[T](name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](Some(name)))
 
   /**
    * Create a named `Undefinedsource` vertex with the specified input type.
@@ -408,7 +406,7 @@ object UndefinedSource {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl2.UndefinedSource[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](Some(name)))
 }
 
 /**
@@ -416,8 +414,8 @@ object UndefinedSource {
  * yet by using this placeholder instead of the real [[Source]]. Later the placeholder can
  * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachSource]].
  */
-final class UndefinedSource[+T](delegate: scaladsl2.UndefinedSource[T]) {
-  def asScala: scaladsl2.UndefinedSource[T] = delegate
+final class UndefinedSource[+T](delegate: scaladsl.UndefinedSource[T]) {
+  def asScala: scaladsl.UndefinedSource[T] = delegate
 }
 
 object UndefinedSink {
@@ -427,7 +425,7 @@ object UndefinedSink {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): UndefinedSink[T] = new UndefinedSink[T](new scaladsl2.UndefinedSink[T](None))
+  def create[T](): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](None))
 
   /**
    * Create a new anonymous `Undefinedsink` vertex with the specified input type.
@@ -435,7 +433,7 @@ object UndefinedSink {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): UndefinedSink[T] = new UndefinedSink[T](new scaladsl2.UndefinedSink[T](None))
+  def create[T](clazz: Class[T]): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](None))
 
   /**
    * Create a named `Undefinedsink` vertex with the specified input type.
@@ -443,7 +441,7 @@ object UndefinedSink {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl2.UndefinedSink[T](Some(name)))
+  def create[T](name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](Some(name)))
 
   /**
    * Create a named `Undefinedsink` vertex with the specified input type.
@@ -451,7 +449,7 @@ object UndefinedSink {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl2.UndefinedSink[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](Some(name)))
 }
 
 /**
@@ -459,8 +457,8 @@ object UndefinedSink {
  * yet by using this placeholder instead of the real [[Sink]]. Later the placeholder can
  * be replaced with [[akka.stream.javadsl.FlowGraphBuilder#attachSink]].
  */
-final class UndefinedSink[-T](delegate: scaladsl2.UndefinedSink[T]) {
-  def asScala: scaladsl2.UndefinedSink[T] = delegate
+final class UndefinedSink[-T](delegate: scaladsl.UndefinedSink[T]) {
+  def asScala: scaladsl.UndefinedSink[T] = delegate
 }
 
 // flow graph //
@@ -482,15 +480,15 @@ object FlowGraph {
  * Java API
  * Builder of [[FlowGraph]] and [[PartialFlowGraph]].
  */
-class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
-  import akka.stream.scaladsl2.JavaConverters._
+class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
+  import akka.stream.scaladsl.JavaConverters._
 
   def this() {
-    this(new scaladsl2.FlowGraphBuilder())
+    this(new scaladsl.FlowGraphBuilder())
   }
 
   /** Converts this Java DSL element to it's Scala DSL counterpart. */
-  def asScala: scaladsl2.FlowGraphBuilder = b
+  def asScala: scaladsl.FlowGraphBuilder = b
 
   def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]) = {
     b.addEdge(source.asScala, flow.asScala, junctionIn.asScala)
@@ -568,11 +566,11 @@ class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
   }
 
   /**
-   * Import all edges from another [[akka.stream.scaladsl2.PartialFlowGraph]] to this builder.
+   * Import all edges from another [[akka.stream.scaladsl.PartialFlowGraph]] to this builder.
    * After importing you can [[#connect]] undefined sources and sinks in
    * two different `PartialFlowGraph` instances.
    */
-  def importPartialFlowGraph(partialFlowGraph: scaladsl2.PartialFlowGraph): FlowGraphBuilder = {
+  def importPartialFlowGraph(partialFlowGraph: scaladsl.PartialFlowGraph): FlowGraphBuilder = {
     b.importPartialFlowGraph(partialFlowGraph)
     this
   }
@@ -597,18 +595,18 @@ class FlowGraphBuilder(b: scaladsl2.FlowGraphBuilder) {
     new PartialFlowGraph(b.partialBuild())
 
   /** Build the [[FlowGraph]] and materialize it. */
-  def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap =
+  def run(materializer: FlowMaterializer): javadsl.MaterializedMap =
     new MaterializedMap(b.build().run()(materializer))
 
 }
 
 object PartialFlowGraphBuilder extends FlowGraphBuilder
 
-class PartialFlowGraph(delegate: scaladsl2.PartialFlowGraph) {
+class PartialFlowGraph(delegate: scaladsl.PartialFlowGraph) {
   import collection.JavaConverters._
-  import akka.stream.scaladsl2.JavaConverters._
+  import akka.stream.scaladsl.JavaConverters._
 
-  def asScala: scaladsl2.PartialFlowGraph = delegate
+  def asScala: scaladsl.PartialFlowGraph = delegate
 
   def undefinedSources(): java.util.Set[UndefinedSource[Any]] =
     delegate.undefinedSources.map(s ⇒ s.asJava).asJava
@@ -639,12 +637,12 @@ class PartialFlowGraph(delegate: scaladsl2.PartialFlowGraph) {
 
 }
 
-class FlowGraph(delegate: scaladsl2.FlowGraph) extends RunnableFlow {
+class FlowGraph(delegate: scaladsl.FlowGraph) extends RunnableFlow {
 
-  /** Convert this element to it's `scaladsl2` equivalent. */
-  def asScala: scaladsl2.FlowGraph = delegate
+  /** Convert this element to it's `scaladsl` equivalent. */
+  def asScala: scaladsl.FlowGraph = delegate
 
-  override def run(materializer: scaladsl2.FlowMaterializer): javadsl.MaterializedMap =
+  override def run(materializer: FlowMaterializer): javadsl.MaterializedMap =
     new MaterializedMap(delegate.run()(materializer))
 
 }

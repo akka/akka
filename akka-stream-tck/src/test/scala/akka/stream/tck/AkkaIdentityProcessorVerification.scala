@@ -5,9 +5,9 @@ package akka.stream.tck
 
 import scala.collection.immutable
 import akka.actor.ActorSystem
-import akka.stream.scaladsl2.FlowMaterializer
-import akka.stream.scaladsl2.Sink
-import akka.stream.scaladsl2.Source
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.EventFilter

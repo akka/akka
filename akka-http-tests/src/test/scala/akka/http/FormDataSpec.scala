@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.ActorSystem
-import akka.stream.scaladsl2.FlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.http.unmarshalling.Unmarshal
 import akka.http.marshalling.Marshal
 import akka.http.model._

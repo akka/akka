@@ -7,7 +7,8 @@ package akka.http.unmarshalling
 import java.io.{ ByteArrayInputStream, InputStreamReader }
 import scala.concurrent.ExecutionContext
 import scala.xml.{ XML, NodeSeq }
-import akka.stream.scaladsl2._
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl._
 import akka.util.ByteString
 import akka.http.util.FastFuture
 import akka.http.model._

@@ -15,8 +15,8 @@ import akka.stream.impl.SoftShutdown
 import akka.stream.impl.Stop
 import akka.stream.impl.SubscribePending
 import akka.stream.impl.SubscriberManagement
-import akka.stream.impl2.ActorBasedFlowMaterializer
-import akka.stream.scaladsl2.KeyedActorFlowSource
+import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.scaladsl.KeyedActorFlowSource
 import org.reactivestreams.Subscriber
 
 import scala.concurrent.duration._
@@ -115,7 +115,8 @@ private class PersistentSourceImpl(persistenceId: String, sourceSettings: Persis
       try {
         ps.foreach(pushToDownstream)
       } catch {
-        case Stop        ⇒ completeDownstream(); shutdownReason = None
+        case Stop ⇒
+          completeDownstream(); shutdownReason = None
         case NonFatal(e) ⇒ abortDownstream(e); shutdownReason = Some(e)
       }
   }

@@ -3,8 +3,8 @@
  */
 package akka.stream.tck
 
-import akka.stream.scaladsl2.Sink
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import org.reactivestreams._
 
 class SimpleCallbackPublisherTest extends AkkaPublisherVerification[Int] {

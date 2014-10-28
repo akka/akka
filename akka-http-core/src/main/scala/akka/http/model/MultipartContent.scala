@@ -7,7 +7,8 @@ package akka.http.model
 import java.io.File
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
-import akka.stream.scaladsl2.{ FlowMaterializer, Sink, Source }
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.impl.SynchronousPublisherFromIterable
 import akka.http.util.FastFuture
 import FastFuture._

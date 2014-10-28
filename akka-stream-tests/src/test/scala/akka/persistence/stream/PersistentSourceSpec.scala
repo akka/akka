@@ -6,12 +6,12 @@ package akka.persistence.stream
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.persistence.RecoveryCompleted
-import akka.stream.scaladsl2.FlowGraph
-import akka.stream.scaladsl2.FlowGraphImplicits
-import akka.stream.scaladsl2.FlowMaterializer
-import akka.stream.scaladsl2.Merge
-import akka.stream.scaladsl2.Sink
-import akka.stream.scaladsl2.Source
+import akka.stream.scaladsl.FlowGraph
+import akka.stream.scaladsl.FlowGraphImplicits
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Merge
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 
