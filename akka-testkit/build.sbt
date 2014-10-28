@@ -16,4 +16,4 @@ libraryDependencies ++= Dependencies.testkit
 
 initialCommands += "import akka.testkit._"
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-testkit")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-testkit").value

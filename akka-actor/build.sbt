@@ -13,4 +13,4 @@ OSGi.actor
 
 libraryDependencies ++= Dependencies.actor
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-actor")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-actor").value
