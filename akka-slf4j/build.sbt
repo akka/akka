@@ -13,4 +13,4 @@ OSGi.slf4j
 
 libraryDependencies ++= Dependencies.slf4j
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-slf4j")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-slf4j").value

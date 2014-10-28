@@ -13,4 +13,4 @@ OSGi.camel
 
 libraryDependencies ++= Dependencies.camel
 
-MimaKeys.previousArtifact := akkaPreviousArtifact("akka-kernel")
+MimaKeys.previousArtifact := akkaPreviousArtifact("akka-camel").value

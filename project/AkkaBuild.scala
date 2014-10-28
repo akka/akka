@@ -503,13 +503,24 @@ object AkkaBuild extends Build {
     binaryIssueFilters ++= mimaIgnoredProblems
   )
 
-  def akkaPreviousArtifact(id: String, organization: String = "com.typesafe.akka", version: String = "2.3.0",
-      crossVersion: String = "2.10"): Option[sbt.ModuleID] =
+  def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
-      val fullId = if (crossVersion.isEmpty) id else id + "_" + crossVersion
-      Some(organization % fullId % version) // the artifact to compare binary compatibility with
+      // Note: This is a little gross because we don't have a 2.3.0 release on Scala 2.11.x
+      // This should be expanded if there are more deviations.
+      val version: String =
+        scalaBinaryVersion.value match {
+          case "2.11" => "2.3.2"
+          case _ =>      "2.3.0"
+        }
+      val fullId = crossVersion.value match {
+        case _ : CrossVersion.Binary => id + "_" + scalaBinaryVersion.value
+        case _ : CrossVersion.Full => id + "_" + scalaVersion.value
+        case CrossVersion.Disabled => id
+      }
+      Some(organization.value % fullId % version) // the artifact to compare binary compatibility with
     }
     else None
+  }
 
   def loadSystemProperties(fileName: String): Unit = {
     import scala.collection.JavaConverters._
