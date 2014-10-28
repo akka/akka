@@ -67,7 +67,7 @@ final case class PersistentChannelSettings(
   /**
    * Java API.
    */
-  def withReplyPersistent(replayPersistent: Boolean): PersistentChannelSettings =
+  def withReplyPersistent(replyPersistent: Boolean): PersistentChannelSettings =
     copy(replyPersistent = replyPersistent)
 
   /**
