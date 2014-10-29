@@ -3,8 +3,11 @@
  */
 package akka.stream.scaladsl
 
+import akka.actor.ActorRef
 import akka.actor.Props
+import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+import concurrent.Future
 import scala.util.Try
 import akka.stream.FlowMaterializer
 
@@ -32,7 +35,8 @@ object Sink {
   /**
    * Helper to create [[Sink]] from `Subscriber`.
    */
-  def apply[T](subscriber: Subscriber[T]): Sink[T] = SubscriberSink(subscriber)
+  def apply[T](subscriber: Subscriber[T]): Sink[T] =
+    SubscriberSink(subscriber)
 
   /**
    * Creates a `Sink` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
@@ -58,7 +62,8 @@ object Sink {
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
    * be [[akka.stream.actor.ActorSubscriber]].
    */
-  def apply[T](props: Props): PropsSink[T] = PropsSink[T](props)
+  def apply[T](props: Props): KeyedSink[T] { type MaterializedType = ActorRef } =
+    PropsSink[T](props)
 
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
@@ -68,19 +73,21 @@ object Sink {
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
    */
-  def future[T]: FutureSink[T] = FutureSink[T]
+  def future[T]: KeyedSink[T] { type MaterializedType = Future[T] } =
+    FutureSink[T]()
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].
    * that can handle one [[org.reactivestreams.Subscriber]].
    */
-  def publisher[T]: PublisherSink[T] = PublisherSink[T]
+  def publisher[T]: KeyedSink[T] { type MaterializedType = Publisher[T] } =
+    PublisherSink[T]()
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
    * that can handle more than one [[org.reactivestreams.Subscriber]].
    */
-  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
+  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): KeyedSink[T] { type MaterializedType = Publisher[T] } =
     FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
 
   /**
@@ -94,7 +101,8 @@ object Sink {
    * normal end of the stream, or completed with `Failure` if there is an error is signaled in
    * the stream..
    */
-  def foreach[T](f: T ⇒ Unit): ForeachSink[T] = ForeachSink(f)
+  def foreach[T](f: T ⇒ Unit): KeyedSink[T] { type MaterializedType = Future[Unit] } =
+    ForeachSink(f)
 
   /**
    * A `Sink` that will invoke the given function for every received element, giving it its previous
@@ -103,7 +111,8 @@ object Sink {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is an error is signaled in the stream.
    */
-  def fold[U, T](zero: U)(f: (U, T) ⇒ U): FoldSink[U, T] = FoldSink(zero)(f)
+  def fold[U, T](zero: U)(f: (U, T) ⇒ U): KeyedSink[T] { type MaterializedType = Future[U] } =
+    FoldSink(zero)(f)
 
   /**
    * A `Sink` that when the flow is completed, either through an error or normal
