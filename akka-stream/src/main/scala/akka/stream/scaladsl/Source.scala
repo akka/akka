@@ -3,9 +3,11 @@
  */
 package akka.stream.scaladsl
 
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousPublisherFromIterable }
 import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
@@ -84,7 +86,8 @@ object Source {
    * that mediate the flow of elements downstream and the propagation of
    * back-pressure upstream.
    */
-  def apply[T](publisher: Publisher[T]): Source[T] = PublisherSource(publisher)
+  def apply[T](publisher: Publisher[T]): Source[T] =
+    PublisherSource(publisher)
 
   /**
    * Helper to create [[Source]] from `Iterator`.
@@ -96,7 +99,8 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def apply[T](iterator: Iterator[T]): Source[T] = IteratorSource(iterator)
+  def apply[T](iterator: Iterator[T]): Source[T] =
+    IteratorSource(iterator)
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -107,14 +111,16 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable)
+  def apply[T](iterable: immutable.Iterable[T]): Source[T] =
+    IterableSource(iterable)
 
   /**
    * Define the sequence of elements to be produced by the given closure.
    * The stream ends normally when evaluation of the closure returns a `None`.
    * The stream ends exceptionally when an exception is thrown from the closure.
    */
-  def apply[T](f: () ⇒ Option[T]): Source[T] = ThunkSource(f)
+  def apply[T](f: () ⇒ Option[T]): Source[T] =
+    ThunkSource(f)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -122,7 +128,8 @@ object Source {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with an error if the `Future` is completed with a failure.
    */
-  def apply[T](future: Future[T]): Source[T] = FutureSource(future)
+  def apply[T](future: Future[T]): Source[T] =
+    FutureSource(future)
 
   /**
    * Elements are produced from the tick closure periodically with the specified interval.
@@ -158,36 +165,42 @@ object Source {
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
    * be [[akka.stream.actor.ActorPublisher]].
    */
-  def apply[T](props: Props): PropsSource[T] = PropsSource(props)
+  def apply[T](props: Props): KeyedSource[T] { type MaterializedType = ActorRef } =
+    PropsSource(props)
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
+  def singleton[T](element: T): Source[T] =
+    apply(SynchronousPublisherFromIterable(List(element)))
 
   /**
    * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
    * for every connected `Sink`.
    */
-  def empty[T](): Source[T] = apply(EmptyPublisher[T])
+  def empty[T](): Source[T] =
+    apply(EmptyPublisher[T])
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
+  def failed[T](cause: Throwable): Source[T] =
+    apply(ErrorPublisher(cause))
 
   /**
    * Concatenates two sources so that the first element
    * emitted by the second source is emitted after the last element of the first
    * source.
    */
-  def concat[T](source1: Source[T], source2: Source[T]): Source[T] = ConcatSource(source1, source2)
+  def concat[T](source1: Source[T], source2: Source[T]): Source[T] =
+    ConcatSource(source1, source2)
 
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T]: SubscriberSource[T] = SubscriberSource[T]
+  def subscriber[T]: KeyedSource[T] { type MaterializedType = Subscriber[T] } =
+    SubscriberSource[T]()
 }
 
 /**
