@@ -40,7 +40,7 @@ object Merge {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Merge[T] = new Merge(new scaladsl.Merge[T](None))
+  def create[T](): Merge[T] = create(name = null)
 
   /**
    * Create a new anonymous `Merge` vertex with the specified output type.
@@ -56,7 +56,7 @@ object Merge {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Merge[T] = new Merge(new scaladsl.Merge[T](Some(name)))
+  def create[T](name: String): Merge[T] = new Merge(new scaladsl.Merge[T](Option(name)))
 
   /**
    * Create a named `Merge` vertex with the specified output type.
@@ -85,7 +85,7 @@ object MergePreferred {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](None))
+  def create[T](): MergePreferred[T] = create(name = null)
 
   /**
    * Create a new anonymous `MergePreferred` vertex with the specified output type.
@@ -93,7 +93,7 @@ object MergePreferred {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](None))
+  def create[T](clazz: Class[T]): MergePreferred[T] = create[T]()
 
   /**
    * Create a named `MergePreferred` vertex with the specified output type.
@@ -101,7 +101,7 @@ object MergePreferred {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](Some(name)))
+  def create[T](name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](Option(name)))
 
   /**
    * Create a named `MergePreferred` vertex with the specified output type.
@@ -109,7 +109,7 @@ object MergePreferred {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): MergePreferred[T] = create[T](name)
 }
 
 /**
@@ -130,7 +130,7 @@ object Broadcast {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(None))
+  def create[T](): Broadcast[T] = create(name = null)
 
   /**
    * Create a new anonymous `Broadcast` vertex with the specified input type.
@@ -146,7 +146,7 @@ object Broadcast {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(Some(name)))
+  def create[T](name: String): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(Option(name)))
 
   /**
    * Create a named `Broadcast` vertex with the specified input type.
@@ -173,7 +173,7 @@ object Balance {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): Balance[T] = new Balance(new scaladsl.Balance(None))
+  def create[T](): Balance[T] = create(name = null)
 
   /**
    * Create a new anonymous `Balance` vertex with the specified input type.
@@ -189,7 +189,8 @@ object Balance {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): Balance[T] = new Balance(new scaladsl.Balance(Some(name)))
+  def create[T](name: String): Balance[T] =
+    new Balance(new scaladsl.Balance(Option(name), waitForAllDownstreams = false))
 
   /**
    * Create a named `Balance` vertex with the specified input type.
@@ -207,6 +208,13 @@ object Balance {
  */
 class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.Balance[T] = delegate
+
+  /**
+   * If you use `withWaitForAllDownstreams(true)` the returned `Balance` will not start emitting
+   * elements to downstream outputs until all of them have requested at least one element.
+   */
+  def withWaitForAllDowstreams(enabled: Boolean): Balance[T] =
+    new Balance(new scaladsl.Balance(delegate.name, delegate.waitForAllDownstreams))
 }
 
 object Zip {
@@ -225,7 +233,7 @@ object Zip {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[A, B](left: Class[A], right: Class[B]): Zip[A, B] = create[A, B](name = null)
+  def create[A, B](left: Class[A], right: Class[B]): Zip[A, B] = create[A, B]()
 
   /**
    * Create a named `Zip` vertex with the specified input types.
@@ -276,8 +284,7 @@ final class Zip[A, B] private (delegate: scaladsl.Zip[A, B]) {
 }
 
 object Unzip {
-  def create[A, B](): Unzip[A, B] =
-    create(null)
+  def create[A, B](): Unzip[A, B] = create(name = null)
 
   def create[A, B](name: String): Unzip[A, B] =
     new Unzip[A, B](new scaladsl.Unzip[A, B](Option(name)))
@@ -390,7 +397,7 @@ object UndefinedSource {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](None))
+  def create[T](clazz: Class[T]): UndefinedSource[T] = create[T]()
 
   /**
    * Create a named `Undefinedsource` vertex with the specified input type.
@@ -398,7 +405,7 @@ object UndefinedSource {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](Some(name)))
+  def create[T](name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](Option(name)))
 
   /**
    * Create a named `Undefinedsource` vertex with the specified input type.
@@ -406,7 +413,7 @@ object UndefinedSource {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): UndefinedSource[T] = create[T](name)
 }
 
 /**
@@ -425,7 +432,7 @@ object UndefinedSink {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](None))
+  def create[T](): UndefinedSink[T] = create(name = null)
 
   /**
    * Create a new anonymous `Undefinedsink` vertex with the specified input type.
@@ -433,7 +440,7 @@ object UndefinedSink {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](None))
+  def create[T](clazz: Class[T]): UndefinedSink[T] = create[T]()
 
   /**
    * Create a named `Undefinedsink` vertex with the specified input type.
@@ -441,7 +448,7 @@ object UndefinedSink {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](Some(name)))
+  def create[T](name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](Option(name)))
 
   /**
    * Create a named `Undefinedsink` vertex with the specified input type.
@@ -449,7 +456,7 @@ object UndefinedSink {
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
    */
-  def create[T](clazz: Class[T], name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](Some(name)))
+  def create[T](clazz: Class[T], name: String): UndefinedSink[T] = create[T](name)
 }
 
 /**
