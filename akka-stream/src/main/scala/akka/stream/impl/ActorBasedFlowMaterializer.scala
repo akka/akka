@@ -97,7 +97,7 @@ private[akka] object Ast {
     override def name = "broadcast"
   }
 
-  case object Balance extends FanOutAstNode {
+  case class Balance(waitForAllDownstreams: Boolean) extends FanOutAstNode {
     override def name = "balance"
   }
 
@@ -255,8 +255,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         val impl = op match {
           case Ast.Broadcast ⇒
             actorOf(Broadcast.props(settings, outputCount).withDispatcher(settings.dispatcher), actorName)
-          case Ast.Balance ⇒
-            actorOf(Balance.props(settings, outputCount).withDispatcher(settings.dispatcher), actorName)
+          case Ast.Balance(waitForAllDownstreams) ⇒
+            actorOf(Balance.props(settings, outputCount, waitForAllDownstreams).withDispatcher(settings.dispatcher), actorName)
           case Ast.Unzip ⇒
             actorOf(Unzip.props(settings).withDispatcher(settings.dispatcher), actorName)
         }

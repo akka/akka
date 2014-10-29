@@ -162,7 +162,8 @@ private[akka] object FanOut {
         if (marked(id) && !cancelled(id)) markedCancelled += 1
         cancelled(id) = true
         outputs(id).subreceive(Cancel(null))
-      case SubstreamSubscribePending(id) ⇒ outputs(id).subreceive(SubscribePending)
+      case SubstreamSubscribePending(id) ⇒
+        outputs(id).subreceive(SubscribePending)
     })
 
   }
@@ -233,20 +234,27 @@ private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int
  * INTERNAL API
  */
 private[akka] object Balance {
-  def props(settings: MaterializerSettings, outputPorts: Int): Props =
-    Props(new Balance(settings, outputPorts))
+  def props(settings: MaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
+    Props(new Balance(settings, outputPorts, waitForAllDownstreams))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
+private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
   (0 until outputPorts) foreach outputBunch.markOutput
 
-  nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
+  val runningPhase = TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
     outputBunch.enqueueAndYield(elem)
-  })
+  }
+
+  if (waitForAllDownstreams)
+    nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
+      nextPhase(runningPhase)
+    })
+  else
+    nextPhase(runningPhase)
 }
 
 /**
@@ -275,7 +283,7 @@ private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_setti
 
       case t ⇒
         throw new IllegalArgumentException(
-          s"Unable to unzip elements of type {t.getClass.getName}, " +
+          s"Unable to unzip elements of type ${t.getClass.getName}, " +
             s"can only handle Tuple2 and akka.japi.Pair!")
     }
   })
