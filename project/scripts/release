@@ -75,9 +75,9 @@
 #
 # Run the script in two stages.
 #  First a dry run:
-#    shell> project/scripts/release --dry-run <version>
-#  And if all goes well a real run:
 #    shell> project/scripts/release <version>
+#  And if all goes well a real run:
+#    shell> project/scripts/release --real-run <version>
 #
 # The artifacts published to oss.sonatype.org needs to be released by following the
 # instructions under release here
@@ -91,10 +91,12 @@ declare -r default_path="www"
 declare -r release_dir="target/release"
 declare release_server=${default_server}
 declare release_path=${default_path}
-declare -r unzipped_dir="target/dist/unzipped"
 
 # flags
 unset run_tests dry_run no_mima no_revert
+
+# dry-run is the default
+dry_run=true
 
 # get the source location for this script; handles symlinks
 function get_script_path {
@@ -113,12 +115,13 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 # print usage info
 function usage {
   cat <<EOM
+Dry run is be default.
 Usage: ${script_name} [options] VERSION
   -h | --help            Print this usage message
   -t | --run-tests       Run all tests before releasing
   -s | --server SERVER   Set the release server (default ${default_server})
   -p | --path PATH       Set the path on the release server (default ${default_path})
-  -n | --dry-run         Build everything but do not push the release
+  -e | --real-run        Build everything and push the release
   -m | --no-mima         Skip binary compatibility check in dry-run
   -r | --no-revert       On dry-run don't revert git commits and tags
 EOM
@@ -152,7 +155,7 @@ while true; do
     -t | --run-tests ) run_tests=true; shift ;;
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
-    -n | --dry-run) dry_run=true; shift ;;
+    -e | --real-run) dry_run=false; shift ;;
     -m | --no-mima) no_mima=true; shift ;;
     -r | --no-revert) no_revert=true; shift ;;
     * ) break ;;
@@ -192,15 +195,6 @@ function get_current_branch {
 # a little messy as the ansi escape codes are included
 function get_current_version {
   local result=$(sbt version | tail -1 | cut -f2)
-  # remove ansi escape code from end
-  local code0=$(echo -e "\033[0m")
-  echo ${result%$code0}
-}
-
-# get the scalaBinaryVersion from sbt
-# a little messy as the ansi escape codes are included
-function get_scala_binary_version {
-  local result=$(sbt scalaBinaryVersion | tail -1 | cut -f2)
   # remove ansi escape code from end
   local code0=$(echo -e "\033[0m")
   echo ${result%$code0}
@@ -273,10 +267,6 @@ else
   echolog "Publishing to ${publish_path}"
 fi
 
-echolog "Getting scalaBinaryVersion from sbt..."
-declare -r scala_binary_version=$(get_scala_binary_version)
-echolog "scalaBinaryVersion is ${scala_binary_version}"
-
 [[ $run_tests ]] && echolog "All tests will be run"
 
 # try ssh'ing to the release server
@@ -310,9 +300,7 @@ if [ ! $dry_run ]; then
 else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
-try sbt $RELEASE_OPT build-release
-echolog "Creating gzipped tar download..."
-try tar -cz -C ${unzipped_dir} -f ${release_dir}/downloads/akka_${scala_binary_version}-${version}.tgz akka-${version}
+try sbt $RELEASE_OPT +build-release
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run

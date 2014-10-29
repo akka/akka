@@ -38,13 +38,11 @@ object AkkaBuild extends Build {
 
   val enableMiMa = true
 
-  val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
-  val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
     version      := "2.3-SNAPSHOT",
-    scalaVersion := requestedScalaVersion
+    scalaVersion := Dependencies.Versions.scala,
+    crossScalaVersions := Dependencies.Versions.crossScala
   )
 
   lazy val akka = Project(
@@ -73,7 +71,7 @@ object AkkaBuild extends Build {
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
         val downloads = d / "downloads"
-        val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz")) 
+        val archivesPathFinder = downloads * ("*" + v + ".zip")
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
       validatePullRequest <<= (Unidoc.unidoc, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
@@ -105,7 +103,7 @@ object AkkaBuild extends Build {
       (multiJvmProjects map (_ % "multi-jvm->multi-jvm"))
     ),
     settings = defaultSettings ++ multiJvmSettings ++ Seq(
-      scalaVersion := requestedScalaVersion,
+      scalaVersion := Dependencies.Versions.scala,
       publishArtifact := false,
       definedTests in Test := Nil
     ) ++ (
@@ -235,7 +233,7 @@ object AkkaBuild extends Build {
     base = file("akka-remote-tests"),
     dependencies = Seq(actorTests % "test->test", multiNodeTestkit),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ multiJvmSettings ++ Seq(
-      libraryDependencies ++= Dependencies.remoteTests,
+      Dependencies.remoteTests,
       // disable parallel tests
       parallelExecution in Test := false,
       extraOptions in MultiJvm <<= (sourceDirectory in MultiJvm) { src =>
@@ -300,7 +298,7 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ OSGi.persistence ++ Seq(
       fork in Test := true,
       javaOptions in Test := defaultMultiJvmOptions,
-      libraryDependencies ++= Dependencies.persistence,
+      Dependencies.persistence,
       previousArtifact := akkaPreviousArtifact("akka-persistence-experimental").value
     )
   )
@@ -365,7 +363,7 @@ object AkkaBuild extends Build {
     base = file("akka-zeromq"),
     dependencies = Seq(actor, testkit % "test;test->test"),
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ javadocSettings ++ OSGi.zeroMQ ++ Seq(
-      libraryDependencies ++= Dependencies.zeroMQ,
+      Dependencies.zeroMQ,
       previousArtifact := akkaPreviousArtifact("akka-zeromq").value
     )
   )
@@ -621,7 +619,7 @@ object AkkaBuild extends Build {
       enableOutput in generatePdf in Sphinx := true,
       enableOutput in generateEpub in Sphinx := true,
       unmanagedSourceDirectories in Test <<= sourceDirectory in Sphinx apply { _ ** "code" get },
-      libraryDependencies ++= Dependencies.docs,
+      Dependencies.docs,
       publishArtifact in Compile := false,
       unmanagedSourceDirectories in ScalariformKeys.format in Test <<= unmanagedSourceDirectories in Test,
       testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
@@ -1122,7 +1120,7 @@ object AkkaBuild extends Build {
       OsgiKeys.exportPackage := Seq("akka*"),
       OsgiKeys.privatePackage := Seq("akka.osgi.impl"),
       //akka-actor packages are not imported, as contained in the CP
-      OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaImport(), configImport(), "*"),
+      OsgiKeys.importPackage := (osgiOptionalImports map optionalResolution) ++ Seq("!sun.misc", scalaVersion(scalaImport).value, configImport(), "*"),
       // dynamicImportPackage needed for loading classes defined in configuration
       OsgiKeys.dynamicImportPackage := Seq("*")
      ) 
@@ -1171,14 +1169,19 @@ object AkkaBuild extends Build {
       "com.google.protobuf")
 
     def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
-      OsgiKeys.importPackage := imports ++ defaultImports,
+      OsgiKeys.importPackage := imports ++ scalaVersion(defaultImports).value,
       OsgiKeys.exportPackage := packages
     )
-    def defaultImports = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(), "*")
+    def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(scalaVersion), "*")
     def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.3", "2.4")
     def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.2.0", "1.3.0")
     def protobufImport(packageName: String = "com.google.protobuf.*") = versionedImport(packageName, "2.5.0", "2.6.0")
-    def scalaImport(packageName: String = "scala.*") = versionedImport(packageName, s"$scalaEpoch.$scalaMajor", s"$scalaEpoch.${scalaMajor+1}")
+    def scalaImport(version: String) = {
+      val packageName = "scala.*"
+      val ScalaVersion = """(\d+)\.(\d+)\..*""".r
+      val ScalaVersion(epoch, major) = version
+      versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
+    }
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
     def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
   }
@@ -1188,13 +1191,17 @@ object AkkaBuild extends Build {
 
 object Dependencies {
 
+  import DependencyHelpers._
+  import DependencyHelpers.ScalaVersionDependentModuleID._
+
   object Versions {
+    val scala = "2.10.4"
+    val crossScala = Seq(scala, "2.11.2")
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
-    val scalaZeroMQVersion = System.getProperty("akka.build.scalaZeroMQVersion", "0.0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
-    val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
+    val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.2")
   }
 
   object Compile {
@@ -1215,7 +1222,11 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
+    val zeroMQClient = ScalaVersionDependentModuleID.fromPF {
+      case version if version.startsWith("2.10") => "org.zeromq"                % "zeromq-scala-binding_2.10" % "0.0.7"        // ApacheV2
+      case version if version.startsWith("2.11") => "org.spark-project.zeromq"  % "zeromq-scala-binding_2.11" % "0.0.7-spark"  // ApacheV2
+      case v => throw new RuntimeException("Scala version $v not supported for zeromq")
+    }
     // mirrored in OSGi sample
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     // mirrored in OSGi sample
@@ -1261,14 +1272,12 @@ object Dependencies {
       val paxExam      = "org.ops4j.pax.exam"          % "pax-exam-junit4"              % "2.6.0"            % "test" // ApacheV2
 
       val reactiveStreams = "org.reactivestreams"      % "reactive-streams-tck"         % "0.3"              % "test" // CC0
-      val scalaXml     = "org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1"            % "test"
+      val scalaXml     = post210Dependency("org.scala-lang.modules"      %% "scala-xml"                   % "1.0.1"            % "test")
     }
   }
 
   import Compile._
   
-  val scalaXmlDepencency = (if (AkkaBuild.requestedScalaVersion.startsWith("2.10")) Nil else Seq(Test.scalaXml))
-
   val actor = Seq(config)
 
   val testkit = Seq(Test.junit, Test.scalatest)
@@ -1277,7 +1286,7 @@ object Dependencies {
 
   val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
 
-  val remoteTests = Seq(Test.junit, Test.scalatest) ++ scalaXmlDepencency
+  val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
 
   val cluster = Seq(Test.junit, Test.scalatest)
 
@@ -1287,8 +1296,7 @@ object Dependencies {
 
   val transactor = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = Seq(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo) ++
-    scalaXmlDepencency
+  val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 
@@ -1319,9 +1327,9 @@ object Dependencies {
 
   val uncommons = Seq(uncommonsMath)
 
-  val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
+  val docs = deps(Test.scalatest, Test.junit, Test.junitIntf, Test.scalaXml)
 
-  val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
+  val zeroMQ = deps(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
   val clusterSample = Seq(Test.scalatest, sigar)
 
