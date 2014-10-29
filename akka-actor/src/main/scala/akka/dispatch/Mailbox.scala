@@ -14,6 +14,7 @@ import akka.event.Logging.Error
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.annotation.tailrec
+import scala.concurrent.forkjoin.ForkJoinTask
 import scala.util.control.NonFatal
 import com.typesafe.config.Config
 import java.util.concurrent.atomic.AtomicInteger
@@ -53,7 +54,7 @@ private[akka] object Mailbox {
  * INTERNAL API
  */
 private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
-  extends SystemMessageQueue with Runnable {
+  extends ForkJoinTask[Unit] with SystemMessageQueue with Runnable {
 
   import Mailbox._
 
@@ -107,22 +108,22 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
   protected var _systemQueueDoNotCallMeDirectly: SystemMessage = _ //null by default
 
   @inline
-  final def status: Mailbox.Status = Unsafe.instance.getIntVolatile(this, AbstractMailbox.mailboxStatusOffset)
+  final def currentStatus: Mailbox.Status = Unsafe.instance.getIntVolatile(this, AbstractMailbox.mailboxStatusOffset)
 
   @inline
-  final def shouldProcessMessage: Boolean = (status & shouldNotProcessMask) == 0
+  final def shouldProcessMessage: Boolean = (currentStatus & shouldNotProcessMask) == 0
 
   @inline
-  final def suspendCount: Int = status / suspendUnit
+  final def suspendCount: Int = currentStatus / suspendUnit
 
   @inline
-  final def isSuspended: Boolean = (status & suspendMask) != 0
+  final def isSuspended: Boolean = (currentStatus & suspendMask) != 0
 
   @inline
-  final def isClosed: Boolean = status == Closed
+  final def isClosed: Boolean = currentStatus == Closed
 
   @inline
-  final def isScheduled: Boolean = (status & Scheduled) != 0
+  final def isScheduled: Boolean = (currentStatus & Scheduled) != 0
 
   @inline
   protected final def updateStatus(oldStatus: Status, newStatus: Status): Boolean =
@@ -139,7 +140,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * @return true if the suspend count reached zero
    */
   @tailrec
-  final def resume(): Boolean = status match {
+  final def resume(): Boolean = currentStatus match {
     case Closed ⇒
       setStatus(Closed); false
     case s ⇒
@@ -155,7 +156,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * @return true if the previous suspend count was zero
    */
   @tailrec
-  final def suspend(): Boolean = status match {
+  final def suspend(): Boolean = currentStatus match {
     case Closed ⇒
       setStatus(Closed); false
     case s ⇒
@@ -168,7 +169,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    * status was Scheduled or not.
    */
   @tailrec
-  final def becomeClosed(): Boolean = status match {
+  final def becomeClosed(): Boolean = currentStatus match {
     case Closed ⇒
       setStatus(Closed); false
     case s ⇒ updateStatus(s, Closed) || becomeClosed()
@@ -179,7 +180,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def setAsScheduled(): Boolean = {
-    val s = status
+    val s = currentStatus
     /*
      * Only try to add Scheduled bit if pure Open/Suspended, not Closed or with
      * Scheduled bit already set.
@@ -193,7 +194,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
    */
   @tailrec
   final def setAsIdle(): Boolean = {
-    val s = status
+    val s = currentStatus
     updateStatus(s, s & ~Scheduled) || setAsIdle()
   }
   /*
@@ -210,13 +211,13 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     // Without calling .head the parameters would be boxed in SystemMessageList wrapper.
     Unsafe.instance.compareAndSwapObject(this, AbstractMailbox.systemMessageOffset, _old.head, _new.head)
 
-  final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = status match {
+  final def canBeScheduledForExecution(hasMessageHint: Boolean, hasSystemMessageHint: Boolean): Boolean = currentStatus match {
     case Open | Scheduled ⇒ hasMessageHint || hasSystemMessageHint || hasSystemMessages || hasMessages
     case Closed           ⇒ false
     case _                ⇒ hasSystemMessageHint || hasSystemMessages
   }
 
-  final def run = {
+  override final def run(): Unit = {
     try {
       if (!isClosed) { //Volatile read, needed here
         processAllSystemMessages() //First, deal with any system messages
@@ -226,6 +227,21 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       setAsIdle() //Volatile write, needed here
       dispatcher.registerForExecution(this, false, false)
     }
+  }
+
+  override final def getRawResult(): Unit = ()
+  override final def setRawResult(unit: Unit): Unit = ()
+  final override def exec(): Boolean = try { run(); false } catch {
+    case ie: InterruptedException ⇒
+      Thread.currentThread.interrupt()
+      false
+    case anything: Throwable ⇒
+      val t = Thread.currentThread
+      t.getUncaughtExceptionHandler match {
+        case null ⇒
+        case some ⇒ some.uncaughtException(t, anything)
+      }
+      throw anything
   }
 
   /**
