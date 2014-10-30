@@ -32,9 +32,17 @@ trait RequestContext {
   def log: LoggingAdapter
 
   /**
+   * The default RoutingSettings to be used for configuring directives.
+   */
+  def settings: RoutingSettings
+
+  /**
    * Returns a copy of this context with the given fields updated.
    */
-  def reconfigure(executionContext: ExecutionContext = executionContext, log: LoggingAdapter = log): RequestContext
+  def reconfigure(
+    executionContext: ExecutionContext = executionContext,
+    log: LoggingAdapter = log,
+    settings: RoutingSettings = settings): RequestContext
 
   /**
    * Completes the request with the given ToResponseMarshallable.
@@ -69,9 +77,14 @@ trait RequestContext {
   def withLog(log: LoggingAdapter): RequestContext
 
   /**
+   * Returns a copy of this context with the new RoutingSettings.
+   */
+  def withSettings(settings: RoutingSettings): RequestContext
+
+  /**
    * Returns a copy of this context with the HttpRequest transformed by the given function.
    */
-  def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext
+  def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext
 
   /**
    * Returns a copy of this context with the unmatched path updated to the given one.
@@ -81,7 +94,7 @@ trait RequestContext {
   /**
    * Returns a copy of this context with the unmatchedPath transformed by the given function.
    */
-  def withUnmatchedPathMapped(f: Uri.Path ⇒ Uri.Path): RequestContext
+  def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext
 
   /**
    * Removes a potentially existing Accept header from the request headers.
