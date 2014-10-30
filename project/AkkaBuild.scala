@@ -1063,7 +1063,10 @@ object AkkaBuild extends Build {
 
       // Change to internal API to fix #15991
       ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite$"),
-      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite")
+      ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite"),
+
+      // Change to optimize use of ForkJoin with Akka's Mailbox
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status")
     )
   }
 
