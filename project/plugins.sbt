@@ -19,4 +19,6 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-s3" % "0.5")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.5")
 
+addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.8.0-M2")
+
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
