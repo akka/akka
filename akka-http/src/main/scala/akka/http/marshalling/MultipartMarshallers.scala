@@ -4,17 +4,15 @@
 
 package akka.http.marshalling
 
-import scala.concurrent.ExecutionContext
+import akka.event.{ NoLogging, LoggingAdapter }
+
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.actor.ActorRefFactory
 import akka.parboiled2.util.Base64
 import akka.stream.FlattenStrategy
 import akka.stream.scaladsl._
 import akka.http.engine.rendering.BodyPartRenderer
-import akka.http.util.actorSystem
-import akka.http.util.FastFuture._
+import akka.http.util.FastFuture
 import akka.http.model._
-import MediaTypes._
 
 trait MultipartMarshallers {
   protected val multipartBoundaryRandom: java.util.Random = ThreadLocalRandom.current()
@@ -28,31 +26,23 @@ trait MultipartMarshallers {
     Base64.custom.encodeToString(array, false)
   }
 
-  implicit def multipartByteRangesMarshaller(implicit refFactory: ActorRefFactory): ToEntityMarshaller[MultipartByteRanges] =
-    multipartPartsMarshaller[MultipartByteRanges](`multipart/byteranges`)(refFactory)
-  implicit def multipartContentMarshaller(implicit refFactory: ActorRefFactory): ToEntityMarshaller[MultipartContent] =
-    multipartPartsMarshaller[MultipartContent](`multipart/mixed`)(refFactory)
-
-  private def multipartPartsMarshaller[T <: MultipartParts](mediaType: MultipartMediaType)(implicit refFactory: ActorRefFactory): ToEntityMarshaller[T] = {
-    val boundary = randomBoundary
-    val mediaTypeWithBoundary = mediaType withBoundary boundary
-    Marshaller.withOpenCharset(mediaTypeWithBoundary) { (value, charset) ⇒
-      val log = actorSystem(refFactory).log
-      val bodyPartRenderer = new BodyPartRenderer(boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-      val chunks = value.parts.transform("bodyPartRenderer", () ⇒ bodyPartRenderer).flatten(FlattenStrategy.concat)
-      HttpEntity.Chunked(ContentType(mediaTypeWithBoundary), chunks)
-    }
-  }
-
-  implicit def multipartFormDataMarshaller(implicit mcm: ToEntityMarshaller[MultipartContent],
-                                           ec: ExecutionContext): ToEntityMarshaller[MultipartFormData] =
+  implicit def multipartMarshaller[T <: Multipart](implicit log: LoggingAdapter = NoLogging): ToEntityMarshaller[T] =
     Marshaller { value ⇒
-      mcm(MultipartContent(value.parts)).fast.map {
-        case Marshalling.WithOpenCharset(mt, marshal) ⇒
-          val mediaType = `multipart/form-data` withBoundary mt.params("boundary")
-          Marshalling.WithOpenCharset(mediaType, cs ⇒ MediaTypeOverrider.forEntity(marshal(cs), mediaType))
-        case x ⇒ throw new IllegalStateException("ToRegularEntityMarshaller[MultipartContent] is expected to produce " +
-          "a Marshalling.WithOpenCharset, not a " + x)
+      val boundary = randomBoundary
+      val contentType = ContentType(value.mediaType withBoundary boundary)
+      FastFuture.successful {
+        Marshalling.WithOpenCharset(contentType.mediaType, { charset ⇒
+          value match {
+            case x: Multipart.Strict ⇒
+              val data = BodyPartRenderer.strict(x.strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
+              HttpEntity(contentType, data)
+            case _ ⇒
+              val chunks = value.parts
+                .transform("bodyPartRenderer", () ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
+                .flatten(FlattenStrategy.concat)
+              HttpEntity.Chunked(contentType, chunks)
+          }
+        })
       }
     }
 }
