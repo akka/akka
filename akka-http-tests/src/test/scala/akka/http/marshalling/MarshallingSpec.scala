@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.Source
 import akka.http.util._
 import akka.http.model._
 import headers._
@@ -51,9 +52,9 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   }
 
   "The MultipartMarshallers." - {
-    "multipartContentMarshaller should correctly marshal multipart content with" - {
+    "multipartMarshaller should correctly marshal multipart content with" - {
       "one empty part" in {
-        marshal(MultipartContent(BodyPart(""))) shouldEqual HttpEntity(
+        marshal(Multipart.General(`multipart/mixed`, Multipart.General.BodyPart.Strict(""))) shouldEqual HttpEntity(
           contentType = ContentType(`multipart/mixed` withBoundary randomBoundary),
           string = s"""--$randomBoundary
                       |Content-Type: text/plain; charset=UTF-8
@@ -62,11 +63,11 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                       |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
       }
       "one non-empty part" in {
-        marshal(MultipartContent(BodyPart(
+        marshal(Multipart.General(`multipart/alternative`, Multipart.General.BodyPart.Strict(
           entity = HttpEntity(ContentType(`text/plain`, `UTF-8`), "test@there.com"),
           headers = `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "email")) :: Nil))) shouldEqual
           HttpEntity(
-            contentType = ContentType(`multipart/mixed` withBoundary randomBoundary),
+            contentType = ContentType(`multipart/alternative` withBoundary randomBoundary),
             string = s"""--$randomBoundary
                         |Content-Type: text/plain; charset=UTF-8
                         |Content-Disposition: form-data; name=email
@@ -75,13 +76,13 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
                         |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
       }
       "two different parts" in {
-        marshal(MultipartContent(
-          BodyPart(HttpEntity(ContentType(`text/plain`, Some(`US-ASCII`)), "first part, with a trailing linebreak\r\n")),
-          BodyPart(
+        marshal(Multipart.General(`multipart/related`,
+          Multipart.General.BodyPart.Strict(HttpEntity(ContentType(`text/plain`, Some(`US-ASCII`)), "first part, with a trailing linebreak\r\n")),
+          Multipart.General.BodyPart.Strict(
             HttpEntity(ContentType(`application/octet-stream`), "filecontent"),
             RawHeader("Content-Transfer-Encoding", "binary") :: Nil))) shouldEqual
           HttpEntity(
-            contentType = ContentType(`multipart/mixed` withBoundary randomBoundary),
+            contentType = ContentType(`multipart/related` withBoundary randomBoundary),
             string = s"""--$randomBoundary
                       |Content-Type: text/plain; charset=US-ASCII
                       |
@@ -98,9 +99,9 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
 
     "multipartFormDataMarshaller should correctly marshal 'multipart/form-data' content with" - {
       "two fields" in {
-        marshal(MultipartFormData(ListMap(
-          "surname" -> BodyPart("Mike"),
-          "age" -> BodyPart(marshal(<int>42</int>))))) shouldEqual
+        marshal(Multipart.FormData(ListMap(
+          "surname" -> HttpEntity("Mike"),
+          "age" -> marshal(<int>42</int>)))) shouldEqual
           HttpEntity(
             contentType = ContentType(`multipart/form-data` withBoundary randomBoundary),
             string = s"""--$randomBoundary
@@ -117,32 +118,26 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
       }
 
       "two fields having a custom `Content-Disposition`" in {
-        marshal(MultipartFormData(
-          BodyPart(
-            HttpEntity(`text/csv`, "name,age\r\n\"John Doe\",20\r\n"),
-            List(`Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "attachment[0]", "filename" -> "attachment.csv")))),
-          BodyPart(
-            HttpEntity("name,age\r\n\"John Doe\",20\r\n".getBytes),
-            List(
-              `Content-Disposition`(ContentDispositionTypes.`form-data`, Map("name" -> "attachment[1]", "filename" -> "attachment.csv")),
-              RawHeader("Content-Transfer-Encoding", "binary"))))) shouldEqual
+        marshal(Multipart.FormData(Source(List(
+          Multipart.FormData.BodyPart("attachment[0]", HttpEntity(`text/csv`, "name,age\r\n\"John Doe\",20\r\n"),
+            Map("filename" -> "attachment.csv")),
+          Multipart.FormData.BodyPart("attachment[1]", HttpEntity("naice!".getBytes),
+            Map("filename" -> "attachment2.csv"), List(RawHeader("Content-Transfer-Encoding", "binary"))))))) shouldEqual
           HttpEntity(
             contentType = ContentType(`multipart/form-data` withBoundary randomBoundary),
             string = s"""--$randomBoundary
                         |Content-Type: text/csv
-                        |Content-Disposition: form-data; name="attachment[0]"; filename=attachment.csv
+                        |Content-Disposition: form-data; filename=attachment.csv; name="attachment[0]"
                         |
                         |name,age
                         |"John Doe",20
                         |
                         |--$randomBoundary
                         |Content-Type: application/octet-stream
-                        |Content-Disposition: form-data; name="attachment[1]"; filename=attachment.csv
+                        |Content-Disposition: form-data; filename=attachment2.csv; name="attachment[1]"
                         |Content-Transfer-Encoding: binary
                         |
-                        |name,age
-                        |"John Doe",20
-                        |
+                        |naice!
                         |--$randomBoundary--""".stripMarginWithNewline("\r\n"))
       }
     }
