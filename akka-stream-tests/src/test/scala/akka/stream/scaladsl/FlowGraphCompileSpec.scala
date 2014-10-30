@@ -303,6 +303,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           val merge = Merge[String]
           import FlowGraphImplicits._
           in1 ~> merge ~> out1
+          in2 ~> merge
           merge ~> out2 // wrong
         }
       }.getMessage should include("at most 1 outgoing")
