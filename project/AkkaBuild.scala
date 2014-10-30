@@ -1390,9 +1390,6 @@ object Dependencies {
 
     // Cluster Sample
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"       // ApacheV2
-    
-    // Graph for Scala
-    val scalaGraph = "com.assembla.scala-incubator"  %% "graph-core"                   % "1.9.0"       // ApacheV2
 
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
@@ -1474,7 +1471,7 @@ object Dependencies {
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
     "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.publishedAkkaVersion,
-    scalaGraph, reactiveStreams,
+    reactiveStreams,
     Test.junitIntf,
     Test.scalatest)
 
