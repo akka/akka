@@ -92,7 +92,7 @@ object Sink {
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
    * that can handle more than one [[org.reactivestreams.Subscriber]].
    */
-  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): KeyedSink[Publisher[T], T] =
+  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): KeyedSink[T, Publisher[T]] =
     new KeyedSink(scaladsl.Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))
 
   /**
@@ -116,7 +116,7 @@ object Sink {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is an error is signaled in the stream.
    */
-  def fold[U, T](zero: U, f: Function[akka.japi.Pair[U, T], U]): KeyedSink[T, U] = {
+  def fold[U, T](zero: U, f: Function[akka.japi.Pair[U, T], U]): KeyedSink[T, Future[U]] = {
     val sSink = scaladsl.Sink.fold[U, T](zero) { case (a, b) ⇒ f.apply(akka.japi.Pair(a, b)) }
     new KeyedSink(sSink)
   }
