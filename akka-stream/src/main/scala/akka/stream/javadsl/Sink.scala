@@ -92,7 +92,7 @@ object Sink {
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]]
    * that can handle more than one [[org.reactivestreams.Subscriber]].
    */
-  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): KeyedSink[Publisher[T], T] =
+  def fanoutPublisher[T](initialBufferSize: Int, maximumBufferSize: Int): KeyedSink[T, Publisher[T]] =
     new KeyedSink(scaladsl.Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))
 
   /**
