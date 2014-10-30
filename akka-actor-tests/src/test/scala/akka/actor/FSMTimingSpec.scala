@@ -45,6 +45,32 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
+    "make sure no event within reasonable time for InfiniteStateTimeout" taggedAs TimingTest in {
+      within(2 seconds) {
+        fsm ! TestStateInfiniteTimeout
+        expectNoMsg
+      }
+    }
+
+    "cancel an InfiniteStateTimeout" taggedAs TimingTest in {
+      within(1 second) {
+        fsm ! Cancel
+        expectMsg(Cancel)
+        expectMsg(Transition(fsm, TestStateInfiniteTimeout, Initial))
+        expectNoMsg
+      }
+    }
+
+    "test setting timeout explicitly to infinite timeout" taggedAs TimingTest in {
+      within(2 seconds) {
+        fsm ! TestStateSetInfiniteTimeoutExplicitly
+        fsm ! SetTimeout
+        expectMsg(Transition(fsm, TestStateSetInfiniteTimeoutExplicitly, Initial))
+        expectNoMsg
+      }
+
+    }
+
     "allow StateTimeout override" taggedAs TimingTest in {
       // the timeout in state TestStateTimeout is 800 ms, then it will change to Initial
       within(400 millis) {
@@ -156,6 +182,8 @@ object FSMTimingSpec {
   trait State
   case object Initial extends State
   case object TestStateTimeout extends State
+  case object TestStateInfiniteTimeout extends State
+  case object TestStateSetInfiniteTimeoutExplicitly extends State
   case object TestStateTimeoutOverride extends State
   case object TestSingleTimer extends State
   case object TestSingleTimerResubmit extends State
@@ -169,6 +197,8 @@ object FSMTimingSpec {
   case object Tock
   case object Cancel
   case object SetHandler
+  case object InvalidTimeout
+  case object SetTimeout
 
   final case class Unhandled(msg: AnyRef)
 
@@ -192,6 +222,16 @@ object FSMTimingSpec {
     }
     when(TestStateTimeout, stateTimeout = 800.millis.dilated) {
       case Event(StateTimeout, _) ⇒ goto(Initial)
+      case Event(Cancel, _)       ⇒ goto(Initial) replying (Cancel)
+    }
+    when(TestStateInfiniteTimeout, stateTimeout = Duration.Inf) {
+      case Event(StateTimeout, _) ⇒ goto(Initial) replying (InvalidTimeout)
+      case Event(Cancel, _)       ⇒ goto(Initial) replying (Cancel)
+    }
+    when(TestStateSetInfiniteTimeoutExplicitly, stateTimeout = 800.millis.dilated) {
+      case Event(SetTimeout, _) ⇒
+        setStateTimeout(TestStateSetInfiniteTimeoutExplicitly, Some(Duration.Inf)); goto(Initial)
+      case Event(StateTimeout, _) ⇒ goto(Initial) replying (InvalidTimeout)
       case Event(Cancel, _)       ⇒ goto(Initial) replying (Cancel)
     }
     when(TestSingleTimer) {

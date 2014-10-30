@@ -61,8 +61,8 @@ class TestFSMRef[S, D, T <: Actor](
    * corresponding transition initiated from within the FSM, including timeout
    * and stop handling.
    */
-  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: FiniteDuration = null, stopReason: Option[FSM.Reason] = None) {
-    fsm.applyState(FSM.State(stateName, stateData, Option(timeout), stopReason)())
+  def setState(stateName: S = fsm.stateName, stateData: D = fsm.stateData, timeout: Duration = null, stopReason: Option[FSM.Reason] = None) {
+    fsm.applyState(FSM.State(stateName, stateData, timeout, stopReason)())
   }
 
   /**
