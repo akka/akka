@@ -4,65 +4,95 @@
 
 package akka.http.unmarshalling
 
-import akka.actor.ActorRefFactory
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl._
+import scala.collection.immutable
+import scala.collection.immutable.VectorBuilder
+import scala.concurrent.ExecutionContext
+import akka.event.{ NoLogging, LoggingAdapter }
 import akka.http.engine.parsing.BodyPartParser
 import akka.http.model._
 import akka.http.util._
+import akka.stream.scaladsl._
 import MediaRanges._
 import MediaTypes._
 import HttpCharsets._
 
 trait MultipartUnmarshallers {
 
-  implicit def defaultMultipartContentUnmarshaller(implicit refFactory: ActorRefFactory) = multipartContentUnmarshaller(`UTF-8`)
-  def multipartContentUnmarshaller(defaultCharset: HttpCharset)(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartContent] =
-    multipartPartsUnmarshaller[MultipartContent](`multipart/*`, ContentTypes.`text/plain` withCharset defaultCharset)(MultipartContent(_))
+  implicit def defaultMultipartGeneralUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
+    multipartGeneralUnmarshaller(`UTF-8`)
+  def multipartGeneralUnmarshaller(defaultCharset: HttpCharset)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.General] =
+    multipartUnmarshaller[Multipart.General, Multipart.General.BodyPart, Multipart.General.BodyPart.Strict](
+      mediaRange = `multipart/*`,
+      defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
+      createBodyPart = Multipart.General.BodyPart(_, _),
+      createStreamed = Multipart.General(_, _),
+      createStrictBodyPart = Multipart.General.BodyPart.Strict,
+      createStrict = Multipart.General.Strict)
 
-  implicit def defaultMultipartByteRangesUnmarshaller(implicit refFactory: ActorRefFactory) = multipartByteRangesUnmarshaller(`UTF-8`)
-  def multipartByteRangesUnmarshaller(defaultCharset: HttpCharset)(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartByteRanges] =
-    multipartPartsUnmarshaller[MultipartByteRanges](`multipart/byteranges`,
-      ContentTypes.`text/plain` withCharset defaultCharset)(MultipartByteRanges(_))
+  implicit def multipartFormDataUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.FormData] =
+    multipartUnmarshaller[Multipart.FormData, Multipart.FormData.BodyPart, Multipart.FormData.BodyPart.Strict](
+      mediaRange = `multipart/form-data`,
+      defaultContentType = ContentTypes.`application/octet-stream`,
+      createBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart(entity, headers).toFormDataBodyPart.get,
+      createStreamed = (_, parts) ⇒ Multipart.FormData(parts),
+      createStrictBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart.Strict(entity, headers).toFormDataBodyPart.get,
+      createStrict = (_, parts) ⇒ Multipart.FormData.Strict(parts))
 
-  def multipartPartsUnmarshaller[T <: MultipartParts](mediaRange: MediaRange, defaultContentType: ContentType)(create: Source[BodyPart] ⇒ T)(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[T] =
+  implicit def defaultMultipartByteRangesUnmarshaller(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
+    multipartByteRangesUnmarshaller(`UTF-8`)
+  def multipartByteRangesUnmarshaller(defaultCharset: HttpCharset)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[Multipart.ByteRanges] =
+    multipartUnmarshaller[Multipart.ByteRanges, Multipart.ByteRanges.BodyPart, Multipart.ByteRanges.BodyPart.Strict](
+      mediaRange = `multipart/byteranges`,
+      defaultContentType = ContentTypes.`text/plain` withCharset defaultCharset,
+      createBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart(entity, headers).toByteRangesBodyPart.get,
+      createStreamed = (_, parts) ⇒ Multipart.ByteRanges(parts),
+      createStrictBodyPart = (entity, headers) ⇒ Multipart.General.BodyPart.Strict(entity, headers).toByteRangesBodyPart.get,
+      createStrict = (_, parts) ⇒ Multipart.ByteRanges.Strict(parts))
+
+  def multipartUnmarshaller[T <: Multipart, BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](mediaRange: MediaRange,
+                                                                                                        defaultContentType: ContentType,
+                                                                                                        createBodyPart: (BodyPartEntity, List[HttpHeader]) ⇒ BP,
+                                                                                                        createStreamed: (MultipartMediaType, Source[BP]) ⇒ T,
+                                                                                                        createStrictBodyPart: (HttpEntity.Strict, List[HttpHeader]) ⇒ BPS,
+                                                                                                        createStrict: (MultipartMediaType, immutable.Seq[BPS]) ⇒ T)(implicit ec: ExecutionContext, log: LoggingAdapter = NoLogging): FromEntityUnmarshaller[T] =
     Unmarshaller { entity ⇒
-      if (mediaRange matches entity.contentType.mediaType) {
+      if (entity.contentType.mediaType.isMultipart && mediaRange.matches(entity.contentType.mediaType)) {
         entity.contentType.mediaType.params.get("boundary") match {
-          case None ⇒ FastFuture.failed(UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter"))
+          case None ⇒
+            FastFuture.failed(UnmarshallingError.InvalidContent("Content-Type with a multipart media type must have a 'boundary' parameter"))
           case Some(boundary) ⇒
-            val bodyParts = entity.dataBytes
-              .transform("bodyPart", () ⇒ new BodyPartParser(defaultContentType, boundary, actorSystem(refFactory).log))
-              .splitWhen(_.isInstanceOf[BodyPartParser.BodyPartStart])
-              .headAndTail
-              .collect {
-                case (BodyPartParser.BodyPartStart(headers, createEntity), entityParts) ⇒
-                  BodyPart(createEntity(entityParts), headers)
-                case (BodyPartParser.ParseError(errorInfo), _) ⇒ throw new ParsingException(errorInfo)
+            import BodyPartParser._
+            val parser = new BodyPartParser(defaultContentType, boundary, log)
+            FastFuture.successful {
+              entity match {
+                case HttpEntity.Strict(ContentType(mediaType: MultipartMediaType, _), data) ⇒
+                  val builder = new VectorBuilder[BPS]()
+                  (parser.onNext(data) ++ parser.onTermination(None)) foreach {
+                    case BodyPartStart(headers, createEntity) ⇒
+                      val entity = createEntity(Source.empty()) match {
+                        case x: HttpEntity.Strict ⇒ x
+                        case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x.getClass.getName)
+                      }
+                      builder += createStrictBodyPart(entity, headers)
+                    case ParseError(errorInfo) ⇒ throw new ParsingException(errorInfo)
+                    case x                     ⇒ throw new IllegalStateException(s"Unexpected BodyPartParser result `x` in strict case")
+                  }
+                  createStrict(mediaType, builder.result())
+                case _ ⇒
+                  val bodyParts = entity.dataBytes
+                    .transform("bodyPart", () ⇒ parser)
+                    .splitWhen(_.isInstanceOf[BodyPartStart])
+                    .headAndTail
+                    .collect {
+                      case (BodyPartStart(headers, createEntity), entityParts) ⇒ createBodyPart(createEntity(entityParts), headers)
+                      case (ParseError(errorInfo), _)                          ⇒ throw new ParsingException(errorInfo)
+                    }
+                  createStreamed(entity.contentType.mediaType.asInstanceOf[MultipartMediaType], bodyParts)
               }
-            FastFuture.successful(create(bodyParts))
+            }
         }
       } else FastFuture.failed(UnmarshallingError.UnsupportedContentType(ContentTypeRange(mediaRange) :: Nil))
     }
-
-  implicit def defaultMultipartFormDataUnmarshaller(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
-    multipartFormDataUnmarshaller(verifyIntegrity = true)
-  def multipartFormDataUnmarshaller(verifyIntegrity: Boolean = true)(implicit refFactory: ActorRefFactory): FromEntityUnmarshaller[MultipartFormData] =
-    multipartPartsUnmarshaller(`multipart/form-data`, ContentTypes.`application/octet-stream`) { bodyParts ⇒
-      def verify(part: BodyPart): BodyPart = part // TODO
-      val parts = if (verifyIntegrity) bodyParts.map(verify) else bodyParts
-      MultipartFormData(parts)
-    }
-
-  implicit def defaultStrictMultipartFormDataUnmarshaller(implicit fm: FlowMaterializer,
-                                                          refFactory: ActorRefFactory): FromEntityUnmarshaller[StrictMultipartFormData] =
-    strictMultipartFormDataUnmarshaller(verifyIntegrity = true)
-  def strictMultipartFormDataUnmarshaller(verifyIntegrity: Boolean = true)(implicit fm: FlowMaterializer,
-                                                                           refFactory: ActorRefFactory): FromEntityUnmarshaller[StrictMultipartFormData] = {
-    implicit val ec = actorSystem(refFactory).dispatcher
-    multipartFormDataUnmarshaller(verifyIntegrity) flatMap (mfd ⇒ mfd.toStrict())
-  }
-
 }
 
 object MultipartUnmarshallers extends MultipartUnmarshallers
