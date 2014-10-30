@@ -142,14 +142,14 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         the[RuntimeException] thrownBy {
           HttpResponse(200, entity = Default(ContentTypes.`application/json`, 10,
             source(ByteString("body123")))) should renderTo("")
-        } should have message "HTTP message had declared Content-Length 10 but entity chunk stream amounts to 3 bytes less"
+        } should have message "HTTP message had declared Content-Length 10 but entity data stream amounts to 3 bytes less"
       }
 
       "one chunk and incorrect (too small) Content-Length" in new TestSetup() {
         the[RuntimeException] thrownBy {
           HttpResponse(200, entity = Default(ContentTypes.`application/json`, 5,
             source(ByteString("body123")))) should renderTo("")
-        } should have message "HTTP message had declared Content-Length 5 but entity chunk stream amounts to more bytes"
+        } should have message "HTTP message had declared Content-Length 5 but entity data stream amounts to more bytes"
       }
 
     }
