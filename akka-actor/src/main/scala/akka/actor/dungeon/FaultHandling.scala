@@ -72,7 +72,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
           clearActorFields(failedActor)
         }
       }
-      assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.status)
+      assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.currentStatus)
       if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
     } else {
       // need to keep that suspend counter balanced
@@ -118,7 +118,7 @@ private[akka] trait FaultHandling { this: ActorCell ⇒
    * Do create the actor in response to a failure.
    */
   protected def faultCreate(): Unit = {
-    assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.status)
+    assert(mailbox.isSuspended, "mailbox must be suspended during failed creation, status=" + mailbox.currentStatus)
     assert(perpetrator == self)
 
     setReceiveTimeout(Duration.Undefined)
