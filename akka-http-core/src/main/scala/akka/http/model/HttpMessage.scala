@@ -277,7 +277,7 @@ object HttpRequest {
     } else // http://tools.ietf.org/html/rfc7230#section-5.4
     if (hostHeader.isEmpty || uri.authority.isEmpty && hostHeader.get.isEmpty ||
       hostHeader.get.host.equalsIgnoreCase(uri.authority.host)) uri
-    else throw new IllegalUriException("'Host' header value of request to `$uri` doesn't match request target authority",
+    else throw new IllegalUriException(s"'Host' header value of request to `$uri` doesn't match request target authority",
       s"Host header: $hostHeader\nrequest target authority: ${uri.authority}")
   }
 }

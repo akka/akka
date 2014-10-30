@@ -10,14 +10,13 @@ import java.lang.{ Iterable ⇒ JIterable }
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
+import scala.util.control.NonFatal
 import akka.util.ByteString
-import akka.stream.{ FlowMaterializer, TimerTransformer, Transformer }
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
-import akka.stream.impl.{ EmptyPublisher, SynchronousPublisherFromIterable }
+import akka.stream.{ TimerTransformer, Transformer }
 import akka.http.util._
 import japi.JavaMapping.Implicits._
-
-import scala.util.control.NonFatal
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -40,7 +39,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
 
   /**
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
-   * The Deferrable is failed with an TimeoutException if the stream isn't completed after the given timeout.
+   * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
   def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[HttpEntity.Strict] = {
     def transformer() =
@@ -163,6 +162,8 @@ object HttpEntity {
 
     def withContentType(contentType: ContentType): Strict =
       if (contentType == this.contentType) this else copy(contentType = contentType)
+
+    override def productPrefix = "HttpEntity.Strict"
   }
 
   /**
@@ -187,6 +188,8 @@ object HttpEntity {
 
     def withContentType(contentType: ContentType): Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)
+
+    override def productPrefix = "HttpEntity.Default"
   }
 
   /**
@@ -198,7 +201,7 @@ object HttpEntity {
     def contentType: ContentType
     def data: Source[ByteString]
 
-    def isKnownEmpty = data eq EmptyPublisher
+    def isKnownEmpty = data eq Source.empty
 
     def dataBytes: Source[ByteString] = data
   }
@@ -219,6 +222,8 @@ object HttpEntity {
     override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): CloseDelimited =
       HttpEntity.CloseDelimited(contentType,
         data.transform("transformDataBytes-CloseDelimited", transformer))
+
+    override def productPrefix = "HttpEntity.CloseDelimited"
   }
 
   /**
@@ -235,6 +240,8 @@ object HttpEntity {
     override def transformDataBytes(transformer: () ⇒ Transformer[ByteString, ByteString]): IndefiniteLength =
       HttpEntity.IndefiniteLength(contentType,
         data.transform("transformDataBytes-IndefiniteLength", transformer))
+
+    override def productPrefix = "HttpEntity.IndefiniteLength"
   }
 
   /**
@@ -243,7 +250,7 @@ object HttpEntity {
   final case class Chunked(contentType: ContentType, chunks: Source[ChunkStreamPart])
     extends japi.HttpEntityChunked with MessageEntity {
 
-    def isKnownEmpty = chunks eq EmptyPublisher
+    def isKnownEmpty = chunks eq Source.empty
     override def isChunked: Boolean = true
 
     def dataBytes: Source[ByteString] =
@@ -282,6 +289,8 @@ object HttpEntity {
 
     def withContentType(contentType: ContentType): Chunked =
       if (contentType == this.contentType) this else copy(contentType = contentType)
+
+    override def productPrefix = "HttpEntity.Chunked"
 
     /** Java API */
     def getChunks: Source[japi.ChunkStreamPart] = chunks.asInstanceOf[Source[japi.ChunkStreamPart]]
