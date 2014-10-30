@@ -75,7 +75,6 @@ public class FlowTest {
             }, system.dispatcher());
 
     probe.expectMsgEquals("de");
-
   }
 
   @Test
