@@ -26,7 +26,7 @@ private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flo
   private[stream] def withSource(in: Source[In]): SourcePipe[Out] = SourcePipe(in, ops)
 
   override def connect[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
-    case p: Pipe[T, In]              ⇒ Pipe(p.ops ++: ops)
+    case p: Pipe[Out, T]             ⇒ Pipe(p.ops ++: ops)
     case gf: GraphFlow[Out, _, _, T] ⇒ gf.prepend(this)
     case x                           ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
@@ -35,6 +35,12 @@ private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flo
     case sp: SinkPipe[Out]     ⇒ sp.prependPipe(this)
     case gs: GraphSink[Out, _] ⇒ gs.prepend(this)
     case d: Sink[Out]          ⇒ this.withSink(d)
+  }
+
+  override def join(flow: Flow[Out, In]): RunnableFlow = flow match {
+    case p: Pipe[Out, In]             ⇒ GraphFlow(this).join(p)
+    case gf: GraphFlow[Out, _, _, In] ⇒ gf.join(this)
+    case x                            ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   private[stream] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)

@@ -223,7 +223,7 @@ trait TcpHelper { this: TestKitBase ⇒
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
     val foreachSink = Sink.foreach[IncomingTcpConnection] { conn ⇒
-      conn.inbound.connect(conn.outbound).run()
+      conn.flow.join(Flow[ByteString]).run()
     }
     val binding = bind(Flow[IncomingTcpConnection].connect(foreachSink), serverAddress)
     new EchoServer(binding.connection.get(foreachSink), binding)

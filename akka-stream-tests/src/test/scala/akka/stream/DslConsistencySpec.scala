@@ -36,8 +36,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
     sSourceClass -> Set("adapt", "from"),
     sSinkClass -> Set("adapt"),
     sFlowGraphClass -> Set("builder"),
-    jFlowGraphClass → Set("graph"),
-    jPartialFlowGraphClass → Set("graph"))
+    jFlowGraphClass → Set("graph", "cyclesAllowed"),
+    jPartialFlowGraphClass → Set("graph", "cyclesAllowed"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[FlowMaterializer])
 
