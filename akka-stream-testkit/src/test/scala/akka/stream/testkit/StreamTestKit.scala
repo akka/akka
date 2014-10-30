@@ -54,6 +54,10 @@ object StreamTestKit {
       pendingRequests -= 1
       subscription.sendNext(elem)
     }
+
+    def sendComplete(): Unit = subscription.sendComplete()
+
+    def sendError(cause: Exception): Unit = subscription.sendError(cause)
   }
 
   sealed trait SubscriberEvent

@@ -46,21 +46,51 @@ private[akka] object FanOut {
     private var markedPending = 0
     private val cancelled = Array.ofDim[Boolean](outputCount)
     private var markedCancelled = 0
+    private val completed = Array.ofDim[Boolean](outputCount)
+    private val errored = Array.ofDim[Boolean](outputCount)
 
     private var unmarkCancelled = true
 
     private var preferredId = 0
 
+    def isPending(output: Int): Boolean = pending(output)
+
+    def isCompleted(output: Int): Boolean = completed(output)
+
+    def isCancelled(output: Int): Boolean = cancelled(output)
+
     def complete(): Unit =
       if (!bunchCancelled) {
         bunchCancelled = true
-        outputs foreach (_.complete())
+        var i = 0
+        while (i < outputs.length) {
+          complete(i)
+          i += 1
+        }
+      }
+
+    def complete(output: Int) =
+      if (!completed(output) && !errored(output) && !cancelled(output)) {
+        outputs(output).complete()
+        completed(output) = true
+        unmarkOutput(output)
       }
 
     def cancel(e: Throwable): Unit =
       if (!bunchCancelled) {
         bunchCancelled = true
-        outputs foreach (_.cancel(e))
+        var i = 0
+        while (i < outputs.length) {
+          error(i, e)
+          i += 1
+        }
+      }
+
+    def error(output: Int, e: Throwable): Unit =
+      if (!errored(output) && !cancelled(output) && !completed(output)) {
+        outputs(output).cancel(e)
+        errored(output) = true
+        unmarkOutput(output)
       }
 
     def markOutput(output: Int): Unit = {
@@ -81,9 +111,25 @@ private[akka] object FanOut {
       }
     }
 
+    def markAllOutputs(): Unit = {
+      var i = 0
+      while (i < outputCount) {
+        markOutput(i)
+        i += 1
+      }
+    }
+
+    def unmarkAllOutputs(): Unit = {
+      var i = 0
+      while (i < outputCount) {
+        unmarkOutput(i)
+        i += 1
+      }
+    }
+
     def unmarkCancelledOutputs(enabled: Boolean): Unit = unmarkCancelled = enabled
 
-    private def idToEnqueue(): Int = {
+    def idToEnqueue(): Int = {
       var id = preferredId
       while (!(marked(id) && pending(id))) {
         id += 1
@@ -110,10 +156,15 @@ private[akka] object FanOut {
       }
     }
 
-    def enqueueAndYield(elem: Any): Unit = {
+    def idToEnqueueAndYield(): Int = {
       val id = idToEnqueue()
       preferredId = id + 1
       if (preferredId == outputCount) preferredId = 0
+      id
+    }
+
+    def enqueueAndYield(elem: Any): Unit = {
+      val id = idToEnqueueAndYield()
       enqueue(id, elem)
     }
 
@@ -122,6 +173,8 @@ private[akka] object FanOut {
       preferredId = preferred
       enqueue(id, elem)
     }
+
+    def onCancel(output: Int): Unit = ()
 
     /**
      * Will only transfer an element when all marked outputs
@@ -161,6 +214,7 @@ private[akka] object FanOut {
         }
         if (marked(id) && !cancelled(id)) markedCancelled += 1
         cancelled(id) = true
+        onCancel(id)
         outputs(id).subreceive(Cancel(null))
       case SubstreamSubscribePending(id) ⇒
         outputs(id).subreceive(SubscribePending)
@@ -222,7 +276,7 @@ private[akka] object Broadcast {
  * INTERNAL API
  */
 private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
-  (0 until outputPorts) foreach outputBunch.markOutput
+  outputBunch.markAllOutputs()
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
@@ -242,7 +296,7 @@ private[akka] object Balance {
  * INTERNAL API
  */
 private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
-  (0 until outputPorts) foreach outputBunch.markOutput
+  outputBunch.markAllOutputs()
 
   val runningPhase = TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
@@ -269,7 +323,7 @@ private[akka] object Unzip {
  * INTERNAL API
  */
 private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_settings, outputPorts = 2) {
-  (0 until outputPorts) foreach outputBunch.markOutput
+  outputBunch.markAllOutputs()
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
     primaryInputs.dequeueInputElement() match {
@@ -288,4 +342,3 @@ private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_setti
     }
   })
 }
-
