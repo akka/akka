@@ -27,10 +27,8 @@ object Marshallers extends SingleMarshallerMarshallers {
     Marshallers(f(first) +: vector)
   }
 
-  implicit val NodeSeqMarshallers: ToEntityMarshallers[NodeSeq] = {
-    import scala.concurrent.ExecutionContext.Implicits.global
+  implicit def nodeSeqMarshallers(implicit ec: ExecutionContext): ToEntityMarshallers[NodeSeq] =
     Marshallers(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)(PredefinedToEntityMarshallers.nodeSeqMarshaller)
-  }
 
   implicit def entity2response[T](implicit m: Marshallers[T, ResponseEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
     m map (entity ⇒ HttpResponse(entity = entity))
