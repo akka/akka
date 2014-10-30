@@ -790,7 +790,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
               case _               ⇒ Logging.simpleName(cell)
             }) +
             (cell match {
-              case real: ActorCell ⇒ " status=" + real.mailbox.status
+              case real: ActorCell ⇒ " status=" + real.mailbox.currentStatus
               case _               ⇒ ""
             }) +
             " " + (cell.childrenRefs match {
