@@ -109,18 +109,6 @@ object Sink {
   def future[In]: KeyedSink[In, Future[In]] =
     new KeyedSink(scaladsl.Sink.future[In])
 
-  /**
-   * A `Sink` that will invoke the given function for every received element, giving it its previous
-   * output (or the given `zero` value) and the element as input.
-   * The returned [[scala.concurrent.Future]] will be completed with value of the final
-   * function evaluation when the input stream ends, or completed with `Failure`
-   * if there is an error is signaled in the stream.
-   */
-  def fold[U, T](zero: U, f: Function[akka.japi.Pair[U, T], U]): KeyedSink[T, Future[U]] = {
-    val sSink = scaladsl.Sink.fold[U, T](zero) { case (a, b) ⇒ f.apply(akka.japi.Pair(a, b)) }
-    new KeyedSink(sSink)
-  }
-
 }
 
 /**

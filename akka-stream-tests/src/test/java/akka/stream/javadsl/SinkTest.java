@@ -6,6 +6,7 @@ package akka.stream.javadsl;
 import java.util.ArrayList;
 import java.util.List;
 
+import akka.stream.javadsl.japi.Function2;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
@@ -42,6 +43,16 @@ public class SinkTest {
     list.add(1);
     final Future<Integer> future = Source.from(list).runWith(futSink, materializer);
     assert Await.result(future, Duration.create("1 second")).equals(1);
+  }
+
+  @Test
+  public void mustBeAbleToUseFold() throws Exception {
+    KeyedSink<Integer, Future<Integer>> foldSink = Sink.fold(0, new Function2<Integer, Integer, Integer>() {
+      @Override public Integer apply(Integer arg1, Integer arg2) throws Exception {
+        return arg1 + arg2;
+      }
+    });
+    Future<Integer> integerFuture = Source.from(new ArrayList<Integer>()).runWith(foldSink, materializer);
   }
 
 }
