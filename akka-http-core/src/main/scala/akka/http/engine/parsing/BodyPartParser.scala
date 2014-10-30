@@ -53,6 +53,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   private[this] val headerParser = HttpHeaderParser(settings, warnOnIllegalHeader) // TODO: prevent re-priming header parser from scratch
   private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary
+  private[this] var receivedInitialBoundary = false
   private[this] var terminated = false
 
   override def isComplete = terminated
@@ -70,24 +71,21 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     result.toList
   }
 
-  def tryParseInitialBoundary(input: ByteString): StateResult = {
+  def tryParseInitialBoundary(input: ByteString): StateResult =
     // we don't use boyerMoore here because we are testing for the boundary *without* a
     // preceding CRLF and at a known location (the very beginning of the entity)
     try {
-      @tailrec def rec(ix: Int): StateResult =
-        if (ix < needle.length) {
-          if (byteAt(input, ix - 2) == needle(ix)) rec(ix + 1)
-          else parsePreamble(input, 0)
-        } else {
-          if (crlf(input, ix - 2)) parseHeaderLines(input, ix)
-          else if (doubleDash(input, ix - 2)) terminate()
-          else parsePreamble(input, 0)
-        }
-      rec(2)
+      if (boundary(input, 0)) {
+        val ix = boundaryLength
+        if (crlf(input, ix)) {
+          receivedInitialBoundary = true
+          parseHeaderLines(input, ix + 2)
+        } else if (doubleDash(input, ix)) terminate()
+        else parsePreamble(input, 0)
+      } else parsePreamble(input, 0)
     } catch {
       case NotEnoughDataException ⇒ continue((input, _) ⇒ tryParseInitialBoundary(input))
     }
-  }
 
   def parsePreamble(input: ByteString, offset: Int): StateResult = {
     try {
@@ -105,32 +103,41 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   @tailrec def parseHeaderLines(input: ByteString, lineStart: Int, headers: List[HttpHeader] = Nil,
                                 headerCount: Int = 0, cth: Option[`Content-Type`] = None): StateResult = {
-    var lineEnd = 0
-    val resultHeader =
-      try {
-        lineEnd = headerParser.parseHeaderLine(input, lineStart)()
-        headerParser.resultHeader
-      } catch {
-        case NotEnoughDataException ⇒ null
+    def contentType =
+      cth match {
+        case Some(x) ⇒ x.contentType
+        case None    ⇒ defaultContentType
       }
-    resultHeader match {
-      case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, cth))
 
-      case HttpHeaderParser.EmptyHeader ⇒
-        val contentType = cth match {
-          case Some(x) ⇒ x.contentType
-          case None    ⇒ defaultContentType
+    if (boundary(input, lineStart)) {
+      emit(BodyPartStart(headers, _ ⇒ HttpEntity.empty(contentType)))
+      val ix = lineStart + boundaryLength
+      if (crlf(input, ix)) parseHeaderLines(input, ix + 2)
+      else if (doubleDash(input, ix)) terminate()
+      else fail("Illegal multipart boundary in message content")
+    } else {
+      var lineEnd = 0
+      val resultHeader =
+        try {
+          lineEnd = headerParser.parseHeaderLine(input, lineStart)()
+          headerParser.resultHeader
+        } catch {
+          case NotEnoughDataException ⇒ null
         }
-        parseEntity(headers, contentType)(input, lineEnd)
+      resultHeader match {
+        case null                         ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, cth))
 
-      case h: `Content-Type` ⇒
-        if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
-        else if (cth.get == h) parseHeaderLines(input, lineEnd, headers, headerCount, cth)
-        else fail("multipart part must not contain more than one Content-Type header")
+        case HttpHeaderParser.EmptyHeader ⇒ parseEntity(headers, contentType)(input, lineEnd)
 
-      case h if headerCount < maxHeaderCount ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, cth)
+        case h: `Content-Type` ⇒
+          if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, Some(h))
+          else if (cth.get == h) parseHeaderLines(input, lineEnd, headers, headerCount, cth)
+          else fail("multipart part must not contain more than one Content-Type header")
 
-      case _                                 ⇒ fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
+        case h if headerCount < maxHeaderCount ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, cth)
+
+        case _                                 ⇒ fail(s"multipart part contains more than the configured limit of $maxHeaderCount headers")
+      }
     }
   }
 
@@ -204,11 +211,20 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   def done(): StateResult = null // StateResult is a phantom type
 
+  // the length of the needle without the preceding CRLF
+  def boundaryLength = needle.length - 2
+
+  @tailrec def boundary(input: ByteString, offset: Int, ix: Int = 2): Boolean =
+    (ix == needle.length) || (byteAt(input, offset + ix - 2) == needle(ix)) && boundary(input, offset, ix + 1)
+
   def crlf(input: ByteString, offset: Int): Boolean =
     byteChar(input, offset) == '\r' && byteChar(input, offset + 1) == '\n'
 
   def doubleDash(input: ByteString, offset: Int): Boolean =
     byteChar(input, offset) == '-' && byteChar(input, offset + 1) == '-'
+
+  override def onTermination(e: Option[Throwable]): List[BodyPartParser.Output] =
+    if (terminated || !receivedInitialBoundary) Nil else ParseError(ErrorInfo("Unexpected end of multipart entity")) :: Nil
 }
 
 private[http] object BodyPartParser {
