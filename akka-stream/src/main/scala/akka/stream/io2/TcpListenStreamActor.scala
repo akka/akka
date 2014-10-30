@@ -15,11 +15,8 @@ import akka.stream.io2.TcpListenStreamActor.TCPSinkSource
 import akka.util.ByteString
 import org.reactivestreams.{ Subscriber, Publisher }
 import scala.util.control.NoStackTrace
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl._
 import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.SimpleActorFlowSource
-import akka.stream.scaladsl.SimpleActorFlowSink
 
 /**
  * INTERNAL API
@@ -170,7 +167,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind,
     }
 
     val tcpSinkSource = new TCPSinkSource(tcpStreamActorCreator, encName(connected.localAddress, connected.remoteAddress))
-    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, tcpSinkSource.sink, tcpSinkSource.source))
+    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, Flow(tcpSinkSource.sink, tcpSinkSource.source)))
   }
 
   def fail(e: Throwable): Unit = {

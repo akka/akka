@@ -30,6 +30,11 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
   def connect(sink: Sink[Out]): Sink[In]
 
   /**
+   * TODO: ban comments
+   */
+  def join(flow: Flow[Out, In]): RunnableFlow
+
+  /**
    *
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a [[SubscriberSource]] and
@@ -84,13 +89,18 @@ object Flow {
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
   def apply[I, O](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] =
-    createFlowFromBuilder(new FlowGraphBuilder(graph.graph), block)
+    createFlowFromBuilder(new FlowGraphBuilder(graph), block)
 
   private def createFlowFromBuilder[I, O](builder: FlowGraphBuilder,
                                           block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] = {
     val (in, out) = block(builder)
     builder.partialBuild().toFlow(in, out)
   }
+
+  /**
+   * TODO:ban comment
+   */
+  def apply[I, O](sink: Sink[I], source: Source[O]): Flow[I, O] = GraphFlow(sink, source)
 }
 
 /**
