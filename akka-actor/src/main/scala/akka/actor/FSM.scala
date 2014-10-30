@@ -8,6 +8,7 @@ import scala.concurrent.duration.Duration
 import scala.collection.mutable
 import akka.routing.{ Deafen, Listen, Listeners }
 import scala.concurrent.duration.FiniteDuration
+import akka.util.Converters._
 
 object FSM {
 
@@ -310,7 +311,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param stateTimeout default state timeout for this state
    * @param stateFunction partial function describing response to input
    */
-  final def when(stateName: S, stateTimeout: FiniteDuration = null)(stateFunction: StateFunction): Unit =
+  final def when(stateName: S, stateTimeout: Duration = null)(stateFunction: StateFunction): Unit =
     register(stateName, stateFunction, Option(stateTimeout))
 
   /**
@@ -415,7 +416,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * Set state timeout explicitly. This method can safely be used from within a
    * state handler.
    */
-  final def setStateTimeout(state: S, timeout: Timeout): Unit = stateTimeouts(state) = timeout
+  final def setStateTimeout(state: S, timeout: Option[Duration]): Unit = stateTimeouts(state) = timeout
 
   /**
    * INTERNAL API, used for testing.
@@ -528,9 +529,9 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * State definitions
    */
   private val stateFunctions = mutable.Map[S, StateFunction]()
-  private val stateTimeouts = mutable.Map[S, Timeout]()
+  private val stateTimeouts = mutable.Map[S, Option[Duration]]()
 
-  private def register(name: S, function: StateFunction, timeout: Timeout): Unit = {
+  private def register(name: S, function: StateFunction, timeout: Option[Duration]): Unit = {
     if (stateFunctions contains name) {
       stateFunctions(name) = stateFunctions(name) orElse function
       stateTimeouts(name) = timeout orElse stateTimeouts(name)
@@ -832,7 +833,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(stateName: S,
-                 stateTimeout: FiniteDuration,
+                 stateTimeout: Duration,
                  stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
     when(stateName, stateTimeout)(stateFunctionBuilder.build())
 
