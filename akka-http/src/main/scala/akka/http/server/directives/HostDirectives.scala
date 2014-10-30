@@ -15,7 +15,7 @@ trait HostDirectives {
   /**
    * Extracts the hostname part of the Host header value in the request.
    */
-  def hostName: Directive1[String] = HostDirectives._hostName
+  def extractHost: Directive1[String] = HostDirectives._extractHost
 
   /**
    * Rejects all requests with a host name different from the given ones.
@@ -25,7 +25,7 @@ trait HostDirectives {
   /**
    * Rejects all requests for whose host name the given predicate function returns false.
    */
-  def host(predicate: String ⇒ Boolean): Directive0 = hostName.require(predicate)
+  def host(predicate: String ⇒ Boolean): Directive0 = extractHost.require(predicate)
 
   /**
    * Rejects all requests with a host name that doesn't have a prefix matching the given regular expression.
@@ -35,7 +35,7 @@ trait HostDirectives {
    */
   def host(regex: Regex): Directive1[String] = {
     def forFunc(regexMatch: String ⇒ Option[String]): Directive1[String] = {
-      hostName.flatMap { name ⇒
+      extractHost.flatMap { name ⇒
         regexMatch(name) match {
           case Some(matched) ⇒ provide(matched)
           case None          ⇒ reject
@@ -56,6 +56,6 @@ trait HostDirectives {
 object HostDirectives extends HostDirectives {
   import BasicDirectives._
 
-  private val _hostName: Directive1[String] =
+  private val _extractHost: Directive1[String] =
     extract(_.request.uri.authority.host.address)
 }

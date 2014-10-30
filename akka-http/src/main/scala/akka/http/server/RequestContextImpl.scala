@@ -18,13 +18,14 @@ private[http] class RequestContextImpl(
   val request: HttpRequest,
   val unmatchedPath: Uri.Path,
   val executionContext: ExecutionContext,
-  val log: LoggingAdapter) extends RequestContext {
+  val log: LoggingAdapter,
+  val settings: RoutingSettings) extends RequestContext {
 
-  def this(request: HttpRequest, log: LoggingAdapter)(implicit ec: ExecutionContext) =
-    this(request, request.uri.path, ec, log)
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext) =
+    this(request, request.uri.path, ec, log, settings)
 
-  def reconfigure(executionContext: ExecutionContext, log: LoggingAdapter): RequestContext =
-    copy(executionContext = executionContext, log = log)
+  def reconfigure(executionContext: ExecutionContext, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
+    copy(executionContext = executionContext, log = log, settings = settings)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
@@ -46,13 +47,16 @@ private[http] class RequestContextImpl(
   override def withLog(log: LoggingAdapter): RequestContext =
     copy(log = log)
 
-  override def withRequestMapped(f: HttpRequest ⇒ HttpRequest): RequestContext =
+  override def withSettings(settings: RoutingSettings): RequestContext =
+    copy(settings = settings)
+
+  override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
 
   override def withUnmatchedPath(path: Uri.Path): RequestContext =
     copy(unmatchedPath = path)
 
-  override def withUnmatchedPathMapped(f: Uri.Path ⇒ Uri.Path): RequestContext =
+  override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
   override def withContentNegotiationDisabled: RequestContext =
@@ -61,6 +65,7 @@ private[http] class RequestContextImpl(
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
                    executionContext: ExecutionContext = executionContext,
-                   log: LoggingAdapter = log) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, log)
+                   log: LoggingAdapter = log,
+                   settings: RoutingSettings = settings) =
+    new RequestContextImpl(request, unmatchedPath, executionContext, log, settings)
 }
