@@ -12,10 +12,10 @@ trait MaterializedMap {
   /**
    * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def get(key: KeyedSource[_]): key.MaterializedType
+  def get(key: Source[_]): key.MaterializedType
 
   /**
    * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[PublisherSink]].
    */
-  def get(key: KeyedSink[_]): key.MaterializedType
+  def get(key: Sink[_]): key.MaterializedType
 }
