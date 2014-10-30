@@ -25,7 +25,7 @@ class FlowMapAsyncSpec extends AkkaSpec {
     "produce future elements" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
       implicit val ec = system.dispatcher
-      val p = Source(1 to 3).mapAsync(n ⇒ Future(n)).to(Sink(c)).run()
+      val p = Source(1 to 3).mapAsync(n ⇒ Future(n)).runWith(Sink(c))
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext(1)

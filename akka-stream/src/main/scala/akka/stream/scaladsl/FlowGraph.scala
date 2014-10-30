@@ -1320,18 +1320,24 @@ class PartialFlowGraph private[akka] (private[akka] val graph: ImmutableGraph[Fl
 private[scaladsl] class MaterializedFlowGraph(materializedSources: Map[KeyedSource[_], Any], materializedSinks: Map[KeyedSink[_], Any])
   extends MaterializedMap {
 
-  override def get(key: KeyedSource[_]): key.MaterializedType =
-    materializedSources.get(key) match {
-      case Some(matSource) ⇒ matSource.asInstanceOf[key.MaterializedType]
-      case None ⇒
-        throw new IllegalArgumentException(s"Source key [$key] doesn't exist in this flow graph")
+  override def get(key: Source[_]): key.MaterializedType =
+    key match {
+      case k: KeyedSource[_] ⇒ materializedSources.get(k) match {
+        case Some(matSource) ⇒ matSource.asInstanceOf[key.MaterializedType]
+        case None ⇒
+          throw new IllegalArgumentException(s"Source key [$key] doesn't exist in this flow graph")
+      }
+      case _ ⇒ ().asInstanceOf[key.MaterializedType]
     }
 
-  def get(key: KeyedSink[_]): key.MaterializedType =
-    materializedSinks.get(key) match {
-      case Some(matSink) ⇒ matSink.asInstanceOf[key.MaterializedType]
-      case None ⇒
-        throw new IllegalArgumentException(s"Sink key [$key] doesn't exist in this flow graph")
+  def get(key: Sink[_]): key.MaterializedType =
+    key match {
+      case k: KeyedSink[_] ⇒ materializedSinks.get(k) match {
+        case Some(matSink) ⇒ matSink.asInstanceOf[key.MaterializedType]
+        case None ⇒
+          throw new IllegalArgumentException(s"Sink key [$key] doesn't exist in this flow graph")
+      }
+      case _ ⇒ ().asInstanceOf[key.MaterializedType]
     }
 }
 

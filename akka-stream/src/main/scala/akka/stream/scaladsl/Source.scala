@@ -17,6 +17,7 @@ import akka.stream.FlowMaterializer
  * Can be used as a `Publisher`
  */
 trait Source[+Out] extends FlowOps[Out] {
+  type MaterializedType
   override type Repr[+O] <: Source[O]
 
   /**
@@ -33,7 +34,7 @@ trait Source[+Out] extends FlowOps[Out] {
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[Sink.fanoutPublisher]].
    */
-  def runWith(sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
+  def runWith(sink: Sink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
     to(sink).run().get(sink)
 
   /**
@@ -195,6 +196,4 @@ object Source {
  * to retrieve in order to access aspects of this source (could be a Subscriber, a
  * Future/Promise, etc.).
  */
-trait KeyedSource[+Out] extends Source[Out] {
-  type MaterializedType
-}
+trait KeyedSource[+Out] extends Source[Out]

@@ -13,19 +13,15 @@ import akka.stream.FlowMaterializer
  * Can be used as a `Subscriber`
  */
 trait Sink[-In] {
-  /**
-   * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
-   * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
-   */
-  def runWith(source: KeyedSource[In])(implicit materializer: FlowMaterializer): source.MaterializedType =
-    source.to(this).run().get(source)
+  type MaterializedType
 
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def runWith(source: Source[In])(implicit materializer: FlowMaterializer): Unit =
-    source.to(this).run()
+  def runWith(source: Source[In])(implicit materializer: FlowMaterializer): source.MaterializedType =
+    source.to(this).run().get(source)
+
 }
 
 object Sink {
@@ -118,6 +114,4 @@ object Sink {
  * to retrieve in order to access aspects of this sink (could be a completion Future
  * or a cancellation handle, etc.)
  */
-trait KeyedSink[-In] extends Sink[In] {
-  type MaterializedType
-}
+trait KeyedSink[-In] extends Sink[In]

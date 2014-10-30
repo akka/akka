@@ -79,7 +79,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val flow: Flow[Int, Long] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
       val c1 = StreamTestKit.SubscriberProbe[Long]()
-      Source(List(1, 2, 3)).via(flow).to(Sink(c1)).run()
+      Source(List(1, 2, 3)).via(flow).runWith(Sink(c1))
 
       val s = c1.expectSubscription()
       s.request(100)

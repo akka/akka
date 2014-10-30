@@ -19,7 +19,6 @@ import scala.util.Failure
 import scala.util.Success
 
 sealed trait ActorFlowSource[+Out] extends Source[Out] {
-  type MaterializedType
 
   /**
    * Attach this source to the given [[org.reactivestreams.Subscriber]]. Using the given
@@ -82,7 +81,7 @@ trait KeyedActorFlowSource[+Out] extends ActorFlowSource[Out] with KeyedSource[O
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-private[scaladsl] final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] {
+final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] {
   override type MaterializedType = Subscriber[Out]
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] =
@@ -96,7 +95,7 @@ private[scaladsl] final case class SubscriberSource[Out]() extends KeyedActorFlo
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-private[scaladsl] final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlowSource[Out] {
+final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     p.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -110,7 +109,7 @@ private[scaladsl] final case class PublisherSource[Out](p: Publisher[Out]) exten
  * in accordance with the demand coming from the downstream transformation
  * steps.
  */
-private[scaladsl] final case class IteratorSource[Out](iterator: Iterator[Out]) extends SimpleActorFlowSource[Out] {
+final case class IteratorSource[Out](iterator: Iterator[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -126,7 +125,7 @@ private[scaladsl] final case class IteratorSource[Out](iterator: Iterator[Out]) 
  * stream will see an individual flow of elements (always starting from the
  * beginning) regardless of when they subscribed.
  */
-private[scaladsl] final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends SimpleActorFlowSource[Out] {
+final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -141,7 +140,7 @@ private[scaladsl] final case class IterableSource[Out](iterable: immutable.Itera
  * The stream ends normally when evaluation of the closure returns a `None`.
  * The stream ends exceptionally when an exception is thrown from the closure.
  */
-private[scaladsl] final case class ThunkSource[Out](f: () ⇒ Option[Out]) extends SimpleActorFlowSource[Out] {
+final case class ThunkSource[Out](f: () ⇒ Option[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -159,7 +158,7 @@ private[scaladsl] final case class ThunkSource[Out](f: () ⇒ Option[Out]) exten
  * may happen before or after materializing the `Flow`.
  * The stream terminates with an error if the `Future` is completed with a failure.
  */
-private[scaladsl] final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowSource[Out] {
+final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -183,7 +182,7 @@ private[scaladsl] final case class FutureSource[Out](future: Future[Out]) extend
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-private[scaladsl] final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends SimpleActorFlowSource[Out] {
+final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -197,7 +196,7 @@ private[scaladsl] final case class TickSource[Out](initialDelay: FiniteDuration,
  * completely, then draining the elements arriving from the second Source. If the first Source is infinite then the
  * second Source will be never drained.
  */
-private[scaladsl] final case class ConcatSource[Out](source1: Source[Out], source2: Source[Out]) extends SimpleActorFlowSource[Out] {
+final case class ConcatSource[Out](source1: Source[Out], source2: Source[Out]) extends SimpleActorFlowSource[Out] {
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val concatter = Concat[Out]
@@ -216,7 +215,7 @@ private[scaladsl] final case class ConcatSource[Out](source1: Source[Out], sourc
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-private[scaladsl] final case class PropsSource[Out](props: Props) extends KeyedActorFlowSource[Out] {
+final case class PropsSource[Out](props: Props) extends KeyedActorFlowSource[Out] {
   override type MaterializedType = ActorRef
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
