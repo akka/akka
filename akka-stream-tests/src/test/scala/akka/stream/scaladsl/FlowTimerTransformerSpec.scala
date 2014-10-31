@@ -11,7 +11,6 @@ import akka.stream.TimerTransformer
 
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTimerTransformerSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()

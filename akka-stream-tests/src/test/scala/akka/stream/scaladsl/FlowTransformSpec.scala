@@ -14,7 +14,6 @@ import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   val settings = MaterializerSettings(system)

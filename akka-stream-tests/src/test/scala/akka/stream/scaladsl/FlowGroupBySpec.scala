@@ -11,7 +11,6 @@ import akka.stream.MaterializerSettings
 import akka.stream.testkit._
 import org.reactivestreams.Publisher
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowGroupBySpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)

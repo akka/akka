@@ -8,7 +8,6 @@ import java.lang.reflect.Method
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   // configuration //

@@ -7,7 +7,6 @@ import akka.testkit.TestProbe
 import akka.stream.testkit.AkkaSpec
 import akka.stream.FlowMaterializer
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowDispatcherSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()

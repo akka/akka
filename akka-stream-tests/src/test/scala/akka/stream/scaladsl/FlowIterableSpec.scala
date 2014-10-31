@@ -11,7 +11,6 @@ import akka.stream.MaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.testkit.StreamTestKit.{ OnComplete, OnError, OnNext }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowIterableSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)

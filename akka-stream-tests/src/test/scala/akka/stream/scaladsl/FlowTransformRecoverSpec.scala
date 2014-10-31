@@ -30,7 +30,6 @@ object FlowTransformRecoverSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowTransformRecoverSpec extends AkkaSpec {
   import FlowTransformRecoverSpec._
 

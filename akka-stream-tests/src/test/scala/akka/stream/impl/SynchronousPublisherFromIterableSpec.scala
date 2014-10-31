@@ -10,7 +10,6 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Subscriber, Subscription }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SynchronousPublisherFromIterableSpec extends AkkaSpec {
 
   "A SynchronousPublisherFromIterable" must {

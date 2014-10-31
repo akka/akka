@@ -14,7 +14,6 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import akka.testkit.TestProbe
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)
