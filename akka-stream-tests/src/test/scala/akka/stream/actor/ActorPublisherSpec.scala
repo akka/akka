@@ -101,7 +101,6 @@ object ActorPublisherSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
   import akka.stream.actor.ActorPublisherSpec._
 

@@ -27,7 +27,6 @@ object ImplicitFlowMaterializerSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ImplicitFlowMaterializerSpec extends AkkaSpec with ImplicitSender {
   import ImplicitFlowMaterializerSpec._
 

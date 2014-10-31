@@ -15,7 +15,6 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowMapAsyncSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()

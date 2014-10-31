@@ -11,7 +11,6 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import org.reactivestreams.Publisher
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowSplitWhenSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)

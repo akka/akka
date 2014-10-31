@@ -13,7 +13,6 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamTestKit
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)

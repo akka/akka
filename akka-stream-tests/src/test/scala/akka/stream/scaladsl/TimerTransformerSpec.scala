@@ -76,7 +76,6 @@ object TimerTransformerSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TimerTransformerSpec extends AkkaSpec {
   import TimerTransformerSpec._
 
