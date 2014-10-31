@@ -175,21 +175,17 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
   /** Converts this Java DSL element to it's Scala DSL counterpart. */
   def asScala: scaladsl.Source[Out] = delegate
 
-  // CONNECT //
+  /**
+   * Transform this [[Source]] by appending the given processing stages.
+   */
+  def via[T](flow: javadsl.Flow[Out, T]): javadsl.Source[T] =
+    new Source(delegate.via(flow.asScala))
 
   /**
-   * Transform this source by appending the given processing stages.
+   * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def connect[T](flow: javadsl.Flow[Out, T]): javadsl.Source[T] =
-    new Source(delegate.connect(flow.asScala))
-
-  /**
-   * Connect this `Source` to a `Sink`, concatenating the processing steps of both.
-   */
-  def connect(sink: javadsl.Sink[Out]): javadsl.RunnableFlow =
-    new RunnableFlowAdapter(delegate.connect(sink.asScala))
-
-  // RUN WITH //
+  def to(sink: javadsl.Sink[Out]): javadsl.RunnableFlow =
+    new RunnableFlowAdapter(delegate.to(sink.asScala))
 
   /**
    * Connect this `Source` to a `KeyedSink` and run it.
@@ -206,9 +202,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
    */
   def runWith(sink: Sink[Out], materializer: FlowMaterializer): Unit =
-    delegate.connect(sink.asScala).run()(materializer)
-
-  // OPS //
+    delegate.to(sink.asScala).run()(materializer)
 
   /**
    * Shortcut for running this `Source` with a fold function.
