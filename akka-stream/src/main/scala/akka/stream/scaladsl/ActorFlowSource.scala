@@ -56,9 +56,9 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
   private def sourcePipe = Pipe.empty[Out].withSource(this)
 
-  override def connect[T](flow: Flow[Out, T]): Source[T] = sourcePipe.connect(flow)
+  override def via[T](flow: Flow[Out, T]): Source[T] = sourcePipe.via(flow)
 
-  override def connect(sink: Sink[Out]): RunnableFlow = sourcePipe.connect(sink)
+  override def to(sink: Sink[Out]): RunnableFlow = sourcePipe.to(sink)
 
   /** INTERNAL API */
   override private[scaladsl] def andThen[U](op: AstNode) = SourcePipe(this, List(op))

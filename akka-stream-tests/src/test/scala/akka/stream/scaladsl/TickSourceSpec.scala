@@ -19,7 +19,7 @@ class TickSourceSpec extends AkkaSpec {
     "produce ticks" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next()).connect(Sink(c)).run()
+      Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next()).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectNoMsg(600.millis)
@@ -35,7 +35,7 @@ class TickSourceSpec extends AkkaSpec {
     "drop ticks when not requested" in {
       val tickGen = Iterator from 1
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).connect(Sink(c)).run()
+      Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(2)
       c.expectNext("tick-1")
@@ -76,7 +76,7 @@ class TickSourceSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).connect(Sink(c)).run()
+      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")

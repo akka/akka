@@ -68,7 +68,7 @@ class GraphFlowSpec extends AkkaSpec {
           in -> out
         }
 
-        source1.connect(flow).connect(Sink(probe)).run()
+        source1.via(flow).to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -86,7 +86,7 @@ class GraphFlowSpec extends AkkaSpec {
           in -> out
         }
 
-        source1.connect(flow).map(_.toInt).connect(Sink(probe)).run()
+        source1.via(flow).map(_.toInt).to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -113,7 +113,7 @@ class GraphFlowSpec extends AkkaSpec {
           in2 -> out2
         }
 
-        source1.connect(flow1).connect(flow2).connect(Sink(probe)).run()
+        source1.via(flow1).via(flow2).to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -150,7 +150,7 @@ class GraphFlowSpec extends AkkaSpec {
           out
         }
 
-        source.connect(Sink(probe)).run()
+        source.to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -167,7 +167,7 @@ class GraphFlowSpec extends AkkaSpec {
           out
         }
 
-        source.map(_.toInt).connect(Sink(probe)).run()
+        source.map(_.toInt).to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -193,7 +193,7 @@ class GraphFlowSpec extends AkkaSpec {
           in2 -> out2
         }
 
-        source.connect(flow).connect(Sink(probe)).run()
+        source.via(flow).to(Sink(probe)).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -230,7 +230,7 @@ class GraphFlowSpec extends AkkaSpec {
           in
         }
 
-        source1.connect(sink).run()
+        source1.to(sink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -247,8 +247,8 @@ class GraphFlowSpec extends AkkaSpec {
           in
         }
 
-        val iSink = Flow[Int].map(_.toString).connect(sink)
-        source1.connect(iSink).run()
+        val iSink = Flow[Int].map(_.toString).to(sink)
+        source1.to(iSink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }
@@ -274,7 +274,7 @@ class GraphFlowSpec extends AkkaSpec {
           in2
         }
 
-        source1.connect(flow).connect(sink).run()
+        source1.via(flow).to(sink).run()
 
         validateProbe(probe, stdRequests, stdResult)
       }

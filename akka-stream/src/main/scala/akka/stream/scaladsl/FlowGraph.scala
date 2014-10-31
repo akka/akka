@@ -656,15 +656,15 @@ class FlowGraphBuilder private (graph: Graph[FlowGraphInternal.Vertex, FlowGraph
     (source, flow, sink) match {
       case (sourcePipe: SourcePipe[In], pipe: Pipe[In, Out], sinkPipe: SinkPipe[Out]) ⇒
         val src = sourcePipe.input
-        val newPipe = Pipe(sourcePipe.ops).connect(pipe).connect(Pipe(sinkPipe.ops))
+        val newPipe = Pipe(sourcePipe.ops).via(pipe).via(Pipe(sinkPipe.ops))
         val snk = sinkPipe.output
         addEdge(src, newPipe, snk) // recursive, but now it is a Source-Pipe-Sink
       case (sourcePipe: SourcePipe[In], pipe: Pipe[In, Out], sink: Sink[Out]) ⇒
         val src = sourcePipe.input
-        val newPipe = Pipe(sourcePipe.ops).connect(pipe)
+        val newPipe = Pipe(sourcePipe.ops).via(pipe)
         addEdge(src, newPipe, sink) // recursive, but now it is a Source-Pipe-Sink
       case (source: Source[In], pipe: Pipe[In, Out], sinkPipe: SinkPipe[Out]) ⇒
-        val newPipe = pipe.connect(Pipe(sinkPipe.ops))
+        val newPipe = pipe.via(Pipe(sinkPipe.ops))
         val snk = sinkPipe.output
         addEdge(source, newPipe, snk) // recursive, but now it is a Source-Pipe-Sink
       case (_, gflow: GraphFlow[In, _, _, Out], _) ⇒
@@ -1291,6 +1291,8 @@ private[scaladsl] class MaterializedFlowGraph(materializedSources: Map[KeyedSour
 
 /**
  * Implicit conversions that provides syntactic sugar for building flow graphs.
+ * Every method in *Ops classes should have an implicit builder parameter to prevent
+ * using conversions where builder is not available (e.g. outside FlowGraph scope).
  */
 object FlowGraphImplicits {
 
@@ -1304,20 +1306,23 @@ object FlowGraphImplicits {
       junctionIn.next
     }
 
+    def ~>(sink: UndefinedSink[Out])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(source, sink)
+
     def ~>(sink: Sink[Out])(implicit builder: FlowGraphBuilder): Unit =
       builder.addEdge(source, sink)
   }
 
   class SourceNextStep[In, Out](source: Source[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
-    def ~>[O](otherflow: Flow[Out, O])(implicit builder: FlowGraphBuilder): SourceNextStep[In, O] =
-      new SourceNextStep(source, flow.connect(otherflow), builder)
+    def ~>[O](otherflow: Flow[Out, O]): SourceNextStep[In, O] =
+      new SourceNextStep(source, flow.via(otherflow), builder)
 
     def ~>(junctionIn: JunctionInPort[Out]): JunctionOutPort[junctionIn.NextT] = {
       builder.addEdge(source, flow, junctionIn)
       junctionIn.next
     }
 
-    def ~>(sink: UndefinedSink[Out])(implicit builder: FlowGraphBuilder): Unit =
+    def ~>(sink: UndefinedSink[Out]): Unit =
       builder.addEdge(source, flow, sink)
 
     def ~>(sink: Sink[Out]): Unit =
@@ -1328,30 +1333,32 @@ object FlowGraphImplicits {
     def ~>[Out](flow: Flow[In, Out])(implicit builder: FlowGraphBuilder): JunctionNextStep[In, Out] =
       new JunctionNextStep(junction, flow, builder)
 
-    def ~>(sink: UndefinedSink[In])(implicit builder: FlowGraphBuilder): Unit =
-      builder.addEdge(junction, Pipe.empty[In], sink)
-
     def ~>(junctionIn: JunctionInPort[In])(implicit builder: FlowGraphBuilder): JunctionOutPort[junctionIn.NextT] = {
       builder.addEdge(junction, junctionIn)
       junctionIn.next
     }
 
-    def ~>(sink: Sink[In])(implicit builder: FlowGraphBuilder): Unit = builder.addEdge(junction, sink)
+    def ~>(sink: UndefinedSink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(junction, Pipe.empty[In], sink)
+
+    def ~>(sink: Sink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(junction, sink)
   }
 
-  class JunctionNextStep[In, Out](junctionOut: JunctionOutPort[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
+  class JunctionNextStep[In, Out](junction: JunctionOutPort[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
+    def ~>[O](otherFlow: Flow[Out, O]): JunctionNextStep[In, O] =
+      new JunctionNextStep(junction, flow.via(otherFlow), builder)
+
     def ~>(junctionIn: JunctionInPort[Out]): JunctionOutPort[junctionIn.NextT] = {
-      builder.addEdge(junctionOut, flow, junctionIn)
+      builder.addEdge(junction, flow, junctionIn)
       junctionIn.next
     }
 
-    def ~>(sink: Sink[Out]): Unit = {
-      builder.addEdge(junctionOut, flow, sink)
-    }
+    def ~>(sink: UndefinedSink[Out]): Unit =
+      builder.addEdge(junction, flow, sink)
 
-    def ~>(sink: UndefinedSink[Out]): Unit = {
-      builder.addEdge(junctionOut, flow, sink)
-    }
+    def ~>(sink: Sink[Out]): Unit =
+      builder.addEdge(junction, flow, sink)
   }
 
   implicit class UndefinedSourceOps[In](val source: UndefinedSource[In]) extends AnyVal {
@@ -1363,23 +1370,26 @@ object FlowGraphImplicits {
       junctionIn.next
     }
 
+    def ~>(sink: UndefinedSink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(source, sink)
+
+    def ~>(sink: Sink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.addEdge(source, sink)
   }
 
   class UndefinedSourceNextStep[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
+    def ~>[T](otherFlow: Flow[Out, T]): UndefinedSourceNextStep[In, T] =
+      new UndefinedSourceNextStep(source, flow.via(otherFlow), builder)
+
     def ~>(junctionIn: JunctionInPort[Out]): JunctionOutPort[junctionIn.NextT] = {
       builder.addEdge(source, flow, junctionIn)
       junctionIn.next
     }
 
-    def ~>[T](otherFlow: Flow[Out, T])(implicit builder: FlowGraphBuilder): UndefinedSourceNextStep[In, T] =
-      new UndefinedSourceNextStep(source, flow.connect(otherFlow), builder)
-
-    def ~>(sink: Sink[Out]): Unit = {
+    def ~>(sink: UndefinedSink[Out]): Unit =
       builder.addEdge(source, flow, sink)
-    }
 
-    def ~>(sink: UndefinedSink[Out]): Unit = {
+    def ~>(sink: Sink[Out]): Unit =
       builder.addEdge(source, flow, sink)
-    }
   }
 }

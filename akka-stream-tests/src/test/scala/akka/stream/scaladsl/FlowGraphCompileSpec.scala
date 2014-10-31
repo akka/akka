@@ -222,15 +222,15 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
 
       FlowGraph(partial2) { b ⇒
-        b.attachSink(undefinedSink1, f1.connect(out1))
-        b.attachSink(UndefinedSink[String]("sink2"), f2.connect(out2))
+        b.attachSink(undefinedSink1, f1.to(out1))
+        b.attachSink(UndefinedSink[String]("sink2"), f2.to(out2))
       }.run()
 
       FlowGraph(partial1) { implicit b ⇒
         import FlowGraphImplicits._
-        b.attachSink(undefinedSink1, f1.connect(out1))
-        b.attachSource(undefinedSource1, Source(List("a", "b", "c")).connect(f1))
-        b.attachSource(undefinedSource2, Source(List("d", "e", "f")).connect(f2))
+        b.attachSink(undefinedSink1, f1.to(out1))
+        b.attachSource(undefinedSource1, Source(List("a", "b", "c")).via(f1))
+        b.attachSource(undefinedSource2, Source(List("d", "e", "f")).via(f2))
         bcast ~> f5 ~> out2
       }.run()
     }
@@ -363,10 +363,10 @@ class FlowGraphCompileSpec extends AkkaSpec {
         b.addEdge(in1, f1, out1)
       }.run()
       FlowGraph { b ⇒
-        b.addEdge(in1, f1, f2.connect(out1))
+        b.addEdge(in1, f1, f2.to(out1))
       }.run()
       FlowGraph { b ⇒
-        b.addEdge(in1.connect(f1), f2, out1)
+        b.addEdge(in1.via(f1), f2, out1)
       }.run()
       FlowGraph { implicit b ⇒
         import FlowGraphImplicits._
@@ -378,16 +378,79 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
       FlowGraph { implicit b ⇒
         import FlowGraphImplicits._
-        in1 ~> f1.connect(out1)
+        in1 ~> f1.to(out1)
       }.run()
       FlowGraph { implicit b ⇒
         import FlowGraphImplicits._
-        in1.connect(f1) ~> out1
+        in1.via(f1) ~> out1
       }.run()
       FlowGraph { implicit b ⇒
         import FlowGraphImplicits._
-        in1.connect(f1) ~> f2.connect(out1)
+        in1.via(f1) ~> f2.to(out1)
       }.run()
+    }
+
+    "build all combinations with implicits" when {
+
+      "Source is connected directly" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          Source.empty[Int] ~> Flow[Int]
+          Source.empty[Int] ~> Broadcast[Int]
+          Source.empty[Int] ~> Sink.ignore
+          Source.empty[Int] ~> UndefinedSink[Int]
+        }
+      }
+
+      "Source is connected through flow" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          Source.empty[Int] ~> Flow[Int] ~> Flow[Int]
+          Source.empty[Int] ~> Flow[Int] ~> Broadcast[Int]
+          Source.empty[Int] ~> Flow[Int] ~> Sink.ignore
+          Source.empty[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        }
+      }
+
+      "Junction is connected directly" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          Broadcast[Int] ~> Flow[Int]
+          Broadcast[Int] ~> Broadcast[Int]
+          Broadcast[Int] ~> Sink.ignore
+          Broadcast[Int] ~> UndefinedSink[Int]
+        }
+      }
+
+      "Junction is connected through flow" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          Broadcast[Int] ~> Flow[Int] ~> Flow[Int]
+          Broadcast[Int] ~> Flow[Int] ~> Broadcast[Int]
+          Broadcast[Int] ~> Flow[Int] ~> Sink.ignore
+          Broadcast[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        }
+      }
+
+      "UndefinedSource is connected directly" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          UndefinedSource[Int] ~> Flow[Int]
+          UndefinedSource[Int] ~> Broadcast[Int]
+          UndefinedSource[Int] ~> Sink.ignore
+          UndefinedSource[Int] ~> UndefinedSink[Int]
+        }
+      }
+
+      "UndefinedSource is connected through flow" in {
+        PartialFlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          UndefinedSource[Int] ~> Flow[Int] ~> Flow[Int]
+          UndefinedSource[Int] ~> Flow[Int] ~> Broadcast[Int]
+          UndefinedSource[Int] ~> Flow[Int] ~> Sink.ignore
+          UndefinedSource[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        }
+      }
     }
 
     "build partial with only undefined sources and sinks" in {

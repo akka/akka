@@ -20,14 +20,14 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
   override type Repr[+O] <: Flow[In, O]
 
   /**
-   * Transform this flow by appending the given processing steps.
+   * Transform this [[Flow]] by appending the given processing steps.
    */
-  def connect[T](flow: Flow[Out, T]): Flow[In, T]
+  def via[T](flow: Flow[Out, T]): Flow[In, T]
 
   /**
-   * Connect this flow to a sink, concatenating the processing steps of both.
+   * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def connect(sink: Sink[Out]): Sink[In]
+  def to(sink: Sink[Out]): Sink[In]
 
   /**
    *
@@ -36,7 +36,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * and `Publisher` of a [[PublisherSink]].
    */
   def runWith(source: KeyedSource[In], sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): (source.MaterializedType, sink.MaterializedType) = {
-    val m = source.connect(this).connect(sink).run()
+    val m = source.via(this).to(sink).run()
     (m.get(source), m.get(sink))
   }
 
@@ -46,7 +46,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * The returned value will contain the materialized value of the `KeyedSink`, e.g. `Publisher` of a [[PublisherSink]].
    */
   def runWith(source: Source[In], sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
-    source.connect(this).runWith(sink)
+    source.via(this).runWith(sink)
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
@@ -54,7 +54,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * The returned value will contain the materialized value of the `SourceWithKey`, e.g. `Subscriber` of a [[SubscriberSource]].
    */
   def runWith(source: KeyedSource[In], sink: Sink[Out])(implicit materializer: FlowMaterializer): source.MaterializedType =
-    source.connect(this).connect(sink).run().get(source)
+    source.via(this).to(sink).run().get(source)
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
@@ -62,7 +62,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * As both `Source` and `Sink` are "simple", no value is returned from this `runWith` overload.
    */
   def runWith(source: Source[In], sink: Sink[Out])(implicit materializer: FlowMaterializer): Unit =
-    source.connect(this).connect(sink).run()
+    source.via(this).to(sink).run()
 }
 
 object Flow {
@@ -101,7 +101,7 @@ trait RunnableFlow {
 }
 
 /**
- * Scala API: Operations offered by Flows and Sources with a free output side: the DSL flows left-to-right only.
+ * Scala API: Operations offered by Sources and Flows with a free output side: the DSL flows left-to-right only.
  */
 trait FlowOps[+Out] {
   import FlowOps._

@@ -39,7 +39,7 @@ object TestClient extends App {
 
   def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
     Source(List(HttpRequest() -> 'NoContext))
-      .connect(Sink(connection.requestSubscriber))
+      .to(Sink(connection.requestSubscriber))
       .run()
     Source(connection.responsePublisher).map(_._1).runWith(Sink.future)
   }

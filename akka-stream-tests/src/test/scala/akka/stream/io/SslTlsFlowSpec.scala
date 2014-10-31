@@ -120,7 +120,7 @@ class SslTlsFlowSpec extends AkkaSpec("akka.actor.default-mailbox.mailbox-type =
     val ssession = Await.result(ssessionf, duration)
     val sdata = ssession.data
     Source(sdata).map(bs ⇒ ByteString(bs.decodeString("utf-8").split('\n').head.toUpperCase + '\n')).
-      connect(Sink(scipher.plainTextOutbound)).run()
+      to(Sink(scipher.plainTextOutbound)).run()
   }
 
   def replyFirstLineInUpperCase(clientConnection: JavaSslConnection): Unit = {
@@ -129,7 +129,7 @@ class SslTlsFlowSpec extends AkkaSpec("akka.actor.default-mailbox.mailbox-type =
 
   def sendLineAndReceiveResponse(ccipher: SslTlsCipher, message: String): String = {
     val csessionf = Source(ccipher.sessionInbound).runWith(Sink.future)
-    Source(List(ByteString(message + '\n'))).connect(Sink(ccipher.plainTextOutbound)).run()
+    Source(List(ByteString(message + '\n'))).to(Sink(ccipher.plainTextOutbound)).run()
     val csession = Await.result(csessionf, duration)
     val cdata = csession.data
     Await.result(Source(cdata).map(_.decodeString("utf-8").split('\n').head).runWith(Sink.future), duration)

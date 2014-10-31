@@ -158,7 +158,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
         Source(List(1, 2, 3)) ~> Flow[Int].map(_ * 2) ~> bcast
         bcast ~> merge
         bcast ~> Flow[Int].map(_ + 3) ~> merge
-        merge ~> Flow[Int].grouped(10).connect(resultFuture)
+        merge ~> Flow[Int].grouped(10).to(resultFuture)
       }.run()
 
       Await.result(g.get(resultFuture), 3.seconds) should contain theSameElementsAs (Seq(2, 4, 6, 5, 7, 9))
@@ -194,8 +194,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val s2 = SubscriberProbe[String]
       FlowGraph(partial) { builder ⇒
         builder.attachSource(input1, Source(List(0, 1, 2).map(_ + 1)))
-        builder.attachSink(output1, Flow[Int].filter(n ⇒ (n % 2) != 0).connect(Sink(s1)))
-        builder.attachSink(output2, Flow[String].map(_.toUpperCase).connect(Sink(s2)))
+        builder.attachSink(output1, Flow[Int].filter(n ⇒ (n % 2) != 0).to(Sink(s1)))
+        builder.attachSink(output2, Flow[String].map(_.toUpperCase).to(Sink(s2)))
       }.run()
 
       val sub1 = s1.expectSubscription()
