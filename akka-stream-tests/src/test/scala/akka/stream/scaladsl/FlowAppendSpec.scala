@@ -17,26 +17,26 @@ class FlowAppendSpec extends AkkaSpec with River {
 
   "Flow" should {
     "append Flow" in riverOf[String] { subscriber ⇒
-      val flow = Flow[Int].connect(otherFlow)
-      Source(elements).connect(flow).connect(Sink(subscriber)).run()
+      val flow = Flow[Int].via(otherFlow)
+      Source(elements).via(flow).to(Sink(subscriber)).run()
     }
 
     "append Sink" in riverOf[String] { subscriber ⇒
-      val sink = Flow[Int].connect(otherFlow.connect(Sink(subscriber)))
-      Source(elements).connect(sink).run()
+      val sink = Flow[Int].to(otherFlow.to(Sink(subscriber)))
+      Source(elements).to(sink).run()
     }
   }
 
   "Source" should {
     "append Flow" in riverOf[String] { subscriber ⇒
       Source(elements)
-        .connect(otherFlow)
-        .connect(Sink(subscriber)).run()
+        .via(otherFlow)
+        .to(Sink(subscriber)).run()
     }
 
     "append Sink" in riverOf[String] { subscriber ⇒
       Source(elements)
-        .connect(otherFlow.connect(Sink(subscriber)))
+        .to(otherFlow.to(Sink(subscriber)))
         .run()
     }
   }
