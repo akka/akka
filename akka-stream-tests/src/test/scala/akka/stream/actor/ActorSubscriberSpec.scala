@@ -122,7 +122,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
     "remember requested after restart" in {
       // creating actor with default supervision, because stream supervisor default strategy is to stop
       val ref = system.actorOf(manualSubscriberProps(testActor))
-      Source(1 to 7).connect(Sink(ActorSubscriber[Int](ref))).run()
+      Source(1 to 7).to(Sink(ActorSubscriber[Int](ref))).run()
       ref ! "ready"
       expectMsg(OnNext(1))
       expectMsg(OnNext(2))

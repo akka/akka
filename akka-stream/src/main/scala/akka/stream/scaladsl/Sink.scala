@@ -18,14 +18,14 @@ trait Sink[-In] {
    * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
   def runWith(source: KeyedSource[In])(implicit materializer: FlowMaterializer): source.MaterializedType =
-    source.connect(this).run().get(source)
+    source.to(this).run().get(source)
 
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
   def runWith(source: Source[In])(implicit materializer: FlowMaterializer): Unit =
-    source.connect(this).run()
+    source.to(this).run()
 }
 
 object Sink {

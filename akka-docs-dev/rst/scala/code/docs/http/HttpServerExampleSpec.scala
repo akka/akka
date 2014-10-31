@@ -76,7 +76,7 @@ class HttpServerExampleSpec
           case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
             println("Accepted new connection from " + remoteAddress)
 
-            Source(requestProducer).map(requestHandler).connect(Sink(responseConsumer)).run()
+            Source(requestProducer).map(requestHandler).to(Sink(responseConsumer)).run()
         })
     }
     //#full-server-example

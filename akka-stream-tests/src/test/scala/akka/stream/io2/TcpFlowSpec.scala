@@ -48,9 +48,9 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       serverConnection.read(256)
-      Source(tcpPublisher).connect(Sink.ignore).run()
+      Source(tcpPublisher).to(Sink.ignore).run()
 
-      Source(testInput).connect(Sink(tcpSubscriber)).run()
+      Source(testInput).to(Sink(tcpSubscriber)).run()
       serverConnection.waitRead() should be(expectedOutput)
 
       server.close()
@@ -162,7 +162,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Source(testInput).connect(Sink(tcpSubscriber)).run()
+      Source(testInput).to(Sink(tcpSubscriber)).run()
       val resultFuture = Source(tcpPublisher).fold(ByteString.empty) { case (res, elem) ⇒ res ++ elem }
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
@@ -181,7 +181,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Source(testInput).connect(Sink(tcpSubscriber1)).run()
+      Source(testInput).to(Sink(tcpSubscriber1)).run()
       tcpPublisher1.subscribe(tcpSubscriber2)
       tcpPublisher2.subscribe(tcpSubscriber3)
       val resultFuture = Source(tcpPublisher3).fold(ByteString.empty) { case (res, elem) ⇒ res ++ elem }

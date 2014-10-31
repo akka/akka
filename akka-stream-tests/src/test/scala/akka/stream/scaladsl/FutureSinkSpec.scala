@@ -37,7 +37,7 @@ class FutureSinkSpec extends AkkaSpec with ScriptedTest {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f = Sink.future[Int]
       val s = Source.subscriber[Int]
-      val m = s.connect(f).run()
+      val m = s.to(f).run()
       p.subscribe(m.get(s))
       val proc = p.expectSubscription
       proc.expectRequest()

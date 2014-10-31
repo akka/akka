@@ -7,7 +7,14 @@ import akka.stream.impl.Ast.AstNode
 
 import scala.annotation.unchecked.uncheckedVariance
 
-private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Flow[In, Out] {
+private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
+  inPipe: Pipe[In, CIn],
+  in: UndefinedSource[CIn],
+  graph: PartialFlowGraph,
+  out: UndefinedSink[COut],
+  outPipe: Pipe[COut, Out])
+  extends Flow[In, Out] {
+
   override type Repr[+O] = GraphFlow[In @uncheckedVariance, CIn, COut, O]
 
   private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphFlow[T, CIn, COut, Out] = copy(inPipe = pipe.appendPipe(inPipe))
@@ -32,30 +39,30 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](inPipe: Pipe[In, CI
     builder.connect(nOut, outPipe, oIn)
   }
 
-  def connect[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
+  def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
     case gFlow: GraphFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
         val (oIn, oOut) = gFlow.remap(b)
-        b.connect(out, outPipe.connect(gFlow.inPipe), oIn)
+        b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
       }
       GraphFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
   }
 
-  override def connect(sink: Sink[Out]) = sink match {
+  override def to(sink: Sink[Out]) = sink match {
     case sinkPipe: SinkPipe[Out] ⇒
       val newGraph = PartialFlowGraph(this.graph) { builder ⇒
-        builder.attachSink(out, outPipe.connect(sinkPipe))
+        builder.attachSink(out, outPipe.to(sinkPipe))
       }
       GraphSink(inPipe, in, newGraph)
     case gSink: GraphSink[Out, Out] ⇒
       val newGraph = PartialFlowGraph(graph) { b ⇒
         val oIn = gSink.remap(b)
-        b.connect(out, outPipe.connect(gSink.inPipe), oIn)
+        b.connect(out, outPipe.via(gSink.inPipe), oIn)
       }
       GraphSink(inPipe, in, newGraph)
-    case sink: Sink[Out] ⇒ connect(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
+    case sink: Sink[Out] ⇒ to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
@@ -75,29 +82,29 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
     builder.connect(nOut, outPipe, oIn)
   }
 
-  override def connect[T](flow: Flow[Out, T]): Source[T] = flow match {
+  override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
     case gFlow: GraphFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
         val (oIn, oOut) = gFlow.remap(b)
-        b.connect(out, outPipe.connect(gFlow.inPipe), oIn)
+        b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
       }
       GraphSource(newGraph, nOut, gFlow.outPipe)
   }
 
-  override def connect(sink: Sink[Out]): RunnableFlow = sink match {
+  override def to(sink: Sink[Out]): RunnableFlow = sink match {
     case sinkPipe: SinkPipe[Out] ⇒
       FlowGraph(this.graph) { implicit builder ⇒
-        builder.attachSink(out, outPipe.connect(sinkPipe))
+        builder.attachSink(out, outPipe.to(sinkPipe))
       }
     case gSink: GraphSink[Out, _] ⇒
       FlowGraph(graph) { b ⇒
         val oIn = gSink.remap(b)
-        b.connect(out, outPipe.connect(gSink.inPipe), oIn)
+        b.connect(out, outPipe.via(gSink.inPipe), oIn)
       }
     case sink: Sink[Out] ⇒
-      connect(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
+      to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
@@ -113,7 +120,7 @@ private[scaladsl] case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in: Unde
 
   private[scaladsl] def prepend(pipe: SourcePipe[In]): FlowGraph = {
     FlowGraph(this.graph) { b ⇒
-      b.attachSource(in, pipe.connect(inPipe))
+      b.attachSource(in, pipe.via(inPipe))
     }
   }
 
