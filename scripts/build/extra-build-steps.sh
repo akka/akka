@@ -75,38 +75,4 @@ if [ $AKKA_BUILD_JAVA8_HOME ]; then
   java8_home="$AKKA_BUILD_JAVA8_HOME"
 fi
 
-# process options and set flags
-while true; do
-  case "$1" in
-    -h | --help ) usage; exit 1 ;;
-    --java_home ) java_home=$2; shift 2 ;;
-    --java8_home ) java8_home=$2; shift 2 ;;
-    * ) break ;;
-  esac
-done
-
-declare -r java_path="$java_home/bin/java"
-declare -r java8_path="$java8_home/bin/java"
-
-# check that java paths work
-check "$java_path"
-check "$java8_path"
-
-# check for a mvn command
-check mvn
-
-# now do some work
-mvncleantest "$java8_home" "akka-samples/akka-docs-java-lambda"
-
-mvncleantest "$java8_home" "akka-samples/akka-sample-fsm-java-lambda"
-
-mvncleantest "$java8_home" "akka-samples/akka-sample-persistence-java-lambda"
-
-mvncleantest "$java8_home" "akka-samples/akka-sample-supervision-java-lambda"
-
-sample_dir=akka-samples/akka-sample-main-java-lambda
-tmp="$script_dir/../../$sample_dir"
-try cd  "$tmp" "can't step into project directory: $tmp"
-export JAVA_HOME="$java8_home"
-try mvn clean compile exec:java -Dexec.mainClass="akka.Main" -Dexec.args="sample.hello.HelloWorld" "mvn execution in $sample_dir failed"
-try mvn exec:java -Dexec.mainClass="sample.hello.Main2" "mvn execution in $sample_dir failed"
+# FIXME resurrect extra tests before merging to release-2.3
