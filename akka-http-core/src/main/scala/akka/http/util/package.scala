@@ -8,13 +8,14 @@ import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import akka.stream.FlattenStrategy
+import akka.stream.{ FlowMaterializer, FlattenStrategy, Transformer }
 import akka.stream.scaladsl.{ Flow, Source }
+import scala.concurrent.Future
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.actor._
-import akka.stream.Transformer
+import scala.collection.immutable
 
 package object util {
   private[http] val UTF8 = Charset.forName("UTF8")
@@ -53,7 +54,7 @@ package object util {
         .flatten(FlattenStrategy.concat)
   }
 
-  private[http] implicit class SourceWithPrintEvent[T](val underlying: Source[T]) {
+  private[http] implicit class EnhancedSource[T](val underlying: Source[T]) {
     def printEvent(marker: String): Source[T] =
       underlying.transform("transform",
         () ⇒ new Transformer[T, T] {
@@ -66,6 +67,14 @@ package object util {
             Nil
           }
         })
+
+    /**
+     * Drain this stream into a Vector and provide it as a future value.
+     *
+     * FIXME: Should be part of akka-streams
+     */
+    def collectAll(implicit materializer: FlowMaterializer): Future[immutable.Seq[T]] =
+      underlying.fold(Vector.empty[T])(_ :+ _)
   }
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =

@@ -106,6 +106,13 @@ sealed trait ResponseEntity extends HttpEntity with japi.ResponseEntity {
 /* An entity that can be used for requests, responses, and body parts */
 sealed trait UniversalEntity extends japi.UniversalEntity with MessageEntity with BodyPartEntity {
   def withContentType(contentType: ContentType): UniversalEntity
+  def contentLength: Long
+
+  /**
+   * Transforms this' entities data bytes with a transformer that will produce exactly the number of bytes given as
+   * ``newContentLength``.
+   */
+  def transformDataBytes(newContentLength: Long, transformer: () ⇒ Transformer[ByteString, ByteString]): UniversalEntity
 }
 
 object HttpEntity {
@@ -141,6 +148,7 @@ object HttpEntity {
    */
   final case class Strict(contentType: ContentType, data: ByteString)
     extends japi.HttpEntityStrict with UniversalEntity {
+    def contentLength: Long = data.length
 
     def isKnownEmpty: Boolean = data.isEmpty
 
@@ -158,6 +166,12 @@ object HttpEntity {
         case NonFatal(ex) ⇒
           Chunked(contentType, Source.failed(ex))
       }
+    }
+    override def transformDataBytes(newContentLength: Long, transformer: () ⇒ Transformer[ByteString, ByteString]): UniversalEntity = {
+      val t = transformer()
+      val newData = (t.onNext(data) ++ t.onTermination(None)).join
+      assert(newData.length.toLong == newContentLength, s"Transformer didn't produce as much bytes (${newData.length}:'${newData.utf8String}') as claimed ($newContentLength)")
+      copy(data = newData)
     }
 
     def withContentType(contentType: ContentType): Strict =
@@ -185,6 +199,8 @@ object HttpEntity {
 
       HttpEntity.Chunked(contentType, chunks)
     }
+    override def transformDataBytes(newContentLength: Long, transformer: () ⇒ Transformer[ByteString, ByteString]): UniversalEntity =
+      Default(contentType, newContentLength, data.transform("transformDataBytes-with-new-length-Default", transformer))
 
     def withContentType(contentType: ContentType): Default =
       if (contentType == this.contentType) this else copy(contentType = contentType)

@@ -58,6 +58,46 @@ private[http] object StreamUtils {
       override def onError(cause: scala.Throwable): Unit = throw f(cause)
     }
 
+  def sliceBytesTransformer(start: Long, length: Long): Transformer[ByteString, ByteString] =
+    new Transformer[ByteString, ByteString] {
+      type State = Transformer[ByteString, ByteString]
+
+      def skipping = new State {
+        var toSkip = start
+        def onNext(element: ByteString): immutable.Seq[ByteString] =
+          if (element.length < toSkip) {
+            // keep skipping
+            toSkip -= element.length
+            Nil
+          } else {
+            become(taking(length))
+            // toSkip <= element.length <= Int.MaxValue
+            currentState.onNext(element.drop(toSkip.toInt))
+          }
+      }
+      def taking(initiallyRemaining: Long) = new State {
+        var remaining: Long = initiallyRemaining
+        def onNext(element: ByteString): immutable.Seq[ByteString] = {
+          val data = element.take(math.min(remaining, Int.MaxValue).toInt)
+          remaining -= data.size
+          if (remaining <= 0) become(finishing)
+          data :: Nil
+        }
+      }
+      def finishing = new State {
+        override def isComplete: Boolean = true
+        def onNext(element: ByteString): immutable.Seq[ByteString] =
+          throw new IllegalStateException("onNext called on complete stream")
+      }
+
+      var currentState: State = if (start > 0) skipping else taking(length)
+      def become(state: State): Unit = currentState = state
+
+      override def isComplete: Boolean = currentState.isComplete
+      def onNext(element: ByteString): immutable.Seq[ByteString] = currentState.onNext(element)
+      override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = currentState.onTermination(e)
+    }
+
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
     _.transformDataBytes(() ⇒ mapErrorTransformer(f))
 }
