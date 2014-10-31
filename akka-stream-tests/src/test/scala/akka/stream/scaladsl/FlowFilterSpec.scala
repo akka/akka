@@ -19,8 +19,8 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
   "A Filter" must {
 
     "filter" in {
-      def script = Script((1 to 50) map { _ ⇒ val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq()) }: _*)
-      (1 to 50) foreach (_ ⇒ runScript(script, settings)(_.filter(_ % 2 == 0)))
+      def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq()) }: _*)
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.filter(_ % 2 == 0)))
     }
 
     "not blow up with high request counts" in {
