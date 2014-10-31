@@ -136,22 +136,5 @@ class FlowIterableSpec extends AkkaSpec {
       got.size should be < (count - 1)
     }
 
-    "have value equality of publisher" in {
-      val p1 = Source(List(1, 2, 3)).runWith(Sink.publisher)
-      val p2 = Source(List(1, 2, 3)).runWith(Sink.publisher)
-      p1 should be(p2)
-      p2 should be(p1)
-      val p3 = Source(List(1, 2, 3, 4)).runWith(Sink.publisher)
-      p1 should not be (p3)
-      p3 should not be (p1)
-      val p4 = Source(Vector.empty[String]).runWith(Sink.publisher)
-      val p5 = Source(Set.empty[String]).runWith(Sink.publisher)
-      p1 should not be (p4)
-      p4 should be(p5)
-      p5 should be(p4)
-      val p6 = Source(List(1, 2, 3).iterator).runWith(Sink.publisher)
-      p1 should not be (p6)
-      p6 should not be (p1)
-    }
   }
 }
