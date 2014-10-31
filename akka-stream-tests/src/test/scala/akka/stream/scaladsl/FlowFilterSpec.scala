@@ -31,7 +31,7 @@ class FlowFilterSpec extends AkkaSpec with ScriptedTest {
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
       Source(Iterator.fill(1000)(0) ++ List(1)).filter(_ != 0).
-        connect(Sink(probe)).run()
+        to(Sink(probe)).run()
 
       val subscription = probe.expectSubscription()
       for (_ ← 1 to 10000) {

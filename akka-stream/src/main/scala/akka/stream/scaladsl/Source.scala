@@ -20,21 +20,21 @@ trait Source[+Out] extends FlowOps[Out] {
   override type Repr[+O] <: Source[O]
 
   /**
-   * Transform this source by appending the given processing stages.
+   * Transform this [[Source]] by appending the given processing stages.
    */
-  def connect[T](flow: Flow[Out, T]): Source[T]
+  def via[T](flow: Flow[Out, T]): Source[T]
 
   /**
-   * Connect this source to a sink, concatenating the processing steps of both.
+   * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def connect(sink: Sink[Out]): RunnableFlow
+  def to(sink: Sink[Out]): RunnableFlow
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[Sink.fanoutPublisher]].
    */
   def runWith(sink: KeyedSink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
-    connect(sink).run().get(sink)
+    to(sink).run().get(sink)
 
   /**
    * Shortcut for running this `Source` with a fold function.

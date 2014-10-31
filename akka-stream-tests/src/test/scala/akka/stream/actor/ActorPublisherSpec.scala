@@ -245,7 +245,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
 
       val mat = source.collect {
         case n if n % 2 == 0 ⇒ "elem-" + n
-      }.connect(sink).run()
+      }.to(sink).run()
 
       val snd = mat.get(source)
       val rcv = mat.get(sink)

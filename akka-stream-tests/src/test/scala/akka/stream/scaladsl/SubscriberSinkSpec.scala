@@ -20,7 +20,7 @@ class SubscriberSinkSpec extends AkkaSpec {
 
     "publish elements to the subscriber" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
-      Source(List(1, 2, 3)).connect(Sink(c)).run()
+      Source(List(1, 2, 3)).to(Sink(c)).run()
       val s = c.expectSubscription()
       s.request(3)
       c.expectNext(1)

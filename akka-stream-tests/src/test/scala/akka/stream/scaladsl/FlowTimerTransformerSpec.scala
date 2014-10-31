@@ -57,7 +57,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           }
           override def isComplete: Boolean = !isTimerActive("tick")
         }).
-        connect(Sink.ignore).run()
+        to(Sink.ignore).run()
       val pSub = p.expectSubscription()
       expectMsg("tick-1")
       expectMsg("tick-2")

@@ -109,7 +109,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind,
         nextPhase(runningPhase)
         listener ! ResumeAccepting(1)
         val publisher = ActorPublisher[IncomingTcpConnection](self)
-        val mf = Source(publisher).connect(connectionHandler).run()
+        val mf = Source(publisher).to(connectionHandler).run()
         val target = self
         requester ! StreamTcp.TcpServerBinding(localAddress)(mf, Some(new Closeable {
           override def close() = target ! Unbind

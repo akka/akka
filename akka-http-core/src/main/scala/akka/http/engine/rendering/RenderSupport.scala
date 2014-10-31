@@ -35,8 +35,8 @@ private object RenderSupport {
   // materializes
   private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleActorFlowSource[T] {
     override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
-      first.connect(Sink(flowSubscriber)).run()(materializer)
-      second.connect(Sink.cancelled).run()(materializer)
+      first.to(Sink(flowSubscriber)).run()(materializer)
+      second.to(Sink.cancelled).run()(materializer)
     }
   }
 

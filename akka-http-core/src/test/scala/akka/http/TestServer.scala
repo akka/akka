@@ -39,7 +39,7 @@ object TestServer extends App {
       Source(connectionStream).foreach {
         case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
           println("Accepted new connection from " + remoteAddress)
-          Source(requestPublisher).map(requestHandler).connect(Sink(responseSubscriber)).run()
+          Source(requestPublisher).map(requestHandler).to(Sink(responseSubscriber)).run()
       }
   }
 

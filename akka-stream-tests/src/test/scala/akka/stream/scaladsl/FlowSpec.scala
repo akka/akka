@@ -228,9 +228,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "subscribe Subscriber" in {
       val flow: Flow[String, String] = Flow[String]
       val c1 = StreamTestKit.SubscriberProbe[String]()
-      val sink: Sink[String] = flow.connect(Sink(c1))
+      val sink: Sink[String] = flow.to(Sink(c1))
       val publisher: Publisher[String] = Source(List("1", "2", "3")).runWith(Sink.publisher)
-      Source(publisher).connect(sink).run()
+      Source(publisher).to(sink).run()
 
       val sub1 = c1.expectSubscription
       sub1.request(3)
@@ -244,7 +244,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val flow = Flow[Int].map(i ⇒ { testActor ! i.toString; i.toString })
 
       val publisher = Source(List(1, 2, 3)).runWith(Sink.publisher)
-      Source(publisher).connect(flow).connect(Sink.ignore).run()
+      Source(publisher).via(flow).to(Sink.ignore).run()
 
       expectMsg("1")
       expectMsg("2")
@@ -254,9 +254,9 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     "perform transformation operation and subscribe Subscriber" in {
       val flow = Flow[Int].map(_.toString)
       val c1 = StreamTestKit.SubscriberProbe[String]()
-      val sink: Sink[Int] = flow.connect(Sink(c1))
+      val sink: Sink[Int] = flow.to(Sink(c1))
       val publisher: Publisher[Int] = Source(List(1, 2, 3)).runWith(Sink.publisher)
-      Source(publisher).connect(sink).run()
+      Source(publisher).to(sink).run()
 
       val sub1 = c1.expectSubscription
       sub1.request(3)

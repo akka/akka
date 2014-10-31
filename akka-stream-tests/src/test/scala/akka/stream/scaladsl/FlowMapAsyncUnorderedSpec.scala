@@ -27,7 +27,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val p = Source(1 to 4).mapAsyncUnordered(n ⇒ Future {
         Await.ready(latch(n), 5.seconds)
         n
-      }).connect(Sink(c)).run()
+      }).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(5)
       latch(2).countDown()
@@ -48,7 +48,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       val p = Source(1 to 20).mapAsyncUnordered(n ⇒ Future {
         probe.ref ! n
         n
-      }).connect(Sink(c)).run()
+      }).to(Sink(c)).run()
       val sub = c.expectSubscription()
       // nothing before requested
       probe.expectNoMsg(500.millis)
@@ -77,7 +77,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
           Await.ready(latch, 10.seconds)
           n
         }
-      }).connect(Sink(c)).run()
+      }).to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err1")
@@ -96,7 +96,7 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
             n
           }
         }).
-        connect(Sink(c)).run()
+        to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(10)
       c.expectError.getMessage should be("err2")

@@ -178,7 +178,7 @@ private[scaladsl] final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Un
         }
         Nil
       }
-    }).connect(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
 }
 
 /**
@@ -202,7 +202,7 @@ private[scaladsl] final case class ForeachSink[In](f: In ⇒ Unit) extends Keyed
         }
         Nil
       }
-    }).connect(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
     promise.future
   }
 }
@@ -232,7 +232,7 @@ private[scaladsl] final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) ex
         }
         Nil
       }
-    }).connect(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
 
     promise.future
   }

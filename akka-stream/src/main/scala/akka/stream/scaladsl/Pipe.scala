@@ -25,13 +25,13 @@ private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flo
 
   private[stream] def withSource(in: Source[In]): SourcePipe[Out] = SourcePipe(in, ops)
 
-  override def connect[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
+  override def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case p: Pipe[T, In]              ⇒ Pipe(p.ops ++: ops)
     case gf: GraphFlow[Out, _, _, T] ⇒ gf.prepend(this)
     case x                           ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
-  override def connect(sink: Sink[Out]): Sink[In] = sink match {
+  override def to(sink: Sink[Out]): Sink[In] = sink match {
     case sp: SinkPipe[Out]     ⇒ sp.prependPipe(this)
     case gs: GraphSink[Out, _] ⇒ gs.prepend(this)
     case d: Sink[Out]          ⇒ this.withSink(d)
@@ -49,7 +49,7 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
 
   private[stream] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
   override def runWith(source: Source[In])(implicit materializer: FlowMaterializer): Unit =
-    source.connect(this).run()
+    source.to(this).run()
 
 }
 
@@ -65,13 +65,13 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
 
   private[stream] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
 
-  override def connect[T](flow: Flow[Out, T]): Source[T] = flow match {
+  override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
     case p: Pipe[Out, T]            ⇒ appendPipe(p)
     case g: GraphFlow[Out, _, _, T] ⇒ g.prepend(this)
     case x                          ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
-  override def connect(sink: Sink[Out]): RunnableFlow = sink match {
+  override def to(sink: Sink[Out]): RunnableFlow = sink match {
     case sp: SinkPipe[Out]    ⇒ RunnablePipe(input, sp.output, sp.ops ++: ops)
     case g: GraphSink[Out, _] ⇒ g.prepend(this)
     case d: Sink[Out]         ⇒ this.withSink(d)

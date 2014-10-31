@@ -194,7 +194,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
           }
           override def cleanup() = cleanupProbe.ref ! s
         }).
-        connect(Sink.ignore).run()
+        to(Sink.ignore).run()
       cleanupProbe.expectMsg("a")
     }
 
@@ -365,7 +365,7 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
               case _ ⇒ Nil
             }
         }
-      }).connect(Sink(subscriber)).run()
+      }).to(Sink(subscriber)).run()
 
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
@@ -388,13 +388,13 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
         })
 
       val s1 = StreamTestKit.SubscriberProbe[Int]()
-      flow.connect(Sink(s1)).run()
+      flow.to(Sink(s1)).run()
       s1.expectSubscription().request(3)
       s1.expectNext(1, 2, 3)
       s1.expectComplete()
 
       val s2 = StreamTestKit.SubscriberProbe[Int]()
-      flow.connect(Sink(s2)).run()
+      flow.to(Sink(s2)).run()
       s2.expectSubscription().request(3)
       s2.expectNext(1, 2, 3)
       s2.expectComplete()

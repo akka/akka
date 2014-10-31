@@ -25,49 +25,49 @@ class FlowCompileSpec extends AkkaSpec {
       "open.run()" shouldNot compile
     }
     "accept Iterable" in {
-      val f: Source[Int] = intSeq.connect(Flow[Int])
+      val f: Source[Int] = intSeq.via(Flow[Int])
     }
     "accept Future" in {
-      val f: Source[Int] = intFut.connect(Flow[Int])
+      val f: Source[Int] = intFut.via(Flow[Int])
     }
     "append Flow" in {
       val open1: Flow[Int, String] = Flow[Int].map(_.toString)
       val open2: Flow[String, Int] = Flow[String].map(_.hashCode)
-      val open3: Flow[Int, Int] = open1.connect(open2)
+      val open3: Flow[Int, Int] = open1.via(open2)
       "open3.run()" shouldNot compile
 
-      val closedSource: Source[Int] = intSeq.connect(open3)
+      val closedSource: Source[Int] = intSeq.via(open3)
       "closedSource.run()" shouldNot compile
 
-      val closedSink: Sink[Int] = open3.connect(Sink.publisher[Int])
+      val closedSink: Sink[Int] = open3.to(Sink.publisher[Int])
       "closedSink.run()" shouldNot compile
 
-      closedSource.connect(Sink.publisher[Int]).run()
-      intSeq.connect(closedSink).run()
+      closedSource.to(Sink.publisher[Int]).run()
+      intSeq.to(closedSink).run()
     }
     "append Sink" in {
       val open: Flow[Int, String] = Flow[Int].map(_.toString)
-      val closedSink: Sink[String] = Flow[String].map(_.hashCode).connect(Sink.publisher[Int])
-      val appended: Sink[Int] = open.connect(closedSink)
+      val closedSink: Sink[String] = Flow[String].map(_.hashCode).to(Sink.publisher[Int])
+      val appended: Sink[Int] = open.to(closedSink)
       "appended.run()" shouldNot compile
       "appended.connect(Sink.future[Int])" shouldNot compile
-      intSeq.connect(appended).run
+      intSeq.to(appended).run
     }
     "be appended to Source" in {
       val open: Flow[Int, String] = Flow[Int].map(_.toString)
-      val closedSource: Source[Int] = strSeq.connect(Flow[String].map(_.hashCode))
-      val closedSource2: Source[String] = closedSource.connect(open)
+      val closedSource: Source[Int] = strSeq.via(Flow[String].map(_.hashCode))
+      val closedSource2: Source[String] = closedSource.via(open)
       "closedSource2.run()" shouldNot compile
       "strSeq.connect(closedSource2)" shouldNot compile
-      closedSource2.connect(Sink.publisher[String]).run
+      closedSource2.to(Sink.publisher[String]).run
     }
   }
 
   "Sink" should {
     val openSource: Sink[Int] =
-      Flow[Int].map(_.toString).connect(Sink.publisher[String])
+      Flow[Int].map(_.toString).to(Sink.publisher[String])
     "accept Source" in {
-      intSeq.connect(openSource)
+      intSeq.to(openSource)
     }
     "not accept Sink" in {
       "openSource.connect(Sink.future[String])" shouldNot compile
@@ -81,7 +81,7 @@ class FlowCompileSpec extends AkkaSpec {
     val openSource: Source[String] =
       Source(Seq(1, 2, 3)).map(_.toString)
     "accept Sink" in {
-      openSource.connect(Sink.publisher[String])
+      openSource.to(Sink.publisher[String])
     }
     "not be accepted by Source" in {
       "openSource.connect(intSeq)" shouldNot compile
@@ -94,7 +94,7 @@ class FlowCompileSpec extends AkkaSpec {
   "RunnableFlow" should {
     Sink.future[String]
     val closed: RunnableFlow =
-      Source(Seq(1, 2, 3)).map(_.toString).connect(Sink.publisher[String])
+      Source(Seq(1, 2, 3)).map(_.toString).to(Sink.publisher[String])
     "run" in {
       closed.run()
     }

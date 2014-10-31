@@ -223,9 +223,9 @@ trait TcpHelper { this: TestKitBase ⇒
 
   def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
     val foreachSink = Sink.foreach[IncomingTcpConnection] { conn ⇒
-      conn.inbound.connect(conn.outbound).run()
+      conn.inbound.to(conn.outbound).run()
     }
-    val binding = bind(Flow[IncomingTcpConnection].connect(foreachSink), serverAddress)
+    val binding = bind(Flow[IncomingTcpConnection].to(foreachSink), serverAddress)
     new EchoServer(binding.connection.get(foreachSink), binding)
   }
 }

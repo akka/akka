@@ -211,8 +211,8 @@ private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requeste
       connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
       tcpOutputs.setConnection(connection)
       tcpInputs.setConnection(connection)
-      val obmf = outbound.connect(Sink(processor)).run()
-      val ibmf = Source(processor).connect(inbound).run()
+      val obmf = outbound.to(Sink(processor)).run()
+      val ibmf = Source(processor).to(inbound).run()
       requester ! StreamTcp.OutgoingTcpConnection(remoteAddress, localAddress)(obmf, ibmf)
       context.become(super.receive)
     case f: CommandFailed ⇒

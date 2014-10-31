@@ -62,21 +62,17 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
   /** Converts this Flow to it's Scala DSL counterpart */
   def asScala: scaladsl.Flow[In, Out] = delegate
 
-  // CONNECT //
+  /**
+   * Transform this [[Flow]] by appending the given processing steps.
+   */
+  def via[T](flow: javadsl.Flow[Out, T]): javadsl.Flow[In, T] =
+    new Flow(delegate.via(flow.asScala))
 
   /**
-   * Transform this flow by appending the given processing steps.
+   * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def connect[T](flow: javadsl.Flow[Out, T]): javadsl.Flow[In, T] =
-    new Flow(delegate.connect(flow.asScala))
-
-  /**
-   * Connect this flow to a sink, concatenating the processing steps of both.
-   */
-  def connect(sink: javadsl.Sink[Out]): javadsl.Sink[In] =
-    new Sink(delegate.connect(sink.asScala))
-
-  // RUN WITH //
+  def to(sink: javadsl.Sink[Out]): javadsl.Sink[In] =
+    new Sink(delegate.to(sink.asScala))
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
@@ -119,8 +115,6 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    */
   def runWith(source: javadsl.Source[In], sink: javadsl.Sink[Out], materializer: FlowMaterializer): Unit =
     delegate.runWith(source.asScala, sink.asScala)(materializer)
-
-  // COMMON OPS //
 
   /**
    * Transform this stream by applying the given function to each of the elements
