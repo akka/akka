@@ -26,7 +26,7 @@ private[akka] object ActorProcessor {
 /**
  * INTERNAL API
  */
-private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl, None)
+private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
   with Processor[I, O] {
   override def onSubscribe(s: Subscription): Unit = impl ! OnSubscribe(s)
   override def onError(t: Throwable): Unit = impl ! OnError(t)

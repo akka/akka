@@ -172,21 +172,6 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
       probe.expectMsg("complete")
     }
 
-    "have value equality of publisher" in {
-      val p1 = SynchronousPublisherFromIterable(List(1, 2, 3))
-      val p2 = SynchronousPublisherFromIterable(List(1, 2, 3))
-      p1 should be(p2)
-      p2 should be(p1)
-      val p3 = SynchronousPublisherFromIterable(List(1, 2, 3, 4))
-      p1 should not be (p3)
-      p3 should not be (p1)
-      val p4 = SynchronousPublisherFromIterable(Vector.empty[String])
-      val p5 = SynchronousPublisherFromIterable(Set.empty[String])
-      p1 should not be (p4)
-      p4 should be(p5)
-      p5 should be(p4)
-    }
-
     "have nice toString" in {
       SynchronousPublisherFromIterable(List(1, 2, 3)).toString should be("SynchronousPublisherFromIterable(1, 2, 3)")
     }

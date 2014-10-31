@@ -133,7 +133,7 @@ private[scaladsl] final case class IterableSource[Out](iterable: immutable.Itera
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
     if (iterable.isEmpty) (EmptyPublisher[Out], ())
     else (ActorPublisher[Out](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
-      name = s"$flowName-0-iterable"), Some(iterable)), ())
+      name = s"$flowName-0-iterable")), ())
 }
 
 /**
@@ -167,12 +167,12 @@ private[scaladsl] final case class FutureSource[Out](future: Future[Out]) extend
     future.value match {
       case Some(Success(element)) ⇒
         (ActorPublisher[Out](materializer.actorOf(IterablePublisher.props(List(element), materializer.settings),
-          name = s"$flowName-0-future"), Some(future)), ())
+          name = s"$flowName-0-future")), ())
       case Some(Failure(t)) ⇒
         (ErrorPublisher(t).asInstanceOf[Publisher[Out]], ())
       case None ⇒
         (ActorPublisher[Out](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
-          name = s"$flowName-0-future"), Some(future)), ())
+          name = s"$flowName-0-future")), ())
     }
 }
 
