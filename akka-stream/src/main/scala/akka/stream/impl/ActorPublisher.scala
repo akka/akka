@@ -29,17 +29,13 @@ private[akka] object ActorPublisher {
   class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down spi.Publisher") with NoStackTrace
   val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
 
-  def apply[T](impl: ActorRef, equalityValue: Option[AnyRef] = None): ActorPublisher[T] = {
-    val a = new ActorPublisher[T](impl, equalityValue)
+  def apply[T](impl: ActorRef): ActorPublisher[T] = {
+    val a = new ActorPublisher[T](impl)
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(a.asInstanceOf[ActorPublisher[Any]])
     a
   }
 
-  def unapply(o: Any): Option[(ActorRef, Option[AnyRef])] = o match {
-    case other: ActorPublisher[_] ⇒ Some((other.impl, other.equalityValue))
-    case _                        ⇒ None
-  }
 }
 
 /**
@@ -48,10 +44,10 @@ private[akka] object ActorPublisher {
  * When you instantiate this class, or its subclasses, you MUST send an ExposedPublisher message to the wrapped
  * ActorRef! If you don't need to subclass, prefer the apply() method on the companion object which takes care of this.
  */
-private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Option[AnyRef]) extends Publisher[T] {
+private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
 
   // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
-  // The actor will call takePendingSubscribers to remove it from the list when it has received the 
+  // The actor will call takePendingSubscribers to remove it from the list when it has received the
   // SubscribePending message. The AtomicReference is set to null by the shutdown method, which is
   // called by the actor from postStop. Pending (unregistered) subscription attempts are denied by
   // the shutdown method. Subscription attempts after shutdown can be denied immediately.
@@ -97,15 +93,6 @@ private[akka] class ActorPublisher[T](val impl: ActorRef, val equalityValue: Opt
       case None    ⇒ subscriber.onComplete()
     }
 
-  override def equals(o: Any): Boolean = (equalityValue, o) match {
-    case (Some(v), ActorPublisher(_, Some(otherValue))) ⇒ v.equals(otherValue)
-    case _ ⇒ super.equals(o)
-  }
-
-  override def hashCode: Int = equalityValue match {
-    case Some(v) ⇒ v.hashCode
-    case None    ⇒ super.hashCode
-  }
 }
 
 /**

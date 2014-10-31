@@ -76,12 +76,5 @@ private[akka] class SynchronousPublisherFromIterable[T](private val iterable: im
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
     subscriber.onSubscribe(new IteratorSubscription(subscriber, iterable.iterator))
 
-  override def equals(o: Any): Boolean = o match {
-    case other: SynchronousPublisherFromIterable[T] ⇒ iterable == other.iterable
-    case _ ⇒ false
-  }
-
-  override def hashCode: Int = iterable.hashCode
-
   override def toString: String = s"SynchronousPublisherFromIterable(${iterable.mkString(", ")})"
 }

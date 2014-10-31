@@ -246,7 +246,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
               withDispatcher(settings.dispatcher), actorName)
         }
 
-        val publisher = new ActorPublisher[Out](impl, equalityValue = None)
+        val publisher = new ActorPublisher[Out](impl)
         impl ! ExposedPublisher(publisher.asInstanceOf[ActorPublisher[Any]])
         val subscribers = Vector.tabulate(inputCount)(FanIn.SubInput[In](impl, _))
         (subscribers, List(publisher))
@@ -261,7 +261,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
             actorOf(Unzip.props(settings).withDispatcher(settings.dispatcher), actorName)
         }
 
-        val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl, equalityValue = None) {
+        val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl) {
           override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
         })
         impl ! FanOut.ExposedPublishers(publishers.asInstanceOf[immutable.Seq[ActorPublisher[Any]]])
