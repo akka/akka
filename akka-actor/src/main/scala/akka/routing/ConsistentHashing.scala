@@ -260,7 +260,8 @@ final case class ConsistentHashingRoutingLogic(
  */
 @SerialVersionUID(1L)
 final case class ConsistentHashingPool(
-  override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
+  val nrOfInstances: Int,
+  override val resizer: Option[Resizer] = None,
   val virtualNodesFactor: Int = 0,
   val hashMapping: ConsistentHashingRouter.ConsistentHashMapping = ConsistentHashingRouter.emptyConsistentHashMapping,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
@@ -282,6 +283,8 @@ final case class ConsistentHashingPool(
 
   override def createRouter(system: ActorSystem): Router =
     new Router(ConsistentHashingRoutingLogic(system, virtualNodesFactor, hashMapping))
+
+  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.

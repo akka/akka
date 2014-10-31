@@ -128,7 +128,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
 @SerialVersionUID(1L)
 final case class AdaptiveLoadBalancingPool(
   metricsSelector: MetricsSelector = MixMetricsSelector,
-  override val nrOfInstances: Int = 0,
+  val nrOfInstances: Int = 0,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher: Boolean = false)
@@ -148,6 +148,8 @@ final case class AdaptiveLoadBalancingPool(
   def this(metricsSelector: MetricsSelector, nr: Int) = this(nrOfInstances = nr)
 
   override def resizer: Option[Resizer] = None
+
+  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
   override def createRouter(system: ActorSystem): Router =
     new Router(AdaptiveLoadBalancingRoutingLogic(system, metricsSelector))
