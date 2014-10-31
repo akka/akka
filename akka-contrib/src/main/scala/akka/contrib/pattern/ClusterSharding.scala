@@ -126,7 +126,7 @@ import akka.cluster.ClusterEvent.ClusterDomainEvent
  * actor the order of the messages is preserved. As long as the buffer limit is not reached
  * messages are delivered on a best effort basis, with at-most once delivery semantics,
  * in the same way as ordinary message sending. Reliable end-to-end messaging, with
- * at-least-once semantics can be added by using channels in `akka-persistence`.
+ * at-least-once semantics can be added by using `AtLeastOnceDelivery` in `akka-persistence`.
  *
  * Some additional latency is introduced for messages targeted to new or previously
  * unused shards due to the round-trip to the coordinator. Rebalancing of shards may
