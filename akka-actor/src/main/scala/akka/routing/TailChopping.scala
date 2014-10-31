@@ -120,7 +120,7 @@ private[akka] final case class TailChoppingRoutees(
  */
 @SerialVersionUID(1L)
 final case class TailChoppingPool(
-  override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
+  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   within: FiniteDuration,
   interval: FiniteDuration,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
@@ -149,6 +149,8 @@ final case class TailChoppingPool(
   override def createRouter(system: ActorSystem): Router =
     new Router(TailChoppingRoutingLogic(system.scheduler, within,
       interval, system.dispatchers.lookup(routerDispatcher)))
+
+  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.

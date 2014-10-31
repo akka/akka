@@ -59,7 +59,7 @@ final class RandomRoutingLogic extends RoutingLogic {
  */
 @SerialVersionUID(1L)
 final case class RandomPool(
-  override val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
+  val nrOfInstances: Int, override val resizer: Option[Resizer] = None,
   override val supervisorStrategy: SupervisorStrategy = Pool.defaultSupervisorStrategy,
   override val routerDispatcher: String = Dispatchers.DefaultDispatcherId,
   override val usePoolDispatcher: Boolean = false)
@@ -78,6 +78,8 @@ final case class RandomPool(
   def this(nr: Int) = this(nrOfInstances = nr)
 
   override def createRouter(system: ActorSystem): Router = new Router(RandomRoutingLogic())
+
+  override def nrOfInstances(sys: ActorSystem) = this.nrOfInstances
 
   /**
    * Setting the supervisor strategy to be used for the “head” Router actor.
