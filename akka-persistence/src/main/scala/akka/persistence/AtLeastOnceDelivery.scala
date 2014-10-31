@@ -284,15 +284,16 @@ trait AtLeastOnceDelivery extends Processor {
     super.aroundPostStop()
   }
 
+  override private[persistence] def onReplaySuccess(receive: Receive, awaitReplay: Boolean): Unit = {
+    super.onReplaySuccess(receive, awaitReplay)
+    redeliverOverdue()
+  }
+
   /**
    * INTERNAL API
    */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
     message match {
-      case ReplayMessagesSuccess ⇒
-        redeliverOverdue()
-        super.aroundReceive(receive, message)
-
       case RedeliveryTick ⇒
         redeliverOverdue()
 
