@@ -228,6 +228,23 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
+      "support `rawRequestUriHeader` setting" in new Test {
+        override protected def newParser: HttpRequestParser = new HttpRequestParser(parserSettings, rawRequestUriHeader = true)()
+
+        """GET /f%6f%6fbar?q=b%61z HTTP/1.1
+          |Host: ping
+          |Content-Type: application/pdf
+          |
+          |""" should parseTo(
+          HttpRequest(
+            GET,
+            "/foobar?q=baz",
+            List(
+              `Raw-Request-URI`("/f%6f%6fbar?q=b%61z"),
+              Host("ping")),
+            HttpEntity.empty(`application/pdf`)))
+      }
+
       "reject a message chunk with" - {
         val start =
           """PATCH /data HTTP/1.1
