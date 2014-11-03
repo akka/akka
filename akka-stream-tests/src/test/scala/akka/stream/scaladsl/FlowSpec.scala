@@ -309,6 +309,28 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       val d2: Flow[String, (Boolean, Source[Fruit])] = Flow[String].map(_ ⇒ new Apple).groupBy(_ ⇒ true)
       val d3: Flow[String, (immutable.Seq[Apple], Source[Fruit])] = Flow[String].map(_ ⇒ new Apple).prefixAndTail(1)
     }
+
+    "be able to concat with a Source" in {
+      val f1: Flow[Int, String] = Flow[Int].map(_.toString + "-s")
+      val s1: Source[Int] = Source(List(1, 2, 3))
+      val s2: Source[Int] = Source(List(4, 5, 6))
+
+      val subs = StreamTestKit.SubscriberProbe[String]()
+      val subSink = Sink.publisher[String]
+
+      val (_, res) = f1.concat(s2).runWith(s1, subSink)
+
+      res.subscribe(subs)
+      val sub = subs.expectSubscription()
+      sub.request(9)
+      subs.expectNext("1-s")
+      subs.expectNext("2-s")
+      subs.expectNext("3-s")
+      subs.expectNext("4-s")
+      subs.expectNext("5-s")
+      subs.expectNext("6-s")
+      subs.expectComplete()
+    }
   }
 
   "A Flow with multiple subscribers (FanOutBox)" must {
