@@ -40,6 +40,24 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
     (m.get(source), m.get(sink))
   }
 
+  /**
+   * Returns a new `Flow` that concatenates a secondary `Source` to this flow so that,
+   * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
+   */
+  def concat(second: Source[In]): Flow[In, Out] = {
+    Flow() { b ⇒
+      val concatter = Concat[Out]
+      val source = UndefinedSource[In]
+      val sink = UndefinedSink[Out]
+
+      b.addEdge(source, this, concatter.first)
+        .addEdge(second, this, concatter.second)
+        .addEdge(concatter.out, sink)
+
+      source → sink
+    }
+  }
+
 }
 
 object Flow {

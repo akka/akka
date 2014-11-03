@@ -369,6 +369,13 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
   def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Flow[In, U] =
     new Flow(delegate.flatten(strategy))
 
+  /**
+   * Returns a new `Flow` that concatenates a secondary `Source` to this flow so that,
+   * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
+   */
+  def concat(second: javadsl.Source[In]): javadsl.Flow[In, Out] =
+    new Flow(delegate.concat(second.asScala))
+
 }
 
 /**
