@@ -526,6 +526,63 @@ do not react to each other's deadlines or to the deadline set in an enclosing
 
 Here, the ``expectMsg`` call will use the default timeout.
 
+Testing parent-child relationships
+----------------------------------
+
+The parent of an actor is always the actor that created it. At times this leads to
+a coupling between the two that may not be straightforward to test. 
+Broadly, there are three approaches to improve testability of parent-child 
+relationships: 
+
+1. when creating a child, pass an explicit reference to its parent 
+2. when creating a parent, tell the parent how to create its child
+3. create a fabricated parent when testing
+
+For example, the structure of the code you want to test may follow this pattern: 
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-example
+
+Using dependency-injection
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The first option is to avoid use of the :meth:`context.parent` function and create 
+a child with a custom parent by passing an explicit reference to its parent instead.
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-dependentchild
+
+Alternatively, you can tell the parent how to create its child. There are two ways 
+to do this: by giving it a :class:`Props` object or by giving it a function which takes care of creating the child actor:
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-dependentparent
+
+Creating the :class:`Props` is straightforward and the function may look like this in your test code:
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#child-maker-test
+
+And like this in your application code:
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#child-maker-prod
+
+Using a fabricated parent
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you prefer to avoid modifying the parent or child constructor you can 
+create a fabricated parent in your test. This, however, does not enable you to test
+the parent actor in isolation.
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-fabricated-parent
+
+Which of these methods is the best depends on what is most important to test. The
+most generic option is to create the parent actor by passing it a function that is
+responsible for the Actor creation, but the fabricated parent is often sufficient.
+
+
+.. includecode:: code/docs/testkit/ParentChildSpec.scala#test-fabricated-parent
+
+Which of these methods is the best depends on what is most important to test. The 
+most generic option is to create the parent actor by passing it the partial function, 
+but the fabricated parent is often sufficient. 
+
 .. _Scala-CallingThreadDispatcher:
 
 CallingThreadDispatcher
