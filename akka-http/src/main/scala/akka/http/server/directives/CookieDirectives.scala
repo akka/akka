@@ -16,7 +16,7 @@ trait CookieDirectives {
 
   /**
    * Extracts an HttpCookie with the given name. If the cookie is not present the
-   * request is rejected with a respective [[spray.routing.MissingCookieRejection]].
+   * request is rejected with a respective [[MissingCookieRejection]].
    */
   def cookie(name: String): Directive1[HttpCookie] =
     headerValue(findCookie(name)) | reject(MissingCookieRejection(name))

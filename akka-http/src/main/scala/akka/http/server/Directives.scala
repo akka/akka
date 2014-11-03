@@ -9,6 +9,7 @@ import directives._
 // FIXME: the comments are kept as a reminder which directives are not yet imported
 
 trait Directives extends RouteConcatenation
+  with AuthenticationDirectives
   with BasicDirectives
   with CacheConditionDirectives
   //with ChunkingDirectives
@@ -30,6 +31,6 @@ trait Directives extends RouteConcatenation
   with RespondWithDirectives
   with RouteDirectives
   with SchemeDirectives
-//with SecurityDirectives
+  with SecurityDirectives
 
 object Directives extends Directives
