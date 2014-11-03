@@ -124,12 +124,12 @@ object FSM {
    * name, the state data, possibly custom timeout, stop reason and replies
    * accumulated while processing the last message.
    */
-  final case class State[S, D](stateName: S, stateData: D, timeout: Option[FiniteDuration] = None, stopReason: Option[Reason] = None, replies: List[Any] = Nil)(private[akka] val notifies: Boolean = true) {
+  final case class State[S, D](stateName: S, stateData: D, timeout: Duration = Duration.Inf, stopReason: Option[Reason] = None, replies: List[Any] = Nil)(private[akka] val notifies: Boolean = true) {
 
     /**
      * Copy object and update values if needed.
      */
-    private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Option[FiniteDuration] = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies): State[S, D] = {
+    private[akka] def copy(stateName: S = stateName, stateData: D = stateData, timeout: Duration = timeout, stopReason: Option[Reason] = stopReason, replies: List[Any] = replies, notifies: Boolean = notifies): State[S, D] = {
       State(stateName, stateData, timeout, stopReason, replies)(notifies)
     }
 
@@ -140,9 +140,8 @@ object FSM {
      *
      * Use Duration.Inf to deactivate an existing timeout.
      */
-    def forMax(timeout: Duration): State[S, D] = timeout match {
-      case f: FiniteDuration ⇒ copy(timeout = Some(f))
-      case _                 ⇒ copy(timeout = None)
+    def forMax(timeout: Duration): State[S, D] = {
+      copy(timeout = timeout)
     }
 
     /**
@@ -275,7 +274,6 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   type Event = FSM.Event[D]
   type StopEvent = FSM.StopEvent[S, D]
   type StateFunction = scala.PartialFunction[Event, State]
-  type Timeout = Option[FiniteDuration]
   type TransitionHandler = PartialFunction[(S, S), Unit]
 
   /*
@@ -311,8 +309,8 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param stateTimeout default state timeout for this state
    * @param stateFunction partial function describing response to input
    */
-  final def when(stateName: S, stateTimeout: Duration = null)(stateFunction: StateFunction): Unit =
-    register(stateName, stateFunction, Option(stateTimeout))
+  final def when(stateName: S, stateTimeout: Duration = Duration.Inf)(stateFunction: StateFunction): Unit =
+    register(stateName, stateFunction, stateTimeout)
 
   /**
    * Set initial state. Call this method from the constructor before the [[#initialize]] method.
@@ -323,7 +321,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * @param stateData initial state data
    * @param timeout state timeout for the initial state, overriding the default timeout for that state
    */
-  final def startWith(stateName: S, stateData: D, timeout: Timeout = None): Unit =
+  final def startWith(stateName: S, stateData: D, timeout: Duration = Duration.Inf): Unit =
     currentState = FSM.State(stateName, stateData, timeout)()
 
   /**
@@ -416,7 +414,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * Set state timeout explicitly. This method can safely be used from within a
    * state handler.
    */
-  final def setStateTimeout(state: S, timeout: Option[Duration]): Unit = stateTimeouts(state) = timeout
+  final def setStateTimeout(state: S, timeout: Duration): Unit = stateTimeouts(state) = timeout
 
   /**
    * INTERNAL API, used for testing.
@@ -529,12 +527,12 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
    * State definitions
    */
   private val stateFunctions = mutable.Map[S, StateFunction]()
-  private val stateTimeouts = mutable.Map[S, Option[Duration]]()
+  private val stateTimeouts = mutable.Map[S, Duration]()
 
-  private def register(name: S, function: StateFunction, timeout: Option[Duration]): Unit = {
+  private def register(name: S, function: StateFunction, timeout: Duration): Unit = {
     if (stateFunctions contains name) {
       stateFunctions(name) = stateFunctions(name) orElse function
-      stateTimeouts(name) = timeout orElse stateTimeouts(name)
+      stateTimeouts(name) = if (timeout.isFinite()) timeout else stateTimeouts(name)
     } else {
       stateFunctions(name) = function
       stateTimeouts(name) = timeout
@@ -649,14 +647,12 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
         this.nextState = null
       }
       currentState = nextState
-      val timeout = if (currentState.timeout.isDefined) currentState.timeout else stateTimeouts(currentState.stateName)
-      if (timeout.isDefined) {
-        val t = timeout.get
-        if (t.isFinite && t.length >= 0) {
-          import context.dispatcher
-          timeoutFuture = Some(context.system.scheduler.scheduleOnce(t, self, TimeoutMarker(generation)))
-        }
+      val timeout = if (currentState.timeout.isFinite()) currentState.timeout else stateTimeouts(currentState.stateName)
+      if (timeout.isFinite()) {
+        import context.dispatcher
+        timeoutFuture = Some(context.system.scheduler.scheduleOnce(timeout, self, TimeoutMarker(generation)))
       }
+
     }
   }
 
@@ -810,7 +806,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunction partial function describing response to input
    */
   final def when(stateName: S)(stateFunction: StateFunction): Unit =
-    when(stateName, null: FiniteDuration)(stateFunction)
+    when(stateName, Duration.Inf: FiniteDuration)(stateFunction)
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -820,7 +816,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateFunctionBuilder partial function builder describing response to input
    */
   final def when(stateName: S, stateFunctionBuilder: FSMStateFunctionBuilder[S, D]): Unit =
-    when(stateName, null, stateFunctionBuilder)
+    when(stateName, Duration.Inf, stateFunctionBuilder)
 
   /**
    * Insert a new StateFunction at the end of the processing chain for the
@@ -846,19 +842,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @param stateData initial state data
    */
   final def startWith(stateName: S, stateData: D): Unit =
-    startWith(stateName, stateData, null: FiniteDuration)
-
-  /**
-   * Set initial state. Call this method from the constructor before the [[#initialize]] method.
-   * If different state is needed after a restart this method, followed by [[#initialize]], can
-   * be used in the actor life cycle hooks [[akka.actor.Actor#preStart]] and [[akka.actor.Actor#postRestart]].
-   *
-   * @param stateName initial state designator
-   * @param stateData initial state data
-   * @param timeout state timeout for the initial state, overriding the default timeout for that state
-   */
-  final def startWith(stateName: S, stateData: D, timeout: FiniteDuration): Unit =
-    startWith(stateName, stateData, Option(timeout))
+    startWith(stateName, stateData, Duration.Inf)
 
   /**
    * Add a handler which is called upon each state transition, i.e. not when
