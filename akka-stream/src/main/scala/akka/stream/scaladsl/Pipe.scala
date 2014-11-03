@@ -48,8 +48,6 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
   private[stream] def withSource(in: Source[In]): RunnablePipe = RunnablePipe(in, output, ops)
 
   private[stream] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
-  override def runWith(source: Source[In])(implicit materializer: FlowMaterializer): Unit =
-    source.to(this).run()
 
 }
 
@@ -91,11 +89,19 @@ private[stream] final case class RunnablePipe(input: Source[_], output: Sink[_],
  * `Source` input or `Sink` output.
  */
 private[stream] class MaterializedPipe(sourceKey: AnyRef, matSource: Any, sinkKey: AnyRef, matSink: Any) extends MaterializedMap {
-  override def get(key: KeyedSource[_]): key.MaterializedType =
-    if (key == sourceKey) matSource.asInstanceOf[key.MaterializedType]
-    else throw new IllegalArgumentException(s"Source key [$key] doesn't match the source [$sourceKey] of this flow")
+  override def get(key: Source[_]): key.MaterializedType =
+    key match {
+      case _: KeyedSource[_] ⇒
+        if (key == sourceKey) matSource.asInstanceOf[key.MaterializedType]
+        else throw new IllegalArgumentException(s"Source key [$key] doesn't match the source [$sourceKey] of this flow")
+      case _ ⇒ ().asInstanceOf[key.MaterializedType]
+    }
 
-  override def get(key: KeyedSink[_]): key.MaterializedType =
-    if (key == sinkKey) matSink.asInstanceOf[key.MaterializedType]
-    else throw new IllegalArgumentException(s"Sink key [$key] doesn't match the sink [$sinkKey] of this flow")
+  override def get(key: Sink[_]): key.MaterializedType =
+    key match {
+      case _: KeyedSink[_] ⇒
+        if (key == sinkKey) matSink.asInstanceOf[key.MaterializedType]
+        else throw new IllegalArgumentException(s"Sink key [$key] doesn't match the sink [$sinkKey] of this flow")
+      case _ ⇒ ().asInstanceOf[key.MaterializedType]
+    }
 }

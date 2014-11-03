@@ -16,7 +16,6 @@ import akka.stream.impl.{ ActorBasedFlowMaterializer, ActorProcessorFactory, Fan
 import java.util.concurrent.atomic.AtomicReference
 
 sealed trait ActorFlowSink[-In] extends Sink[In] {
-  type MaterializedType
 
   /**
    * Attach this sink to the given [[org.reactivestreams.Publisher]]. Using the given
@@ -64,7 +63,7 @@ trait SimpleActorFlowSink[-In] extends ActorFlowSink[In] {
  */
 trait KeyedActorFlowSink[-In] extends ActorFlowSink[In] with KeyedSink[In]
 
-private[scaladsl] object PublisherSink {
+object PublisherSink {
   def apply[T](): PublisherSink[T] = new PublisherSink[T]
   def withFanout[T](initialBufferSize: Int, maximumBufferSize: Int): FanoutPublisherSink[T] =
     new FanoutPublisherSink[T](initialBufferSize, maximumBufferSize)
@@ -76,7 +75,7 @@ private[scaladsl] object PublisherSink {
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-private[scaladsl] class PublisherSink[In] extends KeyedActorFlowSink[In] {
+class PublisherSink[In] extends KeyedActorFlowSink[In] {
   type MaterializedType = Publisher[In]
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = flowPublisher
@@ -84,7 +83,7 @@ private[scaladsl] class PublisherSink[In] extends KeyedActorFlowSink[In] {
   override def toString: String = "PublisherSink"
 }
 
-private[scaladsl] final case class FanoutPublisherSink[In](initialBufferSize: Int, maximumBufferSize: Int) extends KeyedActorFlowSink[In] {
+final case class FanoutPublisherSink[In](initialBufferSize: Int, maximumBufferSize: Int) extends KeyedActorFlowSink[In] {
   type MaterializedType = Publisher[In]
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
@@ -96,7 +95,7 @@ private[scaladsl] final case class FanoutPublisherSink[In](initialBufferSize: In
   }
 }
 
-private[scaladsl] object FutureSink {
+object FutureSink {
   def apply[T](): FutureSink[T] = new FutureSink[T]
 }
 
@@ -107,7 +106,7 @@ private[scaladsl] object FutureSink {
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-private[scaladsl] class FutureSink[In] extends KeyedActorFlowSink[In] {
+class FutureSink[In] extends KeyedActorFlowSink[In] {
 
   type MaterializedType = Future[In]
 
@@ -138,7 +137,7 @@ private[scaladsl] class FutureSink[In] extends KeyedActorFlowSink[In] {
  * Attaches a subscriber to this stream which will just discard all received
  * elements.
  */
-private[scaladsl] final case object BlackholeSink extends SimpleActorFlowSink[Any] {
+final case object BlackholeSink extends SimpleActorFlowSink[Any] {
   override def attach(flowPublisher: Publisher[Any], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
     flowPublisher.subscribe(create(materializer, flowName)._1)
   override def isActive: Boolean = true
@@ -149,14 +148,14 @@ private[scaladsl] final case object BlackholeSink extends SimpleActorFlowSink[An
 /**
  * Attaches a subscriber to this stream.
  */
-private[scaladsl] final case class SubscriberSink[In](subscriber: Subscriber[In]) extends SimpleActorFlowSink[In] {
+final case class SubscriberSink[In](subscriber: Subscriber[In]) extends SimpleActorFlowSink[In] {
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) =
     flowPublisher.subscribe(subscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = (subscriber, ())
 }
 
-private[scaladsl] object OnCompleteSink {
+object OnCompleteSink {
   private val SuccessUnit = Success[Unit](())
 }
 
@@ -165,7 +164,7 @@ private[scaladsl] object OnCompleteSink {
  * completion, apply the provided function with [[scala.util.Success]]
  * or [[scala.util.Failure]].
  */
-private[scaladsl] final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends SimpleActorFlowSink[In] {
+final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends SimpleActorFlowSink[In] {
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) =
     Source(flowPublisher).transform("onCompleteSink", () ⇒ new Transformer[In, Unit] {
@@ -186,7 +185,7 @@ private[scaladsl] final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Un
  * that will be completed with `Success` when reaching the normal end of the stream, or completed
  * with `Failure` if there is an error is signaled in the stream.
  */
-private[scaladsl] final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In] {
+final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In] {
 
   override type MaterializedType = Future[Unit]
 
@@ -214,7 +213,7 @@ private[scaladsl] final case class ForeachSink[In](f: In ⇒ Unit) extends Keyed
  * function evaluation when the input stream ends, or completed with `Failure`
  * if there is an error is signaled in the stream.
  */
-private[scaladsl] final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFlowSink[In] {
+final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFlowSink[In] {
 
   type MaterializedType = Future[U]
 
@@ -241,7 +240,7 @@ private[scaladsl] final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) ex
 /**
  * A sink that immediately cancels its upstream upon materialization.
  */
-private[scaladsl] final case object CancelSink extends SimpleActorFlowSink[Any] {
+final case object CancelSink extends SimpleActorFlowSink[Any] {
 
   override def attach(flowPublisher: Publisher[Any], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
     flowPublisher.subscribe(new Subscriber[Any] {
@@ -257,7 +256,7 @@ private[scaladsl] final case object CancelSink extends SimpleActorFlowSink[Any] 
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-private[scaladsl] final case class PropsSink[In](props: Props) extends KeyedActorFlowSink[In] {
+final case class PropsSink[In](props: Props) extends KeyedActorFlowSink[In] {
 
   type MaterializedType = ActorRef
 
