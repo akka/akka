@@ -9,6 +9,8 @@ import java.io._
 import akka.actor._
 import akka.serialization.{ Serializer, SerializationExtension }
 import akka.serialization.Serialization
+import scala.util.Success
+import scala.util.Failure
 
 /**
  * Wrapper for snapshot `data`. Snapshot `data` are the actual snapshot objects captured by
@@ -59,11 +61,12 @@ class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
       val extension = SerializationExtension(system)
 
       val snapshotSerializer = extension.findSerializerFor(snapshot)
-      val snapshotManifest = if (snapshotSerializer.includeManifest) Some(snapshot.getClass.getName) else None
 
-      val header = SnapshotHeader(snapshotSerializer.identifier, snapshotManifest)
-      val headerSerializer = extension.findSerializerFor(header)
-      val headerBytes = headerSerializer.toBinary(header)
+      val headerOut = new ByteArrayOutputStream
+      writeInt(headerOut, snapshotSerializer.identifier)
+      if (snapshotSerializer.includeManifest)
+        headerOut.write(snapshot.getClass.getName.getBytes("utf-8"))
+      val headerBytes = headerOut.toByteArray
 
       val out = new ByteArrayOutputStream
 
@@ -74,7 +77,7 @@ class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
       out.toByteArray
     }
 
-    // serialize actor references with full address information (defaultAddress) 
+    // serialize actor references with full address information (defaultAddress)
     transportInformation match {
       case Some(ti) ⇒ Serialization.currentTransportInformation.withValue(ti) { serialize() }
       case None     ⇒ serialize()
@@ -88,7 +91,25 @@ class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
     val headerBytes = bytes.slice(4, headerLength + 4)
     val snapshotBytes = bytes.drop(headerLength + 4)
 
-    val header = extension.deserialize(headerBytes, classOf[SnapshotHeader]).get
+    // If we are allowed to break serialization compatibility of stored snapshots in 2.4
+    // we can remove this attempt of deserialize SnapshotHeader with JavaSerializer.
+    // Then the class SnapshotHeader can be removed. See isseue #16009
+    val header = extension.deserialize(headerBytes, classOf[SnapshotHeader]) match {
+      case Success(header) ⇒
+        header
+      case Failure(_) ⇒
+        val headerIn = new ByteArrayInputStream(headerBytes)
+        val serializerId = readInt(headerIn)
+        val remaining = headerIn.available
+        val manifest =
+          if (remaining == 0) None
+          else {
+            val manifestBytes = Array.ofDim[Byte](remaining)
+            headerIn.read(manifestBytes)
+            Some(new String(manifestBytes, "utf-8"))
+          }
+        SnapshotHeader(serializerId, manifest)
+    }
     val manifest = header.manifest.map(system.dynamicAccess.getClassFor[AnyRef](_).get)
 
     extension.deserialize[AnyRef](snapshotBytes, header.serializerId, manifest).get
