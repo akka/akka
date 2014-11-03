@@ -3,14 +3,13 @@ package akka.stream.actor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
+import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Source;
-import akka.stream.FlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 
@@ -38,7 +37,7 @@ public class ActorPublisherTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final MaterializerSettings settings = new MaterializerSettings(2, 4, 2, 4, "akka.test.stream-dispatcher");
+  final MaterializerSettings settings = MaterializerSettings.create(system);
   final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test

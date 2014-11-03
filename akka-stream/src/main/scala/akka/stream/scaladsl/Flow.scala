@@ -379,7 +379,6 @@ trait FlowOps[+Out] {
    */
   def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): Repr[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
-    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll) // TODO remove duality here?
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }

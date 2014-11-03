@@ -7,7 +7,10 @@ import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
 import akka.japi.Pair;
 import akka.japi.Util;
-import akka.stream.*;
+import akka.stream.FlowMaterializer;
+import akka.stream.MaterializerSettings;
+import akka.stream.OverflowStrategy;
+import akka.stream.Transformer;
 import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
@@ -37,7 +40,7 @@ public class FlowTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final MaterializerSettings settings = new MaterializerSettings(2, 4, 2, 4, "akka.test.stream-dispatcher");
+  final MaterializerSettings settings = MaterializerSettings.create(system);
   final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test

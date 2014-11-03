@@ -4,16 +4,25 @@
 
 package akka.stream.io
 
-import akka.actor.{ ActorLogging, ActorRefFactory, Actor, ActorRef }
-import akka.stream.impl._
-import akka.util.{ ByteStringBuilder, ByteString }
 import java.nio.ByteBuffer
-import java.security.cert.Certificate
 import java.security.Principal
+import java.security.cert.Certificate
 import javax.net.ssl.SSLEngineResult.HandshakeStatus._
 import javax.net.ssl.SSLEngineResult.Status._
-import javax.net.ssl.{ SSLEngineResult, SSLPeerUnverifiedException, SSLSession, SSLEngine }
-import org.reactivestreams.{ Subscription, Publisher, Subscriber }
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLEngineResult
+import javax.net.ssl.SSLPeerUnverifiedException
+import javax.net.ssl.SSLSession
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.stream.MaterializerSettings
+import akka.stream.impl._
+import akka.util.ByteString
+import akka.util.ByteStringBuilder
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 import scala.annotation.tailrec
 
@@ -88,11 +97,13 @@ class SslTlsCipherActor(val requester: ActorRef, val sessionNegotioation: SslTls
   with MultiStreamOutputProcessorLike
   with MultiStreamInputProcessorLike {
 
+  override val subscriptionTimeoutSettings = MaterializerSettings(context.system).subscriptionTimeoutSettings
+
   def this(requester: ActorRef, sessionNegotioation: SslTlsCipher.SessionNegotiation) =
     this(requester, sessionNegotioation, false)
 
-  import SslTlsCipherActor._
   import MultiStreamInputProcessor.SubstreamSubscriber
+  import SslTlsCipherActor._
 
   private var _nextId = 0L
   protected def nextId(): Long = { _nextId += 1; _nextId }

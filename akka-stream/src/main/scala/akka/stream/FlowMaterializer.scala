@@ -3,13 +3,25 @@
  */
 package akka.stream
 
+import java.util.Locale
+import java.util.concurrent.TimeUnit
+
+import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.impl.Ast
+import akka.stream.impl.FlowNameCounter
+import akka.stream.impl.StreamSupervisor
+
 import scala.collection.immutable
 
-import akka.actor.{ ActorContext, ActorRefFactory, ActorSystem, ExtendedActorSystem }
-import akka.stream.impl.{ ActorBasedFlowMaterializer, Ast, FlowNameCounter, StreamSupervisor }
+import akka.actor.ActorContext
+import akka.actor.ActorRefFactory
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import com.typesafe.config.Config
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
+import scala.concurrent.duration._
 
 object FlowMaterializer {
 
@@ -171,7 +183,8 @@ object MaterializerSettings {
       config.getInt("max-input-buffer-size"),
       config.getInt("initial-fan-out-buffer-size"),
       config.getInt("max-fan-out-buffer-size"),
-      config.getString("dispatcher"))
+      config.getString("dispatcher"),
+      StreamSubscriptionTimeoutSettings(config))
 
   /**
    * Java API
@@ -209,7 +222,8 @@ final case class MaterializerSettings(
   maxInputBufferSize: Int,
   initialFanOutBufferSize: Int,
   maxFanOutBufferSize: Int,
-  dispatcher: String) {
+  dispatcher: String,
+  subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -234,3 +248,36 @@ final case class MaterializerSettings(
 
   private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0
 }
+
+object StreamSubscriptionTimeoutSettings {
+
+  /** Java API */
+  def create(config: Config): StreamSubscriptionTimeoutSettings =
+    apply(config)
+
+  def apply(config: Config): StreamSubscriptionTimeoutSettings = {
+    val c = config.getConfig("subscription-timeout")
+    StreamSubscriptionTimeoutSettings(
+      mode = c.getString("mode").toLowerCase(Locale.ROOT) match {
+        case "no" | "off" | "false" | "noop" ⇒ NoopTermination
+        case "warn"                          ⇒ WarnTermination
+        case "cancel"                        ⇒ CancelTermination
+      },
+      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis,
+      dispatcher = c.getString("dispatcher"))
+  }
+}
+final case class StreamSubscriptionTimeoutSettings(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration, dispatcher: String)
+
+sealed abstract class StreamSubscriptionTimeoutTerminationMode
+object StreamSubscriptionTimeoutTerminationMode {
+  /** Java API */
+  def noop = NoopTermination
+  /** Java API */
+  def warn = WarnTermination
+  /** Java API */
+  def cancel = CancelTermination
+}
+case object NoopTermination extends StreamSubscriptionTimeoutTerminationMode
+case object WarnTermination extends StreamSubscriptionTimeoutTerminationMode
+case object CancelTermination extends StreamSubscriptionTimeoutTerminationMode
