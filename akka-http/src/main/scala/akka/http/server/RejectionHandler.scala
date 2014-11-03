@@ -31,14 +31,23 @@ object RejectionHandler {
   def default(implicit ec: ExecutionContext) = apply(default = true) {
     case Nil ⇒ complete(NotFound, "The requested resource could not be found.")
 
-    case AuthenticationFailedRejection(cause, challengeHeaders) +: _ ⇒
+    case rejections @ (AuthenticationFailedRejection(cause, _) +: _) ⇒
       val rejectionMessage = cause match {
         case CredentialsMissing  ⇒ "The resource requires authentication, which was not supplied with the request"
         case CredentialsRejected ⇒ "The supplied authentication is invalid"
       }
-      ctx ⇒ ctx.complete(Unauthorized, challengeHeaders, rejectionMessage)
+      val challenges = rejections.collect { case AuthenticationFailedRejection(_, challenge) ⇒ challenge }
+      // Multiple challenges per WWW-Authenticate header are allowed per spec,
+      // however, it seems many browsers will ignore all challenges but the first.
+      // Therefore, multiple WWW-Authenticate headers are rendered, instead.
+      //
+      // See https://code.google.com/p/chromium/issues/detail?id=103220
+      // and https://bugzilla.mozilla.org/show_bug.cgi?id=669675
+      val authenticateHeaders = challenges.map(`WWW-Authenticate`(_))
 
-      case AuthorizationFailedRejection +: _ ⇒
+      complete(Unauthorized, authenticateHeaders, rejectionMessage)
+
+    case AuthorizationFailedRejection +: _ ⇒
       complete(Forbidden, "The supplied authentication is not authorized to access this resource")
 
     case MalformedFormFieldRejection(name, msg, _) +: _ ⇒
