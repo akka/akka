@@ -13,7 +13,7 @@ trait Directives extends RouteConcatenation
   with CacheConditionDirectives
   //with ChunkingDirectives
   with CookieDirectives
-  //with DebuggingDirectives
+  with DebuggingDirectives
   with CodingDirectives
   with ExecutionDirectives
   //with FileAndResourceDirectives
