@@ -32,7 +32,7 @@ object Flow {
    * Creates a `Flow` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def apply[I, O](block: japi.Function[FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
+  def create[I, O](block: japi.Function[FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
     val sFlow = scaladsl.Flow() { b ⇒
       val pair = block.apply(b.asJava)
       pair.first.asScala → pair.second.asScala
@@ -51,6 +51,12 @@ object Flow {
     }
     new Flow[I, O](sFlow)
   }
+
+  /**
+   * TODO:ban comment
+   */
+  def create[I, O](sink: javadsl.Sink[I], source: javadsl.Source[O]): Flow[I, O] =
+    new Flow(scaladsl.Flow(sink.asScala, source.asScala))
 
 }
 
@@ -73,6 +79,12 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    */
   def to(sink: javadsl.Sink[Out]): javadsl.Sink[In] =
     new Sink(delegate.to(sink.asScala))
+
+  /**
+   * TODO: ban comments
+   */
+  def join(flow: javadsl.Flow[Out, In]): javadsl.RunnableFlow =
+    new RunnableFlowAdapter(delegate.join(flow.asScala))
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.

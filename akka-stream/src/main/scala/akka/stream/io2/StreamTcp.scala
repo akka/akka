@@ -34,8 +34,7 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
   }
 
   final case class IncomingTcpConnection(remoteAddress: InetSocketAddress,
-                                         outbound: Sink[ByteString],
-                                         inbound: Source[ByteString])
+                                         flow: Flow[ByteString, ByteString])
 
   /**
    * The Connect message is sent to the StreamTcp manager actor, which is obtained via
