@@ -42,7 +42,7 @@ class FlowConcatAllSpec extends AkkaSpec {
 
     "work together with SplitWhen" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Source((1 to 10).iterator).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).to(Sink(subscriber)).run()
+      Source((1 to 10).iterator).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).runWith(Sink(subscriber))
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
       subscriber.probe.receiveN(10) should be((1 to 10).map(StreamTestKit.OnNext(_)))
