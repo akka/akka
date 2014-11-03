@@ -168,10 +168,10 @@ object Source {
   def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
 
   /**
-   * Create a `Source` with no elements, i.e. an empty stream that is completed immediately
-   * for every connected `Sink`.
+   * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
-  def empty[T](): Source[T] = apply(EmptyPublisher[T])
+  def empty[T](): Source[T] = _empty
+  private[this] val _empty: Source[Nothing] = apply(EmptyPublisher)
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
