@@ -357,7 +357,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
   def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Source[S] =
-    new Source(delegate.conflate(seed.apply, aggregate.apply))
+    new Source(delegate.conflate(seed.apply)(aggregate.apply))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older

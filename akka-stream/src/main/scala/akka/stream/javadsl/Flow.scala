@@ -240,7 +240,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
   def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Flow[In, S] =
-    new Flow(delegate.conflate(seed.apply, aggregate.apply))
+    new Flow(delegate.conflate(seed.apply)(aggregate.apply))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
