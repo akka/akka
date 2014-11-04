@@ -105,6 +105,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               render(x)
               renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen = true, transferEncodingSeen)
 
+            case x: CustomHeader ⇒
+              if (!x.suppressRendering) render(x)
+              renderHeaders(tail, alwaysClose, connHeader, serverHeaderSeen, transferEncodingSeen)
+
             case x: RawHeader if (x is "content-type") || (x is "content-length") || (x is "transfer-encoding") ||
               (x is "date") || (x is "server") || (x is "connection") ⇒
               suppressionWarning(log, x, "illegal RawHeader")
