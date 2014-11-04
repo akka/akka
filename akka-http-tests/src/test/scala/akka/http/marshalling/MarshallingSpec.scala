@@ -4,9 +4,10 @@
 
 package akka.http.marshalling
 
+import akka.http.testkit.MarshallingTestUtils
+import akka.http.marshallers.xml.ScalaXmlSupport._
+
 import scala.collection.immutable.ListMap
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
@@ -17,7 +18,7 @@ import headers._
 import HttpCharsets._
 import MediaTypes._
 
-class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers {
+class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers with MarshallingTestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = FlowMaterializer()
   import system.dispatcher
@@ -28,10 +29,6 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
     }
     "CharArrayMarshaller should marshal char arrays to `text/plain` content in UTF-8" in {
       marshal("Ha“llo".toCharArray) shouldEqual HttpEntity("Ha“llo")
-    }
-    "NodeSeqMarshaller should marshal xml snippets to `text/xml` content in UTF-8" in {
-      marshal(<employee><nr>Ha“llo</nr></employee>) shouldEqual
-        HttpEntity(ContentType(`text/xml`, `UTF-8`), "<employee><nr>Ha“llo</nr></employee>")
     }
     "FormDataMarshaller should marshal FormData instances to application/x-www-form-urlencoded content" in {
       marshal(FormData(Map("name" -> "Bob", "pass" -> "hällo", "admin" -> ""))) shouldEqual
@@ -144,9 +141,6 @@ class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with
   }
 
   override def afterAll() = system.shutdown()
-
-  def marshal[T: ToEntityMarshallers](value: T): HttpEntity.Strict =
-    Await.result(Await.result(Marshal(value).to[HttpEntity], 1.second).toStrict(1.second), 1.second)
 
   protected class FixedRandom extends java.util.Random {
     override def nextBytes(array: Array[Byte]): Unit = "my-stable-boundary".getBytes("UTF-8").copyToArray(array)

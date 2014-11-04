@@ -7,6 +7,7 @@ package akka.http.server.directives
 import org.scalatest.FreeSpec
 
 import scala.concurrent.Promise
+import akka.http.marshallers.xml.ScalaXmlSupport._
 import akka.http.marshalling._
 import akka.http.server._
 import akka.http.model._

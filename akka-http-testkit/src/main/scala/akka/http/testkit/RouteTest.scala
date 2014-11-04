@@ -10,7 +10,6 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
-import org.scalatest.Suite
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
 import akka.http.client.RequestBuilding
@@ -21,7 +20,7 @@ import akka.http.model._
 import headers.Host
 import FastFuture._
 
-trait RouteTest extends RequestBuilding with RouteTestResultComponent {
+trait RouteTest extends RequestBuilding with RouteTestResultComponent with MarshallingTestUtils {
   this: TestFrameworkInterface ⇒
 
   /** Override to supply a custom ActorSystem */
@@ -141,7 +140,5 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent {
       }
   }
 }
-
-trait ScalatestRouteTest extends RouteTest with TestFrameworkInterface.Scalatest { this: Suite ⇒ }
 
 //FIXME: trait Specs2RouteTest extends RouteTest with Specs2Interface

@@ -6,7 +6,6 @@ package akka.http.marshalling
 
 import java.nio.CharBuffer
 import scala.concurrent.ExecutionContext
-import scala.xml.NodeSeq
 import akka.http.model.parser.CharacterClasses
 import akka.http.model.MediaTypes._
 import akka.http.model._
@@ -52,9 +51,6 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
   implicit val StringMarshaller: ToEntityMarshaller[String] = stringMarshaller(`text/plain`)
   def stringMarshaller(mediaType: MediaType): ToEntityMarshaller[String] =
     Marshaller.withOpenCharset(mediaType) { (s, cs) ⇒ HttpEntity(ContentType(mediaType, cs), s) }
-
-  implicit def nodeSeqMarshaller(mediaType: MediaType)(implicit ec: ExecutionContext): ToEntityMarshaller[NodeSeq] =
-    StringMarshaller.wrap(mediaType)(_.toString())
 
   implicit val FormDataMarshaller: ToEntityMarshaller[FormData] =
     Marshaller.withOpenCharset(`application/x-www-form-urlencoded`) { (formData, charset) ⇒

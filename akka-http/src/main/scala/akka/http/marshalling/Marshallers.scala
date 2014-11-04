@@ -7,11 +7,9 @@ package akka.http.marshalling
 import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.util.control.NonFatal
-import scala.xml.NodeSeq
 import akka.http.util.FastFuture
 import akka.http.model._
 import FastFuture._
-import MediaTypes._
 
 case class Marshallers[-A, +B](marshallers: immutable.Seq[Marshaller[A, B]]) {
   require(marshallers.nonEmpty, "marshallers must be non-empty")
@@ -22,13 +20,8 @@ case class Marshallers[-A, +B](marshallers: immutable.Seq[Marshaller[A, B]]) {
 object Marshallers extends SingleMarshallerMarshallers {
   def apply[A, B](m: Marshaller[A, B]): Marshallers[A, B] = apply(m :: Nil)
   def apply[A, B](first: Marshaller[A, B], more: Marshaller[A, B]*): Marshallers[A, B] = apply(first +: more.toVector)
-  def apply[A, B](first: MediaType, more: MediaType*)(f: MediaType ⇒ Marshaller[A, B]): Marshallers[A, B] = {
-    val vector: Vector[Marshaller[A, B]] = more.map(f)(collection.breakOut)
-    Marshallers(f(first) +: vector)
-  }
-
-  implicit def nodeSeqMarshallers(implicit ec: ExecutionContext): ToEntityMarshallers[NodeSeq] =
-    Marshallers(`text/xml`, `application/xml`, `text/html`, `application/xhtml+xml`)(PredefinedToEntityMarshallers.nodeSeqMarshaller)
+  def apply[A, B](mediaTypes: MediaType*)(f: MediaType ⇒ Marshaller[A, B]): Marshallers[A, B] =
+    Marshallers(mediaTypes.map(f)(collection.breakOut))
 
   implicit def entity2response[T](implicit m: Marshallers[T, ResponseEntity], ec: ExecutionContext): Marshallers[T, HttpResponse] =
     m map (entity ⇒ HttpResponse(entity = entity))
