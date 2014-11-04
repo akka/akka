@@ -393,7 +393,7 @@ object AkkaBuild extends Build {
   lazy val httpTests = Project(
     id = "akka-http-tests-experimental",
     base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit, httpXml),
+    dependencies = Seq(httpTestkit, httpSprayJson, httpXml),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
@@ -408,12 +408,18 @@ object AkkaBuild extends Build {
     id = "akka-http-marshallers-experimental",
     base = file("akka-http-marshallers"),
     settings = parentSettings
-  ).aggregate(httpXml)
+  ).aggregate(httpSprayJson, httpXml)
 
   lazy val httpXml =
     httpMarshallerSubproject("xml")
       .settings(
         Dependencies.httpXml
+      )
+
+  lazy val httpSprayJson =
+    httpMarshallerSubproject("spray-json")
+      .settings(
+        Dependencies.httpSprayJson
       )
 
   def httpMarshallerSubproject(name: String) =
@@ -1414,6 +1420,9 @@ object Dependencies {
     // Graph for Scala
     val scalaGraph = "com.assembla.scala-incubator"  %% "graph-core"                   % "1.9.0"       // ApacheV2
 
+    // For akka-http spray-json support
+    val sprayJson     = "io.spray"                   %% "spray-json"                   % "1.3.1"       // ApacheV2
+
     // Compiler plugins
     val genjavadoc    = compilerPlugin("com.typesafe.genjavadoc" %% "genjavadoc-plugin" % genJavaDocVersion cross CrossVersion.full) // ApacheV2
 
@@ -1491,6 +1500,8 @@ object Dependencies {
   val httpTests = Seq(Test.junit, Test.scalatest)
 
   val httpXml = deps(scalaXml)
+
+  val httpSprayJson = deps(sprayJson)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
