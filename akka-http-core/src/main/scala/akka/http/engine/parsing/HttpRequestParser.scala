@@ -110,8 +110,12 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
       def emitRequestStart(createEntity: Source[ParserOutput.RequestOutput] ⇒ RequestEntity,
-                           headers: List[HttpHeader] = headers) =
-        emit(ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, closeAfterResponseCompletion))
+                           headers: List[HttpHeader] = headers) = {
+        val allHeaders =
+          if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
+          else headers
+        emit(ParserOutput.RequestStart(method, uri, protocol, allHeaders, createEntity, closeAfterResponseCompletion))
+      }
 
       teh match {
         case None ⇒
