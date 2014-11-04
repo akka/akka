@@ -8,7 +8,7 @@ import scala.util.control.NonFatal
 import scala.collection.immutable
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.http.util._
-import akka.http.model.ContentTypeRange
+import akka.http.model.{ HttpCharset, MediaType, ContentTypeRange }
 import FastFuture._
 
 trait Unmarshaller[-A, B] extends (A ⇒ Future[B]) {
@@ -52,6 +52,17 @@ object Unmarshaller
 
     def flatMapWithInput[C](f: (A, B) ⇒ Future[C])(implicit ec: ExecutionContext): Unmarshaller[A, C] =
       Unmarshaller(a ⇒ um(a).fast.flatMap(f(a, _)))
+  }
+
+  implicit class EnhancedToEntityUnmarshaller[T](val um: FromEntityUnmarshaller[T]) extends AnyVal {
+    def mapWithCharset[U](f: (T, HttpCharset) ⇒ U)(implicit ec: ExecutionContext): FromEntityUnmarshaller[U] =
+      um.mapWithInput { (entity, data) ⇒ f(data, entity.contentType.charset) }
+
+    def filterMediaType(allowed: MediaType*)(implicit ec: ExecutionContext): FromEntityUnmarshaller[T] =
+      um.flatMapWithInput { (entity, data) ⇒
+        if (allowed contains entity.contentType.mediaType) Future.successful(data)
+        else FastFuture.failed(UnmarshallingError.UnsupportedContentType(allowed map (ContentTypeRange(_)) toList))
+      }
   }
 }
 

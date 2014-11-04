@@ -4,9 +4,9 @@
 
 package akka.http.unmarshalling
 
+import akka.http.testkit.ScalatestUtils
 import akka.util.ByteString
 
-import scala.xml.NodeSeq
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Await }
 import org.scalatest.matchers.Matcher
@@ -20,7 +20,7 @@ import headers._
 import MediaTypes._
 import FastFuture._
 
-class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
+class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
   implicit val materializer = FlowMaterializer()
   import system.dispatcher
@@ -31,9 +31,6 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     }
     "charArrayUnmarshaller should unmarshal `text/plain` content in UTF-8 to char arrays" in {
       Unmarshal(HttpEntity("árvíztűrő ütvefúrógép")).to[Array[Char]] should evaluateTo("árvíztűrő ütvefúrógép".toCharArray)
-    }
-    "nodeSeqUnmarshaller should unmarshal `text/xml` content in UTF-8 to NodeSeqs" in {
-      Unmarshal(HttpEntity(`text/xml`, "<int>Hällö</int>")).to[NodeSeq].fast.map(_.text) should evaluateTo("Hällö")
     }
   }
 
@@ -212,9 +209,6 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   }
 
   override def afterAll() = system.shutdown()
-
-  def evaluateTo[T](value: T): Matcher[Future[T]] =
-    equal(value).matcher[T] compose (x ⇒ Await.result(x, 1.second))
 
   def haveParts[T <: Multipart](parts: Multipart.BodyPart*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[Multipart.BodyPart]] compose { x ⇒

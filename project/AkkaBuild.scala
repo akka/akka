@@ -334,7 +334,7 @@ object AkkaBuild extends Build {
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
       publishArtifact in packageSite := false
     ),
-    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTck, http, httpCore, httpTestkit, httpTests, docsDev)
+    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTck, http, httpMarshallers, httpCore, httpTestkit, httpTests, docsDev)
   )
 
   lazy val httpCore = Project(
@@ -393,7 +393,7 @@ object AkkaBuild extends Build {
   lazy val httpTests = Project(
     id = "akka-http-tests-experimental",
     base = file("akka-http-tests"),
-    dependencies = Seq(httpTestkit),
+    dependencies = Seq(httpTestkit, httpXml),
     settings =
       defaultSettings ++ formatSettings ++
         Seq(
@@ -403,6 +403,26 @@ object AkkaBuild extends Build {
           scalacOptions in Compile  += "-language:_"
         )
   )
+
+  lazy val httpMarshallers = Project(
+    id = "akka-http-marshallers-experimental",
+    base = file("akka-http-marshallers"),
+    settings = parentSettings
+  ).aggregate(httpXml)
+
+  lazy val httpXml =
+    httpMarshallerSubproject("xml")
+      .settings(
+        Dependencies.httpXml
+      )
+
+  def httpMarshallerSubproject(name: String) =
+    Project(
+      id = s"akka-http-$name-experimental",
+      base = file(s"akka-http-marshallers/akka-http-$name"),
+      dependencies = Seq(http),
+      settings = defaultSettings ++ formatSettings
+    )
 
   val macroParadise = Seq(
     libraryDependencies <++= scalaVersion { v =>
@@ -1462,13 +1482,15 @@ object Dependencies {
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion % "test",
     Test.junitIntf, Test.junit, Test.scalatest)
 
-  val http = deps(scalaXml)
+  val http = deps()
 
   val httpTestkit = Seq(
     "com.typesafe.akka" %% "akka-testkit" % Versions.publishedAkkaVersion,
     Test.junit, Test.scalatest.copy(configurations = Some("provided; test")))
 
   val httpTests = Seq(Test.junit, Test.scalatest)
+
+  val httpXml = deps(scalaXml)
 
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
