@@ -4,6 +4,8 @@
 
 package akka.http.server
 
+import akka.http.marshalling.Marshaller
+import akka.http.server.directives.AuthenticationDirectives._
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
@@ -28,11 +30,24 @@ object TestServer extends App {
 
   import ScalaRoutingDSL._
 
+  def auth =
+    HttpBasicAuthenticator.provideUserName {
+      case p @ UserCredentials.Provided(name) ⇒ p.verifySecret(name + "-password")
+      case _                                  ⇒ false
+    }
+
+  implicit val html = Marshaller.nodeSeqMarshaller(MediaTypes.`text/html`)
+
   handleConnections(bindingFuture) withRoute {
     get {
       path("") {
         complete(index)
       } ~
+        path("secure") {
+          HttpBasicAuthentication("My very secure site")(auth) { user ⇒
+            complete(<html><body>Hello <b>{ user }</b>. Access has been granted!</body></html>)
+          }
+        } ~
         path("ping") {
           complete("PONG!")
         } ~
@@ -47,16 +62,16 @@ object TestServer extends App {
   Console.readLine()
   system.shutdown()
 
-  lazy val index = HttpResponse(
-    entity = HttpEntity(MediaTypes.`text/html`,
-      """|<html>
-        | <body>
-        |    <h1>Say hello to <i>akka-http-core</i>!</h1>
-        |    <p>Defined resources:</p>
-        |    <ul>
-        |      <li><a href="/ping">/ping</a></li>
-        |      <li><a href="/crash">/crash</a></li>
-        |    </ul>
-        |  </body>
-        |</html>""".stripMargin))
+  lazy val index =
+    <html>
+      <body>
+        <h1>Say hello to <i>akka-http-core</i>!</h1>
+        <p>Defined resources:</p>
+        <ul>
+          <li><a href="/ping">/ping</a></li>
+          <li><a href="/secure">/secure</a> Use any username and '&lt;username&gt;-password' as credentials</li>
+          <li><a href="/crash">/crash</a></li>
+        </ul>
+      </body>
+    </html>
 }

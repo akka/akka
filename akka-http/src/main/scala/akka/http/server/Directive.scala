@@ -13,7 +13,7 @@ import FastFuture._
 /**
  * A directive that provides a tuple of values of type `L` to create an inner route.
  */
-sealed abstract class Directive[L] private (implicit val ev: Tuple[L]) {
+abstract class Directive[L](implicit val ev: Tuple[L]) {
 
   /**
    * Calls the inner route with a tuple of extracted values of type `L`.
