@@ -39,7 +39,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
   final case class Todo(target: ActorRef, queue: immutable.Seq[Any]) extends Data
   //#simple-state
   //#simple-fsm
-  class Buncher extends Actor with FSM[State, Data] {
+  class Buncher extends FSM[State, Data] {
 
     //#fsm-body
     startWith(Idle, Uninitialized)
@@ -91,7 +91,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
     case object Idle extends StateType
     case object Active extends StateType
 
-    class Dummy extends Actor with FSM[StateType, Int] {
+    class Dummy extends FSM[StateType, Int] {
       class X
       val newData = 42
       object WillDo
@@ -171,7 +171,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
     //#logging-fsm
     import akka.actor.LoggingFSM
-    class MyFSM extends Actor with LoggingFSM[StateType, Data] {
+    class MyFSM extends LoggingFSM[StateType, Data] {
       //#body-elided
       override def logDepth = 12
       onTermination {
@@ -191,7 +191,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
   "simple finite state machine" must {
 
     "demonstrate NullFunction" in {
-      class A extends Actor with FSM[Int, Null] {
+      class A extends FSM[Int, Null] {
         val SomeState = 0
         //#NullFunction
         when(SomeState)(FSM.NullFunction)
