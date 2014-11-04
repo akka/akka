@@ -324,7 +324,7 @@ trait FlowOps[+Out] {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: Out ⇒ S, aggregate: (S, Out) ⇒ S): Repr[S] =
+  def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
     andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
 
   /**

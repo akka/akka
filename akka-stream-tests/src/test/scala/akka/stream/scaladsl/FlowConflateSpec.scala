@@ -24,7 +24,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
+      Source(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -42,7 +42,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
+      Source(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -58,7 +58,7 @@ class FlowConflateSpec extends AkkaSpec {
 
     "work on a variable rate chain" in {
       val future = Source((1 to 1000).iterator)
-        .conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i)
+        .conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .fold(0)(_ + _)
       Await.result(future, 10.seconds) should be(500500)
@@ -68,7 +68,7 @@ class FlowConflateSpec extends AkkaSpec {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).conflate[Int](seed = i ⇒ i, aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
+      Source(publisher).conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
