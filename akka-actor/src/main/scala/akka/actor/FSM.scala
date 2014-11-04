@@ -890,7 +890,7 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * @return the builder with the case statement added
    */
   final def matchEvent[ET, DT <: D](eventType: Class[ET], dataType: Class[DT], predicate: TypedPredicate2[ET, DT], apply: Apply2[ET, DT, State]): FSMStateFunctionBuilder[S, D] =
-    new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, apply)
+    new FSMStateFunctionBuilder[S, D]().event(eventType, dataType, predicate, apply)
 
   /**
    * Create an [[akka.japi.pf.FSMStateFunctionBuilder]] with the first case statement set.
