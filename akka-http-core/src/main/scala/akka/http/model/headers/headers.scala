@@ -30,6 +30,17 @@ sealed trait ModeledHeader extends HttpHeader with Serializable {
   protected def companion: ModeledCompanion
 }
 
+/**
+ * Superclass for user-defined custom headers defined by implementing `name` and `value`.
+ */
+abstract class CustomHeader extends japi.headers.CustomHeader {
+  /** Override to return true if this header shouldn't be rendered */
+  def suppressRendering: Boolean = false
+
+  def lowercaseName: String = name.toRootLowerCase
+  def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
+}
+
 import japi.JavaMapping.Implicits._
 
 // http://tools.ietf.org/html/rfc7230#section-6.1

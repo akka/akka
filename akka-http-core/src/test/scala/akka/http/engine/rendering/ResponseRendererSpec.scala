@@ -4,6 +4,7 @@
 
 package akka.http.engine.rendering
 
+import akka.http.model.HttpMethods._
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -306,6 +307,38 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         HttpResponse(200, List(Server("server/1.0"))) should renderTo {
           """HTTP/1.1 200 OK
             |Server: server/1.0
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |Content-Length: 0
+            |
+            |"""
+        }
+      }
+    }
+
+    "render a CustomHeader header" - {
+      "if suppressRendering = false" in new TestSetup(None) {
+        case class MyHeader(number: Int) extends CustomHeader {
+          def name: String = "X-My-Header"
+          def value: String = s"No$number"
+        }
+        HttpResponse(200, List(MyHeader(5))) should renderTo {
+          """HTTP/1.1 200 OK
+            |X-My-Header: No5
+            |Date: Thu, 25 Aug 2011 09:10:29 GMT
+            |Content-Length: 0
+            |
+            |"""
+        }
+      }
+      "not if suppressRendering = true" in new TestSetup(None) {
+        case class MyInternalHeader(number: Int) extends CustomHeader {
+          override def suppressRendering: Boolean = true
+
+          def name: String = "X-My-Internal-Header"
+          def value: String = s"No$number"
+        }
+        HttpResponse(200, List(MyInternalHeader(5))) should renderTo {
+          """HTTP/1.1 200 OK
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
             |Content-Length: 0
             |
