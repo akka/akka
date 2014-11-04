@@ -5,7 +5,7 @@
 package akka.http.server
 
 import akka.http.model._
-import akka.http.model.headers.{ ByteRange, HttpEncoding }
+import akka.http.model.headers.{ HttpChallenge, ByteRange, HttpEncoding }
 
 import scala.collection.immutable
 
@@ -125,7 +125,7 @@ case class UnacceptedResponseEncodingRejection(supported: HttpEncoding) extends 
  * specified in the cause.
  */
 case class AuthenticationFailedRejection(cause: AuthenticationFailedRejection.Cause,
-                                         challengeHeaders: List[HttpHeader]) extends Rejection
+                                         challenge: HttpChallenge) extends Rejection
 
 object AuthenticationFailedRejection {
   /**
