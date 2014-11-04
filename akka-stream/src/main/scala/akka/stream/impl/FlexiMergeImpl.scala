@@ -14,6 +14,11 @@ import akka.actor.Props
 private[akka] object FlexiMergeImpl {
   def props(settings: MaterializerSettings, inputCount: Int, mergeLogic: FlexiMerge.MergeLogic[Any]): Props =
     Props(new FlexiMergeImpl(settings, inputCount, mergeLogic))
+
+  trait MergeLogicFactory[Out] {
+    def name: Option[String]
+    def createMergeLogic(): FlexiMerge.MergeLogic[Out]
+  }
 }
 
 /**

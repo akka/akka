@@ -5,13 +5,14 @@ package akka.stream.scaladsl
 
 import scala.collection.immutable
 import akka.stream.impl.Ast
+import akka.stream.impl.FlexiMergeImpl.MergeLogicFactory
 
 object FlexiMerge {
 
   /**
    * @see [[InputPort]]
    */
-  sealed trait InputHandle {
+  trait InputHandle {
     private[akka] def portIndex: Int
   }
 
@@ -187,7 +188,7 @@ object FlexiMerge {
  *
  * @param name optional name of the junction in the [[FlowGraph]],
  */
-abstract class FlexiMerge[Out](val name: Option[String]) {
+abstract class FlexiMerge[Out](val name: Option[String]) extends MergeLogicFactory[Out] {
   import FlexiMerge._
 
   def this(name: String) = this(Some(name))
@@ -236,7 +237,7 @@ abstract class FlexiMerge[Out](val name: Option[String]) {
    * Create the stateful logic that will be used when reading input elements
    * and emitting output elements. Create a new instance every time.
    */
-  def createMergeLogic(): MergeLogic[Out]
+  override def createMergeLogic(): MergeLogic[Out]
 
   override def toString = name match {
     case Some(n) ⇒ n
