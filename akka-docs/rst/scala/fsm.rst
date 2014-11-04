@@ -123,9 +123,8 @@ Reference
 The FSM Trait and Object
 ------------------------
 
-The :class:`FSM` trait may only be mixed into an :class:`Actor`. Instead of
-extending :class:`Actor`, the self type approach was chosen in order to make it
-obvious that an actor is actually created:
+The :class:`FSM` trait inherits directly from :class:`Actor`, when you
+extend :class:`FSM` you must be aware that an actor is actually created:
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: simple-fsm
