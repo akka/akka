@@ -4,7 +4,7 @@
 
 package akka.http.server
 
-import akka.http.marshalling.Marshaller
+import akka.http.marshallers.xml.ScalaXmlSupport
 import akka.http.server.directives.AuthenticationDirectives._
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
@@ -36,7 +36,9 @@ object TestServer extends App {
       case _                                  ⇒ false
     }
 
-  implicit val html = Marshaller.nodeSeqMarshaller(MediaTypes.`text/html`)
+  // FIXME: a simple `import ScalaXmlSupport._` should suffice but currently doesn't because
+  // of #16190
+  implicit val html = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
 
   handleConnections(bindingFuture) withRoute {
     get {
