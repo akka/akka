@@ -109,8 +109,9 @@ private[akka] object Ast {
     override def name = "concat"
   }
 
-  case class FlexiMergeNode(merger: FlexiMerge[Any]) extends FanInAstNode {
-    override def name = merger.name.getOrElse("flexMerge")
+  case class FlexiMergeNode(merger: FlexiMergeImpl.MergeLogicFactory[Any]) extends FanInAstNode {
+    override def name = merger.name.getOrElse("flexiMerge")
+
   }
 
   case class RouteNode(route: FlexiRoute[Any]) extends FanOutAstNode {
