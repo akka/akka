@@ -15,6 +15,11 @@ import akka.stream.impl.FanOut.OutputBunch
 private[akka] object FlexiRouteImpl {
   def props(settings: MaterializerSettings, outputCount: Int, routeLogic: FlexiRoute.RouteLogic[Any]): Props =
     Props(new FlexiRouteImpl(settings, outputCount, routeLogic))
+
+  trait RouteLogicFactory[In] {
+    def name: Option[String]
+    def createRouteLogic(): FlexiRoute.RouteLogic[In]
+  }
 }
 
 /**

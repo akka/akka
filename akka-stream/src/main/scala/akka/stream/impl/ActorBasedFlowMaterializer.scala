@@ -109,13 +109,12 @@ private[akka] object Ast {
     override def name = "concat"
   }
 
-  case class FlexiMergeNode(merger: FlexiMergeImpl.MergeLogicFactory[Any]) extends FanInAstNode {
-    override def name = merger.name.getOrElse("flexiMerge")
-
+  case class FlexiMergeNode(factory: FlexiMergeImpl.MergeLogicFactory[Any]) extends FanInAstNode {
+    override def name = factory.name.getOrElse("flexiMerge")
   }
 
-  case class RouteNode(route: FlexiRoute[Any]) extends FanOutAstNode {
-    override def name = route.name.getOrElse("route")
+  case class FlexiRouteNode(factory: FlexiRouteImpl.RouteLogicFactory[Any]) extends FanOutAstNode {
+    override def name = factory.name.getOrElse("flexiRoute")
   }
 
 }
@@ -260,7 +259,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
             actorOf(Balance.props(settings, outputCount, waitForAllDownstreams).withDispatcher(settings.dispatcher), actorName)
           case Ast.Unzip ⇒
             actorOf(Unzip.props(settings).withDispatcher(settings.dispatcher), actorName)
-          case Ast.RouteNode(route) ⇒
+          case Ast.FlexiRouteNode(route) ⇒
             actorOf(FlexiRouteImpl.props(settings, outputCount, route.createRouteLogic()).
               withDispatcher(settings.dispatcher), actorName)
         }
