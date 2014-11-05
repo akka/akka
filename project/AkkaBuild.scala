@@ -1415,9 +1415,6 @@ object Dependencies {
 
     // Cluster Sample
     val sigar       = "org.fusesource"                % "sigar"                        % "1.6.4"       // ApacheV2
-    
-    // Graph for Scala
-    val scalaGraph = "com.assembla.scala-incubator"  %% "graph-core"                   % "1.9.0"       // ApacheV2
 
     // For akka-http spray-json support
     val sprayJson     = "io.spray"                   %% "spray-json"                   % "1.3.1"       // ApacheV2
@@ -1506,7 +1503,7 @@ object Dependencies {
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
     "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.publishedAkkaVersion,
-    scalaGraph, reactiveStreams,
+    reactiveStreams,
     Test.junitIntf,
     Test.scalatest)
 
