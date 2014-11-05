@@ -34,8 +34,8 @@ object FlexiMerge {
 
   sealed trait ReadCondition
   /**
-   * Read condition for the [[MergeLogic#State]] that will is
-   * fulfilled when there are elements for one specfic upstream
+   * Read condition for the [[MergeLogic#State]] that will be
+   * fulfilled when there are elements for one specific upstream
    * input.
    *
    * It is not allowed to use a handle that has been cancelled or
@@ -48,7 +48,7 @@ object FlexiMerge {
     def apply(inputs: immutable.Seq[InputHandle]): ReadAny = new ReadAny(inputs: _*)
   }
   /**
-   * Read condition for the [[MergeLogic#State]] that will is
+   * Read condition for the [[MergeLogic#State]] that will be
    * fulfilled when there are elements for any of the given upstream
    * inputs.
    *
@@ -69,7 +69,7 @@ object FlexiMerge {
     def initialCompletionHandling: CompletionHandling = defaultCompletionHandling
 
     /**
-     * Context that is passed to the methods of [[State]] and [[CompletionHandling]].
+     * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
      * The context provides means for performing side effects, such as emitting elements
      * downstream.
      */
@@ -87,7 +87,7 @@ object FlexiMerge {
       def emit(elem: Out): Unit
 
       /**
-       * Complete this stream succesfully. Upstream subscriptions will be cancelled.
+       * Complete this stream successfully. Upstream subscriptions will be cancelled.
        */
       def complete(): Unit
 
@@ -136,12 +136,12 @@ object FlexiMerge {
     /**
      * How to handle completion or error from upstream input.
      *
-     * The `onComplete` function is called when an upstream input was completed sucessfully.
+     * The `onComplete` function is called when an upstream input was completed successfully.
      * It returns next behavior or [[#SameState]] to keep current behavior.
      * A completion can be propagated downstream with [[MergeLogicContext#complete]],
      * or it can be swallowed to continue with remaining inputs.
      *
-     * The `onError` function is called when an upstream input was completed sucessfully.
+     * The `onError` function is called when an upstream input was completed with failure.
      * It returns next behavior or [[#SameState]] to keep current behavior.
      * An error can be propagated downstream with [[MergeLogicContext#error]],
      * or it can be swallowed to continue with remaining inputs.
