@@ -183,14 +183,28 @@ object Balance {
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def apply[T]: Balance[T] = new Balance[T](None)
+  def apply[T]: Balance[T] = new Balance[T](None, waitForAllDownstreams = false)
   /**
    * Create a named `Balance` vertex with the specified input type.
    * Note that a `Balance` with a specific name can only be used at one place (one vertex)
    * in the `FlowGraph`. Calling this method several times with the same name
    * returns instances that are `equal`.
+   *
+   * If you use `waitForAllDownstreams = true` it will not start emitting
+   * elements to downstream outputs until all of them have requested at least one element.
    */
-  def apply[T](name: String): Balance[T] = new Balance[T](Some(name))
+  def apply[T](name: String, waitForAllDownstreams: Boolean = false): Balance[T] = new Balance[T](Some(name), waitForAllDownstreams)
+
+  /**
+   * Create a new anonymous `Balance` vertex with the specified input type.
+   * Note that a `Balance` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
+   *
+   * If you use `waitForAllDownstreams = true` it will not start emitting
+   * elements to downstream outputs until all of them have requested at least one element.
+   */
+  def apply[T](waitForAllDownstreams: Boolean): Balance[T] = new Balance[T](None, waitForAllDownstreams)
 }
 
 /**
@@ -198,16 +212,16 @@ object Balance {
  * one of the other streams. It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
  */
-final class Balance[T](override val name: Option[String]) extends FlowGraphInternal.InternalVertex with Junction[T] {
+final class Balance[T](override val name: Option[String], val waitForAllDownstreams: Boolean) extends FlowGraphInternal.InternalVertex with Junction[T] {
   override private[akka] def vertex = this
   override def minimumInputCount: Int = 1
   override def maximumInputCount: Int = 1
   override def minimumOutputCount: Int = 2
   override def maximumOutputCount: Int = Int.MaxValue
 
-  override private[akka] def astNode = Ast.Balance
+  override private[akka] val astNode = Ast.Balance(waitForAllDownstreams)
 
-  final override private[scaladsl] def newInstance() = new Balance[T](None)
+  final override private[scaladsl] def newInstance() = new Balance[T](None, waitForAllDownstreams)
 }
 
 object Zip {
