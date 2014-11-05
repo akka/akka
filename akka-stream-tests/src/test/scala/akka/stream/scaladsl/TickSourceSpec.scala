@@ -10,7 +10,6 @@ import akka.stream.FlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TickSourceSpec extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer()

@@ -56,7 +56,7 @@ object AkkaBuild extends Build {
       StatsDMetrics.settings ++
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
-      parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
+      parallelExecution in Test in GlobalScope := false,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, remoteTests.id, parsing.id),
       sources in JavaDoc <<= junidocSources,
@@ -82,11 +82,10 @@ object AkkaBuild extends Build {
         test in Test in httpCore, test in Test in http, test in Test in httpTestkit, test in Test in httpTests,
         test in Test in docsDev) map {
         (_, _, _, _, _, _, _, _, _, _) =>
-      }
+      },
+      aggregate in publishM2 := false // REMOVE DURING MERGE INTO release-2.3
     ),
-    aggregate = Seq(actor, testkit, actorTests, dataflow, remote, remoteTests, camel, cluster, slf4j, agent, transactor,
-      persistence, mailboxes, zeroMQ, kernel, osgi, docs, contrib, samples, multiNodeTestkit, stream, parsing, httpCore,
-      http, docsDev)
+    aggregate = Seq(streamAndHttp) // FIXME DURING MERGE INTO release-2.3
   )
 
   lazy val akkaScalaNightly = Project(
