@@ -190,6 +190,35 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         }
       }
     }
+    "render a CustomHeader header" - {
+      "if suppressRendering = false" in new TestSetup(None) {
+        case class MyHeader(number: Int) extends CustomHeader {
+          def name: String = "X-My-Header"
+          def value: String = s"No$number"
+        }
+        HttpRequest(GET, "/abc", List(MyHeader(5))) should renderTo {
+          """GET /abc HTTP/1.1
+            |X-My-Header: No5
+            |Host: test.com:8080
+            |
+            |"""
+        }
+      }
+      "not if suppressRendering = true" in new TestSetup(None) {
+        case class MyInternalHeader(number: Int) extends CustomHeader {
+          override def suppressRendering: Boolean = true
+
+          def name: String = "X-My-Internal-Header"
+          def value: String = s"No$number"
+        }
+        HttpRequest(GET, "/abc", List(MyInternalHeader(5))) should renderTo {
+          """GET /abc HTTP/1.1
+            |Host: test.com:8080
+            |
+            |"""
+        }
+      }
+    }
 
     "properly use URI from Raw-Request-URI header if present" - {
       "GET request with Raw-Request-URI" in new TestSetup() {
