@@ -91,7 +91,6 @@ object ActorSubscriberSpec {
   }
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
   import ActorSubscriberMessage._
   import ActorSubscriberSpec._

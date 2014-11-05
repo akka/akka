@@ -23,7 +23,7 @@ class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
         Seq(3) -> Seq(3, 3, 3),
         Seq(2) -> Seq(2, 2),
         Seq(1) -> Seq(1))
-      (1 to 100) foreach (_ ⇒ runScript(script, settings)(_.mapConcat(x ⇒ (1 to x) map (_ ⇒ x))))
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.mapConcat(x ⇒ (1 to x) map (_ ⇒ x))))
     }
 
   }

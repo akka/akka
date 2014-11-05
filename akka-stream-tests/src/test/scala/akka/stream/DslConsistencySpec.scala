@@ -8,7 +8,6 @@ import java.lang.reflect.Modifier
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class DslConsistencySpec extends WordSpec with Matchers {
 
   val sFlowClass = classOf[akka.stream.scaladsl.Flow[_, _]]

@@ -13,7 +13,6 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamTestKit
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)
@@ -126,14 +125,14 @@ class FlowGroupedWithinSpec extends AkkaSpec with ScriptedTest {
     }
 
     "group evenly" in {
-      def script = Script((1 to 20) map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }: _*)
-      (1 to 30) foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
+      def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }: _*)
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
     }
 
     "group with rest" in {
-      def script = Script(((1 to 20).map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }
+      def script = Script((TestConfig.RandomTestRange.map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }
         :+ { val x = random.nextInt(); Seq(x) -> Seq(immutable.Seq(x)) }): _*)
-      (1 to 30) foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
     }
 
   }
