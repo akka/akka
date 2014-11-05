@@ -143,10 +143,9 @@ trait TcpHelper { this: TestKitBase ⇒
     def abort(): Unit = connectionActor ! ClientClose(Tcp.Abort)
   }
 
-  class TcpReadProbe(tcpProcessor: Processor[ByteString, ByteString]) {
+  class TcpReadProbe() {
     val subscriberProbe = StreamTestKit.SubscriberProbe[ByteString]()
-    tcpProcessor.subscribe(subscriberProbe)
-    val tcpReadSubscription = subscriberProbe.expectSubscription()
+    lazy val tcpReadSubscription = subscriberProbe.expectSubscription()
 
     def read(count: Int): ByteString = {
       var result = ByteString.empty
@@ -160,10 +159,9 @@ trait TcpHelper { this: TestKitBase ⇒
     def close(): Unit = tcpReadSubscription.cancel()
   }
 
-  class TcpWriteProbe(tcpProcessor: Processor[ByteString, ByteString]) {
+  class TcpWriteProbe() {
     val publisherProbe = StreamTestKit.PublisherProbe[ByteString]()
-    publisherProbe.subscribe(tcpProcessor)
-    val tcpWriteSubscription = publisherProbe.expectSubscription()
+    lazy val tcpWriteSubscription = publisherProbe.expectSubscription()
     var demand = 0L
 
     def write(bytes: ByteString): Unit = {
@@ -175,37 +173,4 @@ trait TcpHelper { this: TestKitBase ⇒
     def close(): Unit = tcpWriteSubscription.sendComplete()
   }
 
-  class EchoServer(termination: Future[Unit], closeable: Closeable) extends Closeable {
-    def close(): Unit = closeable.close()
-    def awaitTermination(atMost: Duration): Unit = Await.result(termination, atMost)
-    def terminationFuture: Future[Unit] = termination
-  }
-
-  def connect(server: Server): (Processor[ByteString, ByteString], ServerConnection) = {
-    val tcpProbe = TestProbe()
-    tcpProbe.send(IO(StreamTcp), StreamTcp.Connect(server.address))
-    val client = server.waitAccept()
-    val outgoingConnection = tcpProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
-
-    (outgoingConnection.processor, client)
-  }
-
-  def connect(serverAddress: InetSocketAddress): StreamTcp.OutgoingTcpConnection = {
-    val connectProbe = TestProbe()
-    connectProbe.send(IO(StreamTcp), StreamTcp.Connect(serverAddress))
-    connectProbe.expectMsgType[StreamTcp.OutgoingTcpConnection]
-  }
-
-  def bind(serverAddress: InetSocketAddress = temporaryServerAddress): StreamTcp.TcpServerBinding = {
-    val bindProbe = TestProbe()
-    bindProbe.send(IO(StreamTcp), StreamTcp.Bind(serverAddress))
-    bindProbe.expectMsgType[StreamTcp.TcpServerBinding]
-  }
-
-  def echoServer(serverAddress: InetSocketAddress = temporaryServerAddress): EchoServer = {
-    val binding = bind(serverAddress)
-    new EchoServer(Source(binding.connectionStream).foreach { conn ⇒
-      conn.inputStream.subscribe(conn.outputStream)
-    }, binding)
-  }
 }
