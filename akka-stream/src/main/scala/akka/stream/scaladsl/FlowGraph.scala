@@ -780,6 +780,18 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
     uncheckedAddGraphEdge(from, to, pipe, inputPort, outputPort)
   }
 
+  private def addOrReplaceSinkEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
+    checkAddOrReplaceSourceSinkPrecondition(from)
+    checkAddSourceSinkPrecondition(to)
+    uncheckedAddGraphEdge(from, to, pipe, inputPort, outputPort)
+  }
+
+  private def addOrReplaceSourceEdge[In, Out](from: Vertex, to: Vertex, pipe: Pipe[In, Out], inputPort: Int, outputPort: Int): Unit = {
+    checkAddSourceSinkPrecondition(from)
+    checkAddOrReplaceSourceSinkPrecondition(to)
+    uncheckedAddGraphEdge(from, to, pipe, inputPort, outputPort)
+  }
+
   def attachSink[Out](token: UndefinedSink[Out], sink: Sink[Out]): this.type = {
     graph.find(token) match {
       case Some(existing) ⇒
@@ -788,11 +800,11 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
         sink match {
           case spipe: SinkPipe[Out] ⇒
             val pipe = edge.label.pipe.appendPipe(Pipe(spipe.ops))
-            addGraphEdge(edge.from.label, SinkVertex(spipe.output), pipe, edge.label.inputPort, edge.label.outputPort)
+            addOrReplaceSinkEdge(edge.from.label, SinkVertex(spipe.output), pipe, edge.label.inputPort, edge.label.outputPort)
           case gsink: GraphSink[Out, _] ⇒
             gsink.importAndConnect(this, token)
           case sink: Sink[Out] ⇒
-            addGraphEdge(edge.from.label, SinkVertex(sink), edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
+            addOrReplaceSinkEdge(edge.from.label, SinkVertex(sink), edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
         }
 
       case None ⇒ throw new IllegalArgumentException(s"No matching UndefinedSink [${token}]")
@@ -808,11 +820,11 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
         source match {
           case spipe: SourcePipe[In] ⇒
             val pipe = Pipe(spipe.ops).appendPipe(edge.label.pipe)
-            addGraphEdge(SourceVertex(spipe.input), edge.to.label, pipe, edge.label.inputPort, edge.label.outputPort)
+            addOrReplaceSourceEdge(SourceVertex(spipe.input), edge.to.label, pipe, edge.label.inputPort, edge.label.outputPort)
           case gsource: GraphSource[_, In] ⇒
             gsource.importAndConnect(this, token)
           case source: Source[In] ⇒
-            addGraphEdge(SourceVertex(source), edge.to.label, edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
+            addOrReplaceSourceEdge(SourceVertex(source), edge.to.label, edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
           case x ⇒ throwUnsupportedValue(x)
         }
 

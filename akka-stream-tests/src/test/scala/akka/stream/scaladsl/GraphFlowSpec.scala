@@ -155,6 +155,23 @@ class GraphFlowSpec extends AkkaSpec {
         validateProbe(probe, stdRequests, stdResult)
       }
 
+      "work with a Sink when having KeyedSource inside" in {
+        val out = UndefinedSink[Int]
+        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val subSource = Source.subscriber[Int]
+
+        val source = Source[Int]() { implicit b ⇒
+          import FlowGraphImplicits._
+          subSource ~> out
+          out
+        }
+
+        val mm = source.to(Sink(probe)).run()
+        source1.to(Sink(mm.get(subSource))).run()
+
+        validateProbe(probe, 4, (0 to 3).toSet)
+      }
+
       "be transformable with a Pipe" in {
         val out = UndefinedSink[String]
 
@@ -238,6 +255,23 @@ class GraphFlowSpec extends AkkaSpec {
         source1.to(sink).run()
 
         validateProbe(probe, stdRequests, stdResult)
+      }
+
+      "work with a Source when having KeyedSink inside" in {
+        val in = UndefinedSource[Int]
+        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val pubSink = Sink.publisher[Int]
+
+        val sink = Sink[Int]() { implicit b ⇒
+          import FlowGraphImplicits._
+          in ~> pubSink
+          in
+        }
+
+        val mm = source1.to(sink).run()
+        Source(mm.get(pubSink)).to(Sink(probe)).run()
+
+        validateProbe(probe, 4, (0 to 3).toSet)
       }
 
       "be transformable with a Pipe" in {
