@@ -11,7 +11,7 @@ import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.actor.ActorSystem
 
-object GraphRouteSpec {
+object GraphFlexiRouteSpec {
 
   /**
    * This is fair in that sense that after enqueueing to an output it yields to other output if
@@ -72,8 +72,6 @@ object GraphRouteSpec {
     val outB = createOutputPort[B]()
 
     override def createRouteLogic() = new RouteLogic[(A, B)] {
-      var lastInA: Option[A] = None
-      var lastInB: Option[B] = None
 
       override def outputHandles(outputCount: Int) = {
         require(outputCount == 2, s"Unzip must have two connected outputs, was $outputCount")
@@ -164,8 +162,8 @@ object GraphRouteSpec {
 }
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class GraphRouteSpec extends AkkaSpec {
-  import GraphRouteSpec._
+class GraphFlexiRouteSpec extends AkkaSpec {
+  import GraphFlexiRouteSpec._
 
   implicit val materializer = FlowMaterializer()
 

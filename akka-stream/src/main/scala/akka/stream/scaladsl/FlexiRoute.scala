@@ -5,13 +5,14 @@ package akka.stream.scaladsl
 
 import scala.collection.immutable
 import akka.stream.impl.Ast
+import akka.stream.impl.FlexiRouteImpl.RouteLogicFactory
 
 object FlexiRoute {
 
   /**
    * @see [[OutputPort]]
    */
-  sealed trait OutputHandle {
+  trait OutputHandle {
     private[akka] def portIndex: Int
   }
 
@@ -51,7 +52,7 @@ object FlexiRoute {
    * fulfilled when there are requests for elements from any of the given downstream
    * outputs.
    *
-   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * Cancelled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
   final case class DemandFromAny(outputs: OutputHandle*) extends DemandCondition
@@ -64,7 +65,7 @@ object FlexiRoute {
    * fulfilled when there are requests for elements from all of the given downstream
    * outputs.
    *
-   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * Cancelled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
   final case class DemandFromAll(outputs: OutputHandle*) extends DemandCondition
@@ -210,7 +211,7 @@ object FlexiRoute {
  *
  * @param name optional name of the junction in the [[FlowGraph]],
  */
-abstract class FlexiRoute[In](val name: Option[String]) {
+abstract class FlexiRoute[In](val name: Option[String]) extends RouteLogicFactory[In] {
   import FlexiRoute._
 
   def this(name: String) = this(Some(name))
@@ -225,7 +226,7 @@ abstract class FlexiRoute[In](val name: Option[String]) {
     override def minimumOutputCount = 2
     override def maximumOutputCount = outputCount
 
-    override private[akka] val astNode = Ast.RouteNode(FlexiRoute.this.asInstanceOf[FlexiRoute[Any]])
+    override private[akka] val astNode = Ast.FlexiRouteNode(FlexiRoute.this.asInstanceOf[FlexiRoute[Any]])
     override def name = vertexName
 
     final override private[scaladsl] def newInstance() = new RouteVertex(None)
@@ -260,7 +261,7 @@ abstract class FlexiRoute[In](val name: Option[String]) {
    * Create the stateful logic that will be used when reading input elements
    * and emitting output elements. Create a new instance every time.
    */
-  def createRouteLogic(): RouteLogic[In]
+  override def createRouteLogic(): RouteLogic[In]
 
   override def toString = name match {
     case Some(n) ⇒ n
