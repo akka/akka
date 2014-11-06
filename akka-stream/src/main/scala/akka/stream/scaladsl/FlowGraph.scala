@@ -57,6 +57,20 @@ private[akka] sealed trait Junction[T] extends JunctionInPort[T] with JunctionOu
   override private[akka] def next = this
 }
 
+private[akka] final class Identity[T]() extends FlowGraphInternal.InternalVertex with Junction[T] {
+  def name: Option[String] = Some("identity")
+
+  override private[akka] val vertex = this
+  override val minimumInputCount: Int = 1
+  override val maximumInputCount: Int = 1
+  override val minimumOutputCount: Int = 1
+  override val maximumOutputCount: Int = 1
+
+  override private[akka] def astNode = Ast.IdentityAstNode
+
+  final override private[scaladsl] def newInstance() = new Identity[T]()
+}
+
 object Merge {
   /**
    * Create a new anonymous `Merge` vertex with the specified output type.
@@ -916,7 +930,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
   private def checkAmbigiousKeyedElement(vertex: Vertex): Unit = {
     def warningMessage(el: Any): String =
       s"An `${el}` instance MUST NOT be used more than once in a `FlowGraph` to avoid ambiguity. " +
-        s"Use individual instances instead the same one multiple times instead. Nodes are: ${graph.nodes}"
+        s"Use individual instances instead of the same one multiple times. Nodes are: ${graph.nodes}"
 
     vertex match {
       case v: SourceVertex if v.source.isInstanceOf[KeyedSource[_]] ⇒ require(!graph.contains(v), warningMessage(v.source))
@@ -1091,11 +1105,21 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
     if (edges.size == 1) {
       val edge = edges.head
       (edge.from.label, edge.to.label) match {
-        case (sourceVertex: SourceVertex, sinkVertex: SinkVertex) ⇒
+        case (sourceVertex @ SourceVertex(_: ActorFlowSource[_]), sinkVertex @ SinkVertex(_: ActorFlowSink[_])) ⇒
+          // Only an ActorFlow{Source,Sink} can be materialized as a Flow.
           val pipe = edge.label.pipe
           runSimple(sourceVertex, sinkVertex, pipe)
+        case (sourceVertex: SourceVertex, sinkVertex: SinkVertex) ⇒
+          // One or two Graph{Source,Sink} must be materialized as a graph.
+          // Add identity Junction in-between because graph materialization
+          // algorithm materializes sinks when it finds a Junction.
+          FlowGraph { b ⇒
+            val id = new Identity[Any]
+            b.addEdge(sourceVertex.source, id)
+            b.addEdge(id.asInstanceOf[Identity[Nothing]], sinkVertex.sink)
+          }.run()
         case _ ⇒
-          runGraph()
+          throw new IllegalStateException(s"Unable to materialize FlowGraph with one edge connecting ${edge.from.label} and ${edge.to.label}.")
       }
     } else
       runGraph()
