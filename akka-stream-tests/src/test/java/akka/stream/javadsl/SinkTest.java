@@ -3,21 +3,20 @@
  */
 package akka.stream.javadsl;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import akka.stream.javadsl.japi.Function2;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.reactivestreams.Publisher;
-
-import scala.concurrent.Await;
-import scala.concurrent.Future;
-import scala.concurrent.duration.Duration;
 import akka.actor.ActorSystem;
 import akka.stream.FlowMaterializer;
 import akka.stream.MaterializerSettings;
+import akka.stream.javadsl.japi.Function2;
 import akka.stream.testkit.AkkaSpec;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.reactivestreams.Publisher;
+import scala.concurrent.Await;
+import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SinkTest {
 
@@ -27,7 +26,7 @@ public class SinkTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final MaterializerSettings settings = new MaterializerSettings(2, 4, 2, 4, "akka.test.stream-dispatcher");
+  final MaterializerSettings settings = MaterializerSettings.create(system);
   final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test

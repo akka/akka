@@ -42,7 +42,7 @@ class FlowGroupBySpec extends AkkaSpec {
 
     def getSubFlow(expectedKey: Int): Source[Int] = {
       masterSubscription.request(1)
-      expectSubFlow(expectedKey: Int)
+      expectSubFlow(expectedKey)
     }
 
     def expectSubFlow(expectedKey: Int): Source[Int] = {
@@ -122,23 +122,21 @@ class FlowGroupBySpec extends AkkaSpec {
     }
 
     "accept cancellation of master stream when substreams are open" in new SubstreamsSupport(groupCount = 3, elementCount = 13) {
-      pending
-      // FIXME: Needs handling of loose substreams that no one refers to anymore.
-      //      val substream = StreamPuppet(getSubproducer(1))
-      //
-      //      substream.request(1)
-      //      substream.expectNext(1)
-      //
-      //      masterSubscription.cancel()
-      //      masterSubscriber.expectNoMsg(100.millis)
-      //
-      //      // Open substreams still work, others are discarded
-      //      substream.request(4)
-      //      substream.expectNext(4)
-      //      substream.expectNext(7)
-      //      substream.expectNext(10)
-      //      substream.expectNext(13)
-      //      substream.expectComplete()
+      val substream = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
+
+      substream.request(1)
+      substream.expectNext(1)
+
+      masterSubscription.cancel()
+      masterSubscriber.expectNoMsg(100.millis)
+
+      // Open substreams still work, others are discarded
+      substream.request(4)
+      substream.expectNext(4)
+      substream.expectNext(7)
+      substream.expectNext(10)
+      substream.expectNext(13)
+      substream.expectComplete()
     }
 
     "work with empty input stream" in {
