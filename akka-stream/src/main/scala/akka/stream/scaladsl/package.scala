@@ -7,10 +7,10 @@ package akka.stream
  * Scala API: The flow DSL allows the formulation of stream transformations based on some
  * input. The starting point is called [[Source]] and can be a collection, an iterator,
  * a block of code which is evaluated repeatedly or a [[org.reactivestreams.Publisher]].
- * A flow with an attached input and open output, is also a [[Source]].
+ * A flow with an attached input and open output is also a [[Source]].
  *
  * A flow may also be defined without an attached input or output and that is then
- * a [[Flow]]. The `Flow` can be connected to the `Source` later by using [[Source#connect]] with
+ * a [[Flow]]. The `Flow` can be connected to the `Source` later by using [[Source#via]] with
  * the flow as argument, and it remains a [[Source]].
  *
  * Transformations can be appended to `Source` and `Flow` with the operations
@@ -25,7 +25,7 @@ package akka.stream
  * In order to execute this pipeline the flow must be materialized by calling [[RunnableFlow#run]] on it.
  *
  * You can create your `Source`, `Flow` and `Sink` in any order and then wire them together before
- * they are materialized by connecting them using [[Flow#connect]], or connecting them into a
+ * they are materialized by connecting them using [[Flow#via]] and [[Flow#to]], or connecting them into a
  * [[FlowGraph]] with fan-in and fan-out elements.
  *
  * See <a href="https://github.com/reactive-streams/reactive-streams/">Reactive Streams</a> for
