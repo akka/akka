@@ -20,33 +20,26 @@ import scala.util.{ Failure, Success }
 
 class DelayedInitProcessor[I, O](implFuture: Future[Processor[I, O]])(implicit ec: ExecutionContext) extends Processor[I, O] {
   @volatile private var impl: Processor[I, O] = _
-  implFuture.onSuccess { case p ⇒ impl = p }
+  private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
 
-  override def onSubscribe(s: Subscription): Unit = implFuture.onComplete {
+  override def onSubscribe(s: Subscription): Unit = setVarFuture.onComplete {
     case Success(impl) ⇒ impl.onSubscribe(s)
     case Failure(_)    ⇒ s.cancel()
   }
 
   override def onError(t: Throwable): Unit = {
-    if (impl eq null) implFuture.onSuccess { case p ⇒ p.onError(t) }
+    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onError(t) }
     else impl.onError(t)
   }
 
   override def onComplete(): Unit = {
-    if (impl eq null) implFuture.onSuccess { case p ⇒ p.onComplete() }
+    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onComplete() }
     else impl.onComplete()
   }
 
   override def onNext(t: I): Unit = impl.onNext(t)
 
-  override def subscribe(s: Subscriber[_ >: O]): Unit = implFuture.onComplete {
-    case Success(impl) ⇒ impl.subscribe(s)
-    case Failure(e)    ⇒ s.onError(e)
-  }
-}
-
-class DelayedInitPublisher[O](implFuture: Future[Publisher[O]])(implicit ec: ExecutionContext) extends Publisher[O] {
-  override def subscribe(s: Subscriber[_ >: O]): Unit = implFuture.onComplete {
+  override def subscribe(s: Subscriber[_ >: O]): Unit = setVarFuture.onComplete {
     case Success(impl) ⇒ impl.subscribe(s)
     case Failure(e)    ⇒ s.onError(e)
   }
