@@ -75,10 +75,14 @@ class TickSourceSpec extends AkkaSpec {
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).to(Sink(c)).run()
+      val tickSource = Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace)
+      val m = tickSource.to(Sink(c)).run()
+      val cancellable = m.get(tickSource)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")
+      awaitCond(cancellable.isCancelled)
+      c.expectNoMsg(100.millis)
     }
 
     "be usable with zip for a simple form of rate limiting" in {
@@ -99,6 +103,26 @@ class TickSourceSpec extends AkkaSpec {
       c.expectNext(2)
       c.expectNoMsg(200.millis)
       sub.cancel()
+    }
+
+    "be possible to cancel" in {
+      val tickGen = Iterator from 1
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val tickSource = Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next())
+      val m = tickSource.to(Sink(c)).run()
+      val cancellable = m.get(tickSource)
+      val sub = c.expectSubscription()
+      sub.request(3)
+      c.expectNoMsg(600.millis)
+      c.expectNext("tick-1")
+      c.expectNoMsg(200.millis)
+      c.expectNext("tick-2")
+      c.expectNoMsg(200.millis)
+      c.expectNext("tick-3")
+      cancellable.cancel()
+      awaitCond(cancellable.isCancelled)
+      sub.request(3)
+      c.expectComplete()
     }
 
   }

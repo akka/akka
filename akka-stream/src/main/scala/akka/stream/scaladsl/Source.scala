@@ -131,8 +131,12 @@ object Source {
    * If a consumer has not requested any elements at the point in time when the tick
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
+   *
+   * The [[MaterializedMap]] will contain a [[akka.actor.Cancellable]] for this
+   * `TickSource` and that can be used for stopping the tick source and thereby
+   * completing the stream.
    */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Source[T] =
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): TickSource[T] =
     TickSource(initialDelay, interval, tick)
 
   /**
