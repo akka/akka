@@ -153,8 +153,8 @@ object MaterializerSettings {
   /**
    * Create [[MaterializerSettings]].
    *
-   * You can refine the configuration based settings using [[MaterializerSettings#withBuffer]],
-   * [[MaterializerSettings#withFanOut]], [[MaterializerSettings#withSubscriptionTimeout]]
+   * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
+   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
    */
   def apply(system: ActorSystem): MaterializerSettings =
     apply(system.settings.config.getConfig("akka.stream.materializer"))
@@ -162,8 +162,8 @@ object MaterializerSettings {
   /**
    * Create [[MaterializerSettings]].
    *
-   * You can refine the configuration based settings using [[MaterializerSettings#withBuffer]],
-   * [[MaterializerSettings#withFanOut]], [[MaterializerSettings#withSubscriptionTimeout]]
+   * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
+   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
    */
   def apply(config: Config): MaterializerSettings =
     MaterializerSettings(
@@ -176,8 +176,8 @@ object MaterializerSettings {
   /**
    * Java API
    *
-   * You can refine the configuration based settings using [[MaterializerSettings#withBuffer]],
-   * [[MaterializerSettings#withFanOut]], [[MaterializerSettings#withSubscriptionTimeout]]
+   * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
+   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
    */
   def create(system: ActorSystem): MaterializerSettings =
     apply(system)
@@ -185,8 +185,8 @@ object MaterializerSettings {
   /**
    * Java API
    *
-   * You can refine the configuration based settings using [[MaterializerSettings#withBuffer]],
-   * [[MaterializerSettings#withFanOut]], [[MaterializerSettings#withSubscriptionTimeout]]
+   * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
+   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
    */
   def create(config: Config): MaterializerSettings =
     apply(config)
