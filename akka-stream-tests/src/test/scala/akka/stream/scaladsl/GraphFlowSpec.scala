@@ -240,6 +240,7 @@ class GraphFlowSpec extends AkkaSpec {
         validateProbe(probe, 10, Set(2, 4, 6, 8, 10, 20, 40, 60, 80, 100))
       }
     }
+
     "turned into sinks" should {
       "work with a Source" in {
         val in = UndefinedSource[Int]
@@ -360,6 +361,41 @@ class GraphFlowSpec extends AkkaSpec {
 
         validateProbe(probe, stdRequests, stdResult)
       }
+
+      "allow connecting source to sink directly" in {
+        val probe = StreamTestKit.SubscriberProbe[Int]()
+        val inSource = Source.subscriber[Int]
+        val outSink = Sink.publisher[Int]
+
+        val source = Source[Int]() { implicit b ⇒
+          import FlowGraphImplicits._
+          val out = UndefinedSink[Int]
+          inSource ~> out
+          out
+        }
+
+        val sink = Sink[Int]() { implicit b ⇒
+          import FlowGraphImplicits._
+          val in = UndefinedSource[Int]
+          in ~> outSink
+          in
+        }
+
+        val mm = FlowGraph { implicit b ⇒
+          import FlowGraphImplicits._
+          val broadcast = Broadcast[Int]
+          source ~> sink
+        }.run()
+
+        val subscriber = mm.get(inSource)
+        val publisher = mm.get(outSink)
+
+        source1.runWith(Sink.publisher).subscribe(subscriber)
+        publisher.subscribe(probe)
+
+        validateProbe(probe, 4, (0 to 3).toSet)
+      }
+
     }
   }
 }
