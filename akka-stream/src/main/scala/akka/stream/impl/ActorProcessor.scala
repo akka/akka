@@ -202,7 +202,6 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
 
-      // TODO centralize overflow protection
       downstreamDemand += elements
       if (downstreamDemand < 0) {
         // Long has overflown
