@@ -48,11 +48,11 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "work with n-way broadcast" in {
-      val f1 = Sink.future[Seq[Int]]
-      val f2 = Sink.future[Seq[Int]]
-      val f3 = Sink.future[Seq[Int]]
-      val f4 = Sink.future[Seq[Int]]
-      val f5 = Sink.future[Seq[Int]]
+      val f1 = Sink.head[Seq[Int]]
+      val f2 = Sink.head[Seq[Int]]
+      val f3 = Sink.head[Seq[Int]]
+      val f4 = Sink.head[Seq[Int]]
+      val f5 = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")

@@ -25,7 +25,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
 
       val preferred = Source(Stream.fill(numElements)(1))
       val aux1, aux2, aux3 = Source(Stream.fill(numElements)(2))
-      val sink = Sink.future[Seq[Int]]
+      val sink = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val merge = MergePreferred[Int]
@@ -45,7 +45,7 @@ class GraphPreferredMergeSpec extends TwoStreamsSetup {
         val g = FlowGraph { implicit b ⇒
           val merge = MergePreferred[Int]
 
-          s1 ~> merge.preferred ~> Sink.future[Int]
+          s1 ~> merge.preferred ~> Sink.head[Int]
           s2 ~> merge.preferred
           s3 ~> merge
         }

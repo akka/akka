@@ -59,7 +59,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       }
-    dataBytes.timerTransform("toStrict", transformer).runWith(Sink.future)
+    dataBytes.timerTransform("toStrict", transformer).runWith(Sink.head)
   }
 
   /**

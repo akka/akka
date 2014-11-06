@@ -45,7 +45,7 @@ public class FlexiMergeTest {
         .addEdge(merge.out(), out1).build().run(materializer);
 
     final Publisher<String> pub = m.get(out1);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>future(), materializer);
+    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
     final List<String> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
         new HashSet<String>(Arrays.asList("a", "b", "c", "d", "e", "f")), 
@@ -60,7 +60,7 @@ public class FlexiMergeTest {
         .addEdge(merge.out(), out1).build().run(materializer);
 
     final Publisher<String> pub = m.get(out1);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>future(), materializer);
+    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
     final List<String> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(Arrays.asList("a", "e", "b", "f", "c", "d"), result);
   }
@@ -78,7 +78,7 @@ public class FlexiMergeTest {
 
     final Publisher<Pair<Integer, String>> pub = m.get(out);
     final Future<List<Pair<Integer, String>>> all = Source.from(pub).grouped(100).
-        runWith(Sink.<List<Pair<Integer, String>>>future(), materializer);
+        runWith(Sink.<List<Pair<Integer, String>>>head(), materializer);
     final List<Pair<Integer, String>> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
         Arrays.asList(new Pair(1, "a"), new Pair(2, "b"), new Pair(3, "c")), 

@@ -37,7 +37,7 @@ public class SinkTest {
   
   @Test
   public void mustBeAbleToUseFuture() throws Exception {
-    final KeyedSink<Integer, Future<Integer>> futSink = Sink.future();
+    final KeyedSink<Integer, Future<Integer>> futSink = Sink.head();
     final List<Integer> list = new ArrayList<Integer>();
     list.add(1);
     final Future<Integer> future = Source.from(list).runWith(futSink, materializer);

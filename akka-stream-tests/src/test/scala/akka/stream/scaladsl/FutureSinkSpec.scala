@@ -13,7 +13,7 @@ import akka.stream.MaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.testkit.ScriptedTest
 
-class FutureSinkSpec extends AkkaSpec with ScriptedTest {
+class HeadSinkSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -21,11 +21,11 @@ class FutureSinkSpec extends AkkaSpec with ScriptedTest {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  "A Flow with Sink.future" must {
+  "A Flow with Sink.head" must {
 
     "yield the first value" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f: Future[Int] = Source(p).map(identity).runWith(Sink.future)
+      val f: Future[Int] = Source(p).map(identity).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -35,7 +35,7 @@ class FutureSinkSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first value when actively constructing" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Sink.future[Int]
+      val f = Sink.head[Int]
       val s = Source.subscriber[Int]
       val m = s.to(f).run()
       p.subscribe(m.get(s))
@@ -48,7 +48,7 @@ class FutureSinkSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Source(p).runWith(Sink.future)
+      val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex")
@@ -59,7 +59,7 @@ class FutureSinkSpec extends AkkaSpec with ScriptedTest {
 
     "yield NoSuchElementExcption for empty stream" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Source(p).runWith(Sink.future)
+      val f = Source(p).runWith(Sink.head)
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()
