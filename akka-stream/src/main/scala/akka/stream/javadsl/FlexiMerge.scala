@@ -109,12 +109,12 @@ object FlexiMerge {
    * How to handle completion or error from upstream input.
    *
    * The `onComplete` method is called when an upstream input was completed sucessfully.
-   * It returns next behavior or [[#SameState]] to keep current behavior.
+   * It returns next behavior or [[MergeLogic#sameState]] to keep current behavior.
    * A completion can be propagated downstream with [[MergeLogicContext#complete]],
    * or it can be swallowed to continue with remaining inputs.
    *
    * The `onError` method is called when an upstream input was completed sucessfully.
-   * It returns next behavior or [[#SameState]] to keep current behavior.
+   * It returns next behavior or [[MergeLogic#sameState]] to keep current behavior.
    * An error can be propagated downstream with [[MergeLogicContext#error]],
    * or it can be swallowed to continue with remaining inputs.
    */
@@ -130,7 +130,7 @@ object FlexiMerge {
    * emit at least one element downstream with [[MergeLogicContext#emit]].
    *
    * The `onInput` method is called when an `element` was read from the `input`.
-   * The method returns next behavior or [[#SameState]] to keep current behavior.
+   * The method returns next behavior or [[MergeLogic#sameState]] to keep current behavior.
    */
   abstract class State[In, Out](val condition: ReadCondition) {
     def onInput(ctx: MergeLogicContext[Out], input: InputHandle, element: In): State[_, Out]

@@ -21,18 +21,19 @@ trait Source[+Out] extends FlowOps[Out] {
   override type Repr[+O] <: Source[O]
 
   /**
-   * Transform this [[Source]] by appending the given processing stages.
+   * Transform this [[akka.stream.scaladsl.Source]] by appending the given processing stages.
    */
   def via[T](flow: Flow[Out, T]): Source[T]
 
   /**
-   * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
+   * Connect this [[akka.stream.scaladsl.Source]] to a [[akka.stream.scaladsl.Sink]],
+   * concatenating the processing steps of both.
    */
   def to(sink: Sink[Out]): RunnableFlow
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
-   * of the `Sink`, e.g. the `Publisher` of a [[Sink.fanoutPublisher]].
+   * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
   def runWith(sink: Sink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
     to(sink).run().get(sink)

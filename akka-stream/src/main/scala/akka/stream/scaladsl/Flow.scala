@@ -298,8 +298,8 @@ trait FlowOps[+Out] {
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
-   * Depending on the defined [[OverflowStrategy]] it might drop elements or backpressure the upstream if there is no
-   * space available
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements or backpressure the upstream if
+   * there is no space available
    *
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -317,7 +317,7 @@ trait FlowOps[+Out] {
    * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
    * stream processing at this point; in that case the upstream subscription is
    * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
+   * the [[akka.stream.Transformer#onTermination]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
    * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
@@ -375,7 +375,7 @@ trait FlowOps[+Out] {
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
-   * This operation can be used on a stream of element type [[Source]].
+   * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
    */
   def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): Repr[U] = strategy match {
     case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
@@ -394,7 +394,7 @@ trait FlowOps[+Out] {
    * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
    * stream processing at this point; in that case the upstream subscription is
    * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.Transformer#onComplete]] function is invoked to produce a (possibly empty)
+   * the [[akka.stream.Transformer#onTermination]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
    * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
