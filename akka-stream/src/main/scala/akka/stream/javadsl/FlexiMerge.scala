@@ -67,6 +67,18 @@ object FlexiMerge {
   class ReadAny(val inputs: JList[InputHandle]) extends ReadCondition
 
   /**
+   * Read condition for the [[MergeLogic#State]] that will be
+   * fulfilled when there are elements for any of the given upstream
+   * inputs, however it differs from [[ReadAny]] in the case that both
+   * the `preferred` and at least one other `secondary` input have demand,
+   * the `preferred` input will always be consumed first.
+   *
+   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * to specify them in the list of `inputs`.
+   */
+  class ReadPreferred(val preferred: InputHandle, val secondaries: JList[InputHandle]) extends ReadCondition
+
+  /**
    * Context that is passed to the methods of [[State]] and [[CompletionHandling]].
    * The context provides means for performing side effects, such as emitting elements
    * downstream.
@@ -157,6 +169,14 @@ object FlexiMerge {
     @varargs def readAny(inputs: InputHandle*): ReadAny = {
       import scala.collection.JavaConverters._
       new ReadAny(inputs.asJava)
+    }
+
+    /**
+     * Convenience to create a [[ReadPreferred]] condition.
+     */
+    @varargs def readPreferred(preferred: InputHandle, secondaries: InputHandle*): ReadPreferred = {
+      import scala.collection.JavaConverters._
+      new ReadPreferred(preferred, secondaries.asJava)
     }
 
     /**
@@ -254,11 +274,13 @@ object FlexiMerge {
 
     }
 
-    def convertReadCondition(condition: ReadCondition): scaladsl.FlexiMerge.ReadCondition =
+    def convertReadCondition(condition: ReadCondition): scaladsl.FlexiMerge.ReadCondition = {
       condition match {
-        case r: ReadAny ⇒ scaladsl.FlexiMerge.ReadAny(immutableIndexedSeq(r.inputs))
-        case r: Read    ⇒ scaladsl.FlexiMerge.Read(r.input)
+        case r: ReadAny       ⇒ scaladsl.FlexiMerge.ReadAny(immutableIndexedSeq(r.inputs))
+        case r: ReadPreferred ⇒ scaladsl.FlexiMerge.ReadPreferred(r.preferred, immutableIndexedSeq(r.secondaries))
+        case r: Read          ⇒ scaladsl.FlexiMerge.Read(r.input)
       }
+    }
 
   }
 }

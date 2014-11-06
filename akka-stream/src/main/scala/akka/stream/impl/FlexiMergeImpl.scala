@@ -86,7 +86,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
 
   private def precondition: TransferState = {
     behavior.condition match {
-      case _: ReadAny | _: Read ⇒ inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand
+      case _: ReadAny | _: ReadPreferred | _: Read ⇒ inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand
     }
   }
 
@@ -99,6 +99,9 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
       behavior.condition match {
         case read: ReadAny ⇒
           markInputs(read.inputs.toArray)
+        case ReadPreferred(preferred, secondaries) ⇒
+          markInputs(secondaries.toArray)
+          inputBunch.markInput(preferred.portIndex)
         case Read(input) ⇒
           require(inputMapping.contains(input.portIndex), s"Unknown input handle $input")
           require(!inputBunch.isCancelled(input.portIndex), s"Read not allowed from cancelled $input")
@@ -119,7 +122,12 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
         val inputHandle = inputMapping(id)
         changeBehavior(behavior.onInput(ctx, inputHandle, elem))
         triggerCompletionAfterRead(inputHandle)
-
+      case ReadPreferred(preferred, secondaries) ⇒
+        val id = inputBunch.idToDequeue()
+        val elem = inputBunch.dequeueAndPrefer(id)
+        val inputHandle = inputMapping(id)
+        changeBehavior(behavior.onInput(ctx, inputHandle, elem))
+        triggerCompletionAfterRead(inputHandle)
       case Read(inputHandle) ⇒
         val elem = inputBunch.dequeue(inputHandle.portIndex)
         changeBehavior(behavior.onInput(ctx, inputHandle, elem))

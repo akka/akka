@@ -172,6 +172,23 @@ object GraphFlexiMergeSpec {
     }
   }
 
+  class PreferringMerge extends FlexiMerge[Int] {
+    import FlexiMerge._
+    val preferred = createInputPort[Int]()
+    val secondary1 = createInputPort[Int]()
+    val secondary2 = createInputPort[Int]()
+
+    def createMergeLogic = new MergeLogic[Int] {
+      override def inputHandles(inputCount: Int) = Vector(preferred, secondary1, secondary2)
+
+      override def initialState = State[Int](ReadPreferred(preferred)(secondary1, secondary2)) {
+        (ctx, input, element) ⇒
+          ctx.emit(element)
+          SameState
+      }
+    }
+  }
+
   class TestMerge extends FlexiMerge[String]("testMerge") {
     import FlexiMerge._
     val input1 = createInputPort[String]()
@@ -298,8 +315,9 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(100)
-      for (n ← 1 to 9)
+      for (n ← 1 to 9) {
         s.expectNext(n)
+      }
       s.expectComplete()
     }
 
@@ -328,6 +346,94 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext(8)
       s.expectNext(8)
       s.expectNext(10)
+      s.expectComplete()
+    }
+
+    "build perferring merge" in {
+      val output = Sink.publisher[Int]
+      val m = FlowGraph { implicit b ⇒
+        val merge = new PreferringMerge
+        Source(List(1, 2, 3)) ~> merge.preferred
+        Source(List(11, 12, 13)) ~> merge.secondary1
+        Source(List(14, 15, 16)) ~> merge.secondary2
+        merge.out ~> output
+      }.run()
+
+      val s = SubscriberProbe[Int]
+      val p = m.get(output)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(100)
+      s.expectNext(1)
+      s.expectNext(2)
+      s.expectNext(3)
+      val secondaries = s.expectNext() ::
+        s.expectNext() ::
+        s.expectNext() ::
+        s.expectNext() ::
+        s.expectNext() ::
+        s.expectNext() :: Nil
+
+      secondaries.toSet should equal(Set(11, 12, 13, 14, 15, 16))
+      s.expectComplete()
+    }
+    "build perferring merge, manually driven" in {
+      val output = Sink.publisher[Int]
+      val preferredDriver = PublisherProbe[Int]()
+      val otherDriver1 = PublisherProbe[Int]()
+      val otherDriver2 = PublisherProbe[Int]()
+
+      val m = FlowGraph { implicit b ⇒
+        val merge = new PreferringMerge
+        Source(preferredDriver) ~> merge.preferred
+        Source(otherDriver1) ~> merge.secondary1
+        Source(otherDriver2) ~> merge.secondary2
+        merge.out ~> output
+      }.run()
+
+      val s = SubscriberProbe[Int]
+      val p = m.get(output)
+      p.subscribe(s)
+
+      val sub = s.expectSubscription()
+      val p1 = preferredDriver.expectSubscription()
+      val s1 = otherDriver1.expectSubscription()
+      val s2 = otherDriver2.expectSubscription()
+
+      // just consume the preferred
+      p1.sendNext(1)
+      sub.request(1)
+      s.expectNext(1)
+
+      // pick preferred over any of the secondaries
+      p1.sendNext(2)
+      s1.sendNext(10)
+      s2.sendNext(20)
+      sub.request(1)
+      s.expectNext(2)
+
+      sub.request(2)
+      s.expectNext(10)
+      s.expectNext(20)
+
+      p1.sendComplete()
+
+      // continue with just secondaries when preferred has completed
+      s1.sendNext(11)
+      s2.sendNext(21)
+      sub.request(2)
+      val d1 = s.expectNext()
+      val d2 = s.expectNext()
+      Set(d1, d2) should equal(Set(11, 21))
+
+      // continue with just one secondary
+      s1.sendComplete()
+      s2.sendNext(4)
+      sub.request(1)
+      s.expectNext(4)
+      s2.sendComplete()
+
+      // complete when all inputs have completed
       s.expectComplete()
     }
 

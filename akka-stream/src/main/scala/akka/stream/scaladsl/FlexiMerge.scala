@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import scala.annotation.varargs
 import scala.collection.immutable
 import akka.stream.impl.Ast
 import akka.stream.impl.FlexiMergeImpl.MergeLogicFactory
@@ -58,9 +59,28 @@ object FlexiMerge {
    */
   final case class ReadAny(inputs: InputHandle*) extends ReadCondition
 
+  object ReadPreferred {
+    def apply(preferred: InputHandle)(secondaries: InputHandle*): ReadPreferred =
+      new ReadPreferred(preferred, secondaries.toArray)
+
+    def apply(preferred: InputHandle, secondaries: immutable.Seq[InputHandle]): ReadPreferred =
+      new ReadPreferred(preferred, secondaries.toArray)
+  }
   /**
-   * The possibly stateful logic that reads from input via the defined [[State]] and
-   * handles completion and error via the defined [[CompletionHandling]].
+   * Read condition for the [[MergeLogic#State]] that will be
+   * fulfilled when there are elements for any of the given upstream
+   * inputs, however it differs from [[ReadAny]] in the case that both
+   * the `preferred` and at least one other `secondary` input have demand,
+   * the `preferred` input will always be consumed first.
+   *
+   * Cancelled and completed inputs are not used, i.e. it is allowed
+   * to specify them in the list of `inputs`.
+   */
+  final case class ReadPreferred(preferred: InputHandle, secondaries: Array[InputHandle]) extends ReadCondition
+
+  /**
+   * The possibly stateful logic that reads from input via the defined [[MergeLogic#State]] and
+   * handles completion and error via the defined [[FlexiMerge#CompletionHandling]].
    *
    * Concrete instance is supposed to be created by implementing [[FlexiMerge#createMergeLogic]].
    */
