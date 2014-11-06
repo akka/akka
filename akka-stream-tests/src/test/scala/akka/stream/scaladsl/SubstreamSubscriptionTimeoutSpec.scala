@@ -73,7 +73,7 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       // sleep long enough for it to be cleaned up
       Thread.sleep(1000)
 
-      val f = s3.runWith(Sink.future).recover { case _: SubscriptionTimeoutException ⇒ "expected" }
+      val f = s3.runWith(Sink.head).recover { case _: SubscriptionTimeoutException ⇒ "expected" }
       Await.result(f, 300.millis) should equal("expected")
     }
 

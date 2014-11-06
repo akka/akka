@@ -95,8 +95,8 @@ final case class FanoutPublisherSink[In](initialBufferSize: Int, maximumBufferSi
   }
 }
 
-object FutureSink {
-  def apply[T](): FutureSink[T] = new FutureSink[T]
+object HeadSink {
+  def apply[T](): HeadSink[T] = new HeadSink[T]
 }
 
 /**
@@ -106,7 +106,7 @@ object FutureSink {
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-class FutureSink[In] extends KeyedActorFlowSink[In] {
+class HeadSink[In] extends KeyedActorFlowSink[In] {
 
   type MaterializedType = Future[In]
 
@@ -130,7 +130,7 @@ class FutureSink[In] extends KeyedActorFlowSink[In] {
     (sub, p.future)
   }
 
-  override def toString: String = "FutureSink"
+  override def toString: String = "HeadSink"
 }
 
 /**
