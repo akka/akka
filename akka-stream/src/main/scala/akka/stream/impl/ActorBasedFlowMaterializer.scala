@@ -85,6 +85,10 @@ private[akka] object Ast {
   sealed trait FanInAstNode extends JunctionAstNode
   sealed trait FanOutAstNode extends JunctionAstNode
 
+  case object IdentityAstNode extends JunctionAstNode {
+    override def name = "identity"
+  }
+
   case object Merge extends FanInAstNode {
     override def name = "merge"
   }
@@ -274,6 +278,10 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         impl ! FanOut.ExposedPublishers(publishers.asInstanceOf[immutable.Seq[ActorPublisher[Any]]])
         val subscriber = ActorSubscriber[In](impl)
         (List(subscriber), publishers)
+
+      case identity @ Ast.IdentityAstNode ⇒
+        val id: Processor[In, Out] = processorForNode(identityTransform, identity.name, 1).asInstanceOf[Processor[In, Out]]
+        (List(id), List(id))
     }
 
   }
