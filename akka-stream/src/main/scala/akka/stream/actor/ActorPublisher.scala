@@ -205,7 +205,12 @@ trait ActorPublisher[T] extends Actor {
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case Request(n) ⇒
       demand += n
-      super.aroundReceive(receive, msg)
+      if (demand < 0 && lifecycleState == Active) {
+        // Long has overflown
+        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
+        onError(demandOverflowException)
+      } else
+        super.aroundReceive(receive, msg)
 
     case Subscribe(sub: Subscriber[_]) ⇒
       lifecycleState match {
@@ -246,7 +251,7 @@ trait ActorPublisher[T] extends Actor {
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
-      // restore previous state 
+      // restore previous state
       subscriber = s.subscriber.orNull
       demand = s.demand
       lifecycleState = s.lifecycleState
