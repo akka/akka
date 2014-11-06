@@ -6,17 +6,19 @@ package akka.stream.impl
 import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
 import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
 import org.reactivestreams.{ Subscriber, Subscription }
-
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * INTERNAL API
  */
 private[akka] object TickPublisher {
-  def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings): Props =
-    Props(new TickPublisher(initialDelay, interval, tick, settings)).withDispatcher(settings.dispatcher)
+  def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any,
+            cancelled: AtomicBoolean, settings: MaterializerSettings): Props =
+    Props(new TickPublisher(initialDelay, interval, tick, cancelled, settings)).
+      withDispatcher(settings.dispatcher)
 
   object TickPublisherSubscription {
     case class Cancel(subscriber: Subscriber[_ >: Any])
@@ -42,12 +44,14 @@ private[akka] object TickPublisher {
  * Each subscriber will receive the tick element if it has requested any elements,
  * otherwise the tick element is dropped for that subscriber.
  */
-private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any, settings: MaterializerSettings) extends Actor with SoftShutdown {
+private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any,
+                                  cancelled: AtomicBoolean, settings: MaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
 
   var exposedPublisher: ActorPublisher[Any] = _
   val demand = mutable.Map.empty[Subscriber[_ >: Any], Long]
+  var failed = false
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 
@@ -82,7 +86,9 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
       } catch {
         case NonFatal(e) ⇒
           // tick closure throwed => onError downstream
+          failed = true
           demand foreach { case (subscriber, _) ⇒ subscriber.onError(e) }
+          softShutdown()
       }
 
     case RequestMore(elements, subscriber) ⇒
@@ -117,8 +123,13 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
 
   override def postStop(): Unit = {
     tickTask.foreach(_.cancel)
+    cancelled.set(true)
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+    if (!failed)
+      demand.foreach {
+        case (subscriber, _) ⇒ subscriber.onComplete()
+      }
   }
 
 }
