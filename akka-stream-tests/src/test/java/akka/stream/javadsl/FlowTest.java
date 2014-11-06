@@ -327,7 +327,7 @@ public class FlowTest {
 
     // collecting
     final Publisher<String> pub = m.get(publisher);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>> future(), materializer);
+    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
 
     final List<String> result = Await.result(all, Duration.apply(200, TimeUnit.MILLISECONDS));
     assertEquals(new HashSet<Object>(Arrays.asList("a", "b", "c", "d", "e", "f")), new HashSet<String>(result));
@@ -466,7 +466,7 @@ public class FlowTest {
       public String apply(String arg0) throws Exception {
         throw new RuntimeException("simulated err");
       }
-    }).runWith(Sink.<String> future(), materializer).onComplete(new OnSuccess<Try<String>>() {
+    }).runWith(Sink.<String>head(), materializer).onComplete(new OnSuccess<Try<String>>() {
       @Override
       public void onSuccess(Try<String> e) throws Throwable {
         if (e == null) {
@@ -484,7 +484,7 @@ public class FlowTest {
   public void mustBeAbleToUseToFuture() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
-    Future<String> future = Source.from(input).runWith(Sink.<String> future(), materializer);
+    Future<String> future = Source.from(input).runWith(Sink.<String>head(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
@@ -494,12 +494,12 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
     Future<Pair<List<Integer>, Source<Integer>>> future = Source.from(input).prefixAndTail(3)
-        .runWith(Sink.<Pair<List<Integer>, Source<Integer>>> future(), materializer);
+        .runWith(Sink.<Pair<List<Integer>, Source<Integer>>>head(), materializer);
     Pair<List<Integer>, Source<Integer>> result = Await.result(future,
         probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
-    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>> future(), materializer);
+    Future<List<Integer>> tailFuture = result.second().grouped(4).runWith(Sink.<List<Integer>>head(), materializer);
     List<Integer> tailResult = Await.result(tailFuture, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(4, 5, 6), tailResult);
   }
@@ -514,7 +514,7 @@ public class FlowTest {
 
     Future<List<Integer>> future = Source.from(mainInputs)
         .flatten(akka.stream.javadsl.FlattenStrategy.<Integer> concat()).grouped(6)
-        .runWith(Sink.<List<Integer>> future(), materializer);
+        .runWith(Sink.<List<Integer>>head(), materializer);
 
     List<Integer> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
 
@@ -526,7 +526,7 @@ public class FlowTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final List<String> input = Arrays.asList("A", "B", "C");
     Future<List<String>> future = Source.from(input).buffer(2, OverflowStrategy.backpressure()).grouped(4)
-        .runWith(Sink.<List<String>> future(), materializer);
+        .runWith(Sink.<List<String>>head(), materializer);
 
     List<String> result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(input, result);
@@ -571,7 +571,7 @@ public class FlowTest {
       public Pair<String, String> apply(String in) throws Exception {
         return new Pair<String, String>(in, in);
       }
-    }).runWith(Sink.<String> future(), materializer);
+    }).runWith(Sink.<String>head(), materializer);
     String result = Await.result(future, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }

@@ -64,7 +64,7 @@ object Sink {
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
    */
-  def future[T]: FutureSink[T] = FutureSink[T]
+  def head[T]: HeadSink[T] = HeadSink[T]
 
   /**
    * A `Sink` that materializes into a [[org.reactivestreams.Publisher]].

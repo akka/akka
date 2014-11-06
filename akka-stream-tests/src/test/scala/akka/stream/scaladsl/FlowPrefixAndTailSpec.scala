@@ -25,10 +25,10 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     val testException = new Exception("test") with NoStackTrace
 
-    def newFutureSink = Sink.future[(immutable.Seq[Int], Source[Int])]
+    def newHeadSink = Sink.head[(immutable.Seq[Int], Source[Int])]
 
     "work on empty input" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source.empty.prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(Nil)
@@ -38,7 +38,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
     }
 
     "work on short input" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source(List(1, 2, 3)).prefixAndTail(10).runWith(futureSink)
       val (prefix, tailFlow) = Await.result(fut, 3.seconds)
       prefix should be(List(1, 2, 3))
@@ -48,40 +48,40 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
     }
 
     "work on longer inputs" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source((1 to 10).iterator).prefixAndTail(5).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 5)
 
-      val futureSink2 = Sink.future[immutable.Seq[Int]]
+      val futureSink2 = Sink.head[immutable.Seq[Int]]
       val fut2 = tail.grouped(6).runWith(futureSink2)
       Await.result(fut2, 3.seconds) should be(6 to 10)
     }
 
     "handle zero take count" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source((1 to 10).iterator).prefixAndTail(0).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      val futureSink2 = Sink.future[immutable.Seq[Int]]
+      val futureSink2 = Sink.head[immutable.Seq[Int]]
       val fut2 = tail.grouped(11).runWith(futureSink2)
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "handle negative take count" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source((1 to 10).iterator).prefixAndTail(-1).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
-      val futureSink2 = Sink.future[immutable.Seq[Int]]
+      val futureSink2 = Sink.head[immutable.Seq[Int]]
       val fut2 = tail.grouped(11).runWith(futureSink2)
       Await.result(fut2, 3.seconds) should be(1 to 10)
     }
 
     "work if size of take is equal to stream size" in {
-      val futureSink = newFutureSink
+      val futureSink = newHeadSink
       val fut = Source((1 to 10).iterator).prefixAndTail(10).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 10)

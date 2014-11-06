@@ -106,8 +106,8 @@ object Sink {
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
    */
-  def future[In]: KeyedSink[In, Future[In]] =
-    new KeyedSink(scaladsl.Sink.future[In])
+  def head[In]: KeyedSink[In, Future[In]] =
+    new KeyedSink(scaladsl.Sink.head[In])
 
 }
 

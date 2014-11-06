@@ -41,7 +41,7 @@ object TestClient extends App {
     Source(List(HttpRequest() -> 'NoContext))
       .to(Sink(connection.requestSubscriber))
       .run()
-    Source(connection.responsePublisher).map(_._1).runWith(Sink.future)
+    Source(connection.responsePublisher).map(_._1).runWith(Sink.head)
   }
 
   result onComplete {

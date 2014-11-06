@@ -64,7 +64,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
   "FlowGraphs" must {
 
     "support broadcast - merge layouts" in {
-      val resultFuture = Sink.future[Seq[Int]]
+      val resultFuture = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")
@@ -83,7 +83,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val elements = 0 to 10
       val in = Source(elements)
       val f = Flow[Int]
-      val out = Sink.future[Seq[Int]]
+      val out = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]
@@ -101,9 +101,9 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
 
     "support wikipedia Topological_sorting 2" in {
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
-      val resultFuture2 = Sink.future[Seq[Int]]
-      val resultFuture9 = Sink.future[Seq[Int]]
-      val resultFuture10 = Sink.future[Seq[Int]]
+      val resultFuture2 = Sink.head[Seq[Int]]
+      val resultFuture9 = Sink.head[Seq[Int]]
+      val resultFuture10 = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val b3 = Broadcast[Int]("b3")
@@ -149,7 +149,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
     }
 
     "allow adding of flows to sources and sinks to flows" in {
-      val resultFuture = Sink.future[Seq[Int]]
+      val resultFuture = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val bcast = Broadcast[Int]("broadcast")

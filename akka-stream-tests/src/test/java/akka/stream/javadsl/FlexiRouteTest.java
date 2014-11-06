@@ -32,8 +32,8 @@ public class FlexiRouteTest {
 
   final Source<String> in = Source.from(Arrays.asList("a", "b", "c", "d", "e"));
 
-  final KeyedSink<List<String>, Future<List<String>>> out1 = Sink.<List<String>>future();
-  final KeyedSink<List<String>, Future<List<String>>> out2 = Sink.<List<String>>future();
+  final KeyedSink<List<String>, Future<List<String>>> out1 = Sink.<List<String>>head();
+  final KeyedSink<List<String>, Future<List<String>>> out2 = Sink.<List<String>>head();
 
   @Test
   public void mustBuildSimpleFairRoute() throws Exception {
@@ -71,8 +71,8 @@ public class FlexiRouteTest {
     Source<Pair<Integer, String>> input = Source.from(Arrays.<Pair<Integer, String>>asList(new Pair(1, "A"), new Pair(
         2, "B"), new Pair(3, "C"), new Pair(4, "D")));
 
-    final KeyedSink<List<Integer>, Future<List<Integer>>> outA = Sink.<List<Integer>>future();
-    final KeyedSink<List<String>, Future<List<String>>> outB = Sink.<List<String>>future();
+    final KeyedSink<List<Integer>, Future<List<Integer>>> outA = Sink.<List<Integer>>head();
+    final KeyedSink<List<String>, Future<List<String>>> outB = Sink.<List<String>>head();
 
     MaterializedMap m = FlowGraph.builder().addEdge(input, unzip.in())
         .addEdge(unzip.outputA, Flow.of(Integer.class).grouped(100), outA)

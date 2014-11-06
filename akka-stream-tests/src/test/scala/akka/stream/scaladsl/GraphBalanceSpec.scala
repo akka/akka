@@ -115,11 +115,11 @@ class GraphBalanceSpec extends AkkaSpec {
     }
 
     "work with 5-way balance" in {
-      val f1 = Sink.future[Seq[Int]]
-      val f2 = Sink.future[Seq[Int]]
-      val f3 = Sink.future[Seq[Int]]
-      val f4 = Sink.future[Seq[Int]]
-      val f5 = Sink.future[Seq[Int]]
+      val f1 = Sink.head[Seq[Int]]
+      val f2 = Sink.head[Seq[Int]]
+      val f3 = Sink.head[Seq[Int]]
+      val f4 = Sink.head[Seq[Int]]
+      val f5 = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance", waitForAllDownstreams = true)

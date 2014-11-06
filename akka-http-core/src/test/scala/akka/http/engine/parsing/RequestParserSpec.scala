@@ -437,7 +437,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               }
               .flatten(FlattenStrategy.concat)
               .map(strictEqualify)
-              .grouped(1000).runWith(Sink.future)
+              .grouped(1000).runWith(Sink.head)
           Await.result(future, 250.millis)
         }
 
@@ -451,7 +451,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart]): Future[Seq[ChunkStreamPart]] =
-      data.grouped(1000).runWith(Sink.future)
+      data.grouped(1000).runWith(Sink.head)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
