@@ -31,4 +31,5 @@ private[akka] class ConcatAllImpl(materializer: FlowMaterializer)
   nextPhase(takeNextSubstream)
 
   override def invalidateSubstreamInput(substream: SubstreamKey, e: Throwable): Unit = fail(e)
+
 }

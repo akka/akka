@@ -37,7 +37,7 @@ private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val key
     }
   }
 
-  def openSubstream(elem: Any, key: Any): TransferPhase = TransferPhase(primaryOutputs.NeedsDemand) { () ⇒
+  def openSubstream(elem: Any, key: Any): TransferPhase = TransferPhase(primaryOutputs.NeedsDemandOrCancel) { () ⇒
     if (primaryOutputs.isClosed) {
       // Just drop, we do not open any more substreams
       nextPhase(waitNext)

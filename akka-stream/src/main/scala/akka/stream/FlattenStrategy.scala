@@ -3,8 +3,6 @@
  */
 package akka.stream
 
-import org.reactivestreams.Publisher
-
 /**
  * Strategy that defines how a stream of streams should be flattened into a stream of simple elements.
  */
