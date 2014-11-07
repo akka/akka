@@ -206,7 +206,7 @@ Each FSM needs a starting point, which is declared using
 
 The optionally given timeout argument overrides any specification given for the
 desired initial state. If you want to cancel a default timeout, use
-:obj:`Duration.Inf`.
+:obj:`None`.
 
 Unhandled Events
 ----------------
