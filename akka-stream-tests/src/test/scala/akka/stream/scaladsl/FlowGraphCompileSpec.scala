@@ -34,7 +34,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
   val in1 = Source(List("a", "b", "c"))
   val in2 = Source(List("d", "e", "f"))
   val out1 = Sink.publisher[String]
-  val out2 = Sink.future[String]
+  val out2 = Sink.head[String]
 
   "FlowGraph" should {
     "build simple merge" in {
