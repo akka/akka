@@ -4,6 +4,8 @@
 
 package akka.http.server
 
+import akka.stream.FlowMaterializer
+
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
 import akka.http.marshalling.ToResponseMarshallable
@@ -18,14 +20,15 @@ private[http] class RequestContextImpl(
   val request: HttpRequest,
   val unmatchedPath: Uri.Path,
   val executionContext: ExecutionContext,
+  val flowMaterializer: FlowMaterializer,
   val log: LoggingAdapter,
   val settings: RoutingSettings) extends RequestContext {
 
-  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext) =
-    this(request, request.uri.path, ec, log, settings)
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext, materializer: FlowMaterializer) =
+    this(request, request.uri.path, ec, materializer, log, settings)
 
-  def reconfigure(executionContext: ExecutionContext, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
-    copy(executionContext = executionContext, log = log, settings = settings)
+  def reconfigure(executionContext: ExecutionContext, flowMaterializer: FlowMaterializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
+    copy(executionContext = executionContext, flowMaterializer = flowMaterializer, log = log, settings = settings)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
@@ -43,6 +46,9 @@ private[http] class RequestContextImpl(
 
   override def withExecutionContext(ec: ExecutionContext): RequestContext =
     copy(executionContext = ec)
+
+  override def withFlowMaterializer(materializer: FlowMaterializer): RequestContext =
+    copy(flowMaterializer = materializer)
 
   override def withLog(log: LoggingAdapter): RequestContext =
     copy(log = log)
@@ -65,7 +71,8 @@ private[http] class RequestContextImpl(
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
                    executionContext: ExecutionContext = executionContext,
+                   flowMaterializer: FlowMaterializer = flowMaterializer,
                    log: LoggingAdapter = log,
                    settings: RoutingSettings = settings) =
-    new RequestContextImpl(request, unmatchedPath, executionContext, log, settings)
+    new RequestContextImpl(request, unmatchedPath, executionContext, flowMaterializer, log, settings)
 }
