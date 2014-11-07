@@ -5,17 +5,20 @@
 package akka.http.util
 
 import java.util.concurrent.atomic.AtomicBoolean
-import org.reactivestreams.Subscriber
+import java.io.InputStream
 
-import akka.http.model.RequestEntity
-import akka.stream.impl.ErrorPublisher
-import akka.stream.{ impl, Transformer, FlowMaterializer }
-import akka.stream.scaladsl._
-import akka.util.ByteString
-import org.reactivestreams.Publisher
+import org.reactivestreams.{ Subscriber, Publisher }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
+
+import akka.actor.Props
+import akka.util.ByteString
+
+import akka.stream.{ impl, Transformer, FlowMaterializer }
+import akka.stream.scaladsl._
+
+import akka.http.model.RequestEntity
 
 /**
  * INTERNAL API
@@ -51,7 +54,7 @@ private[http] object StreamUtils {
     }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
-    ErrorPublisher(ex).asInstanceOf[Publisher[T]]
+    impl.ErrorPublisher(ex).asInstanceOf[Publisher[T]]
 
   def mapErrorTransformer[T](f: Throwable ⇒ Throwable): Transformer[T, T] =
     new Transformer[T, T] {
@@ -124,6 +127,49 @@ private[http] object StreamUtils {
 
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
     _.transformDataBytes(() ⇒ mapErrorTransformer(f))
+
+  /**
+   * Simple blocking Source backed by an InputStream.
+   *
+   * FIXME: should be provided by akka-stream, see #15588
+   */
+  def fromInputStreamSource(inputStream: InputStream, defaultChunkSize: Int = 65536): Source[ByteString] = {
+    import akka.stream.impl._
+
+    def props(materializer: ActorBasedFlowMaterializer): Props = {
+      val iterator = new Iterator[ByteString] {
+        var finished = false
+        def hasNext: Boolean = !finished
+        def next(): ByteString =
+          if (!finished) {
+            val buffer = new Array[Byte](defaultChunkSize)
+            val read = inputStream.read(buffer)
+            if (read < 0) {
+              finished = true
+              inputStream.close()
+              ByteString.empty
+            } else ByteString.fromArray(buffer, 0, read)
+          } else ByteString.empty
+      }
+
+      Props(new IteratorPublisherImpl(iterator, materializer.settings)).withDispatcher(materializer.settings.fileIODispatcher)
+    }
+
+    new AtomicBoolean(false) with SimpleActorFlowSource[ByteString] {
+      override def attach(flowSubscriber: Subscriber[ByteString], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+        create(materializer, flowName)._1.subscribe(flowSubscriber)
+
+      override def isActive: Boolean = true
+      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[ByteString], Unit) =
+        if (!getAndSet(true)) {
+          val ref = materializer.actorOf(props(materializer), name = s"$flowName-0-InputStream-source")
+          val publisher = ActorPublisher[ByteString](ref)
+          ref ! ExposedPublisher(publisher.asInstanceOf[impl.ActorPublisher[Any]])
+
+          (publisher, ())
+        } else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once")).asInstanceOf[Publisher[ByteString]], ())
+    }
+  }
 
   /**
    * Returns a source that can only be used once for testing purposes.
