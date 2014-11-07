@@ -369,8 +369,8 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    *                    state.
    */
   def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Source[U] =
-    new Source(delegate.expand(seed.apply, (s: S) ⇒ {
-      val p = extrapolate.apply(s)
+    new Source(delegate.expand(seed(_))(s ⇒ {
+      val p = extrapolate(s)
       (p.first, p.second)
     }))
 

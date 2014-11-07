@@ -27,7 +27,7 @@ class FlowExpandSpec extends AkkaSpec {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
+      Source(publisher).expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -47,7 +47,7 @@ class FlowExpandSpec extends AkkaSpec {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
       // Simply repeat the last element as an extrapolation step
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
+      Source(publisher).expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()
@@ -69,17 +69,17 @@ class FlowExpandSpec extends AkkaSpec {
     "work on a variable rate chain" in {
       val future = Source((1 to 100).iterator)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
-        .expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i))
+        .expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i))
         .fold(Set.empty[Int])(_ + _)
 
-      Await.result(future, 10.seconds) should be(Set.empty[Int] ++ (1 to 100))
+      Await.result(future, 10.seconds) should contain theSameElementsAs ((1 to 100).toSet)
     }
 
     "backpressure publisher when subscriber is slower" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).expand[Int, Int](seed = i ⇒ i, extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
+      Source(publisher).expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()

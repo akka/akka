@@ -256,8 +256,8 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    *                    state.
    */
   def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Flow[In, U] =
-    new Flow(delegate.expand(seed.apply, (s: S) ⇒ {
-      val p = extrapolate.apply(s)
+    new Flow(delegate.expand(seed(_))(s ⇒ {
+      val p = extrapolate(s)
       (p.first, p.second)
     }))
 
