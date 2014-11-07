@@ -184,7 +184,8 @@ object MaterializerSettings {
       config.getInt("initial-fan-out-buffer-size"),
       config.getInt("max-fan-out-buffer-size"),
       config.getString("dispatcher"),
-      StreamSubscriptionTimeoutSettings(config))
+      StreamSubscriptionTimeoutSettings(config),
+      config.getString("file-io-dispatcher"))
 
   /**
    * Java API
@@ -223,7 +224,8 @@ final case class MaterializerSettings(
   initialFanOutBufferSize: Int,
   maxFanOutBufferSize: Int,
   dispatcher: String,
-  subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings) {
+  subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
+  fileIODispatcher: String) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
