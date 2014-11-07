@@ -56,7 +56,7 @@ object AkkaBuild extends Build {
       StatsDMetrics.settings ++
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
       testMailbox in GlobalScope := System.getProperty("akka.testMailbox", "false").toBoolean,
-      parallelExecution in Test in GlobalScope := false,
+      parallelExecution in GlobalScope in Test := false,
       Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       unidocExclude := Seq(samples.id, remoteTests.id, parsing.id),
       sources in JavaDoc <<= junidocSources,
@@ -997,7 +997,6 @@ object AkkaBuild extends Build {
      * Test settings
      */
 
-    parallelExecution in Test := System.getProperty("akka.parallelExecution", "false").toBoolean,
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
     resolvers += "Akka Repo Snapshots" at "http://repo.akka.io/snapshots", // TODO Remove once reactive streams TCK is released
