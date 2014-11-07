@@ -18,15 +18,15 @@ sealed abstract class ModeledCompanion extends Renderable {
   val name = getClass.getSimpleName.replace("$minus", "-").dropRight(1) // trailing $
   val lowercaseName = name.toRootLowerCase
   private[this] val nameBytes = name.asciiBytes
-  def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
+  final def render[R <: Rendering](r: R): r.type = r ~~ nameBytes ~~ ':' ~~ ' '
 }
 
 sealed trait ModeledHeader extends HttpHeader with Serializable {
   def name: String = companion.name
   def value: String = renderValue(new StringRendering).get
   def lowercaseName: String = companion.lowercaseName
-  def render[R <: Rendering](r: R): r.type = renderValue(r ~~ companion)
-  def renderValue[R <: Rendering](r: R): r.type
+  final def render[R <: Rendering](r: R): r.type = renderValue(r ~~ companion)
+  protected[http] def renderValue[R <: Rendering](r: R): r.type
   protected def companion: ModeledCompanion
 }
 
@@ -38,7 +38,7 @@ abstract class CustomHeader extends japi.headers.CustomHeader {
   def suppressRendering: Boolean = false
 
   def lowercaseName: String = name.toRootLowerCase
-  def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
+  final def render[R <: Rendering](r: R): r.type = r ~~ name ~~ ':' ~~ ' ' ~~ value
 }
 
 import japi.JavaMapping.Implicits._
@@ -81,7 +81,7 @@ object Expect extends ModeledCompanion {
   val `100-continue` = new Expect() {}
 }
 sealed abstract case class Expect private () extends ModeledHeader {
-  def renderValue[R <: Rendering](r: R): r.type = r ~~ "100-continue"
+  final def renderValue[R <: Rendering](r: R): r.type = r ~~ "100-continue"
   protected def companion = Expect
 }
 
