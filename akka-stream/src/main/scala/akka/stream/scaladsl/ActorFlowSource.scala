@@ -10,15 +10,13 @@ import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast.AstNode
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Failure
 import scala.util.Success
-import akka.actor.Cancellable
-import akka.actor.PoisonPill
-import java.util.concurrent.atomic.AtomicBoolean
 
 sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
@@ -183,34 +181,14 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
  * If a consumer has not requested any elements at the point in time when the tick
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
- *
- * The [[MaterializedMap]] will contain a [[akka.actor.Cancellable]] for this
- * `TickSource` and that can be used for stopping the tick source and thereby
- * completing the stream.
  */
-final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends KeyedActorFlowSource[Out] {
-  override type MaterializedType = Cancellable
-
-  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Cancellable = {
-    val (pub, cancellable) = create(materializer, flowName)
-    pub.subscribe(flowSubscriber)
-    cancellable
-  }
+final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends SimpleActorFlowSource[Out] {
+  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
+    create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
-    val cancelled = new AtomicBoolean(false)
-    val ref = materializer.actorOf(TickPublisher.props(initialDelay, interval, tick,
-      cancelled, materializer.settings), name = s"$flowName-0-tick")
-    val cancellable = new Cancellable {
-      override def cancel(): Boolean = {
-        if (!isCancelled)
-          ref ! PoisonPill
-        true
-      }
-      override def isCancelled: Boolean = cancelled.get
-    }
-    (ActorPublisher[Out](ref), cancellable)
-  }
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
+    (ActorPublisher[Out](materializer.actorOf(TickPublisher.props(initialDelay, interval, tick, materializer.settings),
+      name = s"$flowName-0-tick")), ())
 }
 
 /**
