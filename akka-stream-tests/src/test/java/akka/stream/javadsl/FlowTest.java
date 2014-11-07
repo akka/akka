@@ -1,15 +1,13 @@
 package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
 import akka.japi.Pair;
 import akka.japi.Util;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
 import akka.stream.OverflowStrategy;
+import akka.stream.StreamTest;
 import akka.stream.Transformer;
 import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
@@ -32,16 +30,14 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
-public class FlowTest {
+public class FlowTest extends StreamTest {
+  public FlowTest() {
+    super(actorSystemResource);
+  }
 
-  @ClassRule
+    @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
-
-  final ActorSystem system = actorSystemResource.getSystem();
-
-  final MaterializerSettings settings = MaterializerSettings.create(system);
-  final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustBeAbleToUseSimpleOperators() {
