@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import java.util.concurrent.Callable
+
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.japi.Util
@@ -11,13 +12,13 @@ import akka.stream._
 import akka.stream.scaladsl.PropsSource
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import scala.language.implicitConversions
-import akka.actor.Cancellable
 
 /** Java API */
 object Source {
@@ -109,13 +110,9 @@ object Source {
    * If a consumer has not requested any elements at the point in time when the tick
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
-   *
-   * The [[MaterializedMap]] will contain a [[akka.actor.Cancellable]] for this
-   * `KeyedSource` and that can be used for stopping the tick source and thereby
-   * completing the stream.
    */
-  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.KeyedSource[O, Cancellable] =
-    new KeyedSource(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
+  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.Source[O] =
+    new Source(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
@@ -148,7 +145,7 @@ object Source {
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T](): KeyedSource[T, Subscriber[T]] =
+  def subscriber[T](): KeyedSource[Subscriber[T], T] =
     new KeyedSource(scaladsl.Source.subscriber)
 
   /**
