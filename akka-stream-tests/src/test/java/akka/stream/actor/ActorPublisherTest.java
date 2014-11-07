@@ -1,10 +1,8 @@
 package akka.stream.actor;
 
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
+import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.AkkaSpec;
@@ -15,12 +13,15 @@ import org.reactivestreams.Publisher;
 
 import static akka.stream.actor.ActorPublisherMessage.Request;
 
-public class ActorPublisherTest {
+public class ActorPublisherTest extends StreamTest {
+  public ActorPublisherTest() {
+    super(actorSystemResource);
+  }
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("ActorPublisherTest", AkkaSpec.testConf());
 
-  public static class TestPublisher extends UntypedActorPublisher<Integer> {
+    public static class TestPublisher extends UntypedActorPublisher<Integer> {
 
     @Override
     public void onReceive(Object msg) {
@@ -34,11 +35,6 @@ public class ActorPublisherTest {
       }
     }
   }
-
-  final ActorSystem system = actorSystemResource.getSystem();
-
-  final MaterializerSettings settings = MaterializerSettings.create(system);
-  final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustHaveJavaAPI() {
