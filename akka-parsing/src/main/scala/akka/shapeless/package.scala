@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package akka
+package akka.shapeless
 
-package object shapeless {
-  /** Dependent unary function type. */
-  trait DepFn1[T] {
-    type Out
-    def apply(t: T): Out
-  }
+/** Dependent unary function type. */
+trait DepFn1[T] {
+  type Out
+  def apply(t: T): Out
+}
 
-  /** Dependent binary function type. */
-  trait DepFn2[T, U] {
-    type Out
-    def apply(t: T, u: U): Out
-  }
+/** Dependent binary function type. */
+trait DepFn2[T, U] {
+  type Out
+  def apply(t: T, u: U): Out
 }
