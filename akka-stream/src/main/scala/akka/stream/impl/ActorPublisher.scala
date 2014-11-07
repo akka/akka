@@ -17,9 +17,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
  * INTERNAL API
  */
 private[akka] object SimpleCallbackPublisher {
-  def props[T](settings: MaterializerSettings, f: () ⇒ T): Props =
-    Props(new SimpleCallbackPublisherImpl(f, settings)).withDispatcher(settings.dispatcher)
-
+  def props[T](f: () ⇒ T, settings: MaterializerSettings): Props = IteratorPublisher.props(Iterator.continually(f()), settings)
 }
 
 /**
@@ -126,22 +124,23 @@ private[akka] trait SoftShutdown { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private[akka] object SimpleCallbackPublisherImpl {
-  case object Generate
+private[akka] object IteratorPublisherImpl {
+  case object Flush
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: MaterializerSettings)
+private[akka] class IteratorPublisherImpl[T](iterator: Iterator[T], settings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[T]
   with SoftShutdown {
 
-  import akka.stream.impl.SimpleCallbackPublisherImpl._
+  import IteratorPublisherImpl.Flush
 
   type S = ActorSubscription[T]
+  private var demand = 0L
   var pub: ActorPublisher[T] = _
   var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
 
@@ -155,36 +154,46 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
     case SubscribePending ⇒
       pub.takePendingSubscribers() foreach registerSubscriber
       context.become(active)
+      flush()
   }
 
   final def active: Receive = {
     case SubscribePending ⇒
       pub.takePendingSubscribers() foreach registerSubscriber
+      flush()
     case RequestMore(sub, elements) ⇒
       moreRequested(sub.asInstanceOf[S], elements)
-      generate()
+      flush()
     case Cancel(sub) ⇒
       unregisterSubscription(sub.asInstanceOf[S])
-      generate()
-    case Generate ⇒
-      generate()
+      flush()
+    case Flush ⇒
+      flush()
   }
 
   override def postStop(): Unit =
     if (pub ne null) pub.shutdown(shutdownReason)
 
-  private var demand = 0L
-  private def generate(): Unit = {
-    if (demand > 0) {
-      try {
-        demand -= 1
-        pushToDownstream(f())
-        if (demand > 0) self ! Generate
-      } catch {
-        case Stop        ⇒ { completeDownstream(); shutdownReason = None }
-        case NonFatal(e) ⇒ { abortDownstream(e); shutdownReason = Some(e) }
-      }
+  private[this] def flush(): Unit = try {
+    val endOfStream =
+      if (iterator.hasNext) {
+        if (demand > 0) {
+          pushToDownstream(iterator.next())
+          demand -= 1
+          iterator.hasNext == false
+        } else false
+      } else true
+
+    if (endOfStream) {
+      completeDownstream()
+      shutdownReason = None
+    } else if (demand > 0) {
+      self ! Flush
     }
+  } catch {
+    case NonFatal(e) ⇒
+      abortDownstream(e)
+      shutdownReason = Some(e)
   }
 
   override def initialBufferSize = settings.initialFanOutBufferSize
@@ -203,5 +212,4 @@ private[akka] class SimpleCallbackPublisherImpl[T](f: () ⇒ T, settings: Materi
     pub.shutdown(shutdownReason)
     softShutdown()
   }
-
 }

@@ -37,9 +37,10 @@ class FlowIteratorSpec extends AkkaSpec {
     }
 
     "complete empty" in {
-      val p = Source(List.empty[Int].iterator).runWith(Sink.publisher)
+      val p = Source[Int](Iterator.empty).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
+      c.expectSubscription()
       c.expectComplete()
       c.expectNoMsg(100.millis)
 

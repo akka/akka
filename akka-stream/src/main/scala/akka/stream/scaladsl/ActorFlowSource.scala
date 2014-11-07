@@ -3,20 +3,18 @@
  */
 package akka.stream.scaladsl
 
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{ Props, ActorRef }
 import akka.stream.impl._
-import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast.AstNode
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Failure
-import scala.util.Success
+import scala.util.{ Success, Failure }
 
 sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
@@ -114,8 +112,7 @@ final case class IteratorSource[Out](iterator: Iterator[Out]) extends SimpleActo
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    if (iterator.isEmpty) (EmptyPublisher[Out], ())
-    else (ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
+    (ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
       name = s"$flowName-0-iterator")), ())
 }
 
@@ -135,21 +132,31 @@ final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends 
       name = s"$flowName-0-iterable")), ())
 }
 
-/**
- * Define the sequence of elements to be produced by the given closure.
- * The stream ends normally when evaluation of the closure returns a `None`.
- * The stream ends exceptionally when an exception is thrown from the closure.
- */
-final case class ThunkSource[Out](f: () ⇒ Option[Out]) extends SimpleActorFlowSource[Out] {
-  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
-    create(materializer, flowName)._1.subscribe(flowSubscriber)
-  override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    (ActorPublisher[Out](materializer.actorOf(SimpleCallbackPublisher.props(materializer.settings,
-      () ⇒ f() match {
-        case Some(out) ⇒ out
-        case _         ⇒ throw Stop
-      }), name = s"$flowName-0-thunk")), ())
+final class ThunkIterator[Out](thunk: () ⇒ Option[Out]) extends Iterator[Out] {
+  require(thunk ne null, "thunk is not allowed to be null")
+  private[this] var value: Option[Out] = null
+
+  private[this] def advance(): Unit =
+    value = thunk() match {
+      case null   ⇒ throw new NullPointerException("Thunk is not allowed to return null")
+      case option ⇒ option
+    }
+
+  @tailrec override final def hasNext: Boolean = value match {
+    case null ⇒
+      advance(); hasNext
+    case option ⇒ option.isDefined
+  }
+
+  @tailrec override final def next(): Out = value match {
+    case null ⇒
+      advance(); next()
+    case Some(next) ⇒
+      advance(); next
+    case None ⇒ Iterator.empty.next()
+  }
+
+  override def toString: String = "ThunkIterator"
 }
 
 /**

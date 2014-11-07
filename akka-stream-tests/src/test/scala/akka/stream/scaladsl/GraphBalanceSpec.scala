@@ -136,17 +136,14 @@ class GraphBalanceSpec extends AkkaSpec {
 
     "fairly balance between three outputs" in {
       val numElementsForSink = 10000
-      val f1, f2, f3 = Sink.fold[Int, Int](0)(_ + _)
+      val outputs = Seq.fill(3)(Sink.fold[Int, Int](0)(_ + _))
       val g = FlowGraph { implicit b ⇒
         val balance = Balance[Int]("balance", waitForAllDownstreams = true)
-        Source(Stream.fill(10000 * 3)(1)) ~> balance ~> f1
-        balance ~> f2
-        balance ~> f3
+        Source(Stream.fill(numElementsForSink * outputs.size)(1)) ~> balance
+        for { o ← outputs } balance ~> o
       }.run()
 
-      Seq(f1, f2, f3) map { sink ⇒
-        Await.result(g.get(sink), 3.seconds) should be(numElementsForSink +- 1000)
-      }
+      for { o ← outputs } Await.result(g.get(o), 3.seconds) should be(numElementsForSink +- 1000)
     }
 
     "produce to second even though first cancels" in {
