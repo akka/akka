@@ -9,6 +9,8 @@ import akka.http.model.StatusCodes._
 import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
+import akka.stream.scaladsl.Source
+import akka.util.ByteString
 import org.scalatest.{ Inside, Inspectors }
 
 import scala.concurrent.Await
@@ -93,7 +95,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
       }
     }
 
-    "return a 'multipart/byteranges' for a ranged request with multiple coalesced ranges with preserved order" in {
+    "return a 'multipart/byteranges' for a ranged request with multiple coalesced ranges and expect ranges in ascending order" in {
       Get() ~> addHeader(Range(ByteRange(5, 10), ByteRange(0, 1), ByteRange(1, 2))) ~> {
         wrs { complete("Some random and not super short entity.") }
       } ~> check {
@@ -102,16 +104,29 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         parts.size shouldEqual 2
         inside(parts(0)) {
           case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
-            range shouldEqual ContentRange.Default(5, 10, Some(39))
-            unit shouldEqual RangeUnits.Bytes
-            Await.result(entity.dataBytes.utf8String, 100.millis) shouldEqual "random"
-        }
-        inside(parts(1)) {
-          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
             range shouldEqual ContentRange.Default(0, 2, Some(39))
             unit shouldEqual RangeUnits.Bytes
             Await.result(entity.dataBytes.utf8String, 100.millis) shouldEqual "Som"
         }
+        inside(parts(1)) {
+          case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
+            range shouldEqual ContentRange.Default(5, 10, Some(39))
+            unit shouldEqual RangeUnits.Bytes
+            Await.result(entity.dataBytes.utf8String, 100.millis) shouldEqual "random"
+        }
+      }
+    }
+
+    "return a 'multipart/byteranges' for a ranged request with multiple ranges if entity data source isn't reusable" in {
+      val content = "Some random and not super short entity."
+      def entityData() = StreamUtils.oneTimeSource(Source.singleton(ByteString(content)))
+
+      Get() ~> addHeader(Range(ByteRange(5, 10), ByteRange(0, 1), ByteRange(1, 2))) ~> {
+        wrs { complete(HttpEntity.Default(MediaTypes.`text/plain`, content.length, entityData())) }
+      } ~> check {
+        header[`Content-Range`] should be(None)
+        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.collectAll, 1.second)
+        parts.size shouldEqual 2
       }
     }
 
