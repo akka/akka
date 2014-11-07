@@ -123,9 +123,8 @@ Reference
 The FSM Trait and Object
 ------------------------
 
-The :class:`FSM` trait may only be mixed into an :class:`Actor`. Instead of
-extending :class:`Actor`, the self type approach was chosen in order to make it
-obvious that an actor is actually created:
+The :class:`FSM` trait inherits directly from :class:`Actor`, when you
+extend :class:`FSM` you must be aware that an actor is actually created:
 
 .. includecode:: code/docs/actor/FSMDocSpec.scala
    :include: simple-fsm
@@ -207,7 +206,7 @@ Each FSM needs a starting point, which is declared using
 
 The optionally given timeout argument overrides any specification given for the
 desired initial state. If you want to cancel a default timeout, use
-:obj:`Duration.Inf`.
+:obj:`None`.
 
 Unhandled Events
 ----------------
