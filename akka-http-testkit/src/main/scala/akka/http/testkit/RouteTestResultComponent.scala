@@ -7,7 +7,8 @@ package akka.http.testkit
 import java.util.concurrent.CountDownLatch
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.ExecutionContext
+import akka.http.util._
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.model.HttpEntity.ChunkStreamPart
@@ -95,6 +96,6 @@ trait RouteTestResultComponent {
       failTest("Request was neither completed nor rejected within " + timeout)
 
     private def awaitAllElements[T](data: Source[T]): immutable.Seq[T] =
-      Await.result(data.grouped(Int.MaxValue).runWith(Sink.head), timeout)
+      data.collectAll.awaitResult(timeout)
   }
 }

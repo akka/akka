@@ -10,7 +10,9 @@ import java.nio.charset.Charset
 import com.typesafe.config.Config
 import akka.stream.{ FlowMaterializer, FlattenStrategy, Transformer }
 import akka.stream.scaladsl.{ Flow, Source }
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -75,6 +77,17 @@ package object util {
      */
     def collectAll(implicit materializer: FlowMaterializer): Future[immutable.Seq[T]] =
       underlying.fold(Vector.empty[T])(_ :+ _)
+  }
+
+  private[http] implicit class AddFutureAwaitResult[T](future: Future[T]) {
+    /** "Safe" Await.result that doesn't throw away half of the stacktrace */
+    def awaitResult(atMost: Duration): T = {
+      Await.ready(future, atMost)
+      future.value.get match {
+        case Success(t)  ⇒ t
+        case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
+      }
+    }
   }
 
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =
