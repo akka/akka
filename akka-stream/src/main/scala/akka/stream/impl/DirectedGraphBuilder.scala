@@ -150,7 +150,7 @@ private[akka] class DirectedGraphBuilder[E, V] {
       while (toVisit.nonEmpty) {
         val v = toVisit.head
         unvisited -= v
-        toVisit = toVisit.tail
+        toVisit -= v
         toVisit ++= v.neighbors.iterator.filter(unvisited.contains) // visit all unvisited neighbors of v (neighbors are undirected)
       }
 
@@ -186,9 +186,10 @@ private[akka] class DirectedGraphBuilder[E, V] {
             @tailrec def traverse(toTraverse: Set[Vertex[E, V]]): List[Vertex[E, V]] = {
               if (toTraverse.isEmpty) Nil
               else {
-                val c = findCycleInComponent(componentEntryVertex, toVisit = toTraverse.head, newCycleCandidate)
+                val v = toTraverse.head
+                val c = findCycleInComponent(componentEntryVertex, toVisit = v, newCycleCandidate)
                 if (c.nonEmpty) c
-                else traverse(toTraverse = toTraverse.tail)
+                else traverse(toTraverse = toTraverse - v)
               }
             }
 
