@@ -179,6 +179,15 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
     new Flow(delegate.grouped(n).map(_.asJava)) // FIXME optimize to one step
 
   /**
+   * Similar to `fold` but is not a terminal operation,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting the next current value.
+   */
+  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Flow[In, T] =
+    new Flow(delegate.scan(zero)(f.apply))
+
+  /**
    * Chunk up this stream into groups of elements received within a time window,
    * or limited by the given number of elements, whatever happens first.
    * Empty groups will not be emitted if no elements are received from upstream.

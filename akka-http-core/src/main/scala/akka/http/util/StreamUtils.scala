@@ -152,7 +152,7 @@ private[http] object StreamUtils {
           } else ByteString.empty
       }
 
-      Props(new IteratorPublisherImpl(iterator, materializer.settings)).withDispatcher(materializer.settings.fileIODispatcher)
+      IteratorPublisher.props(iterator, materializer.settings).withDispatcher(materializer.settings.fileIODispatcher)
     }
 
     new AtomicBoolean(false) with SimpleActorFlowSource[ByteString] {

@@ -61,7 +61,7 @@ public class ActorSubscriberTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final ActorRef ref = system.actorOf(Props.create(TestSubscriber.class, probe.getRef()).withDispatcher("akka.test.stream-dispatcher"));
     final Subscriber<Integer> subscriber = UntypedActorSubscriber.create(ref);
-    final java.util.Iterator<Integer> input = Arrays.asList(1, 2, 3).iterator();
+    final java.lang.Iterable<Integer> input = Arrays.asList(1, 2, 3);
 
     Source.from(input).runWith(Sink.create(subscriber), materializer);
 

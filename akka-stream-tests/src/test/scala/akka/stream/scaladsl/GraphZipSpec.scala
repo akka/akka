@@ -42,34 +42,34 @@ class GraphZipSpec extends TwoStreamsSetup {
     commonTests()
 
     "work with one immediately completed and one nonempty publisher" in {
-      val subscriber1 = setup(completedPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectCompletedOrSubscriptionFollowedByComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), completedPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), completedPublisher)
       subscriber2.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with one delayed completed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectCompletedOrSubscriptionFollowedByComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), soonToCompletePublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToCompletePublisher)
       subscriber2.expectCompletedOrSubscriptionFollowedByComplete()
     }
 
     "work with one immediately failed and one nonempty publisher" in {
-      val subscriber1 = setup(failedPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), failedPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
       subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one delayed failed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), soonToFailPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       val subscription2 = subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 

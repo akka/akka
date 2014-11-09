@@ -33,7 +33,7 @@ class FlowGroupBySpec extends AkkaSpec {
   }
 
   class SubstreamsSupport(groupCount: Int = 2, elementCount: Int = 6) {
-    val source = Source((1 to elementCount).iterator).runWith(Sink.publisher)
+    val source = Source(1 to elementCount).runWith(Sink.publisher)
     val groupStream = Source(source).groupBy(_ % groupCount).runWith(Sink.publisher)
     val masterSubscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int])]()
 

@@ -3,7 +3,9 @@
  */
 package akka.stream.tck
 
-import scala.collection.immutable
+import akka.event.Logging
+
+import scala.collection.{ mutable, immutable }
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Sink
@@ -24,14 +26,14 @@ abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env
   system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
 
   /** Readable way to ignore TCK specs; Return this for `createErrorStatePublisher` to skip tests including it */
-  final def ignored: Publisher[T] = null
+  final def ignored: mutable.Publisher[T] = null
 
   def this(system: ActorSystem, printlnDebug: Boolean) {
     this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system), printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
   }
 
   def this(printlnDebug: Boolean) {
-    this(ActorSystem(classOf[IterablePublisherTest].getSimpleName, AkkaSpec.testConf), printlnDebug)
+    this(ActorSystem(Logging.simpleName(classOf[IterablePublisherTest]), AkkaSpec.testConf), printlnDebug)
   }
 
   def this() {

@@ -6,10 +6,7 @@ package akka.stream
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-import akka.stream.impl.ActorBasedFlowMaterializer
-import akka.stream.impl.Ast
-import akka.stream.impl.FlowNameCounter
-import akka.stream.impl.StreamSupervisor
+import akka.stream.impl._
 
 import scala.collection.immutable
 
@@ -63,7 +60,8 @@ object FlowMaterializer {
       materializerSettings,
       context.actorOf(StreamSupervisor.props(materializerSettings).withDispatcher(materializerSettings.dispatcher)),
       FlowNameCounter(system).counter,
-      namePrefix)
+      namePrefix,
+      optimizations = Optimizations.none)
   }
 
   /**

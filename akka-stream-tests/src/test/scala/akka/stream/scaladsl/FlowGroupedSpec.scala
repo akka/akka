@@ -18,15 +18,19 @@ class FlowGroupedSpec extends AkkaSpec with ScriptedTest {
 
   "A Grouped" must {
 
+    def randomSeq(n: Int) = immutable.Seq.fill(n)(random.nextInt())
+    def randomTest(n: Int) = { val s = randomSeq(n); s -> immutable.Seq(s) }
+
     "group evenly" in {
-      def script = Script(TestConfig.RandomTestRange map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }: _*)
-      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.grouped(3)))
+      val testLen = random.nextInt(1, 16)
+      def script = Script(TestConfig.RandomTestRange map { _ ⇒ randomTest(testLen) }: _*)
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.grouped(testLen)))
     }
 
     "group with rest" in {
-      def script = Script((TestConfig.RandomTestRange.map { _ ⇒ val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z)) }
-        :+ { val x = random.nextInt(); Seq(x) -> Seq(immutable.Seq(x)) }): _*)
-      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.grouped(3)))
+      val testLen = random.nextInt(1, 16)
+      def script = Script((TestConfig.RandomTestRange.map { _ ⇒ randomTest(testLen) } :+ randomTest(1)): _*)
+      TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.grouped(testLen)))
     }
 
   }

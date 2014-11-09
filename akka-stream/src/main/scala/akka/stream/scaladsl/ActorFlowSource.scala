@@ -14,6 +14,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
 
 sealed trait ActorFlowSource[+Out] extends Source[Out] {
@@ -51,14 +52,12 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
   override type Repr[+O] = SourcePipe[O]
 
-  private def sourcePipe = Pipe.empty[Out].withSource(this)
+  override def via[T](flow: Flow[Out, T]): Source[T] = Pipe.empty[Out].withSource(this).via(flow)
 
-  override def via[T](flow: Flow[Out, T]): Source[T] = sourcePipe.via(flow)
-
-  override def to(sink: Sink[Out]): RunnableFlow = sourcePipe.to(sink)
+  override def to(sink: Sink[Out]): RunnableFlow = Pipe.empty[Out].withSource(this).to(sink)
 
   /** INTERNAL API */
-  override private[scaladsl] def andThen[U](op: AstNode) = SourcePipe(this, List(op))
+  override private[scaladsl] def andThen[U](op: AstNode) = SourcePipe(this, List(op)) //FIXME raw addition of AstNodes
 }
 
 /**
@@ -101,22 +100,6 @@ final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlow
 }
 
 /**
- * Start a new `Source` from the given Iterator. The produced stream of elements
- * will continue until the iterator runs empty or fails during evaluation of
- * the `next()` method. Elements are pulled out of the iterator
- * in accordance with the demand coming from the downstream transformation
- * steps.
- */
-final case class IteratorSource[Out](iterator: Iterator[Out]) extends SimpleActorFlowSource[Out] {
-  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
-    create(materializer, flowName)._1.subscribe(flowSubscriber)
-  override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    (ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
-      name = s"$flowName-0-iterator")), ())
-}
-
-/**
  * Starts a new `Source` from the given `Iterable`. This is like starting from an
  * Iterator, but every Subscriber directly attached to the Publisher of this
  * stream will see an individual flow of elements (always starting from the
@@ -127,36 +110,14 @@ final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends 
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    if (iterable.isEmpty) (EmptyPublisher[Out], ())
-    else (ActorPublisher[Out](materializer.actorOf(IterablePublisher.props(iterable, materializer.settings),
-      name = s"$flowName-0-iterable")), ())
+    (SynchronousPublisherFromIterable(iterable), ()) //FIXME This should probably be an AsynchronousPublisherFromIterable
 }
 
-final class ThunkIterator[Out](thunk: () ⇒ Option[Out]) extends Iterator[Out] {
-  require(thunk ne null, "thunk is not allowed to be null")
-  private[this] var value: Option[Out] = null
-
-  private[this] def advance(): Unit =
-    value = thunk() match {
-      case null   ⇒ throw new NullPointerException("Thunk is not allowed to return null")
-      case option ⇒ option
-    }
-
-  @tailrec override final def hasNext: Boolean = value match {
-    case null ⇒
-      advance(); hasNext
-    case option ⇒ option.isDefined
+//FIXME SerialVersionUID?
+final class FuncIterable[Out](f: () ⇒ Iterator[Out]) extends immutable.Iterable[Out] {
+  override def iterator: Iterator[Out] = try f() catch {
+    case NonFatal(e) ⇒ Iterator.continually(throw e) //FIXME not rock-solid, is the least one can say
   }
-
-  @tailrec override final def next(): Out = value match {
-    case null ⇒
-      advance(); next()
-    case Some(next) ⇒
-      advance(); next
-    case None ⇒ Iterator.empty.next()
-  }
-
-  override def toString: String = "ThunkIterator"
 }
 
 /**
@@ -172,13 +133,12 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
     future.value match {
       case Some(Success(element)) ⇒
-        (ActorPublisher[Out](materializer.actorOf(IterablePublisher.props(List(element), materializer.settings),
-          name = s"$flowName-0-future")), ())
+        (SynchronousPublisherFromIterable(List(element)), ()) // Option is not Iterable. sigh
       case Some(Failure(t)) ⇒
         (ErrorPublisher(t).asInstanceOf[Publisher[Out]], ())
       case None ⇒
         (ActorPublisher[Out](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
-          name = s"$flowName-0-future")), ())
+          name = s"$flowName-0-future")), ()) // FIXME optimize
     }
 }
 

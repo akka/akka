@@ -24,20 +24,20 @@ class FlowBufferSpec extends AkkaSpec {
   "Buffer" must {
 
     "pass elements through normally in backpressured mode" in {
-      val future: Future[Seq[Int]] = Source((1 to 1000).iterator).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
+      val future: Future[Seq[Int]] = Source(1 to 1000).buffer(100, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
         runWith(Sink.head)
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
     "pass elements through normally in backpressured mode with buffer size one" in {
       val futureSink = Sink.head[Seq[Int]]
-      val future = Source((1 to 1000).iterator).buffer(1, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
+      val future = Source(1 to 1000).buffer(1, overflowStrategy = OverflowStrategy.backpressure).grouped(1001).
         runWith(Sink.head)
       Await.result(future, 3.seconds) should be(1 to 1000)
     }
 
     "pass elements through a chain of backpressured buffers of different size" in {
-      val future = Source((1 to 1000).iterator)
+      val future = Source(1 to 1000)
         .buffer(1, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(10, overflowStrategy = OverflowStrategy.backpressure)
         .buffer(256, overflowStrategy = OverflowStrategy.backpressure)

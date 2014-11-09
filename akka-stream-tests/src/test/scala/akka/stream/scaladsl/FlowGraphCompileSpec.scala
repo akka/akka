@@ -24,6 +24,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
   }
 
+  val apples = () ⇒ Iterator.continually(new Apple)
+
   val f1 = Flow[String].transform("f1", op[String, String])
   val f2 = Flow[String].transform("f2", op[String, String])
   val f3 = Flow[String].transform("f3", op[String, String])
@@ -314,8 +316,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
       FlowGraph { b ⇒
         val merge = Merge[Fruit]
         b.
-          addEdge(Source[Fruit](() ⇒ Some(new Apple)), Flow[Fruit], merge).
-          addEdge(Source[Apple](() ⇒ Some(new Apple)), Flow[Apple], merge).
+          addEdge(Source[Fruit](apples), Flow[Fruit], merge).
+          addEdge(Source[Apple](apples), Flow[Apple], merge).
           addEdge(merge, Flow[Fruit].map(identity), out)
       }
     }
@@ -330,8 +332,8 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val unzip = Unzip[Int, String]
         val whatever = Sink.publisher[Any]
         import FlowGraphImplicits._
-        Source[Fruit](() ⇒ Some(new Apple)) ~> merge
-        Source[Apple](() ⇒ Some(new Apple)) ~> merge
+        Source[Fruit](apples) ~> merge
+        Source[Apple](apples) ~> merge
         inA ~> merge
         inB ~> merge
         inA ~> Flow[Fruit].map(identity) ~> merge
@@ -341,9 +343,9 @@ class FlowGraphCompileSpec extends AkkaSpec {
         UndefinedSource[Apple] ~> Flow[Apple].map(identity) ~> merge
         merge ~> Flow[Fruit].map(identity) ~> outA
 
-        Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> merge
-        Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> outB
-        Source[Apple](() ⇒ Some(new Apple)) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
+        Source[Apple](apples) ~> Broadcast[Apple] ~> merge
+        Source[Apple](apples) ~> Broadcast[Apple] ~> outB
+        Source[Apple](apples) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
         inB ~> Broadcast[Apple] ~> merge
 
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in

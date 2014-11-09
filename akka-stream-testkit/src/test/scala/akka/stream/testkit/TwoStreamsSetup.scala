@@ -3,6 +3,7 @@ package akka.stream.testkit
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
+import scala.collection.immutable
 import scala.util.control.NoStackTrace
 import akka.stream.FlowMaterializer
 
@@ -40,7 +41,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def nonemptyPublisher[T](elems: Iterator[T]): Publisher[T] = Source(elems).runWith(Sink.publisher)
+  def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.publisher)
 
   def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 

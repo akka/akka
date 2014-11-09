@@ -44,6 +44,7 @@ private[akka] object FuturePublisher {
 /**
  * INTERNAL API
  */
+//FIXME why do we need to have an actor to drive a Future?
 private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.FuturePublisher.FutureSubscription
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel

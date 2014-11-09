@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.stream.ReactiveStreamsConstants
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
@@ -13,25 +14,43 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] object SynchronousPublisherFromIterable {
-  def apply[T](iterable: immutable.Iterable[T]): Publisher[T] =
-    if (iterable.isEmpty) EmptyPublisher[T]
-    else new SynchronousPublisherFromIterable(iterable)
+  def apply[T](iterable: immutable.Iterable[T]): Publisher[T] = new SynchronousPublisherFromIterable(iterable)
 
-  private class IteratorSubscription[T](subscriber: Subscriber[T], iterator: Iterator[T]) extends Subscription {
+  object IteratorSubscription {
+    def apply[T](subscriber: Subscriber[T], iterator: Iterator[T]): Unit =
+      new IteratorSubscription[T](subscriber, iterator).init()
+  }
+
+  private[this] final class IteratorSubscription[T](subscriber: Subscriber[T], iterator: Iterator[T]) extends Subscription {
     var done = false
     var pendingDemand = 0L
     var pushing = false
+
+    def init(): Unit = try {
+      if (!iterator.hasNext) {
+        cancel()
+        subscriber.onSubscribe(this)
+        subscriber.onComplete()
+      } else {
+        subscriber.onSubscribe(this)
+      }
+    } catch {
+      case NonFatal(e) ⇒
+        cancel()
+        subscriber.onError(e)
+    }
 
     override def cancel(): Unit =
       done = true
 
     override def request(elements: Long): Unit = {
+      if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
       @tailrec def pushNext(): Unit = {
         if (!done)
           if (iterator.isEmpty) {
-            done = true
+            cancel()
             subscriber.onComplete()
-          } else if (pendingDemand != 0) {
+          } else if (pendingDemand > 0) {
             pendingDemand -= 1
             subscriber.onNext(iterator.next())
             pushNext()
@@ -39,7 +58,7 @@ private[akka] object SynchronousPublisherFromIterable {
       }
 
       if (pushing)
-        pendingDemand += elements // reentrant call to requestMore from onNext
+        pendingDemand += elements // reentrant call to requestMore from onNext // FIXME This severely lacks overflow checks
       else {
         try {
           pushing = true
@@ -47,7 +66,7 @@ private[akka] object SynchronousPublisherFromIterable {
           pushNext()
         } catch {
           case NonFatal(e) ⇒
-            done = true
+            cancel()
             subscriber.onError(e)
         } finally { pushing = false }
       }
@@ -71,10 +90,9 @@ private[akka] object SynchronousPublisherFromIterable {
  */
 private[akka] class SynchronousPublisherFromIterable[T](private val iterable: immutable.Iterable[T]) extends Publisher[T] {
 
-  import akka.stream.impl.SynchronousPublisherFromIterable.IteratorSubscription
+  import SynchronousPublisherFromIterable.IteratorSubscription
 
-  override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
-    subscriber.onSubscribe(new IteratorSubscription(subscriber, iterable.iterator))
+  override def subscribe(subscriber: Subscriber[_ >: T]): Unit = IteratorSubscription(subscriber, iterable.iterator) //FIXME what if .iterator throws?
 
-  override def toString: String = s"SynchronousPublisherFromIterable(${iterable.mkString(", ")})"
+  override def toString: String = getClass.getSimpleName
 }

@@ -41,7 +41,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
   "A Flow with transformRecover operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Source(List(1, 2, 3).iterator).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -69,7 +69,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Source(List(1, 2, 3).iterator).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -100,7 +100,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce dropping transformation as expected" in {
-      val p = Source(List(1, 2, 3, 4).iterator).runWith(Sink.publisher)
+      val p = Source(1 to 4).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           var tot = 0
@@ -128,7 +128,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Source(List("a", "bc", "def").iterator).runWith(Sink.publisher)
+      val p = Source(List("a", "bc", "def")).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[String, Int] {
           var concat = ""
@@ -171,7 +171,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "invoke onComplete when done" in {
-      val p = Source(List("a").iterator).runWith(Sink.publisher)
+      val p = Source(List("a")).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new TryRecoveryTransformer[String, String] {
           var s = ""
@@ -241,7 +241,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "report error when exception is thrown" in {
-      val p = Source(List(1, 2, 3).iterator).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = {
@@ -267,7 +267,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
 
     "report error after emitted elements" in {
       EventFilter[IllegalArgumentException]("two not allowed") intercept {
-        val p2 = Source(List(1, 2, 3).iterator).
+        val p2 = Source(1 to 3).
           mapConcat { elem ⇒
             if (elem == 2) throw new IllegalArgumentException("two not allowed")
             else (1 to 5).map(elem * 100 + _)
@@ -367,7 +367,7 @@ class FlowTransformRecoverSpec extends AkkaSpec {
     }
 
     "support cancel as expected" in {
-      val p = Source(List(1, 2, 3).iterator).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val p2 = Source(p).
         transform("transform", () ⇒ new Transformer[Int, Int] {
           override def onNext(elem: Int) = List(elem, elem)
