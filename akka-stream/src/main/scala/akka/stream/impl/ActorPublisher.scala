@@ -16,13 +16,6 @@ import org.reactivestreams.{ Publisher, Subscriber }
 /**
  * INTERNAL API
  */
-private[akka] object SimpleCallbackPublisher {
-  def props[T](f: () ⇒ T, settings: MaterializerSettings): Props = IteratorPublisher.props(Iterator.continually(f()), settings)
-}
-
-/**
- * INTERNAL API
- */
 private[akka] object ActorPublisher {
   class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down spi.Publisher") with NoStackTrace
   val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
@@ -98,7 +91,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
  */
 private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends SubscriptionWithCursor[T] {
   override def request(elements: Long): Unit =
-    if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+    if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
     else impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
@@ -124,20 +117,23 @@ private[akka] trait SoftShutdown { this: Actor ⇒
 /**
  * INTERNAL API
  */
-private[akka] object IteratorPublisherImpl {
-  case object Flush
+private[akka] object IteratorPublisher {
+  private[IteratorPublisher] case object Flush
+
+  def props[T](iterator: Iterator[T], settings: MaterializerSettings): Props =
+    Props(new IteratorPublisher(iterator, settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class IteratorPublisherImpl[T](iterator: Iterator[T], settings: MaterializerSettings)
+private[akka] class IteratorPublisher[T](iterator: Iterator[T], settings: MaterializerSettings)
   extends Actor
   with ActorLogging
   with SubscriberManagement[T]
   with SoftShutdown {
 
-  import IteratorPublisherImpl.Flush
+  import IteratorPublisher.Flush
 
   type S = ActorSubscription[T]
   private var demand = 0L

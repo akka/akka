@@ -57,7 +57,7 @@ class FlowConflateSpec extends AkkaSpec {
     }
 
     "work on a variable rate chain" in {
-      val future = Source((1 to 1000).iterator)
+      val future = Source(1 to 1000)
         .conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .fold(0)(_ + _)

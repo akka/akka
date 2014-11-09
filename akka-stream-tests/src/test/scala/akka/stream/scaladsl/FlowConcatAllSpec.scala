@@ -23,11 +23,11 @@ class FlowConcatAllSpec extends AkkaSpec {
     val testException = new Exception("test") with NoStackTrace
 
     "work in the happy case" in {
-      val s1 = Source((1 to 2).iterator)
+      val s1 = Source(1 to 2)
       val s2 = Source(List.empty[Int])
       val s3 = Source(List(3))
-      val s4 = Source((4 to 6).iterator)
-      val s5 = Source((7 to 10).iterator)
+      val s4 = Source(4 to 6)
+      val s5 = Source(7 to 10)
 
       val main = Source(List(s1, s2, s3, s4, s5))
 
@@ -42,7 +42,7 @@ class FlowConcatAllSpec extends AkkaSpec {
 
     "work together with SplitWhen" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Source((1 to 10).iterator).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).runWith(Sink(subscriber))
+      Source(1 to 10).splitWhen(_ % 2 == 0).flatten(FlattenStrategy.concat).runWith(Sink(subscriber))
       val subscription = subscriber.expectSubscription()
       subscription.request(10)
       subscriber.probe.receiveN(10) should be((1 to 10).map(StreamTestKit.OnNext(_)))

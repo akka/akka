@@ -29,14 +29,15 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
 
     "complete empty" in {
       val p = SynchronousPublisherFromIterable(List.empty[Int])
-      val c = StreamTestKit.SubscriberProbe[Int]()
-      p.subscribe(c)
-      c.expectComplete()
-      c.expectNoMsg(100.millis)
+      def verifyNewSubscriber(i: Int): Unit = {
+        val c = StreamTestKit.SubscriberProbe[Int]()
+        p.subscribe(c)
+        c.expectSubscription()
+        c.expectComplete()
+        c.expectNoMsg(100.millis)
+      }
 
-      val c2 = StreamTestKit.SubscriberProbe[Int]()
-      p.subscribe(c2)
-      c2.expectComplete()
+      1 to 10 foreach verifyNewSubscriber
     }
 
     "produce elements with multiple subscribers" in {
@@ -171,8 +172,8 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
       probe.expectMsg("complete")
     }
 
-    "have nice toString" in {
-      SynchronousPublisherFromIterable(List(1, 2, 3)).toString should be("SynchronousPublisherFromIterable(1, 2, 3)")
+    "have a toString that doesn't OOME" in {
+      SynchronousPublisherFromIterable(List(1, 2, 3)).toString should be(classOf[SynchronousPublisherFromIterable[_]].getSimpleName)
     }
   }
 }

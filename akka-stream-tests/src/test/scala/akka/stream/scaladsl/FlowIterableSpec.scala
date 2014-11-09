@@ -20,7 +20,7 @@ class FlowIterableSpec extends AkkaSpec {
 
   "A Flow based on an iterable" must {
     "produce elements" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -37,16 +37,18 @@ class FlowIterableSpec extends AkkaSpec {
       val p = Source(List.empty[Int]).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
+      c.expectSubscription()
       c.expectComplete()
       c.expectNoMsg(100.millis)
 
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c2)
+      c2.expectSubscription()
       c2.expectComplete()
     }
 
     "produce elements with multiple subscribers" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -70,7 +72,7 @@ class FlowIterableSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(1 to 3).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -96,7 +98,7 @@ class FlowIterableSpec extends AkkaSpec {
     }
 
     "produce elements with one transformation step" in {
-      val p = Source(List(1, 2, 3)).map(_ * 2).runWith(Sink.publisher)
+      val p = Source(1 to 3).map(_ * 2).runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -117,23 +119,5 @@ class FlowIterableSpec extends AkkaSpec {
       c.expectNext(8)
       c.expectComplete()
     }
-
-    "allow cancel before receiving all elements" in {
-      val count = 100000
-      val p = Source(1 to count).runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[Int]()
-      p.subscribe(c)
-      val sub = c.expectSubscription()
-      sub.request(count)
-      c.expectNext(1)
-      sub.cancel()
-      val got = c.probe.receiveWhile(3.seconds) {
-        case _: OnNext[_] ⇒
-        case OnComplete   ⇒ fail("Cancel expected before OnComplete")
-        case OnError(e)   ⇒ fail(e)
-      }
-      got.size should be < (count - 1)
-    }
-
   }
 }

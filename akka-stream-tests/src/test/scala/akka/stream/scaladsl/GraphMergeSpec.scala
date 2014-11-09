@@ -20,9 +20,9 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
     "work in the happy case" in {
       // Different input sizes (4 and 6)
-      val source1 = Source((0 to 3).iterator)
-      val source2 = Source((4 to 9).iterator)
-      val source3 = Source(List.empty[Int].iterator)
+      val source1 = Source(0 to 3)
+      val source2 = Source(4 to 9)
+      val source3 = Source(List[Int]())
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph { implicit b ⇒
@@ -54,7 +54,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List(3))
       val source4 = Source(List(4))
       val source5 = Source(List(5))
-      val source6 = Source(List.empty[Int])
+      val source6 = Source(List[Int]())
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
@@ -85,7 +85,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
     commonTests()
 
     "work with one immediately completed and one nonempty publisher" in {
-      val subscriber1 = setup(completedPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(4)
       subscriber1.expectNext(1)
@@ -94,7 +94,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       subscriber1.expectNext(4)
       subscriber1.expectComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), completedPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), completedPublisher)
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(4)
       subscriber2.expectNext(1)
@@ -105,7 +105,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
     }
 
     "work with one delayed completed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(4)
       subscriber1.expectNext(1)
@@ -114,7 +114,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       subscriber1.expectNext(4)
       subscriber1.expectComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), soonToCompletePublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToCompletePublisher)
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(4)
       subscriber2.expectNext(1)

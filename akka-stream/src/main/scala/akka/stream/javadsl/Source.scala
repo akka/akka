@@ -65,8 +65,8 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def from[O](iterator: java.util.Iterator[O]): javadsl.Source[O] =
-    new Source(scaladsl.Source(iterator.asScala))
+  def from[O](f: japi.Creator[java.util.Iterator[O]]): javadsl.Source[O] =
+    new Source(scaladsl.Source(() ⇒ f.create().asScala))
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -86,14 +86,6 @@ object Source {
    */
   def from[O](iterable: java.lang.Iterable[O]): javadsl.Source[O] =
     new Source(scaladsl.Source(akka.stream.javadsl.japi.Util.immutableIterable(iterable)))
-
-  /**
-   * Define the sequence of elements to be produced by the given closure.
-   * The stream ends normally when evaluation of the closure returns a `None`.
-   * The stream ends exceptionally when an exception is thrown from the closure.
-   */
-  def from[O](f: japi.Creator[akka.japi.Option[O]]): javadsl.Source[O] =
-    new Source(scaladsl.Source(() ⇒ f.create().asScala))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -292,6 +284,15 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    */
   def grouped(n: Int): javadsl.Source[java.util.List[Out @uncheckedVariance]] =
     new Source(delegate.grouped(n).map(_.asJava))
+
+  /**
+   * Similar to `fold` but is not a terminal operation,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * yielding the next current value.
+   */
+  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Source[T] =
+    new Source(delegate.scan(zero)(f.apply))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,

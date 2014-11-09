@@ -27,11 +27,11 @@ class GraphConcatSpec extends TwoStreamsSetup {
         val concat1 = Concat[Int]("concat1")
         val concat2 = Concat[Int]("concat2")
 
-        Source(List.empty[Int].iterator) ~> concat1.first
-        Source((1 to 4).iterator) ~> concat1.second
+        Source(List.empty[Int]) ~> concat1.first
+        Source(1 to 4) ~> concat1.second
 
         concat1.out ~> concat2.first
-        Source((5 to 10).iterator) ~> concat2.second
+        Source(5 to 10) ~> concat2.second
 
         concat2.out ~> Sink(probe)
       }.run()
@@ -49,7 +49,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
     commonTests()
 
     "work with one immediately completed and one nonempty publisher" in {
-      val subscriber1 = setup(completedPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(5)
       subscriber1.expectNext(1)
@@ -58,7 +58,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber1.expectNext(4)
       subscriber1.expectComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), completedPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), completedPublisher)
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(5)
       subscriber2.expectNext(1)
@@ -69,7 +69,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
     }
 
     "work with one delayed completed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
       val subscription1 = subscriber1.expectSubscription()
       subscription1.request(5)
       subscriber1.expectNext(1)
@@ -78,7 +78,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber1.expectNext(4)
       subscriber1.expectComplete()
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), soonToCompletePublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToCompletePublisher)
       val subscription2 = subscriber2.expectSubscription()
       subscription2.request(5)
       subscriber2.expectNext(1)
@@ -89,18 +89,18 @@ class GraphConcatSpec extends TwoStreamsSetup {
     }
 
     "work with one immediately failed and one nonempty publisher" in {
-      val subscriber1 = setup(failedPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), failedPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
       subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "work with one delayed failed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher((1 to 4).iterator))
+      val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
       subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
 
-      val subscriber2 = setup(nonemptyPublisher((1 to 4).iterator), soonToFailPublisher)
+      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
