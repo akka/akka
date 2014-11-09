@@ -510,7 +510,7 @@ object PersistentActorSpec {
 
 }
 
-abstract class PersistentActorSpec(config: Config) extends AkkaSpec(config) with PersistenceSpec with ImplicitSender {
+abstract class PersistentActorSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentActorSpec._
 
   override protected def beforeEach() {

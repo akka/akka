@@ -34,3 +34,8 @@ message AtLeastOnceDeliverySnapshot {
   required int64 currentDeliveryId = 1;
   repeated UnconfirmedDelivery unconfirmedDeliveries = 2;
 }
+
+message PersistentStateChangeEvent {
+  required string stateIdentifier = 1;
+  optional string timeout = 2;
+}

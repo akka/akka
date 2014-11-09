@@ -131,10 +131,10 @@ object PersistentActorFailureSpec {
   }
 }
 
-class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
+class PersistentActorFailureSpec extends PersistenceSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
   """
   akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorFailureSpec$FailingInmemJournal"
-  """))) with PersistenceSpec with ImplicitSender {
+  """))) with ImplicitSender {
 
   import PersistentActorFailureSpec._
   import PersistentActorSpec._
