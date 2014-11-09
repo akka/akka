@@ -158,7 +158,7 @@ class CodingDirectivesSpec extends RoutingSpec {
     "correctly encode the chunk stream produced by a chunked response" in {
       val text = "This is a somewhat lengthy text that is being chunked by the autochunk directive!"
       val textChunks =
-        text.grouped(8).map { chars ⇒
+        () ⇒ text.grouped(8).map { chars ⇒
           Chunk(chars.mkString): ChunkStreamPart
         }
       val chunkedTextEntity = HttpEntity.Chunked(MediaTypes.`text/plain`, Source(textChunks))
