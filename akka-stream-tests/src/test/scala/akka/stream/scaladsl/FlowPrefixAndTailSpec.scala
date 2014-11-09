@@ -49,7 +49,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "work on longer inputs" in {
       val futureSink = newHeadSink
-      val fut = Source((1 to 10).iterator).prefixAndTail(5).runWith(futureSink)
+      val fut = Source(1 to 10).prefixAndTail(5).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 5)
 
@@ -60,7 +60,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle zero take count" in {
       val futureSink = newHeadSink
-      val fut = Source((1 to 10).iterator).prefixAndTail(0).runWith(futureSink)
+      val fut = Source(1 to 10).prefixAndTail(0).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
@@ -71,7 +71,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle negative take count" in {
       val futureSink = newHeadSink
-      val fut = Source((1 to 10).iterator).prefixAndTail(-1).runWith(futureSink)
+      val fut = Source(1 to 10).prefixAndTail(-1).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(Nil)
 
@@ -82,7 +82,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "work if size of take is equal to stream size" in {
       val futureSink = newHeadSink
-      val fut = Source((1 to 10).iterator).prefixAndTail(10).runWith(futureSink)
+      val fut = Source(1 to 10).prefixAndTail(10).runWith(futureSink)
       val (takes, tail) = Await.result(fut, 3.seconds)
       takes should be(1 to 10)
 

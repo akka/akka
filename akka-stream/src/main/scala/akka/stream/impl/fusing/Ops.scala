@@ -11,23 +11,39 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
-private[akka] case class Map[In, Out](f: In ⇒ Out) extends TransitivePullOp[In, Out] {
+private[akka] final case class Map[In, Out](f: In ⇒ Out) extends TransitivePullOp[In, Out] {
   override def onPush(elem: In, ctxt: Context[Out]): Directive = ctxt.push(f(elem))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] case class Filter[T](p: T ⇒ Boolean) extends TransitivePullOp[T, T] {
+private[akka] final case class Filter[T](p: T ⇒ Boolean) extends TransitivePullOp[T, T] {
   override def onPush(elem: T, ctxt: Context[T]): Directive =
     if (p(elem)) ctxt.push(elem)
     else ctxt.pull()
 }
 
+private[akka] final object Collect {
+  // Cached function that can be used with PartialFunction.applyOrElse to ensure that A) the guard is only applied once,
+  // and the caller can check the returned value with Collect.notApplied to query whether the PF was applied or not.
+  // Prior art: https://github.com/scala/scala/blob/v2.11.4/src/library/scala/collection/immutable/List.scala#L458
+  final val NotApplied: Any ⇒ Any = _ ⇒ Collect.NotApplied
+}
+
+private[akka] final case class Collect[In, Out](pf: PartialFunction[In, Out]) extends TransitivePullOp[In, Out] {
+  import Collect.NotApplied
+  override def onPush(elem: In, ctxt: Context[Out]): Directive =
+    pf.applyOrElse(elem, NotApplied) match {
+      case NotApplied  ⇒ ctxt.pull()
+      case result: Out ⇒ ctxt.push(result)
+    }
+}
+
 /**
  * INTERNAL API
  */
-private[akka] case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) extends DeterministicOp[In, Out] {
+private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) extends DeterministicOp[In, Out] {
   private var currentIterator: Iterator[Out] = Iterator.empty
 
   override def onPush(elem: In, ctxt: Context[Out]): Directive = {
@@ -44,20 +60,21 @@ private[akka] case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) extend
 /**
  * INTERNAL API
  */
-private[akka] case class Take[T](count: Int) extends TransitivePullOp[T, T] {
+private[akka] final case class Take[T](count: Int) extends TransitivePullOp[T, T] {
   private var left: Int = count
 
   override def onPush(elem: T, ctxt: Context[T]): Directive = {
     left -= 1
-    if (left == 0) ctxt.pushAndFinish(elem)
-    else ctxt.push(elem)
+    if (left > 0) ctxt.push(elem)
+    else if (left == 0) ctxt.pushAndFinish(elem)
+    else ctxt.finish() //Handle negative take counts
   }
 }
 
 /**
  * INTERNAL API
  */
-private[akka] case class Drop[T](count: Int) extends TransitivePullOp[T, T] {
+private[akka] final case class Drop[T](count: Int) extends TransitivePullOp[T, T] {
   private var left: Int = count
   override def onPush(elem: T, ctxt: Context[T]): Directive =
     if (left > 0) {
@@ -69,7 +86,26 @@ private[akka] case class Drop[T](count: Int) extends TransitivePullOp[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends DeterministicOp[In, Out] {
+private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends DeterministicOp[In, Out] {
+  private var aggregator = zero
+
+  override def onPush(elem: In, ctxt: Context[Out]): Directive = {
+    val old = aggregator
+    aggregator = f(old, elem)
+    ctxt.push(old)
+  }
+
+  override def onPull(ctxt: Context[Out]): Directive =
+    if (isFinishing) ctxt.pushAndFinish(aggregator)
+    else ctxt.pull()
+
+  override def onUpstreamFinish(ctxt: Context[Out]): TerminationDirective = ctxt.absorbTermination()
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends DeterministicOp[In, Out] {
   private var aggregator = zero
 
   override def onPush(elem: In, ctxt: Context[Out]): Directive = {
@@ -87,31 +123,42 @@ private[akka] case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends 
 /**
  * INTERNAL API
  */
-private[akka] case class Grouped[T](n: Int) extends DeterministicOp[T, immutable.Seq[T]] {
-  private var buf: Vector[T] = Vector.empty
+private[akka] final case class Grouped[T](n: Int) extends DeterministicOp[T, immutable.Seq[T]] {
+  private val buf = {
+    val b = Vector.newBuilder[T]
+    b.sizeHint(n)
+    b
+  }
+  private var left = n
 
   override def onPush(elem: T, ctxt: Context[immutable.Seq[T]]): Directive = {
-    buf :+= elem
-    if (buf.size == n) {
-      val emit = buf
-      buf = Vector.empty
+    buf += elem
+    left -= 1
+    if (left == 0) {
+      val emit = buf.result()
+      buf.clear()
+      left = n
       ctxt.push(emit)
     } else ctxt.pull()
   }
 
   override def onPull(ctxt: Context[immutable.Seq[T]]): Directive =
-    if (isFinishing) ctxt.pushAndFinish(buf)
-    else ctxt.pull()
+    if (isFinishing) {
+      val elem = buf.result()
+      buf.clear() //FIXME null out the reference to the `buf`?
+      left = n
+      ctxt.pushAndFinish(elem)
+    } else ctxt.pull()
 
   override def onUpstreamFinish(ctxt: Context[immutable.Seq[T]]): TerminationDirective =
-    if (buf.isEmpty) ctxt.finish()
+    if (left == n) ctxt.finish()
     else ctxt.absorbTermination()
 }
 
 /**
  * INTERNAL API
  */
-private[akka] case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends DetachedOp[T, T] {
+private[akka] final case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy) extends DetachedOp[T, T] {
   import OverflowStrategy._
 
   private val buffer = FixedSizeBuffer(size)
@@ -170,7 +217,7 @@ private[akka] case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy
 /**
  * INTERNAL API
  */
-private[akka] case class Completed[T]() extends DeterministicOp[T, T] {
+private[akka] final case class Completed[T]() extends DeterministicOp[T, T] {
   override def onPush(elem: T, ctxt: Context[T]): Directive = ctxt.finish()
   override def onPull(ctxt: Context[T]): Directive = ctxt.finish()
 }
@@ -178,14 +225,15 @@ private[akka] case class Completed[T]() extends DeterministicOp[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out) extends DetachedOp[In, Out] {
+private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out) extends DetachedOp[In, Out] {
   private var agg: Any = null
 
   override def onPush(elem: In, ctxt: DetachedContext[Out]): UpstreamDirective = {
-    if (agg == null) agg = seed(elem)
-    else agg = aggregate(agg.asInstanceOf[Out], elem)
+    agg = if (agg == null) seed(elem)
+    else aggregate(agg.asInstanceOf[Out], elem)
 
-    if (!isHolding) ctxt.pull() else {
+    if (!isHolding) ctxt.pull()
+    else {
       val result = agg.asInstanceOf[Out]
       agg = null
       ctxt.pushAndPull(result)
@@ -214,7 +262,7 @@ private[akka] case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In
 /**
  * INTERNAL API
  */
-private[akka] case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapolate: Seed ⇒ (Out, Seed)) extends DetachedOp[In, Out] {
+private[akka] final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapolate: Seed ⇒ (Out, Seed)) extends DetachedOp[In, Out] {
   private var s: Any = null
 
   override def onPush(elem: In, ctxt: DetachedContext[Out]): UpstreamDirective = {
@@ -231,9 +279,8 @@ private[akka] case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapolate: S
     else {
       val (emit, newS) = extrapolate(s.asInstanceOf[Seed])
       s = newS
-      if (isHolding) {
-        ctxt.pushAndPull(emit)
-      } else ctxt.push(emit)
+      if (isHolding) ctxt.pushAndPull(emit)
+      else ctxt.push(emit)
     }
 
   }

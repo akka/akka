@@ -19,14 +19,14 @@ private[stream] object Pipe {
 private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
 
-  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops)
+  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops) // FIXME raw addition of AstNodes
 
   private[stream] def withSink(out: Sink[Out]): SinkPipe[In] = SinkPipe(out, ops)
 
   private[stream] def withSource(in: Source[In]): SourcePipe[Out] = SourcePipe(in, ops)
 
   override def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
-    case p: Pipe[T, In]              ⇒ Pipe(p.ops ++: ops)
+    case p: Pipe[Out, T]             ⇒ this.appendPipe(p)
     case gf: GraphFlow[Out, _, _, T] ⇒ gf.prepend(this)
     case x                           ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
@@ -37,7 +37,7 @@ private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flo
     case d: Sink[Out]          ⇒ this.withSink(d)
   }
 
-  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops)
+  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ++: ops) // FIXME raw addition of AstNodes
 }
 
 /**
@@ -47,7 +47,7 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
 
   private[stream] def withSource(in: Source[In]): RunnablePipe = RunnablePipe(in, output, ops)
 
-  private[stream] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops)
+  private[stream] def prependPipe[T](pipe: Pipe[T, In]): SinkPipe[T] = SinkPipe(output, ops ::: pipe.ops) // FIXME raw addition of AstNodes
 
 }
 
@@ -57,11 +57,11 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
 private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[AstNode]) extends Source[Out] {
   override type Repr[+O] = SourcePipe[O]
 
-  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, op :: ops)
+  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, op :: ops) // FIXME raw addition of AstNodes
 
   private[stream] def withSink(out: Sink[Out]): RunnablePipe = RunnablePipe(input, out, ops)
 
-  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops)
+  private[stream] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ++: ops) // FIXME raw addition of AstNodes
 
   override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
     case p: Pipe[Out, T]            ⇒ appendPipe(p)
@@ -70,7 +70,7 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
   }
 
   override def to(sink: Sink[Out]): RunnableFlow = sink match {
-    case sp: SinkPipe[Out]    ⇒ RunnablePipe(input, sp.output, sp.ops ++: ops)
+    case sp: SinkPipe[Out]    ⇒ RunnablePipe(input, sp.output, sp.ops ++: ops) // FIXME raw addition of AstNodes
     case g: GraphSink[Out, _] ⇒ g.prepend(this)
     case d: Sink[Out]         ⇒ this.withSink(d)
   }

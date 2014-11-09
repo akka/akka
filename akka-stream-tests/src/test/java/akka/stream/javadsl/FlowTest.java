@@ -43,7 +43,7 @@ public class FlowTest extends StreamTest {
   public void mustBeAbleToUseSimpleOperators() {
     final JavaTestKit probe = new JavaTestKit(system);
     final String[] lookup = { "a", "b", "c", "d", "e", "f" };
-    final java.util.Iterator<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5).iterator();
+    final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
     final Source<Integer> ints = Source.from(input);
 
     ints.drop(2).take(3).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS)).map(new Function<Integer, String>() {
@@ -79,7 +79,7 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseVoidTypeInForeach() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final java.util.Iterator<String> input = Arrays.asList("a", "b", "c").iterator();
+    final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
     Source<String> ints = Source.from(input);
 
     Future<BoxedUnit> completion = ints.foreach(new Procedure<String>() {
@@ -414,17 +414,11 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseCallableInput() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final akka.stream.javadsl.japi.Creator<akka.japi.Option<Integer>> input = new akka.stream.javadsl.japi.Creator<akka.japi.Option<Integer>>() {
-      int countdown = 5;
-
+    final Iterable<Integer> input1 = Arrays.asList(4,3,2,1,0);
+    final akka.stream.javadsl.japi.Creator<Iterator<Integer>> input = new akka.stream.javadsl.japi.Creator<Iterator<Integer>>() {
       @Override
-      public akka.japi.Option<Integer> create() {
-        if (countdown == 0) {
-          return akka.japi.Option.none();
-        } else {
-          countdown -= 1;
-          return akka.japi.Option.option(countdown);
-        }
+      public Iterator<Integer> create() {
+        return input1.iterator();
       }
     };
     Source.from(input).foreach(new Procedure<Integer>() {

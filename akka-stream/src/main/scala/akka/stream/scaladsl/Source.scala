@@ -3,13 +3,14 @@
  */
 package akka.stream.scaladsl
 
+import scala.language.higherKinds
+
 import akka.actor.Props
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousPublisherFromIterable }
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
-import scala.language.higherKinds
 import akka.stream.FlowMaterializer
 
 /**
@@ -35,8 +36,7 @@ trait Source[+Out] extends FlowOps[Out] {
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    */
-  def runWith(sink: Sink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType =
-    to(sink).run().get(sink)
+  def runWith(sink: Sink[Out])(implicit materializer: FlowMaterializer): sink.MaterializedType = to(sink).run().get(sink)
 
   /**
    * Shortcut for running this `Source` with a fold function.
@@ -46,8 +46,7 @@ trait Source[+Out] extends FlowOps[Out] {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is an error is signaled in the stream.
    */
-  def fold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] =
-    runWith(FoldSink(zero)(f))
+  def fold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] = runWith(FoldSink(zero)(f)) // FIXME why is fold always an end step?
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
@@ -56,8 +55,7 @@ trait Source[+Out] extends FlowOps[Out] {
    * normal end of the stream, or completed with `Failure` if there is an error is signaled in
    * the stream.
    */
-  def foreach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] =
-    runWith(ForeachSink(f))
+  def foreach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] = runWith(ForeachSink(f))
 
   /**
    * Concatenates a second source so that the first element
@@ -90,15 +88,15 @@ object Source {
 
   /**
    * Helper to create [[Source]] from `Iterator`.
-   * Example usage: `Source(Seq(1,2,3).iterator)`
+   * Example usage: `Source(() => Iterator.from(0))`
    *
-   * Start a new `Source` from the given Iterator. The produced stream of elements
-   * will continue until the iterator runs empty or fails during evaluation of
-   * the `next()` method. Elements are pulled out of the iterator
-   * in accordance with the demand coming from the downstream transformation
-   * steps.
+   * Start a new `Source` from the given function that produces anIterator.
+   * The produced stream of elements will continue until the iterator runs empty
+   * or fails during evaluation of the `next()` method.
+   * Elements are pulled out of the iterator in accordance with the demand coming
+   * from the downstream transformation steps.
    */
-  def apply[T](iterator: Iterator[T]): Source[T] = IteratorSource(iterator)
+  def apply[T](f: () ⇒ Iterator[T]): Source[T] = apply(new FuncIterable(f))
 
   /**
    * Helper to create [[Source]] from `Iterable`.
@@ -110,13 +108,6 @@ object Source {
    * beginning) regardless of when they subscribed.
    */
   def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable)
-
-  /**
-   * Define the sequence of elements to be produced by the given closure.
-   * The stream ends normally when evaluation of the closure returns a `None`.
-   * The stream ends exceptionally when an exception is thrown from the closure.
-   */
-  def apply[T](f: () ⇒ Option[T]): Source[T] = IteratorSource(new ThunkIterator(f))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -133,7 +124,7 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Source[T] =
+  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ T): Source[T] = // FIXME why is tick () => T and not T?
     TickSource(initialDelay, interval, tick)
 
   /**
@@ -166,7 +157,7 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element)))
+  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element))) // FIXME optimize
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.

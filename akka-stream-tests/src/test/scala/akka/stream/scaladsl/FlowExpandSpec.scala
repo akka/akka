@@ -67,7 +67,7 @@ class FlowExpandSpec extends AkkaSpec {
     }
 
     "work on a variable rate chain" in {
-      val future = Source((1 to 100).iterator)
+      val future = Source(1 to 100)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }
         .expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i))
         .fold(Set.empty[Int])(_ + _)
