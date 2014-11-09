@@ -64,7 +64,7 @@ object SnapshotSerializationSpec {
 
 }
 
-class SnapshotSerializationSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotSerializationSpec", serialization = "off", extraConfig = Some(
+class SnapshotSerializationSpec extends PersistenceSpec(PersistenceSpec.config("leveldb", "SnapshotSerializationSpec", serialization = "off", extraConfig = Some(
   """
     akka.actor {
       serializers {
@@ -74,7 +74,7 @@ class SnapshotSerializationSpec extends AkkaSpec(PersistenceSpec.config("leveldb
         "akka.persistence.SnapshotSerializationSpec$SerializationMarker" = my-snapshot
       }
     }
-  """))) with PersistenceSpec with ImplicitSender {
+  """))) with ImplicitSender {
 
   import SnapshotSerializationSpec._
   import SnapshotSerializationSpec.XXXXXXXXXXXXXXXXXXXX._
