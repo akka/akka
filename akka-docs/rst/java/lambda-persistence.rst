@@ -408,8 +408,8 @@ the persistent actor will resend these before sending any other messages.
 
 Deliver also requires a function to pass the ``deliveryId`` into the message. A ``deliveryId`` is required to acknowledge 
 receipt of a message, and is also used in playback, when the actor is recovering so that messages received can be correctly acknowledged. 
-A function can be created to map your own ``messageId`` with ``deliveryId``s, which may come from your own domain model. 
-This function must keep track of which ``messageId``s have been acknowledged.
+A function can be created to map your own ``messageId`` to ``deliveryId``, which may come from your own domain model. 
+This function must keep track of which ``messageId`` have been acknowledged.
 Alternatively, the Persistence module provides a default sequence number implementation which can also be used as the ``deliveryId`` 
 for messages. The default sequence increases monotonically, without gaps.
 

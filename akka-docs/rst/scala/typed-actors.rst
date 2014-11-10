@@ -184,7 +184,7 @@ Receive arbitrary messages
 --------------------------
 
 If your implementation class of your TypedActor extends ``akka.actor.TypedActor.Receiver``,
-all messages that are not ``MethodCall``s will be passed into the ``onReceive``-method.
+all messages that are not ``MethodCall`` instances will be passed into the ``onReceive``-method.
 
 This allows you to react to DeathWatch ``Terminated``-messages and other types of messages,
 e.g. when interfacing with untyped actors.
