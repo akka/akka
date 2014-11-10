@@ -6,6 +6,9 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.stream.CancelTermination
 import akka.stream.NoopTermination
 import akka.stream.StreamSubscriptionTimeoutSettings
@@ -44,7 +47,7 @@ trait SubscriptionTimeout {
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
 trait StreamSubscriptionTimeoutSupport {
-  this: Actor with ActorLogging ⇒
+  this: Actor ⇒
 
   /** Default settings for subscription timeouts. */
   def subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings
@@ -81,6 +84,8 @@ trait StreamSubscriptionTimeoutSupport {
       if (subscriptionTimeoutSettings.dispatcher.trim.isEmpty) context.dispatcher
       else context.system.dispatchers.lookup(subscriptionTimeoutSettings.dispatcher)
 
+    val log = Logging(context.system, this)
+
     subscriptionTimeoutSettings.mode match {
       case NoopTermination ⇒
         NoopSubscriptionTimeout
@@ -91,7 +96,7 @@ trait StreamSubscriptionTimeoutSupport {
           val subscriptionTimeout = context.system.scheduler.scheduleOnce(timeout, new Runnable {
             override def run(): Unit = {
               if (safeToCancelTimer.compareAndSet(true, false))
-                onReactiveStream { terminate(_, timeout) }
+                onReactiveStream { terminate(_, timeout, log) }
             }
           })
 
@@ -102,7 +107,8 @@ trait StreamSubscriptionTimeoutSupport {
 
             case _ if safeToCancelTimer.get ⇒
               // first subscription signal, cancel the subscription-timeout
-              safeToCancelTimer.compareAndSet(true, false) && subscriptionTimeout.cancel()
+              if (safeToCancelTimer.compareAndSet(true, false))
+                subscriptionTimeout.cancel()
               true
 
             case CancellingSubscriber if !safeToCancelTimer.get ⇒
@@ -121,12 +127,12 @@ trait StreamSubscriptionTimeoutSupport {
           }
 
           private final def onReactiveStream(block: Publisher[_] ⇒ Unit) =
-            rs.foreach { rs ⇒ block(rs) }(dispatcher)
+            rs.foreach { rs ⇒ block(rs) }(ExecutionContexts.sameThreadExecutionContext)
         }
     }
   }
 
-  private def cancel(rs: Publisher[_], timeout: FiniteDuration): Unit = rs match {
+  private def cancel(rs: Publisher[_], log: LoggingAdapter, timeout: FiniteDuration): Unit = rs match {
     case p: Processor[_, _] ⇒
       log.debug("Cancelling {} Processor's publisher and subscriber sides (after {})", p, timeout)
       p.subscribe(CancellingSubscriber)
@@ -137,14 +143,14 @@ trait StreamSubscriptionTimeoutSupport {
       p.subscribe(CancellingSubscriber)
   }
 
-  private def warn(rs: Any, timeout: FiniteDuration): Unit = {
+  private def warn(rs: Publisher[_], log: LoggingAdapter, timeout: FiniteDuration): Unit = {
     log.warning("Timed out {} detected (after {})! You should investigate if you either cancel or consume all {} instances",
       rs, timeout, rs.getClass.getCanonicalName)
   }
-  private def terminate(el: Publisher[_], timeout: FiniteDuration): Unit = subscriptionTimeoutSettings.mode match {
+  private def terminate(p: Publisher[_], timeout: FiniteDuration, log: LoggingAdapter): Unit = subscriptionTimeoutSettings.mode match {
     case NoopTermination   ⇒ // ignore...
-    case WarnTermination   ⇒ warn(el, timeout)
-    case CancelTermination ⇒ cancel(el, timeout)
+    case WarnTermination   ⇒ warn(p, log, timeout)
+    case CancelTermination ⇒ cancel(p, log, timeout)
   }
 
   /**
