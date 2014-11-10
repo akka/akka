@@ -17,7 +17,7 @@ class ActorPathSpec extends WordSpec with Matchers {
     }
 
     "support parsing remote paths" in {
-      val remote = "akka://sys@host:1234/some/ref"
+      val remote = "akka://my_sys@host:1234/some/ref"
       ActorPath.fromString(remote).toString should be(remote)
     }
 

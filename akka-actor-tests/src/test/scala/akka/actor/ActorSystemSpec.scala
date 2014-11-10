@@ -144,8 +144,8 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reject invalid names" in {
       for (
         n ← Seq(
-          "hallo_welt",
           "-hallowelt",
+          "_hallowelt",
           "hallo*welt",
           "hallo@welt",
           "hallo#welt",
@@ -158,7 +158,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     }
 
     "allow valid names" in {
-      shutdown(ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-"))
+      shutdown(ActorSystem("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"))
     }
 
     "support extensions" in {
