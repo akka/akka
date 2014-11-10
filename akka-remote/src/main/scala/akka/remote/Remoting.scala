@@ -195,7 +195,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
         } catch {
           case e: TimeoutException ⇒
-            notifyError("Startup timed out", e)
+            notifyError("Startup timed out. This is usually related to actor system host setting or host name resolution misconfiguration.", e)
             throw e
           case NonFatal(e) ⇒
             notifyError("Startup failed", e)
