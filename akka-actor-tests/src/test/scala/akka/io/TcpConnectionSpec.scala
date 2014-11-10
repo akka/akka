@@ -5,7 +5,7 @@
 package akka.io
 
 import java.io.{ File, IOException }
-import java.net.{ URLClassLoader, InetSocketAddress }
+import java.net.{ ServerSocket, URLClassLoader, InetSocketAddress }
 import java.nio.ByteBuffer
 import java.nio.channels._
 import java.nio.channels.spi.SelectorProvider
@@ -149,6 +149,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         userHandler.send(connectionActor, Register(userHandler.ref))
         userHandler.expectMsgType[Received].data.decodeString("ASCII") should be("immediatedata")
+        ignoreWindowsWorkaroundForTicket15766()
         interestCallReceiver.expectMsg(OP_READ)
       }
     }
@@ -449,7 +450,10 @@ class TcpConnectionSpec extends AkkaSpec("""
           assertThisConnectionActorTerminated()
 
           val buffer = ByteBuffer.allocate(1)
-          val thrown = evaluating { serverSideChannel.read(buffer) } should produce[IOException]
+          val thrown = evaluating {
+            windowsWorkaroundToDetectAbort()
+            serverSideChannel.read(buffer)
+          } should produce[IOException]
           thrown.getMessage should be(ConnectionResetByPeerMessage)
         }
       }
@@ -599,7 +603,7 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         abortClose(serverSideChannel)
         writer.send(connectionActor, Write(ByteString("testdata")))
-        // bother writer and handler should get the message
+        // both writer and handler should get the message
         writer.expectMsgType[ErrorClosed]
         connectionHandler.expectMsgType[ErrorClosed]
 
@@ -815,6 +819,25 @@ class TcpConnectionSpec extends AkkaSpec("""
         writer.expectMsg(works)
       }
     }
+
+    "report abort before handler is registered (reproducer from #15033)" in {
+      // This test needs the OP_CONNECT workaround on Windows, see original report #15033 and parent ticket #15766
+
+      val bindAddress = new InetSocketAddress(23402)
+      val serverSocket = new ServerSocket(bindAddress.getPort, 100, bindAddress.getAddress)
+      val connectionProbe = TestProbe()
+
+      connectionProbe.send(IO(Tcp), Connect(bindAddress))
+
+      IO(Tcp) ! Connect(bindAddress)
+
+      val socket = serverSocket.accept()
+      connectionProbe.expectMsgType[Tcp.Connected]
+      val connectionActor = connectionProbe.sender()
+      connectionActor ! PoisonPill
+      verifyActorTermination(connectionActor)
+      an[IOException] should be thrownBy { socket.getInputStream.read() }
+    }
   }
 
   /////////////////////////////////////// TEST SUPPORT ////////////////////////////////////////////////
@@ -839,6 +862,11 @@ class TcpConnectionSpec extends AkkaSpec("""
 
     var registerCallReceiver = TestProbe()
     var interestCallReceiver = TestProbe()
+
+    def ignoreWindowsWorkaroundForTicket15766(): Unit = {
+      // Due to the Windows workaround of #15766 we need to set an OP_CONNECT to reliably detect connection resets
+      if (Helpers.isWindows) interestCallReceiver.expectMsg(OP_CONNECT)
+    }
 
     def run(body: ⇒ Unit): Unit = {
       try {
@@ -911,6 +939,19 @@ class TcpConnectionSpec extends AkkaSpec("""
     lazy val serverSelectionKey = registerChannel(serverSideChannel, "server")
     lazy val defaultbuffer = ByteBuffer.allocate(TestSize)
 
+    def windowsWorkaroundToDetectAbort(): Unit = {
+      // Due to a Windows quirk we need to set an OP_CONNECT to reliably detect connection resets, see #1576
+      if (Helpers.isWindows) {
+        serverSelectionKey.interestOps(OP_CONNECT)
+        nioSelector.select(10)
+      }
+    }
+
+    override def ignoreWindowsWorkaroundForTicket15766(): Unit = {
+      super.ignoreWindowsWorkaroundForTicket15766()
+      if (Helpers.isWindows) clientSelectionKey.interestOps(OP_CONNECT)
+    }
+
     override def run(body: ⇒ Unit): Unit = super.run {
       try {
         serverSideChannel.configureBlocking(false)
@@ -921,6 +962,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         userHandler.expectMsg(Connected(serverAddress, clientSideChannel.socket.getLocalSocketAddress.asInstanceOf[InetSocketAddress]))
 
         userHandler.send(connectionActor, Register(connectionHandler.ref, keepOpenOnPeerClosed, useResumeWriting))
+        ignoreWindowsWorkaroundForTicket15766()
         if (!pullMode) interestCallReceiver.expectMsg(OP_READ)
 
         clientSelectionKey // trigger initialization
@@ -1040,6 +1082,7 @@ class TcpConnectionSpec extends AkkaSpec("""
           log.debug("setSoLinger(true, 0) failed with {}", e)
       }
       channel.close()
+      if (Helpers.isWindows) nioSelector.select(10) // Windows needs this
     }
   }
 
