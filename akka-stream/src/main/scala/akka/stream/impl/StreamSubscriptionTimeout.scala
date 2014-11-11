@@ -7,6 +7,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
 import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.event.LoggingAdapter
 import akka.stream.CancelTermination
 import akka.stream.NoopTermination
 import akka.stream.StreamSubscriptionTimeoutSettings
@@ -16,9 +18,9 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NoStackTrace
 
 /**
@@ -45,7 +47,7 @@ trait SubscriptionTimeout {
  * See `akka.stream.materializer.subscription-timeout` for configuration options.
  */
 trait StreamSubscriptionTimeoutSupport {
-  this: Actor with ActorLogging ⇒
+  this: Actor ⇒
 
   /** Default settings for subscription timeouts. */
   def subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings
@@ -77,52 +79,60 @@ trait StreamSubscriptionTimeoutSupport {
     pub
   }
 
-  private def scheduleSubscriptionTimeout(rs: Future[_], timeout: FiniteDuration): SubscriptionTimeout = {
+  private def scheduleSubscriptionTimeout(rs: Future[Publisher[_]], timeout: FiniteDuration): SubscriptionTimeout = {
     implicit val dispatcher =
       if (subscriptionTimeoutSettings.dispatcher.trim.isEmpty) context.dispatcher
       else context.system.dispatchers.lookup(subscriptionTimeoutSettings.dispatcher)
 
-    new SubscriptionTimeout {
-      private val safeToCancelTimer = new AtomicBoolean(true)
+    val log = Logging(context.system, this)
 
-      val subscriptionTimeout = context.system.scheduler.scheduleOnce(timeout, new Runnable {
-        override def run(): Unit = {
-          if (safeToCancelTimer.compareAndSet(true, false))
-            onReactiveStream { terminate(_, timeout) }
-        }
-      })
+    subscriptionTimeoutSettings.mode match {
+      case NoopTermination ⇒
+        NoopSubscriptionTimeout
+      case _ ⇒
+        new SubscriptionTimeout {
+          private val safeToCancelTimer = new AtomicBoolean(true)
 
-      override def cancelAndHandle(s: Subscriber[_]): Boolean = s match {
-        case _ if subscriptionTimeout.isCancelled ⇒
-          // there was some initial subscription already, which cancelled the timeout => continue normal operation
-          true
+          val subscriptionTimeout = context.system.scheduler.scheduleOnce(timeout, new Runnable {
+            override def run(): Unit = {
+              if (safeToCancelTimer.compareAndSet(true, false))
+                onReactiveStream { terminate(_, timeout, log) }
+            }
+          })
 
-        case _ if safeToCancelTimer.get ⇒
-          // first subscription signal, cancel the subscription-timeout
-          safeToCancelTimer.compareAndSet(true, false) && subscriptionTimeout.cancel()
-          true
+          override def cancelAndHandle(s: Subscriber[_]): Boolean = s match {
+            case _ if subscriptionTimeout.isCancelled ⇒
+              // there was some initial subscription already, which cancelled the timeout => continue normal operation
+              true
 
-        case CancellingSubscriber if !safeToCancelTimer.get ⇒
-          // publisher termination in progress - normally we'd onError all subscribers, except the CancellationSubscriber (!)
-          // guaranteed that no other subscribers are coming in now
-          true
+            case _ if safeToCancelTimer.get ⇒
+              // first subscription signal, cancel the subscription-timeout
+              if (safeToCancelTimer.compareAndSet(true, false))
+                subscriptionTimeout.cancel()
+              true
 
-        case _ ⇒
-          // terminated - kill incoming subscribers
-          onReactiveStream { rs ⇒
-            s.onError(new SubscriptionTimeoutException(s"Publisher (${rs}) you are trying to subscribe to has been shut-down " +
-              s"because exceeding it's subscription-timeout.") with NoStackTrace)
+            case CancellingSubscriber if !safeToCancelTimer.get ⇒
+              // publisher termination in progress - normally we'd onError all subscribers, except the CancellationSubscriber (!)
+              // guaranteed that no other subscribers are coming in now
+              true
+
+            case _ ⇒
+              // terminated - kill incoming subscribers
+              onReactiveStream { rs ⇒
+                s.onError(new SubscriptionTimeoutException(s"Publisher (${rs}) you are trying to subscribe to has been shut-down " +
+                  s"because exceeding it's subscription-timeout.") with NoStackTrace)
+              }
+
+              false
           }
 
-          false
-      }
-
-      private final def onReactiveStream(block: Any ⇒ Unit) =
-        rs.foreach { rs ⇒ block(rs) }(ExecutionContexts.sameThreadExecutionContext)
+          private final def onReactiveStream(block: Publisher[_] ⇒ Unit) =
+            rs.foreach { rs ⇒ block(rs) }(ExecutionContexts.sameThreadExecutionContext)
+        }
     }
   }
 
-  private def cancel(rs: Any, timeout: FiniteDuration): Unit = rs match {
+  private def cancel(rs: Publisher[_], log: LoggingAdapter, timeout: FiniteDuration): Unit = rs match {
     case p: Processor[_, _] ⇒
       log.debug("Cancelling {} Processor's publisher and subscriber sides (after {})", p, timeout)
       p.subscribe(CancellingSubscriber)
@@ -133,14 +143,22 @@ trait StreamSubscriptionTimeoutSupport {
       p.subscribe(CancellingSubscriber)
   }
 
-  private def warn(rs: Any, timeout: FiniteDuration): Unit = {
+  private def warn(rs: Publisher[_], log: LoggingAdapter, timeout: FiniteDuration): Unit = {
     log.warning("Timed out {} detected (after {})! You should investigate if you either cancel or consume all {} instances",
       rs, timeout, rs.getClass.getCanonicalName)
   }
-  private def terminate(el: Any, timeout: FiniteDuration): Unit = subscriptionTimeoutSettings.mode match {
+  private def terminate(p: Publisher[_], timeout: FiniteDuration, log: LoggingAdapter): Unit = subscriptionTimeoutSettings.mode match {
     case NoopTermination   ⇒ // ignore...
-    case WarnTermination   ⇒ warn(el, timeout)
-    case CancelTermination ⇒ cancel(el, timeout)
+    case WarnTermination   ⇒ warn(p, log, timeout)
+    case CancelTermination ⇒ cancel(p, log, timeout)
+  }
+
+  /**
+   * Subscription timeout which does not start any scheduled events and always returns `true` on cancelAndHandle,
+   * meaning that it never times out a subscription. This specialised implementation is to be used for "noop" timeouting mode.
+   */
+  private final case object NoopSubscriptionTimeout extends SubscriptionTimeout {
+    override def cancelAndHandle(s: Subscriber[_]): Boolean = true
   }
 
   private final case object CancellingSubscriber extends Subscriber[Any] {
