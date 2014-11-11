@@ -210,8 +210,9 @@ private[remote] class ReliableDeliverySupervisor(
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
-      log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason is: [{}].",
-        remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage)
+      val causedBy = if (e.getCause == null) "" else s"Caused by: [${e.getCause.getMessage}]"
+      log.warning("Association with remote system [{}] has failed, address is now gated for [{}] ms. Reason: [{}] {}",
+        remoteAddress, settings.RetryGateClosedFor.toMillis, e.getMessage, causedBy)
       uidConfirmed = false // Need confirmation of UID again
       if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
         bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
@@ -466,7 +467,7 @@ private[remote] object EndpointWriter {
 
   case class OutboundAck(ack: Ack)
 
-  // These settings are not configurable because wrong configuration will break the auto-tuning 
+  // These settings are not configurable because wrong configuration will break the auto-tuning
   private val SendBufferBatchSize = 5
   private val MinAdaptiveBackoffNanos = 300000L // 0.3 ms
   private val MaxAdaptiveBackoffNanos = 2000000L // 2 ms
