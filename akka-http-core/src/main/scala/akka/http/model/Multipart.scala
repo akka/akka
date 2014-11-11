@@ -198,7 +198,7 @@ object Multipart {
           def additionalDispositionParams = _additionalDispositionParams
           def additionalHeaders = _additionalHeaders
           def entity = _entity
-          override def toString = s"FormData.BodyPart(${_name}, ${_entity}, ${_additionalDispositionParams}, ${_additionalHeaders})"
+          override def toString = s"FormData.BodyPart($name, $entity, $additionalDispositionParams, $additionalHeaders)"
         }
 
       def unapply(value: BodyPart): Option[(String, BodyPartEntity, Map[String, String], immutable.Seq[HttpHeader])] =
@@ -266,7 +266,7 @@ object Multipart {
           def entity = _entity
           def rangeUnit = _rangeUnit
           def additionalHeaders = _additionalHeaders
-          override def toString = s"ByteRanges.BodyPart(${_contentRange}, ${_entity}, ${_rangeUnit}, ${_additionalHeaders})"
+          override def toString = s"ByteRanges.BodyPart($contentRange, $entity, $rangeUnit, $additionalHeaders)"
         }
 
       def unapply(value: BodyPart): Option[(ContentRange, BodyPartEntity, RangeUnit, immutable.Seq[HttpHeader])] =

@@ -15,13 +15,23 @@ final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpChar
     case HttpCharsetRange.`*` ⇒ r ~~ mediaRange
     case x                    ⇒ r ~~ mediaRange ~~ ContentType.`; charset=` ~~ x
   }
+
+  /**
+   * Returns a [[ContentType]] instance which fits this range.
+   */
+  def specimen: ContentType = ContentType(mediaRange.specimen, charsetRange.specimen)
 }
 
 object ContentTypeRange {
   val `*` = ContentTypeRange(MediaRanges.`*/*`)
 
-  implicit def apply(mediaType: MediaType): ContentTypeRange = apply(MediaRange(mediaType), HttpCharsetRange.`*`)
+  implicit def apply(mediaType: MediaType): ContentTypeRange = apply(mediaType, HttpCharsetRange.`*`)
   implicit def apply(mediaRange: MediaRange): ContentTypeRange = apply(mediaRange, HttpCharsetRange.`*`)
+  implicit def apply(contentType: ContentType): ContentTypeRange =
+    contentType.definedCharset match {
+      case Some(charset) ⇒ apply(contentType.mediaType, charset)
+      case None          ⇒ ContentTypeRange(contentType.mediaType)
+    }
 }
 
 final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCharset]) extends japi.ContentType with ValueRenderable {
