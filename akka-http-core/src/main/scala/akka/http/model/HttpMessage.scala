@@ -250,7 +250,8 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
 
   override def withMethod(method: akka.http.model.japi.HttpMethod): HttpRequest = copy(method = method.asInstanceOf[HttpMethod])
   override def withProtocol(protocol: akka.http.model.japi.HttpProtocol): HttpRequest = copy(protocol = protocol.asInstanceOf[HttpProtocol])
-  override def withUri(path: String): HttpRequest = copy(uri = Uri(path))
+  override def withUri(path: String): HttpRequest = withUri(Uri(path))
+  def withUri(uri: Uri): HttpRequest = copy(uri = uri)
 
   /** Java API */
   override def getUri: japi.Uri = japi.Accessors.Uri(uri)

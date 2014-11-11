@@ -34,6 +34,11 @@ sealed abstract class MediaRange extends japi.MediaRange with Renderable with Wi
    */
   def withCharset(charsetRange: HttpCharsetRange): ContentTypeRange = ContentTypeRange(this, charsetRange)
 
+  /**
+   * Returns a [[MediaType]] instance which fits this range.
+   */
+  def specimen: MediaType
+
   /** Java API */
   def getParams: util.Map[String, String] = {
     import collection.JavaConverters._
@@ -72,6 +77,7 @@ object MediaRange {
     override def isMultipart = mainType == "multipart"
     override def isText = mainType == "text"
     override def isVideo = mainType == "video"
+    def specimen = MediaType.custom(mainType, "custom")
   }
 
   def custom(mainType: String, params: Map[String, String] = Map.empty, qValue: Float = 1.0f): MediaRange = {
@@ -95,6 +101,7 @@ object MediaRange {
     def withParams(params: Map[String, String]) = copy(mediaType = mediaType.withParams(params))
     def withQValue(qValue: Float) = copy(qValue = qValue)
     def render[R <: Rendering](r: R): r.type = if (qValue < 1.0f) r ~~ mediaType ~~ ";q=" ~~ qValue else r ~~ mediaType
+    def specimen = mediaType
   }
 
   implicit def apply(mediaType: MediaType): MediaRange = apply(mediaType, 1.0f)
@@ -114,34 +121,42 @@ object MediaRanges extends ObjectRegistry[String, MediaRange] {
 
   val `*/*` = new PredefinedMediaRange("*/*") {
     def matches(mediaType: MediaType) = true
+    def specimen = MediaTypes.`text/plain`
   }
   val `application/*` = new PredefinedMediaRange("application/*") {
     def matches(mediaType: MediaType) = mediaType.isApplication
-    override def isApplication: Boolean = true
+    override def isApplication = true
+    def specimen = MediaTypes.`application/json`
   }
   val `audio/*` = new PredefinedMediaRange("audio/*") {
     def matches(mediaType: MediaType) = mediaType.isAudio
-    override def isAudio: Boolean = true
+    override def isAudio = true
+    def specimen = MediaTypes.`audio/ogg`
   }
   val `image/*` = new PredefinedMediaRange("image/*") {
     def matches(mediaType: MediaType) = mediaType.isImage
-    override def isImage: Boolean = true
+    override def isImage = true
+    def specimen = MediaTypes.`image/png`
   }
   val `message/*` = new PredefinedMediaRange("message/*") {
     def matches(mediaType: MediaType) = mediaType.isMessage
-    override def isMessage: Boolean = true
+    override def isMessage = true
+    def specimen = MediaTypes.`message/rfc822`
   }
   val `multipart/*` = new PredefinedMediaRange("multipart/*") {
     def matches(mediaType: MediaType) = mediaType.isMultipart
-    override def isMultipart: Boolean = true
+    override def isMultipart = true
+    def specimen = MediaTypes.`multipart/form-data`
   }
   val `text/*` = new PredefinedMediaRange("text/*") {
     def matches(mediaType: MediaType) = mediaType.isText
-    override def isText: Boolean = true
+    override def isText = true
+    def specimen = MediaTypes.`text/plain`
   }
   val `video/*` = new PredefinedMediaRange("video/*") {
     def matches(mediaType: MediaType) = mediaType.isVideo
-    override def isVideo: Boolean = true
+    override def isVideo = true
+    def specimen = MediaTypes.`video/mp4`
   }
 }
 
