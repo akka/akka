@@ -1198,8 +1198,8 @@ object Dependencies {
   import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val scala = "2.10.4"
-    val crossScala = Seq(scala, "2.11.2")
+    val crossScala = Seq("2.10.4", "2.11.4")
+    val scala = crossScala.head
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
