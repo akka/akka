@@ -5,14 +5,16 @@
 package akka.http.model
 
 /**
- * Model for `application/x-www-form-urlencoded` form data.
+ * Simple model for `application/x-www-form-urlencoded` form data.
  */
-final case class FormData(fields: Uri.Query) {
-  type FieldType = (String, String)
-}
+final case class FormData(fields: Uri.Query)
 
 object FormData {
   val Empty = FormData(Uri.Query.Empty)
+
   def apply(fields: Map[String, String]): FormData =
     if (fields.isEmpty) Empty else FormData(Uri.Query(fields))
+
+  def apply(fields: (String, String)*): FormData =
+    if (fields.isEmpty) Empty else FormData(Uri.Query(fields: _*))
 }
