@@ -293,7 +293,7 @@ trait FlowOps[+Out] {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: Out ⇒ S, extrapolate: S ⇒ (U, S)): Repr[U] =
+  def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U] =
     andThen(Fusable(Vector(fusing.Expand(seed, extrapolate)), "expand"))
 
   /**
