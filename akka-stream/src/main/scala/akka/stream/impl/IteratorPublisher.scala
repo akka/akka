@@ -10,12 +10,7 @@ import akka.stream.MaterializerSettings
  * INTERNAL API
  */
 private[akka] object IteratorPublisher {
-  def props(iterator: Iterator[Any], settings: MaterializerSettings): Props = {
-    def f(): Any = {
-      if (!iterator.hasNext) throw Stop
-      iterator.next()
-    }
-    SimpleCallbackPublisher.props(settings, f)
-  }
+  def props[T](iterator: Iterator[T], settings: MaterializerSettings): Props =
+    Props(new IteratorPublisherImpl(iterator, settings)).withDispatcher(settings.dispatcher)
 
 }
