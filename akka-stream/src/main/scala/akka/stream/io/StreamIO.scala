@@ -4,20 +4,23 @@
 package akka.stream.io
 
 import java.io.Closeable
+import java.net.{ InetSocketAddress, URLEncoder }
 
-import akka.util.ByteString
-import org.reactivestreams.{ Processor, Publisher, Subscriber }
-import java.net.InetSocketAddress
 import akka.actor._
-import scala.collection._
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
-import akka.stream.impl.{ ActorPublisher, ExposedPublisher, ActorProcessor }
+import akka.pattern.ask
 import akka.stream.MaterializerSettings
-import akka.io.IO
-import java.net.URLEncoder
-import akka.japi.Util
+import akka.stream.impl._
+import akka.stream.io.StreamTcp.{ IncomingTcpConnection, OutgoingTcpConnection, TcpServerBinding }
+import akka.stream.scaladsl.{ Flow, KeyedActorFlowSource, Pipe, Source }
+import akka.util.{ ByteString, Timeout }
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
+import scala.collection._
+import scala.concurrent.duration._
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
 
 object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
 
@@ -25,17 +28,22 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
   override def createExtension(system: ExtendedActorSystem): StreamTcpExt = new StreamTcpExt(system)
   override def get(system: ActorSystem): StreamTcpExt = super.get(system)
 
-  case class OutgoingTcpConnection(remoteAddress: InetSocketAddress,
-                                   localAddress: InetSocketAddress,
-                                   processor: Processor[ByteString, ByteString]) {
-    def outputStream: Subscriber[ByteString] = processor
-    def inputStream: Publisher[ByteString] = processor
-  }
+  /**
+   * INTERNAL API
+   */
+  private[akka] case class OutgoingTcpConnection(remoteAddress: InetSocketAddress,
+                                                 localAddress: InetSocketAddress,
+                                                 processor: Processor[ByteString, ByteString])
 
-  sealed abstract case class TcpServerBinding(localAddress: InetSocketAddress,
-                                              connectionStream: Publisher[IncomingTcpConnection]) extends Closeable
-
-  object TcpServerBinding {
+  /**
+   * INTERNAL API
+   */
+  private[akka] sealed abstract case class TcpServerBinding(localAddress: InetSocketAddress,
+                                                            connectionStream: Publisher[IncomingTcpConnection]) extends Closeable
+  /**
+   * INTERNAL API
+   */
+  private[akka] object TcpServerBinding {
     def apply(localAddress: InetSocketAddress, connectionStream: Publisher[IncomingTcpConnection]): TcpServerBinding =
       new TcpServerBinding(localAddress, connectionStream) {
         override def close() = ()
@@ -47,171 +55,125 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
       }
   }
 
-  case class IncomingTcpConnection(remoteAddress: InetSocketAddress,
-                                   inputStream: Publisher[ByteString],
-                                   outputStream: Subscriber[ByteString]) {
-    def handleWith(processor: Processor[ByteString, ByteString]): Unit = {
-      processor.subscribe(outputStream)
-      inputStream.subscribe(processor)
-    }
-  }
+  case class IncomingTcpConnection(remoteAddress: InetSocketAddress, stream: Flow[ByteString, ByteString])
 
   /**
-   * The Connect message is sent to the StreamTcp manager actor, which is obtained via
-   * `IO(StreamTcp)`. The manager replies with a [[StreamTcp.OutgoingTcpConnection]]
-   * message.
-   *
-   * @param remoteAddress the address to connect to
-   * @param settings if Some the passed [[MaterializerSettings]] will be used during stream actor creation,
-   *                 otherwise the ActorSystem's default settings will be used
-   * @param localAddress optionally specifies a specific address to bind to
-   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
-   * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
+   * INTERNAL API
    */
-  case class Connect(remoteAddress: InetSocketAddress,
-                     localAddress: Option[InetSocketAddress] = None,
-                     materializerSettings: Option[MaterializerSettings] = None,
-                     options: immutable.Traversable[SocketOption] = Nil,
-                     connectTimeout: Duration = Duration.Inf,
-                     idleTimeout: Duration = Duration.Inf) {
-    /**
-     * Java API
-     */
-    def withMaterializerSettings(materializerSettings: MaterializerSettings): Connect =
-      copy(materializerSettings = Option(materializerSettings))
-
-    /**
-     * Java API
-     */
-    def withLocalAddress(localAddress: InetSocketAddress): Connect =
-      copy(localAddress = Option(localAddress))
-
-    /**
-     * Java API
-     */
-    def withSocketOptions(options: java.lang.Iterable[SocketOption]): Connect =
-      copy(options = Util.immutableSeq(options))
-
-    /**
-     * Java API
-     */
-    def withConnectTimeout(connectTimeout: Duration): Connect =
-      copy(connectTimeout = connectTimeout)
-
-    /**
-     * Java API
-     */
-    def withIdleTimeout(idleTimeout: Duration): Connect =
-      copy(idleTimeout = idleTimeout)
-  }
-
+  private[akka] case class Connect(remoteAddress: InetSocketAddress,
+                                   localAddress: Option[InetSocketAddress] = None,
+                                   materializerSettings: Option[MaterializerSettings] = None,
+                                   options: immutable.Traversable[SocketOption] = Nil,
+                                   connectTimeout: Duration = Duration.Inf,
+                                   idleTimeout: Duration = Duration.Inf)
   /**
-   * The Bind message is send to the StreamTcp manager actor, which is obtained via
-   * `IO(StreamTcp)`, in order to bind to a listening socket. The manager
-   * replies with a [[StreamTcp.TcpServerBinding]]. If the local port is set to 0 in
-   * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
-   * the actual port which was bound to.
-   *
-   * @param settings if Some, these materializer settings will be used for stream actors,
-   *                 else the ActorSystem's default materializer settings will be used.
-   * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
-   * @param backlog the number of unaccepted connections the O/S
-   *                kernel will hold for this port before refusing connections.
-   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
+   * INTERNAL API
    */
-  case class Bind(localAddress: InetSocketAddress,
-                  settings: Option[MaterializerSettings] = None,
-                  backlog: Int = 100,
-                  options: immutable.Traversable[SocketOption] = Nil,
-                  idleTimeout: Duration = Duration.Inf) {
+  private[akka] case class Bind(localAddress: InetSocketAddress,
+                                settings: Option[MaterializerSettings] = None,
+                                backlog: Int = 100,
+                                options: immutable.Traversable[SocketOption] = Nil,
+                                idleTimeout: Duration = Duration.Inf)
 
-    /**
-     * Java API
-     */
-    def withBacklog(backlog: Int): Bind = copy(backlog = backlog)
-
-    /**
-     * Java API
-     */
-    def withSocketOptions(options: java.lang.Iterable[SocketOption]): Bind =
-      copy(options = Util.immutableSeq(options))
-
-    /**
-     * Java API
-     */
-    def withIdleTimeout(idleTimeout: Duration): Bind =
-      copy(idleTimeout = idleTimeout)
-  }
-
-}
-
-/**
- * Java API: Factory methods for the messages of `StreamTcp`.
- */
-object StreamTcpMessage {
-  /**
-   * Java API: The Connect message is sent to the StreamTcp manager actor, which is obtained via
-   * `StreamTcp.get(system).manager()`. The manager replies with a [[StreamTcp.OutgoingTcpConnection]]
-   * message.
-   *
-   * @param remoteAddress is the address to connect to
-   * @param localAddress optionally specifies a specific address to bind to
-   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
-   * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
-   */
-  def connect(
-    settings: MaterializerSettings,
-    remoteAddress: InetSocketAddress,
-    localAddress: InetSocketAddress,
-    options: java.lang.Iterable[SocketOption],
-    connectTimeout: Duration,
-    idleTimeout: Duration): StreamTcp.Connect =
-    StreamTcp.Connect(remoteAddress, Option(localAddress), Option(settings), Util.immutableSeq(options), connectTimeout, idleTimeout)
-
-  /**
-   * Java API: Message to Connect to the given `remoteAddress` without binding to a local address and without
-   * specifying options.
-   */
-  def connect(settings: MaterializerSettings, remoteAddress: InetSocketAddress): StreamTcp.Connect =
-    StreamTcp.Connect(remoteAddress, materializerSettings = Option(settings))
-
-  /**
-   * Java API: The Bind message is send to the StreamTcp manager actor, which is obtained via
-   * `StreamTcp.get(system).manager()`, in order to bind to a listening socket. The manager
-   * replies with a [[StreamTcp.TcpServerBinding]]. If the local port is set to 0 in
-   * the Bind message, then the [[StreamTcp.TcpServerBinding]] message should be inspected to find
-   * the actual port which was bound to.
-   *
-   * @param settings if Some, these materializer settings will be used for stream actors,
-   *                 else the ActorSystem's default materializer settings will be used.
-   * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
-   * @param backlog the number of unaccepted connections the O/S
-   *                kernel will hold for this port before refusing connections.
-   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
-   * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
-   */
-  def bind(settings: MaterializerSettings,
-           localAddress: InetSocketAddress,
-           backlog: Int,
-           options: java.lang.Iterable[SocketOption],
-           idleTimeout: Duration): StreamTcp.Bind =
-    StreamTcp.Bind(localAddress, Option(settings), backlog, Util.immutableSeq(options), idleTimeout)
-
-  /**
-   * Java API: Message to open a listening socket without specifying options.
-   */
-  def bind(settings: MaterializerSettings, localAddress: InetSocketAddress): StreamTcp.Bind =
-    StreamTcp.Bind(localAddress, Option(settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class StreamTcpExt(system: ExtendedActorSystem) extends IO.Extension {
-  val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
+private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[I, O]])(implicit ec: ExecutionContext) extends Processor[I, O] {
+  @volatile private var impl: Processor[I, O] = _
+  private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
+
+  override def onSubscribe(s: Subscription): Unit = implFuture.onComplete {
+    case Success(impl) ⇒ impl.onSubscribe(s)
+    case Failure(_)    ⇒ s.cancel()
+  }
+
+  override def onError(t: Throwable): Unit = {
+    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onError(t) }
+    else impl.onError(t)
+  }
+
+  override def onComplete(): Unit = {
+    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onComplete() }
+    else impl.onComplete()
+  }
+
+  override def onNext(t: I): Unit = impl.onNext(t)
+
+  override def subscribe(s: Subscriber[_ >: O]): Unit = setVarFuture.onComplete {
+    case Success(impl) ⇒ impl.subscribe(s)
+    case Failure(e)    ⇒ s.onError(e)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class StreamTcpExt(val system: ExtendedActorSystem) extends Extension {
+  private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
+
+  /**
+   * Creates a Flow that represents a TCP connection to a remote host. The actual connection is only attempted
+   * when the Flow is materialized. The returned Flow is reusable, each new materialization will attempt to open
+   * a new connection to the remote host.
+   *
+   * @param remoteAddress the address to connect to
+   * @param localAddress optionally specifies a specific address to bind to
+   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
+   * @param connectTimeout the desired timeout for connection establishment, infinite means "no timeout"
+   * @param idleTimeout the desired idle timeout on the connection, infinite means "no timeout"
+   */
+  def connect(remoteAddress: InetSocketAddress,
+              localAddress: Option[InetSocketAddress] = None,
+              options: immutable.Traversable[SocketOption] = Nil,
+              connectTimeout: Duration = Duration.Inf,
+              idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString] = {
+    implicit val t = Timeout(3.seconds)
+    import system.dispatcher
+    Pipe { () ⇒
+      new DelayedInitProcessor[ByteString, ByteString](
+        (StreamTcp(system).manager ? StreamTcp.Connect(remoteAddress, localAddress, None, options, connectTimeout, idleTimeout))
+          .mapTo[OutgoingTcpConnection]
+          .map(_.processor))
+    }
+  }
+
+  /**
+   * Returns a Source that represents a port listening to incoming connections. The actual binding to the local port
+   * happens when the Source is first materialized. This Source is not reusable until the listen port becomes available
+   * again.
+   *
+   * @param localAddress the socket address to bind to; use port zero for automatic assignment (i.e. an ephemeral port)
+   * @param backlog the number of unaccepted connections the O/S
+   *                kernel will hold for this port before refusing connections.
+   * @param options Please refer to [[akka.io.TcpSO]] for a list of all supported options.
+   * @param idleTimeout the desired idle timeout on the accepted connections, infinite means "no timeout"
+   */
+  def bind(localAddress: InetSocketAddress,
+           backlog: Int = 100,
+           options: immutable.Traversable[SocketOption] = Nil,
+           idleTimeout: Duration = Duration.Inf): Source[IncomingTcpConnection] { type MaterializedType = Future[TcpServerBinding] } = {
+    new KeyedActorFlowSource[IncomingTcpConnection] {
+      implicit val t = Timeout(3.seconds)
+      import system.dispatcher
+
+      override def attach(flowSubscriber: Subscriber[IncomingTcpConnection], materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType = {
+        val bindingFuture = (StreamTcp(system).manager ? StreamTcp.Bind(localAddress, None, backlog, options, idleTimeout))
+          .mapTo[TcpServerBinding]
+
+        bindingFuture.map(_.connectionStream).onComplete {
+          case Success(impl) ⇒ impl.subscribe(flowSubscriber)
+          case Failure(e)    ⇒ flowSubscriber.onError(e)
+        }
+
+        bindingFuture
+      }
+
+      override type MaterializedType = Future[TcpServerBinding]
+    }
+  }
+
 }
 
 /**
@@ -225,7 +187,7 @@ private[akka] object StreamTcpManager {
  * INTERNAL API
  */
 private[akka] class StreamTcpManager extends Actor {
-  import StreamTcpManager._
+  import akka.stream.io.StreamTcpManager._
 
   var nameCounter = 0
   def encName(prefix: String, address: InetSocketAddress) = {

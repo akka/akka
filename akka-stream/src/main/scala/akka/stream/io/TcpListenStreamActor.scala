@@ -10,8 +10,9 @@ import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
 import akka.stream.MaterializerSettings
 import akka.stream.impl._
+import akka.stream.scaladsl.{ Pipe, Flow }
 import akka.util.ByteString
-import org.reactivestreams.Publisher
+import org.reactivestreams.{ Processor, Publisher }
 
 import scala.util.control.NoStackTrace
 
@@ -133,7 +134,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
-    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
+    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, Pipe(() ⇒ processor)))
   }
 
   def fail(e: Throwable): Unit = {

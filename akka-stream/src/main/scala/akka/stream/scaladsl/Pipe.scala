@@ -3,7 +3,9 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.impl.Ast
 import akka.stream.impl.Ast.AstNode
+import org.reactivestreams.Processor
 import scala.annotation.unchecked.uncheckedVariance
 import scala.language.{ existentials, higherKinds }
 import akka.stream.FlowMaterializer
@@ -11,6 +13,9 @@ import akka.stream.FlowMaterializer
 private[stream] object Pipe {
   private val emptyInstance = Pipe[Any, Any](ops = Nil)
   def empty[T]: Pipe[T, T] = emptyInstance.asInstanceOf[Pipe[T, T]]
+
+  private[stream] def apply[In, Out](p: () ⇒ Processor[In, Out]): Pipe[In, Out] =
+    new Pipe[In, Out](List(Ast.DirectProcessor(() ⇒ p().asInstanceOf[Processor[Any, Any]])))
 }
 
 /**

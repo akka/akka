@@ -24,7 +24,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
 
       val tcpReadProbe = new TcpReadProbe()
       val tcpWriteProbe = new TcpWriteProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp2.connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp(system).connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       serverConnection.write(testData)
@@ -44,7 +44,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
-      Source(testInput).via(StreamTcp2.connect(server.address)).to(Sink.ignore).run()
+      Source(testInput).via(StreamTcp(system).connect(server.address)).to(Sink.ignore).run()
 
       val serverConnection = server.waitAccept()
       serverConnection.read(256)
@@ -60,11 +60,14 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val idle = new TcpWriteProbe() // Just register an idle upstream
       val resultFuture =
         Source(idle.publisherProbe)
-          .via(StreamTcp2.connect(server.address))
+          .via(StreamTcp(system).connect(server.address))
           .fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
       val serverConnection = server.waitAccept()
 
-      for (in ← testInput) serverConnection.write(in)
+      for (in ← testInput) {
+        serverConnection.write(in)
+        Thread.sleep(10)
+      }
 
       serverConnection.confirmedClose()
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
@@ -77,7 +80,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp2.connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp(system).connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       tcpWriteProbe.close()
@@ -94,7 +97,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp2.connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp(system).connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       tcpReadProbe.close()
@@ -114,7 +117,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
 
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp2.connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp(system).connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       // FIXME: here (and above tests) add a chitChat() method ensuring this works even after prior communication
@@ -139,7 +142,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
 
-      Source(tcpWriteProbe.publisherProbe).via(StreamTcp2.connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp(system).connect(server.address)).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
       serverConnection.abort()
@@ -157,14 +160,14 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
 
     // Reusing handler
     val echoHandler = ForeachSink[IncomingTcpConnection] { incoming ⇒
-      Source(incoming.inputStream).to(Sink(incoming.outputStream)).run()
+      incoming.stream.join(Flow[ByteString]).run()
     }
 
     "be able to implement echo" in {
       import system.dispatcher
 
       val serverAddress = temporaryServerAddress
-      val binding = StreamTcp2.bind(serverAddress)
+      val binding = StreamTcp(system).bind(serverAddress)
       val echoServer = binding.to(echoHandler).run()
 
       val echoServerFinish = echoServer.get(echoHandler)
@@ -173,7 +176,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
-        Source(testInput).via(StreamTcp2.connect(serverAddress)).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+        Source(testInput).via(StreamTcp(system).connect(serverAddress)).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
       echoServerBinding.foreach(_.close)
@@ -184,13 +187,13 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       import system.dispatcher
 
       val serverAddress = temporaryServerAddress
-      val binding = StreamTcp2.bind(serverAddress)
+      val binding = StreamTcp(system).bind(serverAddress)
       val echoServer = binding.to(echoHandler).run()
 
       val echoServerFinish = echoServer.get(echoHandler)
       val echoServerBinding = echoServer.get(binding)
 
-      val echoConnection = StreamTcp2.connect(serverAddress)
+      val echoConnection = StreamTcp(system).connect(serverAddress)
 
       val testInput = Iterator.range(0, 256).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
