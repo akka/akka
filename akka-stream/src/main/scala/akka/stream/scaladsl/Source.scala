@@ -116,7 +116,7 @@ object Source {
    * The stream ends normally when evaluation of the closure returns a `None`.
    * The stream ends exceptionally when an exception is thrown from the closure.
    */
-  def apply[T](f: () ⇒ Option[T]): Source[T] = ThunkSource(f)
+  def apply[T](f: () ⇒ Option[T]): Source[T] = IteratorSource(new ThunkIterator(f))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of

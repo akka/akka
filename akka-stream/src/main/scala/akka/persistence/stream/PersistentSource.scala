@@ -12,7 +12,6 @@ import akka.stream.impl.Cancel
 import akka.stream.impl.ExposedPublisher
 import akka.stream.impl.RequestMore
 import akka.stream.impl.SoftShutdown
-import akka.stream.impl.Stop
 import akka.stream.impl.SubscribePending
 import akka.stream.impl.SubscriberManagement
 import akka.stream.impl.ActorBasedFlowMaterializer
@@ -112,11 +111,7 @@ private class PersistentSourceImpl(persistenceId: String, sourceSettings: Persis
     case Cancel(sub) ⇒
       unregisterSubscription(sub.asInstanceOf[S])
     case Response(ps) ⇒
-      try {
-        ps.foreach(pushToDownstream)
-      } catch {
-        case Stop ⇒
-          completeDownstream(); shutdownReason = None
+      try ps.foreach(pushToDownstream) catch {
         case NonFatal(e) ⇒ abortDownstream(e); shutdownReason = Some(e)
       }
   }
