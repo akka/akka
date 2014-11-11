@@ -494,7 +494,7 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
 private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
 
-  if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
+  if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
         "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-')")
