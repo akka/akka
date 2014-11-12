@@ -20,7 +20,7 @@ class OptimizingActorBasedFlowMaterializerSpec extends AkkaSpec with ImplicitSen
       val f = Source(1 to 100).
         drop(4).
         drop(5).
-        transform("identity", () ⇒ FlowOps.identityTransformer).
+        transform("identity", () ⇒ FlowOps.identityStage).
         filter(_ % 2 == 0).
         map(_ * 2).
         map(identity).

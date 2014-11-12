@@ -7,9 +7,9 @@ package akka.http.coding
 import java.io.ByteArrayOutputStream
 import akka.http.model._
 import akka.http.util.StreamUtils
-import akka.stream.Transformer
 import akka.util.ByteString
 import headers._
+import akka.stream.scaladsl.Flow
 
 trait Encoder {
   def encoding: HttpEncoding
@@ -26,7 +26,7 @@ trait Encoder {
 
   def newCompressor: Compressor
 
-  def newEncodeTransformer(): Transformer[ByteString, ByteString] = {
+  def newEncodeTransformer(): Flow[ByteString, ByteString] = {
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)

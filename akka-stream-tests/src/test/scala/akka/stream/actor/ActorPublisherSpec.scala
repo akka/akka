@@ -329,7 +329,6 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       val timeout = 150.millis
       val a = system.actorOf(timeoutingProps(testActor, timeout))
       val pub = ActorPublisher(a)
-      watch(a)
 
       // don't subscribe for `timeout` millis, so it will shut itself down
       expectMsg("timed-out")
@@ -341,6 +340,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
 
       expectMsg("cleaned-up")
       // termination is tiggered by user code
+      watch(a)
       expectTerminated(a)
     }
 

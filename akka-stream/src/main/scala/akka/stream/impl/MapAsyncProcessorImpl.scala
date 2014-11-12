@@ -11,11 +11,15 @@ import scala.util.control.NonFatal
 import akka.stream.MaterializerSettings
 import akka.pattern.pipe
 import scala.annotation.tailrec
+import akka.actor.Props
 
 /**
  * INTERNAL API
  */
 private[akka] object MapAsyncProcessorImpl {
+
+  def props(settings: MaterializerSettings, f: Any ⇒ Future[Any]): Props =
+    Props(new MapAsyncProcessorImpl(settings, f))
 
   object FutureElement {
     implicit val ordering: Ordering[FutureElement] = new Ordering[FutureElement] {
@@ -43,7 +47,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: An
   var doneSeqNo = 0L
   def gap: Long = submittedSeqNo - doneSeqNo
 
-  // TODO performance improvement: explore Endre's proposal of using an array based ring buffer addressed by 
+  // TODO performance improvement: explore Endre's proposal of using an array based ring buffer addressed by
   //      seqNo & Mask and explicitly storing a Gap object to denote missing pieces instead of the sorted set
 
   // keep future results arriving too early in a buffer sorted by seqNo
@@ -62,7 +66,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: An
       if (iter.hasNext) {
         val next = iter.next()
         val inOrder = next.seqNo == (doneSeqNo + 1)
-        // stop at first missing seqNo 
+        // stop at first missing seqNo
         if (inOrder) {
           n += 1
           doneSeqNo = next.seqNo

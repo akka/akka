@@ -5,15 +5,14 @@ package akka.stream.scaladsl
 
 import akka.actor.ActorRef
 import akka.actor.Props
-
 import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
-import akka.stream.Transformer
 import akka.stream.impl.{ ActorBasedFlowMaterializer, ActorProcessorFactory, FanoutProcessorImpl, BlackholeSubscriber }
 import java.util.concurrent.atomic.AtomicReference
+import akka.stream.stage._
 
 sealed trait ActorFlowSink[-In] extends Sink[In] {
 
@@ -167,15 +166,15 @@ object OnCompleteSink {
 final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends SimpleActorFlowSink[In] {
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) =
-    Source(flowPublisher).transform("onCompleteSink", () ⇒ new Transformer[In, Unit] {
-      override def onNext(in: In) = Nil
-      override def onError(e: Throwable) = ()
-      override def onTermination(e: Option[Throwable]) = {
-        e match {
-          case None    ⇒ callback(OnCompleteSink.SuccessUnit)
-          case Some(e) ⇒ callback(Failure(e))
-        }
-        Nil
+    Source(flowPublisher).transform("onCompleteSink", () ⇒ new PushStage[In, Unit] {
+      override def onPush(elem: In, ctx: Context[Unit]): Directive = ctx.pull()
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
+        callback(Failure(cause))
+        ctx.fail(cause)
+      }
+      override def onUpstreamFinish(ctx: Context[Unit]): TerminationDirective = {
+        callback(OnCompleteSink.SuccessUnit)
+        ctx.finish()
       }
     }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
 }
@@ -191,15 +190,18 @@ final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In] 
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val promise = Promise[Unit]()
-    Source(flowPublisher).transform("foreach", () ⇒ new Transformer[In, Unit] {
-      override def onNext(in: In) = { f(in); Nil }
-      override def onError(cause: Throwable): Unit = ()
-      override def onTermination(e: Option[Throwable]) = {
-        e match {
-          case None    ⇒ promise.success(())
-          case Some(e) ⇒ promise.failure(e)
-        }
-        Nil
+    Source(flowPublisher).transform("foreach", () ⇒ new PushStage[In, Unit] {
+      override def onPush(elem: In, ctx: Context[Unit]): Directive = {
+        f(elem)
+        ctx.pull()
+      }
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
+        promise.failure(cause)
+        ctx.fail(cause)
+      }
+      override def onUpstreamFinish(ctx: Context[Unit]): TerminationDirective = {
+        promise.success(())
+        ctx.finish()
       }
     }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
     promise.future
@@ -220,16 +222,22 @@ final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFl
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val promise = Promise[U]()
 
-    Source(flowPublisher).transform("fold", () ⇒ new Transformer[In, U] {
-      var state: U = zero
-      override def onNext(in: In): immutable.Seq[U] = { state = f(state, in); Nil }
-      override def onError(cause: Throwable) = ()
-      override def onTermination(e: Option[Throwable]) = {
-        e match {
-          case None    ⇒ promise.success(state)
-          case Some(e) ⇒ promise.failure(e)
-        }
-        Nil
+    Source(flowPublisher).transform("fold", () ⇒ new PushStage[In, U] {
+      private var aggregator = zero
+
+      override def onPush(elem: In, ctx: Context[U]): Directive = {
+        aggregator = f(aggregator, elem)
+        ctx.pull()
+      }
+
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[U]): TerminationDirective = {
+        promise.failure(cause)
+        ctx.fail(cause)
+      }
+
+      override def onUpstreamFinish(ctx: Context[U]): TerminationDirective = {
+        promise.success(aggregator)
+        ctx.finish()
       }
     }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
 

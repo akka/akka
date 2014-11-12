@@ -5,6 +5,15 @@ package akka.stream.impl
 
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.Source
+import akka.actor.Props
+
+/**
+ * INTERNAL API
+ */
+private[akka] object GroupByProcessorImpl {
+  def props(settings: MaterializerSettings, keyFor: Any ⇒ Any): Props =
+    Props(new GroupByProcessorImpl(settings, keyFor))
+}
 
 /**
  * INTERNAL API

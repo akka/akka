@@ -12,7 +12,7 @@ import akka.http.model.headers._
 import akka.http.engine.rendering.RenderSupport._
 import akka.http.util._
 import akka.stream.scaladsl.Source
-import akka.stream.Transformer
+import akka.stream.stage._
 import akka.util.ByteString
 import HttpEntity._
 
@@ -24,19 +24,19 @@ private[http] object BodyPartRenderer {
   def streamed(boundary: String,
                nioCharset: Charset,
                partHeadersSizeHint: Int,
-               log: LoggingAdapter): Transformer[Multipart.BodyPart, Source[ChunkStreamPart]] =
-    new Transformer[Multipart.BodyPart, Source[ChunkStreamPart]] {
+               log: LoggingAdapter): PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart]] =
+    new PushPullStage[Multipart.BodyPart, Source[ChunkStreamPart]] {
       var firstBoundaryRendered = false
 
-      def onNext(bodyPart: Multipart.BodyPart): List[Source[ChunkStreamPart]] = {
+      override def onPush(bodyPart: Multipart.BodyPart, ctx: Context[Source[ChunkStreamPart]]): Directive = {
         val r = new CustomCharsetByteStringRendering(nioCharset, partHeadersSizeHint)
 
-        def bodyPartChunks(data: Source[ByteString]): List[Source[ChunkStreamPart]] = {
+        def bodyPartChunks(data: Source[ByteString]): Source[ChunkStreamPart] = {
           val entityChunks = data.map[ChunkStreamPart](Chunk(_))
-          (Source(Chunk(r.get) :: Nil) ++ entityChunks) :: Nil
+          chunkStream(r.get) ++ entityChunks
         }
 
-        def completePartRendering(): List[Source[ChunkStreamPart]] =
+        def completePartRendering(): Source[ChunkStreamPart] =
           bodyPart.entity match {
             case x if x.isKnownEmpty       ⇒ chunkStream(r.get)
             case Strict(_, data)           ⇒ chunkStream((r ~~ data).get)
@@ -48,18 +48,26 @@ private[http] object BodyPartRenderer {
         firstBoundaryRendered = true
         renderEntityContentType(r, bodyPart.entity)
         renderHeaders(r, bodyPart.headers, log)
-        completePartRendering()
+        ctx.push(completePartRendering())
       }
 
-      override def onTermination(e: Option[Throwable]): List[Source[ChunkStreamPart]] =
-        if (e.isEmpty && firstBoundaryRendered) {
+      override def onPull(ctx: Context[Source[ChunkStreamPart]]): Directive = {
+        val finishing = ctx.isFinishing
+        if (finishing && firstBoundaryRendered) {
           val r = new ByteStringRendering(boundary.length + 4)
           renderFinalBoundary(r, boundary)
-          chunkStream(r.get)
-        } else Nil
+          ctx.pushAndFinish(chunkStream(r.get))
+        } else if (finishing)
+          ctx.finish()
+        else
+          ctx.pull()
+      }
 
-      private def chunkStream(byteString: ByteString) =
-        Source[ChunkStreamPart](Chunk(byteString) :: Nil) :: Nil
+      override def onUpstreamFinish(ctx: Context[Source[ChunkStreamPart]]): TerminationDirective = ctx.absorbTermination()
+
+      private def chunkStream(byteString: ByteString): Source[ChunkStreamPart] =
+        Source.singleton(Chunk(byteString))
+
     }
 
   def strict(parts: immutable.Seq[Multipart.BodyPart.Strict], boundary: String, nioCharset: Charset,
