@@ -28,7 +28,7 @@ object StreamSubscriptionTimeoutSupport {
    * Subscription timeout which does not start any scheduled events and always returns `true`.
    * This specialized implementation is to be used for "noop" timeout mode.
    */
-  private final case object NoopSubscriptionTimeout extends Cancellable {
+  final case object NoopSubscriptionTimeout extends Cancellable {
     override def cancel() = true
     override def isCancelled = true
   }
