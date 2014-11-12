@@ -1374,7 +1374,7 @@ object Dependencies {
     // TODO this version should be the same as the RS version once the RS TCK has been merged and released
     val reactiveStreamsTckVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M2-20140910-174042-SNAPSHOT")
 
-    val publishedAkkaVersion = "2.3.6"
+    val publishedAkkaVersion = "2.3.7"
   }
 
   object Compile {
