@@ -250,6 +250,7 @@ final case class MaterializerSettings(
 }
 
 object StreamSubscriptionTimeoutSettings {
+  import StreamSubscriptionTimeoutTerminationMode._
 
   /** Java API */
   def create(config: Config): StreamSubscriptionTimeoutSettings =
@@ -263,21 +264,23 @@ object StreamSubscriptionTimeoutSettings {
         case "warn"                          ⇒ WarnTermination
         case "cancel"                        ⇒ CancelTermination
       },
-      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis,
-      dispatcher = c.getString("dispatcher"))
+      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
   }
 }
-final case class StreamSubscriptionTimeoutSettings(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration, dispatcher: String)
+final case class StreamSubscriptionTimeoutSettings(mode: StreamSubscriptionTimeoutTerminationMode, timeout: FiniteDuration)
 
 sealed abstract class StreamSubscriptionTimeoutTerminationMode
+
 object StreamSubscriptionTimeoutTerminationMode {
+  case object NoopTermination extends StreamSubscriptionTimeoutTerminationMode
+  case object WarnTermination extends StreamSubscriptionTimeoutTerminationMode
+  case object CancelTermination extends StreamSubscriptionTimeoutTerminationMode
+
   /** Java API */
   def noop = NoopTermination
   /** Java API */
   def warn = WarnTermination
   /** Java API */
   def cancel = CancelTermination
+
 }
-case object NoopTermination extends StreamSubscriptionTimeoutTerminationMode
-case object WarnTermination extends StreamSubscriptionTimeoutTerminationMode
-case object CancelTermination extends StreamSubscriptionTimeoutTerminationMode
