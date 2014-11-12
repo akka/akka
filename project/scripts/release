@@ -261,13 +261,13 @@ function try {
 
 echolog "Creating release ${version} ..."
 
-if [ $dry_run ]; then
+if [ "$dry_run" == "true" ]; then
   echodry "Building everything but not pushing release"
 else
   echolog "Publishing to ${publish_path}"
 fi
 
-[[ $run_tests ]] && echolog "All tests will be run"
+[[ "$run_tests" == "true" ]] && echolog "All tests will be run"
 
 # try ssh'ing to the release server
 echolog "Checking ssh connection to ${release_server}"
@@ -287,7 +287,7 @@ try ${script_dir}/find-replace ${current_version} ${version}
 try sbt clean
 
 # run the tests if specified
-if [ $run_tests ]; then
+if [ "$run_tests" == "true" ]; then
   echolog "Running all tests..."
   try sbt test
   echolog "All tests are green"
@@ -295,7 +295,7 @@ fi
 
 # build the release
 echolog "Building the release..."
-if [ ! $dry_run ]; then
+if [ "$dry_run" == "false" ]; then
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true -Dpublish.maven.central=true"
 else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
@@ -304,7 +304,7 @@ try sbt $RELEASE_OPT +build-release
 echolog "Successfully created local release"
 
 # check binary compatibility for dry run
-if [ ! $no_mima ] && [ $dry_run ]; then
+if [ "$no_mima" == "false" ] && [ "$dry_run" == "true" ]; then
   echodry "Running migration manager report..."
   sbt mima-report-binary-issues
   echodry "Finished migration manager report"
@@ -346,7 +346,7 @@ trap arrgh_interrupt SIGHUP SIGINT SIGTERM
 
 # push the commits and tags to git origin
 echolog "Pushing to git origin..."
-if [ $dry_run ]; then
+if [ "$dry_run" == "true" ]; then
   echodry "Not actually pushing to git origin. Commands:"
   echodry "  git push origin --tags"
 else
@@ -355,7 +355,7 @@ fi
 
 # push the release to the server
 echolog "Pushing ${release_dir} to ${publish_path} ..."
-if [ $dry_run ]; then
+if [ "$dry_run" == "true" ]; then
   echodry "Not actually pushing to server. Command:"
   echodry "  rsync -rlpvz --chmod=Dg+ws,Fg+w --exclude ${release_dir}/downloads ${release_dir}/ ${publish_path}/"
   echodry "  sbt upload-release"
@@ -364,8 +364,8 @@ else
   important sbt upload-release
 fi
 
-if [ $dry_run ]; then
-  if [ $no_revert ]; then
+if [ "$dry_run" == "true" ]; then
+  if [ "$no_revert" == "true" ]; then
     echodry "No revert: git branch ${release_branch} and git tag v${version} remain"
   else
     git_cleanup
