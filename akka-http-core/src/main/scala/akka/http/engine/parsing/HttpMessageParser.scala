@@ -97,7 +97,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
 
   def badProtocol: Nothing
 
-  @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: List[HttpHeader] = Nil,
+  @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: ListBuffer[HttpHeader] = ListBuffer[HttpHeader](),
                                       headerCount: Int = 0, ch: Option[Connection] = None,
                                       clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
                                       teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
@@ -117,7 +117,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
         case HttpHeaderParser.EmptyHeader ⇒
           val close = HttpMessage.connectionCloseExpected(protocol, ch)
           setCompletionHandling(CompletionIsEntityStreamError)
-          parseEntity(headers, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
+          parseEntity(headers.toList, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
 
         case h: `Content-Length` ⇒ clh match {
           case None      ⇒ parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
@@ -134,21 +134,21 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
           case Some(x) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
         }
         case h: Connection ⇒ ch match {
-          case None    ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)
+          case None    ⇒ parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)
           case Some(x) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh)
         }
         case h: Host ⇒
-          if (!hh) parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
+          if (!hh) parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
           else failMessageStart("HTTP message must not contain more than one Host header")
 
-        case h: Expect ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)
+        case h: Expect ⇒ parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)
 
-        case h         ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c, hh)
+        case h         ⇒ parseHeaderLines(input, lineEnd, headers += h, headerCount + 1, ch, clh, cth, teh, e100c, hh)
       }
     } else failMessageStart(s"HTTP message contains more than the configured limit of $maxHeaderCount headers")
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
-  def parseHeaderLinesAux(headers: List[HttpHeader], headerCount: Int, ch: Option[Connection],
+  def parseHeaderLinesAux(headers: ListBuffer[HttpHeader], headerCount: Int, ch: Option[Connection],
                           clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                           e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
     parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)

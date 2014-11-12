@@ -76,7 +76,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-length:    17
           |
           |Shake your BOODY!""" should parseTo {
-          HttpRequest(POST, "/resource/yes", List(Connection("keep-alive"), `User-Agent`("curl/7.19.7 xyz")),
+          HttpRequest(POST, "/resource/yes", List(`User-Agent`("curl/7.19.7 xyz"), Connection("keep-alive")),
             "Shake your BOODY!", `HTTP/1.0`)
         }
         closeAfterResponseCompletion shouldEqual Seq(false)
@@ -91,7 +91,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Shake your BOODY!GET / HTTP/1.0
           |
           |""" should parseTo(
-          HttpRequest(POST, "/resource/yes", List(Connection("keep-alive"), `User-Agent`("curl/7.19.7 xyz")),
+          HttpRequest(POST, "/resource/yes", List(`User-Agent`("curl/7.19.7 xyz"), Connection("keep-alive")),
             "Shake your BOODY!".getBytes, `HTTP/1.0`),
           HttpRequest(protocol = `HTTP/1.0`))
         closeAfterResponseCompletion shouldEqual Seq(false, true)
@@ -107,8 +107,8 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           | fancy
           |
           |""" should parseTo {
-          HttpRequest(DELETE, "/abc", List(Connection("close", "fancy"), Accept(MediaRanges.`*/*`),
-            `User-Agent`("curl/7.19.7 abc xyz")), protocol = `HTTP/1.0`)
+          HttpRequest(DELETE, "/abc", List(`User-Agent`("curl/7.19.7 abc xyz"), Accept(MediaRanges.`*/*`),
+            Connection("close", "fancy")), protocol = `HTTP/1.0`)
         }
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
@@ -165,7 +165,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Host: ping
             |
             |"""
-        val baseRequest = HttpRequest(PATCH, "/data", List(Host("ping"), Connection("lalelu")))
+        val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")))
 
         "request start" in new Test {
           Seq(start, "rest") should generalMultiParseTo(
@@ -217,7 +217,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               |
               |""") should generalMultiParseTo(
               Right(baseRequest.withEntity(Chunked(`application/pdf`,
-                source(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
+                source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
 
@@ -276,7 +276,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Host: ping
             |
             |"""
-        val baseRequest = HttpRequest(PATCH, "/data", List(Host("ping"), Connection("lalelu")),
+        val baseRequest = HttpRequest(PATCH, "/data", List(Connection("lalelu"), Host("ping")),
           HttpEntity.Chunked(`application/octet-stream`, source()))
 
         "an illegal char after chunk size" in new Test {
