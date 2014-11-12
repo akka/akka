@@ -9,9 +9,9 @@ import scala.util.matching.Regex
 import scala.annotation.tailrec
 import akka.http.server.util.Tuple
 import akka.http.server.util.TupleOps._
+import akka.http.common.NameOptionReceptacle
 import akka.http.model.Uri.Path
 import akka.http.util._
-import directives.NameReceptacle
 
 /**
  * A PathMatcher tries to match a prefix of a given string and returns either a PathMatcher.Matched instance
@@ -216,7 +216,7 @@ trait ImplicitPathMatcherConstruction {
   implicit def segmentStringToPathMatcher(segment: String): PathMatcher0 =
     PathMatcher(segment :: Path.Empty, ())
 
-  implicit def stringOptionNameReceptacle2PathMatcher(nr: NameReceptacle[Option[String]]): PathMatcher0 =
+  implicit def stringNameOptionReceptacle2PathMatcher(nr: NameOptionReceptacle[String]): PathMatcher0 =
     PathMatcher(nr.name).?
 
   /**

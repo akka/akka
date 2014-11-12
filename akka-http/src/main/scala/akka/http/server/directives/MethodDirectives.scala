@@ -12,41 +12,42 @@ trait MethodDirectives {
   import BasicDirectives._
   import RouteDirectives._
   import ParameterDirectives._
+  import MethodDirectives._
 
   /**
    * A route filter that rejects all non-DELETE requests.
    */
-  def delete: Directive0 = MethodDirectives._delete
+  def delete: Directive0 = _delete
 
   /**
    * A route filter that rejects all non-GET requests.
    */
-  def get: Directive0 = MethodDirectives._get
+  def get: Directive0 = _get
 
   /**
    * A route filter that rejects all non-HEAD requests.
    */
-  def head: Directive0 = MethodDirectives._head
+  def head: Directive0 = _head
 
   /**
    * A route filter that rejects all non-OPTIONS requests.
    */
-  def options: Directive0 = MethodDirectives._options
+  def options: Directive0 = _options
 
   /**
    * A route filter that rejects all non-PATCH requests.
    */
-  def patch: Directive0 = MethodDirectives._patch
+  def patch: Directive0 = _patch
 
   /**
    * A route filter that rejects all non-POST requests.
    */
-  def post: Directive0 = MethodDirectives._post
+  def post: Directive0 = _post
 
   /**
    * A route filter that rejects all non-PUT requests.
    */
-  def put: Directive0 = MethodDirectives._put
+  def put: Directive0 = _put
 
   /**
    * Rejects all requests whose HTTP method does not match the given one.
@@ -67,13 +68,15 @@ trait MethodDirectives {
    *  - Supporting older browsers that lack support for certain HTTP methods. E.g. IE8 does not support PATCH
    */
   def overrideMethodWithParameter(paramName: String): Directive0 =
-    parameter(paramName?) flatMap {
-      case Some(method) ⇒
-        getForKey(method.toUpperCase) match {
-          case Some(m) ⇒ mapRequest(_.copy(method = m))
-          case _       ⇒ complete(StatusCodes.NotImplemented)
-        }
-      case _ ⇒ pass
+    extractExecutionContext flatMap { implicit ec ⇒
+      parameter(paramName?) flatMap {
+        case Some(method) ⇒
+          getForKey(method.toUpperCase) match {
+            case Some(m) ⇒ mapRequest(_.copy(method = m))
+            case _       ⇒ complete(StatusCodes.NotImplemented)
+          }
+        case None ⇒ pass
+      }
     }
 }
 

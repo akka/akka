@@ -5,6 +5,8 @@
 package akka.http.server
 package directives
 
+import akka.http.common.ToNameReceptacleEnhancements
+
 trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction with ToNameReceptacleEnhancements {
   import BasicDirectives._
   import RouteDirectives._
