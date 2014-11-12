@@ -85,6 +85,25 @@ object ActorPublisherSpec {
       }
   }
 
+  def timeoutingProps(probe: ActorRef, timeout: FiniteDuration): Props =
+    Props(classOf[TimeoutingPublisher], probe, timeout).withDispatcher("akka.test.stream-dispatcher")
+
+  class TimeoutingPublisher(probe: ActorRef, timeout: FiniteDuration) extends ActorPublisher[Int] {
+    import akka.stream.actor.ActorPublisherMessage._
+    import context.dispatcher
+
+    override def subscriptionTimeout = timeout
+
+    override def receive: Receive = {
+      case Request(_) ⇒
+        onNext(1)
+      case SubscriptionTimeoutExceeded ⇒
+        probe ! "timed-out"
+        context.system.scheduler.scheduleOnce(timeout, probe, "cleaned-up")
+        context.system.scheduler.scheduleOnce(timeout, self, PoisonPill)
+    }
+  }
+
   def receiverProps(probe: ActorRef): Props =
     Props(new Receiver(probe)).withDispatcher("akka.test.stream-dispatcher")
 
@@ -102,6 +121,7 @@ object ActorPublisherSpec {
 }
 
 class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
+
   import akka.stream.actor.ActorPublisherSpec._
 
   system.eventStream.publish(Mute(EventFilter[IllegalStateException]()))
@@ -301,6 +321,41 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       (0 to 10).foreach { msg ⇒
         probe1.expectMsg(msg.toString + "mark")
         probe2.expectMsg(msg.toString)
+      }
+    }
+
+    "be able to define a subscription-timeout, after which it should shut down" in {
+      implicit val materializer = FlowMaterializer()
+      val timeout = 150.millis
+      val a = system.actorOf(timeoutingProps(testActor, timeout))
+      val pub = ActorPublisher(a)
+      watch(a)
+
+      // don't subscribe for `timeout` millis, so it will shut itself down
+      expectMsg("timed-out")
+
+      // now subscribers will already be rejected, while the actor could perform some clean-up
+      val sub = StreamTestKit.SubscriberProbe()
+      pub.subscribe(sub)
+      sub.expectError()
+
+      expectMsg("cleaned-up")
+      // termination is tiggered by user code
+      expectTerminated(a)
+    }
+
+    "be able to define a subscription-timeout, which is cancelled by the first incoming Subscriber" in {
+      implicit val materializer = FlowMaterializer()
+      val timeout = 500.millis
+      val sub = StreamTestKit.SubscriberProbe[Int]()
+
+      within(2 * timeout) {
+        val pub = ActorPublisher(system.actorOf(timeoutingProps(testActor, timeout)))
+
+        // subscribe right away, should cancel subscription-timeout
+        pub.subscribe(sub)
+
+        expectNoMsg()
       }
     }
 

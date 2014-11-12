@@ -4,7 +4,9 @@
 package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
+import akka.actor.Cancellable
 import akka.stream.ReactiveStreamsConstants
+import akka.stream.impl.StreamSubscriptionTimeoutSupport
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.actor.AbstractActor
 import akka.actor.Actor
@@ -15,6 +17,9 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.UntypedActor
+
+import concurrent.duration.Duration
+import concurrent.duration.FiniteDuration
 
 object ActorPublisher {
 
@@ -57,6 +62,12 @@ object ActorPublisherMessage {
   @SerialVersionUID(1L) case object Cancel extends ActorPublisherMessage
 
   /**
+   * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
+   * Once the actor receives this message, this publisher will already be in cancelled state, thus the actor should clean-up and stop itself.
+   */
+  @SerialVersionUID(1L) case object SubscriptionTimeoutExceeded extends ActorPublisherMessage
+
+  /**
    * Java API: get the singleton instance of the `Cancel` message
    */
   def cancelInstance = Cancel
@@ -96,11 +107,16 @@ object ActorPublisherMessage {
  * You can terminate the stream with failure by calling [[#onError]]. After that you are not allowed to
  * call [[#onNext]], [[#onError]] and [[#onComplete]].
  *
+ * If you suspect that this [[ActorPublisher]] may never get subscribed to, you can override the [[#subscriptionTimeout]]
+ * method to provide a timeout after which this Publisher should be considered canceled. The actor will be notified when
+ * the timeout triggers via an [[akka.stream.actor.ActorPublisherMessage.SubscriptionTimeoutExceeded]] message and MUST then perform cleanup and stop itself.
+ *
  * If the actor is stopped the stream will be completed, unless it was not already terminated with
  * failure, completed or canceled.
  */
 trait ActorPublisher[T] extends Actor {
   import ActorPublisher._
+  import akka.stream.actor.ActorPublisherMessage._
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
 
@@ -108,6 +124,17 @@ trait ActorPublisher[T] extends Actor {
   private var subscriber: Subscriber[Any] = _
   private var demand = 0L
   private var lifecycleState: LifecycleState = PreSubscriber
+  private var scheduledSubscriptionTimeout: Cancellable = StreamSubscriptionTimeoutSupport.NoopSubscriptionTimeout
+
+  /**
+   * Subscription timeout after which this actor will become Canceled and reject any incoming "late" subscriber.
+   *
+   * The actor will receive an [[SubscriptionTimeoutExceeded]] message upon which it
+   * MUST react by performing all necessary cleanup and stopping itself.
+   *
+   * Use this feature in order to avoid leaking actors when you suspect that this Publisher may never get subscribed to by some Subscriber.
+   */
+  def subscriptionTimeout: Duration = Duration.Inf
 
   /**
    * The state when the publisher is active, i.e. before the subscriber is attached
@@ -215,6 +242,7 @@ trait ActorPublisher[T] extends Actor {
     case Subscribe(sub: Subscriber[_]) ⇒
       lifecycleState match {
         case PreSubscriber ⇒
+          scheduledSubscriptionTimeout.cancel()
           subscriber = sub
           lifecycleState = Active
           sub.onSubscribe(new ActorPublisherSubscription(self))
@@ -228,13 +256,38 @@ trait ActorPublisher[T] extends Actor {
       }
 
     case Cancel ⇒
-      lifecycleState = Canceled
-      demand = 0
-      subscriber = null
+      cancelSelf()
       super.aroundReceive(receive, msg)
+
+    case SubscriptionTimeoutExceeded ⇒
+      if (!scheduledSubscriptionTimeout.isCancelled) {
+        cancelSelf()
+        super.aroundReceive(receive, msg)
+      }
 
     case _ ⇒
       super.aroundReceive(receive, msg)
+  }
+
+  private def cancelSelf() {
+    lifecycleState = Canceled
+    demand = 0
+    subscriber = null
+  }
+
+  /**
+   * INTERNAL API
+   */
+  override protected[akka] def aroundPreStart(): Unit = {
+    super.aroundPreStart()
+    import context.dispatcher
+
+    subscriptionTimeout match {
+      case timeout: FiniteDuration ⇒
+        scheduledSubscriptionTimeout = context.system.scheduler.scheduleOnce(timeout, self, SubscriptionTimeoutExceeded)
+      case _ ⇒
+      // ignore...
+    }
   }
 
   /**
