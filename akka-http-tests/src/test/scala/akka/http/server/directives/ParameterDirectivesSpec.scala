@@ -5,7 +5,6 @@
 package akka.http.server
 package directives
 
-import akka.http.unmarshalling.{ FromStringOptionUnmarshaller, UnmarshallingError }
 import org.scalatest.{ FreeSpec, Inside }
 import akka.http.unmarshalling.Unmarshaller.HexInt
 
@@ -22,8 +21,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('amount.as[Int]) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value",
-            Some(UnmarshallingError.InvalidContent(_, Some(_: NumberFormatException)))) ⇒
+          case MalformedQueryParamRejection("amount", "'1x3' is not a valid 32-bit signed integer value", Some(_)) ⇒
         }
       }
     }
@@ -117,8 +115,7 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
         parameter('really.as[Boolean]) { echoComplete }
       } ~> check {
         inside(rejection) {
-          case MalformedQueryParamRejection("really", "'absolutely' is not a valid Boolean value",
-            Some(UnmarshallingError.InvalidContent(_, None))) ⇒
+          case MalformedQueryParamRejection("really", "'absolutely' is not a valid Boolean value", None) ⇒
         }
       }
     }
@@ -162,7 +159,6 @@ class ParameterDirectivesSpec extends FreeSpec with GenericRoutingSpec with Insi
   "The 'parameter' requirement directive should" - {
     "block requests that do not contain the required parameter" in {
       Get("/person?age=19") ~> {
-        implicitly[FromStringOptionUnmarshaller[String]]
         parameter('nose ! "large") { completeOk }
       } ~> check { handled shouldEqual false }
     }
