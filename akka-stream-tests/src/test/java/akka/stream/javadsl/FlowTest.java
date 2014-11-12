@@ -257,10 +257,10 @@ public class FlowTest {
   @Test
   public void mustBeAbleToUseSplitWhen() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final Iterable<String> input = Arrays.asList("A", "B", "C", "\n", "D", "\n", "E", "F");
+    final Iterable<String> input = Arrays.asList("A", "B", "C", ".", "D", ".", "E", "F");
     Source.from(input).splitWhen(new Predicate<String>() {
       public boolean test(String elem) {
-        return elem.equals("\n");
+        return elem.equals(".");
       }
     }).foreach(new Procedure<Source<String>>() {
       @Override
@@ -268,7 +268,7 @@ public class FlowTest {
         subStream.filter(new Predicate<String>() {
           @Override
           public boolean test(String elem) {
-            return !elem.equals("\n");
+            return !elem.equals(".");
           }
         }).grouped(10).foreach(new Procedure<List<String>>() {
           @Override
