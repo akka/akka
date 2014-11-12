@@ -33,7 +33,7 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
         }
       } ~> check {
         status shouldEqual OK
-        entity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
+        responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header("Fancy") shouldEqual Some(pinkHeader)
       }
     }
@@ -69,7 +69,7 @@ class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteT
 
       check {
         status shouldEqual OK
-        entity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
+        responseEntity shouldEqual HttpEntity(ContentTypes.`text/plain(UTF-8)`, "abc")
         header("Fancy") shouldEqual Some(pinkHeader)
       }(result)
     }
