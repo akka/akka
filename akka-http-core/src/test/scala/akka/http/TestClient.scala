@@ -38,7 +38,7 @@ object TestClient extends App {
   } yield response.header[headers.Server]
 
   def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
-    Source(List(HttpRequest() -> 'NoContext))
+    Source.singleton(HttpRequest() -> 'NoContext)
       .to(Sink(connection.requestSubscriber))
       .run()
     Source(connection.responsePublisher).map(_._1).runWith(Sink.head)

@@ -5,6 +5,15 @@ package akka.stream.impl
 
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.Sink
+import akka.actor.Props
+
+/**
+ * INTERNAL API
+ */
+private[akka] object ConcatAllImpl {
+  def props(materializer: FlowMaterializer): Props =
+    Props(new ConcatAllImpl(materializer))
+}
 
 /**
  * INTERNAL API

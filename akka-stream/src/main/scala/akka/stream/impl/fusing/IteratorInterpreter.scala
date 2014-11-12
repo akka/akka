@@ -3,49 +3,57 @@
  */
 package akka.stream.impl.fusing
 
-object IteratorInterpreter {
-  case class IteratorUpstream[T](input: Iterator[T]) extends DeterministicOp[T, T] {
+import akka.stream.stage._
+
+/**
+ * INTERNAL API
+ */
+private[akka] object IteratorInterpreter {
+  final case class IteratorUpstream[T](input: Iterator[T]) extends PushPullStage[T, T] {
     private var hasNext = input.hasNext
 
-    override def onPush(elem: T, ctxt: Context[T]): Directive =
+    override def onPush(elem: T, ctx: Context[T]): Directive =
       throw new UnsupportedOperationException("IteratorUpstream operates as a source, it cannot be pushed")
 
-    override def onPull(ctxt: Context[T]): Directive = {
-      if (!hasNext) ctxt.finish()
+    override def onPull(ctx: Context[T]): Directive = {
+      if (!hasNext) ctx.finish()
       else {
         val elem = input.next()
         hasNext = input.hasNext
-        if (!hasNext) ctxt.pushAndFinish(elem)
-        else ctxt.push(elem)
+        if (!hasNext) ctx.pushAndFinish(elem)
+        else ctx.push(elem)
       }
 
     }
+
+    // don't let toString consume the iterator
+    override def toString: String = "IteratorUpstream"
   }
 
-  case class IteratorDownstream[T]() extends BoundaryOp with Iterator[T] {
+  final case class IteratorDownstream[T]() extends BoundaryStage with Iterator[T] {
     private var done = false
     private var nextElem: T = _
     private var needsPull = true
     private var lastError: Throwable = null
 
-    override def onPush(elem: Any, ctxt: BoundaryContext): Directive = {
+    override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
       nextElem = elem.asInstanceOf[T]
       needsPull = false
-      ctxt.exit()
+      ctx.exit()
     }
 
-    override def onPull(ctxt: BoundaryContext): Directive =
+    override def onPull(ctx: BoundaryContext): Directive =
       throw new UnsupportedOperationException("IteratorDownstream operates as a sink, it cannot be pulled")
 
-    override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
+    override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
       done = true
-      ctxt.finish()
+      ctx.finish()
     }
 
-    override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = {
+    override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
       done = true
       lastError = cause
-      ctxt.finish()
+      ctx.finish()
     }
 
     private def pullIfNeeded(): Unit = {
@@ -56,27 +64,37 @@ object IteratorInterpreter {
 
     override def hasNext: Boolean = {
       if (!done) pullIfNeeded()
-      !(done && needsPull)
+      !(done && needsPull) || (lastError ne null)
     }
 
     override def next(): T = {
-      if (!hasNext) {
-        if (lastError != null) throw lastError
-        else Iterator.empty.next()
+      if (lastError ne null) {
+        val e = lastError
+        lastError = null
+        throw e
+      } else if (!hasNext)
+        Iterator.empty.next()
+      else {
+        needsPull = true
+        nextElem
       }
-      needsPull = true
-      nextElem
     }
+
+    // don't let toString consume the iterator
+    override def toString: String = "IteratorDownstream"
 
   }
 }
 
-class IteratorInterpreter[I, O](val input: Iterator[I], val ops: Seq[DeterministicOp[_, _]]) {
+/**
+ * INTERNAL API
+ */
+private[akka] class IteratorInterpreter[I, O](val input: Iterator[I], val ops: Seq[PushPullStage[_, _]]) {
   import akka.stream.impl.fusing.IteratorInterpreter._
 
   private val upstream = IteratorUpstream(input)
   private val downstream = IteratorDownstream[O]()
-  private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Op[_, _, _, _, _]]] :+ downstream)
+  private val interpreter = new OneBoundedInterpreter(upstream +: ops.asInstanceOf[Seq[Stage[_, _]]] :+ downstream)
   interpreter.init()
 
   def iterator: Iterator[O] = downstream

@@ -9,8 +9,8 @@ import scala.collection.mutable.ListBuffer
 import scala.collection.immutable
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
-import akka.stream.Transformer
 import akka.stream.scaladsl.Source
+import akka.stream.stage._
 import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._
@@ -21,7 +21,7 @@ import HttpProtocols._
  */
 private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOutput <: ParserOutput](val settings: ParserSettings,
                                                                                                      val headerParser: HttpHeaderParser)
-  extends Transformer[ByteString, Output] {
+  extends StatefulStage[ByteString, Output] {
   import settings._
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
@@ -30,16 +30,21 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
   private[this] var terminated = false
-  override def isComplete = terminated
 
-  def onNext(input: ByteString): immutable.Seq[Output] = {
-    result.clear()
-    try state(input)
-    catch {
-      case e: ParsingException    ⇒ fail(e.status, e.info)
-      case NotEnoughDataException ⇒ throw new IllegalStateException // we are missing a try/catch{continue} wrapper somewhere
+  override def initial = new State {
+    override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
+      result.clear()
+      try state(input)
+      catch {
+        case e: ParsingException ⇒ fail(e.status, e.info)
+        case NotEnoughDataException ⇒
+          // we are missing a try/catch{continue} wrapper somewhere
+          throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
+      }
+      val resultIterator = result.iterator
+      if (terminated) emitAndFinish(resultIterator, ctx)
+      else emit(resultIterator, ctx)
     }
-    result.toList
   }
 
   def startNewMessage(input: ByteString, offset: Int): StateResult = {

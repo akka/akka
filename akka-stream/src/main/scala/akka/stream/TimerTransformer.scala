@@ -9,7 +9,7 @@ import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 
 /**
- * [[Transformer]] with support for scheduling keyed (named) timer events.
+ * Transformer with support for scheduling keyed (named) timer events.
  */
 abstract class TimerTransformer[-T, +U] extends TransformerLike[T, U] {
   import TimerTransformer._

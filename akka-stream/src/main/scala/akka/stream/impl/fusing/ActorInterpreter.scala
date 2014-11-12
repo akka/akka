@@ -4,21 +4,21 @@
 package akka.stream.impl.fusing
 
 import java.util.Arrays
-
 import akka.actor.{ Actor, ActorRef }
 import akka.event.Logging
 import akka.stream.MaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
+import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
-
 import scala.util.control.NonFatal
+import akka.actor.Props
 
 /**
  * INTERNAL API
  */
-private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryOp {
+private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryStage {
   require(size > 0, "buffer size cannot be zero")
   require((size & (size - 1)) == 0, "buffer size must be a power of two")
 
@@ -60,25 +60,25 @@ private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryOp
     }
   }
 
-  override def onPush(elem: Any, ctxt: BoundaryContext): Directive =
+  override def onPush(elem: Any, ctx: BoundaryContext): Directive =
     throw new UnsupportedOperationException("BUG: Cannot push the upstream boundary")
 
-  override def onPull(ctxt: BoundaryContext): Directive = {
-    if (inputBufferElements > 1) ctxt.push(dequeue())
+  override def onPull(ctx: BoundaryContext): Directive = {
+    if (inputBufferElements > 1) ctx.push(dequeue())
     else if (inputBufferElements == 1) {
-      if (upstreamCompleted) ctxt.pushAndFinish(dequeue())
-      else ctxt.push(dequeue())
+      if (upstreamCompleted) ctx.pushAndFinish(dequeue())
+      else ctx.push(dequeue())
     } else if (upstreamCompleted) {
-      ctxt.finish()
+      ctx.finish()
     } else {
       downstreamWaiting = true
-      ctxt.exit()
+      ctx.exit()
     }
   }
 
-  override def onDownstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
+  override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = {
     cancel()
-    ctxt.exit()
+    ctx.exit()
   }
 
   def cancel(): Unit = {
@@ -143,7 +143,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryOp
 /**
  * INTERNAL API
  */
-private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp {
+private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryStage {
 
   private var exposedPublisher: ActorPublisher[Any] = _
 
@@ -177,27 +177,27 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp 
     }
   }
 
-  override def onPush(elem: Any, ctxt: BoundaryContext): Directive = {
+  override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
     onNext(elem)
-    if (downstreamDemand > 0) ctxt.pull()
-    else if (downstreamCompleted) ctxt.finish()
+    if (downstreamDemand > 0) ctx.pull()
+    else if (downstreamCompleted) ctx.finish()
     else {
       upstreamWaiting = true
-      ctxt.exit()
+      ctx.exit()
     }
   }
 
-  override def onPull(ctxt: BoundaryContext): Directive =
+  override def onPull(ctx: BoundaryContext): Directive =
     throw new UnsupportedOperationException("BUG: Cannot pull the downstream boundary")
 
-  override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
+  override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
     complete()
-    ctxt.finish()
+    ctx.finish()
   }
 
-  override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = {
+  override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
     fail(cause)
-    ctxt.fail(cause)
+    ctx.fail(cause)
   }
 
   private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
@@ -245,7 +245,15 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp 
 /**
  * INTERNAL API
  */
-private[akka] class ActorInterpreter(settings: MaterializerSettings, ops: Seq[Op[_, _, _, _, _]])
+private[akka] object ActorInterpreter {
+  def props(settings: MaterializerSettings, ops: Seq[Stage[_, _]]): Props =
+    Props(new ActorInterpreter(settings, ops))
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorInterpreter(val settings: MaterializerSettings, val ops: Seq[Stage[_, _]])
   extends Actor {
 
   private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize)

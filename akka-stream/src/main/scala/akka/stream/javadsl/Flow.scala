@@ -4,13 +4,12 @@
 package akka.stream.javadsl
 
 import akka.stream._
-
 import akka.japi.Util
 import akka.stream.scaladsl
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+import akka.stream.stage.Stage
 
 object Flow {
 
@@ -282,46 +281,31 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
     new Flow(delegate.buffer(size, overflowStrategy))
 
   /**
-   * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
-   * function is invoked, expecting a (possibly empty) sequence of output elements
-   * to be produced.
-   * After handing off the elements produced from one input element to the downstream
-   * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
-   * stream processing at this point; in that case the upstream subscription is
-   * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.Transformer#onTermination]] function is invoked to produce a (possibly empty)
-   * sequence of elements in response to the end-of-stream event.
-   *
-   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
-   *
-   * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
-   *
-   * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
-   * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
-   * therefore you do not have to add any additional thread safety or memory
-   * visibility constructs to access the state from the callback methods.
+   * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
+   * This operator makes it possible to extend the `Flow` API when there is no specialized
+   * operator that performs the transformation.
    *
    * Note that you can use [[#timerTransform]] if you need support for scheduled events in the transformer.
    */
-  def transform[U](name: String, mkTransformer: japi.Creator[Transformer[Out, U]]): javadsl.Flow[In, U] =
-    new Flow(delegate.transform(name, () ⇒ mkTransformer.create()))
+  def transform[U](name: String, mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U] =
+    new Flow(delegate.transform(name, () ⇒ mkStage.create()))
 
   /**
    * Transformation of a stream, with additional support for scheduled events.
    *
-   * For each element the [[akka.stream.Transformer#onNext]]
+   * For each element the [[akka.stream.TransformerLike#onNext]]
    * function is invoked, expecting a (possibly empty) sequence of output elements
    * to be produced.
    * After handing off the elements produced from one input element to the downstream
-   * subscribers, the [[akka.stream.Transformer#isComplete]] predicate determines whether to end
+   * subscribers, the [[akka.stream.TransformerLike#isComplete]] predicate determines whether to end
    * stream processing at this point; in that case the upstream subscription is
    * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.Transformer#onTermination]] function is invoked to produce a (possibly empty)
+   * the [[akka.stream.TransformerLike#onTermination]] function is invoked to produce a (possibly empty)
    * sequence of elements in response to the end-of-stream event.
    *
-   * [[akka.stream.Transformer#onError]] is called when failure is signaled from upstream.
+   * [[akka.stream.TransformerLike#onError]] is called when failure is signaled from upstream.
    *
-   * After normal completion or error the [[akka.stream.Transformer#cleanup]] function is called.
+   * After normal completion or error the [[akka.stream.TransformerLike#cleanup]] function is called.
    *
    * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
    * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and
@@ -330,8 +314,8 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    *
    * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
    */
-  def timerTransform[U](name: String, mkTransformer: japi.Creator[TimerTransformer[Out, U]]): javadsl.Flow[In, U] =
-    new Flow(delegate.timerTransform(name, () ⇒ mkTransformer.create()))
+  def timerTransform[U](name: String, mkStage: japi.Creator[TimerTransformer[Out, U]]): javadsl.Flow[In, U] =
+    new Flow(delegate.timerTransform(name, () ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element

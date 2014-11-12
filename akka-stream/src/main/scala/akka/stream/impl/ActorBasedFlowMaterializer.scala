@@ -7,18 +7,17 @@ import java.util.concurrent.atomic.AtomicLong
 
 import akka.dispatch.Dispatchers
 import akka.event.Logging
-import akka.stream.impl.fusing.{ ActorInterpreter, Op }
-
+import akka.stream.impl.fusing.ActorInterpreter
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Await, Future }
-
 import akka.actor._
-import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer, Transformer }
+import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer }
 import akka.stream.MaterializationException
 import akka.stream.actor.ActorSubscriber
 import akka.stream.impl.Zip.ZipAs
 import akka.stream.scaladsl._
+import akka.stream.stage._
 import akka.pattern.ask
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
 
@@ -29,20 +28,16 @@ private[akka] object Ast {
   sealed abstract class AstNode {
     def name: String
   }
-  // FIXME Replace with Operate
-  final case class Transform(name: String, mkTransformer: () ⇒ Transformer[Any, Any]) extends AstNode
-  // FIXME Replace with Operate
-  final case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
 
-  final case class Operate(mkOp: () ⇒ fusing.Op[_, _, _, _, _]) extends AstNode {
-    override def name = "operate"
-  }
+  final case class TimerTransform(mkStage: () ⇒ TimerTransformer[Any, Any], override val name: String) extends AstNode
+
+  final case class StageFactory(mkStage: () ⇒ Stage[_, _], override val name: String) extends AstNode
 
   object Fused {
-    def apply(ops: immutable.Seq[Op[_, _, _, _, _]]): Fused =
+    def apply(ops: immutable.Seq[Stage[_, _]]): Fused =
       Fused(ops, ops.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+")) //FIXME change to something more performant for name
   }
-  final case class Fused(ops: immutable.Seq[Op[_, _, _, _, _]], override val name: String) extends AstNode
+  final case class Fused(ops: immutable.Seq[Stage[_, _]], override val name: String) extends AstNode
 
   final case class Map(f: Any ⇒ Any) extends AstNode { override def name = "map" }
 
@@ -197,7 +192,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   //FIXME Optimize the implementation of the optimizer (no joke)
   // AstNodes are in reverse order, Fusable Ops are in order
   private[this] final def optimize(ops: List[Ast.AstNode]): (List[Ast.AstNode], Int) = {
-    @tailrec def analyze(rest: List[Ast.AstNode], optimized: List[Ast.AstNode], fuseCandidates: List[fusing.Op[_, _, _, _, _]]): (List[Ast.AstNode], Int) = {
+    @tailrec def analyze(rest: List[Ast.AstNode], optimized: List[Ast.AstNode], fuseCandidates: List[Stage[_, _]]): (List[Ast.AstNode], Int) = {
 
       //The `verify` phase
       def verify(rest: List[Ast.AstNode], orig: List[Ast.AstNode]): List[Ast.AstNode] =
@@ -245,10 +240,10 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         }
 
       // Tries to squeeze AstNode into a single fused pipeline
-      def ast2op(head: Ast.AstNode, prev: List[fusing.Op[_, _, _, _, _]]): List[fusing.Op[_, _, _, _, _]] =
+      def ast2op(head: Ast.AstNode, prev: List[Stage[_, _]]): List[Stage[_, _]] =
         head match {
           // Always-on below
-          case Ast.Operate(mkOp)                ⇒ mkOp() :: prev
+          case Ast.StageFactory(mkStage, _)     ⇒ mkStage() :: prev
 
           // Optimizations below
           case noMatch if !optimizations.fusion ⇒ prev
@@ -332,7 +327,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           val (pub, value) = createSource(flowName)
           (value, attachSink(pub, flowName))
         } else {
-          val id = processorForNode[In, Out](identityTransform, flowName, 1)
+          val id = processorForNode[In, Out](identityStageNode, flowName, 1)
           (attachSource(id, flowName), attachSink(id, flowName))
         }
       } else {
@@ -344,7 +339,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
     new MaterializedPipe(source, sourceValue, sink, sinkValue)
   }
   //FIXME Should this be a dedicated AstNode?
-  private[this] val identityTransform = Ast.Transform("identity", () ⇒ FlowOps.identityTransformer[Any])
+  private[this] val identityStageNode = Ast.StageFactory(() ⇒ FlowOps.identityStage[Any], "identity")
 
   def executionContext: ExecutionContext = dispatchers.lookup(settings.dispatcher match {
     case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
@@ -406,7 +401,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         (List(subscriber), publishers)
 
       case identity @ Ast.IdentityAstNode ⇒ // FIXME Why is IdentityAstNode a JunctionAStNode?
-        val id = List(processorForNode[In, Out](identityTransform, identity.name, 1)) // FIXME is `identity.name` appropriate/unique here?
+        val id = List(processorForNode[In, Out](identityStageNode, identity.name, 1)) // FIXME is `identity.name` appropriate/unique here?
         (id, id)
     }
 
@@ -460,31 +455,26 @@ private[akka] object ActorProcessorFactory {
   def props(materializer: FlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings // USE THIS TO AVOID CLOSING OVER THE MATERIALIZER BELOW
     (op match {
-      case Fused(ops, _)        ⇒ Props(new ActorInterpreter(settings, ops))
-      case Map(f)               ⇒ Props(new ActorInterpreter(settings, List(fusing.Map(f))))
-      case Filter(p)            ⇒ Props(new ActorInterpreter(settings, List(fusing.Filter(p))))
-      case Drop(n)              ⇒ Props(new ActorInterpreter(settings, List(fusing.Drop(n))))
-      case Take(n)              ⇒ Props(new ActorInterpreter(settings, List(fusing.Take(n))))
-      case Collect(pf)          ⇒ Props(new ActorInterpreter(settings, List(fusing.Collect(pf))))
-      case Scan(z, f)           ⇒ Props(new ActorInterpreter(settings, List(fusing.Scan(z, f))))
-      case Expand(s, f)         ⇒ Props(new ActorInterpreter(settings, List(fusing.Expand(s, f))))
-      case Conflate(s, f)       ⇒ Props(new ActorInterpreter(settings, List(fusing.Conflate(s, f))))
-      case Buffer(n, s)         ⇒ Props(new ActorInterpreter(settings, List(fusing.Buffer(n, s))))
-      case MapConcat(f)         ⇒ Props(new ActorInterpreter(settings, List(fusing.MapConcat(f))))
-      case Operate(mkOp)        ⇒ Props(new ActorInterpreter(settings, List(mkOp())))
-      case MapAsync(f)          ⇒ Props(new MapAsyncProcessorImpl(settings, f))
-      case MapAsyncUnordered(f) ⇒ Props(new MapAsyncUnorderedProcessorImpl(settings, f))
-      case Grouped(n)           ⇒ Props(new ActorInterpreter(settings, List(fusing.Grouped(n))))
-      case GroupBy(f)           ⇒ Props(new GroupByProcessorImpl(settings, f))
-      case PrefixAndTail(n)     ⇒ Props(new PrefixAndTailImpl(settings, n))
-      case SplitWhen(p)         ⇒ Props(new SplitWhenProcessorImpl(settings, p))
-      case ConcatAll            ⇒ Props(new ConcatAllImpl(materializer)) //FIXME closes over the materializer, is this good?
-      case t: Transform ⇒
-        val tr = t.mkTransformer()
-        Props(new TransformProcessorImpl(settings, tr))
-      case t: TimerTransform ⇒
-        val tr = t.mkTransformer()
-        Props(new TimerTransformerProcessorsImpl(settings, tr))
+      case Fused(ops, _)              ⇒ ActorInterpreter.props(settings, ops)
+      case Map(f)                     ⇒ ActorInterpreter.props(settings, List(fusing.Map(f)))
+      case Filter(p)                  ⇒ ActorInterpreter.props(settings, List(fusing.Filter(p)))
+      case Drop(n)                    ⇒ ActorInterpreter.props(settings, List(fusing.Drop(n)))
+      case Take(n)                    ⇒ ActorInterpreter.props(settings, List(fusing.Take(n)))
+      case Collect(pf)                ⇒ ActorInterpreter.props(settings, List(fusing.Collect(pf)))
+      case Scan(z, f)                 ⇒ ActorInterpreter.props(settings, List(fusing.Scan(z, f)))
+      case Expand(s, f)               ⇒ ActorInterpreter.props(settings, List(fusing.Expand(s, f)))
+      case Conflate(s, f)             ⇒ ActorInterpreter.props(settings, List(fusing.Conflate(s, f)))
+      case Buffer(n, s)               ⇒ ActorInterpreter.props(settings, List(fusing.Buffer(n, s)))
+      case MapConcat(f)               ⇒ ActorInterpreter.props(settings, List(fusing.MapConcat(f)))
+      case MapAsync(f)                ⇒ MapAsyncProcessorImpl.props(settings, f)
+      case MapAsyncUnordered(f)       ⇒ MapAsyncUnorderedProcessorImpl.props(settings, f)
+      case Grouped(n)                 ⇒ ActorInterpreter.props(settings, List(fusing.Grouped(n)))
+      case GroupBy(f)                 ⇒ GroupByProcessorImpl.props(settings, f)
+      case PrefixAndTail(n)           ⇒ PrefixAndTailImpl.props(settings, n)
+      case SplitWhen(p)               ⇒ SplitWhenProcessorImpl.props(settings, p)
+      case ConcatAll                  ⇒ ConcatAllImpl.props(materializer) //FIXME closes over the materializer, is this good?
+      case StageFactory(mkStage, _)   ⇒ ActorInterpreter.props(settings, List(mkStage()))
+      case TimerTransform(mkStage, _) ⇒ TimerTransformerProcessorsImpl.props(settings, mkStage())
     }).withDispatcher(settings.dispatcher)
   }
 

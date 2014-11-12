@@ -7,6 +7,12 @@ import java.util.LinkedList
 import akka.stream.MaterializerSettings
 import akka.stream.TimerTransformer
 import scala.util.control.NonFatal
+import akka.actor.Props
+
+private[akka] object TimerTransformerProcessorsImpl {
+  def props(settings: MaterializerSettings, transformer: TimerTransformer[Any, Any]): Props =
+    Props(new TimerTransformerProcessorsImpl(settings, transformer))
+}
 
 /**
  * INTERNAL API
@@ -14,17 +20,29 @@ import scala.util.control.NonFatal
 private[akka] class TimerTransformerProcessorsImpl(
   _settings: MaterializerSettings,
   transformer: TimerTransformer[Any, Any])
-  extends TransformProcessorImpl(_settings, transformer) {
+  extends ActorProcessorImpl(_settings) with Emit {
   import TimerTransformer._
+
+  var errorEvent: Option[Throwable] = None
 
   override def preStart(): Unit = {
     super.preStart()
+    nextPhase(running)
     transformer.start(context)
   }
 
-  override def postStop(): Unit = {
-    super.postStop()
-    transformer.stop()
+  override def postStop(): Unit =
+    try {
+      super.postStop()
+      transformer.stop()
+    } finally transformer.cleanup()
+
+  override def onError(e: Throwable): Unit = {
+    try {
+      transformer.onError(e)
+      errorEvent = Some(e)
+      pump()
+    } catch { case NonFatal(ex) ⇒ fail(ex) }
   }
 
   val schedulerInputs: Inputs = new DefaultInputTransferStates {
@@ -58,7 +76,7 @@ private[akka] class TimerTransformerProcessorsImpl(
     def isCompleted = false
   }
 
-  private val runningPhase: TransferPhase = TransferPhase(RunningCondition) { () ⇒
+  private val running: TransferPhase = TransferPhase(RunningCondition) { () ⇒
     if (primaryInputs.inputsDepleted || (transformer.isComplete && !schedulerInputs.inputsAvailable)) {
       nextPhase(terminate)
     } else if (schedulerInputs.inputsAvailable) {
@@ -71,6 +89,11 @@ private[akka] class TimerTransformerProcessorsImpl(
     }
   }
 
-  override def running: TransferPhase = runningPhase
+  private val terminate = TransferPhase(Always) { () ⇒
+    emits = transformer.onTermination(errorEvent)
+    emitAndThen(completedPhase)
+  }
+
+  override def toString: String = s"Transformer(emits=$emits, transformer=$transformer)"
 
 }

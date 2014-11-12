@@ -4,13 +4,10 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
-
 import akka.dispatch.Dispatchers
-import akka.stream.impl.fusing.{ Op, ActorInterpreter }
-
+import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.concurrent.duration._
-
 import akka.actor._
 import akka.stream.{ TransformerLike, MaterializerSettings }
 import akka.stream.FlowMaterializer
@@ -22,6 +19,8 @@ import akka.testkit._
 import akka.testkit.TestEvent.{ UnMute, Mute }
 import com.typesafe.config.ConfigFactory
 import org.reactivestreams.{ Processor, Subscriber, Publisher }
+import akka.stream.impl.fusing.ActorInterpreter
+import scala.util.control.NoStackTrace
 
 object FlowSpec {
   class Fruit
@@ -32,25 +31,9 @@ object FlowSpec {
 
   case class BrokenMessage(msg: String)
 
-  class BrokenTransformProcessorImpl(
-    _settings: MaterializerSettings,
-    transformer: TransformerLike[Any, Any],
-    brokenMessage: Any) extends TransformProcessorImpl(_settings, transformer) {
-
-    import akka.stream.actor.ActorSubscriberMessage._
-
-    override protected[akka] def aroundReceive(receive: Receive, msg: Any) = {
-      msg match {
-        case OnNext(m) if m == brokenMessage ⇒
-          throw new NullPointerException(s"I'm so broken [$m]")
-        case _ ⇒ super.aroundReceive(receive, msg)
-      }
-    }
-  }
-
   class BrokenActorInterpreter(
     _settings: MaterializerSettings,
-    _ops: Seq[Op[_, _, _, _, _]],
+    _ops: Seq[Stage[_, _]],
     brokenMessage: Any)
     extends ActorInterpreter(_settings, _ops) {
 
@@ -76,7 +59,6 @@ object FlowSpec {
 
     override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): Processor[In, Out] = {
       val props = op match {
-        case t: Transform   ⇒ Props(new BrokenTransformProcessorImpl(settings, t.mkTransformer(), brokenMessage))
         case f: Fused       ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage)).withDispatcher(settings.dispatcher)
         case Map(f)         ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Map(f)), brokenMessage))
         case Filter(p)      ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Filter(p)), brokenMessage))
@@ -639,6 +621,6 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
     }
   }
 
-  object TestException extends RuntimeException
+  object TestException extends RuntimeException with NoStackTrace
 
 }

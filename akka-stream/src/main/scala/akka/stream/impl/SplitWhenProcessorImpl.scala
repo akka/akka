@@ -5,6 +5,15 @@ package akka.stream.impl
 
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.Source
+import akka.actor.Props
+
+/**
+ * INTERNAL API
+ */
+private[akka] object SplitWhenProcessorImpl {
+  def props(settings: MaterializerSettings, splitPredicate: Any ⇒ Boolean): Props =
+    Props(new SplitWhenProcessorImpl(settings, splitPredicate))
+}
 
 /**
  * INTERNAL API

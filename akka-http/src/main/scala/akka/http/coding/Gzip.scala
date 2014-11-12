@@ -128,6 +128,7 @@ class GzipDecompressor extends DeflateDecompressor {
   }
 
   private def fail(msg: String) = throw new ZipException(msg)
+
 }
 
 /** INTERNAL API */

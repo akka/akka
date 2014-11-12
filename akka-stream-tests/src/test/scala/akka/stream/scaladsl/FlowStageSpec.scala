@@ -6,15 +6,14 @@ package akka.stream.scaladsl
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.stream.FlowMaterializer
 import akka.stream.MaterializerSettings
-import akka.stream.Transformer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
+import akka.stream.stage._
 
-class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
+class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
@@ -26,11 +25,11 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "produce one-to-one transformation as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
+        transform("transform", () ⇒ new PushStage[Int, Int] {
           var tot = 0
-          override def onNext(elem: Int) = {
+          override def onPush(elem: Int, ctx: Context[Int]) = {
             tot += elem
-            List(tot)
+            ctx.push(tot)
           }
         }).
         runWith(Sink.publisher)
@@ -49,12 +48,23 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "produce one-to-several transformation as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
+        transform("transform", () ⇒ new StatefulStage[Int, Int] {
           var tot = 0
-          override def onNext(elem: Int) = {
-            tot += elem
-            Vector.fill(elem)(tot)
+
+          lazy val waitForNext = new State {
+            override def onPush(elem: Int, ctx: Context[Int]) = {
+              tot += elem
+              emit(Iterator.fill(elem)(tot), ctx)
+            }
           }
+
+          override def initial = waitForNext
+
+          override def onUpstreamFinish(ctx: Context[Int]): TerminationDirective = {
+            if (current eq waitForNext) ctx.finish()
+            else ctx.absorbTermination()
+          }
+
         }).
         runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
@@ -75,15 +85,14 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "produce dropping transformation as expected" in {
       val p = Source(List(1, 2, 3, 4)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
+        transform("transform", () ⇒ new PushStage[Int, Int] {
           var tot = 0
-          override def onNext(elem: Int) = {
+          override def onPush(elem: Int, ctx: Context[Int]) = {
             tot += elem
-            if (elem % 2 == 0) {
-              Nil
-            } else {
-              List(tot)
-            }
+            if (elem % 2 == 0)
+              ctx.pull()
+            else
+              ctx.push(tot)
           }
         }).
         runWith(Sink.publisher)
@@ -102,18 +111,18 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "produce multi-step transformation as expected" in {
       val p = Source(List("a", "bc", "def")).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[String, Int] {
+        transform("transform", () ⇒ new PushStage[String, Int] {
           var concat = ""
-          override def onNext(elem: String) = {
+          override def onPush(elem: String, ctx: Context[Int]) = {
             concat += elem
-            List(concat.length)
+            ctx.push(concat.length)
           }
         }).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
+        transform("transform", () ⇒ new PushStage[Int, Int] {
           var tot = 0
-          override def onNext(length: Int) = {
+          override def onPush(length: Int, ctx: Context[Int]) = {
             tot += length
-            List(tot)
+            ctx.push(tot)
           }
         }).
         runWith(Sink.fanoutPublisher(2, 2))
@@ -138,104 +147,41 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       c2.expectComplete()
     }
 
-    "invoke onComplete when done" in {
+    "support emit onUpstreamFinish" in {
       val p = Source(List("a")).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[String, String] {
+        transform("transform", () ⇒ new StatefulStage[String, String] {
           var s = ""
-          override def onNext(element: String) = {
-            s += element
-            Nil
-          }
-          override def onTermination(e: Option[Throwable]) = List(s + "B")
-        }).
-        runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p2.subscribe(c)
-      val s = c.expectSubscription()
-      s.request(1)
-      c.expectNext("aB")
-      c.expectComplete()
-    }
-
-    "invoke cleanup when done" in {
-      val cleanupProbe = TestProbe()
-      val p = Source(List("a")).runWith(Sink.publisher)
-      val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[String, String] {
-          var s = ""
-          override def onNext(element: String) = {
-            s += element
-            Nil
-          }
-          override def onTermination(e: Option[Throwable]) = List(s + "B")
-          override def cleanup() = cleanupProbe.ref ! s
-        }).
-        runWith(Sink.publisher)
-      val c = StreamTestKit.SubscriberProbe[String]()
-      p2.subscribe(c)
-      val s = c.expectSubscription()
-      s.request(1)
-      c.expectNext("aB")
-      c.expectComplete()
-      cleanupProbe.expectMsg("a")
-    }
-
-    "invoke cleanup when done consume" in {
-      val cleanupProbe = TestProbe()
-      val p = Source(List("a")).runWith(Sink.publisher)
-      Source(p).
-        transform("transform", () ⇒ new Transformer[String, String] {
-          var s = "x"
-          override def onNext(element: String) = {
-            s = element
-            List(element)
-          }
-          override def cleanup() = cleanupProbe.ref ! s
-        }).
-        to(Sink.ignore).run()
-      cleanupProbe.expectMsg("a")
-    }
-
-    "invoke cleanup when done after error" in {
-      val cleanupProbe = TestProbe()
-      val p = Source(List("a", "b", "c")).runWith(Sink.publisher)
-      val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[String, String] {
-          var s = ""
-          override def onNext(in: String) = {
-            if (in == "b") {
-              throw new IllegalArgumentException("Not b") with NoStackTrace
-            } else {
-              val out = s + in
-              s += in.toUpperCase
-              List(out)
+          override def initial = new State {
+            override def onPush(element: String, ctx: Context[String]) = {
+              s += element
+              ctx.pull()
             }
           }
-          override def onTermination(e: Option[Throwable]) = List(s + "B")
-          override def cleanup() = cleanupProbe.ref ! s
+          override def onUpstreamFinish(ctx: Context[String]) =
+            terminationEmit(Iterator.single(s + "B"), ctx)
         }).
         runWith(Sink.publisher)
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
       s.request(1)
-      c.expectNext("a")
-      s.request(1)
-      c.expectError()
-      cleanupProbe.expectMsg("A")
+      c.expectNext("aB")
+      c.expectComplete()
     }
 
-    "allow cancellation using isComplete" in {
+    "allow early finish" in {
       val p = StreamTestKit.PublisherProbe[Int]()
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
+        transform("transform", () ⇒ new PushStage[Int, Int] {
           var s = ""
-          override def onNext(element: Int) = {
+          override def onPush(element: Int, ctx: Context[Int]) = {
             s += element
-            List(element)
+            if (s == "1")
+              ctx.pushAndFinish(element)
+            else
+              ctx.push(element)
           }
-          override def isComplete = s == "1"
         }).
         runWith(Sink.publisher)
       val proc = p.expectSubscription
@@ -248,46 +194,19 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       c.expectNext(1)
       c.expectComplete()
       proc.expectCancellation()
-    }
-
-    "call onComplete after isComplete signaled completion" in {
-      val cleanupProbe = TestProbe()
-      val p = StreamTestKit.PublisherProbe[Int]()
-      val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
-          var s = ""
-          override def onNext(element: Int) = {
-            s += element
-            List(element)
-          }
-          override def isComplete = s == "1"
-          override def onTermination(e: Option[Throwable]) = List(s.length + 10)
-          override def cleanup() = cleanupProbe.ref ! s
-        }).
-        runWith(Sink.publisher)
-      val proc = p.expectSubscription
-      val c = StreamTestKit.SubscriberProbe[Int]()
-      p2.subscribe(c)
-      val s = c.expectSubscription()
-      s.request(10)
-      proc.sendNext(1)
-      proc.sendNext(2)
-      c.expectNext(1)
-      c.expectNext(11)
-      c.expectComplete()
-      proc.expectCancellation()
-      cleanupProbe.expectMsg("1")
     }
 
     "report error when exception is thrown" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
-          override def onNext(elem: Int) = {
-            if (elem == 2) {
-              throw new IllegalArgumentException("two not allowed")
-            } else {
-              List(elem, elem)
+        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+          override def initial = new State {
+            override def onPush(elem: Int, ctx: Context[Int]) = {
+              if (elem == 2) {
+                throw new IllegalArgumentException("two not allowed")
+              } else {
+                emit(Iterator(elem, elem), ctx)
+              }
             }
           }
         }).
@@ -304,11 +223,41 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
       }
     }
 
+    "support emit of final elements when onUpstreamFailure" in {
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p2 = Source(p).
+        map(elem ⇒ if (elem == 2) throw new IllegalArgumentException("two not allowed") else elem).
+        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+          override def initial = new State {
+            override def onPush(elem: Int, ctx: Context[Int]) = ctx.push(elem)
+          }
+
+          override def onUpstreamFailure(cause: Throwable, ctx: Context[Int]) = {
+            terminationEmit(Iterator(100, 101), ctx)
+          }
+        }).
+        filter(elem ⇒ elem != 1). // it's undefined if element 1 got through before the error or not
+        runWith(Sink.publisher)
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      p2.subscribe(subscriber)
+      val subscription = subscriber.expectSubscription()
+      EventFilter[IllegalArgumentException]("two not allowed") intercept {
+        subscription.request(100)
+        subscriber.expectNext(100)
+        subscriber.expectNext(101)
+        subscriber.expectComplete()
+        subscriber.expectNoMsg(200.millis)
+      }
+    }
+
     "support cancel as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
-          override def onNext(elem: Int) = List(elem, elem)
+        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+          override def initial = new State {
+            override def onPush(elem: Int, ctx: Context[Int]) =
+              emit(Iterator(elem, elem), ctx)
+          }
         }).
         runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
@@ -326,9 +275,12 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
     "support producing elements from empty inputs" in {
       val p = Source(List.empty[Int]).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new Transformer[Int, Int] {
-          override def onNext(elem: Int) = Nil
-          override def onTermination(e: Option[Throwable]) = List(1, 2, 3)
+        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+          override def initial = new State {
+            override def onPush(elem: Int, ctx: Context[Int]) = ctx.pull()
+          }
+          override def onUpstreamFinish(ctx: Context[Int]) =
+            terminationEmit(Iterator(1, 2, 3), ctx)
         }).
         runWith(Sink.publisher)
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
@@ -344,26 +296,24 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "support converting onComplete into onError" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Source(List(5, 1, 2, 3)).transform("transform", () ⇒ new Transformer[Int, Int] {
+      Source(List(5, 1, 2, 3)).transform("transform", () ⇒ new PushStage[Int, Int] {
         var expectedNumberOfElements: Option[Int] = None
         var count = 0
-        override def onNext(elem: Int) =
+        override def onPush(elem: Int, ctx: Context[Int]) =
           if (expectedNumberOfElements.isEmpty) {
             expectedNumberOfElements = Some(elem)
-            Nil
+            ctx.pull()
           } else {
             count += 1
-            List(elem)
+            ctx.push(elem)
           }
-        override def onTermination(err: Option[Throwable]) = err match {
-          case Some(e) ⇒ Nil
-          case None ⇒
-            expectedNumberOfElements match {
-              case Some(expected) if count != expected ⇒
-                throw new RuntimeException(s"Expected $expected, got $count") with NoStackTrace
-              case _ ⇒ Nil
-            }
-        }
+
+        override def onUpstreamFinish(ctx: Context[Int]) =
+          expectedNumberOfElements match {
+            case Some(expected) if count != expected ⇒
+              throw new RuntimeException(s"Expected $expected, got $count") with NoStackTrace
+            case _ ⇒ ctx.finish()
+          }
       }).to(Sink(subscriber)).run()
 
       val subscription = subscriber.expectSubscription()
@@ -377,12 +327,12 @@ class FlowTransformSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.d
 
     "be safe to reuse" in {
       val flow = Source(1 to 3).transform("transform", () ⇒
-        new Transformer[Int, Int] {
+        new PushStage[Int, Int] {
           var count = 0
 
-          override def onNext(elem: Int): Seq[Int] = {
+          override def onPush(elem: Int, ctx: Context[Int]) = {
             count += 1
-            List(count)
+            ctx.push(count)
           }
         })
 

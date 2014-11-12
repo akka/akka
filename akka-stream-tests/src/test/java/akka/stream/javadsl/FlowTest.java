@@ -5,29 +5,25 @@ import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
 import akka.japi.Pair;
-import akka.japi.Util;
 import akka.stream.OverflowStrategy;
 import akka.stream.StreamTest;
-import akka.stream.Transformer;
+import akka.stream.stage.*;
 import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.testkit.JavaTestKit;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
-import scala.Option;
-import scala.collection.immutable.Seq;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 import scala.util.Try;
-
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 
 public class FlowTest extends StreamTest {
@@ -104,37 +100,37 @@ public class FlowTest extends StreamTest {
   @Test
   public void mustBeAbleToUseTransform() {
     final JavaTestKit probe = new JavaTestKit(system);
-    final JavaTestKit probe2 = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
-    Source.from(input).transform("publish", new Creator<Transformer<Integer, Integer>>() {
+    Source.from(input).transform("publish", new Creator<Stage<Integer, Integer>>() {
       @Override
-      public Transformer<Integer, Integer> create() throws Exception {
-        return new Transformer<Integer, Integer>() {
+      public PushPullStage<Integer, Integer> create() throws Exception {
+        return new StatefulStage<Integer, Integer>() {
           int sum = 0;
           int count = 0;
 
           @Override
-          public scala.collection.immutable.Seq<Integer> onNext(Integer element) {
-            sum += element;
-            count += 1;
-            return Util.immutableSeq(new Integer[] { element, element });
+          public StageState<Integer, Integer> initial() {
+            return new StageState<Integer, Integer>() {
+              @Override
+              public Directive onPush(Integer element, Context<Integer> ctx) {
+                sum += element;
+                count += 1;
+                if (count == 4) {
+                  return emitAndFinish(Arrays.asList(element, element, sum).iterator(), ctx);
+                } else {
+                  return emit(Arrays.asList(element, element).iterator(), ctx);
+                }
+              }
+              
+            };
           }
-
+          
           @Override
-          public boolean isComplete() {
-            return count == 4;
+          public TerminationDirective onUpstreamFinish(Context<Integer> ctx) {
+            return terminationEmit(Collections.singletonList(sum).iterator(), ctx);
           }
-
-          @Override
-          public scala.collection.immutable.Seq<Integer> onTermination(Option<Throwable> e) {
-            return Util.immutableSingletonSeq(sum);
-          }
-
-          @Override
-          public void cleanup() {
-            probe2.getRef().tell("cleanup", ActorRef.noSender());
-          }
+          
         };
       }
     }).foreach(new Procedure<Integer>() {
@@ -152,66 +148,6 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(3);
     probe.expectMsgEquals(3);
     probe.expectMsgEquals(6);
-    probe2.expectMsgEquals("cleanup");
-  }
-
-  @Test
-  public void mustBeAbleToUseTransformRecover() {
-    final JavaTestKit probe = new JavaTestKit(system);
-    final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
-    Source.from(input).map(new Function<Integer, Integer>() {
-      public Integer apply(Integer elem) {
-        if (elem == 4) {
-          throw new IllegalArgumentException("4 not allowed");
-        } else {
-          return elem + elem;
-        }
-      }
-    }).transform("publish", new Creator<Transformer<Integer, String>>() {
-      @Override
-      public Transformer<Integer, String> create() throws Exception {
-        return new Transformer<Integer, String>() {
-
-          @Override
-          public scala.collection.immutable.Seq<String> onNext(Integer element) {
-            return Util.immutableSingletonSeq(element.toString());
-          }
-
-          @Override
-          public scala.collection.immutable.Seq<String> onTermination(Option<Throwable> e) {
-            if (e.isEmpty()) {
-              return Util.immutableSeq(new String[0]);
-            } else {
-              return Util.immutableSingletonSeq(e.get().getMessage());
-            }
-          }
-
-          @Override
-          public void onError(Throwable e) {
-          }
-
-          @Override
-          public boolean isComplete() {
-            return false;
-          }
-
-          @Override
-          public void cleanup() {
-          }
-
-        };
-      }
-    }).foreach(new Procedure<String>() {
-      public void apply(String elem) {
-        probe.getRef().tell(elem, ActorRef.noSender());
-      }
-    }, materializer);
-
-    probe.expectMsgEquals("0");
-    probe.expectMsgEquals("2");
-    probe.expectMsgEquals("4");
-    probe.expectMsgEquals("6");
-    probe.expectMsgEquals("4 not allowed");
   }
 
   @Test
@@ -291,14 +227,19 @@ public class FlowTest extends StreamTest {
 
   }
 
-  public <In, Out> Creator<Transformer<In, Out>> op() {
-    return new akka.stream.javadsl.japi.Creator<Transformer<In, Out>>() {
+  public <T> Creator<Stage<T, T>> op() {
+    return new akka.stream.javadsl.japi.Creator<Stage<T, T>>() {
       @Override
-      public Transformer<In, Out> create() throws Exception {
-        return new Transformer<In, Out>() {
+      public PushPullStage<T, T> create() throws Exception {
+        return new PushPullStage<T, T>() {  
           @Override
-          public Seq<Out> onNext(In element) {
-            return Util.immutableSeq(Collections.singletonList((Out) element)); // TODO needs helpers
+          public Directive onPush(T element, Context<T> ctx) {
+            return ctx.push(element);
+          }
+          
+          @Override
+          public Directive onPull(Context<T> ctx) {
+            return ctx.pull();
           }
         };
       }
@@ -307,9 +248,9 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final Flow<String, String> f1 = Flow.of(String.class).transform("f1", this.<String, String>op()); // javadsl
-    final Flow<String, String> f2 = Flow.of(String.class).transform("f2", this.<String, String>op()); // javadsl
-    final Flow<String, String> f3 = Flow.of(String.class).transform("f2", this.<String, String>op()); // javadsl
+    final Flow<String, String> f1 = Flow.of(String.class).transform("f1", this.<String>op()); // javadsl
+    final Flow<String, String> f2 = Flow.of(String.class).transform("f2", this.<String>op()); // javadsl
+    final Flow<String, String> f3 = Flow.of(String.class).transform("f2", this.<String>op()); // javadsl
 
     final Source<String> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String> in2 = Source.from(Arrays.asList("d", "e", "f"));
