@@ -101,6 +101,46 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
       // it should be terminated after none of it's substreams are used within the timeout
       expectTerminated(groupByActor, 1000.millis)
     }
+
+    "not timeout and cancel substream publishers when they have been subscribed to" in {
+      val publisherProbe = StreamTestKit.PublisherProbe[Int]()
+      val publisher = Source(publisherProbe).groupBy(_ % 2).runWith(Sink.publisher)
+      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int])]()
+      publisher.subscribe(subscriber)
+
+      val upstreamSubscription = publisherProbe.expectSubscription()
+
+      val downstreamSubscription = subscriber.expectSubscription()
+      downstreamSubscription.request(100)
+
+      upstreamSubscription.sendNext(1)
+      upstreamSubscription.sendNext(2)
+
+      val (_, s1) = subscriber.expectNext()
+      // should not break normal usage
+      val s1SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      s1.runWith(Sink.publisher).subscribe(s1SubscriberProbe)
+      val s1Sub = s1SubscriberProbe.expectSubscription()
+      s1Sub.request(1)
+      s1SubscriberProbe.expectNext(1)
+
+      val (_, s2) = subscriber.expectNext()
+      // should not break normal usage
+      val s2SubscriberProbe = StreamTestKit.SubscriberProbe[Int]()
+      s2.runWith(Sink.publisher).subscribe(s2SubscriberProbe)
+      val s2Sub = s2SubscriberProbe.expectSubscription()
+
+      // sleep long enough for tiemout to trigger if not cancelled
+      Thread.sleep(1000)
+
+      s2Sub.request(100)
+      s2SubscriberProbe.expectNext(2)
+      s1Sub.request(100)
+      upstreamSubscription.sendNext(3)
+      upstreamSubscription.sendNext(4)
+      s1SubscriberProbe.expectNext(3)
+      s2SubscriberProbe.expectNext(4)
+    }
   }
 
   private def watchGroupByActor(flowNr: Int): ActorRef = {
