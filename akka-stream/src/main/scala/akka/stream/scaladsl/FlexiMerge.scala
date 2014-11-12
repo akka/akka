@@ -107,7 +107,7 @@ object FlexiMerge {
 
   /**
    * The possibly stateful logic that reads from input via the defined [[MergeLogic#State]] and
-   * handles completion and error via the defined [[FlexiMerge#CompletionHandling]].
+   * handles completion and error via the defined [[MergeLogic#CompletionHandling]].
    *
    * Concrete instance is supposed to be created by implementing [[FlexiMerge#createMergeLogic]].
    */

@@ -122,13 +122,13 @@ object FlexiRoute {
    * handle cancel from downstream output.
    *
    * The `onComplete` method is called the upstream input was completed successfully.
-   * It returns next behavior or [[#SameState]] to keep current behavior.
+   * It returns next behavior or [[#sameState]] to keep current behavior.
    *
    * The `onError` method is called when the upstream input was completed with failure.
    * It returns next behavior or [[#SameState]] to keep current behavior.
    *
    * The `onCancel` method is called when a downstream output cancels.
-   * It returns next behavior or [[#SameState]] to keep current behavior.
+   * It returns next behavior or [[#sameState]] to keep current behavior.
    */
   abstract class CompletionHandling[In] {
     def onComplete(ctx: RouteLogicContext[In, Any]): Unit
@@ -144,7 +144,7 @@ object FlexiRoute {
    * [[RouteLogicContext#emit]].
    *
    * The `onInput` method is called when an `element` was read from upstream.
-   * The function returns next behavior or [[#SameState]] to keep current behavior.
+   * The function returns next behavior or [[#sameState]] to keep current behavior.
    */
   abstract class State[In, Out](val condition: DemandCondition) {
     def onInput(ctx: RouteLogicContext[In, Out], preferredOutput: OutputHandle, element: In): State[In, _]

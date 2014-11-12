@@ -68,7 +68,7 @@ object FlexiMerge {
   class ReadAny(val inputs: JList[InputHandle]) extends ReadCondition
 
   /**
-   * Read condition for the [[MergeLogic#State]] that will be
+   * Read condition for the [[FlexiMerge#State]] that will be
    * fulfilled when there are elements for any of the given upstream
    * inputs, however it differs from [[ReadAny]] in the case that both
    * the `preferred` and at least one other `secondary` input have demand,
@@ -80,7 +80,7 @@ object FlexiMerge {
   class ReadPreferred(val preferred: InputHandle, val secondaries: JList[InputHandle]) extends ReadCondition
 
   /**
-   * Read condition for the [[MergeLogic#State]] that will be
+   * Read condition for the [[FlexiMerge#State]] that will be
    * fulfilled when there are elements for *all* of the given upstream
    * inputs.
    *

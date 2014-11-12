@@ -8,11 +8,15 @@ import scala.util.control.NonFatal
 import akka.stream.MaterializerSettings
 import akka.stream.MaterializerSettings
 import akka.pattern.pipe
+import akka.actor.Props
 
 /**
  * INTERNAL API
  */
 private[akka] object MapAsyncUnorderedProcessorImpl {
+  def props(settings: MaterializerSettings, f: Any ⇒ Future[Any]): Props =
+    Props(new MapAsyncUnorderedProcessorImpl(settings, f))
+
   case class FutureElement(element: Any)
   case class FutureFailure(cause: Throwable)
 }
