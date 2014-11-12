@@ -27,23 +27,21 @@ trait MultipartMarshallers {
   }
 
   implicit def multipartMarshaller[T <: Multipart](implicit log: LoggingAdapter = NoLogging): ToEntityMarshaller[T] =
-    Marshaller { value ⇒
+    Marshaller strict { value ⇒
       val boundary = randomBoundary
       val contentType = ContentType(value.mediaType withBoundary boundary)
-      FastFuture.successful {
-        Marshalling.WithOpenCharset(contentType.mediaType, { charset ⇒
-          value match {
-            case x: Multipart.Strict ⇒
-              val data = BodyPartRenderer.strict(x.strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
-              HttpEntity(contentType, data)
-            case _ ⇒
-              val chunks = value.parts
-                .transform("bodyPartRenderer", () ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
-                .flatten(FlattenStrategy.concat)
-              HttpEntity.Chunked(contentType, chunks)
-          }
-        })
-      }
+      Marshalling.WithOpenCharset(contentType.mediaType, { charset ⇒
+        value match {
+          case x: Multipart.Strict ⇒
+            val data = BodyPartRenderer.strict(x.strictParts, boundary, charset.nioCharset, partHeadersSizeHint = 128, log)
+            HttpEntity(contentType, data)
+          case _ ⇒
+            val chunks = value.parts
+              .transform("bodyPartRenderer", () ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
+              .flatten(FlattenStrategy.concat)
+            HttpEntity.Chunked(contentType, chunks)
+        }
+      })
     }
 }
 
