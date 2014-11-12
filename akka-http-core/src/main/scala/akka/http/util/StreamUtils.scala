@@ -4,17 +4,21 @@
 
 package akka.http.util
 
-import akka.http.model.RequestEntity
-import akka.stream.impl.ErrorPublisher
-import akka.stream.Transformer
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
-import org.reactivestreams.Publisher
+import java.util.concurrent.atomic.AtomicBoolean
+import java.io.InputStream
+
+import org.reactivestreams.{ Subscriber, Publisher }
 
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.control.NonFatal
+
+import akka.actor.Props
+import akka.util.ByteString
+
+import akka.stream.{ impl, Transformer, FlowMaterializer }
+import akka.stream.scaladsl._
+
+import akka.http.model.RequestEntity
 
 /**
  * INTERNAL API
@@ -50,7 +54,7 @@ private[http] object StreamUtils {
     }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
-    ErrorPublisher(ex).asInstanceOf[Publisher[T]]
+    impl.ErrorPublisher(ex).asInstanceOf[Publisher[T]]
 
   def mapErrorTransformer[T](f: Throwable ⇒ Throwable): Transformer[T, T] =
     new Transformer[T, T] {
@@ -98,8 +102,90 @@ private[http] object StreamUtils {
       override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = currentState.onTermination(e)
     }
 
+  /**
+   * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
+   * will only be traversed once.
+   */
+  def transformMultiple[T, U](input: Source[T], transformers: immutable.Seq[() ⇒ Transformer[T, U]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[U]] =
+    transformers match {
+      case Nil      ⇒ Nil
+      case Seq(one) ⇒ Vector(input.transform("transformMultipleElement", one))
+      case multiple ⇒
+        val results = Vector.fill(multiple.size)(Sink.publisher[U])
+        val mat =
+          FlowGraph { implicit b ⇒
+            import FlowGraphImplicits._
+
+            val broadcast = Broadcast[T]("transformMultipleInputBroadcast")
+            input ~> broadcast
+            (multiple, results).zipped.foreach { (trans, sink) ⇒
+              broadcast ~> Flow[T].transform("transformMultipleElement", trans) ~> sink
+            }
+          }.run()
+        results.map(s ⇒ Source(mat.get(s)))
+    }
+
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
     _.transformDataBytes(() ⇒ mapErrorTransformer(f))
+
+  /**
+   * Simple blocking Source backed by an InputStream.
+   *
+   * FIXME: should be provided by akka-stream, see #15588
+   */
+  def fromInputStreamSource(inputStream: InputStream, defaultChunkSize: Int = 65536): Source[ByteString] = {
+    import akka.stream.impl._
+
+    def props(materializer: ActorBasedFlowMaterializer): Props = {
+      val iterator = new Iterator[ByteString] {
+        var finished = false
+        def hasNext: Boolean = !finished
+        def next(): ByteString =
+          if (!finished) {
+            val buffer = new Array[Byte](defaultChunkSize)
+            val read = inputStream.read(buffer)
+            if (read < 0) {
+              finished = true
+              inputStream.close()
+              ByteString.empty
+            } else ByteString.fromArray(buffer, 0, read)
+          } else ByteString.empty
+      }
+
+      Props(new IteratorPublisherImpl(iterator, materializer.settings)).withDispatcher(materializer.settings.fileIODispatcher)
+    }
+
+    new AtomicBoolean(false) with SimpleActorFlowSource[ByteString] {
+      override def attach(flowSubscriber: Subscriber[ByteString], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+        create(materializer, flowName)._1.subscribe(flowSubscriber)
+
+      override def isActive: Boolean = true
+      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[ByteString], Unit) =
+        if (!getAndSet(true)) {
+          val ref = materializer.actorOf(props(materializer), name = s"$flowName-0-InputStream-source")
+          val publisher = ActorPublisher[ByteString](ref)
+          ref ! ExposedPublisher(publisher.asInstanceOf[impl.ActorPublisher[Any]])
+
+          (publisher, ())
+        } else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once")).asInstanceOf[Publisher[ByteString]], ())
+    }
+  }
+
+  /**
+   * Returns a source that can only be used once for testing purposes.
+   */
+  def oneTimeSource[T](other: Source[T]): Source[T] = {
+    import akka.stream.impl._
+    val original = other.asInstanceOf[ActorFlowSource[T]]
+    new AtomicBoolean(false) with SimpleActorFlowSource[T] {
+      override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+        create(materializer, flowName)._1.subscribe(flowSubscriber)
+      override def isActive: Boolean = true
+      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[T], Unit) =
+        if (!getAndSet(true)) (original.create(materializer, flowName)._1, ())
+        else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once")).asInstanceOf[Publisher[T]], ())
+    }
+  }
 }
 
 /**

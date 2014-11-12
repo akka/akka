@@ -1,10 +1,8 @@
 package akka.stream.actor;
 
 import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
+import akka.stream.StreamTest;
 import akka.stream.javadsl.AkkaJUnitActorSystemResource;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -19,7 +17,10 @@ import java.util.Arrays;
 import static akka.stream.actor.ActorSubscriberMessage.OnError;
 import static akka.stream.actor.ActorSubscriberMessage.OnNext;
 
-public class ActorSubscriberTest {
+public class ActorSubscriberTest extends StreamTest {
+  public ActorSubscriberTest() {
+    super(actorSystemResource);
+  }
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest", AkkaSpec.testConf());
@@ -54,11 +55,6 @@ public class ActorSubscriberTest {
       }
     }
   }
-
-  final ActorSystem system = actorSystemResource.getSystem();
-
-  final MaterializerSettings settings = MaterializerSettings.create(system);
-  final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustHaveJavaAPI() {
