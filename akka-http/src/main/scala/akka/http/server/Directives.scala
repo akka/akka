@@ -22,7 +22,7 @@ trait Directives extends RouteConcatenation
   with FutureDirectives
   with HeaderDirectives
   with HostDirectives
-  //with MarshallingDirectives
+  with MarshallingDirectives
   with MethodDirectives
   with MiscDirectives
   with ParameterDirectives

@@ -100,16 +100,16 @@ object RejectionHandler {
       complete(NotAcceptable, "Resource representation is only available with these Content-Types:\n" + supported.map(_.value).mkString("\n"))
 
     case rejections @ (UnacceptedResponseEncodingRejection(_) +: _) ⇒
-      val supported = rejections.collect { case UnacceptedResponseEncodingRejection(supported) ⇒ supported }
+      val supported = rejections.collect { case UnacceptedResponseEncodingRejection(x) ⇒ x }
       complete(NotAcceptable, "Resource representation is only available with these Content-Encodings:\n" + supported.map(_.value).mkString("\n"))
 
     case rejections @ (UnsupportedRequestContentTypeRejection(_) +: _) ⇒
-      val supported = rejections.collect { case UnsupportedRequestContentTypeRejection(supported) ⇒ supported }
-      complete(UnsupportedMediaType, "There was a problem with the requests Content-Type:\n" + supported.mkString(" or "))
+      val supported = rejections.collect { case UnsupportedRequestContentTypeRejection(x) ⇒ x }
+      complete(UnsupportedMediaType, "The request's Content-Type is not supported. Expected:\n" + supported.mkString(" or "))
 
     case rejections @ (UnsupportedRequestEncodingRejection(_) +: _) ⇒
-      val supported = rejections.collect { case UnsupportedRequestEncodingRejection(supported) ⇒ supported }
-      complete(BadRequest, "The requests Content-Encoding must be one the following:\n" + supported.map(_.value).mkString("\n"))
+      val supported = rejections.collect { case UnsupportedRequestEncodingRejection(x) ⇒ x }
+      complete(BadRequest, "The request's Content-Encoding is not supported. Expected:\n" + supported.map(_.value).mkString(" or "))
 
     case ValidationRejection(msg, _) +: _ ⇒
       complete(BadRequest, msg)

@@ -8,7 +8,7 @@ import akka.stream.FlowMaterializer
 
 import scala.concurrent.{ Future, ExecutionContext }
 import akka.event.LoggingAdapter
-import akka.http.marshalling.ToResponseMarshallable
+import akka.http.marshalling.{ Marshal, ToResponseMarshallable }
 import akka.http.util.FastFuture
 import akka.http.model._
 import FastFuture._
@@ -33,7 +33,11 @@ private[http] class RequestContextImpl(
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
     trm(request)(executionContext)
       .fast.map(res ⇒ RouteResult.Complete(res))(executionContext)
-      .fast.recover { case RejectionError(rej) ⇒ RouteResult.Rejected(rej :: Nil) }(executionContext)
+      .fast.recover {
+        case Marshal.UnacceptableResponseContentTypeException(supported) ⇒
+          RouteResult.Rejected(UnacceptedResponseContentTypeRejection(supported) :: Nil)
+        case RejectionError(rej) ⇒ RouteResult.Rejected(rej :: Nil)
+      }(executionContext)
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
     FastFuture.successful(RouteResult.Rejected(rejections.toVector))
