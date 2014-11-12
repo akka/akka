@@ -78,6 +78,33 @@ object FlexiMerge {
    */
   final case class ReadPreferred(preferred: InputHandle, secondaries: Array[InputHandle]) extends ReadCondition
 
+  object ReadAll {
+    def apply(inputs: immutable.Seq[InputHandle]): ReadAll = new ReadAll(ReadAllInputs, inputs: _*)
+    def apply(inputs: InputHandle*): ReadAll = new ReadAll(ReadAllInputs, inputs: _*)
+  }
+  /**
+   * Read condition for the [[MergeLogic#State]] that will be
+   * fulfilled when there are elements for *all* of the given upstream
+   * inputs.
+   *
+   * The emited element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
+   *
+   * Cancelled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
+   * the resulting [[ReadAllInputs]] will then not contain values for this element, which can be
+   * handled via supplying a default value instead of the value from the (now cancelled) input.
+   */
+  final case class ReadAll(mkResult: immutable.Map[InputHandle, Any] ⇒ ReadAllInputsBase, inputs: InputHandle*) extends ReadCondition
+  /** INTERNAL API */
+  private[stream] trait ReadAllInputsBase
+  /**
+   * Provides typesafe accessors to values from inputs supplied to [[ReadAll]].
+   */
+  final case class ReadAllInputs(map: immutable.Map[InputHandle, Any]) extends ReadAllInputsBase {
+    def apply[T](input: InputPort[T, _]): T = map(input).asInstanceOf[T]
+    def get[T](input: InputPort[T, _]): Option[T] = map.get(input).asInstanceOf[Option[T]]
+    def getOrElse[T, B >: T](input: InputPort[T, _], default: ⇒ B): T = map.getOrElse(input, default).asInstanceOf[T]
+  }
+
   /**
    * The possibly stateful logic that reads from input via the defined [[MergeLogic#State]] and
    * handles completion and error via the defined [[FlexiMerge#CompletionHandling]].

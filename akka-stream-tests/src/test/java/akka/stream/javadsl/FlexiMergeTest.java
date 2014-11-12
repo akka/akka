@@ -66,6 +66,7 @@ public class FlexiMergeTest {
   }
   
   @Test
+  @SuppressWarnings("unchecked")
   public void mustBuildSimpleZip() throws Exception {
     Zip<Integer, String> zip = new Zip<Integer, String>();
     
@@ -81,7 +82,33 @@ public class FlexiMergeTest {
         runWith(Sink.<List<Pair<Integer, String>>>head(), materializer);
     final List<Pair<Integer, String>> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
-        Arrays.asList(new Pair(1, "a"), new Pair(2, "b"), new Pair(3, "c")), 
+        Arrays.asList(new Pair(1, "a"), new Pair(2, "b"), new Pair(3, "c")),
+        result);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void mustBuildTripleZipUsingReadAll() throws Exception {
+    TripleZip<Long, Integer, String> zip = new TripleZip<Long, Integer, String>();
+
+    Source<Long> inA = Source.from(Arrays.asList(1L, 2L, 3L, 4L));
+    Source<Integer> inB = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<String> inC = Source.from(Arrays.asList("a", "b", "c"));
+    KeyedSink<Triple<Long, Integer, String>, Publisher<Triple<Long, Integer, String>>> out = Sink.publisher();
+
+    MaterializedMap m = FlowGraph.builder()
+      .addEdge(inA, zip.inputA)
+      .addEdge(inB, zip.inputB)
+      .addEdge(inC, zip.inputC)
+      .addEdge(zip.out(), out)
+      .build().run(materializer);
+
+    final Publisher<Triple<Long, Integer, String>> pub = m.get(out);
+    final Future<List<Triple<Long, Integer, String>>> all = Source.from(pub).grouped(100).
+        runWith(Sink.<List<Triple<Long, Integer, String>>>head(), materializer);
+    final List<Triple<Long, Integer, String>> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
+    assertEquals(
+        Arrays.asList(new Triple(1L, 1, "a"), new Triple(2L, 2, "b"), new Triple(3L, 3, "c")),
         result);
   }
 
@@ -266,6 +293,96 @@ public class FlexiMergeTest {
 
         @Override
         public CompletionHandling<Pair<A, B>> initialCompletionHandling() {
+          return eagerClose();
+        }
+
+      };
+    }
+  }
+
+  static public class Triple<A, B, C> {
+    public final A a;
+    public final B b;
+    public final C c;
+
+    public Triple(A a, B b, C c) {
+      this.a = a;
+      this.b = b;
+      this.c = c;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      Triple triple = (Triple) o;
+
+      if (a != null ? !a.equals(triple.a) : triple.a != null) {
+        return false;
+      }
+      if (b != null ? !b.equals(triple.b) : triple.b != null) {
+        return false;
+      }
+      if (c != null ? !c.equals(triple.c) : triple.c != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = a != null ? a.hashCode() : 0;
+      result = 31 * result + (b != null ? b.hashCode() : 0);
+      result = 31 * result + (c != null ? c.hashCode() : 0);
+      return result;
+    }
+  }
+
+  static public class TripleZip<A, B, C> extends FlexiMerge<FlexiMerge.ReadAllInputs, Triple<A, B, C>> {
+
+    public final InputPort<A, Triple<A, B, C>> inputA = createInputPort();
+    public final InputPort<B, Triple<A, B, C>> inputB = createInputPort();
+    public final InputPort<C, Triple<A, B, C>> inputC = createInputPort();
+
+    public TripleZip() {
+      super("triple-zip");
+    }
+
+    @Override
+    public MergeLogic<ReadAllInputs, Triple<A, B, C>> createMergeLogic() {
+      return new MergeLogic<ReadAllInputs, Triple<A, B, C>>() {
+
+        @Override
+        public List<InputHandle> inputHandles(int inputCount) {
+          if (inputCount != 3)
+            throw new IllegalArgumentException("Zip must have two connected inputs, was " + inputCount);
+          return Arrays.asList(inputA.handle(), inputB.handle());
+        }
+
+        @Override
+        public State<ReadAllInputs, Triple<A, B, C>> initialState() {
+          return new State<ReadAllInputs, Triple<A, B, C>>(readAll(inputA, inputB, inputC)) {
+            @Override
+            public State<ReadAllInputs, Triple<A, B, C>> onInput(MergeLogicContext<Triple<A, B, C>> ctx, InputHandle input, ReadAllInputs inputs) {
+              final A a = inputs.getOrDefault(inputA, null);
+              final B b = inputs.getOrDefault(inputB, null);
+              final C c = inputs.getOrDefault(inputC, null);
+
+              ctx.emit(new Triple<A, B, C>(a, b, c));
+
+              return sameState();
+            }
+          };
+        }
+
+        @Override
+        public CompletionHandling<Triple<A, B, C>> initialCompletionHandling() {
           return eagerClose();
         }
 
