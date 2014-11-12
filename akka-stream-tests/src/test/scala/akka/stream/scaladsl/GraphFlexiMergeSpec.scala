@@ -1,7 +1,5 @@
 package akka.stream.scaladsl
 
-import scala.util.control.NoStackTrace
-
 import FlowGraphImplicits._
 import akka.stream.FlowMaterializer
 import akka.stream.testkit.AkkaSpec
@@ -9,6 +7,8 @@ import akka.stream.testkit.StreamTestKit.AutoPublisher
 import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
+
+import scala.util.control.NoStackTrace
 
 object GraphFlexiMergeSpec {
 
@@ -100,133 +100,164 @@ object GraphFlexiMergeSpec {
         readA
       }
 
-      override def initialState = readA
-
       override def initialCompletionHandling = eagerClose
+
+      override def initialState: State[_] = readA
     }
   }
+}
 
-  class OrderedMerge extends FlexiMerge[Int] {
-    import FlexiMerge._
-    val input1 = createInputPort[Int]()
-    val input2 = createInputPort[Int]()
+class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue) extends FlexiMerge[(A, B, C)]("triple-zip") {
+  import FlexiMerge._
+  val soonCancelledInput = createInputPort[A]()
+  val stableInput1 = createInputPort[B]()
+  val stableInput2 = createInputPort[C]()
 
-    def createMergeLogic = new MergeLogic[Int] {
-      private var reference = 0
+  def createMergeLogic = new MergeLogic[(A, B, C)] {
 
-      override def inputHandles(inputCount: Int) = Vector(input1, input2)
-
-      val emitOtherOnClose = CompletionHandling(
-        onComplete = { (ctx, input) ⇒
-          ctx.changeCompletionHandling(emitLast)
-          readRemaining(other(input))
-        },
-        onError = { (ctx, input, cause) ⇒
-          ctx.error(cause)
-          SameState
-        })
-
-      def other(input: InputHandle): InputHandle = if (input eq input1) input2 else input1
-
-      def getFirstElement = State[Int](ReadAny(input1, input2)) { (ctx, input, element) ⇒
-        reference = element
-        ctx.changeCompletionHandling(emitOtherOnClose)
-        readUntilLarger(other(input))
-      }
-
-      def readUntilLarger(input: InputHandle): State[Int] = State[Int](Read(input)) {
-        (ctx, input, element) ⇒
-          if (element <= reference) {
-            ctx.emit(element)
-            SameState
-          } else {
-            ctx.emit(reference)
-            reference = element
-            readUntilLarger(other(input))
-          }
-      }
-
-      def readRemaining(input: InputHandle) = State[Int](Read(input)) {
-        (ctx, input, element) ⇒
-          if (element <= reference)
-            ctx.emit(element)
-          else {
-            ctx.emit(reference)
-            reference = element
-          }
-          SameState
-      }
-
-      val emitLast = CompletionHandling(
-        onComplete = { (ctx, input) ⇒
-          if (ctx.isDemandAvailable)
-            ctx.emit(reference)
-          SameState
-        },
-        onError = { (ctx, input, cause) ⇒
-          ctx.error(cause)
-          SameState
-        })
-
-      override def initialState = getFirstElement
+    override def inputHandles(inputCount: Int) = {
+      require(inputCount == 3, s"Zip must have two connected inputs, was $inputCount")
+      Vector(soonCancelledInput, stableInput1, stableInput2)
     }
+
+    override def initialState = State[ReadAllInputs](ReadAll(soonCancelledInput, stableInput1, stableInput2)) {
+      case (ctx, input, inputs) ⇒
+        val a = inputs.getOrElse(soonCancelledInput, null)
+        val b = inputs.getOrElse(stableInput1, null)
+        val c = inputs.getOrElse(stableInput2, null)
+
+        ctx.emit((a, b, c))
+        if (cancelAfter == 0)
+          ctx.cancel(soonCancelledInput)
+        cancelAfter -= 1
+
+        SameState
+    }
+
+    override def initialCompletionHandling = eagerClose
   }
+}
 
-  class PreferringMerge extends FlexiMerge[Int] {
-    import FlexiMerge._
-    val preferred = createInputPort[Int]()
-    val secondary1 = createInputPort[Int]()
-    val secondary2 = createInputPort[Int]()
+class OrderedMerge extends FlexiMerge[Int] {
+  import FlexiMerge._
+  val input1 = createInputPort[Int]()
+  val input2 = createInputPort[Int]()
 
-    def createMergeLogic = new MergeLogic[Int] {
-      override def inputHandles(inputCount: Int) = Vector(preferred, secondary1, secondary2)
+  def createMergeLogic = new MergeLogic[Int] {
+    private var reference = 0
 
-      override def initialState = State[Int](ReadPreferred(preferred)(secondary1, secondary2)) {
-        (ctx, input, element) ⇒
+    override def inputHandles(inputCount: Int) = Vector(input1, input2)
+
+    val emitOtherOnClose = CompletionHandling(
+      onComplete = { (ctx, input) ⇒
+        ctx.changeCompletionHandling(emitLast)
+        readRemaining(other(input))
+      },
+      onError = { (ctx, input, cause) ⇒
+        ctx.error(cause)
+        SameState
+      })
+
+    def other(input: InputHandle): InputHandle = if (input eq input1) input2 else input1
+
+    def getFirstElement = State[Int](ReadAny(input1, input2)) { (ctx, input, element) ⇒
+      reference = element
+      ctx.changeCompletionHandling(emitOtherOnClose)
+      readUntilLarger(other(input))
+    }
+
+    def readUntilLarger(input: InputHandle): State[Int] = State[Int](Read(input)) {
+      (ctx, input, element) ⇒
+        if (element <= reference) {
           ctx.emit(element)
           SameState
-      }
+        } else {
+          ctx.emit(reference)
+          reference = element
+          readUntilLarger(other(input))
+        }
+    }
+
+    def readRemaining(input: InputHandle) = State[Int](Read(input)) {
+      (ctx, input, element) ⇒
+        if (element <= reference)
+          ctx.emit(element)
+        else {
+          ctx.emit(reference)
+          reference = element
+        }
+        SameState
+    }
+
+    val emitLast = CompletionHandling(
+      onComplete = { (ctx, input) ⇒
+        if (ctx.isDemandAvailable)
+          ctx.emit(reference)
+        SameState
+      },
+      onError = { (ctx, input, cause) ⇒
+        ctx.error(cause)
+        SameState
+      })
+
+    override def initialState = getFirstElement
+  }
+}
+
+class PreferringMerge extends FlexiMerge[Int] {
+  import FlexiMerge._
+  val preferred = createInputPort[Int]()
+  val secondary1 = createInputPort[Int]()
+  val secondary2 = createInputPort[Int]()
+
+  def createMergeLogic = new MergeLogic[Int] {
+    override def inputHandles(inputCount: Int) = Vector(preferred, secondary1, secondary2)
+
+    override def initialState = State[Int](ReadPreferred(preferred)(secondary1, secondary2)) {
+      (ctx, input, element) ⇒
+        ctx.emit(element)
+        SameState
     }
   }
+}
 
-  class TestMerge extends FlexiMerge[String]("testMerge") {
-    import FlexiMerge._
-    val input1 = createInputPort[String]()
-    val input2 = createInputPort[String]()
-    val input3 = createInputPort[String]()
+class TestMerge extends FlexiMerge[String]("testMerge") {
+  import FlexiMerge._
+  val input1 = createInputPort[String]()
+  val input2 = createInputPort[String]()
+  val input3 = createInputPort[String]()
 
-    def createMergeLogic: MergeLogic[String] = new MergeLogic[String] {
-      val handles = Vector(input1, input2, input3)
-      override def inputHandles(inputCount: Int) = handles
+  def createMergeLogic: MergeLogic[String] = new MergeLogic[String] {
+    val handles = Vector(input1, input2, input3)
+    override def inputHandles(inputCount: Int) = handles
 
-      override def initialState = State[String](ReadAny(handles)) {
-        (ctx, input, element) ⇒
-          if (element == "cancel")
-            ctx.cancel(input)
-          else if (element == "err")
-            ctx.error(new RuntimeException("err") with NoStackTrace)
-          else if (element == "complete")
-            ctx.complete()
-          else
-            ctx.emit("onInput: " + element)
+    override def initialState = State[String](ReadAny(handles)) {
+      (ctx, input, element) ⇒
+        if (element == "cancel")
+          ctx.cancel(input)
+        else if (element == "err")
+          ctx.error(new RuntimeException("err") with NoStackTrace)
+        else if (element == "complete")
+          ctx.complete()
+        else
+          ctx.emit("onInput: " + element)
 
-          SameState
-      }
-
-      override def initialCompletionHandling = CompletionHandling(
-        onComplete = { (ctx, input) ⇒
-          if (ctx.isDemandAvailable)
-            ctx.emit("onComplete: " + input.portIndex)
-          SameState
-        },
-        onError = { (ctx, input, cause) ⇒
-          cause match {
-            case _: IllegalArgumentException ⇒ // swallow
-            case _                           ⇒ ctx.error(cause)
-          }
-          SameState
-        })
+        SameState
     }
+
+    override def initialCompletionHandling = CompletionHandling(
+      onComplete = { (ctx, input) ⇒
+        if (ctx.isDemandAvailable)
+          ctx.emit("onComplete: " + input.portIndex)
+        SameState
+      },
+      onError = { (ctx, input, cause) ⇒
+        cause match {
+          case _: IllegalArgumentException ⇒ // swallow
+          case _                           ⇒ ctx.error(cause)
+        }
+        SameState
+      })
   }
 }
 
@@ -298,6 +329,52 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext(1 -> "a")
       s.expectNext(2 -> "b")
       s.expectNext(3 -> "c")
+      s.expectComplete()
+    }
+    "build simple triple-zip merge using ReadAll" in {
+      val output = Sink.publisher[(Long, Int, String)]
+      val m = FlowGraph { implicit b ⇒
+        val merge = new TripleCancellingZip[Long, Int, String]
+        // format: OFF
+        Source(List(1L,   2L       )) ~> merge.soonCancelledInput
+        Source(List(1,    2,   3, 4)) ~> merge.stableInput1
+        Source(List("a", "b", "c"  )) ~> merge.stableInput2
+        merge.out ~> output
+        // format: ON
+      }.run()
+
+      val s = SubscriberProbe[(Long, Int, String)]
+      val p = m.get(output)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+
+      sub.request(10)
+      s.expectNext((1L, 1, "a"))
+      s.expectNext((2L, 2, "b"))
+      s.expectComplete()
+    }
+    "build simple triple-zip merge using ReadAll, and continue with provided value for cancelled input" in {
+      val output = Sink.publisher[(Long, Int, String)]
+      val m = FlowGraph { implicit b ⇒
+        val merge = new TripleCancellingZip[Long, Int, String](cancelAfter = 1)
+        // format: OFF
+        Source(List(1L,   2L,  3L,  4L, 5L)) ~> merge.soonCancelledInput
+        Source(List(1,    2,   3,   4     )) ~> merge.stableInput1
+        Source(List("a", "b", "c"         )) ~> merge.stableInput2
+        merge.out ~> output
+        // format: ON
+      }.run()
+
+      val s = SubscriberProbe[(Long, Int, String)]
+      val p = m.get(output)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+
+      sub.request(10)
+      s.expectNext((1L, 1, "a"))
+      s.expectNext((2L, 2, "b"))
+      // soonCancelledInput is now cancelled and continues with default (null) value
+      s.expectNext((null.asInstanceOf[Long], 3, "c"))
       s.expectComplete()
     }
 
