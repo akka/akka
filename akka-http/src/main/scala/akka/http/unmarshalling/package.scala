@@ -4,6 +4,7 @@
 
 package akka.http
 
+import akka.http.common.StrictForm
 import akka.http.model._
 
 package object unmarshalling {
@@ -12,5 +13,5 @@ package object unmarshalling {
   type FromResponseUnmarshaller[T] = Unmarshaller[HttpResponse, T]
   type FromRequestUnmarshaller[T] = Unmarshaller[HttpRequest, T]
   type FromStringUnmarshaller[T] = Unmarshaller[String, T]
-  type FromStringOptionUnmarshaller[T] = Unmarshaller[Option[String], T]
+  type FromStrictFormFieldUnmarshaller[T] = Unmarshaller[StrictForm.Field, T]
 }
