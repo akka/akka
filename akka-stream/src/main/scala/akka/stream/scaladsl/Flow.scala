@@ -108,13 +108,13 @@ trait FlowOps[+Out] {
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: Out ⇒ T): Repr[T] = andThen(OpFactory(() ⇒ fusing.Map(f), "map"))
+  def map[T](f: Out ⇒ T): Repr[T] = andThen(Fusable(Vector(fusing.Map(f)), "map"))
 
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    */
-  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] = andThen(OpFactory(() ⇒ fusing.MapConcat(f), "mapConcat"))
+  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] = andThen(Fusable(Vector(fusing.MapConcat(f)), "mapConcat"))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -144,16 +144,16 @@ trait FlowOps[+Out] {
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(OpFactory(() ⇒ fusing.Filter(p), "filter"))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Fusable(Vector(fusing.Filter(p)), "filter"))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(OpFactory(List(
-    () ⇒ fusing.Filter(pf.isDefinedAt),
-    () ⇒ fusing.Map(pf.apply)), "filter"))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(Fusable(Vector(
+    fusing.Filter(pf.isDefinedAt),
+    fusing.Map(pf.apply)), "filter"))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -163,7 +163,7 @@ trait FlowOps[+Out] {
    */
   def grouped(n: Int): Repr[immutable.Seq[Out]] = {
     require(n > 0, "n must be greater than 0")
-    andThen(OpFactory(() ⇒ fusing.Grouped(n), "grouped"))
+    andThen(Fusable(Vector(fusing.Grouped(n)), "grouped"))
   }
 
   /**
@@ -208,8 +208,8 @@ trait FlowOps[+Out] {
    * No elements will be dropped if `n` is zero or negative.
    */
   def drop(n: Int): Repr[Out] =
-    if (n <= 0) andThen(OpFactory(Nil, "drop"))
-    else andThen(OpFactory(() ⇒ fusing.Drop(n), "drop"))
+    if (n <= 0) andThen(Fusable(Vector.empty, "drop"))
+    else andThen(Fusable(Vector(fusing.Drop(n)), "drop"))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -240,8 +240,8 @@ trait FlowOps[+Out] {
    * or negative.
    */
   def take(n: Int): Repr[Out] =
-    if (n <= 0) andThen(OpFactory(() ⇒ fusing.Completed(), "take"))
-    else andThen(OpFactory(() ⇒ fusing.Take(n), "take"))
+    if (n <= 0) andThen(Fusable(Vector(fusing.Completed()), "take"))
+    else andThen(Fusable(Vector(fusing.Take(n)), "take"))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -278,7 +278,7 @@ trait FlowOps[+Out] {
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
   def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
-    andThen(OpFactory(() ⇒ fusing.Conflate(seed, aggregate), "conflate"))
+    andThen(Fusable(Vector(fusing.Conflate(seed, aggregate)), "conflate"))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -294,7 +294,7 @@ trait FlowOps[+Out] {
    *                    state.
    */
   def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U] =
-    andThen(OpFactory(() ⇒ fusing.Expand(seed, extrapolate), "expand"))
+    andThen(Fusable(Vector(fusing.Expand(seed, extrapolate)), "expand"))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -306,7 +306,7 @@ trait FlowOps[+Out] {
    */
   def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
-    andThen(OpFactory(() ⇒ fusing.Buffer(size, overflowStrategy), "buffer"))
+    andThen(Fusable(Vector(fusing.Buffer(size, overflowStrategy)), "buffer"))
   }
 
   /**
