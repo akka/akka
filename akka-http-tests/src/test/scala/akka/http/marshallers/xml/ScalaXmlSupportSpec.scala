@@ -4,19 +4,13 @@
 
 package akka.http.marshallers.xml
 
-import akka.http.unmarshalling.Unmarshal
-
-import akka.http.testkit.ScalatestRouteTest
-import akka.http.unmarshalling.UnmarshallingError.UnsupportedContentType
-import org.scalatest.{ Matchers, WordSpec }
-
-import akka.http.model.HttpCharsets._
-import akka.http.model.MediaTypes._
-import akka.http.model.{ ContentTypeRange, ContentType, HttpEntity }
-
-import akka.http.marshalling.{ ToEntityMarshallers, Marshal }
-
 import scala.xml.NodeSeq
+import org.scalatest.{ Matchers, WordSpec }
+import akka.http.testkit.ScalatestRouteTest
+import akka.http.unmarshalling.{ Unmarshaller, Unmarshal }
+import akka.http.model._
+import HttpCharsets._
+import MediaTypes._
 
 class ScalaXmlSupportSpec extends WordSpec with Matchers with ScalatestRouteTest {
   import ScalaXmlSupport._
@@ -31,7 +25,7 @@ class ScalaXmlSupportSpec extends WordSpec with Matchers with ScalatestRouteTest
     }
     "nodeSeqUnmarshaller should reject `application/octet-stream`" in {
       Unmarshal(HttpEntity(`application/octet-stream`, "<int>Hällö</int>")).to[NodeSeq].map(_.text) should
-        haveFailedWith(UnsupportedContentType(ScalaXmlSupport.nodeSeqMediaTypes map (ContentTypeRange(_))))
+        haveFailedWith(Unmarshaller.UnsupportedContentTypeException(nodeSeqContentTypeRanges: _*))
     }
   }
 }

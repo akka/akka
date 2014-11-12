@@ -54,17 +54,17 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
 
   def handled: Boolean = result.handled
   def response: HttpResponse = result.response
-  def entity: HttpEntity = result.entity
+  def responseEntity: HttpEntity = result.entity
   def chunks: immutable.Seq[HttpEntity.ChunkStreamPart] = result.chunks
   def entityAs[T: FromEntityUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal entity to type '${implicitly[ClassTag[T]]}' for `entityAs` assertion: $e\n\nResponse was: $response"
-    Await.result(Unmarshal(entity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
+    Await.result(Unmarshal(responseEntity).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
   def responseAs[T: FromResponseUnmarshaller: ClassTag](implicit timeout: Duration = 1.second): T = {
     def msg(e: Throwable) = s"Could not unmarshal response to type '${implicitly[ClassTag[T]]}' for `responseAs` assertion: $e\n\nResponse was: $response"
     Await.result(Unmarshal(response).to[T].fast.recover[T] { case error ⇒ failTest(msg(error)) }, timeout)
   }
-  def contentType: ContentType = entity.contentType
+  def contentType: ContentType = responseEntity.contentType
   def mediaType: MediaType = contentType.mediaType
   def charset: HttpCharset = contentType.charset
   def definedCharset: Option[HttpCharset] = contentType.definedCharset
