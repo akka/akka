@@ -38,9 +38,12 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
       bytes.decodeString(entity.contentType.charset.nioCharset.name) // ouch!!!
     }
 
-  implicit def urlEncodedFormDataUnmarshaller(implicit fm: FlowMaterializer,
-                                              ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
-    stringUnmarshaller mapWithInput { (entity, string) ⇒
+  implicit def defaultUrlEncodedFormDataUnmarshaller(implicit fm: FlowMaterializer,
+                                                     ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
+    urlEncodedFormDataUnmarshaller(MediaTypes.`application/x-www-form-urlencoded`)
+  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*)(implicit fm: FlowMaterializer,
+                                                                ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
+    stringUnmarshaller.forContentTypes(ranges: _*).mapWithInput { (entity, string) ⇒
       try {
         val nioCharset = entity.contentType.definedCharset.getOrElse(HttpCharsets.`UTF-8`).nioCharset
         val query = Uri.Query(string, nioCharset)
