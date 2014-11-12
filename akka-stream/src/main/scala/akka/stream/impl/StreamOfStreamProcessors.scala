@@ -124,9 +124,13 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
   }
 
   protected def invalidateSubstreamOutput(substream: SubstreamKey): Unit = {
+    completeSubstreamOutput(substream)
+    pump()
+  }
+
+  protected def completeSubstreamOutput(substream: SubstreamKey): Unit = {
     substreamOutputs(substream).complete()
     substreamOutputs -= substream
-    pump()
   }
 
   protected def failOutputs(e: Throwable): Unit = {
@@ -138,7 +142,10 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
   }
 
   val outputSubstreamManagement: Receive = {
-    case SubstreamRequestMore(key, demand)   ⇒ substreamOutputs(key).enqueueOutputDemand(demand)
+    case SubstreamRequestMore(key, demand) ⇒ substreamOutputs.get(key) match {
+      case Some(substream) ⇒ substream.enqueueOutputDemand(demand)
+      case _               ⇒ // ignore...
+    }
     case SubstreamCancel(key)                ⇒ invalidateSubstreamOutput(key)
     case SubstreamSubscribe(key, subscriber) ⇒ substreamOutputs(key).attachSubscriber(subscriber)
   }
