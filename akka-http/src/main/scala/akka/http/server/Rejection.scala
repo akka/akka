@@ -4,10 +4,9 @@
 
 package akka.http.server
 
-import akka.http.model._
-import akka.http.model.headers.{ HttpChallenge, ByteRange, HttpEncoding }
-
 import scala.collection.immutable
+import akka.http.model._
+import headers._
 
 /**
  * A rejection encapsulates a specific reason why a Route was not able to handle a request. Rejections are gathered
@@ -71,7 +70,7 @@ case class MalformedHeaderRejection(headerName: String, errorMsg: String,
  * Rejection created by unmarshallers.
  * Signals that the request was rejected because the requests content-type is unsupported.
  */
-case class UnsupportedRequestContentTypeRejection(errorMsg: String) extends Rejection
+case class UnsupportedRequestContentTypeRejection(supported: Set[ContentTypeRange]) extends Rejection
 
 /**
  * Rejection created by decoding filters.
@@ -110,7 +109,7 @@ case object RequestEntityExpectedRejection extends Rejection
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content type is accepted by the client
  */
-case class UnacceptedResponseContentTypeRejection(supported: Seq[ContentType]) extends Rejection
+case class UnacceptedResponseContentTypeRejection(supported: Set[ContentType]) extends Rejection
 
 /**
  * Rejection created by encoding filters.
