@@ -34,7 +34,7 @@ trait PredefinedToResponseMarshallers extends LowPriorityToResponseMarshallerImp
 
   implicit def fromStatusCodeAndHeadersAndValue[T](implicit mt: ToEntityMarshaller[T],
                                                    ec: ExecutionContext): TRM[(StatusCode, immutable.Seq[HttpHeader], T)] =
-    Marshaller { case (status, headers, value) ⇒ mt(value).fast.map(_ map (HttpResponse(status, headers, _))) }
+    Marshaller { case (status, headers, value) ⇒ mt(value).fast map (_ map (_ map (HttpResponse(status, headers, _)))) }
 }
 
 trait LowPriorityToResponseMarshallerImplicits {

@@ -59,9 +59,8 @@ trait PredefinedToEntityMarshallers extends MultipartMarshallers {
       HttpEntity(ContentType(`application/x-www-form-urlencoded`, charset), string)
     }
 
-  implicit val HttpEntityMarshaller: ToEntityMarshaller[MessageEntity] = Marshaller { value ⇒
-    // since we don't want to recode we simply ignore the charset determined by content negotiation here
-    FastFuture.successful(Marshalling.WithOpenCharset(value.contentType.mediaType, _ ⇒ value))
+  implicit val HttpEntityMarshaller: ToEntityMarshaller[MessageEntity] = Marshaller strict { value ⇒
+    Marshalling.WithFixedCharset(value.contentType.mediaType, value.contentType.charset, () ⇒ value)
   }
 }
 

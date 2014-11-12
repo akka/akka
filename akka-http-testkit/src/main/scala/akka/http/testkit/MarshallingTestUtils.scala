@@ -16,7 +16,7 @@ import akka.stream.FlowMaterializer
 import scala.util.Try
 
 trait MarshallingTestUtils {
-  def marshal[T: ToEntityMarshallers](value: T)(implicit ec: ExecutionContext, mat: FlowMaterializer): HttpEntity.Strict =
+  def marshal[T: ToEntityMarshaller](value: T)(implicit ec: ExecutionContext, mat: FlowMaterializer): HttpEntity.Strict =
     Await.result(Marshal(value).to[HttpEntity].flatMap(_.toStrict(1.second)), 1.second)
 
   def unmarshalValue[T: FromEntityUnmarshaller](entity: HttpEntity)(implicit ec: ExecutionContext, mat: FlowMaterializer): T =

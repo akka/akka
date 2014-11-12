@@ -16,7 +16,7 @@ trait GenericMarshallers extends LowPriorityToResponseMarshallerImplicits {
   implicit def optionMarshaller[A, B](implicit m: Marshaller[A, B], empty: EmptyValue[B]): Marshaller[Option[A], B] =
     Marshaller {
       case Some(value) ⇒ m(value)
-      case None        ⇒ FastFuture.successful(Marshalling.Opaque(() ⇒ empty.emptyValue))
+      case None        ⇒ FastFuture.successful(Marshalling.Opaque(() ⇒ empty.emptyValue) :: Nil)
     }
 
   implicit def eitherMarshaller[A1, A2, B](implicit m1: Marshaller[A1, B], m2: Marshaller[A2, B]): Marshaller[Either[A1, A2], B] =

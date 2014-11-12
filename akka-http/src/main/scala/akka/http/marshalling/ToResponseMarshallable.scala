@@ -18,15 +18,13 @@ trait ToResponseMarshallable {
 }
 
 object ToResponseMarshallable {
-  implicit def isMarshallable[A](_value: A)(implicit _marshaller: ToResponseMarshaller[A]): ToResponseMarshallable =
+  implicit def apply[A](_value: A)(implicit _marshaller: ToResponseMarshaller[A]): ToResponseMarshallable =
     new ToResponseMarshallable {
       type T = A
       def value: T = _value
       def marshaller: ToResponseMarshaller[T] = _marshaller
     }
 
-  implicit def marshallableIsMarshallable: ToResponseMarshaller[ToResponseMarshallable] =
-    Marshaller[ToResponseMarshallable, HttpResponse] { value ⇒
-      value.marshaller(value.value)
-    }
+  implicit val marshaller: ToResponseMarshaller[ToResponseMarshallable] =
+    Marshaller { marshallable ⇒ marshallable.marshaller(marshallable.value) }
 }

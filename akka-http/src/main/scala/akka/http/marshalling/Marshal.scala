@@ -4,7 +4,6 @@
 
 package akka.http.marshalling
 
-import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import akka.http.util.FastFuture
 import akka.http.model.HttpCharsets._
@@ -14,36 +13,36 @@ import FastFuture._
 object Marshal {
   def apply[T](value: T): Marshal[T] = new Marshal(value)
 
-  class UnacceptableResponseContentTypeException(supported: immutable.Seq[ContentType]) extends RuntimeException
+  case class UnacceptableResponseContentTypeException(supported: Set[ContentType]) extends RuntimeException
 
   private class MarshallingWeight(val weight: Float, val marshal: () ⇒ HttpResponse)
 }
 
 class Marshal[A](val value: A) {
   /**
-   * Marshals `value` to the first of the available `Marshallers` for `A` and `B`.
-   * If the marshaller is flexible with regard to the used charset `UTF-8` is chosen.
+   * Marshals `value` using the first available [[Marshalling]] for `A` and `B` provided by the given [[Marshaller]].
+   * If the marshalling is flexible with regard to the used charset `UTF-8` is chosen.
    */
-  def to[B](implicit m: Marshallers[A, B], ec: ExecutionContext): Future[B] =
-    m.marshallers.head(value).fast.map {
-      case Marshalling.WithFixedCharset(_, _, marshal) ⇒ marshal()
-      case Marshalling.WithOpenCharset(_, marshal)     ⇒ marshal(HttpCharsets.`UTF-8`)
-      case Marshalling.Opaque(marshal)                 ⇒ marshal()
+  def to[B](implicit m: Marshaller[A, B], ec: ExecutionContext): Future[B] =
+    m(value).fast.map {
+      _.head match {
+        case Marshalling.WithFixedCharset(_, _, marshal) ⇒ marshal()
+        case Marshalling.WithOpenCharset(_, marshal)     ⇒ marshal(HttpCharsets.`UTF-8`)
+        case Marshalling.Opaque(marshal)                 ⇒ marshal()
+      }
     }
 
   /**
    * Marshals `value` to an `HttpResponse` for the given `HttpRequest` with full content-negotiation.
    */
-  def toResponseFor(request: HttpRequest)(implicit m: ToResponseMarshallers[A], ec: ExecutionContext): Future[HttpResponse] = {
+  def toResponseFor(request: HttpRequest)(implicit m: ToResponseMarshaller[A], ec: ExecutionContext): Future[HttpResponse] = {
     import akka.http.marshalling.Marshal._
     val mediaRanges = request.acceptedMediaRanges // cache for performance
     val charsetRanges = request.acceptedCharsetRanges // cache for performance
     def qValueMT(mediaType: MediaType) = request.qValueForMediaType(mediaType, mediaRanges)
     def qValueCS(charset: HttpCharset) = request.qValueForCharset(charset, charsetRanges)
 
-    val marshallingFutures = m.marshallers.map(_(value))
-    val marshallingsFuture = FastFuture.sequence(marshallingFutures)
-    marshallingsFuture.fast.map { marshallings ⇒
+    m(value).fast.map { marshallings ⇒
       def weight(mt: MediaType, cs: HttpCharset): Float = math.min(qValueMT(mt), qValueCS(cs))
       val defaultMarshallingWeight: MarshallingWeight =
         new MarshallingWeight(0f, { () ⇒
@@ -51,7 +50,7 @@ class Marshal[A](val value: A) {
             case Marshalling.WithFixedCharset(mt, cs, _) ⇒ ContentType(mt, cs)
             case Marshalling.WithOpenCharset(mt, _)      ⇒ ContentType(mt)
           }
-          throw new UnacceptableResponseContentTypeException(supportedContentTypes)
+          throw UnacceptableResponseContentTypeException(supportedContentTypes.toSet)
         })
       val best = marshallings.foldLeft(defaultMarshallingWeight) {
         case (acc, Marshalling.WithFixedCharset(mt, cs, marshal)) ⇒
