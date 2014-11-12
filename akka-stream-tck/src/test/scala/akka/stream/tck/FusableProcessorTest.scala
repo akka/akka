@@ -22,7 +22,7 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
     val flowName = getClass.getSimpleName + "-" + processorCounter.incrementAndGet()
 
     val processor = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
-      Ast.OpFactory(() ⇒ akka.stream.impl.fusing.Map[Int, Int](identity), "identity"), flowName, 1)
+      Ast.Fusable(Vector(akka.stream.impl.fusing.Map[Int, Int](identity)), "identity"), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]
   }

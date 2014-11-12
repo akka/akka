@@ -43,12 +43,7 @@ private[akka] object Ast {
 
   case class TimerTransform(name: String, mkTransformer: () ⇒ TimerTransformer[Any, Any]) extends AstNode
 
-  object OpFactory {
-    def apply(mkOp: () ⇒ Op[_, _, _, _, _], name: String): OpFactory =
-      OpFactory(List(mkOp), name)
-  }
-
-  case class OpFactory(mkOps: List[() ⇒ Op[_, _, _, _, _]], name: String) extends AstNode
+  case class Fusable(ops: immutable.Seq[Op[_, _, _, _, _]], name: String) extends AstNode
 
   case class MapAsync(f: Any ⇒ Future[Any]) extends AstNode {
     override def name = "mapAsync"
@@ -331,7 +326,7 @@ private[akka] object ActorProcessorFactory {
   def props(materializer: FlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings
     (op match {
-      case OpFactory(mkOps, _)  ⇒ Props(new ActorInterpreter(materializer.settings, mkOps.map(_.apply())))
+      case Fusable(ops, _)      ⇒ Props(new ActorInterpreter(materializer.settings, ops))
       case t: Transform         ⇒ Props(new TransformProcessorImpl(settings, t.mkTransformer()))
       case t: TimerTransform    ⇒ Props(new TimerTransformerProcessorsImpl(settings, t.mkTransformer()))
       case m: MapAsync          ⇒ Props(new MapAsyncProcessorImpl(settings, m.f))

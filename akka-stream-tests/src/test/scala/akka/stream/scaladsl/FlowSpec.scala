@@ -14,7 +14,7 @@ import akka.actor.{ Props, ActorRefFactory, ActorRef }
 import akka.stream.{ TransformerLike, MaterializerSettings }
 import akka.stream.FlowMaterializer
 import akka.stream.impl.{ ActorProcessorFactory, TransformProcessorImpl, StreamSupervisor, ActorBasedFlowMaterializer }
-import akka.stream.impl.Ast.{ Transform, OpFactory, AstNode }
+import akka.stream.impl.Ast.{ Transform, Fusable, AstNode }
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.testkit.ChainSetup
 import akka.testkit._
@@ -72,9 +72,9 @@ object FlowSpec {
 
     override def processorForNode(op: AstNode, flowName: String, n: Int): Processor[Any, Any] = {
       val props = op match {
-        case t: Transform        ⇒ Props(new BrokenTransformProcessorImpl(settings, t.mkTransformer(), brokenMessage))
-        case OpFactory(mkOps, _) ⇒ Props(new BrokenActorInterpreter(settings, mkOps.map(_.apply()), brokenMessage)).withDispatcher(settings.dispatcher)
-        case o                   ⇒ ActorProcessorFactory.props(this, o)
+        case t: Transform ⇒ Props(new BrokenTransformProcessorImpl(settings, t.mkTransformer(), brokenMessage))
+        case f: Fusable   ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage)).withDispatcher(settings.dispatcher)
+        case o            ⇒ ActorProcessorFactory.props(this, o)
       }
       val impl = actorOf(props, s"$flowName-$n-${op.name}")
       ActorProcessorFactory(impl)
