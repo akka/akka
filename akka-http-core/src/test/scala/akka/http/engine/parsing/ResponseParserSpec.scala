@@ -105,7 +105,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Content-Type: text/plain; charset=UTF-8
           |
           |Sh""", "ake your BOODY!HTTP/1.") should generalMultiParseTo(
-          Right(HttpResponse(InternalServerError, List(Connection("close"), `User-Agent`("curl/7.19.7 xyz")),
+          Right(HttpResponse(InternalServerError, List(`User-Agent`("curl/7.19.7 xyz"), Connection("close")),
             "Shake your BOODY!")))
         closeAfterResponseCompletion shouldEqual Seq(true)
       }
@@ -130,7 +130,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |Server: spray-can
           |
           |"""
-      val baseResponse = HttpResponse(headers = List(Server("spray-can"), Connection("lalelu")))
+      val baseResponse = HttpResponse(headers = List(Connection("lalelu"), Server("spray-can")))
 
       "response start" in new Test {
         Seq(start, "rest") should generalMultiParseTo(
@@ -181,7 +181,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |
             |HT""") should generalMultiParseTo(
             Right(baseResponse.withEntity(Chunked(`application/pdf`,
-              source(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))),
+              source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))),
             Left(MessageStartError(400: StatusCode, ErrorInfo("Illegal HTTP message start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
