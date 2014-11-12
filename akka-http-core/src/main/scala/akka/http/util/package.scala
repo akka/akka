@@ -10,7 +10,9 @@ import java.nio.charset.Charset
 import com.typesafe.config.Config
 import akka.stream.{ FlowMaterializer, FlattenStrategy, Transformer }
 import akka.stream.scaladsl.{ Flow, Source }
-import scala.concurrent.Future
+import scala.concurrent.duration.Duration
+import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success }
 import scala.util.matching.Regex
 import akka.event.LoggingAdapter
 import akka.util.ByteString
@@ -77,6 +79,17 @@ package object util {
       underlying.fold(Vector.empty[T])(_ :+ _)
   }
 
+  private[http] implicit class AddFutureAwaitResult[T](future: Future[T]) {
+    /** "Safe" Await.result that doesn't throw away half of the stacktrace */
+    def awaitResult(atMost: Duration): T = {
+      Await.ready(future, atMost)
+      future.value.get match {
+        case Success(t)  ⇒ t
+        case Failure(ex) ⇒ throw new RuntimeException("Trying to await result of failed Future, see the cause for the original problem.", ex)
+      }
+    }
+  }
+
   private[http] def errorLogger(log: LoggingAdapter, msg: String): Transformer[ByteString, ByteString] =
     new Transformer[ByteString, ByteString] {
       def onNext(element: ByteString) = element :: Nil
@@ -86,5 +99,14 @@ package object util {
   private[this] val _identityFunc: Any ⇒ Any = x ⇒ x
   /** Returns a constant identity function to avoid allocating the closure */
   def identityFunc[T]: T ⇒ T = _identityFunc.asInstanceOf[T ⇒ T]
+
+  def humanReadableByteCount(bytes: Long, si: Boolean): String = {
+    val unit = if (si) 1000 else 1024
+    if (bytes >= unit) {
+      val exp = (math.log(bytes) / math.log(unit)).toInt
+      val pre = if (si) "kMGTPE".charAt(exp - 1).toString else "KMGTPE".charAt(exp - 1).toString + 'i'
+      "%.1f %sB" format (bytes / math.pow(unit, exp), pre)
+    } else bytes.toString + "  B"
+  }
 }
 

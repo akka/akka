@@ -34,6 +34,7 @@ trait RangeDirectives {
    */
   def withRangeSupport: Directive0 =
     extractRequestContext.flatMap { ctx ⇒
+      import ctx.flowMaterializer
       val settings = ctx.settings
       implicit val log = ctx.log
       import settings.{ rangeCountLimit, rangeCoalescingThreshold }
@@ -66,7 +67,17 @@ trait RangeDirectives {
       def multipartRanges(ranges: Seq[ByteRange], entity: UniversalEntity): Multipart.ByteRanges = {
         val length = entity.contentLength
         val iRanges: Seq[IndexRange] = ranges.map(indexRange(length))
-        val bodyParts = coalesceRanges(iRanges).map(ir ⇒ Multipart.ByteRanges.BodyPart(ir.contentRange(length), ir(entity)))
+
+        // It's only possible to run once over the input entity data stream because it's not known if the
+        // source is reusable.
+        // Therefore, ranges need to be sorted to prevent that some selected ranges already start to accumulate data
+        // but cannot be sent out because another range is blocking the queue.
+        val coalescedRanges = coalesceRanges(iRanges).sortBy(_.start)
+        val bodyPartTransformers = coalescedRanges.map(ir ⇒ () ⇒ StreamUtils.sliceBytesTransformer(ir.start, ir.length)).toVector
+        val bodyPartByteStreams = StreamUtils.transformMultiple(entity.dataBytes, bodyPartTransformers)
+        val bodyParts = (coalescedRanges, bodyPartByteStreams).zipped.map { (range, bytes) ⇒
+          Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
+        }
         Multipart.ByteRanges(Source(bodyParts.toVector))
       }
 

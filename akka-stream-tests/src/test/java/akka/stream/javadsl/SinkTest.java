@@ -3,9 +3,10 @@
  */
 package akka.stream.javadsl;
 
-import akka.actor.ActorSystem;
-import akka.stream.FlowMaterializer;
-import akka.stream.MaterializerSettings;
+import java.util.ArrayList;
+import java.util.List;
+
+import akka.stream.StreamTest;
 import akka.stream.javadsl.japi.Function2;
 import akka.stream.testkit.AkkaSpec;
 import org.junit.ClassRule;
@@ -18,16 +19,14 @@ import scala.concurrent.duration.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SinkTest {
+public class SinkTest extends StreamTest {
+  public SinkTest() {
+    super(actorSystemResource);
+  }
 
   @ClassRule
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("FlowTest",
       AkkaSpec.testConf());
-
-  final ActorSystem system = actorSystemResource.getSystem();
-
-  final MaterializerSettings settings = MaterializerSettings.create(system);
-  final FlowMaterializer materializer = FlowMaterializer.create(settings, system);
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
