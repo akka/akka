@@ -244,7 +244,8 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
       "support `rawRequestUriHeader` setting" in new Test {
-        override protected def newParser: HttpRequestParser = new HttpRequestParser(parserSettings, rawRequestUriHeader = true)()
+        override protected def newParser: HttpRequestParser =
+          new HttpRequestParser(parserSettings, rawRequestUriHeader = true, HttpHeaderParser(parserSettings)())
 
         """GET /f%6f%6fbar?q=b%61z HTTP/1.1
           |Host: ping
@@ -458,7 +459,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
-    protected def newParser = new HttpRequestParser(parserSettings, false)()
+    protected def newParser = new HttpRequestParser(parserSettings, false, HttpHeaderParser(parserSettings)())
 
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
