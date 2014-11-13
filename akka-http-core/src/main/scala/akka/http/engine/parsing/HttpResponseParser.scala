@@ -16,15 +16,16 @@ import HttpResponseParser.NoMethod
  * INTERNAL API
  */
 private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
+                                       _headerParser: HttpHeaderParser,
+                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)
   extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
   import settings._
 
   private[this] var requestMethodForCurrentResponse: HttpMethod = NoMethod
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
-  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit, dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
-    new HttpResponseParser(settings, dequeueRequestMethodForNextResponse)(headerParser.copyWith(warnOnIllegalHeader))
+  def createSharedCopy(dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
+    new HttpResponseParser(settings, headerParser.createSharedCopy(), dequeueRequestMethodForNextResponse)
 
   override def startNewMessage(input: ByteString, offset: Int): StateResult = {
     requestMethodForCurrentResponse = dequeueRequestMethodForNextResponse()

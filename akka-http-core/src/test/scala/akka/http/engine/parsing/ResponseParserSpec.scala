@@ -278,8 +278,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
 
     def parserSettings: ParserSettings = ParserSettings(system)
     def newParser(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(parserSettings,
-        dequeueRequestMethodForNextResponse = () ⇒ requestMethod)()
+      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)(), () ⇒ requestMethod)
       parser
     }
 

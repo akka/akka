@@ -5,18 +5,17 @@
 package akka.http.engine.client
 
 import java.net.InetSocketAddress
-import akka.util.ByteString
-
 import scala.collection.immutable.Queue
 import akka.stream.scaladsl._
 import akka.event.LoggingAdapter
 import akka.stream.FlowMaterializer
 import akka.stream.FlattenStrategy
 import akka.stream.io.StreamTcp
+import akka.util.ByteString
 import akka.http.Http
 import akka.http.model.{ HttpMethod, HttpRequest, ErrorInfo, HttpResponse }
 import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
-import akka.http.engine.parsing.HttpResponseParser
+import akka.http.engine.parsing.{ HttpRequestParser, HttpHeaderParser, HttpResponseParser }
 import akka.http.engine.parsing.ParserOutput._
 import akka.http.util._
 
@@ -29,10 +28,13 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
 
   import effectiveSettings._
 
-  val rootParser = new HttpResponseParser(parserSettings)()
-  val warnOnIllegalHeader: ErrorInfo ⇒ Unit = errorInfo ⇒
-    if (parserSettings.illegalHeaderWarnings)
-      log.warning(errorInfo.withSummaryPrepended("Illegal response header").formatPretty)
+  // the initial header parser we initially use for every connection,
+  // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
+  val rootParser = new HttpResponseParser(
+    parserSettings,
+    HttpHeaderParser(parserSettings) { errorInfo ⇒
+      if (parserSettings.illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal response header").formatPretty)
+    })
 
   val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
@@ -47,6 +49,10 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
     val netOut = Sink(tcpConn.outputStream)
     val netIn = Source(tcpConn.inputStream)
 
+    // each connection uses a single (private) response parser instance for all its responses
+    // which builds a cache of all header instances seen on that connection
+    val responseParser = rootParser.createSharedCopy(requestMethodByPass)
+
     val pipeline = FlowGraph { implicit b ⇒
       val bypassFanout = Broadcast[(HttpRequest, Any)]("bypassFanout")
       val bypassFanin = Zip[HttpResponse, Any]("bypassFanin")
@@ -60,7 +66,7 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
 
       val responsePipeline =
         Flow[ByteString]
-          .transform("rootParser", () ⇒ rootParser.copyWith(warnOnIllegalHeader, requestMethodByPass))
+          .transform("rootParser", () ⇒ responseParser)
           .splitWhen(_.isInstanceOf[MessageStart])
           .headAndTail
           .collect {
