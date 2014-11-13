@@ -111,7 +111,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
           case HttpEntity.Strict(_, data) ⇒
             renderContentLength(data.length)
-            Source(r.get :: data :: Nil) :: Nil
+            Source.singleton(r.get ++ data) :: Nil
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength)
