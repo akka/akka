@@ -51,7 +51,7 @@ trait ProducerSupport extends Actor with CamelSupport {
 
   /**
    * Produces <code>msg</code> to the endpoint specified by <code>endpointUri</code>. Before the message is
-   * actually sent it is pre-processed by calling <code>receiveBeforeProduce</code>. If <code>oneway</code>
+   * actually sent it is pre-processed by calling <code>transformOutgoingMessage</code>. If <code>oneway</code>
    * is <code>true</code>, an in-only message exchange is initiated, otherwise an in-out message exchange.
    *
    * @see Producer#produce(Any, ExchangePattern)
