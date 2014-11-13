@@ -289,7 +289,7 @@ Pluggable transport support
 ---------------------------
 
 Akka can be configured to use various transports to communicate with remote systems. The core
-component of this feature is the :meth:`akka.remote.Transport` SPI. Transport implementations must extend this trait.
+component of this feature is the :meth:`akka.remote.transport.Transport` SPI. Transport implementations must extend this trait.
 Transports can be loaded by setting the ``akka.remote.enabled-transports`` configuration key to point to one or
 more configuration sections containing driver descriptions.
 
