@@ -17,7 +17,8 @@ import StatusCodes._
  * INTERNAL API
  */
 private[http] class HttpRequestParser(_settings: ParserSettings,
-                                      rawRequestUriHeader: Boolean)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
+                                      rawRequestUriHeader: Boolean,
+                                      _headerParser: HttpHeaderParser)
   extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
   import settings._
 
@@ -25,8 +26,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
   private[this] var uri: Uri = _
   private[this] var uriBytes: Array[Byte] = _
 
-  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit): HttpRequestParser =
-    new HttpRequestParser(settings, rawRequestUriHeader)(headerParser.copyWith(warnOnIllegalHeader))
+  def createSharedCopy(): HttpRequestParser =
+    new HttpRequestParser(settings, rawRequestUriHeader, headerParser.createSharedCopy())
 
   def parseMessage(input: ByteString, offset: Int): StateResult = {
     var cursor = parseMethod(input, offset)
