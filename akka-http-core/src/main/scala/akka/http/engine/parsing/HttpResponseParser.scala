@@ -11,6 +11,7 @@ import akka.util.ByteString
 import akka.http.model._
 import headers._
 import HttpResponseParser.NoMethod
+import ParserOutput._
 
 /**
  * INTERNAL API
@@ -18,7 +19,7 @@ import HttpResponseParser.NoMethod
 private[http] class HttpResponseParser(_settings: ParserSettings,
                                        _headerParser: HttpHeaderParser,
                                        dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)
-  extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
+  extends HttpMessageParser[ResponseOutput](_settings, _headerParser) {
   import settings._
 
   private[this] var requestMethodForCurrentResponse: HttpMethod = NoMethod
@@ -74,9 +75,9 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Source[ParserOutput.ResponseOutput] ⇒ ResponseEntity,
+    def emitResponseStart(createEntity: Source[ResponseOutput] ⇒ ResponseEntity,
                           headers: List[HttpHeader] = headers) =
-      emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
+      emit(ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
       startNewMessage(input, bodyStart)
@@ -99,7 +100,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
+              val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
             parseToCloseBody(input, bodyStart)
@@ -121,7 +122,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   // currently we do not check for `settings.maxContentLength` overflow
   def parseToCloseBody(input: ByteString, bodyStart: Int): StateResult = {
     if (input.length > bodyStart)
-      emit(ParserOutput.EntityPart(input drop bodyStart))
+      emit(EntityPart(input drop bodyStart))
     continue(parseToCloseBody)
   }
 }
