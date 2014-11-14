@@ -76,7 +76,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryOp
     }
   }
 
-  override def onDownstreamFinish(ctxt: BoundaryContext): Directive = {
+  override def onDownstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
     cancel()
     ctxt.exit()
   }
@@ -190,12 +190,12 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp 
   override def onPull(ctxt: BoundaryContext): Directive =
     throw new UnsupportedOperationException("BUG: Cannot pull the downstream boundary")
 
-  override def onUpstreamFinish(ctxt: BoundaryContext): Directive = {
+  override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
     complete()
     ctxt.finish()
   }
 
-  override def onFailure(cause: Throwable, ctxt: BoundaryContext): Directive = {
+  override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = {
     fail(cause)
     ctxt.fail(cause)
   }

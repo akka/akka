@@ -47,7 +47,7 @@ trait InterpreterSpecKit extends AkkaSpec {
 
     class UpstreamProbe extends BoundaryOp {
 
-      override def onDownstreamFinish(ctxt: BoundaryContext): Directive = {
+      override def onDownstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
         lastEvent += Cancel
         ctxt.exit()
       }
@@ -72,12 +72,12 @@ trait InterpreterSpecKit extends AkkaSpec {
         ctxt.exit()
       }
 
-      override def onUpstreamFinish(ctxt: BoundaryContext): Directive = {
+      override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = {
         lastEvent += OnComplete
         ctxt.exit()
       }
 
-      override def onFailure(cause: Throwable, ctxt: BoundaryContext): Directive = {
+      override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = {
         lastEvent += OnError(cause)
         ctxt.exit()
       }
