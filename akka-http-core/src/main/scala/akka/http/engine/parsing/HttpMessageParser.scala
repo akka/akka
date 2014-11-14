@@ -14,12 +14,13 @@ import akka.http.model.parser.CharacterClasses
 import akka.http.model._
 import headers._
 import HttpProtocols._
+import ParserOutput._
 
 /**
  * INTERNAL API
  */
-private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOutput <: ParserOutput](val settings: ParserSettings,
-                                                                                                     val headerParser: HttpHeaderParser)
+private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](val settings: ParserSettings,
+                                                                                        val headerParser: HttpHeaderParser)
   extends StatefulStage[ByteString, Output] {
   import settings._
 
@@ -134,12 +135,12 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     val remainingInputBytes = input.length - bodyStart
     if (remainingInputBytes > 0) {
       if (remainingInputBytes < remainingBodyBytes) {
-        emit(ParserOutput.EntityPart(input drop bodyStart))
+        emit(EntityPart(input drop bodyStart))
         continue(parseFixedLengthBody(remainingBodyBytes - remainingInputBytes, isLastMessage))
       } else {
         val offset = bodyStart + remainingBodyBytes.toInt
-        emit(ParserOutput.EntityPart(input.slice(bodyStart, offset)))
-        emit(ParserOutput.MessageEnd)
+        emit(EntityPart(input.slice(bodyStart, offset)))
+        emit(MessageEnd)
         if (isLastMessage) terminate()
         else startNewMessage(input, offset)
       }
@@ -154,8 +155,8 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
         case HttpHeaderParser.EmptyHeader ⇒
           val lastChunk =
             if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
-          emit(ParserOutput.EntityChunk(lastChunk))
-          emit(ParserOutput.MessageEnd)
+          emit(EntityChunk(lastChunk))
+          emit(MessageEnd)
           if (isLastMessage) terminate()
           else startNewMessage(input, lineEnd)
         case header if headerCount < maxHeaderCount ⇒
@@ -168,7 +169,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       if (chunkSize > 0) {
         val chunkBodyEnd = cursor + chunkSize
         def result(terminatorLen: Int) = {
-          emit(ParserOutput.EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
+          emit(EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
           trampoline(_ ⇒ parseChunk(input, chunkBodyEnd + terminatorLen, isLastMessage))
         }
         byteChar(input, chunkBodyEnd) match {
@@ -227,7 +228,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   def fail(status: StatusCode): StateResult = fail(status, status.defaultMessage)
   def fail(status: StatusCode, summary: String, detail: String = ""): StateResult = fail(status, ErrorInfo(summary, detail))
   def fail(status: StatusCode, info: ErrorInfo): StateResult = {
-    emit(ParserOutput.ParseError(status, info))
+    emit(ParseError(status, info))
     terminate()
   }
 
@@ -251,12 +252,12 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
   def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: Source[_ <: ParserOutput]): UniversalEntity = {
-    val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
+    val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
     HttpEntity.Default(contentType(cth), contentLength, data)
   }
 
   def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Source[_ <: ParserOutput]): RequestEntity with ResponseEntity = {
-    val chunks = entityChunks.collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }
+    val chunks = entityChunks.collect { case EntityChunk(chunk) ⇒ chunk }
     HttpEntity.Chunked(contentType(cth), chunks)
   }
 

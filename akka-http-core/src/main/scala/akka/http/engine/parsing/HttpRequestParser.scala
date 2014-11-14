@@ -12,6 +12,7 @@ import akka.util.ByteString
 import akka.http.model._
 import headers._
 import StatusCodes._
+import ParserOutput._
 
 /**
  * INTERNAL API
@@ -19,7 +20,7 @@ import StatusCodes._
 private[http] class HttpRequestParser(_settings: ParserSettings,
                                       rawRequestUriHeader: Boolean,
                                       _headerParser: HttpHeaderParser)
-  extends HttpMessageParser[ParserOutput.RequestOutput](_settings, _headerParser) {
+  extends HttpMessageParser[RequestOutput](_settings, _headerParser) {
   import settings._
 
   private[this] var method: HttpMethod = _
@@ -110,12 +111,12 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: Source[ParserOutput.RequestOutput] ⇒ RequestEntity,
+      def emitRequestStart(createEntity: Source[RequestOutput] ⇒ RequestEntity,
                            headers: List[HttpHeader] = headers) = {
         val allHeaders =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
           else headers
-        emit(ParserOutput.RequestStart(method, uri, protocol, allHeaders, createEntity, closeAfterResponseCompletion))
+        emit(RequestStart(method, uri, protocol, allHeaders, createEntity, closeAfterResponseCompletion))
       }
 
       teh match {
