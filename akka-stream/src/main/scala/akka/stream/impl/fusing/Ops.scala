@@ -81,7 +81,7 @@ private[akka] case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends 
     if (isFinishing) ctxt.pushAndFinish(aggregator)
     else ctxt.pull()
 
-  override def onUpstreamFinish(ctxt: Context[Out]): Directive = ctxt.absorbTermination()
+  override def onUpstreamFinish(ctxt: Context[Out]): TerminationDirective = ctxt.absorbTermination()
 }
 
 /**
@@ -103,7 +103,7 @@ private[akka] case class Grouped[T](n: Int) extends DeterministicOp[T, immutable
     if (isFinishing) ctxt.pushAndFinish(buf)
     else ctxt.pull()
 
-  override def onUpstreamFinish(ctxt: Context[immutable.Seq[T]]): Directive =
+  override def onUpstreamFinish(ctxt: Context[immutable.Seq[T]]): TerminationDirective =
     if (buf.isEmpty) ctxt.finish()
     else ctxt.absorbTermination()
 }
@@ -130,7 +130,7 @@ private[akka] case class Buffer[T](size: Int, overflowStrategy: OverflowStrategy
     else ctxt.push(buffer.dequeue().asInstanceOf[T])
   }
 
-  override def onUpstreamFinish(ctxt: DetachedContext[T]): Directive =
+  override def onUpstreamFinish(ctxt: DetachedContext[T]): TerminationDirective =
     if (buffer.isEmpty) ctxt.finish()
     else ctxt.absorbTermination()
 
@@ -208,7 +208,7 @@ private[akka] case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In
     }
   }
 
-  override def onUpstreamFinish(ctxt: DetachedContext[Out]): Directive = ctxt.absorbTermination()
+  override def onUpstreamFinish(ctxt: DetachedContext[Out]): TerminationDirective = ctxt.absorbTermination()
 }
 
 /**
