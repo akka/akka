@@ -20,9 +20,9 @@ trait Op[In, Out, PushD <: Directive, PullD <: Directive, Ctxt <: Context[Out]] 
   def isFinishing: Boolean = terminationPending
   def onPush(elem: In, ctxt: Ctxt): PushD
   def onPull(ctxt: Ctxt): PullD
-  def onUpstreamFinish(ctxt: Ctxt): Directive = ctxt.finish()
-  def onDownstreamFinish(ctxt: Ctxt): Directive = ctxt.finish()
-  def onFailure(cause: Throwable, ctxt: Ctxt): Directive = ctxt.fail(cause)
+  def onUpstreamFinish(ctxt: Ctxt): TerminationDirective = ctxt.finish()
+  def onDownstreamFinish(ctxt: Ctxt): TerminationDirective = ctxt.finish()
+  def onFailure(cause: Throwable, ctxt: Ctxt): TerminationDirective = ctxt.fail(cause)
 }
 
 trait DeterministicOp[In, Out] extends Op[In, Out, Directive, Directive, Context[Out]]
@@ -73,9 +73,9 @@ object OneBoundedInterpreter {
   private[akka] object Finished extends BoundaryOp {
     override def onPush(elem: Any, ctxt: BoundaryContext): UpstreamDirective = ctxt.finish()
     override def onPull(ctxt: BoundaryContext): DownstreamDirective = ctxt.finish()
-    override def onUpstreamFinish(ctxt: BoundaryContext): Directive = ctxt.exit()
-    override def onDownstreamFinish(ctxt: BoundaryContext): Directive = ctxt.exit()
-    override def onFailure(cause: Throwable, ctxt: BoundaryContext): Directive = ctxt.exit()
+    override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
+    override def onDownstreamFinish(ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
+    override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
   }
 }
 
