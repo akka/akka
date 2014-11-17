@@ -131,3 +131,12 @@ In order to make cluster routers smarter about when they can start local routees
 ``nrOfInstances`` defined on ``Pool`` now takes ``ActorSystem`` as an argument.
 In case you have implemented a custom Pool you will have to update the method's signature,
 however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
+
+Logger names use full class name 
+================================
+Previously, few places in akka used "simple" logger names, such as ``Cluster`` or ``Remoting``.
+Now they use full class names, such as ``akka.cluster.Cluster`` or ``akka.remote.Remoting``,
+in order to allow package level log level definitions and ease source code lookup. 
+In case you used specific "simple" logger name based rules in your ``logback.xml`` configurations,
+please change them to reflect appropriate package name, such as
+``<logger name='akka.cluster' level='warn' />`` or ``<logger name='akka.remote' level='error' />``
