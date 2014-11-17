@@ -5,25 +5,15 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.stream.impl.fusing.{ ActorInterpreter, Op }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.{ ExecutionContext, Await, Future }
 
-import akka.actor.Actor
-import akka.actor.ActorCell
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.LocalActorRef
-import akka.actor.Props
-import akka.actor.RepointableActorRef
-import akka.actor.SupervisorStrategy
+import akka.actor._
 import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer, Transformer }
 import akka.stream.MaterializationException
 import akka.stream.actor.ActorSubscriber
@@ -176,6 +166,7 @@ final case class Optimizations(collapsing: Boolean, elision: Boolean, simplifica
  * INTERNAL API
  */
 case class ActorBasedFlowMaterializer(override val settings: MaterializerSettings,
+                                      dispatchers: Dispatchers, // FIXME is this the right choice for loading an EC?
                                       supervisor: ActorRef,
                                       flowNameCounter: AtomicLong,
                                       namePrefix: String,
@@ -262,11 +253,17 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           // Optimizations below
           case noMatch if !optimizations.fusion ⇒ prev
 
-          case Ast.Take(n)                      ⇒ fusing.Take(n) :: prev
-          case Ast.Drop(n)                      ⇒ fusing.Drop(n) :: prev
-          case Ast.Filter(p)                    ⇒ fusing.Filter(p) :: prev
           case Ast.Map(f)                       ⇒ fusing.Map(f) :: prev
+          case Ast.Filter(p)                    ⇒ fusing.Filter(p) :: prev
+          case Ast.Drop(n)                      ⇒ fusing.Drop(n) :: prev
+          case Ast.Take(n)                      ⇒ fusing.Take(n) :: prev
           case Ast.Collect(pf)                  ⇒ fusing.Collect(pf) :: prev
+          case Ast.Scan(z, f)                   ⇒ fusing.Scan(z, f) :: prev
+          case Ast.Expand(s, f)                 ⇒ fusing.Expand(s, f) :: prev
+          case Ast.Conflate(s, f)               ⇒ fusing.Conflate(s, f) :: prev
+          case Ast.Buffer(n, s)                 ⇒ fusing.Buffer(n, s) :: prev
+          case Ast.MapConcat(f)                 ⇒ fusing.MapConcat(f) :: prev
+          case Ast.Grouped(n)                   ⇒ fusing.Grouped(n) :: prev
           //FIXME Add more fusion goodies here
           case _                                ⇒ prev
         }
@@ -348,6 +345,11 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   }
   //FIXME Should this be a dedicated AstNode?
   private[this] val identityTransform = Ast.Transform("identity", () ⇒ FlowOps.identityTransformer[Any])
+
+  def executionContext: ExecutionContext = dispatchers.lookup(settings.dispatcher match {
+    case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
+    case other                    ⇒ other
+  })
 
   /**
    * INTERNAL API

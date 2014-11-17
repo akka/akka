@@ -6,11 +6,11 @@ package akka.stream.scaladsl
 import scala.language.higherKinds
 
 import akka.actor.Props
-import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousPublisherFromIterable }
+import akka.stream.impl.{ EmptyPublisher, ErrorPublisher, SynchronousIterablePublisher }
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import akka.stream.FlowMaterializer
 
 /**
@@ -107,7 +107,7 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable)
+  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable, ExecutionContext.global) // FIXME can't be global!
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -157,7 +157,7 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def singleton[T](element: T): Source[T] = apply(SynchronousPublisherFromIterable(List(element))) // FIXME optimize
+  def singleton[T](element: T): Source[T] = apply(SynchronousIterablePublisher(List(element), "singleton")) // FIXME optimize
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
@@ -168,7 +168,7 @@ object Source {
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause))
+  def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause, "failed"))
 
   /**
    * Concatenates two sources so that the first element
