@@ -17,7 +17,7 @@ import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.scaladsl._
 import akka.stream.FlowMaterializer
-import akka.stream.impl.SynchronousPublisherFromIterable
+import akka.stream.impl.SynchronousIterablePublisher
 import HttpEntity._
 import HttpMethods._
 

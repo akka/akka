@@ -23,7 +23,7 @@ object StreamTestKit {
   /**
    * Signals error to subscribers immediately, before handing out subscription.
    */
-  def errorPublisher[T](cause: Throwable): Publisher[T] = ErrorPublisher(cause: Throwable).asInstanceOf[Publisher[T]]
+  def errorPublisher[T](cause: Throwable): Publisher[T] = ErrorPublisher(cause, "error").asInstanceOf[Publisher[T]]
 
   def emptyPublisher[T](): Publisher[T] = EmptyPublisher[T]
 

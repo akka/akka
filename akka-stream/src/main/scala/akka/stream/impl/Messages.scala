@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import language.existentials
 import org.reactivestreams.Subscription
 
 /**

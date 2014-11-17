@@ -3,6 +3,7 @@
  */
 package akka.stream.impl
 
+import akka.dispatch.ExecutionContexts
 import akka.stream.ReactiveStreamsConstants
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
@@ -13,8 +14,9 @@ import scala.util.control.NonFatal
 /**
  * INTERNAL API
  */
-private[akka] object SynchronousPublisherFromIterable {
-  def apply[T](iterable: immutable.Iterable[T]): Publisher[T] = new SynchronousPublisherFromIterable(iterable)
+private[akka] object SynchronousIterablePublisher {
+  def apply[T](iterable: immutable.Iterable[T], name: String): Publisher[T] =
+    new SynchronousIterablePublisher(iterable, name)
 
   object IteratorSubscription {
     def apply[T](subscriber: Subscriber[T], iterator: Iterator[T]): Unit =
@@ -49,7 +51,7 @@ private[akka] object SynchronousPublisherFromIterable {
         if (!done)
           if (iterator.isEmpty) {
             cancel()
-            subscriber.onComplete()
+            subscriber.onComplete() // FIXME this is technically incorrect since if onComplete throws an Exception, we'll call onError (illegal)
           } else if (pendingDemand > 0) {
             pendingDemand -= 1
             subscriber.onNext(iterator.next())
@@ -88,11 +90,13 @@ private[akka] object SynchronousPublisherFromIterable {
  * For example, usage from an actor is fine. Concurrent calls to the subscription is not allowed.
  * Reentrant calls to `requestMore` directly from `onNext` are supported by this publisher.
  */
-private[akka] class SynchronousPublisherFromIterable[T](private val iterable: immutable.Iterable[T]) extends Publisher[T] {
+private[akka] final class SynchronousIterablePublisher[T](
+  private val iterable: immutable.Iterable[T],
+  private val name: String) extends Publisher[T] {
 
-  import SynchronousPublisherFromIterable.IteratorSubscription
+  import SynchronousIterablePublisher.IteratorSubscription
 
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = IteratorSubscription(subscriber, iterable.iterator) //FIXME what if .iterator throws?
 
-  override def toString: String = getClass.getSimpleName
+  override def toString: String = name
 }

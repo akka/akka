@@ -12,7 +12,7 @@ import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
@@ -43,7 +43,7 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
    * This method indicates whether this Source can create a Publisher instead of being
    * attached to a Subscriber. This is only used if the Flow does not contain any
    * operations.
-   */
+   */ //FIXME this smells like a hack
   def isActive: Boolean = false
 
   // these are unique keys, case class equality would break them
@@ -63,7 +63,7 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
 /**
  * A source that does not need to create a user-accessible object during materialization.
  */
-trait SimpleActorFlowSource[+Out] extends ActorFlowSource[Out] {
+trait SimpleActorFlowSource[+Out] extends ActorFlowSource[Out] { // FIXME Tightly couples XSources with ActorBasedFlowMaterializer (wrong!)
   override type MaterializedType = Unit
 }
 
@@ -78,7 +78,7 @@ trait KeyedActorFlowSource[+Out] extends ActorFlowSource[Out] with KeyedSource[O
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] {
+final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override type MaterializedType = Subscriber[Out]
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] =
@@ -92,7 +92,7 @@ final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] {
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlowSource[Out] {
+final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     p.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -100,17 +100,21 @@ final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlow
 }
 
 /**
- * Starts a new `Source` from the given `Iterable`. This is like starting from an
- * Iterator, but every Subscriber directly attached to the Publisher of this
- * stream will see an individual flow of elements (always starting from the
- * beginning) regardless of when they subscribed.
+ * Starts a new `Source` from the given `Iterable`.
  */
-final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends SimpleActorFlowSource[Out] {
+final case class IterableSource[Out](iterable: immutable.Iterable[Out], executor: ExecutionContext) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    (SynchronousPublisherFromIterable(iterable), ()) //FIXME This should probably be an AsynchronousPublisherFromIterable
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val publisher = try {
+      val it = iterable.iterator
+      ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(it, materializer.settings), name = s"$flowName-0-iterable"))
+    } catch {
+      case NonFatal(e) ⇒ ErrorPublisher(e, s"$flowName-0-error").asInstanceOf[Publisher[Out]]
+    }
+    (publisher, ())
+  }
 }
 
 //FIXME SerialVersionUID?
@@ -126,19 +130,19 @@ final class FuncIterable[Out](f: () ⇒ Iterator[Out]) extends immutable.Iterabl
  * may happen before or after materializing the `Flow`.
  * The stream terminates with an error if the `Future` is completed with a failure.
  */
-final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowSource[Out] {
+final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
     future.value match {
       case Some(Success(element)) ⇒
-        (SynchronousPublisherFromIterable(List(element)), ()) // Option is not Iterable. sigh
+        (SynchronousIterablePublisher(List(element), s"$flowName-0-synciterable"), ()) // Option is not Iterable. sigh
       case Some(Failure(t)) ⇒
-        (ErrorPublisher(t).asInstanceOf[Publisher[Out]], ())
+        (ErrorPublisher(t, s"$flowName-0-error").asInstanceOf[Publisher[Out]], ())
       case None ⇒
         (ActorPublisher[Out](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
-          name = s"$flowName-0-future")), ()) // FIXME optimize
+          name = s"$flowName-0-future")), ()) // FIXME this does not need to be an actor
     }
 }
 
@@ -149,7 +153,7 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends SimpleActorFlowSource[Out] {
+final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
@@ -163,7 +167,7 @@ final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteD
  * completely, then draining the elements arriving from the second Source. If the first Source is infinite then the
  * second Source will be never drained.
  */
-final case class ConcatSource[Out](source1: Source[Out], source2: Source[Out]) extends SimpleActorFlowSource[Out] {
+final case class ConcatSource[Out](source1: Source[Out], source2: Source[Out]) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val concatter = Concat[Out]

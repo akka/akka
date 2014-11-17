@@ -5,12 +5,13 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.dispatch.Dispatchers
 import akka.stream.impl.fusing.{ Op, ActorInterpreter }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
 
-import akka.actor.{ Props, ActorRefFactory, ActorRef }
+import akka.actor._
 import akka.stream.{ TransformerLike, MaterializerSettings }
 import akka.stream.FlowMaterializer
 import akka.stream.impl._
@@ -66,11 +67,12 @@ object FlowSpec {
 
   class BrokenFlowMaterializer(
     settings: MaterializerSettings,
+    dispatchers: Dispatchers,
     supervisor: ActorRef,
     flowNameCounter: AtomicLong,
     namePrefix: String,
     optimizations: Optimizations,
-    brokenMessage: Any) extends ActorBasedFlowMaterializer(settings, supervisor, flowNameCounter, namePrefix, optimizations) {
+    brokenMessage: Any) extends ActorBasedFlowMaterializer(settings, dispatchers, supervisor, flowNameCounter, namePrefix, optimizations) {
 
     override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): Processor[In, Out] = {
       val props = op match {
@@ -95,7 +97,17 @@ object FlowSpec {
   }
 
   def createBrokenFlowMaterializer(settings: MaterializerSettings, brokenMessage: Any)(implicit context: ActorRefFactory): BrokenFlowMaterializer = {
-    new BrokenFlowMaterializer(settings,
+    new BrokenFlowMaterializer(
+      settings,
+      {
+        context match {
+          case s: ActorSystem  ⇒ s.dispatchers
+          case c: ActorContext ⇒ c.system.dispatchers
+          case null            ⇒ throw new IllegalArgumentException("ActorRefFactory context must be defined")
+          case _ ⇒
+            throw new IllegalArgumentException(s"ActorRefFactory context must be a ActorSystem or ActorContext, got [${context.getClass.getName}]")
+        }
+      },
       context.actorOf(StreamSupervisor.props(settings).withDispatcher(settings.dispatcher)),
       flowNameCounter,
       "brokenflow",
