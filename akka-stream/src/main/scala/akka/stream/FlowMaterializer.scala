@@ -223,7 +223,7 @@ final case class MaterializerSettings(
   maxFanOutBufferSize: Int,
   dispatcher: String,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  fileIODispatcher: String) {
+  fileIODispatcher: String) { // FIXME Why does this exist?!
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -246,7 +246,7 @@ final case class MaterializerSettings(
   def withDispatcher(dispatcher: String): MaterializerSettings =
     copy(dispatcher = dispatcher)
 
-  private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0
+  private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0 // FIXME this considers 0 a power of 2
 }
 
 object StreamSubscriptionTimeoutSettings {
