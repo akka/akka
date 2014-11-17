@@ -51,6 +51,8 @@ private[akka] object MultiStreamOutputProcessor {
     override def subreceive: SubReceive =
       throw new UnsupportedOperationException("Substream outputs are managed in a dedicated receive block")
 
+    def isAttached() = state.get().isInstanceOf[Attached]
+
     def enqueueOutputDemand(demand: Long): Unit = {
       downstreamDemand += demand
       pump.pump()
@@ -115,6 +117,7 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
 
   protected def nextId(): Long
 
+  // stream keys will be removed from this map on cancellation/subscription-timeout, never assume a key is present
   private val substreamOutputs = mutable.Map.empty[SubstreamKey, SubstreamOutput]
 
   protected def createSubstreamOutput(): SubstreamOutput = {
@@ -131,8 +134,12 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
   }
 
   protected def completeSubstreamOutput(substream: SubstreamKey): Unit = {
-    substreamOutputs(substream).complete()
-    substreamOutputs -= substream
+    substreamOutputs.get(substream) match {
+      case Some(sub) ⇒
+        sub.complete()
+        substreamOutputs -= substream
+      case _ ⇒ // ignore, already completed...
+    }
   }
 
   protected def failOutputs(e: Throwable): Unit = {
@@ -145,12 +152,18 @@ private[akka] trait MultiStreamOutputProcessorLike extends Pump with StreamSubsc
 
   val outputSubstreamManagement: Receive = {
     case SubstreamRequestMore(key, demand) ⇒ substreamOutputs.get(key) match {
-      case Some(substream) ⇒ substream.enqueueOutputDemand(demand)
-      case _               ⇒ // ignore...
+      case Some(sub) ⇒ sub.enqueueOutputDemand(demand)
+      case _         ⇒ // ignore...
     }
-    case SubstreamCancel(key)                ⇒ invalidateSubstreamOutput(key)
-    case SubstreamSubscribe(key, subscriber) ⇒ substreamOutputs(key).attachSubscriber(subscriber)
-    case SubstreamSubscriptionTimeout(key)   ⇒ subscriptionTimedOut(substreamOutputs(key))
+    case SubstreamSubscribe(key, subscriber) ⇒ substreamOutputs.get(key) match {
+      case Some(sub) ⇒ sub.attachSubscriber(subscriber)
+      case _         ⇒ // ignore...
+    }
+    case SubstreamSubscriptionTimeout(key) ⇒ substreamOutputs.get(key) match {
+      case Some(sub) if !sub.isAttached() ⇒ subscriptionTimedOut(sub)
+      case _                              ⇒ // ignore...
+    }
+    case SubstreamCancel(key) ⇒ invalidateSubstreamOutput(key)
   }
 
   override protected def handleSubscriptionTimeout(target: Publisher[_], cause: Exception) = target match {
