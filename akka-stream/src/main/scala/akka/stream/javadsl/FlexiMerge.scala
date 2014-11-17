@@ -5,6 +5,7 @@ package akka.stream.javadsl
 
 import scala.annotation.varargs
 import akka.stream.scaladsl
+import akka.stream.scaladsl.FlexiMerge.ReadAllInputsBase
 import scala.collection.immutable
 import java.util.{ List ⇒ JList }
 import akka.japi.Util.immutableIndexedSeq
@@ -77,6 +78,30 @@ object FlexiMerge {
    * to specify them in the list of `inputs`.
    */
   class ReadPreferred(val preferred: InputHandle, val secondaries: JList[InputHandle]) extends ReadCondition
+
+  /**
+   * Read condition for the [[MergeLogic#State]] that will be
+   * fulfilled when there are elements for *all* of the given upstream
+   * inputs.
+   *
+   * The emited element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
+   *
+   * Cancelled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
+   * the resulting [[ReadAllInputs]] will then not contain values for this element, which can be
+   * handled via supplying a default value instead of the value from the (now cancelled) input.
+   */
+  class ReadAll(val inputs: JList[InputHandle]) extends ReadCondition
+
+  /**
+   * Provides typesafe accessors to values from inputs supplied to [[ReadAll]].
+   */
+  final class ReadAllInputs(map: immutable.Map[scaladsl.FlexiMerge.InputHandle, Any]) extends ReadAllInputsBase {
+    /** Returns the value for the given [[InputPort]], or `null` if this input was cancelled. */
+    def get[T](input: InputPort[T, _]): T = getOrDefault(input, null)
+
+    /** Returns the value for the given [[InputPort]], or `defaultValue`. */
+    def getOrDefault[T, B >: T](input: InputPort[T, _], defaultValue: B): T = map.getOrElse(input, defaultValue).asInstanceOf[T]
+  }
 
   /**
    * Context that is passed to the methods of [[State]] and [[CompletionHandling]].
@@ -164,6 +189,11 @@ object FlexiMerge {
     def sameState[A]: State[A, Out] = FlexiMerge.sameStateInstance.asInstanceOf[State[A, Out]]
 
     /**
+     * Convenience to create a [[Read]] condition.
+     */
+    def read(input: InputHandle): Read = new Read(input)
+
+    /**
      * Convenience to create a [[ReadAny]] condition.
      */
     @varargs def readAny(inputs: InputHandle*): ReadAny = {
@@ -180,9 +210,12 @@ object FlexiMerge {
     }
 
     /**
-     * Convenience to create a [[Read]] condition.
+     * Convenience to create a [[ReadAll]] condition.
      */
-    def read(input: InputHandle): Read = new Read(input)
+    @varargs def readAll(inputs: InputHandle*): ReadAll = {
+      import scala.collection.JavaConverters._
+      new ReadAll(inputs.asJava)
+    }
 
     /**
      * Will continue to operate until a read becomes unsatisfiable, then it completes.
@@ -279,6 +312,7 @@ object FlexiMerge {
         case r: ReadAny       ⇒ scaladsl.FlexiMerge.ReadAny(immutableIndexedSeq(r.inputs))
         case r: ReadPreferred ⇒ scaladsl.FlexiMerge.ReadPreferred(r.preferred, immutableIndexedSeq(r.secondaries))
         case r: Read          ⇒ scaladsl.FlexiMerge.Read(r.input)
+        case r: ReadAll       ⇒ scaladsl.FlexiMerge.ReadAll(new ReadAllInputs(_), immutableIndexedSeq(r.inputs): _*)
       }
     }
 

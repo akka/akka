@@ -3,10 +3,11 @@
  */
 package akka.stream.impl
 
-import scala.collection.breakOut
-import akka.stream.scaladsl.FlexiMerge
-import akka.stream.MaterializerSettings
 import akka.actor.Props
+import akka.stream.MaterializerSettings
+import akka.stream.scaladsl.FlexiMerge
+
+import scala.collection.breakOut
 
 /**
  * INTERNAL API
@@ -47,7 +48,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
     }
 
     override def onDepleted(input: Int): Unit =
-      changeBehavior(completion.onComplete(ctx, inputMapping(input)))
+      triggerCompletion(inputMapping(input))
   }
 
   private val ctx: mergeLogic.MergeLogicContext = new mergeLogic.MergeLogicContext {
@@ -87,6 +88,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
   private def precondition: TransferState = {
     behavior.condition match {
       case _: ReadAny | _: ReadPreferred | _: Read ⇒ inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand
+      case _: ReadAll                              ⇒ inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand
     }
   }
 
@@ -102,6 +104,8 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
         case ReadPreferred(preferred, secondaries) ⇒
           markInputs(secondaries.toArray)
           inputBunch.markInput(preferred.portIndex)
+        case read: ReadAll ⇒
+          markInputs(read.inputs.toArray)
         case Read(input) ⇒
           require(inputMapping.contains(input.portIndex), s"Unknown input handle $input")
           require(!inputBunch.isCancelled(input.portIndex), s"Read not allowed from cancelled $input")
@@ -122,7 +126,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
         val inputHandle = inputMapping(id)
         changeBehavior(behavior.onInput(ctx, inputHandle, elem))
         triggerCompletionAfterRead(inputHandle)
-      case ReadPreferred(preferred, secondaries) ⇒
+      case read: ReadPreferred ⇒
         val id = inputBunch.idToDequeue()
         val elem = inputBunch.dequeueAndPrefer(id)
         val inputHandle = inputMapping(id)
@@ -132,13 +136,37 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
         val elem = inputBunch.dequeue(inputHandle.portIndex)
         changeBehavior(behavior.onInput(ctx, inputHandle, elem))
         triggerCompletionAfterRead(inputHandle)
+      case read: ReadAll ⇒
+        val inputHandles = read.inputs
 
+        def include(input: InputHandle): Boolean =
+          !inputBunch.isCancelled(input.portIndex) && !inputBunch.isDepleted(input.portIndex)
+
+        val values = inputHandles.collect {
+          case input if include(input) ⇒ input → inputBunch.dequeue(input.portIndex)
+        }
+
+        changeBehavior(behavior.onInput(ctx, inputHandles.head, read.mkResult(Map(values: _*))))
+
+        // must be triggered after emiting the accumulated out value
+        triggerCompletionAfterRead(inputHandles)
     }
 
   })
 
+  private def triggerCompletionAfterRead(inputs: Seq[InputHandle]): Unit = {
+    var j = 0
+    while (j < inputs.length) {
+      triggerCompletionAfterRead(inputs(j))
+      j += 1
+    }
+  }
+
   private def triggerCompletionAfterRead(inputHandle: InputHandle): Unit =
     if (inputBunch.isDepleted(inputHandle.portIndex))
-      changeBehavior(completion.onComplete(ctx, inputHandle))
+      triggerCompletion(inputHandle)
 
+  private def triggerCompletion(inputHandle: InputHandle) {
+    changeBehavior(completion.onComplete(ctx, inputHandle))
+  }
 }
