@@ -16,7 +16,7 @@ import akka.actor.{ Status, ActorSystem }
 import akka.io.IO
 import akka.testkit.TestProbe
 import akka.stream.FlowMaterializer
-import akka.stream.impl.SynchronousPublisherFromIterable
+import akka.stream.impl.SynchronousIterablePublisher
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.scaladsl._

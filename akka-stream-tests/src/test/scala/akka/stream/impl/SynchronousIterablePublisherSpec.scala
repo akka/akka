@@ -10,11 +10,11 @@ import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestProbe
 import org.reactivestreams.{ Subscriber, Subscription }
 
-class SynchronousPublisherFromIterableSpec extends AkkaSpec {
+class SynchronousIterablePublisherSpec extends AkkaSpec {
 
   "A SynchronousPublisherFromIterable" must {
     "produce elements" in {
-      val p = SynchronousPublisherFromIterable(List(1, 2, 3))
+      val p = SynchronousIterablePublisher(1 to 3, "range")
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -28,7 +28,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "complete empty" in {
-      val p = SynchronousPublisherFromIterable(List.empty[Int])
+      val p = SynchronousIterablePublisher(List.empty[Int], "empty")
       def verifyNewSubscriber(i: Int): Unit = {
         val c = StreamTestKit.SubscriberProbe[Int]()
         p.subscribe(c)
@@ -41,7 +41,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "produce elements with multiple subscribers" in {
-      val p = SynchronousPublisherFromIterable(List(1, 2, 3))
+      val p = SynchronousIterablePublisher(1 to 3, "range")
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -65,7 +65,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = SynchronousPublisherFromIterable(List(1, 2, 3))
+      val p = SynchronousIterablePublisher(1 to 3, "range")
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -91,7 +91,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "not produce after cancel" in {
-      val p = SynchronousPublisherFromIterable(List(1, 2, 3))
+      val p = SynchronousIterablePublisher(1 to 3, "range")
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -103,7 +103,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "not produce after cancel from onNext" in {
-      val p = SynchronousPublisherFromIterable(List(1, 2, 3, 4, 5))
+      val p = SynchronousIterablePublisher(1 to 5, "range")
       val probe = TestProbe()
       p.subscribe(new Subscriber[Int] {
         var sub: Subscription = _
@@ -127,17 +127,10 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
 
     "produce onError when iterator throws" in {
       val iterable = new immutable.Iterable[Int] {
-        override def iterator: Iterator[Int] = new Iterator[Int] {
-          private var n = 0
-          override def hasNext: Boolean = n < 3
-          override def next(): Int = {
-            n += 1
-            if (n == 2) throw new IllegalStateException("not two")
-            n
-          }
-        }
+        override def iterator: Iterator[Int] =
+          (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
       }
-      val p = SynchronousPublisherFromIterable(iterable)
+      val p = SynchronousIterablePublisher(iterable, "iterable")
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -152,7 +145,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
 
     "handle reentrant requests" in {
       val N = 50000
-      val p = SynchronousPublisherFromIterable(1 to N)
+      val p = SynchronousIterablePublisher(1 to N, "range")
       val probe = TestProbe()
       p.subscribe(new Subscriber[Int] {
         var sub: Subscription = _
@@ -173,7 +166,7 @@ class SynchronousPublisherFromIterableSpec extends AkkaSpec {
     }
 
     "have a toString that doesn't OOME" in {
-      SynchronousPublisherFromIterable(List(1, 2, 3)).toString should be(classOf[SynchronousPublisherFromIterable[_]].getSimpleName)
+      SynchronousIterablePublisher(1 to 3, "range").toString should be("range")
     }
   }
 }
