@@ -97,7 +97,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
   private val _isTerminated = new AtomicBoolean(false)
-  private val log = Logging(system, "Cluster")
+  private val log = Logging(system, getClass.getName)
   // ClusterJmx is initialized as the last thing in the constructor
   private var clusterJmx: Option[ClusterJmx] = None
 

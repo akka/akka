@@ -389,7 +389,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
 
   val settings = TestConductor().Settings
   val connection = RemoteConnection(Server, controllerPort, settings.ServerSocketWorkerPoolSize,
-    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, "ConductorHandler")))
+    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, classOf[ConductorHandler].getName)))
 
   /*
    * Supervision of the BarrierCoordinator means to catch all his bad emotions

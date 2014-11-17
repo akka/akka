@@ -1386,11 +1386,11 @@ object ShardCoordinator {
      */
     sealed trait CoordinatorMessage
     /**
-     * `ShardRegion` registers to `ShardCoordinator`, until it receives [[RegisterAck]]. 
+     * `ShardRegion` registers to `ShardCoordinator`, until it receives [[RegisterAck]].
      */
     @SerialVersionUID(1L) final case class Register(shardRegion: ActorRef) extends CoordinatorCommand
     /**
-     * `ShardRegion` in proxy only mode registers to `ShardCoordinator`, until it receives [[RegisterAck]]. 
+     * `ShardRegion` in proxy only mode registers to `ShardCoordinator`, until it receives [[RegisterAck]].
      */
     @SerialVersionUID(1L) final case class RegisterProxy(shardRegionProxy: ActorRef) extends CoordinatorCommand
     /**

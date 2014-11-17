@@ -129,7 +129,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
-  val log: LoggingAdapter = Logging(system.eventStream, "Remoting")
+  val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
