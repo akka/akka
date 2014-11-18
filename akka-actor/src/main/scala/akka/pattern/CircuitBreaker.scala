@@ -11,6 +11,7 @@ import scala.util.control.NoStackTrace
 import java.util.concurrent.{ Callable, CopyOnWriteArrayList }
 import scala.concurrent.{ ExecutionContext, Future, Promise, Await }
 import scala.concurrent.duration._
+import scala.concurrent.TimeoutException
 import scala.util.control.NonFatal
 import scala.util.Success
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
@@ -108,7 +109,9 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    *
    * @param body Call needing protected
    * @tparam T return type from call
-   * @return [[scala.concurrent.Future]] containing the call result
+   * @return [[scala.concurrent.Future]] containing the call result or a
+   * [[scala.concurrent.TimeoutException]] if the call timed out
+   *
    */
   def withCircuitBreaker[T](body: ⇒ Future[T]): Future[T] = currentState.invoke(body)
 
@@ -117,17 +120,21 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    *
    * @param body Call needing protected
    * @tparam T return type from call
-   * @return [[scala.concurrent.Future]] containing the call result
+   * @return [[scala.concurrent.Future]] containing the call result or a
+   * [[scala.concurrent.TimeoutException]] if the call timed out
    */
   def callWithCircuitBreaker[T](body: Callable[Future[T]]): Future[T] = withCircuitBreaker(body.call)
 
   /**
    * Wraps invocations of synchronous calls that need to be protected
    *
-   * Calls are run in caller's thread
+   * Calls are run in caller's thread. Because of the synchronous nature of
+   * this call the  [[scala.concurrent.TimeoutException]] will only be thrown
+   * after the body has completed.
    *
    * @param body Call needing protected
    * @tparam T return type from call
+   * @throws scala.concurrent.TimeoutException if the call timed out
    * @return The result of the call
    */
   def withSyncCircuitBreaker[T](body: ⇒ T): T =
@@ -140,9 +147,9 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
    *
    * @param body Call needing protected
    * @tparam T return type from call
+   * @throws scala.concurrent.TimeoutException if the call timed out
    * @return The result of the call
    */
-
   def callWithSyncCircuitBreaker[T](body: Callable[T]): T = withSyncCircuitBreaker(body.call)
 
   /**
@@ -292,13 +299,31 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      * @return Future containing the result of the call
      */
     def callThrough[T](body: ⇒ Future[T]): Future[T] = {
-      val deadline = callTimeout.fromNow
-      val bodyFuture = try body catch { case NonFatal(t) ⇒ Future.failed(t) }
-      bodyFuture.onComplete({
-        case s: Success[_] if !deadline.isOverdue() ⇒ callSucceeds()
-        case _                                      ⇒ callFails()
-      })(sameThreadExecutionContext)
-      bodyFuture
+
+      def materialize[T](value: ⇒ Future[T]): Future[T] = try value catch { case NonFatal(t) ⇒ Future.failed(t) }
+
+      if (callTimeout == Duration.Zero) {
+        materialize(body)
+      } else {
+        val p = Promise[T]()
+
+        implicit val ec = sameThreadExecutionContext
+        p.future.onComplete({
+          case s: Success[_] ⇒ callSucceeds()
+          case _             ⇒ callFails()
+        })
+
+        val timeout = scheduler.scheduleOnce(callTimeout) {
+          p.tryCompleteWith(
+            Future.failed(new TimeoutException("Circuit Breaker Timed out.")))
+        }
+
+        materialize(body).onComplete { result ⇒
+          p tryComplete result
+          timeout.cancel
+        }
+        p.future
+      }
     }
 
     /**

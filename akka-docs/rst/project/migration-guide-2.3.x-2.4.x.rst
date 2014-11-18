@@ -78,6 +78,14 @@ included ``self.path.parent.name`` to include the cluster type name.
 In ``2.4.x`` entries are now children of a ``Shard``, which in turn is a child of the local ``ShardRegion``. To include the shard
 type in the ``persistenceId`` it is now accessed by ``self.path.parent.parent.name`` from each entry.
 
+
+Circuit Breaker Timeout Change
+==============================
+In ``2.3.x`` calls protected by the ``CircuitBreaker`` were allowed to run indefinitely and the check to see if the timeout had been exceeded was done after the call had returned.
+
+In ``2.4.x`` the failureCount of the Breaker will be increased as soon as the timeout is reached and a ``Failure[TimeoutException]`` will be returned immediately for asynchronous calls. Synchronous calls will now throw a ``TimeoutException`` after the call is finished.
+
+
 Removed Deprecated Features
 ===========================
 
@@ -123,4 +131,3 @@ In order to make cluster routers smarter about when they can start local routees
 ``nrOfInstances`` defined on ``Pool`` now takes ``ActorSystem`` as an argument.
 In case you have implemented a custom Pool you will have to update the method's signature,
 however the implementation can remain the same if you don't need to rely on an ActorSystem in your logic.
-
