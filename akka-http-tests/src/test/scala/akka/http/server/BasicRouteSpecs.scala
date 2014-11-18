@@ -134,4 +134,36 @@ class BasicRouteSpecs extends RoutingSpec {
       expect(dynamicRoute, "xxxx")
     }
   }
+
+  case object MyException extends RuntimeException
+  "Route sealing" should {
+    "catch route execution exceptions" in {
+      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+        get { ctx ⇒
+          throw MyException
+        }
+      } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
+    "catch route building exceptions" in {
+      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+        get {
+          throw MyException
+        }
+      } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
+    "convert all rejections to responses" in {
+      object MyRejection extends Rejection
+      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+        get {
+          reject(MyRejection)
+        }
+      } ~> check {
+        status shouldEqual StatusCodes.InternalServerError
+      }
+    }
+  }
 }
