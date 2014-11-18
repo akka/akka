@@ -4,21 +4,13 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.{ NoStackTrace, NonFatal }
-
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
 import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
 import org.reactivestreams.{ Publisher, Subscriber }
-
-/**
- * INTERNAL API
- */
-private[akka] object SimpleCallbackPublisher {
-  def props[T](f: () ⇒ T, settings: MaterializerSettings): Props = IteratorPublisher.props(Iterator.continually(f()), settings)
-}
+import org.reactivestreams.Subscription
 
 /**
  * INTERNAL API
@@ -96,12 +88,18 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
 /**
  * INTERNAL API
  */
-private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends SubscriptionWithCursor[T] {
+private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends Subscription {
   override def request(elements: Long): Unit =
-    if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+    if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
     else impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
+
+/**
+ * INTERNAL API
+ */
+private[akka] class ActorSubscriptionWithCursor[T](_impl: ActorRef, _subscriber: Subscriber[_ >: T])
+  extends ActorSubscription[T](_impl, _subscriber) with SubscriptionWithCursor[T]
 
 /**
  * INTERNAL API
@@ -121,95 +119,3 @@ private[akka] trait SoftShutdown { this: Actor ⇒
   }
 }
 
-/**
- * INTERNAL API
- */
-private[akka] object IteratorPublisherImpl {
-  case object Flush
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class IteratorPublisherImpl[T](iterator: Iterator[T], settings: MaterializerSettings)
-  extends Actor
-  with ActorLogging
-  with SubscriberManagement[T]
-  with SoftShutdown {
-
-  import IteratorPublisherImpl.Flush
-
-  type S = ActorSubscription[T]
-  private var demand = 0L
-  var pub: ActorPublisher[T] = _
-  var shutdownReason: Option[Throwable] = ActorPublisher.NormalShutdownReason
-
-  final def receive = {
-    case ExposedPublisher(pub) ⇒
-      this.pub = pub.asInstanceOf[ActorPublisher[T]]
-      context.become(waitingForSubscribers)
-  }
-
-  final def waitingForSubscribers: Receive = {
-    case SubscribePending ⇒
-      pub.takePendingSubscribers() foreach registerSubscriber
-      context.become(active)
-      flush()
-  }
-
-  final def active: Receive = {
-    case SubscribePending ⇒
-      pub.takePendingSubscribers() foreach registerSubscriber
-      flush()
-    case RequestMore(sub, elements) ⇒
-      moreRequested(sub.asInstanceOf[S], elements)
-      flush()
-    case Cancel(sub) ⇒
-      unregisterSubscription(sub.asInstanceOf[S])
-      flush()
-    case Flush ⇒
-      flush()
-  }
-
-  override def postStop(): Unit =
-    if (pub ne null) pub.shutdown(shutdownReason)
-
-  private[this] def flush(): Unit = try {
-    val endOfStream =
-      if (iterator.hasNext) {
-        if (demand > 0) {
-          pushToDownstream(iterator.next())
-          demand -= 1
-          iterator.hasNext == false
-        } else false
-      } else true
-
-    if (endOfStream) {
-      completeDownstream()
-      shutdownReason = None
-    } else if (demand > 0) {
-      self ! Flush
-    }
-  } catch {
-    case NonFatal(e) ⇒
-      abortDownstream(e)
-      shutdownReason = Some(e)
-  }
-
-  override def initialBufferSize = settings.initialFanOutBufferSize
-  override def maxBufferSize = settings.maxFanOutBufferSize
-
-  override def createSubscription(subscriber: Subscriber[_ >: T]): ActorSubscription[T] =
-    new ActorSubscription(self, subscriber)
-
-  override def requestFromUpstream(elements: Long): Unit = demand += elements
-
-  override def cancelUpstream(): Unit = {
-    pub.shutdown(shutdownReason)
-    softShutdown()
-  }
-  override def shutdown(completed: Boolean): Unit = {
-    pub.shutdown(shutdownReason)
-    softShutdown()
-  }
-}

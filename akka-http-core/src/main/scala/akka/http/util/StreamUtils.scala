@@ -54,7 +54,7 @@ private[http] object StreamUtils {
     }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
-    impl.ErrorPublisher(ex).asInstanceOf[Publisher[T]]
+    impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
   def mapErrorTransformer[T](f: Throwable ⇒ Throwable): Transformer[T, T] =
     new Transformer[T, T] {
@@ -152,7 +152,7 @@ private[http] object StreamUtils {
           } else ByteString.empty
       }
 
-      Props(new IteratorPublisherImpl(iterator, materializer.settings)).withDispatcher(materializer.settings.fileIODispatcher)
+      IteratorPublisher.props(iterator, materializer.settings).withDispatcher(materializer.settings.fileIODispatcher)
     }
 
     new AtomicBoolean(false) with SimpleActorFlowSource[ByteString] {
@@ -167,7 +167,7 @@ private[http] object StreamUtils {
           ref ! ExposedPublisher(publisher.asInstanceOf[impl.ActorPublisher[Any]])
 
           (publisher, ())
-        } else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once")).asInstanceOf[Publisher[ByteString]], ())
+        } else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once"), "failed").asInstanceOf[Publisher[ByteString]], ())
     }
   }
 
@@ -183,7 +183,7 @@ private[http] object StreamUtils {
       override def isActive: Boolean = true
       override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[T], Unit) =
         if (!getAndSet(true)) (original.create(materializer, flowName)._1, ())
-        else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once")).asInstanceOf[Publisher[T]], ())
+        else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once"), "failed").asInstanceOf[Publisher[T]], ())
     }
   }
 }

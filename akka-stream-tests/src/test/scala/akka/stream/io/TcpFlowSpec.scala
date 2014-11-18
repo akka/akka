@@ -6,6 +6,7 @@ package akka.stream.io
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.stream.scaladsl.Source
@@ -44,7 +45,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val server = new Server()
       val (tcpProcessor, serverConnection) = connect(server)
 
-      val testInput = Iterator.range(0, 256).map(ByteString(_))
+      val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       serverConnection.read(256)
@@ -59,7 +60,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val server = new Server()
       val (tcpProcessor, serverConnection) = connect(server)
 
-      val testInput = Iterator.range(0, 256).map(ByteString(_))
+      val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       for (in ← testInput) serverConnection.write(in)
@@ -155,7 +156,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val server = echoServer(serverAddress)
       val conn = connect(serverAddress)
 
-      val testInput = Iterator.range(0, 256).map(ByteString(_))
+      val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       Source(testInput).runWith(Sink(conn.outputStream))
@@ -175,7 +176,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
       val conn2 = connect(serverAddress)
       val conn3 = connect(serverAddress)
 
-      val testInput = Iterator.range(0, 256).map(ByteString(_))
+      val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
 
       Source(testInput).runWith(Sink(conn1.outputStream))

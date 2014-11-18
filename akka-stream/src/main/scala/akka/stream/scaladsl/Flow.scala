@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.Ast._
-import akka.stream.impl.fusing
 import akka.stream.{ TimerTransformer, Transformer, OverflowStrategy }
 import akka.util.Collections.EmptyImmutableSeq
 import scala.collection.immutable
@@ -102,19 +101,18 @@ trait RunnableFlow {
 trait FlowOps[+Out] {
   import FlowOps._
   type Repr[+O]
-  import akka.stream.impl.fusing
 
   /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: Out ⇒ T): Repr[T] = andThen(OpFactory(() ⇒ fusing.Map(f), "map"))
+  def map[T](f: Out ⇒ T): Repr[T] = andThen(Map(f.asInstanceOf[Any ⇒ Any]))
 
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    */
-  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] = andThen(OpFactory(() ⇒ fusing.MapConcat(f), "mapConcat"))
+  def mapConcat[T](f: Out ⇒ immutable.Seq[T]): Repr[T] = andThen(MapConcat(f.asInstanceOf[Any ⇒ immutable.Seq[Any]]))
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -144,16 +142,14 @@ trait FlowOps[+Out] {
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(OpFactory(() ⇒ fusing.Filter(p), "filter"))
+  def filter(p: Out ⇒ Boolean): Repr[Out] = andThen(Filter(p.asInstanceOf[Any ⇒ Boolean]))
 
   /**
    * Transform this stream by applying the given partial function to each of the elements
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
    */
-  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(OpFactory(List(
-    () ⇒ fusing.Filter(pf.isDefinedAt),
-    () ⇒ fusing.Map(pf.apply)), "filter"))
+  def collect[T](pf: PartialFunction[Out, T]): Repr[T] = andThen(Collect(pf.asInstanceOf[PartialFunction[Any, Any]]))
 
   /**
    * Chunk up this stream into groups of the given size, with the last group
@@ -161,10 +157,15 @@ trait FlowOps[+Out] {
    *
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
-  def grouped(n: Int): Repr[immutable.Seq[Out]] = {
-    require(n > 0, "n must be greater than 0")
-    andThen(OpFactory(() ⇒ fusing.Grouped(n), "grouped"))
-  }
+  def grouped(n: Int): Repr[immutable.Seq[Out]] = andThen(Grouped(n))
+
+  /**
+   * Similar to `fold` but is not a terminal operation,
+   * emits its current value which starts at `zero` and then
+   * applies the current and next value to the given function `f`,
+   * emitting the next current value.
+   */
+  def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Scan(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
 
   /**
    * Chunk up this stream into groups of elements received within a time window,
@@ -207,9 +208,7 @@ trait FlowOps[+Out] {
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): Repr[Out] =
-    if (n <= 0) andThen(OpFactory(Nil, "drop"))
-    else andThen(OpFactory(() ⇒ fusing.Drop(n), "drop"))
+  def drop(n: Int): Repr[Out] = andThen(Drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -225,7 +224,7 @@ trait FlowOps[+Out] {
 
       def onNext(in: Out) = delegate.onNext(in)
       def onTimer(timerKey: Any) = {
-        delegate = identityTransformer.asInstanceOf[Transformer[Out, Out]]
+        delegate = FlowOps.identityTransformer[Out]
         Nil
       }
     })
@@ -239,9 +238,7 @@ trait FlowOps[+Out] {
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    */
-  def take(n: Int): Repr[Out] =
-    if (n <= 0) andThen(OpFactory(() ⇒ fusing.Completed(), "take"))
-    else andThen(OpFactory(() ⇒ fusing.Take(n), "take"))
+  def take(n: Int): Repr[Out] = andThen(Take(n))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given
@@ -256,12 +253,12 @@ trait FlowOps[+Out] {
     timerTransform("takeWithin", () ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(TakeWithinTimerKey, d)
 
-      var delegate: Transformer[Out, Out] = identityTransformer.asInstanceOf[Transformer[Out, Out]]
+      var delegate: Transformer[Out, Out] = FlowOps.identityTransformer[Out]
 
-      def onNext(in: Out) = delegate.onNext(in)
+      override def onNext(in: Out) = delegate.onNext(in)
       override def isComplete = delegate.isComplete
-      def onTimer(timerKey: Any) = {
-        delegate = takeCompletedTransformer.asInstanceOf[Transformer[Out, Out]]
+      override def onTimer(timerKey: Any) = {
+        delegate = FlowOps.completedTransformer[Out]
         Nil
       }
     })
@@ -278,7 +275,7 @@ trait FlowOps[+Out] {
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
   def conflate[S](seed: Out ⇒ S)(aggregate: (S, Out) ⇒ S): Repr[S] =
-    andThen(OpFactory(() ⇒ fusing.Conflate(seed, aggregate), "conflate"))
+    andThen(Conflate(seed.asInstanceOf[Any ⇒ Any], aggregate.asInstanceOf[(Any, Any) ⇒ Any]))
 
   /**
    * Allows a faster downstream to progress independently of a slower publisher by extrapolating elements from an older
@@ -294,7 +291,7 @@ trait FlowOps[+Out] {
    *                    state.
    */
   def expand[S, U](seed: Out ⇒ S)(extrapolate: S ⇒ (U, S)): Repr[U] =
-    andThen(OpFactory(() ⇒ fusing.Expand(seed, extrapolate), "expand"))
+    andThen(Expand(seed.asInstanceOf[Any ⇒ Any], extrapolate.asInstanceOf[Any ⇒ (Any, Any)]))
 
   /**
    * Adds a fixed size buffer in the flow that allows to store elements from a faster upstream until it becomes full.
@@ -304,10 +301,8 @@ trait FlowOps[+Out] {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] = {
-    require(size > 0, s"Buffer size must be larger than zero but was [$size]")
-    andThen(OpFactory(() ⇒ fusing.Buffer(size, overflowStrategy), "buffer"))
-  }
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): Repr[Out] =
+    andThen(Buffer(size, overflowStrategy))
 
   /**
    * Generic transformation of a stream: for each element the [[akka.stream.Transformer#onNext]]
@@ -418,18 +413,21 @@ trait FlowOps[+Out] {
 /**
  * INTERNAL API
  */
-private[scaladsl] object FlowOps {
+private[stream] object FlowOps {
   private case object TakeWithinTimerKey
   private case object DropWithinTimerKey
   private case object GroupedWithinTimerKey
 
-  private val takeCompletedTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+  private[this] final case object CompletedTransformer extends Transformer[Any, Any] {
     override def onNext(elem: Any) = Nil
     override def isComplete = true
   }
 
-  private val identityTransformer: Transformer[Any, Any] = new Transformer[Any, Any] {
+  private[this] final case object IdentityTransformer extends Transformer[Any, Any] {
     override def onNext(elem: Any) = List(elem)
   }
+
+  def completedTransformer[T]: Transformer[T, T] = CompletedTransformer.asInstanceOf[Transformer[T, T]]
+  def identityTransformer[T]: Transformer[T, T] = IdentityTransformer.asInstanceOf[Transformer[T, T]]
 }
 
