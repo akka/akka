@@ -127,15 +127,8 @@ class SynchronousIterablePublisherSpec extends AkkaSpec {
 
     "produce onError when iterator throws" in {
       val iterable = new immutable.Iterable[Int] {
-        override def iterator: Iterator[Int] = new Iterator[Int] {
-          private var n = 0
-          override def hasNext: Boolean = n < 3
-          override def next(): Int = {
-            n += 1
-            if (n == 2) throw new IllegalStateException("not two")
-            n
-          }
-        }
+        override def iterator: Iterator[Int] =
+          (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
       }
       val p = SynchronousIterablePublisher(iterable, "iterable")
       val c = StreamTestKit.SubscriberProbe[Int]()

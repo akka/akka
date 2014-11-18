@@ -100,17 +100,22 @@ final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlow
 }
 
 /**
- * Starts a new `Source` from the given `Iterable`. This is like starting from an
- * Iterator, but every Subscriber directly attached to the Publisher of this
- * stream will see an individual flow of elements (always starting from the
- * beginning) regardless of when they subscribed.
+ * Starts a new `Source` from the given `Iterable`.
  */
-final case class IterableSource[Out](iterable: immutable.Iterable[Out], executor: ExecutionContext) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
+final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends SimpleActorFlowSource[Out] {
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
-    (AsynchronousIterablePublisher(iterable, s"$flowName-0-asynciterable", executor), ())
+  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val publisher = try {
+      val iterator = iterable.iterator
+      ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(iterator, materializer.settings),
+        name = s"$flowName-0-iterable"))
+    } catch {
+      case NonFatal(e) ⇒ ErrorPublisher(e, s"$flowName-0-error").asInstanceOf[Publisher[Out]]
+    }
+    (publisher, ())
+  }
 }
 
 //FIXME SerialVersionUID?

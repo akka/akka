@@ -107,7 +107,7 @@ object Source {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable, ExecutionContext.global) // FIXME can't be global!
+  def apply[T](iterable: immutable.Iterable[T]): Source[T] = IterableSource(iterable)
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of

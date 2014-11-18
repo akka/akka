@@ -11,9 +11,9 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   extends DefaultOutputTransferStates
   with SubscriberManagement[Any] {
 
-  override type S = ActorSubscription[_ >: Any]
+  override type S = ActorSubscriptionWithCursor[_ >: Any]
   override def createSubscription(subscriber: Subscriber[_ >: Any]): S =
-    new ActorSubscription(self, subscriber)
+    new ActorSubscriptionWithCursor(self, subscriber)
 
   protected var exposedPublisher: ActorPublisher[Any] = _
 
@@ -76,10 +76,12 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
     case SubscribePending ⇒
       subscribePending()
     case RequestMore(subscription, elements) ⇒
-      moreRequested(subscription.asInstanceOf[ActorSubscription[Any]], elements)
+      // FIXME can we avoid this cast?
+      moreRequested(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]], elements)
       pump.pump()
     case Cancel(subscription) ⇒
-      unregisterSubscription(subscription.asInstanceOf[ActorSubscription[Any]])
+      // FIXME can we avoid this cast?
+      unregisterSubscription(subscription.asInstanceOf[ActorSubscriptionWithCursor[Any]])
       pump.pump()
   }
 
