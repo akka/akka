@@ -342,9 +342,10 @@ private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscri
   import ActorPublisher._
   import ActorPublisherMessage._
 
-  override def request(n: Long): Unit =
-    if (n <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
-    else ref ! Request(n)
+  override def request(n: Long): Unit = {
+    ReactiveStreamsConstants.validateRequest(n)
+    ref ! Request(n)
+  }
   override def cancel(): Unit = ref ! Cancel
 }
 
