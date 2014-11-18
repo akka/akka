@@ -3,6 +3,8 @@
  */
 package akka.stream.tck
 
+import akka.event.Logging
+
 import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
@@ -27,7 +29,7 @@ abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEn
   }
 
   def this(printlnDebug: Boolean) {
-    this(ActorSystem(classOf[IterablePublisherTest].getSimpleName, AkkaSpec.testConf), printlnDebug)
+    this(ActorSystem(Logging.simpleName(classOf[IterablePublisherTest]), AkkaSpec.testConf), printlnDebug)
   }
 
   def this() {

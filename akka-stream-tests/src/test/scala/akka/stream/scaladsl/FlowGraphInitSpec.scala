@@ -45,7 +45,7 @@ class FlowGraphInitSpec extends AkkaSpec {
       val s = Source(1 to 5)
       val b = Broadcast[Int]
 
-      val sink: KeyedSink[Int] = Sink.foreach[Int](i ⇒ i)
+      val sink: KeyedSink[Int] = Sink.foreach[Int](_ ⇒ ())
       val otherSink: KeyedSink[Int] = Sink.foreach[Int](i ⇒ 2 * i)
 
       FlowGraph { implicit builder ⇒

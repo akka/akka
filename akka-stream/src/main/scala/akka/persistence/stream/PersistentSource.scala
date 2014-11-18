@@ -7,7 +7,7 @@ import akka.actor._
 import akka.persistence._
 import akka.stream.MaterializerSettings
 import akka.stream.impl.ActorPublisher
-import akka.stream.impl.ActorSubscription
+import akka.stream.impl.ActorSubscriptionWithCursor
 import akka.stream.impl.Cancel
 import akka.stream.impl.ExposedPublisher
 import akka.stream.impl.RequestMore
@@ -83,7 +83,7 @@ private class PersistentSourceImpl(persistenceId: String, sourceSettings: Persis
 
   import PersistentSourceBuffer._
 
-  type S = ActorSubscription[Any]
+  type S = ActorSubscriptionWithCursor[Any]
 
   private val buffer = context.actorOf(Props(classOf[PersistentSourceBuffer], persistenceId, sourceSettings, self).
     withDispatcher(context.props.dispatcher), "persistent-source-buffer")
@@ -125,8 +125,8 @@ private class PersistentSourceImpl(persistenceId: String, sourceSettings: Persis
   override def maxBufferSize =
     materializerSettings.maxFanOutBufferSize
 
-  override def createSubscription(subscriber: Subscriber[_ >: Any]): ActorSubscription[Any] =
-    new ActorSubscription(self, subscriber)
+  override def createSubscription(subscriber: Subscriber[_ >: Any]): ActorSubscriptionWithCursor[Any] =
+    new ActorSubscriptionWithCursor(self, subscriber)
 
   override def cancelUpstream(): Unit = {
     if (pub ne null) pub.shutdown(shutdownReason)
