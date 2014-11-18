@@ -3,7 +3,7 @@
  */
 package akka.stream
 
-import org.reactivestreams.{ Subscription, Subscriber }
+import org.reactivestreams.{ Subscription, Subscriber, Publisher }
 
 import scala.util.control.NonFatal
 
@@ -24,6 +24,9 @@ object ReactiveStreamsConstants {
   final def validateRequest(n: Long): Unit =
     if (n < 1) throw new IllegalArgumentException(NumberOfElementsInRequestMustBePositiveMsg) with SpecViolation
 
+  final def rejectAdditionalSubscriber[T](subsriber: Subscriber[T], rejector: Publisher[T]): Unit =
+    tryOnError(subsriber, new IllegalStateException(s"$rejector $SupportsOnlyASingleSubscriber"))
+
   sealed trait SpecViolation {
     self: Throwable ⇒
     def violation: Throwable = self // this method is needed because Scalac is not smart enough to handle it otherwise
@@ -32,8 +35,12 @@ object ReactiveStreamsConstants {
   final class SignalThrewException(message: String, cause: Throwable) extends IllegalStateException(message, cause) with SpecViolation
 
   final def tryOnError[T](subscriber: Subscriber[T], error: Throwable): Unit =
-    try subscriber.onError(error) catch {
-      case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onError", t)
+    error match {
+      case sv: SpecViolation ⇒ throw new IllegalStateException("It is not legal to try to signal onError with a SpecViolation", sv.violation)
+      case other ⇒
+        try subscriber.onError(other) catch {
+          case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onError", t)
+        }
     }
 
   final def tryOnNext[T](subscriber: Subscriber[T], element: T): Unit =

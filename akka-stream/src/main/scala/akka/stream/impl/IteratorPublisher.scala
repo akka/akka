@@ -22,11 +22,12 @@ private[akka] object IteratorPublisher {
   private case object PushMore
 
   private sealed trait State
+  private sealed trait StopState extends State
   private case object Unitialized extends State
   private case object Initialized extends State
-  private case object Cancelled extends State
-  private case object Completed extends State
-  private case class Errored(cause: Throwable) extends State
+  private case object Cancelled extends StopState
+  private case object Completed extends StopState
+  private case class Errored(cause: Throwable) extends StopState
 }
 
 /**
@@ -35,18 +36,20 @@ private[akka] object IteratorPublisher {
  */
 private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: MaterializerSettings) extends Actor {
   import IteratorPublisher._
+  import ReactiveStreamsConstants._
 
   private var exposedPublisher: ActorPublisher[Any] = _
   private var subscriber: Subscriber[Any] = _
   private var downstreamDemand: Long = 0L
   private var state: State = Unitialized
-  private val maxPush = settings.maxInputBufferSize
+  private val maxPush = settings.maxInputBufferSize // FIXME why is this a good number?
 
   def receive = {
     case ExposedPublisher(publisher) ⇒
       exposedPublisher = publisher
       context.become(waitingForFirstSubscriber)
-    case _ ⇒ throw new IllegalStateException("The first message must be ExposedPublisher")
+    case _ ⇒
+      throw new IllegalStateException("The first message must be ExposedPublisher")
   }
 
   def waitingForFirstSubscriber: Receive = {
@@ -64,11 +67,9 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: Materia
   def active: Receive = {
     case RequestMore(_, elements) ⇒
       downstreamDemand += elements
-      if (downstreamDemand < 0) {
-        // Long has overflown, reactive-streams specification rule 3.17
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
-        stop(Errored(demandOverflowException))
-      } else
+      if (downstreamDemand < 0) // Long has overflown, reactive-streams specification rule 3.17
+        stop(Errored(new IllegalStateException(TotalPendingDemandMustNotExceedLongMaxValue)))
+      else
         push()
     case PushMore ⇒
       push()
@@ -84,7 +85,7 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: Materia
       if (downstreamDemand > 0) {
         downstreamDemand -= 1
         val hasNext = {
-          subscriber.onNext(iterator.next())
+          tryOnNext(subscriber, iterator.next())
           iterator.hasNext
         }
         if (!hasNext)
@@ -101,20 +102,22 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: Materia
   }
 
   private def registerSubscriber(sub: Subscriber[Any]): Unit = {
-    if (subscriber eq null) {
-      subscriber = sub
-      subscriber.onSubscribe(new ActorSubscription(self, sub))
-    } else
-      sub.onError(new IllegalStateException(s"${Logging.simpleName(this)} ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
+    subscriber match {
+      case null ⇒
+        subscriber = sub
+        tryOnSubscribe(sub, new ActorSubscription(self, sub))
+      case _ ⇒
+        rejectAdditionalSubscriber(sub, exposedPublisher)
+    }
   }
 
-  private def stop(reason: State): Unit = {
+  private def stop(reason: StopState): Unit = {
     state match {
-      case _: Errored | Cancelled | Completed ⇒ throw new IllegalStateException
-      case _                                  ⇒ // ok
+      case _: StopState ⇒ throw new IllegalStateException(s"Already stopped. Transition attempted from $state to $reason")
+      case _ ⇒
+        state = reason
+        context.stop(self)
     }
-    state = reason
-    context.stop(self)
   }
 
   override def postStop(): Unit = {
@@ -122,10 +125,10 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: Materia
       case Unitialized | Initialized | Cancelled ⇒
         if (exposedPublisher ne null) exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
       case Completed ⇒
-        subscriber.onComplete()
+        tryOnComplete(subscriber)
         exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
       case Errored(e) ⇒
-        subscriber.onError(e)
+        tryOnError(subscriber, e)
         exposedPublisher.shutdown(Some(e))
     }
     // if onComplete or onError throws we let normal supervision take care of it,
