@@ -102,7 +102,7 @@ final case class PublisherSource[Out](p: Publisher[Out]) extends SimpleActorFlow
 /**
  * Starts a new `Source` from the given `Iterable`.
  */
-final case class IterableSource[Out](iterable: immutable.Iterable[Out], executor: ExecutionContext) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
+final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) =
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
