@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.dispatch.ExecutionContexts
-import akka.stream.ReactiveStreamsConstants
+
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 import scala.annotation.tailrec
@@ -46,7 +46,7 @@ private[akka] object SynchronousIterablePublisher {
       done = true
 
     override def request(elements: Long): Unit = {
-      if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+      if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
       @tailrec def pushNext(): Unit = {
         if (!done)
           if (iterator.isEmpty) {

@@ -14,7 +14,7 @@ import akka.actor.Props
 import akka.actor.Status
 import akka.actor.SupervisorStrategy
 import akka.stream.MaterializerSettings
-import akka.stream.ReactiveStreamsConstants
+
 import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
@@ -35,7 +35,7 @@ private[akka] object FuturePublisher {
     import akka.stream.impl.FuturePublisher.FutureSubscription._
     def cancel(): Unit = ref ! Cancel(this)
     def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
       else ref ! RequestMore(this)
     override def toString = "FutureSubscription"
   }
@@ -107,7 +107,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
     if (subscribers.contains(subscriber))
-      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     else {
       val subscription = new FutureSubscription(self)
       subscribers = subscribers.updated(subscriber, subscription)

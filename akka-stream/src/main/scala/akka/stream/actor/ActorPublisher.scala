@@ -5,8 +5,7 @@ package akka.stream.actor
 
 import java.util.concurrent.ConcurrentHashMap
 import akka.actor.Cancellable
-import akka.stream.ReactiveStreamsConstants
-import akka.stream.impl.StreamSubscriptionTimeoutSupport
+import akka.stream.impl.{ ReactiveStreamsCompliance, StreamSubscriptionTimeoutSupport }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import akka.actor.AbstractActor
 import akka.actor.Actor
@@ -234,7 +233,7 @@ trait ActorPublisher[T] extends Actor {
       demand += n
       if (demand < 0 && lifecycleState == Active) {
         // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
+        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
         onError(demandOverflowException)
       } else
         super.aroundReceive(receive, msg)
@@ -250,9 +249,9 @@ trait ActorPublisher[T] extends Actor {
         case Completed           ⇒ sub.onComplete()
         case Active | Canceled ⇒
           if (subscriber == sub)
-            sub.onError(new IllegalStateException(s"ActorPublisher [$self, sub: $sub] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
+            sub.onError(new IllegalStateException(s"ActorPublisher [$self, sub: $sub] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
           else
-            sub.onError(new IllegalStateException(s"ActorPublisher [$self] ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
+            sub.onError(new IllegalStateException(s"ActorPublisher [$self] ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
       }
 
     case Cancel ⇒
@@ -343,7 +342,7 @@ private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscri
   import ActorPublisherMessage._
 
   override def request(n: Long): Unit = {
-    ReactiveStreamsConstants.validateRequest(n)
+    ReactiveStreamsCompliance.validateRequest(n)
     ref ! Request(n)
   }
   override def cancel(): Unit = ref ! Cancel

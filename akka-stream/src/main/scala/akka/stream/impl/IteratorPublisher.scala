@@ -9,7 +9,7 @@ import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
 import akka.stream.MaterializerSettings
-import akka.stream.ReactiveStreamsConstants
+
 import org.reactivestreams.Subscriber
 
 /**
@@ -36,7 +36,7 @@ private[akka] object IteratorPublisher {
  */
 private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: MaterializerSettings) extends Actor {
   import IteratorPublisher._
-  import ReactiveStreamsConstants._
+  import ReactiveStreamsCompliance._
 
   private var exposedPublisher: ActorPublisher[Any] = _
   private var subscriber: Subscriber[Any] = _

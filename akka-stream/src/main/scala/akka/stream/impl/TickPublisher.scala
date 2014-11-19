@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
-import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
+import akka.stream.MaterializerSettings
 import org.reactivestreams.{ Subscriber, Subscription }
 
 import scala.collection.mutable
@@ -27,7 +27,7 @@ private[akka] object TickPublisher {
     import akka.stream.impl.TickPublisher.TickPublisherSubscription._
     def cancel(): Unit = ref ! Cancel(subscriber)
     def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
       else ref ! RequestMore(elements, subscriber)
     override def toString = "TickPublisherSubscription"
   }
@@ -99,7 +99,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
 
   def registerSubscriber(subscriber: Subscriber[_ >: Any]): Unit = {
     if (demand.contains(subscriber))
-      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsConstants.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
+      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
     else {
       val subscription = new TickPublisherSubscription(self, subscriber)
       demand(subscriber) = 0
