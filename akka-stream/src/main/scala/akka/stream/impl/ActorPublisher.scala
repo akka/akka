@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.{ NoStackTrace, NonFatal }
 import akka.actor.{ Actor, ActorLogging, ActorRef, Props, Terminated }
-import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
+import akka.stream.MaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber }
 import org.reactivestreams.Subscription
 
@@ -90,7 +90,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
  */
 private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends Subscription {
   override def request(elements: Long): Unit =
-    if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+    if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
     else impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
