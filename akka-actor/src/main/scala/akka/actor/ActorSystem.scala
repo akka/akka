@@ -603,7 +603,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
   }
 
-  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass, logFilter)
+  val log: LoggingAdapter = new BusLogging(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
 
   val scheduler: Scheduler = createScheduler()
 
