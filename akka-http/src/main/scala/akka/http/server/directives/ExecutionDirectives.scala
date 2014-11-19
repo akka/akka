@@ -8,6 +8,9 @@ package directives
 import akka.http.util.FastFuture
 import FastFuture._
 
+import scala.concurrent.Future
+import scala.util.control.NonFatal
+
 trait ExecutionDirectives {
   import BasicDirectives._
 
@@ -16,11 +19,15 @@ trait ExecutionDirectives {
    * [[akka.http.server.ExceptionHandler]].
    */
   def handleExceptions(handler: ExceptionHandler): Directive0 =
-    extractRequestContext flatMap { ctx ⇒
-      import ctx.executionContext
-      mapRouteResultFuture {
-        _.fast.recoverWith(handler andThen (_(ctx.withContentNegotiationDisabled)))
-      }
+    Directive { innerRouteBuilder ⇒
+      ctx ⇒
+        import ctx.executionContext
+        def handleException: PartialFunction[Throwable, Future[RouteResult]] =
+          handler andThen (_(ctx.withContentNegotiationDisabled))
+        try innerRouteBuilder(())(ctx).fast.recoverWith(handleException)
+        catch {
+          case NonFatal(e) ⇒ handleException.applyOrElse[Throwable, Future[RouteResult]](e, throw _)
+        }
     }
 
   /**
