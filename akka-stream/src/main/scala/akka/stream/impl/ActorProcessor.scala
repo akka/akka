@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.Arrays
 
 import akka.actor._
-import akka.stream.{ ReactiveStreamsConstants, MaterializerSettings }
+import akka.stream.MaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
 import org.reactivestreams.{ Subscriber, Subscription, Processor }
@@ -186,7 +186,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
       if (subscriber eq null) {
         subscriber = sub
         subscriber.onSubscribe(createSubscription())
-      } else sub.onError(new IllegalStateException(s"${getClass.getSimpleName} ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
+      } else sub.onError(new IllegalStateException(s"${getClass.getSimpleName} ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
@@ -205,7 +205,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
       downstreamDemand += elements
       if (downstreamDemand < 0) {
         // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
+        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
         cancel(demandOverflowException)
       }
 

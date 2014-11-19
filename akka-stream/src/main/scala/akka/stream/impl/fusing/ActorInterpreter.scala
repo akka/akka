@@ -7,7 +7,7 @@ import java.util.Arrays
 
 import akka.actor.{ Actor, ActorRef }
 import akka.event.Logging
-import akka.stream.{ MaterializerSettings, ReactiveStreamsConstants }
+import akka.stream.MaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
@@ -205,7 +205,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp 
       if (subscriber eq null) {
         subscriber = sub
         subscriber.onSubscribe(new ActorSubscription(actor, subscriber))
-      } else sub.onError(new IllegalStateException(s"${Logging.simpleName(this)} ${ReactiveStreamsConstants.SupportsOnlyASingleSubscriber}"))
+      } else sub.onError(new IllegalStateException(s"${Logging.simpleName(this)} ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
@@ -225,7 +225,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryOp 
       downstreamDemand += elements
       if (downstreamDemand < 0) {
         // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsConstants.TotalPendingDemandMustNotExceedLongMaxValue)
+        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
         enter().finish()
         fail(demandOverflowException)
       } else if (upstreamWaiting) {
