@@ -778,7 +778,7 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
 private[cluster] object MetricsCollector {
   def apply(system: ExtendedActorSystem, settings: ClusterSettings): MetricsCollector = {
     import settings.{ MetricsCollectorClass ⇒ fqcn }
-    def log = Logging(system, "MetricsCollector")
+    def log = Logging(system, getClass.getName)
     if (fqcn == classOf[SigarMetricsCollector].getName) {
       Try(new SigarMetricsCollector(system)) match {
         case Success(sigarCollector) ⇒ sigarCollector

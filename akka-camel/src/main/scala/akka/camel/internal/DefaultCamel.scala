@@ -28,7 +28,7 @@ import akka.actor.{ ExtendedActorSystem, ActorRef, Props }
  */
 private[camel] class DefaultCamel(val system: ExtendedActorSystem) extends Camel {
   val supervisor = system.actorOf(Props[CamelSupervisor], "camel-supervisor")
-  private[camel] implicit val log = Logging(system, "Camel")
+  private[camel] implicit val log = Logging(system, getClass.getName)
 
   lazy val context: DefaultCamelContext = {
     val ctx = settings.ContextProvider.getContext(system)
