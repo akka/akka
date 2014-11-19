@@ -8,8 +8,6 @@ package headers
 import java.lang.Iterable
 import java.net.InetSocketAddress
 import java.util
-import akka.http.model.japi
-import akka.http.model.japi.JavaMapping
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.util._
@@ -54,6 +52,7 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
   def renderValue[R <: Rendering](r: R): r.type = r ~~ tokens
   def hasClose = has("close")
   def hasKeepAlive = has("keep-alive")
+  def append(tokens: immutable.Seq[String]) = Connection(this.tokens ++ tokens)
   @tailrec private def has(item: String, ix: Int = 0): Boolean =
     if (ix < tokens.length)
       if (tokens(ix) equalsIgnoreCase item) true
@@ -563,6 +562,7 @@ final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])
         case remaining ⇒ Some(`Transfer-Encoding`(remaining))
       }
     } else Some(this)
+  def append(encodings: immutable.Seq[TransferEncoding]) = `Transfer-Encoding`(this.encodings ++ encodings)
   def renderValue[R <: Rendering](r: R): r.type = r ~~ encodings
   protected def companion = `Transfer-Encoding`
 
