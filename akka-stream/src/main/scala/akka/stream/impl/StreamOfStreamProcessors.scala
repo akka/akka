@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorLogging
 import akka.actor.Cancellable
-import akka.stream.ReactiveStreamsConstants
+
 import akka.actor.{ Actor, ActorRef }
 import akka.stream.MaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
@@ -25,7 +25,7 @@ private[akka] object MultiStreamOutputProcessor {
 
   class SubstreamSubscription(val parent: ActorRef, val substreamKey: SubstreamKey) extends Subscription {
     override def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsConstants.NumberOfElementsInRequestMustBePositiveMsg)
+      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
       else parent ! SubstreamRequestMore(substreamKey, elements)
     override def cancel(): Unit = parent ! SubstreamCancel(substreamKey)
     override def toString = "SubstreamSubscription" + System.identityHashCode(this)
@@ -91,7 +91,7 @@ private[akka] object MultiStreamOutputProcessor {
       if (state.compareAndSet(Open, Attached(s))) actor ! SubstreamSubscribe(key, s)
       else {
         state.get() match {
-          case _: Attached       ⇒ s.onError(new IllegalStateException("Substream publisher " + ReactiveStreamsConstants.SupportsOnlyASingleSubscriber))
+          case _: Attached       ⇒ s.onError(new IllegalStateException("Substream publisher " + ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber))
           case c: CompletedState ⇒ closeSubscriber(s, c)
           case Open              ⇒ throw new IllegalStateException("Publisher cannot become open after being used before")
         }
