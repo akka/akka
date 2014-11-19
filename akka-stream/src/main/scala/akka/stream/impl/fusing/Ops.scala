@@ -54,7 +54,11 @@ private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) 
 
   override def onPull(ctxt: Context[Out]): Directive =
     if (currentIterator.hasNext) ctxt.push(currentIterator.next())
+    else if (isFinishing) ctxt.finish()
     else ctxt.pull()
+
+  override def onUpstreamFinish(ctxt: Context[Out]): TerminationDirective =
+    ctxt.absorbTermination()
 }
 
 /**
