@@ -107,12 +107,12 @@ final case class IterableSource[Out](iterable: immutable.Iterable[Out]) extends 
     create(materializer, flowName)._1.subscribe(flowSubscriber)
   override def isActive: Boolean = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
-    val publisher = try {
-      val it = iterable.iterator
-      ActorPublisher[Out](materializer.actorOf(IteratorPublisher.props(it, materializer.settings), name = s"$flowName-0-iterable"))
-    } catch {
-      case NonFatal(e) ⇒ ErrorPublisher(e, s"$flowName-0-error").asInstanceOf[Publisher[Out]]
-    }
+    val publisher =
+      try ActorPublisher[Out](
+        materializer.actorOf(IteratorPublisher.props(iterable.iterator, materializer.settings),
+          name = s"$flowName-0-iterable")) catch {
+        case NonFatal(e) ⇒ ErrorPublisher(e, s"$flowName-0-error").asInstanceOf[Publisher[Out]]
+      }
     (publisher, ())
   }
 }
