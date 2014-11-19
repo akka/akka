@@ -3,9 +3,12 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
 import akka.stream.MaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.FlowMaterializer
 
 class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
 
@@ -24,6 +27,19 @@ class FlowMapConcatSpec extends AkkaSpec with ScriptedTest {
         Seq(2) -> Seq(2, 2),
         Seq(1) -> Seq(1))
       TestConfig.RandomTestRange foreach (_ ⇒ runScript(script, settings)(_.mapConcat(x ⇒ (1 to x) map (_ ⇒ x))))
+    }
+
+    "map and concat grouping with slow downstream" in {
+      val settings = MaterializerSettings(system)
+        .withInputBuffer(initialSize = 2, maxSize = 2)
+      implicit val materializer = FlowMaterializer(settings)
+      val s = SubscriberProbe[Int]
+      val input = (1 to 20).grouped(5).toList
+      Source(input).mapConcat(identity).map(x ⇒ { Thread.sleep(10); x }).runWith(Sink(s))
+      val sub = s.expectSubscription()
+      sub.request(100)
+      for (i ← 1 to 20) s.expectNext(i)
+      s.expectComplete()
     }
 
   }
