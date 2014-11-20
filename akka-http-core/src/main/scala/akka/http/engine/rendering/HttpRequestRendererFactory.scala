@@ -98,23 +98,21 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
 
-      def renderContentLength(contentLength: Long): Unit = {
-        if (method.isEntityAccepted) r ~~ `Content-Length` ~~ contentLength ~~ CrLf
-        r ~~ CrLf
-      }
+      def renderContentLength(contentLength: Long) =
+        if (method.isEntityAccepted) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
       def completeRequestRendering(): Source[ByteString] =
         entity match {
           case x if x.isKnownEmpty ⇒
-            renderContentLength(0)
+            renderContentLength(0) ~~ CrLf
             Source.singleton(r.get)
 
           case HttpEntity.Strict(_, data) ⇒
-            renderContentLength(data.length)
+            renderContentLength(data.length) ~~ CrLf
             Source.singleton(r.get ++ data)
 
           case HttpEntity.Default(_, contentLength, data) ⇒
-            renderContentLength(contentLength)
+            renderContentLength(contentLength) ~~ CrLf
             renderByteStrings(r,
               data.transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)))
 

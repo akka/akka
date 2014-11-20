@@ -505,7 +505,6 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
             """HTTP/1.1 100 Continue
               |Server: akka-http/test
               |Date: XXXX
-              |Content-Length: 0
               |
               |""".stripMarginWithNewline("\r\n")
           dataProbe.expectNoMsg(50.millis)
@@ -543,7 +542,6 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
             """HTTP/1.1 100 Continue
               |Server: akka-http/test
               |Date: XXXX
-              |Content-Length: 0
               |
               |""".stripMarginWithNewline("\r\n")
           dataProbe.expectNoMsg(50.millis)

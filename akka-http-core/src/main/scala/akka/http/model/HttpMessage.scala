@@ -5,6 +5,8 @@
 package akka.http.model
 
 import java.lang.{ Iterable ⇒ JIterable }
+import akka.parboiled2.CharUtils
+
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
@@ -129,7 +131,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              headers: immutable.Seq[HttpHeader] = Nil,
                              entity: RequestEntity = HttpEntity.Empty,
                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpRequest with HttpMessage {
-  require(!uri.isEmpty, "An HttpRequest must not have an empty Uri")
+  HttpRequest.verifyUri(uri)
   require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
   require(protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
     "HTTP/1.0 requests must not have a chunked entity")
@@ -281,6 +283,22 @@ object HttpRequest {
     else throw new IllegalUriException(s"'Host' header value of request to `$uri` doesn't match request target authority",
       s"Host header: $hostHeader\nrequest target authority: ${uri.authority}")
   }
+
+  /**
+   * Verifies that the given [[Uri]] is non-empty and has either scheme `http`, `https` or no scheme at all.
+   * If any of these conditions is not met the method throws an [[IllegalArgumentException]].
+   */
+  def verifyUri(uri: Uri): Unit =
+    if (uri.isEmpty) throw new IllegalArgumentException("`uri` must not be empty")
+    else {
+      def c(i: Int) = CharUtils.toLowerCase(uri.scheme charAt i)
+      uri.scheme.length match {
+        case 0 ⇒ // ok
+        case 4 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' ⇒ // ok
+        case 5 if c(0) == 'h' && c(1) == 't' && c(2) == 't' && c(3) == 'p' && c(4) == 's' ⇒ // ok
+        case _ ⇒ throw new IllegalArgumentException("""`uri` must have scheme "http", "https" or no scheme""")
+      }
+    }
 }
 
 /**
@@ -290,6 +308,10 @@ final case class HttpResponse(status: StatusCode = StatusCodes.OK,
                               headers: immutable.Seq[HttpHeader] = Nil,
                               entity: ResponseEntity = HttpEntity.Empty,
                               protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpResponse with HttpMessage {
+  require(entity.isKnownEmpty || status.allowsEntity, "Responses with this status code must have an empty entity")
+  require(protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
+    "HTTP/1.0 responses must not have a chunked entity")
+
   type Self = HttpResponse
   def self = this
 
