@@ -116,12 +116,16 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     "throw suitable exceptions for malformed actor names" in {
       intercept[InvalidActorNameException](system.actorOf(Props.empty, null)).getMessage.contains("null") should be(true)
       intercept[InvalidActorNameException](system.actorOf(Props.empty, "")).getMessage.contains("empty") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage.contains("conform") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("conform") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("conform") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("conform") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("conform") should be(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("conform") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage.contains("not start with `$`") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%xx")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%0G")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%gg")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("Illegal actor name") should be(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("include only ASCII") should be(true)
     }
 
   }
