@@ -4,7 +4,6 @@
 
 package akka.http.engine.rendering
 
-import akka.http.model.HttpMethods._
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.duration._
 import scala.concurrent.Await
@@ -18,7 +17,6 @@ import akka.http.util._
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.FlowMaterializer
-import akka.stream.impl.SynchronousIterablePublisher
 import HttpEntity._
 
 class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
@@ -51,7 +49,6 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             |Age: 0
             |Server: akka-http/1.0.0
             |Date: Thu, 25 Aug 2011 09:10:29 GMT
-            |Content-Length: 0
             |
             |"""
         }
