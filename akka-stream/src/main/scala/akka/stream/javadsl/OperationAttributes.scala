@@ -29,9 +29,12 @@ object OperationAttributes {
   /**
    * Specifies the name of the operation.
    */
-  def name(name: String): OperationAttributes = new OperationAttributes {
-    private[akka] def asScala = scaladsl.OperationAttributes.name(name)
-  }
+  def name(name: String): OperationAttributes =
+    if (name eq null) none
+    else
+      new OperationAttributes {
+        private[akka] def asScala = scaladsl.OperationAttributes.name(name)
+      }
 
   /**
    * Specifies the initial and maximum size of the input buffer.

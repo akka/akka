@@ -218,54 +218,44 @@ class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
 }
 
 object Zip {
-
+  import akka.japi.{ Pair, Function2 }
   /**
-   * Create a new anonymous `Zip` vertex with the specified input types.
-   * Note that a `Zip` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.*
-   */
-  def create[A, B](): Zip[A, B] = create(name = null)
-
-  /**
-   * Create a new anonymous `Zip` vertex with the specified input types.
-   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * Create a new anonymous `ZipWith` vertex with the specified input types and zipping-function
+   * which creates `akka.japi.Pair`s.
+   * Note that a ZipWith` instance can only be used at one place (one vertex)
    * in the `FlowGraph`. This method creates a new instance every time it
    * is called and those instances are not `equal`.
    */
-  def create[A, B](left: Class[A], right: Class[B]): Zip[A, B] = create[A, B]()
+  def create[A, B]: ZipWith[A, B, A Pair B] =
+    ZipWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]])
+
+  private[this] final val _toPair: Function2[Any, Any, Any Pair Any] =
+    new Function2[Any, Any, Any Pair Any] { override def apply(a: Any, b: Any): Any Pair Any = new Pair(a, b) }
+}
+
+object ZipWith {
 
   /**
-   * Create a named `Zip` vertex with the specified input types.
-   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * Creates a new anonymous `ZipWith` vertex with the specified input types and zipping-function `f`.
+   * Note that a `ZipWith` instance can only be used at one place (one vertex)
    * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.*
+   * is called and those instances are not `equal`.
    */
-  def create[A, B](name: String): Zip[A, B] =
-    new Zip(new scaladsl.Zip[A, B](OperationAttributes.name(name).asScala) {
-      override private[akka] def astNode: Ast.FanInAstNode = Ast.Zip(impl.Zip.AsJavaPair, attributes)
-    })
+  def create[A, B, C](f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
+    create(name = null, f = f)
 
   /**
-   * Create a named `Zip` vertex with the specified input types.
-   * Note that a `Zip` instance can only be used at one place (one vertex)
+   * Creates a new named `ZipWith` vertex with the specified input types and zipping-function `f`.
+   * Note that a `ZipWith` instance can only be used at one place (one vertex)
    * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.*
+   * is called and those instances are not `equal`.
    */
-  def create[A, B](name: String, left: Class[A], right: Class[A]): Zip[A, B] =
-    create[A, B](name)
+  def create[A, B, C](name: String, f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
+    new ZipWith(new scaladsl.ZipWith[A, B, C](OperationAttributes.name(name).asScala, f.apply _))
 
-  class Left[A, B](private val zip: Zip[A, B]) extends JunctionInPort[A] {
-    override def asScala: scaladsl.JunctionInPort[A] = zip.asScala.left
-  }
-  class Right[A, B](private val zip: Zip[A, B]) extends JunctionInPort[B] {
-    override def asScala: scaladsl.JunctionInPort[B] = zip.asScala.right
-  }
-  class Out[A, B](private val zip: Zip[A, B]) extends JunctionOutPort[akka.japi.Pair[A, B]] {
-    // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
-    override def asScala: scaladsl.JunctionOutPort[akka.japi.Pair[A, B]] =
-      zip.asScala.out.asInstanceOf[scaladsl.JunctionOutPort[akka.japi.Pair[A, B]]]
-  }
+  final class Left[A, B, C](override val asScala: scaladsl.ZipWith.Left[A, B, C]) extends JunctionInPort[A]
+  final class Right[A, B, C](override val asScala: scaladsl.ZipWith.Right[A, B, C]) extends JunctionInPort[B]
+  final class Out[A, B, C](override val asScala: scaladsl.ZipWith.Out[A, B, C]) extends JunctionOutPort[C]
 }
 
 /**
@@ -273,14 +263,10 @@ object Zip {
  * by combining corresponding elements in pairs. If one of the two streams is
  * longer than the other, its remaining elements are ignored.
  */
-final class Zip[A, B] private (delegate: scaladsl.Zip[A, B]) {
-
-  /** Convert this element to it's `scaladsl` equivalent. */
-  def asScala = delegate
-
-  val left = new Zip.Left(this)
-  val right = new Zip.Right(this)
-  val out = new Zip.Out(this)
+final class ZipWith[A, B, C] private (val asScala: scaladsl.ZipWith[A, B, C]) {
+  val left = new ZipWith.Left[A, B, C](asScala.left)
+  val right = new ZipWith.Right[A, B, C](asScala.right)
+  val out = new ZipWith.Out[A, B, C](asScala.out)
 }
 
 object Unzip {
@@ -341,7 +327,7 @@ object Concat {
    * Create a named `Concat` vertex with the specified input types.
    * Note that a `Concat` instance can only be used at one place (one vertex)
    * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.*
+   * is called and those instances are not `equal`.
    */
   def create[T](name: String): Concat[T] = new Concat(scaladsl.Concat[T](name))
 
@@ -349,7 +335,7 @@ object Concat {
    * Create a named `Concat` vertex with the specified input types.
    * Note that a `Concat` instance can only be used at one place (one vertex)
    * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.*
+   * is called and those instances are not `equal`.
    */
   def create[T](name: String, clazz: Class[T]): Concat[T] = create(name)
 

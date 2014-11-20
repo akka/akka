@@ -7,7 +7,6 @@ import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.actor.Props
 import akka.stream.MaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
-import akka.stream.impl.Zip.ZipAs
 import org.reactivestreams.{ Subscription, Subscriber }
 
 /**
@@ -245,7 +244,7 @@ private[akka] object FairMerge {
 /**
  * INTERNAL API
  */
-private[akka] class FairMerge(_settings: MaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
+private[akka] final class FairMerge(_settings: MaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
@@ -268,7 +267,9 @@ private[akka] object UnfairMerge {
 /**
  * INTERNAL API
  */
-private[akka] class UnfairMerge(_settings: MaterializerSettings, _inputPorts: Int, val preferred: Int) extends FanIn(_settings, _inputPorts) {
+private[akka] final class UnfairMerge(_settings: MaterializerSettings,
+                                      _inputPorts: Int,
+                                      val preferred: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
@@ -280,42 +281,20 @@ private[akka] class UnfairMerge(_settings: MaterializerSettings, _inputPorts: In
 /**
  * INTERNAL API
  */
-private[akka] object Zip {
-  def props(settings: MaterializerSettings, zipAs: ZipAs): Props =
-    Props(new Zip(settings, zipAs))
-
-  /**
-   * INTERNAL API
-   *
-   * Allows to zip to different tuple implementations (e.g. Scala's `Tuple2` or Java's `Pair`),
-   * while sharing the same `Zip` implementation.
-   */
-  private[akka] sealed trait ZipAs {
-    type Zipped[A, B]
-    def apply[A, B](first: A, second: B): Zipped[A, B]
-  }
-  /** INTERNAL API */
-  private[akka] object AsJavaPair extends ZipAs {
-    override type Zipped[A, B] = akka.japi.Pair[A, B]
-    override def apply[A, B](first: A, second: B) = akka.japi.Pair(first, second)
-  }
-  /** INTERNAL API */
-  private[akka] object AsScalaTuple2 extends ZipAs {
-    override type Zipped[A, B] = (A, B)
-    override def apply[A, B](first: A, second: B) = first → second
-  }
+private[akka] object ZipWith {
+  def props(settings: MaterializerSettings, f: (Any, Any) ⇒ Any): Props = Props(new ZipWith(settings, f))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Zip(_settings: MaterializerSettings, zip: ZipAs) extends FanIn(_settings, inputPorts = 2) {
+private[akka] final class ZipWith(_settings: MaterializerSettings, f: (Any, Any) ⇒ Any) extends FanIn(_settings, inputPorts = 2) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
     val elem0 = inputBunch.dequeue(0)
     val elem1 = inputBunch.dequeue(1)
-    primaryOutputs.enqueueOutputElement(zip(elem0, elem1))
+    primaryOutputs.enqueueOutputElement(f(elem0, elem1))
   })
 }
 
@@ -323,14 +302,13 @@ private[akka] class Zip(_settings: MaterializerSettings, zip: ZipAs) extends Fan
  * INTERNAL API
  */
 private[akka] object Concat {
-  def props(settings: MaterializerSettings): Props =
-    Props(new Concat(settings))
+  def props(settings: MaterializerSettings): Props = Props(new Concat(settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Concat(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
+private[akka] final class Concat(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
   val First = 0
   val Second = 1
 

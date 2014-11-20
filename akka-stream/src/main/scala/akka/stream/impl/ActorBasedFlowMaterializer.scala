@@ -16,7 +16,6 @@ import akka.actor._
 import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer }
 import akka.stream.MaterializationException
 import akka.stream.actor.ActorSubscriber
-import akka.stream.impl.Zip.ZipAs
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.pattern.ask
@@ -31,7 +30,7 @@ private[akka] object Ast {
     def attributes: OperationAttributes
     def withAttributes(attributes: OperationAttributes): AstNode
   }
-
+  // FIXME Fix the name `Defaults` is waaaay too opaque. How about "Names"?
   object Defaults {
     val timerTransform = name("timerTransform")
     val stageFactory = name("stageFactory")
@@ -72,13 +71,11 @@ private[akka] object Ast {
   import Defaults._
 
   final case class TimerTransform(mkStage: () ⇒ TimerTransformer[Any, Any], attributes: OperationAttributes = timerTransform) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class StageFactory(mkStage: () ⇒ Stage[_, _], attributes: OperationAttributes = stageFactory) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   object Fused {
@@ -86,107 +83,88 @@ private[akka] object Ast {
       Fused(ops, name(ops.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+"))) //FIXME change to something more performant for name
   }
   final case class Fused(ops: immutable.Seq[Stage[_, _]], attributes: OperationAttributes = fused) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Map(f: Any ⇒ Any, attributes: OperationAttributes = map) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Filter(p: Any ⇒ Boolean, attributes: OperationAttributes = filter) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Collect(pf: PartialFunction[Any, Any], attributes: OperationAttributes = collect) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   // FIXME Replace with OperateAsync
   final case class MapAsync(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsync) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   //FIXME Should be OperateUnorderedAsync
   final case class MapAsyncUnordered(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsyncUnordered) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Grouped(n: Int, attributes: OperationAttributes = grouped) extends AstNode {
     require(n > 0, "n must be greater than 0")
 
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   //FIXME should be `n: Long`
   final case class Take(n: Int, attributes: OperationAttributes = take) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   //FIXME should be `n: Long`
   final case class Drop(n: Int, attributes: OperationAttributes = drop) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Scan(zero: Any, f: (Any, Any) ⇒ Any, attributes: OperationAttributes = scan) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class Buffer(size: Int, overflowStrategy: OverflowStrategy, attributes: OperationAttributes = buffer) extends AstNode {
     require(size > 0, s"Buffer size must be larger than zero but was [$size]")
 
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
   final case class Conflate(seed: Any ⇒ Any, aggregate: (Any, Any) ⇒ Any, attributes: OperationAttributes = conflate) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
   final case class Expand(seed: Any ⇒ Any, extrapolate: Any ⇒ (Any, Any), attributes: OperationAttributes = expand) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
   final case class MapConcat(f: Any ⇒ immutable.Seq[Any], attributes: OperationAttributes = mapConcat) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class GroupBy(f: Any ⇒ Any, attributes: OperationAttributes = groupBy) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class PrefixAndTail(n: Int, attributes: OperationAttributes = prefixAndTail) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class SplitWhen(p: Any ⇒ Boolean, attributes: OperationAttributes = splitWhen) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   final case class ConcatAll(attributes: OperationAttributes = concatAll) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   case class DirectProcessor(p: () ⇒ Processor[Any, Any], attributes: OperationAttributes = processor) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
+
   case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key[_], attributes: OperationAttributes = processorWithKey) extends AstNode {
-    def withAttributes(attributes: OperationAttributes) =
-      copy(attributes = attributes)
+    def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
   sealed trait JunctionAstNode {
@@ -197,6 +175,8 @@ private[akka] object Ast {
   sealed trait FanInAstNode extends JunctionAstNode
   sealed trait FanOutAstNode extends JunctionAstNode
 
+  final case class ZipWith(f: (Any, Any) ⇒ Any, attributes: OperationAttributes) extends FanInAstNode
+
   // FIXME Why do we need this?
   case class IdentityAstNode(attributes: OperationAttributes) extends JunctionAstNode
 
@@ -206,7 +186,6 @@ private[akka] object Ast {
   final case class Broadcast(attributes: OperationAttributes) extends FanOutAstNode
   final case class Balance(waitForAllDownstreams: Boolean, attributes: OperationAttributes) extends FanOutAstNode
 
-  final case class Zip(as: ZipAs, attributes: OperationAttributes) extends FanInAstNode
   final case class Unzip(attributes: OperationAttributes) extends FanOutAstNode
 
   final case class Concat(attributes: OperationAttributes) extends FanInAstNode
@@ -476,7 +455,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         val props = fanin match {
           case Ast.Merge(_)                  ⇒ FairMerge.props(transformedSettings, inputCount)
           case Ast.MergePreferred(_)         ⇒ UnfairMerge.props(transformedSettings, inputCount)
-          case Ast.Zip(as, _)                ⇒ Zip.props(transformedSettings, as)
+          case Ast.ZipWith(f, _)             ⇒ ZipWith.props(transformedSettings, f)
           case Ast.Concat(_)                 ⇒ Concat.props(transformedSettings)
           case Ast.FlexiMergeNode(merger, _) ⇒ FlexiMergeImpl.props(transformedSettings, inputCount, merger.createMergeLogic())
         }
@@ -484,7 +463,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
 
         val publisher = new ActorPublisher[Out](impl)
         impl ! ExposedPublisher(publisher.asInstanceOf[ActorPublisher[Any]])
-        val subscribers = Vector.tabulate(inputCount)(FanIn.SubInput[In](impl, _))
+        val subscribers = Vector.tabulate(inputCount)(FanIn.SubInput[In](impl, _)) // FIXME switch to List.tabulate for inputCount < 8?
         (subscribers, List(publisher))
 
       case fanout: Ast.FanOutAstNode ⇒
@@ -496,7 +475,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         }
         val impl = actorOf(props, actorName, fanout)
 
-        val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl) {
+        val publishers = Vector.tabulate(outputCount)(id ⇒ new ActorPublisher[Out](impl) { // FIXME switch to List.tabulate for inputCount < 8?
           override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
         })
         impl ! FanOut.ExposedPublishers(publishers.asInstanceOf[immutable.Seq[ActorPublisher[Any]]])
