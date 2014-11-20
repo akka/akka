@@ -39,5 +39,14 @@ class OptimizingActorBasedFlowMaterializerSpec extends AkkaSpec with ImplicitSen
 
       Await.result(f, 5.seconds) should be(expected)
     }
+
+    "optimize map + map" in {
+      implicit val mat = FlowMaterializer().asInstanceOf[ActorBasedFlowMaterializer].copy(optimizations = Optimizations.all)
+
+      val fl = Source(1 to 100).map(_ + 2).map(_ * 2).fold(0)(_ + _)
+      val expected = (1 to 100).map(_ + 2).map(_ * 2).fold(0)(_ + _)
+
+      Await.result(fl, 5.seconds) should be(expected)
+    }
   }
 }
