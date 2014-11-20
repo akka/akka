@@ -136,6 +136,9 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
 
+      def renderContentLengthHeader(contentLength: Long) =
+        if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
+
       def byteStrings(entityBytes: ⇒ Source[ByteString]): Source[ByteString] =
         renderByteStrings(r, entityBytes, skipEntity = noEntity)
 
@@ -144,20 +147,19 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
           case HttpEntity.Strict(_, data) ⇒
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
-            r ~~ `Content-Length` ~~ data.length ~~ CrLf ~~ CrLf
+            renderContentLengthHeader(data.length) ~~ CrLf
             val entityBytes = if (noEntity) ByteString.empty else data
             Source.singleton(r.get ++ entityBytes)
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
-            r ~~ `Content-Length` ~~ contentLength ~~ CrLf ~~ CrLf
+            renderContentLengthHeader(contentLength) ~~ CrLf
             byteStrings(data.transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)))
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
-            renderEntityContentType(r, entity)
-            r ~~ CrLf
+            renderEntityContentType(r, entity) ~~ CrLf
             byteStrings(data)
 
           case HttpEntity.Chunked(contentType, chunks) ⇒
@@ -165,8 +167,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
               completeResponseRendering(HttpEntity.CloseDelimited(contentType, chunks.map(_.data)))
             else {
               renderHeaders(headers.toList)
-              renderEntityContentType(r, entity)
-              r ~~ CrLf
+              renderEntityContentType(r, entity) ~~ CrLf
               byteStrings(chunks.transform("renderChunks", () ⇒ new ChunkTransformer))
             }
         }
