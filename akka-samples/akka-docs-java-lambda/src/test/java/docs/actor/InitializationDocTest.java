@@ -102,7 +102,7 @@ public class InitializationDocTest {
   public void testGenericActor() {
     new JavaTestKit(system) {{
       ActorRef genericTestActor = system.actorOf(Props.create(GenericActor.class), "genericActor");
-      GenericMessage<String> genericMessage = new GenericMessage<>("a");
+      GenericMessage<String> genericMessage = new GenericMessage<String>("a");
 
       genericTestActor.tell(genericMessage, getRef());
       expectMsgEquals("A");
@@ -113,8 +113,8 @@ public class InitializationDocTest {
   public void actorShouldNotRespondForEmptyMessage() {
     new JavaTestKit(system) {{
       ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicate.class), "genericActorWithPredicate");
-      GenericMessage<String> emptyGenericMessage = new GenericMessage<>("");
-      GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<>("a");
+      GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
+      GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
 
       genericTestActor.tell(emptyGenericMessage, getRef());
       expectNoMsg();

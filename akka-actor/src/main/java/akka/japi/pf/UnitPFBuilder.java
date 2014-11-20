@@ -12,8 +12,8 @@ import scala.runtime.BoxedUnit;
  * void methods to {@link scala.runtime.BoxedUnit}.
  *
  * @param <I> the input type, that this PartialFunction to be applied to
- *            <p>
- *            This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
+ *
+ * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public final class UnitPFBuilder<I> extends AbstractPFBuilder<I, BoxedUnit> {
 
@@ -47,7 +47,7 @@ public final class UnitPFBuilder<I> extends AbstractPFBuilder<I, BoxedUnit> {
   }
 
   /**
-   * Add a new case statement to this b uilder.
+   * Add a new case statement to this builder.
    *
    * @param type      a type to match the argument against
    * @param predicate a predicate that will be evaluated on the argument if the type matches

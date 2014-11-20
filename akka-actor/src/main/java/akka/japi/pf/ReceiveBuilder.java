@@ -6,29 +6,29 @@ package akka.japi.pf;
 
 /**
  * Used for building a partial function for {@link akka.actor.Actor#receive() Actor.receive()}.
- * <p>
+ *
  * There is both a match on type only, and a match on type and predicate.
- * <p>
+ *
  * Inside an actor you can use it like this with Java 8 to define your receive method.
- * <p>
+ * <p/>
  * Example:
  * <pre>
- *
- * @Override public Actor() {
- * receive(ReceiveBuilder.
- * match(Double.class, d -> {
- * sender().tell(d.isNaN() ? 0 : d, self());
- * }).
- * match(Integer.class, i -> {
- * sender().tell(i * 10, self());
- * }).
- * match(String.class, s -> s.startsWith("foo"), s -> {
- * sender().tell(s.toUpperCase(), self());
- * }).build()
- * );
+ * @Override
+ * public Actor() {
+ *   receive(ReceiveBuilder.
+ *     match(Double.class, d -> {
+ *       sender().tell(d.isNaN() ? 0 : d, self());
+ *     }).
+ *     match(Integer.class, i -> {
+ *       sender().tell(i * 10, self());
+ *     }).
+ *     match(String.class, s -> s.startsWith("foo"), s -> {
+ *       sender().tell(s.toUpperCase(), self());
+ *     }).build()
+ *   );
  * }
  * </pre>
- * <p>
+ *
  * This is an EXPERIMENTAL feature and is subject to change until it has received more real world testing.
  */
 public class ReceiveBuilder {
