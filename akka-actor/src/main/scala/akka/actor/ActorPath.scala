@@ -22,7 +22,7 @@ object ActorPath {
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
    * http://www.ietf.org/rfc/rfc2396.txt
    */
-  val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
+  val ElementRegex = """(?:[-\w:@&=+,.!~*'_;])(?:[-\w:@&=+,.!~*'$_;])*""".r
 
   private[akka] final val emptyActorPath: immutable.Iterable[String] = List("")
 }
