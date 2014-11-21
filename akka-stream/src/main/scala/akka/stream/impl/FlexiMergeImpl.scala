@@ -79,11 +79,14 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
     var i = 0
     while (i < inputs.length) {
       val id = inputs(i).portIndex
-      if (inputMapping.contains(id) && !inputBunch.isCancelled(id) && !inputBunch.isDepleted(id))
+      if (include(id))
         inputBunch.markInput(id)
       i += 1
     }
   }
+
+  private def include(portIndex: Int): Boolean =
+    inputMapping.contains(portIndex) && !inputBunch.isCancelled(portIndex) && !inputBunch.isDepleted(portIndex)
 
   private def precondition: TransferState = {
     behavior.condition match {
@@ -139,11 +142,8 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
       case read: ReadAll ⇒
         val inputHandles = read.inputs
 
-        def include(input: InputHandle): Boolean =
-          !inputBunch.isCancelled(input.portIndex) && !inputBunch.isDepleted(input.portIndex)
-
         val values = inputHandles.collect {
-          case input if include(input) ⇒ input → inputBunch.dequeue(input.portIndex)
+          case input if include(input.portIndex) ⇒ input → inputBunch.dequeue(input.portIndex)
         }
 
         changeBehavior(behavior.onInput(ctx, inputHandles.head, read.mkResult(Map(values: _*))))
