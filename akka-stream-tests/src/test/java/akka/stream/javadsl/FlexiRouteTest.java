@@ -5,6 +5,7 @@ package akka.stream.javadsl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.HashSet;
 import org.junit.ClassRule;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -45,8 +46,13 @@ public class FlexiRouteTest {
 
     final List<String> result1 = Await.result(m.get(out1), Duration.apply(3, TimeUnit.SECONDS));
     final List<String> result2 = Await.result(m.get(out2), Duration.apply(3, TimeUnit.SECONDS));
-    assertEquals(Arrays.asList("a", "c", "e"), result1);
-    assertEquals(Arrays.asList("b", "d"), result2);
+    
+    // we can't know exactly which elements that go to each output, because if subscription/request 
+    // from one of the downstream is delayed the elements will be pushed to the other output
+    final HashSet<String> all = new HashSet<String>();
+    all.addAll(result1);
+    all.addAll(result2);
+    assertEquals(new HashSet<String>(Arrays.asList("a", "b", "c", "d", "e")), all);
   }
 
   @Test

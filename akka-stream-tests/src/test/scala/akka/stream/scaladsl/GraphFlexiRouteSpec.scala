@@ -175,33 +175,25 @@ class GraphFlexiRouteSpec extends AkkaSpec {
   "FlexiRoute" must {
 
     "build simple fair route" in {
+      // we can't know exactly which elements that go to each output, because if subscription/request
+      // from one of the downstream is delayed the elements will be pushed to the other output
+      val s = SubscriberProbe[String]
+      val merge = Merge[String]
       val m = FlowGraph { implicit b ⇒
         val route = new Fair[String]
         in ~> route.in
-        route.out1 ~> out1
-        route.out2 ~> out2
+        route.out1 ~> merge
+        route.out2 ~> merge
+        merge ~> Sink(s)
       }.run()
 
-      val s1 = SubscriberProbe[String]
-      val p1 = m.get(out1)
-      p1.subscribe(s1)
-      val sub1 = s1.expectSubscription()
-      val s2 = SubscriberProbe[String]
-      val p2 = m.get(out2)
-      p2.subscribe(s2)
-      val sub2 = s2.expectSubscription()
+      val sub = s.expectSubscription()
+      sub.request(10)
 
-      sub1.request(10)
-      sub2.request(10)
+      (s.probe.receiveN(5).map { case OnNext(elem) ⇒ elem }).toSet should be(
+        Set("a", "b", "c", "d", "e"))
 
-      s1.expectNext("a")
-      s2.expectNext("b")
-      s1.expectNext("c")
-      s2.expectNext("d")
-      s1.expectNext("e")
-
-      s1.expectComplete()
-      s2.expectComplete()
+      s.expectComplete()
     }
 
     "build simple round-robin route" in {
