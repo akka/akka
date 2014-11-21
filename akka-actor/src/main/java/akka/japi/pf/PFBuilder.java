@@ -23,52 +23,56 @@ public final class PFBuilder<I, R> extends AbstractPFBuilder<I, R> {
   /**
    * Add a new case statement to this builder.
    *
-   * @param type   a type to match the argument against
-   * @param apply  an action to apply to the argument if the type matches
-   * @return       a builder with the case statement added
+   * @param type  a type to match the argument against
+   * @param apply an action to apply to the argument if the type matches
+   * @return a builder with the case statement added
    */
-  public <P> PFBuilder<I, R> match(final Class<P> type, FI.Apply<P, R> apply) {
-    addStatement(new CaseStatement<I, P, R>(
-      new FI.Predicate() {
-        @Override
-        public boolean defined(Object o) {
-          return type.isInstance(o);
-        }
-      }, apply));
+  @SuppressWarnings("unchecked")
+  public <P> PFBuilder<I, R> match(final Class<? extends P> type, FI.Apply<? extends P, R> apply) {
+
+    FI.Predicate predicate = new FI.Predicate() {
+      @Override
+      public boolean defined(Object o) {
+        return type.isInstance(o);
+      }
+    };
+
+    addStatement(new CaseStatement<I, P, R>(predicate, (FI.Apply<P, R>) apply));
     return this;
   }
 
   /**
    * Add a new case statement to this builder.
    *
-   * @param type       a type to match the argument against
-   * @param predicate  a predicate that will be evaluated on the argument if the type matches
-   * @param apply      an action to apply to the argument if the type matches and the predicate returns true
-   * @return           a builder with the case statement added
+   * @param type      a type to match the argument against
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param apply     an action to apply to the argument if the type matches and the predicate returns true
+   * @return a builder with the case statement added
    */
-  public <P> PFBuilder<I, R> match(final Class<P> type,
-                                   final FI.TypedPredicate<P> predicate,
-                                   final FI.Apply<P, R> apply) {
-    addStatement(new CaseStatement<I, P, R>(
-      new FI.Predicate() {
-        @Override
-        public boolean defined(Object o) {
-          if (!type.isInstance(o))
-            return false;
-          else {
-            @SuppressWarnings("unchecked")
-            P p = (P) o;
-            return predicate.defined(p);
-          }
+  @SuppressWarnings("unchecked")
+  public <P> PFBuilder<I, R> match(final Class<? extends P> type,
+                                   final FI.TypedPredicate<? extends P> predicate,
+                                   final FI.Apply<? extends P, R> apply) {
+    FI.Predicate fiPredicate = new FI.Predicate() {
+      @Override
+      public boolean defined(Object o) {
+        if (!type.isInstance(o))
+          return false;
+        else {
+          @SuppressWarnings("unchecked")
+          P p = (P) o;
+          return ((FI.TypedPredicate<P>) predicate).defined(p);
         }
-      }, apply));
+      }
+    };
+    addStatement(new CaseStatement<I, P, R>(fiPredicate, (FI.Apply<P, R>) apply));
     return this;
   }
 
   /**
    * Add a new case statement to this builder.
    *
-   * @param object  the object to compare equals with
+   * @param object the object to compare equals with
    * @param apply  an action to apply to the argument if the object compares equal
    * @return a builder with the case statement added
    */
@@ -86,8 +90,9 @@ public final class PFBuilder<I, R> extends AbstractPFBuilder<I, R> {
 
   /**
    * Add a new case statement to this builder, that matches any argument.
-   * @param apply  an action to apply to the argument
-   * @return       a builder with the case statement added
+   *
+   * @param apply an action to apply to the argument
+   * @return a builder with the case statement added
    */
   public PFBuilder<I, R> matchAny(final FI.Apply<Object, R> apply) {
     addStatement(new CaseStatement<I, Object, R>(

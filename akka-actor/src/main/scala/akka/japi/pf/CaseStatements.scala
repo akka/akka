@@ -4,13 +4,13 @@
 
 package akka.japi.pf
 
-import FI.{ UnitApply, Apply, Predicate }
+import FI.{UnitApply, Apply, Predicate}
 
 private[pf] object CaseStatement {
   def empty[F, T](): PartialFunction[F, T] = PartialFunction.empty
 }
 
-private[pf] class CaseStatement[F, P, T](predicate: Predicate, apply: Apply[P, T])
+private[pf] class CaseStatement[-F, +P, T](predicate: Predicate, apply: Apply[P, T])
   extends PartialFunction[F, T] {
 
   override def isDefinedAt(o: F) = predicate.defined(o)

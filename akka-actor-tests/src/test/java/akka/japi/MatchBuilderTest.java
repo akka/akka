@@ -38,4 +38,44 @@ public class MatchBuilderTest {
     exception.expect(MatchError.class);
     assertFalse("A string should throw a MatchError", new Double(4711).equals(pf.match("4711")));
   }
+
+
+  static class GenericClass<T> {
+    T val;
+
+    public GenericClass(T val) {
+      this.val = val;
+    }
+  }
+
+  @Test
+  public void shouldHandleMatchOnGenericClass() {
+    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.Apply<GenericClass<String>, String>() {
+      @Override
+      public String apply(GenericClass<String> stringGenericClass) {
+        return stringGenericClass.val;
+      }
+    }));
+
+    assertTrue("String value should be extract from GenericMessage", "A".equals(pf.match(new GenericClass<String>("A"))));
+  }
+
+
+  @Test
+  public void shouldHandleMatchWithPredicateOnGenericClass() {
+    Match<Object, String> pf = Match.create(Match.match(GenericClass.class, new FI.TypedPredicate<GenericClass<String>>() {
+      @Override
+      public boolean defined(GenericClass<String> genericClass) {
+        return !genericClass.val.isEmpty();
+      }
+    }, new FI.Apply<GenericClass<String>, String>() {
+      @Override
+      public String apply(GenericClass<String> stringGenericClass) {
+        return stringGenericClass.val;
+      }
+    }));
+
+    exception.expect(MatchError.class);
+    assertTrue("empty GenericMessage should throw match error", "".equals(pf.match(new GenericClass<String>(""))));
+  }
 }
