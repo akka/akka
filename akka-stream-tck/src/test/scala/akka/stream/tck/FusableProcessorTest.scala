@@ -4,10 +4,10 @@
 package akka.stream.tck
 
 import java.util.concurrent.atomic.AtomicInteger
-
 import akka.stream.impl.{ Ast, ActorBasedFlowMaterializer }
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import org.reactivestreams.{ Publisher, Processor }
+import akka.stream.impl.fusing.Map
 
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
@@ -22,7 +22,7 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
     val flowName = getClass.getSimpleName + "-" + processorCounter.incrementAndGet()
 
     val processor = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
-      Ast.Fused(List(akka.stream.impl.fusing.Map[Int, Int](identity)), "identity"), flowName, 1)
+      Ast.Fused(List(Map[Int, Int](identity)), "identity"), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]
   }

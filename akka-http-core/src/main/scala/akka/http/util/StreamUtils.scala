@@ -4,129 +4,120 @@
 
 package akka.http.util
 
-import java.util.concurrent.atomic.AtomicBoolean
 import java.io.InputStream
 
-import org.reactivestreams.{ Subscriber, Publisher }
+import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-
+import scala.util.Try
 import akka.actor.Props
-import akka.util.ByteString
-
-import akka.stream.{ impl, Transformer, FlowMaterializer }
-import akka.stream.scaladsl._
-
 import akka.http.model.RequestEntity
+import akka.stream.FlowMaterializer
+import akka.stream.impl.Ast.AstNode
+import akka.stream.impl.Ast.StageFactory
+import akka.stream.impl.fusing.IteratorInterpreter
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import akka.stream.impl
+import akka.util.ByteString
+import org.reactivestreams.{ Subscriber, Publisher }
 
 /**
  * INTERNAL API
  */
 private[http] object StreamUtils {
-  /**
-   * Maps a transformer by strictly applying the given function to each output element.
-   */
-  def mapTransformer[T, U, V](t: Transformer[T, U], f: U ⇒ V): Transformer[T, V] =
-    new Transformer[T, V] {
-      override def isComplete: Boolean = t.isComplete
-
-      def onNext(element: T): immutable.Seq[V] = t.onNext(element).map(f)
-      override def onTermination(e: Option[Throwable]): immutable.Seq[V] = t.onTermination(e).map(f)
-      override def onError(cause: Throwable): Unit = t.onError(cause)
-      override def cleanup(): Unit = t.cleanup()
-    }
 
   /**
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Transformer[ByteString, ByteString] =
-    new Transformer[ByteString, ByteString] {
-      def onNext(element: ByteString): immutable.Seq[ByteString] = f(element) :: Nil
+  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Flow[ByteString, ByteString] = {
+    val transformer = new PushPullStage[ByteString, ByteString] {
+      override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
+        ctx.push(f(element))
 
-      override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] =
-        if (e.isEmpty) {
-          val last = finish()
-          if (last.nonEmpty) last :: Nil
-          else Nil
-        } else super.onTermination(e)
+      override def onPull(ctx: Context[ByteString]): Directive =
+        if (ctx.isFinishing) ctx.pushAndFinish(finish())
+        else ctx.pull()
+
+      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
     }
+    Flow[ByteString].transform("transformBytes", () ⇒ transformer)
+  }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
     impl.ErrorPublisher(ex, "failed").asInstanceOf[Publisher[T]]
 
-  def mapErrorTransformer[T](f: Throwable ⇒ Throwable): Transformer[T, T] =
-    new Transformer[T, T] {
-      def onNext(element: T): immutable.Seq[T] = immutable.Seq(element)
-      override def onError(cause: scala.Throwable): Unit = throw f(cause)
+  def mapErrorTransformer(f: Throwable ⇒ Throwable): Flow[ByteString, ByteString] = {
+    val transformer = new PushStage[ByteString, ByteString] {
+      override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
+        ctx.push(element)
+
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[ByteString]): TerminationDirective =
+        ctx.fail(f(cause))
     }
 
-  def sliceBytesTransformer(start: Long, length: Long): Transformer[ByteString, ByteString] =
-    new Transformer[ByteString, ByteString] {
-      type State = Transformer[ByteString, ByteString]
+    Flow[ByteString].transform("transformError", () ⇒ transformer)
+  }
+
+  def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString] = {
+    val transformer = new StatefulStage[ByteString, ByteString] {
 
       def skipping = new State {
         var toSkip = start
-        def onNext(element: ByteString): immutable.Seq[ByteString] =
+        override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
           if (element.length < toSkip) {
             // keep skipping
             toSkip -= element.length
-            Nil
+            ctx.pull()
           } else {
             become(taking(length))
             // toSkip <= element.length <= Int.MaxValue
-            currentState.onNext(element.drop(toSkip.toInt))
+            current.onPush(element.drop(toSkip.toInt), ctx)
           }
       }
       def taking(initiallyRemaining: Long) = new State {
         var remaining: Long = initiallyRemaining
-        def onNext(element: ByteString): immutable.Seq[ByteString] = {
+        override def onPush(element: ByteString, ctx: Context[ByteString]): Directive = {
           val data = element.take(math.min(remaining, Int.MaxValue).toInt)
           remaining -= data.size
-          if (remaining <= 0) become(finishing)
-          data :: Nil
+          if (remaining <= 0) ctx.pushAndFinish(data)
+          else ctx.push(data)
         }
       }
-      def finishing = new State {
-        override def isComplete: Boolean = true
-        def onNext(element: ByteString): immutable.Seq[ByteString] =
-          throw new IllegalStateException("onNext called on complete stream")
-      }
 
-      var currentState: State = if (start > 0) skipping else taking(length)
-      def become(state: State): Unit = currentState = state
-
-      override def isComplete: Boolean = currentState.isComplete
-      def onNext(element: ByteString): immutable.Seq[ByteString] = currentState.onNext(element)
-      override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] = currentState.onTermination(e)
+      override def initial: State = if (start > 0) skipping else taking(length)
     }
+    Flow[ByteString].transform("sliceBytes", () ⇒ transformer)
+  }
 
   /**
    * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
    * will only be traversed once.
    */
-  def transformMultiple[T, U](input: Source[T], transformers: immutable.Seq[() ⇒ Transformer[T, U]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[U]] =
+  def transformMultiple(input: Source[ByteString], transformers: immutable.Seq[Flow[ByteString, ByteString]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[ByteString]] =
     transformers match {
       case Nil      ⇒ Nil
-      case Seq(one) ⇒ Vector(input.transform("transformMultipleElement", one))
+      case Seq(one) ⇒ Vector(input.via(one))
       case multiple ⇒
-        val results = Vector.fill(multiple.size)(Sink.publisher[U])
+        val results = Vector.fill(multiple.size)(Sink.publisher[ByteString])
         val mat =
           FlowGraph { implicit b ⇒
             import FlowGraphImplicits._
 
-            val broadcast = Broadcast[T]("transformMultipleInputBroadcast")
+            val broadcast = Broadcast[ByteString]("transformMultipleInputBroadcast")
             input ~> broadcast
             (multiple, results).zipped.foreach { (trans, sink) ⇒
-              broadcast ~> Flow[T].transform("transformMultipleElement", trans) ~> sink
+              broadcast ~> trans ~> sink
             }
           }.run()
         results.map(s ⇒ Source(mat.get(s)))
     }
 
   def mapEntityError(f: Throwable ⇒ Throwable): RequestEntity ⇒ RequestEntity =
-    _.transformDataBytes(() ⇒ mapErrorTransformer(f))
+    _.transformDataBytes(mapErrorTransformer(f))
 
   /**
    * Simple blocking Source backed by an InputStream.
@@ -186,13 +177,53 @@ private[http] object StreamUtils {
         else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once"), "failed").asInstanceOf[Publisher[T]], ())
     }
   }
-}
 
-/**
- * INTERNAL API
- */
-private[http] class EnhancedTransformer[T, U](val t: Transformer[T, U]) extends AnyVal {
-  def map[V](f: U ⇒ V): Transformer[T, V] = StreamUtils.mapTransformer(t, f)
+  def runStrict(sourceData: ByteString, transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
+    Try {
+      transformer match {
+        case Pipe(ops) ⇒
+          if (ops.isEmpty)
+            Some(sourceData)
+          else {
+            @tailrec def tryBuild(remaining: List[AstNode], acc: List[PushPullStage[ByteString, ByteString]]): List[PushPullStage[ByteString, ByteString]] =
+              remaining match {
+                case Nil ⇒ acc.reverse
+                case StageFactory(mkStage, _) :: tail ⇒
+                  mkStage() match {
+                    case d: PushPullStage[ByteString, ByteString] ⇒
+                      tryBuild(tail, d :: acc)
+                    case _ ⇒ Nil
+                  }
+                case _ ⇒ Nil
+              }
+
+            val strictOps = tryBuild(ops, Nil)
+            if (strictOps.isEmpty)
+              None
+            else {
+              val iter: Iterator[ByteString] = new IteratorInterpreter(Iterator.single(sourceData), strictOps).iterator
+              var byteSize = 0L
+              var result = ByteString.empty
+              var i = 0
+              // note that iter.next() will throw exception if the stream fails, caught by the enclosing Try
+              while (iter.hasNext) {
+                i += 1
+                if (i > maxElements)
+                  throw new IllegalArgumentException(s"Too many elements produced by byte transformation, $i was greater than max allowed $maxElements elements")
+                val elem = iter.next()
+                byteSize += elem.size
+                if (byteSize > maxByteSize)
+                  throw new IllegalArgumentException(s"Too large data result, $byteSize bytes was greater than max allowed $maxByteSize bytes")
+                result ++= elem
+              }
+              Some(result)
+            }
+          }
+
+        case _ ⇒ None
+      }
+    }
+
 }
 
 /**

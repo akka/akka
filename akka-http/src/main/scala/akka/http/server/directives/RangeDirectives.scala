@@ -41,7 +41,7 @@ trait RangeDirectives {
 
       class IndexRange(val start: Long, val end: Long) {
         def length = end - start
-        def apply(entity: UniversalEntity): UniversalEntity = entity.transformDataBytes(length, () ⇒ StreamUtils.sliceBytesTransformer(start, length))
+        def apply(entity: UniversalEntity): UniversalEntity = entity.transformDataBytes(length, StreamUtils.sliceBytesTransformer(start, length))
         def distance(other: IndexRange) = mergedEnd(other) - mergedStart(other) - (length + other.length)
         def mergeWith(other: IndexRange) = new IndexRange(mergedStart(other), mergedEnd(other))
         def contentRange(entityLength: Long) = ContentRange(start, end - 1, entityLength)
@@ -73,7 +73,7 @@ trait RangeDirectives {
         // Therefore, ranges need to be sorted to prevent that some selected ranges already start to accumulate data
         // but cannot be sent out because another range is blocking the queue.
         val coalescedRanges = coalesceRanges(iRanges).sortBy(_.start)
-        val bodyPartTransformers = coalescedRanges.map(ir ⇒ () ⇒ StreamUtils.sliceBytesTransformer(ir.start, ir.length)).toVector
+        val bodyPartTransformers = coalescedRanges.map(ir ⇒ StreamUtils.sliceBytesTransformer(ir.start, ir.length)).toVector
         val bodyPartByteStreams = StreamUtils.transformMultiple(entity.dataBytes, bodyPartTransformers)
         val bodyParts = (coalescedRanges, bodyPartByteStreams).zipped.map { (range, bytes) ⇒
           Multipart.ByteRanges.BodyPart(range.contentRange(length), HttpEntity(entity.contentType, range.length, bytes))
