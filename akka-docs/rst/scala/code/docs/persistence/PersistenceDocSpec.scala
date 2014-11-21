@@ -111,6 +111,14 @@ trait PersistenceDocSpec {
   }
 
   new AnyRef {
+      trait MyProcessor1 extends PersistentActor {
+        //#recover-fully-disabled
+        override def preStart() = self ! Recover(toSequenceNr = 0L)
+        //#recover-fully-disabled
+      }
+  }
+
+  new AnyRef {
     trait ProcessorMethods {
       //#persistence-id
       def persistenceId: String
