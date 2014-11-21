@@ -116,7 +116,7 @@ class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue) extends 
   def createMergeLogic = new MergeLogic[(A, B, C)] {
 
     override def inputHandles(inputCount: Int) = {
-      require(inputCount == 3, s"Zip must have two connected inputs, was $inputCount")
+      require(inputCount == 3, s"TripleZip must have 3 connected inputs, was $inputCount")
       Vector(soonCancelledInput, stableInput1, stableInput2)
     }
 
