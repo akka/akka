@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.language.existentials
-import akka.stream.Transformer
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Flow
+import akka.stream.stage._
 
 /**
  * Provides operations needed to implement the `timed` DSL
@@ -99,41 +99,49 @@ object Timed extends TimedOps with TimedIntervalBetweenOps {
     }
   }
 
-  final class StartTimedFlow[T](ctx: TimedFlowContext) extends Transformer[T, T] {
+  final class StartTimedFlow[T](timedContext: TimedFlowContext) extends PushStage[T, T] {
     private var started = false
 
-    override def onNext(element: T) = {
+    override def onPush(elem: T, ctx: Context[T]): Directive = {
       if (!started) {
-        ctx.start()
+        timedContext.start()
         started = true
       }
-
-      immutable.Seq(element)
+      ctx.push(elem)
     }
   }
 
-  final class StopTimed[T](ctx: TimedFlowContext, _onComplete: FiniteDuration ⇒ Unit) extends Transformer[T, T] {
+  final class StopTimed[T](timedContext: TimedFlowContext, _onComplete: FiniteDuration ⇒ Unit) extends PushStage[T, T] {
 
-    override def cleanup() {
-      val d = ctx.stop()
+    override def onPush(elem: T, ctx: Context[T]): Directive = ctx.push(elem)
+
+    override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+      stopTime()
+      ctx.fail(cause)
+    }
+    override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+      stopTime()
+      ctx.finish()
+    }
+    private def stopTime() {
+      val d = timedContext.stop()
       _onComplete(d)
     }
 
-    override def onNext(element: T) = immutable.Seq(element)
   }
 
-  final class TimedIntervalTransformer[T](matching: T ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit) extends Transformer[T, T] {
+  final class TimedIntervalTransformer[T](matching: T ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit) extends PushStage[T, T] {
     private var prevNanos = 0L
     private var matched = 0L
 
-    override def onNext(in: T): immutable.Seq[T] = {
-      if (matching(in)) {
-        val d = updateInterval(in)
+    override def onPush(elem: T, ctx: Context[T]): Directive = {
+      if (matching(elem)) {
+        val d = updateInterval(elem)
 
         if (matched > 1)
           onInterval(d)
       }
-      immutable.Seq(in)
+      ctx.push(elem)
     }
 
     private def updateInterval(in: T): FiniteDuration = {

@@ -8,7 +8,7 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.language.{ existentials, higherKinds }
 import akka.stream.FlowMaterializer
 
-private[stream] object Pipe {
+private[akka] object Pipe {
   private val emptyInstance = Pipe[Any, Any](ops = Nil)
   def empty[T]: Pipe[T, T] = emptyInstance.asInstanceOf[Pipe[T, T]]
 }
@@ -16,7 +16,7 @@ private[stream] object Pipe {
 /**
  * Flow with one open input and one open output.
  */
-private[stream] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
+private[akka] final case class Pipe[-In, +Out](ops: List[AstNode]) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
 
   override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = this.copy(ops = op :: ops) // FIXME raw addition of AstNodes

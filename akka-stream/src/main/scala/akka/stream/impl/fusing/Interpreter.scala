@@ -4,63 +4,38 @@
 package akka.stream.impl.fusing
 
 import scala.annotation.tailrec
+import scala.collection.breakOut
 import scala.util.control.NonFatal
+import akka.stream.stage._
 
 // TODO:
 // fix jumpback table with keep-going-on-complete ops (we might jump between otherwise isolated execution regions)
 // implement grouped, buffer
 // add recover
 
-trait Op[In, Out, PushD <: Directive, PullD <: Directive, Ctxt <: Context[Out]] {
-  private[fusing] var holding = false
-  private[fusing] var allowedToPush = false
-  private[fusing] var terminationPending = false
-
-  def isHolding: Boolean = holding
-  def isFinishing: Boolean = terminationPending
-  def onPush(elem: In, ctxt: Ctxt): PushD
-  def onPull(ctxt: Ctxt): PullD
-  def onUpstreamFinish(ctxt: Ctxt): TerminationDirective = ctxt.finish()
-  def onDownstreamFinish(ctxt: Ctxt): TerminationDirective = ctxt.finish()
-  def onFailure(cause: Throwable, ctxt: Ctxt): TerminationDirective = ctxt.fail(cause)
+/**
+ * INTERNAL API
+ *
+ * `BoundaryStage` implementations are meant to communicate with the external world. These stages do not have most of the
+ * safety properties enforced and should be used carefully. One important ability of BoundaryStages that they can take
+ * off an execution signal by calling `ctx.exit()`. This is typically used immediately after an external signal has
+ * been produced (for example an actor message). BoundaryStages can also kickstart execution by calling `enter()` which
+ * returns a context they can use to inject signals into the interpreter. There is no checks in place to enforce that
+ * the number of signals taken out by exit() and the number of signals returned via enter() are the same -- using this
+ * stage type needs extra care from the implementer.
+ *
+ * BoundaryStages are the elements that make the interpreter *tick*, there is no other way to start the interpreter
+ * than using a BoundaryStage.
+ */
+private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext] {
+  private[fusing] var bctx: BoundaryContext = _
+  def enter(): BoundaryContext = bctx
 }
 
-trait DeterministicOp[In, Out] extends Op[In, Out, Directive, Directive, Context[Out]]
-trait DetachedOp[In, Out] extends Op[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out]]
-trait BoundaryOp extends Op[Any, Any, Directive, Directive, BoundaryContext] {
-  private[fusing] var bctxt: BoundaryContext = _
-  def enter(): BoundaryContext = bctxt
-}
-
-trait TransitivePullOp[In, Out] extends DeterministicOp[In, Out] {
-  final override def onPull(ctxt: Context[Out]): Directive = ctxt.pull()
-}
-
-sealed trait Directive
-sealed trait UpstreamDirective extends Directive
-sealed trait DownstreamDirective extends Directive
-sealed trait TerminationDirective extends Directive
-final class FreeDirective extends UpstreamDirective with DownstreamDirective with TerminationDirective
-
-sealed trait Context[Out] {
-  def push(elem: Out): DownstreamDirective
-  def pull(): UpstreamDirective
-  def finish(): FreeDirective
-  def pushAndFinish(elem: Out): DownstreamDirective
-  def fail(cause: Throwable): FreeDirective
-  def absorbTermination(): TerminationDirective
-}
-
-trait DetachedContext[Out] extends Context[Out] {
-  def hold(): FreeDirective
-  def pushAndPull(elem: Out): FreeDirective
-}
-
-trait BoundaryContext extends Context[Any] {
-  def exit(): FreeDirective
-}
-
-object OneBoundedInterpreter {
+/**
+ * INTERNAL API
+ */
+private[akka] object OneBoundedInterpreter {
   final val PhantomDirective = null
 
   /**
@@ -70,16 +45,18 @@ object OneBoundedInterpreter {
    * paths again. When finishing an op this op is injected in its place to isolate upstream and downstream execution
    * domains.
    */
-  private[akka] object Finished extends BoundaryOp {
-    override def onPush(elem: Any, ctxt: BoundaryContext): UpstreamDirective = ctxt.finish()
-    override def onPull(ctxt: BoundaryContext): DownstreamDirective = ctxt.finish()
-    override def onUpstreamFinish(ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
-    override def onDownstreamFinish(ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
-    override def onFailure(cause: Throwable, ctxt: BoundaryContext): TerminationDirective = ctxt.exit()
+  private[akka] object Finished extends BoundaryStage {
+    override def onPush(elem: Any, ctx: BoundaryContext): UpstreamDirective = ctx.finish()
+    override def onPull(ctx: BoundaryContext): DownstreamDirective = ctx.finish()
+    override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = ctx.exit()
+    override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = ctx.exit()
+    override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = ctx.exit()
   }
 }
 
 /**
+ * INTERNAL API
+ *
  * One-bounded interpreter for a linear chain of stream operations (graph support is possible and will be implemented
  * later)
  *
@@ -105,70 +82,70 @@ object OneBoundedInterpreter {
  * time. This "exactly one" property is enforced by proper types and runtime checks where needed. Currently there are
  * three kinds of ops:
  *
- *  - DeterministicOp implementations participate in 1-bounded regions. For every external non-completion signal these
+ *  - PushPullStage implementations participate in 1-bounded regions. For every external non-completion signal these
  *  ops produce *exactly one* signal (completion is different, explained later) therefore keeping the number of events
  *  the same: exactly one.
  *
- *  - DetachedOp implementations are boundaries between 1-bounded regions. This means that they need to enforce the
- *  "exactly one" property both on their upstream and downstream regions. As a consequence a DetachedOp can never
- *  answer an onPull with a ctxt.pull() or answer an onPush() with a ctxt.push() since such an action would "steal"
+ *  - DetachedStage implementations are boundaries between 1-bounded regions. This means that they need to enforce the
+ *  "exactly one" property both on their upstream and downstream regions. As a consequence a DetachedStage can never
+ *  answer an onPull with a ctx.pull() or answer an onPush() with a ctx.push() since such an action would "steal"
  *  the event from one region (resulting in zero signals) and would inject it to the other region (resulting in two
- *  signals). However DetachedOps have the ability to call ctxt.hold() as a response to onPush/onPull which temporarily
+ *  signals). However DetachedStages have the ability to call ctx.hold() as a response to onPush/onPull which temporarily
  *  takes the signal off and stops execution, at the same time putting the op in a "holding" state. If the op is in a
  *  holding state it contains one absorbed signal, therefore in this state the only possible command to call is
- *  ctxt.pushAndPull() which results in two events making the balance right again:
+ *  ctx.pushAndPull() which results in two events making the balance right again:
  *  1 hold + 1 external event = 2 external event
  *  This mechanism allows synchronization between the upstream and downstream regions which otherwise can progress
  *  independently.
  *
- *  - BoundaryOp implementations are meant to communicate with the external world. These ops do not have most of the
- *  safety properties enforced and should be used carefully. One important ability of BoundaryOps that they can take
- *  off an execution signal by calling ctxt.exit(). This is typically used immediately after an external signal has
- *  been produced (for example an actor message). BoundaryOps can also kickstart execution by calling enter() which
+ *  - BoundaryStage implementations are meant to communicate with the external world. These ops do not have most of the
+ *  safety properties enforced and should be used carefully. One important ability of BoundaryStages that they can take
+ *  off an execution signal by calling ctx.exit(). This is typically used immediately after an external signal has
+ *  been produced (for example an actor message). BoundaryStages can also kickstart execution by calling enter() which
  *  returns a context they can use to inject signals into the interpreter. There is no checks in place to enforce that
  *  the number of signals taken out by exit() and the number of signals returned via enter() are the same -- using this
  *  op type needs extra care from the implementer.
- *  BoundaryOps are the elements that make the interpreter *tick*, there is no other way to start the interpreter
- *  than using a BoundaryOp.
+ *  BoundaryStages are the elements that make the interpreter *tick*, there is no other way to start the interpreter
+ *  than using a BoundaryStage.
  *
  * Operations are allowed to do early completion and cancel/complete their upstreams and downstreams. It is *not*
- * allowed however to do these independently to avoid isolated execution islands. The only call possible is ctxt.finish()
+ * allowed however to do these independently to avoid isolated execution islands. The only call possible is ctx.finish()
  * which is a combination of cancel/complete.
  * Since onComplete is not a backpressured signal it is sometimes preferable to push a final element and then immediately
  * finish. This combination is exposed as pushAndFinish() which enables op writers to propagate completion events without
  * waiting for an extra round of pull.
  * Another peculiarity is how to convert termination events (complete/failure) into elements. The problem
- * here is that the termination events are not backpressured while elements are. This means that simply calling ctxt.push()
+ * here is that the termination events are not backpressured while elements are. This means that simply calling ctx.push()
  * as a response to onUpstreamFinished() will very likely break boundedness and result in a buffer overflow somewhere.
- * Therefore the only allowed command in this case is ctxt.absorbTermination() which stops the propagation of the
+ * Therefore the only allowed command in this case is ctx.absorbTermination() which stops the propagation of the
  * termination signal, and puts the op in a finishing state. Depending on whether the op has a pending pull signal it has
  * not yet "consumed" by a push its onPull() handler might be called immediately.
  *
  * In order to execute different individual execution regions the interpreter uses the callstack to schedule these. The
  * current execution forking operations are
- *  - ctxt.finish() which starts a wave of completion and cancellation in two directions. When an op calls finish()
+ *  - ctx.finish() which starts a wave of completion and cancellation in two directions. When an op calls finish()
  *  it is immediately replaced by an artificial Finished op which makes sure that the two execution paths are isolated
  *  forever.
- *  - ctxt.fail() which is similar to finish()
- *  - ctxt.pushAndPull() which (as a response to a previous ctxt.hold()) starts a wawe of downstream push and upstream
+ *  - ctx.fail() which is similar to finish()
+ *  - ctx.pushAndPull() which (as a response to a previous ctx.hold()) starts a wawe of downstream push and upstream
  *  pull. The two execution paths are isolated by the op itself since onPull() from downstream can only answered by hold or
  *  push, while onPush() from upstream can only answered by hold or pull -- it is impossible to "cross" the op.
- *  - ctxt.pushAndFinish() which is different from the forking ops above because the execution of push and finish happens on
+ *  - ctx.pushAndFinish() which is different from the forking ops above because the execution of push and finish happens on
  *  the same execution region and they are order dependent, too.
  * The interpreter tracks the depth of recursive forking and allows various strategies of dealing with the situation
  * when this depth reaches a certain limit. In the simplest case an error is reported (this is very useful for stress
  * testing and finding callstack wasting bugs), in the other case the forked call is scheduled via a list -- i.e. instead
  * of the stack the heap is used.
  */
-class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 100, val overflowToHeap: Boolean = true) {
+private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: Int = 100, val overflowToHeap: Boolean = true) {
   import OneBoundedInterpreter._
-  type UntypedOp = Op[Any, Any, Directive, Directive, DetachedContext[Any]]
+  type UntypedOp = AbstractStage[Any, Any, Directive, Directive, Context[Any]]
   require(ops.nonEmpty, "OneBoundedInterpreter cannot be created without at least one Op")
 
-  private val pipeline = ops.toArray.asInstanceOf[Array[UntypedOp]]
+  private val pipeline: Array[UntypedOp] = ops.map(_.asInstanceOf[UntypedOp])(breakOut)
 
   /**
-   * This table is used to accelerate demand propagation upstream. All ops that implement TransitivePullOp are guaranteed
+   * This table is used to accelerate demand propagation upstream. All ops that implement PushStage are guaranteed
    * to only do upstream propagation of demand signals, therefore it is not necessary to execute them but enough to
    * "jump over" them. This means that when a chain of one million maps gets a downstream demand it is propagated
    * to the upstream *in one step* instead of one million onPull() calls.
@@ -199,7 +176,7 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
     var nextJumpBack = -1
     for (pos ← 0 until pipeline.length) {
       table(pos) = nextJumpBack
-      if (!pipeline(pos).isInstanceOf[TransitivePullOp[_, _]]) nextJumpBack = pos
+      if (!pipeline(pos).isInstanceOf[PushStage[_, _]]) nextJumpBack = pos
     }
     table
   }
@@ -217,7 +194,7 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
 
     override def pull(): UpstreamDirective = {
       if (pipeline(activeOp).holding) throw new IllegalStateException("Cannot pull while holding, only pushAndPull")
-      pipeline(activeOp).allowedToPush = !pipeline(activeOp).isInstanceOf[DetachedOp[_, _]]
+      pipeline(activeOp).allowedToPush = !pipeline(activeOp).isInstanceOf[DetachedStage[_, _]]
       state = Pulling
       PhantomDirective
     }
@@ -227,6 +204,8 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       state = Cancelling
       PhantomDirective
     }
+
+    def isFinishing: Boolean = pipeline(activeOp).terminationPending
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
       pipeline(activeOp) = Finished.asInstanceOf[UntypedOp]
@@ -253,6 +232,8 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       exit()
     }
 
+    override def isHolding: Boolean = pipeline(activeOp).holding
+
     override def pushAndPull(elem: Any): FreeDirective = {
       if (!pipeline(activeOp).holding) throw new IllegalStateException("Cannot pushAndPull without holding first")
       pipeline(activeOp).holding = false
@@ -276,14 +257,14 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
   private object Pushing extends State {
     override def advance(): Unit = {
       activeOp += 1
-      pipeline(activeOp).onPush(elementInFlight, ctxt = this)
+      pipeline(activeOp).onPush(elementInFlight, ctx = this)
     }
   }
 
   private object PushFinish extends State {
     override def advance(): Unit = {
       activeOp += 1
-      pipeline(activeOp).onPush(elementInFlight, ctxt = this)
+      pipeline(activeOp).onPush(elementInFlight, ctx = this)
     }
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
@@ -302,7 +283,7 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
     override def advance(): Unit = {
       elementInFlight = null
       activeOp = jumpBacks(activeOp)
-      pipeline(activeOp).onPull(ctxt = this)
+      pipeline(activeOp).onPull(ctx = this)
     }
 
     override def hold(): FreeDirective = {
@@ -317,7 +298,9 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       elementInFlight = null
       pipeline(activeOp) = Finished.asInstanceOf[UntypedOp]
       activeOp += 1
-      if (!pipeline(activeOp).isFinishing) pipeline(activeOp).onUpstreamFinish(ctxt = this)
+
+      // FIXME issue #16345, ArrayIndexOutOfBoundsException
+      if (!pipeline(activeOp).terminationPending) pipeline(activeOp).onUpstreamFinish(ctx = this)
       else exit()
     }
 
@@ -330,7 +313,7 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       pipeline(activeOp).terminationPending = true
       pipeline(activeOp).holding = false
       // FIXME: This state is potentially corrupted by the jumpBackTable (not updated when jumping over)
-      if (pipeline(activeOp).allowedToPush) pipeline(activeOp).onPull(ctxt = Pulling)
+      if (pipeline(activeOp).allowedToPush) pipeline(activeOp).onPull(ctx = Pulling)
       else exit()
       PhantomDirective
     }
@@ -341,7 +324,9 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       elementInFlight = null
       pipeline(activeOp) = Finished.asInstanceOf[UntypedOp]
       activeOp -= 1
-      if (!pipeline(activeOp).isFinishing) pipeline(activeOp).onDownstreamFinish(ctxt = this)
+
+      // FIXME issue #16345, ArrayIndexOutOfBoundsException
+      if (!pipeline(activeOp).terminationPending) pipeline(activeOp).onDownstreamFinish(ctx = this)
       else exit()
     }
 
@@ -356,13 +341,13 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
       elementInFlight = null
       pipeline(activeOp) = Finished.asInstanceOf[UntypedOp]
       activeOp += 1
-      pipeline(activeOp).onFailure(cause, ctxt = this)
+      pipeline(activeOp).onUpstreamFailure(cause, ctx = this)
     }
 
     override def absorbTermination(): TerminationDirective = {
       pipeline(activeOp).terminationPending = true
       pipeline(activeOp).holding = false
-      if (pipeline(activeOp).allowedToPush) pipeline(activeOp).onPull(ctxt = Pulling)
+      if (pipeline(activeOp).allowedToPush) pipeline(activeOp).onPull(ctx = Pulling)
       else exit()
       PhantomDirective
     }
@@ -421,7 +406,6 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
     state = forkState
     execute()
     activeOp = savePos
-    PhantomDirective
   }
 
   def init(): Unit = {
@@ -432,13 +416,15 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
   def isFinished: Boolean = pipeline(Upstream) == Finished && pipeline(Downstream) == Finished
 
   /**
-   * This method injects a Context to each of the BoundaryOps. This will be the context returned by enter().
+   * This method injects a Context to each of the BoundaryStages. This will be the context returned by enter().
    */
   private def initBoundaries(): Unit = {
     var op = 0
     while (op < pipeline.length) {
-      if (pipeline(op).isInstanceOf[BoundaryOp]) {
-        pipeline(op).asInstanceOf[BoundaryOp].bctxt = new State {
+      // FIXME try to change this to a pattern match `case boundary: BoundaryStage`
+      // but that doesn't work with current Context types
+      if (pipeline(op).isInstanceOf[BoundaryStage]) {
+        pipeline(op).asInstanceOf[BoundaryStage].bctx = new State {
           val entryPoint = op
 
           override def advance(): Unit = ()
@@ -499,7 +485,7 @@ class OneBoundedInterpreter(ops: Seq[Op[_, _, _, _, _]], val forkLimit: Int = 10
   private def runDetached(): Unit = {
     var op = pipeline.length - 1
     while (op >= 0) {
-      if (pipeline(op).isInstanceOf[DetachedOp[_, _]]) {
+      if (pipeline(op).isInstanceOf[DetachedStage[_, _]]) {
         activeOp = op
         state = Pulling
         execute()

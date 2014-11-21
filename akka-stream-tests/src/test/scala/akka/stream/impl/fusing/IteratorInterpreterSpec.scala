@@ -1,9 +1,12 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.impl.fusing
 
+import scala.collection.immutable
 import akka.stream.testkit.AkkaSpec
 import akka.util.ByteString
-
-import scala.collection.immutable
+import akka.stream.stage._
 
 class IteratorInterpreterSpec extends AkkaSpec {
 
@@ -45,28 +48,32 @@ class IteratorInterpreterSpec extends AkkaSpec {
 
     "throw exceptions when chain fails" in {
       val itr = new IteratorInterpreter[Int, Int](List(1, 2, 3).iterator, Seq(
-        new TransitivePullOp[Int, Int] {
-          override def onPush(elem: Int, ctxt: Context[Int]): Directive = {
-            if (elem == 2) ctxt.fail(new ArithmeticException())
-            else ctxt.push(elem)
+        new PushStage[Int, Int] {
+          override def onPush(elem: Int, ctx: Context[Int]): Directive = {
+            if (elem == 2) ctx.fail(new ArithmeticException())
+            else ctx.push(elem)
           }
         })).iterator
 
       itr.next() should be(1)
+      itr.hasNext should be(true)
       a[ArithmeticException] should be thrownBy { itr.next() }
+      itr.hasNext should be(false)
     }
 
     "throw exceptions when op in chain throws" in {
       val itr = new IteratorInterpreter[Int, Int](List(1, 2, 3).iterator, Seq(
-        new TransitivePullOp[Int, Int] {
-          override def onPush(elem: Int, ctxt: Context[Int]): Directive = {
+        new PushStage[Int, Int] {
+          override def onPush(elem: Int, ctx: Context[Int]): Directive = {
             if (elem == 2) throw new ArithmeticException()
-            else ctxt.push(elem)
+            else ctx.push(elem)
           }
         })).iterator
 
       itr.next() should be(1)
+      itr.hasNext should be(true)
       a[ArithmeticException] should be thrownBy { itr.next() }
+      itr.hasNext should be(false)
     }
 
     "work with an empty iterator" in {
@@ -108,47 +115,47 @@ class IteratorInterpreterSpec extends AkkaSpec {
   }
 
   // This op needs an extra pull round to finish
-  case class NaiveTake[T](count: Int) extends DeterministicOp[T, T] {
+  case class NaiveTake[T](count: Int) extends PushPullStage[T, T] {
     private var left: Int = count
 
-    override def onPush(elem: T, ctxt: Context[T]): Directive = {
+    override def onPush(elem: T, ctx: Context[T]): Directive = {
       left -= 1
-      ctxt.push(elem)
+      ctx.push(elem)
     }
 
-    override def onPull(ctxt: Context[T]): Directive = {
-      if (left == 0) ctxt.finish()
-      else ctxt.pull()
+    override def onPull(ctx: Context[T]): Directive = {
+      if (left == 0) ctx.finish()
+      else ctx.pull()
     }
   }
 
-  case class ByteStringBatcher(threshold: Int, compact: Boolean = true) extends DeterministicOp[ByteString, ByteString] {
+  case class ByteStringBatcher(threshold: Int, compact: Boolean = true) extends PushPullStage[ByteString, ByteString] {
     require(threshold > 0, "Threshold must be positive")
 
     private var buf = ByteString.empty
     private var passthrough = false
 
-    override def onPush(elem: ByteString, ctxt: Context[ByteString]): Directive = {
-      if (passthrough) ctxt.push(elem)
+    override def onPush(elem: ByteString, ctx: Context[ByteString]): Directive = {
+      if (passthrough) ctx.push(elem)
       else {
         buf = buf ++ elem
         if (buf.size >= threshold) {
           val batch = if (compact) buf.compact else buf
           passthrough = true
           buf = ByteString.empty
-          ctxt.push(batch)
-        } else ctxt.pull()
+          ctx.push(batch)
+        } else ctx.pull()
       }
     }
 
-    override def onPull(ctxt: Context[ByteString]): Directive = {
-      if (isFinishing) ctxt.pushAndFinish(buf)
-      else ctxt.pull()
+    override def onPull(ctx: Context[ByteString]): Directive = {
+      if (ctx.isFinishing) ctx.pushAndFinish(buf)
+      else ctx.pull()
     }
 
-    override def onUpstreamFinish(ctxt: Context[ByteString]): TerminationDirective = {
-      if (passthrough || buf.isEmpty) ctxt.finish()
-      else ctxt.absorbTermination()
+    override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = {
+      if (passthrough || buf.isEmpty) ctx.finish()
+      else ctx.absorbTermination()
     }
   }
 

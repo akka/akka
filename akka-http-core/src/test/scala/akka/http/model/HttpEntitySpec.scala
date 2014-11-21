@@ -16,8 +16,8 @@ import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import akka.stream.FlowMaterializer
-import akka.stream.Transformer
 import akka.http.model.HttpEntity._
+import akka.http.util.StreamUtils
 
 class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
   val tpe: ContentType = ContentTypes.`application/octet-stream`
@@ -120,14 +120,8 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       Await.result(transformed.toStrict(250.millis), 250.millis)
     }
 
-  def duplicateBytesTransformer(): Transformer[ByteString, ByteString] =
-    new Transformer[ByteString, ByteString] {
-      def onNext(bs: ByteString): immutable.Seq[ByteString] =
-        Vector(doubleChars(bs))
-
-      override def onTermination(e: Option[Throwable]): immutable.Seq[ByteString] =
-        Vector(trailer)
-    }
+  def duplicateBytesTransformer(): Flow[ByteString, ByteString] =
+    StreamUtils.byteStringTransformer(doubleChars, () ⇒ trailer)
 
   def trailer: ByteString = ByteString("--dup")
   def doubleChars(bs: ByteString): ByteString = ByteString(bs.flatMap(b ⇒ Seq(b, b)): _*)

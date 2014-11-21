@@ -6,6 +6,15 @@ package akka.stream.impl
 import scala.collection.immutable
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.Source
+import akka.actor.Props
+
+/**
+ * INTERNAL API
+ */
+private[akka] object PrefixAndTailImpl {
+  def props(settings: MaterializerSettings, takeMax: Int): Props =
+    Props(new PrefixAndTailImpl(settings, takeMax))
+}
 
 /**
  * INTERNAL API
