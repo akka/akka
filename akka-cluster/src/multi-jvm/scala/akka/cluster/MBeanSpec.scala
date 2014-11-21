@@ -22,6 +22,7 @@ object MBeanMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
     akka.cluster.jmx.enabled = on
+    akka.cluster.roles = [testNode]
     """)).withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
@@ -119,19 +120,31 @@ abstract class MBeanSpec
              |  "members": [
              |    {
              |      "address": "${sortedNodes(0)}",
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "roles": [
+             |        "testNode"
+             |      ]
              |    },
              |    {
              |      "address": "${sortedNodes(1)}",
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "roles": [
+             |        "testNode"
+             |      ]
              |    },
              |    {
              |      "address": "${sortedNodes(2)}",
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "roles": [
+             |        "testNode"
+             |      ]
              |    },
              |    {
              |      "address": "${sortedNodes(3)}",
-             |      "status": "Up"
+             |      "status": "Up",
+             |      "roles": [
+             |        "testNode"
+             |      ]
              |    }
              |  ],
              |  "unreachable": [
