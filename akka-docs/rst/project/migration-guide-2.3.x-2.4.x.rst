@@ -140,3 +140,11 @@ in order to allow package level log level definitions and ease source code looku
 In case you used specific "simple" logger name based rules in your ``logback.xml`` configurations,
 please change them to reflect appropriate package name, such as
 ``<logger name='akka.cluster' level='warn' />`` or ``<logger name='akka.remote' level='error' />``
+
+Default interval for TestKit.awaitAssert changed to 100 ms
+==========================================================
+
+Default check interval changed from 800 ms to 100 ms. You can define the interval explicitly if you need a
+longer interval.
+
+
