@@ -228,7 +228,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           case noMatch if !optimizations.simplification || (noMatch ne orig) ⇒ orig
 
           // Two consecutive maps is equivalent to one pipelined map
-          case Ast.Map(second) :: Ast.Map(first) :: rest ⇒ Ast.Map(first compose second) :: rest
+          case Ast.Map(second) :: Ast.Map(first) :: rest ⇒ Ast.Map(first andThen second) :: rest
 
           case noMatch ⇒ noMatch
         }
