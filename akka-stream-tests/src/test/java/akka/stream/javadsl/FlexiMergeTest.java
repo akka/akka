@@ -7,7 +7,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.HashSet;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -89,7 +88,6 @@ public class FlexiMergeTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  @Ignore // FIXME this is failing, see issue #16321
   public void mustBuildTripleZipUsingReadAll() throws Exception {
     TripleZip<Long, Integer, String> zip = new TripleZip<Long, Integer, String>();
 
@@ -344,6 +342,10 @@ public class FlexiMergeTest {
       result = 31 * result + (c != null ? c.hashCode() : 0);
       return result;
     }
+    
+    public String toString() {
+      return "(" + a + ", " + b + ", " + c + ")"; 
+    }
   }
 
   static public class TripleZip<A, B, C> extends FlexiMerge<FlexiMerge.ReadAllInputs, Triple<A, B, C>> {
@@ -363,8 +365,8 @@ public class FlexiMergeTest {
         @Override
         public List<InputHandle> inputHandles(int inputCount) {
           if (inputCount != 3)
-            throw new IllegalArgumentException("Zip must have two connected inputs, was " + inputCount);
-          return Arrays.asList(inputA.handle(), inputB.handle());
+            throw new IllegalArgumentException("TripleZip must have 3 connected inputs, was " + inputCount);
+          return Arrays.asList(inputA.handle(), inputB.handle(), inputC.handle());
         }
 
         @Override
