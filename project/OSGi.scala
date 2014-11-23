@@ -32,14 +32,6 @@ object OSGi {
 
   val osgi = exports(Seq("akka.osgi.*"))
 
-  val osgiDiningHakkersSampleApi = exports(Seq("akka.sample.osgi.api"))
-
-  val osgiDiningHakkersSampleCommand = osgiSettings ++ Seq(OsgiKeys.bundleActivator := Option("akka.sample.osgi.command.Activator"), OsgiKeys.privatePackage := Seq("akka.sample.osgi.command"))
-
-  val osgiDiningHakkersSampleCore = exports(Seq("")) ++ Seq(OsgiKeys.bundleActivator := Option("akka.sample.osgi.activation.Activator"), OsgiKeys.privatePackage := Seq("akka.sample.osgi.internal", "akka.sample.osgi.activation", "akka.sample.osgi.service"))
-
-  val osgiDiningHakkersSampleUncommons = exports(Seq("org.uncommons.maths.random")) ++ Seq(OsgiKeys.privatePackage := Seq("org.uncommons.maths.binary", "org.uncommons.maths", "org.uncommons.maths.number"))
-
   val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
