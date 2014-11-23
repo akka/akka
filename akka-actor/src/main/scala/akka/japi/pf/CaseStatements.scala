@@ -4,7 +4,7 @@
 
 package akka.japi.pf
 
-import FI.{UnitApply, Apply, Predicate}
+import FI.{ UnitApply, Apply, Predicate }
 
 private[pf] object CaseStatement {
   def empty[F, T](): PartialFunction[F, T] = PartialFunction.empty
