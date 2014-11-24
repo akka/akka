@@ -28,6 +28,7 @@ private[http] object ParserOutput {
     protocol: HttpProtocol,
     headers: List[HttpHeader],
     createEntity: Source[RequestOutput] ⇒ RequestEntity,
+    expect100ContinueResponsePending: Boolean,
     closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
@@ -43,5 +44,7 @@ private[http] object ParserOutput {
 
   final case class EntityChunk(chunk: HttpEntity.ChunkStreamPart) extends MessageOutput
 
-  final case class ParseError(status: StatusCode, info: ErrorInfo) extends MessageStart with MessageOutput
+  final case class MessageStartError(status: StatusCode, info: ErrorInfo) extends MessageStart with MessageOutput
+
+  final case class EntityStreamError(info: ErrorInfo) extends MessageOutput
 }

@@ -131,7 +131,7 @@ final case class HttpRequest(method: HttpMethod = HttpMethods.GET,
                              protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) extends japi.HttpRequest with HttpMessage {
   require(!uri.isEmpty, "An HttpRequest must not have an empty Uri")
   require(entity.isKnownEmpty || method.isEntityAccepted, "Requests with this method must have an empty entity")
-  require(protocol == HttpProtocols.`HTTP/1.1` || !entity.isInstanceOf[HttpEntity.Chunked],
+  require(protocol != HttpProtocols.`HTTP/1.0` || !entity.isInstanceOf[HttpEntity.Chunked],
     "HTTP/1.0 requests must not have a chunked entity")
 
   type Self = HttpRequest

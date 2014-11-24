@@ -49,10 +49,6 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
     val netOut = Sink(tcpConn.outputStream)
     val netIn = Source(tcpConn.inputStream)
 
-    // each connection uses a single (private) response parser instance for all its responses
-    // which builds a cache of all header instances seen on that connection
-    val responseParser = rootParser.createSharedCopy(requestMethodByPass)
-
     val pipeline = FlowGraph { implicit b ⇒
       val bypassFanout = Broadcast[(HttpRequest, Any)]("bypassFanout")
       val bypassFanin = Zip[HttpResponse, Any]("bypassFanin")
@@ -66,7 +62,10 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
 
       val responsePipeline =
         Flow[ByteString]
-          .transform("rootParser", () ⇒ responseParser)
+          .transform("rootParser", () ⇒
+            // each connection uses a single (private) response parser instance for all its responses
+            // which builds a cache of all header instances seen on that connection
+            rootParser.createShallowCopy(requestMethodByPass))
           .splitWhen(_.isInstanceOf[MessageStart])
           .headAndTail
           .collect {

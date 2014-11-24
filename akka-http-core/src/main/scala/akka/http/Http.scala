@@ -11,9 +11,9 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.collection.immutable
 import akka.io.Inet
 import akka.stream.MaterializerSettings
-import akka.http.engine.client.{ HttpClientProcessor, ClientConnectionSettings }
+import akka.http.engine.client.ClientConnectionSettings
 import akka.http.engine.server.ServerSettings
-import akka.http.model.{ HttpResponse, HttpRequest, japi }
+import akka.http.model.{ ErrorInfo, HttpResponse, HttpRequest, japi }
 import akka.http.util._
 import akka.actor._
 
@@ -141,6 +141,8 @@ object Http extends ExtensionKey[HttpExt] {
   class ConnectionAttemptFailedException(val endpoint: InetSocketAddress) extends ConnectionException(s"Connection attempt to $endpoint failed")
 
   class RequestTimeoutException(val request: HttpRequest, message: String) extends ConnectionException(message)
+
+  class StreamException(val info: ErrorInfo) extends RuntimeException(info.summary)
 }
 
 class HttpExt(system: ExtendedActorSystem) extends akka.io.IO.Extension {
