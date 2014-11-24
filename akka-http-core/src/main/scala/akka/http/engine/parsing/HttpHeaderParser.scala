@@ -83,7 +83,7 @@ private[engine] final class HttpHeaderParser private (
   /**
    * Returns a copy of this parser that shares the trie data with this instance.
    */
-  def createSharedCopy(): HttpHeaderParser =
+  def createShallowCopy(): HttpHeaderParser =
     new HttpHeaderParser(settings, warnOnIllegalHeader, nodes, nodeCount, branchData, branchDataCount, values, valueCount)
 
   /**
