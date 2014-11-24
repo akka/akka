@@ -4,13 +4,12 @@
 
 package akka.actor
 
-import scala.concurrent.duration.Duration
-import com.typesafe.config._
-import akka.routing._
-import akka.japi.Util.immutableSeq
-import java.util.concurrent.{ TimeUnit }
-import akka.util.WildcardTree
 import java.util.concurrent.atomic.AtomicReference
+
+import akka.routing._
+import akka.util.WildcardTree
+import com.typesafe.config._
+
 import scala.annotation.tailrec
 
 object Deploy {
@@ -155,14 +154,13 @@ private[akka] class Deployer(val settings: ActorSystem.Settings, val dynamicAcce
 
   def deploy(d: Deploy): Unit = {
     @tailrec def add(path: Array[String], d: Deploy, w: WildcardTree[Deploy] = deployments.get): Unit = {
-      import ActorPath.ElementRegex
       for (i ← 0 until path.length) path(i) match {
         case "" ⇒
           throw new InvalidActorNameException(s"actor name in deployment [${d.path}] must not be empty")
-        case ElementRegex() ⇒ // ok
+        case el if ActorPath.isValidPathElement(el) ⇒ // ok
         case name ⇒
           throw new InvalidActorNameException(
-            s"illegal actor name [$name] in deployment [${d.path}], must conform to $ElementRegex")
+            s"Illegal actor name [$name] in deployment [${d.path}]. Actor paths MUST: not start with `$$`, include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.")
       }
 
       if (!deployments.compareAndSet(w, w.insert(path.iterator, d))) add(path, d)

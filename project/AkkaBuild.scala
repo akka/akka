@@ -192,9 +192,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, stream, persistence, testkit).map(_ % "compile;compile->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.testkit
-    ) ++ settings ++ jmhSettings ++ Seq(
-      outputTarget in Jmh := target.value
-    )
+    ) ++ settings ++ jmhSettings
   )
 
   lazy val actorTests = Project(
