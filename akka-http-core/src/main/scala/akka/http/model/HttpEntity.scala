@@ -43,7 +43,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[HttpEntity.Strict] = {
+  def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer): Future[HttpEntity.Strict] = {
     def transformer() =
       new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
@@ -167,7 +167,7 @@ object HttpEntity {
 
     def dataBytes: Source[ByteString] = Source(data :: Nil)
 
-    override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+    override def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer) =
       FastFuture.successful(this)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString]): MessageEntity =
