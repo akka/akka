@@ -3,9 +3,10 @@
  */
 package akka.actor
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import java.net.MalformedURLException
+
+import org.scalatest.Matchers
+import org.scalatest.WordSpec
 
 class ActorPathSpec extends WordSpec with Matchers {
 
@@ -71,7 +72,6 @@ class ActorPathSpec extends WordSpec with Matchers {
       rootA.toStringWithAddress(b) should be("akka.tcp://mysys@aaa:2552/")
       (rootA / "user").toStringWithAddress(b) should be("akka.tcp://mysys@aaa:2552/user")
       (rootA / "user" / "foo").toStringWithAddress(b) should be("akka.tcp://mysys@aaa:2552/user/foo")
-
     }
   }
 }

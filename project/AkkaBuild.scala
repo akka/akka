@@ -4,18 +4,23 @@
 
 package akka
 
-import java.io.{FileInputStream, InputStreamReader}
+import java.io.FileInputStream
+import java.io.InputStreamReader
 import java.util.Properties
 
-import akka.Formatting.docFormatSettings
-import akka.MultiNode.multiJvmSettings
-import akka.TestExtras.{GraphiteBuildEvents, JUnitFileReporting, StatsDMetrics}
-import akka.Unidoc.{scaladocSettings, unidocSettings}
-import com.typesafe.sbt.S3Plugin.{S3, s3Settings}
-import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.{MultiJvm, extraOptions}
+import akka.TestExtras.GraphiteBuildEvents
+import akka.TestExtras.JUnitFileReporting
+import akka.TestExtras.StatsDMetrics
+import akka.Unidoc.scaladocSettings
+import akka.Unidoc.unidocSettings
+import com.typesafe.sbt.S3Plugin.S3
+import com.typesafe.sbt.S3Plugin.s3Settings
+import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.sbt.site.SphinxSupport
 import com.typesafe.sbt.site.SphinxSupport.Sphinx
-import com.typesafe.tools.mima.plugin.MimaKeys.{binaryIssueFilters, previousArtifact, reportBinaryIssues}
+import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
+import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
+import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
 import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt.Keys._
 import sbt._
@@ -85,6 +90,12 @@ object AkkaBuild extends Build {
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
     dependencies = Seq(testkit % "compile;test->test")
+  )
+
+  lazy val benchJmh = Project(
+    id = "akka-bench-jmh",
+    base = file("akka-bench-jmh"),
+    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test")
   )
 
   lazy val remote = Project(
@@ -340,7 +351,6 @@ object AkkaBuild extends Build {
   val validatePullRequestTask = validatePullRequest := ()
 
   lazy val mimaIgnoredProblems = {
-    import com.typesafe.tools.mima.core._
     Seq(
       // add filters here, see release-2.2 branch
      )
