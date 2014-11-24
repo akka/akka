@@ -4,23 +4,28 @@
 
 package akka.http.engine.server
 
+import akka.actor.{ Props, ActorRef }
 import akka.event.LoggingAdapter
+import akka.stream.stage.PushPullStage
+import akka.util.ByteString
 import akka.stream.io.StreamTcp
 import akka.stream.FlattenStrategy
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
-import akka.http.model.{ HttpRequest, HttpResponse, HttpMethods }
+import akka.http.model._
 import akka.http.engine.parsing.ParserOutput._
 import akka.http.Http
 import akka.http.util._
-import akka.util.ByteString
+
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)(implicit fm: FlowMaterializer)
+private[http] class HttpServerPipeline(settings: ServerSettings,
+                                       log: LoggingAdapter)(implicit fm: FlowMaterializer)
   extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
   import settings.parserSettings
 
@@ -44,87 +49,125 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
     val userIn = Sink.publisher[HttpRequest]
     val userOut = Source.subscriber[HttpResponse]
 
-    // each connection uses a single (private) request parser instance for all its requests
-    // which builds a cache of all header instances seen on that connection
-    val requestParser = rootParser.createSharedCopy()
+    val oneHundredContinueSource = Source[OneHundredContinue.type](Props[OneHundredContinueSourceActor])
+    @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
 
     val pipeline = FlowGraph { implicit b ⇒
-      val bypassFanout = Broadcast[(RequestOutput, Source[RequestOutput])]("bypassFanout")
+      val bypassFanout = Broadcast[RequestOutput]("bypassFanout")
       val bypassMerge = new BypassMerge
 
-      val rootParsePipeline =
-        Flow[ByteString]
-          .transform("rootParser", () ⇒ requestParser)
+      val requestParsing = Flow[ByteString].transform("rootParser", () ⇒
+        // each connection uses a single (private) request parser instance for all its requests
+        // which builds a cache of all header instances seen on that connection
+        rootParser.createShallowCopy(() ⇒ oneHundredContinueRef))
+
+      val requestPreparation =
+        Flow[RequestOutput]
           .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
           .headAndTail
+          .collect {
+            case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
+              val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
+              val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+              HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
+          }
 
       val rendererPipeline =
         Flow[ResponseRenderingContext]
+          .transform("recover", () ⇒ new ErrorsTo500ResponseRecovery(log)) // FIXME: simplify after #16394 is closed
           .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
           .flatten(FlattenStrategy.concat)
           .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
 
-      val requestTweaking = Flow[(RequestOutput, Source[RequestOutput])].collect {
-        case (RequestStart(method, uri, protocol, headers, createEntity, _), entityParts) ⇒
-          val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-          val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-          HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
-      }
-
-      val bypass =
-        Flow[(RequestOutput, Source[RequestOutput])]
-          .collect[MessageStart with RequestOutput] { case (x: MessageStart, _) ⇒ x }
-
       //FIXME: the graph is unnecessary after fixing #15957
-      networkIn ~> rootParsePipeline ~> bypassFanout ~> requestTweaking ~> userIn
-      bypassFanout ~> bypass ~> bypassMerge.bypassInput
+      networkIn ~> requestParsing ~> bypassFanout ~> requestPreparation ~> userIn
+      bypassFanout ~> bypassMerge.bypassInput
       userOut ~> bypassMerge.applicationInput ~> rendererPipeline ~> networkOut
+      oneHundredContinueSource ~> bypassMerge.oneHundredContinueInput
 
     }.run()
+    oneHundredContinueRef = Some(pipeline.get(oneHundredContinueSource))
 
     Http.IncomingConnection(tcpConn.remoteAddress, pipeline.get(userIn), pipeline.get(userOut))
   }
 
-  // A special merge that works similarly to a combined `zip` + `map`
-  // with the exception that certain elements on the bypass input of the `zip` (ParseErrors) cause
-  // an immediate emitting of an element to downstream, without waiting for the applicationInput
   class BypassMerge extends FlexiMerge[ResponseRenderingContext]("BypassMerge") {
     import FlexiMerge._
-    val bypassInput = createInputPort[MessageStart with RequestOutput]()
+    val bypassInput = createInputPort[RequestOutput]()
+    val oneHundredContinueInput = createInputPort[OneHundredContinue.type]()
     val applicationInput = createInputPort[HttpResponse]()
 
     def createMergeLogic() = new MergeLogic[ResponseRenderingContext] {
-      var requestStart: RequestStart = _
-
       override def inputHandles(inputCount: Int) = {
-        require(inputCount == 2, s"BypassMerge must have two connected inputs, was $inputCount")
-        Vector(bypassInput, applicationInput)
+        require(inputCount == 3, s"BypassMerge must have 3 connected inputs, was $inputCount")
+        Vector(bypassInput, oneHundredContinueInput, applicationInput)
       }
 
-      override def initialState = readBypass
-
-      val readBypass = State[MessageStart with RequestOutput](Read(bypassInput)) {
-        case (ctx, _, rs: RequestStart) ⇒
-          requestStart = rs
-          readApplicationInput
-
-        case (ctx, _, ParseError(status, info)) ⇒
-          log.warning("Illegal request, responding with status '{}': {}", status, info.formatPretty)
-          val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-          ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true)
-          ctx.complete() // shouldn't this return a `State` rather than `Unit`?
-          SameState // it seems weird to stay in the same state after completion
+      override val initialState = State[Any](Read(bypassInput)) {
+        case (ctx, _, requestStart: RequestStart)      ⇒ waitingForApplicationResponse(requestStart)
+        case (ctx, _, MessageStartError(status, info)) ⇒ finishWithError(ctx, "request", status, info)
+        case _                                         ⇒ SameState // drop other parser output
       }
 
-      val readApplicationInput: State[HttpResponse] =
-        State[HttpResponse](Read(applicationInput)) { (ctx, _, response) ⇒
-          ctx.emit(ResponseRenderingContext(response, requestStart.method, requestStart.protocol,
-            requestStart.closeAfterResponseCompletion))
-          requestStart = null
-          readBypass
+      def waitingForApplicationResponse(requestStart: RequestStart): State[Any] =
+        State[Any](ReadAny(oneHundredContinueInput, applicationInput)) {
+          case (ctx, _, response: HttpResponse) ⇒
+            // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
+            val close = requestStart.closeAfterResponseCompletion || requestStart.expect100ContinueResponsePending
+            ctx.emit(ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
+            if (close) finish(ctx) else initialState
+
+          case (ctx, _, OneHundredContinue) ⇒
+            assert(requestStart.expect100ContinueResponsePending)
+            ctx.emit(ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
+            waitingForApplicationResponse(requestStart.copy(expect100ContinueResponsePending = false))
         }
 
-      override def initialCompletionHandling = eagerClose
+      override def initialCompletionHandling = CompletionHandling(
+        onComplete = (ctx, _) ⇒ { ctx.complete(); SameState },
+        onError = {
+          case (ctx, _, error: Http.StreamException) ⇒
+            // the application has forwarded a request entity stream error to the response stream
+            finishWithError(ctx, "request", StatusCodes.BadRequest, error.info)
+          case (ctx, _, error) ⇒
+            ctx.error(error)
+            SameState
+        })
+
+      def finishWithError(ctx: MergeLogicContext, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
+        log.warning("Illegal {}, responding with status '{}': {}", target, status, info.formatPretty)
+        val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
+        ctx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true))
+        finish(ctx)
+      }
+
+      def finish(ctx: MergeLogicContext): State[Any] = {
+        ctx.complete() // shouldn't this return a `State` rather than `Unit`?
+        SameState // it seems weird to stay in the same state after completion
+      }
     }
   }
+}
+
+private[server] class ErrorsTo500ResponseRecovery(log: LoggingAdapter)
+  extends PushPullStage[ResponseRenderingContext, ResponseRenderingContext] {
+  import akka.stream.stage.Context
+
+  private[this] var errorResponse: ResponseRenderingContext = _
+
+  override def onPush(elem: ResponseRenderingContext, ctx: Context[ResponseRenderingContext]) = ctx.push(elem)
+
+  override def onPull(ctx: Context[ResponseRenderingContext]) =
+    if (ctx.isFinishing) ctx.pushAndFinish(errorResponse)
+    else ctx.pull()
+
+  override def onUpstreamFailure(error: Throwable, ctx: Context[ResponseRenderingContext]) =
+    error match {
+      case NonFatal(e) ⇒
+        log.error(e, "Internal server error, sending 500 response")
+        errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError),
+          closeAfterResponseCompletion = true)
+        ctx.absorbTermination()
+      case _ ⇒ ctx.fail(error)
+    }
 }

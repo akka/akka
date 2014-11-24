@@ -6,9 +6,13 @@ package akka.http.engine.parsing
 
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
-import akka.http.model.parser.CharacterClasses
+import akka.actor.ActorRef
+import akka.stream.stage.{ Context, PushPullStage }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import akka.http.engine.server.OneHundredContinue
+import akka.http.model.parser.CharacterClasses
+import akka.http.util.identityFunc
 import akka.http.model._
 import headers._
 import StatusCodes._
@@ -19,7 +23,8 @@ import ParserOutput._
  */
 private[http] class HttpRequestParser(_settings: ParserSettings,
                                       rawRequestUriHeader: Boolean,
-                                      _headerParser: HttpHeaderParser)
+                                      _headerParser: HttpHeaderParser,
+                                      oneHundredContinueRef: () ⇒ Option[ActorRef] = () ⇒ None)
   extends HttpMessageParser[RequestOutput](_settings, _headerParser) {
   import settings._
 
@@ -27,8 +32,8 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
   private[this] var uri: Uri = _
   private[this] var uriBytes: Array[Byte] = _
 
-  def createSharedCopy(): HttpRequestParser =
-    new HttpRequestParser(settings, rawRequestUriHeader, headerParser.createSharedCopy())
+  def createShallowCopy(oneHundredContinueRef: () ⇒ Option[ActorRef]): HttpRequestParser =
+    new HttpRequestParser(settings, rawRequestUriHeader, headerParser.createShallowCopy(), oneHundredContinueRef)
 
   def parseMessage(input: ByteString, offset: Int): StateResult = {
     var cursor = parseMethod(input, offset)
@@ -109,15 +114,31 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
   // http://tools.ietf.org/html/rfc7230#section-3.3
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                  hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
+                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
       def emitRequestStart(createEntity: Source[RequestOutput] ⇒ RequestEntity,
                            headers: List[HttpHeader] = headers) = {
         val allHeaders =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
           else headers
-        emit(RequestStart(method, uri, protocol, allHeaders, createEntity, closeAfterResponseCompletion))
+        emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
       }
+
+      def expect100continueHandling[T]: Source[T] ⇒ Source[T] =
+        if (expect100continue) {
+          _.transform("expect100continueTrigger", () ⇒ new PushPullStage[T, T] {
+            private var oneHundredContinueSent = false
+            def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
+            def onPull(ctx: Context[T]) = {
+              if (!oneHundredContinueSent) {
+                val ref = oneHundredContinueRef().getOrElse(throw new IllegalStateException("oneHundredContinueRef unavailable"))
+                ref ! OneHundredContinue
+                oneHundredContinueSent = true
+              }
+              ctx.pull()
+            }
+          })
+        } else identityFunc
 
       teh match {
         case None ⇒
@@ -126,17 +147,19 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             case None                        ⇒ 0
           }
           if (contentLength > maxContentLength)
-            fail(RequestEntityTooLarge,
+            failMessageStart(RequestEntityTooLarge,
               s"Request Content-Length $contentLength exceeds the configured limit of $maxContentLength")
           else if (contentLength == 0) {
             emitRequestStart(emptyEntity(cth))
+            setCompletionHandling(HttpMessageParser.CompletionOk)
             startNewMessage(input, bodyStart)
           } else if (contentLength <= input.size - bodyStart) {
             val cl = contentLength.toInt
             emitRequestStart(strictEntity(cth, input, bodyStart, cl))
+            setCompletionHandling(HttpMessageParser.CompletionOk)
             startNewMessage(input, bodyStart + cl)
           } else {
-            emitRequestStart(defaultEntity(cth, contentLength))
+            emitRequestStart(defaultEntity(cth, contentLength, expect100continueHandling))
             parseFixedLengthBody(contentLength, closeAfterResponseCompletion)(input, bodyStart)
           }
 
@@ -144,11 +167,11 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
           val completedHeaders = addTransferEncodingWithChunkedPeeled(headers, te)
           if (te.isChunked) {
             if (clh.isEmpty) {
-              emitRequestStart(chunkedEntity(cth), completedHeaders)
+              emitRequestStart(chunkedEntity(cth, expect100continueHandling), completedHeaders)
               parseChunk(input, bodyStart, closeAfterResponseCompletion)
-            } else fail("A chunked request must not contain a Content-Length header.")
-          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None, hostHeaderPresent,
-            closeAfterResponseCompletion)
+            } else failMessageStart("A chunked request must not contain a Content-Length header.")
+          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
+            expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
       }
-    } else fail("Request is missing required `Host` header")
+    } else failMessageStart("Request is missing required `Host` header")
 }
