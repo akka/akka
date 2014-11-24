@@ -60,13 +60,14 @@ trait PredefinedFromStringUnmarshallers {
     string.toLowerCase match {
       case "true" | "yes" | "on"  ⇒ true
       case "false" | "no" | "off" ⇒ false
-      case x                      ⇒ throw UnmarshallingError.InvalidContent(s"'$x' is not a valid Boolean value")
+      case ""                     ⇒ throw Unmarshaller.NoContentException
+      case x                      ⇒ throw new IllegalArgumentException(s"'$x' is not a valid Boolean value")
     }
   }
 
   private def numberFormatError(value: String, target: String): PartialFunction[Throwable, Nothing] = {
     case e: NumberFormatException ⇒
-      throw UnmarshallingError.InvalidContent(s"'$value' is not a valid $target value", e)
+      throw if (value.isEmpty) Unmarshaller.NoContentException else new IllegalArgumentException(s"'$value' is not a valid $target value", e)
   }
 }
 
