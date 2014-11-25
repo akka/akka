@@ -215,6 +215,21 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
                 source(LastChunk("nice=true", List(RawHeader("Bar", "xyz"), RawHeader("Foo", "pip apo"))))))))
           closeAfterResponseCompletion shouldEqual Seq(false)
         }
+
+        "don't overflow the stack for large buffers of chunks" in new Test {
+          override val awaitAtMost = 3000.millis
+
+          val x = NotEnoughDataException
+          val numChunks = 15000 // failed starting from 4000 with sbt started with `-Xss2m`
+          val oneChunk = "1\r\nz\n"
+          val manyChunks = (oneChunk * numChunks) + "0\r\n"
+
+          val parser = newParser
+          val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
+          val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
+          val strictChunks = chunks.collectAll.awaitResult(awaitAtMost)
+          strictChunks.size shouldEqual numChunks
+        }
       }
 
       "properly parse a chunked request with additional transfer encodings" in new Test {
@@ -374,14 +389,15 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   override def afterAll() = system.shutdown()
 
   private class Test {
+    def awaitAtMost: FiniteDuration = 250.millis
     var closeAfterResponseCompletion = Seq.empty[Boolean]
 
     class StrictEqualHttpRequest(val req: HttpRequest) {
       override def equals(other: scala.Any): Boolean = other match {
         case other: StrictEqualHttpRequest ⇒
           this.req.copy(entity = HttpEntity.Empty) == other.req.copy(entity = HttpEntity.Empty) &&
-            Await.result(this.req.entity.toStrict(250.millis), 250.millis) ==
-            Await.result(other.req.entity.toStrict(250.millis), 250.millis)
+            this.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost) ==
+            other.req.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
       }
 
       override def toString = req.toString
@@ -414,32 +430,32 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def generalRawMultiParseTo(parser: HttpRequestParser,
                                expected: Either[ParseError, HttpRequest]*): Matcher[Seq[String]] =
       equal(expected.map(strictEqualify))
-        .matcher[Seq[Either[ParseError, StrictEqualHttpRequest]]] compose { input: Seq[String] ⇒
-          val future =
-            Source(input.toList)
-              .map(ByteString.apply)
-              .transform("parser", () ⇒ parser)
-              .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
-              .headAndTail
-              .collect {
-                case (ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, close), entityParts) ⇒
-                  closeAfterResponseCompletion :+= close
-                  Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
-                case (x: ParseError, _) ⇒ Left(x)
-              }
-              .map { x ⇒
-                Source {
-                  x match {
-                    case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
-                    case Left(error)    ⇒ Future.successful(Left(error))
-                  }
-                }
-              }
-              .flatten(FlattenStrategy.concat)
-              .map(strictEqualify)
-              .grouped(1000).runWith(Sink.head)
-          Await.result(future, 250.millis)
+        .matcher[Seq[Either[ParseError, StrictEqualHttpRequest]]] compose multiParse(parser)
+
+    def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[ParseError, StrictEqualHttpRequest]] =
+      Source(input.toList)
+        .map(ByteString.apply)
+        .transform("parser", () ⇒ parser)
+        .splitWhen(_.isInstanceOf[ParserOutput.MessageStart])
+        .headAndTail
+        .collect {
+          case (ParserOutput.RequestStart(method, uri, protocol, headers, createEntity, close), entityParts) ⇒
+            closeAfterResponseCompletion :+= close
+            Right(HttpRequest(method, uri, headers, createEntity(entityParts), protocol))
+          case (x: ParseError, _) ⇒ Left(x)
         }
+        .map { x ⇒
+          Source {
+            x match {
+              case Right(request) ⇒ compactEntity(request.entity).fast.map(x ⇒ Right(request.withEntity(x)))
+              case Left(error)    ⇒ Future.successful(Left(error))
+            }
+          }
+        }
+        .flatten(FlattenStrategy.concat)
+        .map(strictEqualify)
+        .collectAll
+        .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
     protected def newParser = new HttpRequestParser(parserSettings, false)()
@@ -447,11 +463,11 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     private def compactEntity(entity: RequestEntity): Future[RequestEntity] =
       entity match {
         case x: Chunked ⇒ compactEntityChunks(x.chunks).fast.map(compacted ⇒ x.copy(chunks = source(compacted: _*)))
-        case _          ⇒ entity.toStrict(250.millis)
+        case _          ⇒ entity.toStrict(awaitAtMost)
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart]): Future[Seq[ChunkStreamPart]] =
-      data.grouped(1000).runWith(Sink.head)
+      data.collectAll
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
