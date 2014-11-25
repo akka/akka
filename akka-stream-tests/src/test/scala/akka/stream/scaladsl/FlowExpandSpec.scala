@@ -66,6 +66,28 @@ class FlowExpandSpec extends AkkaSpec {
       sub.cancel()
     }
 
+    "do not drop last element" in {
+      val publisher = StreamTestKit.PublisherProbe[Int]()
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+
+      // Simply repeat the last element as an extrapolation step
+      Source(publisher).expand(seed = i ⇒ i)(extrapolate = i ⇒ (i, i)).runWith(Sink(subscriber))
+
+      val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
+      val sub = subscriber.expectSubscription()
+
+      autoPublisher.sendNext(1)
+      sub.request(1)
+      subscriber.expectNext(1)
+
+      autoPublisher.sendNext(2)
+      autoPublisher.sendComplete()
+
+      sub.request(1)
+      subscriber.expectNext(2)
+      subscriber.expectComplete()
+    }
+
     "work on a variable rate chain" in {
       val future = Source(1 to 100)
         .map { i ⇒ if (ThreadLocalRandom.current().nextBoolean()) Thread.sleep(10); i }

@@ -327,10 +327,10 @@ class InterpreterSpec extends InterpreterSpecKit {
     "work with expand-expand" in new TestSetup(Seq(
       Expand(
         (in: Int) ⇒ in,
-        (agg: Int) ⇒ (agg, agg)),
+        (agg: Int) ⇒ (agg, agg + 1)),
       Expand(
         (in: Int) ⇒ in,
-        (agg: Int) ⇒ (agg, agg)))) {
+        (agg: Int) ⇒ (agg, agg + 1)))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -341,22 +341,24 @@ class InterpreterSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(0)))
 
       downstream.requestOne()
-      lastEvents() should be(Set(OnNext(0)))
+      lastEvents() should be(Set(OnNext(1)))
 
-      upstream.onNext(1)
+      upstream.onNext(10)
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
-      lastEvents() should be(Set(RequestOne, OnNext(0))) // One zero is still in the pipeline
+      lastEvents() should be(Set(RequestOne, OnNext(2))) // One element is still in the pipeline
 
       downstream.requestOne()
-      lastEvents() should be(Set(OnNext(1)))
+      lastEvents() should be(Set(OnNext(10)))
 
       downstream.requestOne()
-      lastEvents() should be(Set(OnNext(1)))
+      lastEvents() should be(Set(OnNext(11)))
 
       upstream.onComplete()
-      lastEvents() should be(Set(OnComplete))
+      downstream.requestOne()
+      // This is correct! If you don't believe, run the interpreter with Debug on
+      lastEvents() should be(Set(OnComplete, OnNext(12)))
     }
 
     "implement conflate-expand" in new TestSetup(Seq(

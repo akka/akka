@@ -36,7 +36,7 @@ private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Direc
  * INTERNAL API
  */
 private[akka] object OneBoundedInterpreter {
-  final val PhantomDirective = null
+  final val Debug = false
 
   /**
    * INTERNAL API
@@ -142,7 +142,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
   type UntypedOp = AbstractStage[Any, Any, Directive, Directive, Context[Any]]
   require(ops.nonEmpty, "OneBoundedInterpreter cannot be created without at least one Op")
 
-  private val pipeline: Array[UntypedOp] = ops.map(_.asInstanceOf[UntypedOp])(breakOut)
+  private final val pipeline: Array[UntypedOp] = ops.map(_.asInstanceOf[UntypedOp])(breakOut)
 
   /**
    * This table is used to accelerate demand propagation upstream. All ops that implement PushStage are guaranteed
@@ -152,10 +152,10 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
    * This table maintains the positions where execution should jump from a current position when a pull event is to
    * be executed.
    */
-  private val jumpBacks: Array[Int] = calculateJumpBacks
+  private final val jumpBacks: Array[Int] = calculateJumpBacks
 
-  private val Upstream = 0
-  private val Downstream = pipeline.length - 1
+  private final val Upstream = 0
+  private final val Downstream = pipeline.length - 1
 
   // Var to hold the current element if pushing. The only reason why this var is needed is to avoid allocations and
   // make it possible for the Pushing state to be an object
@@ -210,20 +210,20 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       currentOp.allowedToPush = false
       elementInFlight = elem
       state = Pushing
-      PhantomDirective
+      null
     }
 
     override def pull(): UpstreamDirective = {
       if (currentOp.holding) throw new IllegalStateException("Cannot pull while holding, only pushAndPull")
       currentOp.allowedToPush = !currentOp.isInstanceOf[DetachedStage[_, _]]
       state = Pulling
-      PhantomDirective
+      null
     }
 
     override def finish(): FreeDirective = {
       fork(Completing)
       state = Cancelling
-      PhantomDirective
+      null
     }
 
     def isFinishing: Boolean = currentOp.terminationPending
@@ -244,7 +244,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def fail(cause: Throwable): FreeDirective = {
       fork(Failing(cause))
       state = Cancelling
-      PhantomDirective
+      null
     }
 
     override def hold(): FreeDirective = {
@@ -260,7 +260,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       currentOp.holding = false
       fork(Pushing, elem)
       state = Pulling
-      PhantomDirective
+      null
     }
 
     override def absorbTermination(): TerminationDirective = {
@@ -271,32 +271,32 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def exit(): FreeDirective = {
       elementInFlight = null
       activeOpIndex = -1
-      PhantomDirective
+      null
     }
   }
 
-  private object Pushing extends State {
+  private final val Pushing: State = new State {
     override def advance(): Unit = activeOpIndex += 1
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
   }
 
-  private object PushFinish extends State {
+  private final val PushFinish: State = new State {
     override def advance(): Unit = activeOpIndex += 1
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
       elementInFlight = elem
       state = PushFinish
-      PhantomDirective
+      null
     }
 
     override def finish(): FreeDirective = {
       state = Completing
-      PhantomDirective
+      null
     }
   }
 
-  private object Pulling extends State {
+  private final val Pulling: State = new State {
     override def advance(): Unit = {
       elementInFlight = null
       activeOpIndex = jumpBacks(activeOpIndex)
@@ -310,7 +310,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     }
   }
 
-  private object Completing extends State {
+  private final val Completing: State = new State {
     override def advance(): Unit = {
       elementInFlight = null
       pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
@@ -324,7 +324,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
 
     override def finish(): FreeDirective = {
       state = Completing
-      PhantomDirective
+      null
     }
 
     override def absorbTermination(): TerminationDirective = {
@@ -333,11 +333,11 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       // FIXME: This state is potentially corrupted by the jumpBackTable (not updated when jumping over)
       if (currentOp.allowedToPush) currentOp.onPull(ctx = Pulling)
       else exit()
-      PhantomDirective
+      null
     }
   }
 
-  private object Cancelling extends State {
+  private final val Cancelling: State = new State {
     override def advance(): Unit = {
       elementInFlight = null
       pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
@@ -351,7 +351,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
 
     override def finish(): FreeDirective = {
       state = Cancelling
-      PhantomDirective
+      null
     }
   }
 
@@ -369,15 +369,31 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       currentOp.holding = false
       if (currentOp.allowedToPush) currentOp.onPull(ctx = Pulling)
       else exit()
-      PhantomDirective
+      null
     }
   }
 
   private def inside: Boolean = activeOpIndex > -1 && activeOpIndex < pipeline.length
 
+  private def printDebug(): Unit = {
+    val padding = "    " * activeOpIndex
+    val icon: String = state match {
+      case Pushing | PushFinish ⇒ padding + s"---> $elementInFlight"
+      case Pulling ⇒
+        ("    " * jumpBacks(activeOpIndex)) +
+          "<---" +
+          ("----" * (activeOpIndex - jumpBacks(activeOpIndex) - 1))
+      case Completing ⇒ padding + "---|"
+      case Cancelling ⇒ padding + "|---"
+      case Failing(e) ⇒ padding + s"---X ${e.getMessage}"
+    }
+    println(icon)
+  }
+
   @tailrec private def execute(): Unit = {
     while (inside) {
       try {
+        if (Debug) printDebug()
         state.progress()
       } catch {
         case NonFatal(e) if lastOpFailing != activeOpIndex ⇒
@@ -451,42 +467,42 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
             activeOpIndex = entryPoint
             super.push(elem)
             execute()
-            PhantomDirective
+            null
           }
 
           override def pull(): UpstreamDirective = {
             activeOpIndex = entryPoint
             super.pull()
             execute()
-            PhantomDirective
+            null
           }
 
           override def finish(): FreeDirective = {
             activeOpIndex = entryPoint
             super.finish()
             execute()
-            PhantomDirective
+            null
           }
 
           override def fail(cause: Throwable): FreeDirective = {
             activeOpIndex = entryPoint
             super.fail(cause)
             execute()
-            PhantomDirective
+            null
           }
 
           override def hold(): FreeDirective = {
             activeOpIndex = entryPoint
             super.hold()
             execute()
-            PhantomDirective
+            null
           }
 
           override def pushAndPull(elem: Any): FreeDirective = {
             activeOpIndex = entryPoint
             super.pushAndPull(elem)
             execute()
-            PhantomDirective
+            null
           }
         }
       }
