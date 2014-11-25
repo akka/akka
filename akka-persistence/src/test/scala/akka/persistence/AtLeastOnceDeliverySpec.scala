@@ -29,13 +29,15 @@ object AtLeastOnceDeliverySpec {
 
   def senderProps(testActor: ActorRef, name: String,
                   redeliverInterval: FiniteDuration, warnAfterNumberOfUnconfirmedAttempts: Int,
-                  async: Boolean, destinations: Map[String, ActorPath]): Props =
-    Props(new Sender(testActor, name, redeliverInterval, warnAfterNumberOfUnconfirmedAttempts, async, destinations))
+                  redeliveryBurstLimit: Int, async: Boolean, destinations: Map[String, ActorPath]): Props =
+    Props(new Sender(testActor, name, redeliverInterval, warnAfterNumberOfUnconfirmedAttempts,
+      redeliveryBurstLimit, async, destinations))
 
   class Sender(testActor: ActorRef,
                name: String,
                override val redeliverInterval: FiniteDuration,
                override val warnAfterNumberOfUnconfirmedAttempts: Int,
+               override val redeliveryBurstLimit: Int,
                async: Boolean,
                destinations: Map[String, ActorPath])
     extends PersistentActor with AtLeastOnceDelivery with ActorLogging {
@@ -154,7 +156,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
     "deliver messages in order when nothing is lost" in {
       val probeA = TestProbe()
       val destinations = Map("A" -> system.actorOf(destinationProps(probeA.ref)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, 1000, async = false, destinations), name)
       snd ! Req("a")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a"))
@@ -165,7 +167,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
       val destinations = Map("A" -> system.actorOf(unreliableProps(3, dst)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, 1000, async = false, destinations), name)
       snd ! Req("a-1")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a-1"))
@@ -189,7 +191,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
       val destinations = Map("A" -> system.actorOf(unreliableProps(3, dst)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, 1000, async = false, destinations), name)
       snd ! Req("a-1")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a-1"))
@@ -222,7 +224,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
       val destinations = Map("A" -> system.actorOf(unreliableProps(2, dst)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, 1000, async = false, destinations), name)
       snd ! Req("a-1")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a-1"))
@@ -257,7 +259,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val dst = system.actorOf(destinationProps(probeA.ref))
       val destinations = Map("A" -> system.actorOf(unreliableProps(3, dst)).path)
-      val snd = system.actorOf(senderProps(testActor, name, 1000.millis, 5, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 1000.millis, 5, 1000, async = false, destinations), name)
       snd ! Req("a-1")
       expectMsg(ReqAck)
       probeA.expectMsg(Action(1, "a-1"))
@@ -294,7 +296,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val probeA = TestProbe()
       val probeB = TestProbe()
       val destinations = Map("A" -> probeA.ref.path, "B" -> probeB.ref.path)
-      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 3, async = false, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 3, 1000, async = false, destinations), name)
       snd ! Req("a-1")
       snd ! Req("b-1")
       snd ! Req("b-2")
@@ -320,7 +322,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
         "A" -> system.actorOf(unreliableProps(2, dstA), "unreliable-a").path,
         "B" -> system.actorOf(unreliableProps(5, dstB), "unreliable-b").path,
         "C" -> system.actorOf(unreliableProps(3, dstC), "unreliable-c").path)
-      val snd = system.actorOf(senderProps(testActor, name, 1000.millis, 5, async = true, destinations), name)
+      val snd = system.actorOf(senderProps(testActor, name, 1000.millis, 5, 1000, async = true, destinations), name)
       val N = 100
       for (n ← 1 to N) {
         snd ! Req("a-" + n)
@@ -337,6 +339,32 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       probeC.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should be((1 to N).map(n ⇒ "c-" + n).toSet)
     }
 
+    "limit the number of messages redelivered at once" in {
+      val probeA = TestProbe()
+      val dst = system.actorOf(destinationProps(probeA.ref))
+      val destinations = Map("A" -> system.actorOf(unreliableProps(2, dst)).path)
+
+      val snd = system.actorOf(senderProps(testActor, name, 500.millis, 5, 2, async = true, destinations), name)
+
+      val N = 10
+      for (n ← 1 to N) {
+        snd ! Req("a-" + n)
+      }
+
+      // initially all odd messages should go through
+      for (n ← 1 to N if n % 2 == 1) probeA.expectMsg(Action(n, s"a-$n"))
+      probeA.expectNoMsg(100.millis)
+
+      // at each redelivery round, 2 (even) messages are sent, the first goes through
+      // without throttling, at each round half of the messages would go through
+      var toDeliver = (1 to N).filter(_ % 2 == 0).map(_.toLong).toSet
+      for (n ← 1 to N if n % 2 == 0) {
+        toDeliver -= probeA.expectMsgType[Action].id
+        probeA.expectNoMsg(100.millis)
+      }
+
+      toDeliver should be(Set.empty)
+    }
   }
 }
 

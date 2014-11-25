@@ -123,6 +123,22 @@ trait AtLeastOnceDelivery extends Processor {
     Persistence(context.system).settings.atLeastOnceDelivery.redeliverInterval
 
   /**
+   * Maximum number of unconfirmed messages that will be sent at each redelivery burst
+   * (burst frequency is half of the redelivery interval).
+   * If there's a lot of unconfirmed messages (e.g. if the destination is not available for a long time),
+   * this helps to prevent an overwhelming amount of messages to be sent at once.
+   *
+   * The default value can be configured with the
+   * `akka.persistence.at-least-once-delivery.redelivery-burst-limit`
+   * configuration key. This method can be overridden by implementation classes to return
+   * non-default values.
+   */
+  def redeliveryBurstLimit: Int = defaultRedeliveryBurstLimit
+
+  private val defaultRedeliveryBurstLimit: Int =
+    Persistence(context.system).settings.atLeastOnceDelivery.redeliveryBurstLimit
+
+  /**
    * After this number of delivery attempts a [[AtLeastOnceDelivery.UnconfirmedWarning]] message
    * will be sent to `self`. The count is reset after a restart.
    *
@@ -223,15 +239,17 @@ trait AtLeastOnceDelivery extends Processor {
     val deadline = now - redeliverInterval.toNanos
     var warnings = Vector.empty[UnconfirmedDelivery]
 
-    unconfirmed foreach {
-      case (deliveryId, delivery) ⇒
-        if (delivery.timestamp <= deadline) {
+    unconfirmed
+      .iterator
+      .filter { case (_, delivery) ⇒ delivery.timestamp <= deadline }
+      .take(redeliveryBurstLimit)
+      .foreach {
+        case (deliveryId, delivery) ⇒
           send(deliveryId, delivery, now)
 
           if (delivery.attempt == warnAfterNumberOfUnconfirmedAttempts)
             warnings :+= UnconfirmedDelivery(deliveryId, delivery.destination, delivery.message)
-        }
-    }
+      }
 
     if (warnings.nonEmpty)
       self ! UnconfirmedWarning(warnings)
