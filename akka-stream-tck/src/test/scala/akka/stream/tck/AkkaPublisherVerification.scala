@@ -21,9 +21,6 @@ abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEn
   extends PublisherVerification[T](env, publisherShutdownTimeout)
   with TestNGSuiteLike {
 
-  /** Readable way to ignore TCK specs; Return this for `createErrorStatePublisher` to skip tests including it */
-  final def ignored: Publisher[T] = null
-
   def this(system: ActorSystem, printlnDebug: Boolean) {
     this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system), printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
   }
@@ -39,6 +36,9 @@ abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEn
   implicit val materializer = FlowMaterializer(MaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
 
   override def skipStochasticTests() = true // TODO maybe enable?
+
+  // TODO re-enable this test once 1.0.0.RC1 is released, with https://github.com/reactive-streams/reactive-streams/pull/154
+  override def spec317_mustSignalOnErrorWhenPendingAboveLongMaxValue() = notVerified("TODO Enable this test once https://github.com/reactive-streams/reactive-streams/pull/154 is merged (ETA 1.0.0.RC1)")
 
   @AfterClass
   def shutdownActorSystem(): Unit = {

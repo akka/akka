@@ -25,9 +25,6 @@ abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env
 
   system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
 
-  /** Readable way to ignore TCK specs; Return this for `createErrorStatePublisher` to skip tests including it */
-  final def ignored: mutable.Publisher[T] = null
-
   def this(system: ActorSystem, printlnDebug: Boolean) {
     this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system), printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
   }
@@ -41,6 +38,9 @@ abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env
   }
 
   override def skipStochasticTests() = true // TODO maybe enable?
+
+  // TODO re-enable this test once 1.0.0.RC1 is released, with https://github.com/reactive-streams/reactive-streams/pull/154
+  override def spec317_mustSignalOnErrorWhenPendingAboveLongMaxValue() = notVerified("TODO Enable this test once https://github.com/reactive-streams/reactive-streams/pull/154 is merged (ETA 1.0.0.RC1)")
 
   override def createErrorStatePublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))

@@ -1369,9 +1369,7 @@ object Dependencies {
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
 
-    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M2")
-    // TODO this version should be the same as the RS version once the RS TCK has been merged and released
-    val reactiveStreamsTckVersion = System.getProperty("akka.build.reactiveStreamsVersion", "0.4.0.M2-20140910-174042-SNAPSHOT")
+    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.M1")
 
     val publishedAkkaVersion = "2.3.7"
   }
@@ -1447,7 +1445,7 @@ object Dependencies {
       val scalaXml     = Compile.scalaXml % "test"                                                                    // Scala License
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams"      % "reactive-streams-tck"         % reactiveStreamsTckVersion % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams"      % "reactive-streams-tck"         % reactiveStreamsVersion % "test" // CC0
 
       // metrics, measurements, perf testing
       val metrics         = "com.codahale.metrics"        % "metrics-core"                 % "3.0.1"            % "test" // ApacheV2
