@@ -26,6 +26,11 @@ public abstract class MediaType {
     }
 
     /**
+     * Creates a ContentType from this media-type
+     */
+    public ContentType toContentType() { return ContentType.create(this); }
+
+    /**
      * Creates a media-range from this media-type with a given qValue.
      */
     public MediaRange toRange(float qValue) {
