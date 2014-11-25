@@ -21,7 +21,7 @@ import java.util.concurrent.{
   ThreadFactory,
   ThreadPoolExecutor
 }
-import java.util.concurrent.atomic.{ AtomicReference, AtomicLong }
+import java.util.concurrent.atomic.{ AtomicReference, AtomicLong, AtomicInteger }
 
 object ThreadPoolConfig {
   type QueueFactory = () ⇒ BlockingQueue[Runnable]
@@ -31,6 +31,7 @@ object ThreadPoolConfig {
   val defaultMaxPoolSize: Int = 128
   val defaultTimeout: Duration = Duration(60000L, TimeUnit.MILLISECONDS)
   val defaultRejectionPolicy: RejectedExecutionHandler = new SaneRejectedExecutionHandler()
+  val defaultMinimumNumberOfUnblockedThreads: Int = 0
 
   def scaledPoolSize(floor: Int, multiplier: Double, ceiling: Int): Int =
     math.min(math.max((Runtime.getRuntime.availableProcessors * multiplier).ceil.toInt, floor), ceiling)
@@ -46,13 +47,45 @@ object ThreadPoolConfig {
   def reusableQueue(queue: BlockingQueue[Runnable]): QueueFactory = () ⇒ queue
 
   def reusableQueue(queueFactory: QueueFactory): QueueFactory = reusableQueue(queueFactory())
+
+  /**
+   * INTERNAL API
+   */
+  private[ThreadPoolConfig] final class BlockContextThreadFactory(
+    delegate: ThreadFactory, minUnblockedThreads: Int) extends AtomicInteger(0) with ThreadFactory {
+
+    @volatile var threadPoolExecutor: ThreadPoolExecutor = null
+    override def newThread(runnable: Runnable): Thread =
+      delegate.newThread(new Runnable with BlockContext {
+        override def run(): Unit = BlockContext.withBlockContext(this) {
+          incrementAndGet()
+          try runnable.run() finally { decrementAndGet() }
+        }
+
+        override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
+          @scala.annotation.tailrec def canBlock(): Boolean = {
+            val pre = get()
+            if (pre > 0 && pre > minUnblockedThreads) compareAndSet(pre, pre - 1) || canBlock()
+            else {
+              val tpe = threadPoolExecutor
+              (tpe ne null) && tpe.prestartCoreThread() && canBlock() // Retry if we have a TPE and we booted a new Core Thread
+            }
+          }
+
+          if (canBlock()) {
+            try thunk finally incrementAndGet()
+          } else throw new RejectedExecutionException(
+            s"Blocking rejected due to insufficient unblocked threads in pool. Needs at least $minUnblockedThreads")
+        }
+      })
+  }
 }
 
 /**
  * Function0 without the fun stuff (mostly for the sake of the Java API side of things)
  */
 trait ExecutorServiceFactory {
-  def createExecutorService: ExecutorService
+  def createExecutorService(): ExecutorService
 }
 
 /**
@@ -65,24 +98,36 @@ trait ExecutorServiceFactoryProvider {
 /**
  * A small configuration DSL to create ThreadPoolExecutors that can be provided as an ExecutorServiceFactoryProvider to Dispatcher
  */
-final case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
-                                  corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
-                                  maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
-                                  threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
-                                  queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
-                                  rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy)
+case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConfig.defaultAllowCoreThreadTimeout,
+                            corePoolSize: Int = ThreadPoolConfig.defaultCorePoolSize,
+                            maxPoolSize: Int = ThreadPoolConfig.defaultMaxPoolSize,
+                            threadTimeout: Duration = ThreadPoolConfig.defaultTimeout,
+                            queueFactory: ThreadPoolConfig.QueueFactory = ThreadPoolConfig.linkedBlockingQueue(),
+                            rejectionPolicy: RejectedExecutionHandler = ThreadPoolConfig.defaultRejectionPolicy,
+                            minUnblockedThreads: Int = ThreadPoolConfig.defaultMinimumNumberOfUnblockedThreads)
   extends ExecutorServiceFactoryProvider {
+
   class ThreadPoolExecutorServiceFactory(val threadFactory: ThreadFactory) extends ExecutorServiceFactory {
     def createExecutorService: ExecutorService = {
+      val newThreadFactory: ThreadFactory =
+        if (minUnblockedThreads > 0) new ThreadPoolConfig.BlockContextThreadFactory(threadFactory, minUnblockedThreads)
+        else threadFactory
+
       val service: ThreadPoolExecutor = new ThreadPoolExecutor(
         corePoolSize,
         maxPoolSize,
         threadTimeout.length,
         threadTimeout.unit,
         queueFactory(),
-        threadFactory,
+        newThreadFactory,
         rejectionPolicy) with LoadMetrics {
         def atFullThrottle(): Boolean = this.getActiveCount >= this.getPoolSize
+      }
+      newThreadFactory match {
+        case bctf: ThreadPoolConfig.BlockContextThreadFactory ⇒
+          bctf.threadPoolExecutor = service // Resolve the chicken-and-egg situation
+          service.prestartAllCoreThreads() // Make sure we boot the core threads up so they are ready for blocking
+        case other ⇒ // The Dude Abides
       }
       service.allowCoreThreadTimeOut(allowCorePoolTimeout)
       service
@@ -90,10 +135,9 @@ final case class ThreadPoolConfig(allowCorePoolTimeout: Boolean = ThreadPoolConf
   }
   final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
-      case m: MonitorableThreadFactory ⇒
-        // add the dispatcher id to the thread names
-        m.withName(m.name + "-" + id)
-      case other ⇒ other
+      // add the dispatcher id to the thread names and get
+      case m: MonitorableThreadFactory ⇒ m.copy(name = s"${m.name}-${id}")
+      case other                       ⇒ other
     }
     new ThreadPoolExecutorServiceFactory(tf)
   }
@@ -106,34 +150,32 @@ final case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
   import ThreadPoolConfig._
 
   def withNewThreadPoolWithCustomBlockingQueue(newQueueFactory: QueueFactory): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = newQueueFactory))
+    copy(config = config.copy(queueFactory = newQueueFactory))
 
   def withNewThreadPoolWithCustomBlockingQueue(queue: BlockingQueue[Runnable]): ThreadPoolConfigBuilder =
     withNewThreadPoolWithCustomBlockingQueue(reusableQueue(queue))
 
   def withNewThreadPoolWithLinkedBlockingQueueWithUnboundedCapacity: ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = linkedBlockingQueue()))
+    copy(config = config.copy(queueFactory = linkedBlockingQueue()))
 
   def withNewThreadPoolWithLinkedBlockingQueueWithCapacity(capacity: Int): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = linkedBlockingQueue(capacity)))
+    copy(config = config.copy(queueFactory = linkedBlockingQueue(capacity)))
 
   def withNewThreadPoolWithSynchronousQueueWithFairness(fair: Boolean): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = synchronousQueue(fair)))
+    copy(config = config.copy(queueFactory = synchronousQueue(fair)))
 
   def withNewThreadPoolWithArrayBlockingQueueWithCapacityAndFairness(capacity: Int, fair: Boolean): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair)))
+    copy(config = config.copy(queueFactory = arrayBlockingQueue(capacity, fair)))
 
   def setCorePoolSize(size: Int): ThreadPoolConfigBuilder =
-    if (config.maxPoolSize < size)
-      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
-    else
-      this.copy(config = config.copy(corePoolSize = size))
+    if (config.corePoolSize == size) this
+    else if (config.maxPoolSize < size) this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else copy(config = config.copy(corePoolSize = size))
 
   def setMaxPoolSize(size: Int): ThreadPoolConfigBuilder =
-    if (config.corePoolSize > size)
-      this.copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
-    else
-      this.copy(config = config.copy(maxPoolSize = size))
+    if (config.maxPoolSize == size) this
+    else if (config.corePoolSize > size) copy(config = config.copy(corePoolSize = size, maxPoolSize = size))
+    else copy(config = config.copy(maxPoolSize = size))
 
   def setCorePoolSizeFromFactor(min: Int, multiplier: Double, max: Int): ThreadPoolConfigBuilder =
     setCorePoolSize(scaledPoolSize(min, multiplier, max))
@@ -145,13 +187,20 @@ final case class ThreadPoolConfigBuilder(config: ThreadPoolConfig) {
     setKeepAliveTime(Duration(time, TimeUnit.MILLISECONDS))
 
   def setKeepAliveTime(time: Duration): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(threadTimeout = time))
+    if (config.threadTimeout == time) this
+    else copy(config = config.copy(threadTimeout = time))
 
   def setAllowCoreThreadTimeout(allow: Boolean): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(allowCorePoolTimeout = allow))
+    if (config.allowCorePoolTimeout == allow) this
+    else copy(config = config.copy(allowCorePoolTimeout = allow))
 
   def setQueueFactory(newQueueFactory: QueueFactory): ThreadPoolConfigBuilder =
-    this.copy(config = config.copy(queueFactory = newQueueFactory))
+    if (config.queueFactory eq newQueueFactory) this
+    else copy(config = config.copy(queueFactory = newQueueFactory))
+
+  def setMinimumNumberOfUnblockedThreads(newMinimumNumberOfUnblockedThreads: Int): ThreadPoolConfigBuilder =
+    if (config.minUnblockedThreads == newMinimumNumberOfUnblockedThreads) this
+    else copy(config = config.copy(minUnblockedThreads = newMinimumNumberOfUnblockedThreads))
 
   def configure(fs: Option[Function[ThreadPoolConfigBuilder, ThreadPoolConfigBuilder]]*): ThreadPoolConfigBuilder =
     fs.foldLeft(this)((c, f) ⇒ f.map(_(c)).getOrElse(c))
@@ -163,38 +212,40 @@ object MonitorableThreadFactory {
 
   private[akka] class AkkaForkJoinWorkerThread(_pool: ForkJoinPool) extends ForkJoinWorkerThread(_pool) with BlockContext {
     override def blockOn[T](thunk: ⇒ T)(implicit permission: CanAwait): T = {
-      val result = new AtomicReference[Option[T]](None)
+      @volatile var result: Option[T] = None
       ForkJoinPool.managedBlock(new ForkJoinPool.ManagedBlocker {
         def block(): Boolean = {
-          result.set(Some(thunk))
+          result = Some(thunk)
           true
         }
-        def isReleasable = result.get.isDefined
+        def isReleasable = result.isDefined
       })
-      result.get.get // Exception intended if None
+      result.get // Exception intended if None
     }
   }
 }
 
+/**
+ * Has mutable state, which is uncommon for case classes. Create a copy to get a clean slate.
+ */
 final case class MonitorableThreadFactory(name: String,
                                           daemonic: Boolean,
                                           contextClassLoader: Option[ClassLoader],
                                           exceptionHandler: Thread.UncaughtExceptionHandler = MonitorableThreadFactory.doNothing,
-                                          protected val counter: AtomicLong = new AtomicLong)
+                                          protected val counter: AtomicLong = new AtomicLong(0L))
   extends ThreadFactory with ForkJoinPool.ForkJoinWorkerThreadFactory {
 
-  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread = {
-    val t = wire(new MonitorableThreadFactory.AkkaForkJoinWorkerThread(pool))
-    // Name of the threads for the ForkJoinPool are not customizable. Change it here.
-    t.setName(name + "-" + counter.incrementAndGet())
-    t
-  }
+  def newThread(pool: ForkJoinPool): ForkJoinWorkerThread =
+    wire(new MonitorableThreadFactory.AkkaForkJoinWorkerThread(pool))
 
-  def newThread(runnable: Runnable): Thread = wire(new Thread(runnable, name + "-" + counter.incrementAndGet()))
+  def newThread(runnable: Runnable): Thread =
+    wire(new Thread(runnable))
 
+  @deprecated("use the copy method instead", "2.4")
   def withName(newName: String): MonitorableThreadFactory = copy(newName)
 
   protected def wire[T <: Thread](t: T): T = {
+    t.setName(s"${name}-${counter.incrementAndGet()}")
     t.setUncaughtExceptionHandler(exceptionHandler)
     t.setDaemon(daemonic)
     contextClassLoader foreach t.setContextClassLoader
