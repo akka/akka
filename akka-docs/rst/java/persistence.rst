@@ -448,6 +448,13 @@ The interval between redelivery attempts is defined by the ``redeliverInterval``
 The default value can be configured with the ``akka.persistence.at-least-once-delivery.redeliver-interval``
 configuration key. The method can be overridden by implementation classes to return non-default values.
 
+The maximum number of messages that will be sent at each redelivery burst is defined by the
+``redeliveryBurstLimit`` method (burst frequency is half of the redelivery interval). If there's a lot of
+unconfirmed messages (e.g. if the destination is not available for a long time), this helps to prevent an overwhelming
+amount of messages to be sent at once. The default value can be configured with the
+``akka.persistence.at-least-once-delivery.redelivery-burst-limit`` configuration key. The method can be overridden
+by implementation classes to return non-default values.
+
 After a number of delivery attempts a ``AtLeastOnceDelivery.UnconfirmedWarning`` message
 will be sent to ``self``. The re-sending will still continue, but you can choose to call
 ``confirmDelivery`` to cancel the re-sending. The number of delivery attempts before emitting the
