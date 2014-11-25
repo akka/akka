@@ -417,8 +417,7 @@ class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrer
   final def createExecutorServiceFactory(id: String, threadFactory: ThreadFactory): ExecutorServiceFactory = {
     val tf = threadFactory match {
       case m: MonitorableThreadFactory ⇒
-        // add the dispatcher id to the thread names
-        m.withName(m.name + "-" + id)
+        m.copy(name = s"${m.name}-${id}") // add the dispatcher id to the thread names
       case other ⇒ other
     }
     new ForkJoinExecutorServiceFactory(

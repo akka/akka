@@ -276,9 +276,9 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         // No changes to the Ast, lets try to see if we can squeeze the current head Ast node into a fusion pipeline
         case head :: rest ⇒
           ast2op(head, fuseCandidates) match {
-            case Nil               ⇒ analyze(rest, head :: optimized, Nil)
-            case `fuseCandidates`  ⇒ analyze(rest, head :: Ast.Fused(fuseCandidates) :: optimized, Nil)
-            case newFuseCandidates ⇒ analyze(rest, optimized, newFuseCandidates)
+            case Nil                      ⇒ analyze(rest, head :: optimized, Nil)
+            case l if l eq fuseCandidates ⇒ analyze(rest, head :: Ast.Fused(fuseCandidates) :: optimized, Nil)
+            case newFuseCandidates        ⇒ analyze(rest, optimized, newFuseCandidates)
           }
       }
     }
