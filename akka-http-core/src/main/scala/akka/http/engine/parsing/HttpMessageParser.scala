@@ -6,7 +6,6 @@ package akka.http.engine.parsing
 
 import scala.annotation.tailrec
 import scala.collection.mutable.ListBuffer
-import scala.collection.immutable
 import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
@@ -25,6 +24,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   import settings._
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
+  final case class Trampoline(f: ByteString ⇒ StateResult) extends StateResult
 
   private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
@@ -34,13 +34,20 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   override def initial = new State {
     override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
       result.clear()
-      try state(input)
-      catch {
-        case e: ParsingException ⇒ fail(e.status, e.info)
-        case NotEnoughDataException ⇒
-          // we are missing a try/catch{continue} wrapper somewhere
-          throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
-      }
+
+      @tailrec def run(next: ByteString ⇒ StateResult): StateResult =
+        (try next(input)
+        catch {
+          case e: ParsingException ⇒ fail(e.status, e.info)
+          case NotEnoughDataException ⇒
+            // we are missing a try/catch{continue} wrapper somewhere
+            throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
+        }) match {
+          case Trampoline(next) ⇒ run(next)
+          case x                ⇒ x
+        }
+
+      run(state)
       val resultIterator = result.iterator
       if (terminated) emitAndFinish(resultIterator, ctx)
       else emit(resultIterator, ctx)
@@ -162,7 +169,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
         val chunkBodyEnd = cursor + chunkSize
         def result(terminatorLen: Int) = {
           emit(ParserOutput.EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
-          parseChunk(input, chunkBodyEnd + terminatorLen, isLastMessage)
+          trampoline(_ ⇒ parseChunk(input, chunkBodyEnd + terminatorLen, isLastMessage))
         }
         byteChar(input, chunkBodyEnd) match {
           case '\r' if byteChar(input, chunkBodyEnd + 1) == '\n' ⇒ result(2)
@@ -213,6 +220,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
     state = next(_, 0)
     done()
   }
+  def trampoline(next: ByteString ⇒ StateResult): StateResult = Trampoline(next)
 
   def fail(summary: String): StateResult = fail(summary, "")
   def fail(summary: String, detail: String): StateResult = fail(StatusCodes.BadRequest, summary, detail)
