@@ -50,7 +50,7 @@ trait InterpreterSpecKit extends AkkaSpec {
 
       override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = {
         lastEvent += Cancel
-        ctx.exit()
+        ctx.finish()
       }
 
       override def onPull(ctx: BoundaryContext): Directive = {
@@ -75,12 +75,12 @@ trait InterpreterSpecKit extends AkkaSpec {
 
       override def onUpstreamFinish(ctx: BoundaryContext): TerminationDirective = {
         lastEvent += OnComplete
-        ctx.exit()
+        ctx.finish()
       }
 
       override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
         lastEvent += OnError(cause)
-        ctx.exit()
+        ctx.finish()
       }
 
       override def onPull(ctx: BoundaryContext): Directive =

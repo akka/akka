@@ -6,8 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.{ OverflowStrategy, FlowMaterializer, MaterializerSettings }
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 
 class FlowConflateSpec extends AkkaSpec {
@@ -91,6 +90,14 @@ class FlowConflateSpec extends AkkaSpec {
       subscriber.expectNoMsg(1.second)
       sub.cancel()
 
+    }
+
+    "work with a buffer and fold" in {
+      val future = Source(1 to 50)
+        .conflate(seed = i ⇒ i)(aggregate = (sum, i) ⇒ sum + i)
+        .buffer(50, OverflowStrategy.backpressure)
+        .fold(0)(_ + _)
+      Await.result(future, 3.seconds) should be((1 to 50).sum)
     }
 
   }
