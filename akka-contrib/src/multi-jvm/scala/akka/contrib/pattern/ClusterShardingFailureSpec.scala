@@ -165,6 +165,22 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
       enterBarrier("journal-blackholed")
 
       runOn(first) {
+        // try with a new shard, will not reply until journal is available again
+        region ! Add("40", 4)
+        val probe = TestProbe()
+        region.tell(Get("40"), probe.ref)
+        probe.expectNoMsg(1.second)
+      }
+
+      enterBarrier("first-delayed")
+
+      runOn(controller) {
+        testConductor.passThrough(controller, first, Direction.Both).await
+        testConductor.passThrough(controller, second, Direction.Both).await
+      }
+      enterBarrier("journal-ok")
+
+      runOn(first) {
         region ! Get("21")
         expectMsg(Value("21", 3))
         val entry21 = lastSender
@@ -188,13 +204,12 @@ class ClusterShardingFailureSpec extends MultiNodeSpec(ClusterShardingFailureSpe
 
         region ! Get("11")
         expectMsg(Value("11", 1))
+
+        region ! Get("40")
+        expectMsg(Value("40", 4))
       }
 
-      runOn(controller) {
-        testConductor.passThrough(controller, first, Direction.Both).await
-        testConductor.passThrough(controller, second, Direction.Both).await
-      }
-      enterBarrier("journal-ok")
+      enterBarrier("verified-first")
 
       runOn(second) {
         region ! Add("10", 1)
