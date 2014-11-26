@@ -28,12 +28,18 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
       Set("create", "apply", "ops", "appendJava", "andThen") ++
-      Seq("asScala", "asJava")
+      Set("asScala", "asJava")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     sFlowClass -> Set("of"),
     sSourceClass -> Set("adapt", "from"),
     sSinkClass -> Set("adapt"),
+
+    // TODO timerTransform is to be removed or replaced.  See https://github.com/akka/akka/issues/16393
+    jFlowClass -> Set("timerTransform"),
+    jSourceClass -> Set("timerTransform"),
+    jSinkClass -> Set(),
+
     sFlowGraphClass -> Set("builder"),
     jFlowGraphClass → Set("graph"),
     jPartialFlowGraphClass → Set("graph"))

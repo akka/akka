@@ -364,6 +364,8 @@ trait FlowOps[+Out] {
   }
 
   /**
+   * INTERNAL API - meant for removal / rewrite. See https://github.com/akka/akka/issues/16393
+   *
    * Transformation of a stream, with additional support for scheduled events.
    *
    * For each element the [[akka.stream.TransformerLike#onNext]]
@@ -387,7 +389,7 @@ trait FlowOps[+Out] {
    *
    * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
    */
-  def timerTransform[U](name: String, mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U] =
+  private[akka] def timerTransform[U](name: String, mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U] =
     andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]], name))
 
   /** INTERNAL API */

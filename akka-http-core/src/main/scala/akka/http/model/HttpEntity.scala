@@ -61,6 +61,8 @@ sealed trait HttpEntity extends japi.HttpEntity {
           throw new java.util.concurrent.TimeoutException(
             s"HttpEntity.toStrict timed out after $timeout while still waiting for outstanding data")
       }
+
+    // TODO timerTransform is meant to be replaced / rewritten, it's currently private[akka]; See https://github.com/akka/akka/issues/16393
     dataBytes.timerTransform("toStrict", transformer).runWith(Sink.head)
   }
 

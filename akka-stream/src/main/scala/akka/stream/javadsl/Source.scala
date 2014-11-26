@@ -396,33 +396,6 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
     new Source(delegate.transform(name, () ⇒ mkStage.create()))
 
   /**
-   * Transformation of a stream, with additional support for scheduled events.
-   *
-   * For each element the [[akka.stream.TransformerLike#onNext]]
-   * function is invoked, expecting a (possibly empty) sequence of output elements
-   * to be produced.
-   * After handing off the elements produced from one input element to the downstream
-   * subscribers, the [[akka.stream.TransformerLike#isComplete]] predicate determines whether to end
-   * stream processing at this point; in that case the upstream subscription is
-   * canceled. Before signaling normal completion to the downstream subscribers,
-   * the [[akka.stream.TransformerLike#onTermination]] function is invoked to produce a (possibly empty)
-   * sequence of elements in response to the end-of-stream event.
-   *
-   * [[akka.stream.TransformerLike#onError]] is called when failure is signaled from upstream.
-   *
-   * After normal completion or error the [[akka.stream.TransformerLike#cleanup]] function is called.
-   *
-   * It is possible to keep state in the concrete [[akka.stream.TimerTransformer]] instance with
-   * ordinary instance variables. The [[akka.stream.TimerTransformer]] is executed by an actor and
-   * therefore you do not have to add any additional thread safety or memory
-   * visibility constructs to access the state from the callback methods.
-   *
-   * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
-   */
-  def timerTransform[U](name: String, mkStage: japi.Creator[TimerTransformer[Out, U]]): javadsl.Source[U] =
-    new Source(delegate.timerTransform(name, () ⇒ mkStage.create()))
-
-  /**
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
