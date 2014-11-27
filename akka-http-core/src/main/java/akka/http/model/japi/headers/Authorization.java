@@ -14,4 +14,7 @@ public abstract class Authorization extends akka.http.model.HttpHeader {
     public static Authorization create(HttpCredentials credentials) {
         return new akka.http.model.headers.Authorization(((akka.http.model.headers.HttpCredentials) credentials));
     }
+    public static Authorization basic(String username, String password) {
+        return create(HttpCredentials.createBasicHttpCredentials(username, password));
+    }
 }
