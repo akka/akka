@@ -20,7 +20,7 @@ public abstract class HttpCredentials {
     public static HttpCredentials create(String scheme, String token, Map<String, String> params) {
         return new akka.http.model.headers.GenericHttpCredentials(scheme, token, Util.convertMapToScala(params));
     }
-    public static BasicHttpCredentials createBasicHttpCredential(String username, String password) {
+    public static BasicHttpCredentials createBasicHttpCredentials(String username, String password) {
         return new akka.http.model.headers.BasicHttpCredentials(username, password);
     }
     public static OAuth2BearerToken createOAuth2BearerToken(String token) {
