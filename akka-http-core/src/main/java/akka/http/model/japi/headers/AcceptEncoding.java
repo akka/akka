@@ -11,6 +11,9 @@ package akka.http.model.japi.headers;
 public abstract class AcceptEncoding extends akka.http.model.HttpHeader {
     public abstract Iterable<HttpEncodingRange> getEncodings();
 
+    public static AcceptEncoding create(HttpEncoding encoding) {
+        return new akka.http.model.headers.Accept$minusEncoding(akka.http.model.japi.Util.<HttpEncodingRange, akka.http.model.headers.HttpEncodingRange>convertArray(new HttpEncodingRange[] {encoding.toRange()}));
+    }
     public static AcceptEncoding create(HttpEncodingRange... encodings) {
         return new akka.http.model.headers.Accept$minusEncoding(akka.http.model.japi.Util.<HttpEncodingRange, akka.http.model.headers.HttpEncodingRange>convertArray(encodings));
     }
