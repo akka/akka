@@ -3,7 +3,10 @@
  */
 package akka.stream.io
 
+import java.net.InetSocketAddress
+
 import akka.io.{ IO, Tcp }
+import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef, Status }
 import akka.stream.impl._
@@ -20,8 +23,13 @@ private[akka] object TcpStreamActor {
   case object WriteAck extends Tcp.Event
   class TcpStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
-  def outboundProps(connectCmd: Connect, requester: ActorRef, settings: MaterializerSettings): Props =
-    Props(new OutboundTcpStreamActor(connectCmd, requester, settings)).withDispatcher(settings.dispatcher)
+  def outboundProps(processorPromise: Promise[Processor[ByteString, ByteString]],
+                    localAddressPromise: Promise[InetSocketAddress],
+                    connectCmd: Connect,
+                    materializerSettings: MaterializerSettings): Props =
+    Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, connectCmd,
+      materializerSettings)).withDispatcher(materializerSettings.dispatcher)
+
   def inboundProps(connection: ActorRef, settings: MaterializerSettings): Props =
     Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher)
 }
@@ -201,7 +209,9 @@ private[akka] class InboundTcpStreamActor(
 /**
  * INTERNAL API
  */
-private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requester: ActorRef, _settings: MaterializerSettings)
+private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[ByteString, ByteString]],
+                                           localAddressPromise: Promise[InetSocketAddress],
+                                           val connectCmd: Connect, _settings: MaterializerSettings)
   extends TcpStreamActor(_settings) {
   import TcpStreamActor._
   import context.system
@@ -222,11 +232,14 @@ private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requeste
       connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
       tcpOutputs.setConnection(connection)
       tcpInputs.setConnection(connection)
-      requester ! StreamTcpManager.ConnectReply(remoteAddress, localAddress, exposedProcessor)
+      localAddressPromise.success(localAddress)
+      processorPromise.success(exposedProcessor)
       initSteps.become(Actor.emptyBehavior)
+
     case f: CommandFailed ⇒
       val ex = new TcpStreamException("Connection failed.")
-      requester ! Status.Failure(ex)
+      localAddressPromise.failure(ex)
+      processorPromise.failure(ex)
       fail(ex)
   }
 }
