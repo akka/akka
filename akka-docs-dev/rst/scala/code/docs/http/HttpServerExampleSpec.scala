@@ -6,6 +6,7 @@ package docs.http
 
 import akka.actor.ActorSystem
 import akka.http.model._
+import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 
 class HttpServerExampleSpec
@@ -20,11 +21,9 @@ class HttpServerExampleSpec
     implicit val system = ActorSystem()
     implicit val materializer = FlowMaterializer()
 
-    val Http.ServerSource(source, serverBindingKey) = Http(system).bind(interface = "localhost", port = 8080)
-    source.foreach {
-      case Http.IncomingConnection(remoteAddress, flow) ⇒
-        println("Accepted new connection from " + remoteAddress)
-
+    val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
+    for (connection <- serverBinding.connections) {
+      println("Accepted new connection from " + connection.remoteAddress)
       // handle connection here
     }
     //#bind-example
@@ -37,7 +36,7 @@ class HttpServerExampleSpec
     implicit val system = ActorSystem()
     implicit val materializer = FlowMaterializer()
 
-    val Http.ServerSource(source, serverBindingKey) = Http(system).bind(interface = "localhost", port = 8080)
+    val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
 
     //#full-server-example
     import akka.http.model.HttpMethods._
@@ -54,13 +53,10 @@ class HttpServerExampleSpec
       case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
     }
 
-    // ...
+    serverBinding.connections foreach { connection =>
+      println("Accepted new connection from " + connection.remoteAddress)
 
-    source.foreach {
-      case Http.IncomingConnection(remoteAddress, flow) ⇒
-        println("Accepted new connection from " + remoteAddress)
-
-        flow.join(Flow[HttpRequest].map(requestHandler)).run()
+      connection handleWith { Flow[HttpRequest] map requestHandler }
     }
     //#full-server-example
   }
