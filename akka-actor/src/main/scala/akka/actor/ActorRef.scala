@@ -446,12 +446,37 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
+/** Subscribe to this class to be notified about all DeadLetters (also the supressed ones). */
+sealed trait AllDeadLetters {
+  def message: Any
+  def sender: ActorRef
+  def recipient: ActorRef
+}
+
 /**
  * When a message is sent to an Actor that is terminated before receiving the message, it will be sent as a DeadLetter
  * to the ActorSystem's EventStream
  */
 @SerialVersionUID(1L)
-case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) {
+case class DeadLetter(message: Any, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters {
+  require(sender ne null, "DeadLetter sender may not be null")
+  require(recipient ne null, "DeadLetter recipient may not be null")
+}
+
+/**
+ * Use with caution: Messages extending this trait will not be sent to dead-letters.
+ * Instead they will be wrapped as [[SuppressedDeadLetter]] and may be subscribed for explicitly.
+ */
+trait DeadLetterSuppression
+
+/**
+ * Similar to [[DeadLetter]] with the slight twist of NOT being logged by the default dead letters listener.
+ * Messages which end up being suppressed dead letters are internal messages for which ending up as dead-letter is both expected and harmless.
+ *
+ * It is possible to subscribe to suppressed dead letters on the ActorSystem's EventStream explicitly.
+ */
+@SerialVersionUID(1L)
+case class SuppressedDeadLetter(message: DeadLetterSuppression, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters {
   require(sender ne null, "DeadLetter sender may not be null")
   require(recipient ne null, "DeadLetter recipient may not be null")
 }
@@ -509,6 +534,9 @@ private[akka] class EmptyLocalActorRef(override val provider: ActorRefProvider,
         case None ⇒
           eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
       }
+      true
+    case m: DeadLetterSuppression ⇒
+      eventStream.publish(SuppressedDeadLetter(m, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
       true
     case _ ⇒ false
   }
