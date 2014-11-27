@@ -11,6 +11,7 @@ val project = Project(
     version := "2.4-SNAPSHOT",
     scalaVersion := "2.10.4",
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-actor" % akkaVersion,
       "com.typesafe.akka" %% "akka-remote" % akkaVersion,
       "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
       "org.scalatest" %% "scalatest" % "2.2.1" % "test"),
