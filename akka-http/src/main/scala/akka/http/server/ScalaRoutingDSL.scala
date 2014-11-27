@@ -19,33 +19,43 @@ import FastFuture._
  */
 trait ScalaRoutingDSL extends Directives {
 
-  sealed trait Applicator[R] {
-    def withRoute(route: Route): R
-    def withSyncHandler(handler: HttpRequest ⇒ HttpResponse): R
-    def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): R
-  }
+  /**
+   * Handles all connections from the given binding at maximum rate.
+   */
+  def handleConnections(httpServerBinding: Http.ServerBinding)(implicit fm: FlowMaterializer,
+                                                               setupProvider: RoutingSetupProvider): Applicator =
+    handleConnections(httpServerBinding.connections)
 
-  def handleConnections(serverSource: Http.ServerSource)(implicit fm: FlowMaterializer,
-                                                         setupProvider: RoutingSetupProvider): Applicator[Unit] = {
-    new Applicator[Unit] {
-      def withRoute(route: Route): Unit =
+  /**
+   * Handles all connections from the given source at maximum rate.
+   */
+  def handleConnections(connections: Source[Http.IncomingConnection])(implicit fm: FlowMaterializer,
+                                                                      setupProvider: RoutingSetupProvider): Applicator =
+    new Applicator {
+      def withRoute(route: Route) =
         run(routeRunner(route, _))
 
-      def withSyncHandler(handler: HttpRequest ⇒ HttpResponse): Unit =
+      def withSyncHandler(handler: HttpRequest ⇒ HttpResponse) =
         withAsyncHandler(request ⇒ FastFuture.successful(handler(request)))
 
-      def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): Unit =
+      def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]) =
         run(_ ⇒ handler)
 
-      private def run(f: RoutingSetup ⇒ HttpRequest ⇒ Future[HttpResponse]): Unit =
-        serverSource.source.foreach {
-          case connection @ Http.IncomingConnection(remoteAddress, flow) ⇒
-            val setup = setupProvider(connection)
-            setup.routingLog.log.debug("Accepted new connection from " + remoteAddress)
-            val runner = f(setup)
-            flow.join(Flow[HttpRequest].mapAsync(request ⇒ runner(request))).run()(fm)
+      def run(f: RoutingSetup ⇒ HttpRequest ⇒ Future[HttpResponse]): MaterializedMap = {
+        val sink = ForeachSink[Http.IncomingConnection] { connection ⇒
+          val setup = setupProvider(connection)
+          setup.routingLog.log.debug("Accepted new connection from " + connection.remoteAddress)
+          val runner = f(setup)
+          connection.handleWith(Flow[HttpRequest] mapAsync runner)
         }
+        connections.to(sink).run()
+      }
     }
+
+  sealed trait Applicator {
+    def withRoute(route: Route): MaterializedMap
+    def withSyncHandler(handler: HttpRequest ⇒ HttpResponse): MaterializedMap
+    def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): MaterializedMap
   }
 
   def routeRunner(route: Route, setup: RoutingSetup): HttpRequest ⇒ Future[HttpResponse] = {
