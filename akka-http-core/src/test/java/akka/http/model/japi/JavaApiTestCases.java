@@ -40,8 +40,12 @@ public class JavaApiTestCases {
 
     /** Adds authentication to an existing request */
     public static HttpRequest addAuthentication(HttpRequest request) {
+        // unused here but just to show the shortcut
+        request.addHeader(Authorization.basic("username", "password"));
+
         return request
-            .addHeader(Authorization.create(HttpCredentials.createBasicHttpCredential("username", "password")));
+            .addHeader(Authorization.create(HttpCredentials.createBasicHttpCredentials("username", "password")));
+
     }
 
     /** Removes cookies from an existing request */
