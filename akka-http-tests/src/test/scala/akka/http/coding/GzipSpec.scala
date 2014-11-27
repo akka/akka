@@ -103,8 +103,8 @@ class GzipSpec extends WordSpec with CodecSpecSupport {
   }
 
   def gzip(s: String) = ourGzip(ByteString(s, "UTF8"))
-  def ourGzip(bytes: ByteString): ByteString = Gzip.newCompressor.compressAndFinish(bytes)
-  def ourGunzip(bytes: ByteString): ByteString = Gzip.newDecompressor.decompressAndFinish(bytes)
+  def ourGzip(bytes: ByteString): ByteString = Gzip.encode(bytes)
+  def ourGunzip(bytes: ByteString): ByteString = Gzip.decode(bytes)
 
   lazy val corruptGzipContent = {
     val content = gzip("Hello").toArray
