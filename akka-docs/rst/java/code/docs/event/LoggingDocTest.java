@@ -4,6 +4,10 @@
 package docs.event;
 
 //#imports
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.AllDeadLetters;
+import akka.actor.SuppressedDeadLetter;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -64,7 +68,30 @@ public class LoggingDocTest {
     //#deadletters
     JavaTestKit.shutdownActorSystem(system);
   }
-  
+
+  @Test
+  public void subscribeToSuppressedDeadLetters() {
+    final ActorSystem system = ActorSystem.create("SuppressedDeadLetters");
+    final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
+    
+    //#suppressed-deadletters
+    system.eventStream().subscribe(actor, SuppressedDeadLetter.class);
+    //#suppressed-deadletters
+
+    JavaTestKit.shutdownActorSystem(system);
+  }
+  @Test
+  public void subscribeToAllDeadLetters() {
+    final ActorSystem system = ActorSystem.create("AllDeadLetters");
+    final ActorRef actor = system.actorOf(Props.create(DeadLetterActor.class));
+
+    //#all-deadletters
+    system.eventStream().subscribe(actor, AllDeadLetters.class);
+    //#all-deadletters
+
+    JavaTestKit.shutdownActorSystem(system);
+  }
+
   @Test
   public void demonstrateMultipleArgs() {
     final ActorSystem system = ActorSystem.create("multiArg");
