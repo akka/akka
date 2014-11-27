@@ -10,9 +10,7 @@ import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
 import akka.stream.FlowMaterializer
-import akka.stream.io.StreamTcp
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
-import akka.http.Http
 import akka.http.model._
 import akka.http.util._
 import headers._
@@ -20,7 +18,7 @@ import HttpEntity._
 import MediaTypes._
 import HttpMethods._
 
-class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with Inside {
+class HttpServerSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with Inside {
   implicit val materializer = FlowMaterializer()
 
   "The server implementation" should {
@@ -612,24 +610,24 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
   }
 
   class TestSetup {
-    val netIn = StreamTestKit.PublisherProbe[ByteString]
-    val netOut = StreamTestKit.SubscriberProbe[ByteString]
-    val tcpConnection = StreamTcp.IncomingTcpConnection(null, Flow(Sink(netOut), Source(netIn)))
+    val requests = StreamTestKit.SubscriberProbe[HttpRequest]
+    val responses = StreamTestKit.PublisherProbe[HttpResponse]
 
     def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
 
-    val pipeline = new HttpServerPipeline(settings, NoLogging)
-    val Http.IncomingConnection(_, httpPipelineFlow) = pipeline(tcpConnection)
+    val (netIn, netOut) = {
+      val netIn = StreamTestKit.PublisherProbe[ByteString]
+      val netOut = StreamTestKit.SubscriberProbe[ByteString]
+      val transportFlow = HttpServer.serverFlowToTransport(Flow(Sink(requests), Source(responses)), settings, NoLogging)
+      Source(netIn).via(transportFlow).runWith(Sink(netOut))
+      netIn -> netOut
+    }
 
     def wipeDate(string: String) =
       string.fastSplit('\n').map {
         case s if s.startsWith("Date:") ⇒ "Date: XXXX\r"
         case s                          ⇒ s
       }.mkString("\n")
-
-    val requests = StreamTestKit.SubscriberProbe[HttpRequest]
-    val responses = StreamTestKit.PublisherProbe[HttpResponse]
-    Flow(Sink(requests), Source(responses)).join(httpPipelineFlow).run()
 
     val netInSub = netIn.expectSubscription()
     val netOutSub = netOut.expectSubscription()
