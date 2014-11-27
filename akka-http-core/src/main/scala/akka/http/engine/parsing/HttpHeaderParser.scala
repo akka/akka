@@ -57,7 +57,7 @@ import akka.http.model.parser.CharacterClasses._
  * Since we address them via the nodes MSB and zero is reserved the trie
  * cannot hold more then 255 items, so this array has a fixed size of 255.
  */
-private[parsing] final class HttpHeaderParser private (
+private[engine] final class HttpHeaderParser private (
   val settings: HttpHeaderParser.Settings,
   warnOnIllegalHeader: ErrorInfo ⇒ Unit,
   private[this] var nodes: Array[Char] = new Array(512), // initial size, can grow as needed
@@ -83,7 +83,7 @@ private[parsing] final class HttpHeaderParser private (
   /**
    * Returns a copy of this parser that shares the trie data with this instance.
    */
-  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
+  def createShallowCopy(): HttpHeaderParser =
     new HttpHeaderParser(settings, warnOnIllegalHeader, nodes, nodeCount, branchData, branchDataCount, values, valueCount)
 
   /**
@@ -402,12 +402,10 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  private val defaultIllegalHeaderWarning: ErrorInfo ⇒ Unit = info ⇒ throw new IllegalHeaderException(info)
-
-  def apply(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+  def apply(settings: HttpHeaderParser.Settings)(warnOnIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw new IllegalHeaderException(info)) =
     prime(unprimed(settings, warnOnIllegalHeader))
 
-  def unprimed(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit = defaultIllegalHeaderWarning) =
+  def unprimed(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, warnOnIllegalHeader)
 
   def prime(parser: HttpHeaderParser): HttpHeaderParser = {
