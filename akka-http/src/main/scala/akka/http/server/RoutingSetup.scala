@@ -4,13 +4,12 @@
 
 package akka.http.server
 
-import akka.stream.FlowMaterializer
-
 import scala.concurrent.ExecutionContext
-import akka.actor.{ ActorSystem, ActorContext }
 import akka.event.LoggingAdapter
-import akka.http.model.HttpRequest
+import akka.actor.{ ActorSystem, ActorContext }
+import akka.stream.FlowMaterializer
 import akka.http.Http
+import akka.http.model.HttpRequest
 
 /**
  * Provides a ``RoutingSetup`` for a given connection.
