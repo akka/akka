@@ -40,9 +40,9 @@ private object RenderSupport {
     }
   }
 
-  def renderEntityContentType(r: Rendering, entity: HttpEntity): Unit =
-    if (entity.contentType != ContentTypes.NoContentType)
-      r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
+  def renderEntityContentType(r: Rendering, entity: HttpEntity) =
+    if (entity.contentType != ContentTypes.NoContentType) r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
+    else r
 
   def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString],
                         skipEntity: Boolean = false): Source[ByteString] = {

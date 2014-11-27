@@ -11,20 +11,22 @@ import akka.util.ByteString
 import akka.http.model._
 import headers._
 import HttpResponseParser.NoMethod
+import ParserOutput._
 
 /**
  * INTERNAL API
  */
 private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)(_headerParser: HttpHeaderParser = HttpHeaderParser(_settings))
-  extends HttpMessageParser[ParserOutput.ResponseOutput](_settings, _headerParser) {
+                                       _headerParser: HttpHeaderParser,
+                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)
+  extends HttpMessageParser[ResponseOutput](_settings, _headerParser) {
   import settings._
 
   private[this] var requestMethodForCurrentResponse: HttpMethod = NoMethod
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
-  def copyWith(warnOnIllegalHeader: ErrorInfo ⇒ Unit, dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
-    new HttpResponseParser(settings, dequeueRequestMethodForNextResponse)(headerParser.copyWith(warnOnIllegalHeader))
+  def createShallowCopy(dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
+    new HttpResponseParser(settings, headerParser.createShallowCopy(), dequeueRequestMethodForNextResponse)
 
   override def startNewMessage(input: ByteString, offset: Int): StateResult = {
     requestMethodForCurrentResponse = dequeueRequestMethodForNextResponse()
@@ -39,7 +41,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
         cursor = parseReason(input, cursor)()
         parseHeaderLines(input, cursor)
       } else badProtocol
-    } else fail("Unexpected server response", input.drop(offset).utf8String)
+    } else failMessageStart("Unexpected server response", input.drop(offset).utf8String)
 
   def badProtocol = throw new ParsingException("The server-side HTTP version is not supported")
 
@@ -72,12 +74,13 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   // http://tools.ietf.org/html/rfc7230#section-3.3
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                  hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
-    def emitResponseStart(createEntity: Source[ParserOutput.ResponseOutput] ⇒ ResponseEntity,
+                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult = {
+    def emitResponseStart(createEntity: Source[ResponseOutput] ⇒ ResponseEntity,
                           headers: List[HttpHeader] = headers) =
-      emit(ParserOutput.ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
+      emit(ResponseStart(statusCode, protocol, headers, createEntity, closeAfterResponseCompletion))
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
+      setCompletionHandling(HttpMessageParser.CompletionOk)
       startNewMessage(input, bodyStart)
     }
 
@@ -86,11 +89,12 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
         case None ⇒ clh match {
           case Some(`Content-Length`(contentLength)) ⇒
             if (contentLength > maxContentLength)
-              fail(s"Response Content-Length $contentLength exceeds the configured limit of $maxContentLength")
+              failMessageStart(s"Response Content-Length $contentLength exceeds the configured limit of $maxContentLength")
             else if (contentLength == 0) finishEmptyResponse()
             else if (contentLength < input.size - bodyStart) {
               val cl = contentLength.toInt
               emitResponseStart(strictEntity(cth, input, bodyStart, cl))
+              setCompletionHandling(HttpMessageParser.CompletionOk)
               startNewMessage(input, bodyStart + cl)
             } else {
               emitResponseStart(defaultEntity(cth, contentLength))
@@ -98,9 +102,10 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             }
           case None ⇒
             emitResponseStart { entityParts ⇒
-              val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
+              val data = entityParts.collect { case EntityPart(bytes) ⇒ bytes }
               HttpEntity.CloseDelimited(contentType(cth), data)
             }
+            setCompletionHandling(HttpMessageParser.CompletionOk)
             parseToCloseBody(input, bodyStart)
         }
 
@@ -110,9 +115,9 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
             if (clh.isEmpty) {
               emitResponseStart(chunkedEntity(cth), completedHeaders)
               parseChunk(input, bodyStart, closeAfterResponseCompletion)
-            } else fail("A chunked response must not contain a Content-Length header.")
-          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None, hostHeaderPresent,
-            closeAfterResponseCompletion)
+            } else failMessageStart("A chunked response must not contain a Content-Length header.")
+          } else parseEntity(completedHeaders, protocol, input, bodyStart, clh, cth, teh = None,
+            expect100continue, hostHeaderPresent, closeAfterResponseCompletion)
       }
     } else finishEmptyResponse()
   }
@@ -120,7 +125,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
   // currently we do not check for `settings.maxContentLength` overflow
   def parseToCloseBody(input: ByteString, bodyStart: Int): StateResult = {
     if (input.length > bodyStart)
-      emit(ParserOutput.EntityPart(input drop bodyStart))
+      emit(EntityPart(input drop bodyStart))
     continue(parseToCloseBody)
   }
 }

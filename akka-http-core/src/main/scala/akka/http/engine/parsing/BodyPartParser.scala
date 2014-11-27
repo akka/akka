@@ -50,7 +50,11 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
   // see: http://www.cgjennings.ca/fjs/ and http://ijes.info/4/1/42544103.pdf
   private[this] val boyerMoore = new BoyerMoore(needle)
 
-  private[this] val headerParser = HttpHeaderParser(settings, warnOnIllegalHeader) // TODO: prevent re-priming header parser from scratch
+  // TODO: prevent re-priming header parser from scratch
+  private[this] val headerParser = HttpHeaderParser(settings) { errorInfo ⇒
+    if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
+  }
+
   private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
   private[this] var resultIterator: Iterator[Output] = Iterator.empty
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary

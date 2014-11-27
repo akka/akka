@@ -10,48 +10,66 @@ import akka.parboiled2.CharUtils
 import akka.util.ByteString
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
+import akka.http.Http.StreamException
 import akka.http.model.parser.CharacterClasses
+import akka.http.util._
 import akka.http.model._
 import headers._
 import HttpProtocols._
+import ParserOutput._
 
 /**
  * INTERNAL API
  */
-private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOutput <: ParserOutput](val settings: ParserSettings,
-                                                                                                     val headerParser: HttpHeaderParser)
-  extends StatefulStage[ByteString, Output] {
+private[http] abstract class HttpMessageParser[Output >: MessageOutput <: ParserOutput](val settings: ParserSettings,
+                                                                                        val headerParser: HttpHeaderParser)
+  extends PushPullStage[ByteString, Output] {
+  import HttpMessageParser._
   import settings._
 
   sealed trait StateResult // phantom type for ensuring soundness of our parsing method setup
   final case class Trampoline(f: ByteString ⇒ StateResult) extends StateResult
 
-  private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
+  private[this] val result = new ListBuffer[Output]
   private[this] var state: ByteString ⇒ StateResult = startNewMessage(_, 0)
   private[this] var protocol: HttpProtocol = `HTTP/1.1`
+  private[this] var completionHandling: CompletionHandling = CompletionOk
   private[this] var terminated = false
 
-  override def initial = new State {
-    override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
-      result.clear()
+  override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
+    @tailrec def run(next: ByteString ⇒ StateResult): StateResult =
+      (try next(input)
+      catch {
+        case e: ParsingException ⇒ failMessageStart(e.status, e.info)
+        case NotEnoughDataException ⇒
+          // we are missing a try/catch{continue} wrapper somewhere
+          throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
+      }) match {
+        case Trampoline(x) ⇒ run(x)
+        case x             ⇒ x
+      }
 
-      @tailrec def run(next: ByteString ⇒ StateResult): StateResult =
-        (try next(input)
-        catch {
-          case e: ParsingException ⇒ fail(e.status, e.info)
-          case NotEnoughDataException ⇒
-            // we are missing a try/catch{continue} wrapper somewhere
-            throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
-        }) match {
-          case Trampoline(next) ⇒ run(next)
-          case x                ⇒ x
-        }
+    if (result.nonEmpty) throw new IllegalStateException("Unexpected `onPush`")
+    run(state)
+    pushResultHeadAndFinishOrPull(ctx)
+  }
 
-      run(state)
-      val resultIterator = result.iterator
-      if (terminated) emitAndFinish(resultIterator, ctx)
-      else emit(resultIterator, ctx)
+  def onPull(ctx: Context[Output]): Directive = pushResultHeadAndFinishOrPull(ctx)
+
+  def pushResultHeadAndFinishOrPull(ctx: Context[Output]): Directive =
+    if (result.nonEmpty) {
+      val head = result.head
+      result.remove(0) // faster than `ListBuffer::drop`
+      ctx.push(head)
+    } else if (terminated) ctx.finish() else ctx.pull()
+
+  override def onUpstreamFinish(ctx: Context[Output]) = {
+    completionHandling() match {
+      case Some(x) ⇒ emit(x.asInstanceOf[Output])
+      case None    ⇒ // nothing to do
     }
+    terminated = true
+    if (result.isEmpty) ctx.finish() else ctx.absorbTermination()
   }
 
   def startNewMessage(input: ByteString, offset: Int): StateResult = {
@@ -59,6 +77,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       try parseMessage(input, offset)
       catch { case NotEnoughDataException ⇒ continue(input, offset)(_startNewMessage) }
 
+    if (offset < input.length) setCompletionHandling(CompletionIsMessageStartError)
     _startNewMessage(input, offset)
   }
 
@@ -81,65 +100,75 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   @tailrec final def parseHeaderLines(input: ByteString, lineStart: Int, headers: List[HttpHeader] = Nil,
                                       headerCount: Int = 0, ch: Option[Connection] = None,
                                       clh: Option[`Content-Length`] = None, cth: Option[`Content-Type`] = None,
-                                      teh: Option[`Transfer-Encoding`] = None, hh: Boolean = false): StateResult = {
-    var lineEnd = 0
-    val resultHeader =
-      try {
-        lineEnd = headerParser.parseHeaderLine(input, lineStart)()
-        headerParser.resultHeader
-      } catch {
-        case NotEnoughDataException ⇒ null
+                                      teh: Option[`Transfer-Encoding`] = None, e100c: Boolean = false,
+                                      hh: Boolean = false): StateResult =
+    if (headerCount < maxHeaderCount) {
+      var lineEnd = 0
+      val resultHeader =
+        try {
+          lineEnd = headerParser.parseHeaderLine(input, lineStart)()
+          headerParser.resultHeader
+        } catch {
+          case NotEnoughDataException ⇒ null
+        }
+      resultHeader match {
+        case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, e100c, hh))
+
+        case HttpHeaderParser.EmptyHeader ⇒
+          val close = HttpMessage.connectionCloseExpected(protocol, ch)
+          setCompletionHandling(CompletionIsEntityStreamError)
+          parseEntity(headers, protocol, input, lineEnd, clh, cth, teh, e100c, hh, close)
+
+        case h: `Content-Length` ⇒ clh match {
+          case None      ⇒ parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, e100c, hh)
+          case Some(`h`) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case _         ⇒ failMessageStart("HTTP message must not contain more than one Content-Length header")
+        }
+        case h: `Content-Type` ⇒ cth match {
+          case None      ⇒ parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, e100c, hh)
+          case Some(`h`) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, e100c, hh)
+          case _         ⇒ failMessageStart("HTTP message must not contain more than one Content-Type header")
+        }
+        case h: `Transfer-Encoding` ⇒ teh match {
+          case None    ⇒ parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), e100c, hh)
+          case Some(x) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, Some(x append h.encodings), e100c, hh)
+        }
+        case h: Connection ⇒ ch match {
+          case None    ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, Some(h), clh, cth, teh, e100c, hh)
+          case Some(x) ⇒ parseHeaderLines(input, lineEnd, headers, headerCount, Some(x append h.tokens), clh, cth, teh, e100c, hh)
+        }
+        case h: Host ⇒
+          if (!hh) parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c, hh = true)
+          else failMessageStart("HTTP message must not contain more than one Host header")
+
+        case h: Expect ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c = true, hh)
+
+        case h         ⇒ parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, e100c, hh)
       }
-    resultHeader match {
-      case null ⇒ continue(input, lineStart)(parseHeaderLinesAux(headers, headerCount, ch, clh, cth, teh, hh))
-
-      case HttpHeaderParser.EmptyHeader ⇒
-        val close = HttpMessage.connectionCloseExpected(protocol, ch)
-        parseEntity(headers, protocol, input, lineEnd, clh, cth, teh, hh, close)
-
-      case h: Connection ⇒
-        parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, Some(h), clh, cth, teh, hh)
-
-      case h: `Content-Length` ⇒
-        if (clh.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, Some(h), cth, teh, hh)
-        else fail("HTTP message must not contain more than one Content-Length header")
-
-      case h: `Content-Type` ⇒
-        if (cth.isEmpty) parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, Some(h), teh, hh)
-        else if (cth.get == h) parseHeaderLines(input, lineEnd, headers, headerCount, ch, clh, cth, teh, hh)
-        else fail("HTTP message must not contain more than one Content-Type header")
-
-      case h: `Transfer-Encoding` ⇒
-        parseHeaderLines(input, lineEnd, headers, headerCount + 1, ch, clh, cth, Some(h), hh)
-
-      case h if headerCount < maxHeaderCount ⇒
-        parseHeaderLines(input, lineEnd, h :: headers, headerCount + 1, ch, clh, cth, teh, hh || h.isInstanceOf[Host])
-
-      case _ ⇒ fail(s"HTTP message contains more than the configured limit of $maxHeaderCount headers")
-    }
-  }
+    } else failMessageStart(s"HTTP message contains more than the configured limit of $maxHeaderCount headers")
 
   // work-around for compiler complaining about non-tail-recursion if we inline this method
   def parseHeaderLinesAux(headers: List[HttpHeader], headerCount: Int, ch: Option[Connection],
                           clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                          hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
-    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, hh)
+                          e100c: Boolean, hh: Boolean)(input: ByteString, lineStart: Int): StateResult =
+    parseHeaderLines(input, lineStart, headers, headerCount, ch, clh, cth, teh, e100c, hh)
 
   def parseEntity(headers: List[HttpHeader], protocol: HttpProtocol, input: ByteString, bodyStart: Int,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
-                  hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult
+                  expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult
 
   def parseFixedLengthBody(remainingBodyBytes: Long,
                            isLastMessage: Boolean)(input: ByteString, bodyStart: Int): StateResult = {
     val remainingInputBytes = input.length - bodyStart
     if (remainingInputBytes > 0) {
       if (remainingInputBytes < remainingBodyBytes) {
-        emit(ParserOutput.EntityPart(input drop bodyStart))
+        emit(EntityPart(input drop bodyStart))
         continue(parseFixedLengthBody(remainingBodyBytes - remainingInputBytes, isLastMessage))
       } else {
         val offset = bodyStart + remainingBodyBytes.toInt
-        emit(ParserOutput.EntityPart(input.slice(bodyStart, offset)))
-        emit(ParserOutput.MessageEnd)
+        emit(EntityPart(input.slice(bodyStart, offset)))
+        emit(MessageEnd)
+        setCompletionHandling(CompletionOk)
         if (isLastMessage) terminate()
         else startNewMessage(input, offset)
       }
@@ -149,32 +178,38 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   def parseChunk(input: ByteString, offset: Int, isLastMessage: Boolean): StateResult = {
     @tailrec def parseTrailer(extension: String, lineStart: Int, headers: List[HttpHeader] = Nil,
                               headerCount: Int = 0): StateResult = {
-      val lineEnd = headerParser.parseHeaderLine(input, lineStart)()
-      headerParser.resultHeader match {
-        case HttpHeaderParser.EmptyHeader ⇒
-          val lastChunk =
-            if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
-          emit(ParserOutput.EntityChunk(lastChunk))
-          emit(ParserOutput.MessageEnd)
-          if (isLastMessage) terminate()
-          else startNewMessage(input, lineEnd)
-        case header if headerCount < maxHeaderCount ⇒
-          parseTrailer(extension, lineEnd, header :: headers, headerCount + 1)
-        case _ ⇒ fail(s"Chunk trailer contains more than the configured limit of $maxHeaderCount headers")
-      }
+      var errorInfo: ErrorInfo = null
+      val lineEnd =
+        try headerParser.parseHeaderLine(input, lineStart)()
+        catch { case e: ParsingException ⇒ errorInfo = e.info; 0 }
+      if (errorInfo eq null) {
+        headerParser.resultHeader match {
+          case HttpHeaderParser.EmptyHeader ⇒
+            val lastChunk =
+              if (extension.isEmpty && headers.isEmpty) HttpEntity.LastChunk else HttpEntity.LastChunk(extension, headers)
+            emit(EntityChunk(lastChunk))
+            emit(MessageEnd)
+            setCompletionHandling(CompletionOk)
+            if (isLastMessage) terminate()
+            else startNewMessage(input, lineEnd)
+          case header if headerCount < maxHeaderCount ⇒
+            parseTrailer(extension, lineEnd, header :: headers, headerCount + 1)
+          case _ ⇒ failEntityStream(s"Chunk trailer contains more than the configured limit of $maxHeaderCount headers")
+        }
+      } else failEntityStream(errorInfo)
     }
 
     def parseChunkBody(chunkSize: Int, extension: String, cursor: Int): StateResult =
       if (chunkSize > 0) {
         val chunkBodyEnd = cursor + chunkSize
         def result(terminatorLen: Int) = {
-          emit(ParserOutput.EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
+          emit(EntityChunk(HttpEntity.Chunk(input.slice(cursor, chunkBodyEnd), extension)))
           trampoline(_ ⇒ parseChunk(input, chunkBodyEnd + terminatorLen, isLastMessage))
         }
         byteChar(input, chunkBodyEnd) match {
           case '\r' if byteChar(input, chunkBodyEnd + 1) == '\n' ⇒ result(2)
           case '\n' ⇒ result(1)
-          case x ⇒ fail("Illegal chunk termination")
+          case x ⇒ failEntityStream("Illegal chunk termination")
         }
       } else parseTrailer(extension, cursor)
 
@@ -186,7 +221,7 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
           case '\n' ⇒ parseChunkBody(chunkSize, extension, cursor + 1)
           case _ ⇒ parseChunkExtensions(chunkSize, cursor + 1)(startIx)
         }
-      } else fail(s"HTTP chunk extension length exceeds configured limit of $maxChunkExtLength characters")
+      } else failEntityStream(s"HTTP chunk extension length exceeds configured limit of $maxChunkExtLength characters")
 
     @tailrec def parseSize(cursor: Int, size: Long): StateResult =
       if (size <= maxChunkSize) {
@@ -194,9 +229,9 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
           case c if CharacterClasses.HEXDIG(c) ⇒ parseSize(cursor + 1, size * 16 + CharUtils.hexValue(c))
           case ';' if cursor > offset ⇒ parseChunkExtensions(size.toInt, cursor + 1)()
           case '\r' if cursor > offset && byteChar(input, cursor + 1) == '\n' ⇒ parseChunkBody(size.toInt, "", cursor + 2)
-          case c ⇒ fail(s"Illegal character '${escape(c)}' in chunk start")
+          case c ⇒ failEntityStream(s"Illegal character '${escape(c)}' in chunk start")
         }
-      } else fail(s"HTTP chunk size exceeds the configured limit of $maxChunkSize bytes")
+      } else failEntityStream(s"HTTP chunk size exceeds the configured limit of $maxChunkSize bytes")
 
     try parseSize(offset, 0)
     catch {
@@ -222,12 +257,21 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
   }
   def trampoline(next: ByteString ⇒ StateResult): StateResult = Trampoline(next)
 
-  def fail(summary: String): StateResult = fail(summary, "")
-  def fail(summary: String, detail: String): StateResult = fail(StatusCodes.BadRequest, summary, detail)
-  def fail(status: StatusCode): StateResult = fail(status, status.defaultMessage)
-  def fail(status: StatusCode, summary: String, detail: String = ""): StateResult = fail(status, ErrorInfo(summary, detail))
-  def fail(status: StatusCode, info: ErrorInfo): StateResult = {
-    emit(ParserOutput.ParseError(status, info))
+  def failMessageStart(summary: String): StateResult = failMessageStart(summary, "")
+  def failMessageStart(summary: String, detail: String): StateResult = failMessageStart(StatusCodes.BadRequest, summary, detail)
+  def failMessageStart(status: StatusCode): StateResult = failMessageStart(status, status.defaultMessage)
+  def failMessageStart(status: StatusCode, summary: String, detail: String = ""): StateResult = failMessageStart(status, ErrorInfo(summary, detail))
+  def failMessageStart(status: StatusCode, info: ErrorInfo): StateResult = {
+    emit(MessageStartError(status, info))
+    setCompletionHandling(CompletionOk)
+    terminate()
+  }
+
+  def failEntityStream(summary: String): StateResult = failEntityStream(summary, "")
+  def failEntityStream(summary: String, detail: String): StateResult = failEntityStream(ErrorInfo(summary, detail))
+  def failEntityStream(info: ErrorInfo): StateResult = {
+    emit(EntityStreamError(info))
+    setCompletionHandling(CompletionOk)
     terminate()
   }
 
@@ -250,14 +294,23 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
                    contentLength: Int)(entityParts: Any): UniversalEntity =
     HttpEntity.Strict(contentType(cth), input.slice(bodyStart, bodyStart + contentLength))
 
-  def defaultEntity(cth: Option[`Content-Type`], contentLength: Long)(entityParts: Source[_ <: ParserOutput]): UniversalEntity = {
-    val data = entityParts.collect { case ParserOutput.EntityPart(bytes) ⇒ bytes }
-    HttpEntity.Default(contentType(cth), contentLength, data)
+  def defaultEntity(cth: Option[`Content-Type`],
+                    contentLength: Long,
+                    transformData: Source[ByteString] ⇒ Source[ByteString] = identityFunc)(entityParts: Source[_ <: ParserOutput]): UniversalEntity = {
+    val data = entityParts.collect {
+      case EntityPart(bytes)       ⇒ bytes
+      case EntityStreamError(info) ⇒ throw new StreamException(info)
+    }
+    HttpEntity.Default(contentType(cth), contentLength, transformData(data))
   }
 
-  def chunkedEntity(cth: Option[`Content-Type`])(entityChunks: Source[_ <: ParserOutput]): RequestEntity with ResponseEntity = {
-    val chunks = entityChunks.collect { case ParserOutput.EntityChunk(chunk) ⇒ chunk }
-    HttpEntity.Chunked(contentType(cth), chunks)
+  def chunkedEntity(cth: Option[`Content-Type`],
+                    transformChunks: Source[HttpEntity.ChunkStreamPart] ⇒ Source[HttpEntity.ChunkStreamPart] = identityFunc)(entityChunks: Source[_ <: ParserOutput]): RequestEntity = {
+    val chunks = entityChunks.collect {
+      case EntityChunk(chunk)      ⇒ chunk
+      case EntityStreamError(info) ⇒ throw new StreamException(info)
+    }
+    HttpEntity.Chunked(contentType(cth), transformChunks(chunks))
   }
 
   def addTransferEncodingWithChunkedPeeled(headers: List[HttpHeader], teh: `Transfer-Encoding`): List[HttpHeader] =
@@ -265,4 +318,16 @@ private[http] abstract class HttpMessageParser[Output >: ParserOutput.MessageOut
       case Some(x) ⇒ x :: headers
       case None    ⇒ headers
     }
+
+  def setCompletionHandling(completionHandling: CompletionHandling): Unit =
+    this.completionHandling = completionHandling
+}
+
+private[http] object HttpMessageParser {
+  type CompletionHandling = () ⇒ Option[ParserOutput]
+  val CompletionOk: CompletionHandling = () ⇒ None
+  val CompletionIsMessageStartError: CompletionHandling =
+    () ⇒ Some(ParserOutput.MessageStartError(StatusCodes.BadRequest, ErrorInfo("Illegal HTTP message start")))
+  val CompletionIsEntityStreamError: CompletionHandling =
+    () ⇒ Some(ParserOutput.EntityStreamError(ErrorInfo("Entity stream truncation")))
 }
