@@ -5,6 +5,7 @@
 package akka.http.model.japi;
 
 import akka.http.model.Uri;
+import akka.http.model.UriJavaAccessor;
 
 import java.net.InetAddress;
 import java.nio.charset.Charset;
@@ -34,26 +35,26 @@ public abstract class Host {
     /**
      * The constant representing an empty Host.
      */
-    public static final Host EMPTY = akka.http.model.Uri$Host$Empty$.MODULE$;
+    public static final Host EMPTY = UriJavaAccessor.emptyHost();
 
     /**
      * Parse the given Host string using the default charset and parsing-mode.
      */
     public static Host create(String string) {
-        return create(string, Uri.Host$.MODULE$.apply$default$2());
+        return UriJavaAccessor.hostApply(string);
     }
 
     /**
      * Parse the given Host string using the given charset and the default parsing-mode.
      */
     public static Host create(String string, Charset charset) {
-        return Uri.Host$.MODULE$.apply(string, charset, Uri.Host$.MODULE$.apply$default$3());
+      return UriJavaAccessor.hostApply(string, charset);
     }
 
     /**
      * Parse the given Host string using the given charset and parsing-mode.
      */
     public static Host create(String string, Charset charset, Uri.ParsingMode parsingMode) {
-        return Uri.Host$.MODULE$.apply(string, charset, parsingMode);
+      return UriJavaAccessor.hostApply(string, charset, parsingMode);
     }
 }

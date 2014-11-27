@@ -849,3 +849,20 @@ object UriRendering {
 
   private[http] def isAsciiCompatible(cs: Charset) = cs == UTF8 || cs == ISO88591 || cs == ASCII
 }
+
+/**
+ * INTERNAL API.
+ */
+abstract class UriJavaAccessor
+/**
+ * INTERNAL API.
+ */
+object UriJavaAccessor {
+  def hostApply(string: String): Host = Uri.Host(string)
+  def hostApply(string: String, charset: Charset): Host = Uri.Host(string, charset)
+  def hostApply(string: String, charset: Charset, pm: Uri.ParsingMode): Host = Uri.Host(string, charset, pm)
+  def emptyHost: Uri.Host = Uri.Host.Empty
+  def pmStrict: Uri.ParsingMode = Uri.ParsingMode.Strict
+  def pmRelaxed: Uri.ParsingMode = Uri.ParsingMode.Relaxed
+  def pmRelaxedWithRawQuery: Uri.ParsingMode = Uri.ParsingMode.RelaxedWithRawQuery
+}
