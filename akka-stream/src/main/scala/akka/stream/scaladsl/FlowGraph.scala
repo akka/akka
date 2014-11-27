@@ -355,13 +355,13 @@ object Concat {
    */
   def apply[T](name: String): Concat[T] = new Concat[T](Some(name))
 
-  class First[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
-    override val port = 0
+  final class First[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
+    override def port = 0
     type NextT = T
     override def next = vertex.out
   }
-  class Second[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
-    override val port = 1
+  final class Second[T] private[akka] (val vertex: Concat[T]) extends JunctionInPort[T] {
+    override def port = 1
     type NextT = T
     override def next = vertex.out
   }
