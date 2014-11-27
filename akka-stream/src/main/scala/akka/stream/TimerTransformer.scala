@@ -11,7 +11,9 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * Transformer with support for scheduling keyed (named) timer events.
  */
-abstract class TimerTransformer[-T, +U] extends TransformerLike[T, U] {
+// TODO: TimerTransformer is meant to be replaced; See https://github.com/akka/akka/issues/16410
+@deprecated("TimerTransformer is meant to be replaced; See https://github.com/akka/akka/issues/16410")
+private[akka] abstract class TimerTransformer[-T, +U] extends TransformerLike[T, U] {
   import TimerTransformer._
   private val timers = mutable.Map[Any, Timer]()
   private val timerIdGen = Iterator from 1
