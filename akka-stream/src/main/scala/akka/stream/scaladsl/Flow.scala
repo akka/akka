@@ -309,8 +309,6 @@ trait FlowOps[+Out] {
    * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
-   *
-   * Note that you can use [[#timerTransform]] if you need support for scheduled events in the transformer.
    */
   def transform[T](name: String, mkStage: () ⇒ Stage[Out, T]): Repr[T] =
     andThen(StageFactory(mkStage, name))
