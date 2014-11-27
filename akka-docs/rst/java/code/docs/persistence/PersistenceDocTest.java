@@ -71,8 +71,8 @@ public class PersistenceDocTest {
                 //#usage
                 processor = getContext().actorOf(Props.create(MyProcessor.class), "myProcessor");
 
-                processor.tell(Persistent.create("foo"), null);
-                processor.tell("bar", null);
+                processor.tell(Persistent.create("foo"), getSelf());
+                processor.tell("bar", getSelf());
                 //#usage
             }
 
@@ -82,7 +82,7 @@ public class PersistenceDocTest {
 
             private void recover() {
                 //#recover-explicit
-                processor.tell(Recover.create(), null);
+                processor.tell(Recover.create(), getSelf());
                 //#recover-explicit
             }
         }
@@ -105,7 +105,7 @@ public class PersistenceDocTest {
             //#recover-on-start-custom
             @Override
             public void preStart() {
-                getSelf().tell(Recover.create(457L), null);
+                getSelf().tell(Recover.create(457L), getSelf());
             }
             //#recover-on-start-custom
         }
@@ -164,6 +164,15 @@ public class PersistenceDocTest {
             }
             
             //#recovery-completed
+        }
+    };
+
+    static Object fullyDisabledRecoveyExample = new Object() {
+        abstract class MyProcessor1 extends UntypedPersistentActor {
+            //#recover-fully-disabled
+            @Override
+            public void preStart() { getSelf().tell(Recover.create(0L), getSelf()); }
+            //#recover-fully-disabled
         }
     };
     
@@ -563,7 +572,7 @@ public class PersistenceDocTest {
                 final Procedure<String> replyToSender = new Procedure<String>() {
                     @Override
                     public void apply(String event) throws Exception {
-                        sender().tell(event, self());
+                        sender().tell(event, getSelf());
                     }
                 };
 
