@@ -389,8 +389,6 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * Generic transformation of a stream with a custom processing [[akka.stream.stage.Stage]].
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
-   *
-   * Note that you can use [[#timerTransform]] if you need support for scheduled events in the transformer.
    */
   def transform[U](name: String, mkStage: japi.Creator[Stage[Out, U]]): javadsl.Source[U] =
     new Source(delegate.transform(name, () ⇒ mkStage.create()))
