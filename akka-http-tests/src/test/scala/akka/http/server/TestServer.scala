@@ -17,16 +17,13 @@ import akka.http.model._
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.log-dead-letters = off
-                                                   """)
+    akka.log-dead-letters = off""")
   implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
   implicit val materializer = FlowMaterializer()
 
-  implicit val askTimeout: Timeout = 500.millis
-  val serverSource = Http(system).bind(interface = "localhost", port = 8080)
-
   import ScalaRoutingDSL._
+  import ScalaXmlSupport._
 
   def auth =
     HttpBasicAuthenticator.provideUserName {
@@ -34,33 +31,31 @@ object TestServer extends App {
       case _                                  ⇒ false
     }
 
-  // FIXME: a simple `import ScalaXmlSupport._` should suffice but currently doesn't because
-  // of #16190
-  implicit val html = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  val binding = Http().bind(interface = "localhost", port = 8080)
 
-  handleConnections(serverSource) withRoute {
-    get {
-      path("") {
-        complete(index)
-      } ~
-        path("secure") {
-          HttpBasicAuthentication("My very secure site")(auth) { user ⇒
-            complete(<html><body>Hello <b>{ user }</b>. Access has been granted!</body></html>)
+  val materializedMap =
+    handleConnections(binding) withRoute {
+      get {
+        path("") {
+          complete(index)
+        } ~
+          path("secure") {
+            HttpBasicAuthentication("My very secure site")(auth) { user ⇒
+              complete(<html><body>Hello <b>{ user }</b>. Access has been granted!</body></html>)
+            }
+          } ~
+          path("ping") {
+            complete("PONG!")
+          } ~
+          path("crash") {
+            complete(sys.error("BOOM!"))
           }
-        } ~
-        path("ping") {
-          complete("PONG!")
-        } ~
-        path("crash") {
-          complete(sys.error("BOOM!"))
-        }
+      }
     }
-  }
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-
   Console.readLine()
-  system.shutdown()
+  binding.unbind(materializedMap).onComplete(_ ⇒ system.shutdown())
 
   lazy val index =
     <html>
