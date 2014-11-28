@@ -222,7 +222,7 @@ private[akka] class OutboundTcpStreamActor(val connectCmd: Connect, val requeste
       connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
       tcpOutputs.setConnection(connection)
       tcpInputs.setConnection(connection)
-      requester ! StreamTcp.OutgoingTcpConnection(remoteAddress, localAddress, exposedProcessor)
+      requester ! StreamTcpManager.ConnectReply(remoteAddress, localAddress, exposedProcessor)
       initSteps.become(Actor.emptyBehavior)
     case f: CommandFailed ⇒
       val ex = new TcpStreamException("Connection failed.")

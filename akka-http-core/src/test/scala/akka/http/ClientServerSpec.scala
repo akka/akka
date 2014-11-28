@@ -7,16 +7,12 @@ package akka.http
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.reactivestreams.Publisher
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-import akka.actor.{ Status, ActorSystem }
-import akka.io.IO
-import akka.testkit.TestProbe
+import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
-import akka.stream.impl.SynchronousIterablePublisher
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.scaladsl._
@@ -42,33 +38,34 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     "properly bind and unbind a server" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
-      val commander = TestProbe()
-      commander.send(IO(Http), Http.Bind(hostname, port))
-
-      val Http.ServerBinding(localAddress, connectionStream) = commander.expectMsgType[Http.ServerBinding]
+      val Http.ServerSource(source, key) = Http(system).bind(hostname, port)
+      val c = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val mm = source.to(Sink(c)).run()
+      val Http.ServerBinding(localAddress) = Await.result(mm.get(key), 3.seconds)
+      val sub = c.expectSubscription()
       localAddress.getHostName shouldEqual hostname
       localAddress.getPort shouldEqual port
 
-      val c = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      connectionStream.subscribe(c)
-      val sub = c.expectSubscription()
-
       sub.cancel()
+
       // TODO: verify unbinding effect
     }
 
     "report failure if bind fails" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
-      val commander = TestProbe()
-      commander.send(IO(Http), Http.Bind(hostname, port))
-      val binding = commander.expectMsgType[Http.ServerBinding]
-      commander.send(IO(Http), Http.Bind(hostname, port))
-      commander.expectMsgType[Status.Failure]
-
-      // Clean up
-      val c = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      binding.connectionStream.subscribe(c)
-      val sub = c.expectSubscription()
+      val Http.ServerSource(source, key) = Http(system).bind(hostname, port)
+      val c1 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val mm1 = source.to(Sink(c1)).run()
+      val sub = c1.expectSubscription()
+      val Http.ServerBinding(localAddress) = Await.result(mm1.get(key), 3.seconds)
+      localAddress.getHostName shouldEqual hostname
+      localAddress.getPort shouldEqual port
+      val c2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val mm2 = source.to(Sink(c2)).run()
+      val failure = intercept[akka.stream.io.StreamTcp.IncomingTcpException] {
+        val serverBinding = Await.result(mm2.get(key), 3.seconds)
+      }
+      failure.getMessage should be("Bind failed")
       sub.cancel()
     }
 
@@ -126,40 +123,38 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   class TestSetup {
     val (hostname, port) = temporaryServerHostnameAndPort()
-    val bindHandler = TestProbe()
     def configOverrides = ""
 
     // automatically bind a server
     val connectionStream: SubscriberProbe[Http.IncomingConnection] = {
-      val commander = TestProbe()
       val settings = configOverrides.toOption.map(ServerSettings.apply)
-      commander.send(IO(Http), Http.Bind(hostname, port, serverSettings = settings))
+      val Http.ServerSource(source, key) = Http(system).bind(hostname, port, serverSettings = settings)
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
-      commander.expectMsgType[Http.ServerBinding].connectionStream.subscribe(probe)
+      source.to(Sink(probe)).run()
       probe
     }
     val connectionStreamSub = connectionStream.expectSubscription()
 
     def openNewClientConnection[T](settings: Option[ClientConnectionSettings] = None): (PublisherProbe[(HttpRequest, T)], SubscriberProbe[(HttpResponse, T)]) = {
-      val commander = TestProbe()
-      commander.send(IO(Http), Http.Connect(hostname, port, settings = settings))
-      val connection = commander.expectMsgType[Http.OutgoingConnection]
-      connection.remoteAddress.getPort shouldEqual port
-      connection.remoteAddress.getHostName shouldEqual hostname
+      val outgoingFlow = Http(system).connect(hostname, port, settings = settings)
       val requestPublisherProbe = StreamTestKit.PublisherProbe[(HttpRequest, T)]()
       val responseSubscriberProbe = StreamTestKit.SubscriberProbe[(HttpResponse, T)]()
-      requestPublisherProbe.subscribe(connection.requestSubscriber)
-      connection.responsePublisher.asInstanceOf[Publisher[(HttpResponse, T)]].subscribe(responseSubscriberProbe)
+      val tflow = outgoingFlow.flow.asInstanceOf[Flow[((HttpRequest, T)), ((HttpResponse, T))]]
+      val mm = Flow(Sink(responseSubscriberProbe), Source(requestPublisherProbe)).join(tflow).run()
+      val connection = Await.result(mm.get(outgoingFlow.key), 3.seconds)
+      connection.remoteAddress.getPort shouldEqual port
+      connection.remoteAddress.getHostName shouldEqual hostname
+
       requestPublisherProbe -> responseSubscriberProbe
     }
 
     def acceptConnection(): (SubscriberProbe[HttpRequest], PublisherProbe[HttpResponse]) = {
       connectionStreamSub.request(1)
-      val Http.IncomingConnection(_, requestPublisher, responseSubscriber) = connectionStream.expectNext()
+      val Http.IncomingConnection(remoteAddress, flow) = connectionStream.expectNext()
       val requestSubscriberProbe = StreamTestKit.SubscriberProbe[HttpRequest]()
       val responsePublisherProbe = StreamTestKit.PublisherProbe[HttpResponse]()
-      requestPublisher.subscribe(requestSubscriberProbe)
-      responsePublisherProbe.subscribe(responseSubscriber)
+      Flow(Sink(requestSubscriberProbe), Source(responsePublisherProbe)).join(flow).run()
+
       requestSubscriberProbe -> responsePublisherProbe
     }
 

@@ -7,9 +7,6 @@ package docs.http
 import akka.actor.ActorSystem
 import akka.http.model._
 import akka.stream.testkit.AkkaSpec
-import akka.util.Timeout
-
-import scala.concurrent.duration._
 
 class HttpServerExampleSpec
   extends AkkaSpec("akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox") {
@@ -18,45 +15,33 @@ class HttpServerExampleSpec
   "binding example" in {
     //#bind-example
     import akka.http.Http
-    import akka.io.IO
-    import akka.pattern.ask
     import akka.stream.FlowMaterializer
-    import akka.stream.scaladsl.Source
 
     implicit val system = ActorSystem()
-    import system.dispatcher
     implicit val materializer = FlowMaterializer()
-    implicit val askTimeout: Timeout = 500.millis
 
-    val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
-    bindingFuture foreach {
-      case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Source(connectionStream).foreach({
-          case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
-            println("Accepted new connection from " + remoteAddress)
+    val Http.ServerSource(source, serverBindingKey) = Http(system).bind(interface = "localhost", port = 8080)
+    source.foreach {
+      case Http.IncomingConnection(remoteAddress, flow) ⇒
+        println("Accepted new connection from " + remoteAddress)
 
-          // handle connection here
-        })
+      // handle connection here
     }
     //#bind-example
   }
+
   "full-server-example" in {
     import akka.http.Http
-    import akka.io.IO
-    import akka.pattern.ask
     import akka.stream.FlowMaterializer
-    import akka.stream.scaladsl.Source
-    import akka.stream.scaladsl.Sink
 
     implicit val system = ActorSystem()
-    import system.dispatcher
     implicit val materializer = FlowMaterializer()
-    implicit val askTimeout: Timeout = 500.millis
 
-    val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
+    val Http.ServerSource(source, serverBindingKey) = Http(system).bind(interface = "localhost", port = 8080)
 
     //#full-server-example
     import akka.http.model.HttpMethods._
+    import akka.stream.scaladsl.Flow
 
     val requestHandler: HttpRequest ⇒ HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) ⇒
@@ -70,14 +55,12 @@ class HttpServerExampleSpec
     }
 
     // ...
-    bindingFuture foreach {
-      case Http.ServerBinding(localAddress, connectionStream) ⇒
-        Source(connectionStream).foreach({
-          case Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
-            println("Accepted new connection from " + remoteAddress)
 
-            Source(requestProducer).map(requestHandler).to(Sink(responseConsumer)).run()
-        })
+    source.foreach {
+      case Http.IncomingConnection(remoteAddress, flow) ⇒
+        println("Accepted new connection from " + remoteAddress)
+
+        flow.join(Flow[HttpRequest].map(requestHandler)).run()
     }
     //#full-server-example
   }
