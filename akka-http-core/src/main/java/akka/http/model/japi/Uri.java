@@ -4,6 +4,7 @@
 
 package akka.http.model.japi;
 
+import akka.http.model.UriJavaAccessor;
 import akka.japi.Option;
 import akka.parboiled2.ParserInput$;
 
@@ -156,9 +157,9 @@ public abstract class Uri {
      */
     public abstract Uri fragment(Option<String> fragment);
 
-    public static final akka.http.model.Uri.ParsingMode STRICT = akka.http.model.Uri$ParsingMode$Strict$.MODULE$;
-    public static final akka.http.model.Uri.ParsingMode RELAXED = akka.http.model.Uri$ParsingMode$Relaxed$.MODULE$;
-    public static final akka.http.model.Uri.ParsingMode RELAXED_WITH_RAW_QUERY = akka.http.model.Uri$ParsingMode$RelaxedWithRawQuery$.MODULE$;
+    public static final akka.http.model.Uri.ParsingMode STRICT = UriJavaAccessor.pmStrict();
+    public static final akka.http.model.Uri.ParsingMode RELAXED = UriJavaAccessor.pmRelaxed();
+    public static final akka.http.model.Uri.ParsingMode RELAXED_WITH_RAW_QUERY = UriJavaAccessor.pmRelaxedWithRawQuery();
 
     /**
      * Creates a default Uri to be modified using the modification methods.
