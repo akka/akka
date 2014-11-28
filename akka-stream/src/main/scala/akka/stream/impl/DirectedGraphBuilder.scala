@@ -24,6 +24,7 @@ private[akka] final case class Vertex[E, V](label: V) {
 
   def isolated: Boolean = inDegree == 0 && outDegree == 0
 
+  // FIXME #16381 this is at the wrong level
   def isSink: Boolean = outEdgeSet.isEmpty
 
   def successors: Set[Vertex[E, V]] = outEdgeSet.map(_.to)

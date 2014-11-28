@@ -181,7 +181,8 @@ private[http] object StreamUtils {
   def runStrict(sourceData: ByteString, transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
     Try {
       transformer match {
-        case Pipe(ops) ⇒
+        // FIXME #16382 right now the flow can't use keys, should that be allowed?
+        case Pipe(ops, keys) if keys.isEmpty ⇒
           if (ops.isEmpty)
             Some(sourceData)
           else {

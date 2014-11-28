@@ -19,6 +19,12 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val sSinkClass = classOf[akka.stream.scaladsl.Sink[_]]
   val jSinkClass = classOf[akka.stream.javadsl.Sink[_]]
 
+  val sKeyClass = classOf[akka.stream.scaladsl.Key]
+  val jKeyClass = classOf[akka.stream.javadsl.Key[_]]
+
+  val sMaterializedMapClass = classOf[akka.stream.scaladsl.MaterializedMap]
+  val jMaterializedMapClass = classOf[akka.stream.javadsl.MaterializedMap]
+
   val jFlowGraphClass = classOf[akka.stream.javadsl.FlowGraph]
   val sFlowGraphClass = classOf[akka.stream.scaladsl.FlowGraph]
 
@@ -41,8 +47,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
     jSinkClass -> Set(),
 
     sFlowGraphClass -> Set("builder"),
-    jFlowGraphClass → Set("graph"),
-    jPartialFlowGraphClass → Set("graph"))
+    jFlowGraphClass → Set("graph", "cyclesAllowed"),
+    jPartialFlowGraphClass → Set("graph", "cyclesAllowed", "disconnectedAllowed"))
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[FlowMaterializer])
 
@@ -57,6 +63,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
     ("Source" -> List(sSourceClass, jSourceClass)) ::
       ("Flow" -> List(sFlowClass, jFlowClass)) ::
       ("Sink" -> List(sSinkClass, jSinkClass)) ::
+      ("Key" -> List(sKeyClass, jKeyClass)) ::
+      ("MaterializedMap" -> List(sMaterializedMapClass, jMaterializedMapClass)) ::
       ("FlowGraph" -> List(sFlowGraphClass, jFlowGraphClass)) ::
       ("PartialFlowGraph" -> List(sPartialFlowGraphClass, jPartialFlowGraphClass)) ::
       Nil foreach {

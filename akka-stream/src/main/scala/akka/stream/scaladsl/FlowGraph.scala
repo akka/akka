@@ -3,18 +3,15 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.impl.Ast.FanInAstNode
-import akka.stream.impl.Ast
-import java.util
+import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
 
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
+import akka.stream.FlowMaterializer
+import akka.stream.impl.Ast
+import akka.stream.impl.Ast.FanInAstNode
+import akka.stream.impl.{ DirectedGraphBuilder, Edge }
+import org.reactivestreams._
 
 import scala.language.existentials
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Publisher
-import akka.stream.FlowMaterializer
-import akka.stream.impl.{ DirectedGraphBuilder, Edge, Vertex ⇒ GVertex }
 
 /**
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
@@ -57,8 +54,16 @@ private[akka] sealed trait Junction[T] extends JunctionInPort[T] with JunctionOu
   override private[akka] def next = this
 }
 
+private[akka] object Identity {
+  private val id = new AtomicInteger(1)
+  def getId: Int = id.getAndIncrement
+}
+
 private[akka] final class Identity[T]() extends FlowGraphInternal.InternalVertex with Junction[T] {
-  def name: Option[String] = Some("identity")
+  import Identity._
+
+  // This vertex can not have a name or else there can only be one instance in the whole graph
+  def name: Option[String] = None
 
   override private[akka] val vertex = this
   override val minimumInputCount: Int = 1
@@ -66,7 +71,7 @@ private[akka] final class Identity[T]() extends FlowGraphInternal.InternalVertex
   override val minimumOutputCount: Int = 1
   override val maximumOutputCount: Int = 1
 
-  override private[akka] def astNode = Ast.IdentityAstNode
+  override private[akka] val astNode = Ast.IdentityAstNode(getId)
 
   final override private[scaladsl] def newInstance() = new Identity[T]()
 }
@@ -495,7 +500,7 @@ private[akka] object FlowGraphInternal {
 
     /**
      * These are unique keys, case class equality would break them.
-     * In the case of KeyedSources we MUST compare by object equality, in order to avoid ambigiousities in materialization.
+     * In the case of KeyedSources we MUST compare by object equality, in order to avoid ambiguities in materialization.
      */
     final override def equals(other: Any): Boolean = other match {
       case v: SinkVertex ⇒ (sink, v.sink) match {
@@ -550,11 +555,65 @@ private[akka] object FlowGraphInternal {
 
   }
 
+  /**
+   * INTERNAL API
+   *
+   * This is a minimalistic processor to tie a loop that when we know that we are materializing a flow
+   * and only have one upstream and one downstream.
+   *
+   * It can only be used with a SourceVertex/SinkVertex during a flow join, since if the graph would
+   * be copied into another graph then the SourceVertex/SinkVertex would still point to the same instance
+   * of the IdentityProcessor.
+   */
+  class IdentityProcessor extends Processor[Any, Any] {
+    import akka.stream.actor.ActorSubscriber.OnSubscribe
+    import akka.stream.actor.ActorSubscriberMessage._
+
+    @volatile private var subscriber: Subscriber[Any] = null
+    private val state = new AtomicReference[AnyRef]()
+
+    override def onSubscribe(s: Subscription) =
+      if (subscriber != null) subscriber.onSubscribe(s)
+      else state.getAndSet(OnSubscribe(s)) match {
+        case sub: Subscriber[Any] ⇒ sub.onSubscribe(s)
+        case _                    ⇒
+      }
+
+    override def onError(t: Throwable) =
+      if (subscriber != null) subscriber.onError(t)
+      else state.getAndSet(OnError(t)) match {
+        case sub: Subscriber[Any] ⇒ sub.onError(t)
+        case _                    ⇒
+      }
+
+    override def onComplete() =
+      if (subscriber != null) subscriber.onComplete()
+      else state.getAndSet(OnComplete) match {
+        case sub: Subscriber[Any] ⇒ sub.onComplete()
+        case _                    ⇒
+      }
+
+    override def onNext(t: Any) =
+      if (subscriber != null) subscriber.onNext(t)
+      else throw new IllegalStateException("IdentityProcessor received onNext before signaling demand")
+
+    override def subscribe(sub: Subscriber[_ >: Any]) =
+      if (subscriber != null) sub.onError(new IllegalStateException("IdentityProcessor can only be subscribed to once"))
+      else {
+        subscriber = sub.asInstanceOf[Subscriber[Any]]
+        if (!state.compareAndSet(null, sub)) state.get match {
+          case OnSubscribe(s) ⇒ sub.onSubscribe(s)
+          case OnError(t)     ⇒ sub.onError(t)
+          case OnComplete     ⇒ sub.onComplete()
+          case s              ⇒ throw new IllegalStateException(s"IdentityProcessor found unknown state $s")
+        }
+      }
+  }
 }
 
 object FlowGraphBuilder {
   private[scaladsl] def apply[T](partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ T): T = {
-    val builder = new FlowGraphBuilder(partialFlowGraph.graph)
+    val builder = new FlowGraphBuilder(partialFlowGraph)
     block(builder)
   }
 }
@@ -563,16 +622,21 @@ object FlowGraphBuilder {
  * Builder of [[FlowGraph]] and [[PartialFlowGraph]].
  * Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]) {
+class FlowGraphBuilder private[akka] (
+  _graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex],
+  private var cyclesAllowed: Boolean,
+  private var disconnectedAllowed: Boolean) {
+
   import FlowGraphInternal._
   private val graph = new DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]()
 
-  private[akka] def this() = this(new DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]())
+  private[akka] def this() = this(new DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex](), false, false)
 
   private var edgeQualifier = 0
   importGraph(_graph)
 
-  private var cyclesAllowed = false
+  private[akka] def this(flowGraph: FlowGraphLike) =
+    this(flowGraph.graph, flowGraph.cyclesAllowed, flowGraph.disconnectedAllowed)
 
   private def addSourceToPipeEdge[In, Out](source: Source[In], pipe: Pipe[In, Out], junctionIn: JunctionInPort[Out]): this.type = {
     val sourceVertex = SourceVertex(source)
@@ -650,7 +714,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
   def addEdge[In, Out](source: Source[In], flow: Flow[In, Out], junctionIn: JunctionInPort[Out]): this.type = {
     (source, flow) match {
       case (spipe: SourcePipe[In], pipe: Pipe[In, Out]) ⇒
-        addSourceToPipeEdge(spipe.input, Pipe(spipe.ops).appendPipe(pipe), junctionIn)
+        addSourceToPipeEdge(spipe.input, Pipe(spipe).appendPipe(pipe), junctionIn)
       case (gsource: GraphSource[_, In], _) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
@@ -669,7 +733,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
   def addEdge[In, Out](junctionOut: JunctionOutPort[In], flow: Flow[In, Out], sink: Sink[Out]): this.type = {
     (flow, sink) match {
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
-        addPipeToSinkEdge(junctionOut, pipe.appendPipe(Pipe(spipe.ops)), spipe.output)
+        addPipeToSinkEdge(junctionOut, pipe.appendPipe(Pipe(spipe)), spipe.output)
       case (_, gsink: GraphSink[Out, _]) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
@@ -689,15 +753,15 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
     (source, flow, sink) match {
       case (sourcePipe: SourcePipe[In], pipe: Pipe[In, Out], sinkPipe: SinkPipe[Out]) ⇒
         val src = sourcePipe.input
-        val newPipe = Pipe(sourcePipe.ops).via(pipe).via(Pipe(sinkPipe.ops))
+        val newPipe = Pipe(sourcePipe).via(pipe).via(Pipe(sinkPipe))
         val snk = sinkPipe.output
         addEdge(src, newPipe, snk) // recursive, but now it is a Source-Pipe-Sink
       case (sourcePipe: SourcePipe[In], pipe: Pipe[In, Out], sink: Sink[Out]) ⇒
         val src = sourcePipe.input
-        val newPipe = Pipe(sourcePipe.ops).via(pipe)
+        val newPipe = Pipe(sourcePipe).via(pipe)
         addEdge(src, newPipe, sink) // recursive, but now it is a Source-Pipe-Sink
       case (source: Source[In], pipe: Pipe[In, Out], sinkPipe: SinkPipe[Out]) ⇒
-        val newPipe = pipe.via(Pipe(sinkPipe.ops))
+        val newPipe = pipe.via(Pipe(sinkPipe))
         val snk = sinkPipe.output
         addEdge(source, newPipe, snk) // recursive, but now it is a Source-Pipe-Sink
       case (_, gflow: GraphFlow[In, _, _, Out], _) ⇒
@@ -736,7 +800,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
   def addEdge[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], sink: Sink[Out]): this.type = {
     (flow, sink) match {
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
-        addGraphEdge(source, SinkVertex(spipe.output), pipe.appendPipe(Pipe(spipe.ops)), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
+        addGraphEdge(source, SinkVertex(spipe.output), pipe.appendPipe(Pipe(spipe)), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
       case (gflow: GraphFlow[In, _, _, Out], _) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
@@ -759,7 +823,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
   def addEdge[In, Out](source: Source[In], flow: Flow[In, Out], sink: UndefinedSink[Out]): this.type = {
     (flow, source) match {
       case (pipe: Pipe[In, Out], spipe: SourcePipe[Out]) ⇒
-        addGraphEdge(SourceVertex(spipe.input), sink, Pipe(spipe.ops).appendPipe(pipe), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
+        addGraphEdge(SourceVertex(spipe.input), sink, Pipe(spipe).appendPipe(pipe), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
       case (_, gsource: GraphSource[_, In]) ⇒
         val tOut1 = UndefinedSource[In]
         val tOut2 = UndefinedSink[In]
@@ -813,7 +877,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
         graph.remove(existing.label)
         sink match {
           case spipe: SinkPipe[Out] ⇒
-            val pipe = edge.label.pipe.appendPipe(Pipe(spipe.ops))
+            val pipe = edge.label.pipe.appendPipe(Pipe(spipe))
             addOrReplaceSinkEdge(edge.from.label, SinkVertex(spipe.output), pipe, edge.label.inputPort, edge.label.outputPort)
           case gsink: GraphSink[Out, _] ⇒
             gsink.importAndConnect(this, token)
@@ -833,7 +897,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
         graph.remove(existing.label)
         source match {
           case spipe: SourcePipe[In] ⇒
-            val pipe = Pipe(spipe.ops).appendPipe(edge.label.pipe)
+            val pipe = Pipe(spipe).appendPipe(edge.label.pipe)
             addOrReplaceSourceEdge(SourceVertex(spipe.input), edge.to.label, pipe, edge.label.inputPort, edge.label.outputPort)
           case gsource: GraphSource[_, In] ⇒
             gsource.importAndConnect(this, token)
@@ -853,7 +917,10 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
    * by first importing the other `PartialFlowGraph` with [[#importPartialFlowGraph]]
    * and then connect them with this method.
    */
-  def connect[A, B](out: UndefinedSink[A], flow: Flow[A, B], in: UndefinedSource[B]): this.type = {
+  def connect[A, B](out: UndefinedSink[A], flow: Flow[A, B], in: UndefinedSource[B]): this.type =
+    connect(out, flow, in, false)
+
+  private[scaladsl] def connect[A, B](out: UndefinedSink[A], flow: Flow[A, B], in: UndefinedSource[B], joining: Boolean): this.type = {
     require(graph.contains(out), s"Couldn't connect from [$out], no matching UndefinedSink")
     require(graph.contains(in), s"Couldn't connect to [$in], no matching UndefinedSource")
 
@@ -861,11 +928,42 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
     val inEdge = graph.get(in).outgoing.head
     flow match {
       case pipe: Pipe[A, B] ⇒
-        val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]]).appendPipe(inEdge.label.pipe)
         graph.remove(out)
         graph.remove(in)
-        addOrReplaceGraphEdge(outEdge.from.label, inEdge.to.label, newPipe, inEdge.label.inputPort, outEdge.label.outputPort)
+        if (out == inEdge.to.label && in == outEdge.from.label) {
+          require(joining == true, "Connecting an edge to itself should only happen when joining flows")
+          val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]])
+          val identityProcessor = new IdentityProcessor
+          addEdge(Source(identityProcessor), newPipe, Sink(identityProcessor))
+        } else if (joining == true) {
+          val identityProcessor = new IdentityProcessor
+          val sinkVertex = SinkVertex(Sink(identityProcessor))
+          val sourceVertex = SourceVertex(Source(identityProcessor))
+          val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]])
+          outEdge.from.label match {
+            case s: SourceVertex ⇒
+              // direct source to sink connection, needs an identity vertex in between
+              val id = new Identity[Any]
+              addOrReplaceSinkEdge(outEdge.from.label, id, newPipe, UnlabeledPort, outEdge.label.outputPort)
+              addOrReplaceSinkEdge(id, sinkVertex, Pipe.empty[Any], UnlabeledPort, UnlabeledPort)
+            case _ ⇒
+              addOrReplaceSinkEdge(outEdge.from.label, sinkVertex, newPipe, UnlabeledPort, outEdge.label.outputPort)
+          }
+          inEdge.to.label match {
+            case s: SinkVertex ⇒
+              // direct source to sink connection, needs an identity vertex in between
+              val id = new Identity[Any]
+              addOrReplaceSourceEdge(id, inEdge.to.label, inEdge.label.pipe, inEdge.label.inputPort, UnlabeledPort)
+              addOrReplaceSourceEdge(sourceVertex, id, Pipe.empty[Any], UnlabeledPort, UnlabeledPort)
+            case _ ⇒
+              addOrReplaceSourceEdge(sourceVertex, inEdge.to.label, inEdge.label.pipe, inEdge.label.inputPort, UnlabeledPort)
+          }
+        } else {
+          val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]]).appendPipe(inEdge.label.pipe)
+          addOrReplaceGraphEdge(outEdge.from.label, inEdge.to.label, newPipe, inEdge.label.inputPort, outEdge.label.outputPort)
+        }
       case gflow: GraphFlow[A, _, _, B] ⇒
+        require(joining == false, "Graph flows should have been split up to pipes while joining")
         gflow.importAndConnect(this, out, in)
       case x ⇒ throwUnsupportedValue(x)
     }
@@ -917,12 +1015,20 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
     cyclesAllowed = true
   }
 
+  /**
+   * Allow multiple apparently disconnected graphs in the same graph.
+   * They might still be connected through source/sink pairs.
+   */
+  private[scaladsl] def allowDisconnected(): Unit = {
+    disconnectedAllowed = true
+  }
+
   private def checkAddSourceSinkPrecondition(vertex: Vertex): Unit = {
     checkAmbigiousKeyedElement(vertex)
 
     vertex match {
       case node @ (_: UndefinedSource[_] | _: UndefinedSink[_]) ⇒
-        require(!graph.contains(node), s"[$node] instance is already used in this flow graph")
+        require(!graph.contains(node), s"[$node] instance is already used in this flow graph [${graph.nodes.map(_.toString)}]")
       case _ ⇒ // ok
     }
   }
@@ -990,7 +1096,7 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
    */
   private[akka] def partialBuild(): PartialFlowGraph = {
     checkPartialBuildPreconditions()
-    new PartialFlowGraph(graph.copy())
+    new PartialFlowGraph(graph.copy(), cyclesAllowed, disconnectedAllowed)
   }
 
   private def checkPartialBuildPreconditions(): Unit = {
@@ -1048,7 +1154,8 @@ class FlowGraphBuilder private[akka] (_graph: DirectedGraphBuilder[FlowGraphInte
     require(graph.exists(_.inDegree == 0),
       "Graph must have at least one source")
 
-    require(graph.isWeaklyConnected, "Graph must be connected")
+    if (!disconnectedAllowed)
+      require(graph.isWeaklyConnected, "Graph must be connected")
   }
 
 }
@@ -1064,7 +1171,7 @@ object FlowGraph {
    * Build a [[FlowGraph]] from scratch.
    */
   def apply(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
-    apply(new DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex])(block)
+    apply(new FlowGraphBuilder())(block)
 
   /**
    * Continue building a [[FlowGraph]] from an existing `PartialFlowGraph`.
@@ -1072,17 +1179,9 @@ object FlowGraph {
    * [[FlowGraphBuilder#attachSource]] and [[FlowGraphBuilder#attachSink]]
    */
   def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
-    apply(partialFlowGraph.graph)(block)
+    apply(new FlowGraphBuilder(partialFlowGraph))(block)
 
-  /**
-   * Continue building a [[FlowGraph]] from an existing `FlowGraph`.
-   * For example you can connect more output flows to a [[Broadcast]] vertex.
-   */
-  def apply(flowGraph: FlowGraph)(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
-    apply(flowGraph.graph)(block)
-
-  private def apply(graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex])(block: FlowGraphBuilder ⇒ Unit): FlowGraph = {
-    val builder = new FlowGraphBuilder(graph)
+  private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): FlowGraph = {
     block(builder)
     builder.build()
   }
@@ -1128,19 +1227,12 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
   /**
    * Run FlowGraph that only contains one edge from a `Source` to a `Sink`.
    */
-  private def runSimple(sourceVertex: SourceVertex, sinkVertex: SinkVertex, pipe: Pipe[Any, Nothing])(implicit materializer: FlowMaterializer): MaterializedMap = {
-    val mf = pipe.withSource(sourceVertex.source).withSink(sinkVertex.sink).run()
-    val materializedSources: Map[KeyedSource[_], Any] = sourceVertex match {
-      case SourceVertex(source: KeyedSource[_]) ⇒ Map(source -> mf.get(source))
-      case _                                    ⇒ Map.empty
-    }
-    val materializedSinks: Map[KeyedSink[_], Any] = sinkVertex match {
-      case SinkVertex(sink: KeyedSink[_]) ⇒ Map(sink -> mf.get(sink))
-      case _                              ⇒ Map.empty
-    }
-    new MaterializedFlowGraph(materializedSources, materializedSinks)
-  }
+  private def runSimple(sourceVertex: SourceVertex, sinkVertex: SinkVertex, pipe: Pipe[Any, Nothing])(implicit materializer: FlowMaterializer): MaterializedMap =
+    pipe.withSource(sourceVertex.source).withSink(sinkVertex.sink).run()
 
+  /**
+   * This is the normal marterialization of a graph.
+   */
   private def runGraph()(implicit materializer: FlowMaterializer): MaterializedMap = {
 
     // start with sinks
@@ -1152,7 +1244,7 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
                     downstreamSubscriber: Map[E, Subscriber[Any]] = Map.empty,
                     upstreamPublishers: Map[E, Publisher[Any]] = Map.empty,
                     sources: Map[SourceVertex, SinkPipe[Any]] = Map.empty,
-                    materializedSinks: Map[KeyedSink[_], Any] = Map.empty)
+                    materializedMap: MaterializedMap = MaterializedMap.empty)
 
     val result = startingNodes.foldLeft(Memo()) {
       case (memo, start) ⇒
@@ -1165,18 +1257,13 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
               val pipe = edge.label.pipe
 
               // returns the materialized sink, if any
-              def connectToDownstream(publisher: Publisher[Any]): Option[(KeyedSink[_], Any)] = {
+              def connectToDownstream(publisher: Publisher[Any]): MaterializedMap = {
                 val f = pipe.withSource(PublisherSource(publisher))
                 edge.to.label match {
-                  case SinkVertex(sink: KeyedSink[_]) ⇒
-                    val mf = f.withSink(sink).run()
-                    Some(sink -> mf.get(sink))
                   case SinkVertex(sink) ⇒
                     f.withSink(sink).run()
-                    None
                   case _ ⇒
                     f.withSink(SubscriberSink(memo.downstreamSubscriber(edge))).run()
-                    None
                 }
               }
 
@@ -1190,10 +1277,10 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
                 case v: InternalVertex ⇒
                   if (memo.upstreamPublishers.contains(edge)) {
                     // vertex already materialized
-                    val materializedSink = connectToDownstream(memo.upstreamPublishers(edge))
+                    val materializedMap = connectToDownstream(memo.upstreamPublishers(edge))
                     memo.copy(
                       visited = memo.visited + edge,
-                      materializedSinks = memo.materializedSinks ++ materializedSink)
+                      materializedMap = memo.materializedMap.merge(materializedMap))
                   } else {
 
                     val op = v.astNode
@@ -1205,32 +1292,28 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
                     val edgePublishers =
                       edge.from.outgoing.toSeq.sortBy(_.label.outputPort).zip(publishers).toMap
                     val publisher = edgePublishers(edge)
-                    val materializedSink = connectToDownstream(publisher)
+                    val materializedMap = connectToDownstream(publisher)
                     memo.copy(
                       visited = memo.visited + edge,
                       downstreamSubscriber = memo.downstreamSubscriber ++ edgeSubscribers,
                       upstreamPublishers = memo.upstreamPublishers ++ edgePublishers,
-                      materializedSinks = memo.materializedSinks ++ materializedSink)
+                      materializedMap = memo.materializedMap.merge(materializedMap))
                   }
 
               }
             }
 
         }
-
     }
 
-    // connect all input sources as the last thing
-    val materializedSources = result.sources.foldLeft(Map.empty[KeyedSource[_], Any]) {
+    // connect all input sources as the last thing (also picks up materialized keys)
+    val materializedMap: MaterializedMap = result.sources.foldLeft(result.materializedMap) {
       case (acc, (SourceVertex(source), pipe)) ⇒
-        val mf = pipe.withSource(source).run()
-        source match {
-          case sourceKey: KeyedSource[_] ⇒ acc.updated(sourceKey, mf.get(sourceKey))
-          case _                         ⇒ acc
-        }
+
+        acc.merge(pipe.withSource(source).run())
     }
 
-    new MaterializedFlowGraph(materializedSources, result.materializedSinks)
+    materializedMap
   }
 
 }
@@ -1246,23 +1329,16 @@ object PartialFlowGraph {
    * Build a [[PartialFlowGraph]] from scratch.
    */
   def apply(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(new DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex])(block)
+    apply(new FlowGraphBuilder())(block)
 
   /**
    * Continue building a [[PartialFlowGraph]] from an existing `PartialFlowGraph`.
    */
   def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(partialFlowGraph.graph)(block)
+    apply(new FlowGraphBuilder(partialFlowGraph))(block)
 
-  /**
-   * Continue building a [[PartialFlowGraph]] from an existing `PartialFlowGraph`.
-   */
-  def apply(flowGraph: FlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(flowGraph.graph)(block)
-
-  private def apply(graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex])(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
+  private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
     // FlowGraphBuilder does a full import on the passed graph, so no defensive copy needed
-    val builder = new FlowGraphBuilder(graph)
     block(builder)
     builder.partialBuild()
   }
@@ -1275,7 +1351,10 @@ object PartialFlowGraph {
  * Build a `PartialFlowGraph` by starting with one of the `apply` methods in
  * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]) {
+class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex],
+                                      private[scaladsl] override val cyclesAllowed: Boolean,
+                                      private[scaladsl] override val disconnectedAllowed: Boolean) extends FlowGraphLike {
+
   import FlowGraphInternal._
 
   def undefinedSources: Set[UndefinedSource[_]] =
@@ -1293,7 +1372,6 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    * no [[UndefinedSource]] in the graph, and you need to provide it as a parameter.
    */
   def toSource[O](out: UndefinedSink[O]): Source[O] = {
-    require(graph.contains(out), s"Couldn't create Source with [$out], no matching UndefinedSink")
     checkUndefinedSinksAndSources(sources = Nil, sinks = List(out), description = "Source")
     GraphSource(this, out, Pipe.empty[O])
   }
@@ -1333,31 +1411,14 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
 }
 
 /**
- * Returned by [[FlowGraph#run]] and can be used to retrieve the materialized
- * `Source` inputs or `Sink` outputs.
+ * INTERNAL API
+ *
+ * Common things that the builder needs to extract from FlowGraph and PartialFlowGraph
  */
-private[scaladsl] class MaterializedFlowGraph(materializedSources: Map[KeyedSource[_], Any], materializedSinks: Map[KeyedSink[_], Any])
-  extends MaterializedMap {
-
-  override def get(key: Source[_]): key.MaterializedType =
-    key match {
-      case k: KeyedSource[_] ⇒ materializedSources.get(k) match {
-        case Some(matSource) ⇒ matSource.asInstanceOf[key.MaterializedType]
-        case None ⇒
-          throw new IllegalArgumentException(s"Source key [$key] doesn't exist in this flow graph")
-      }
-      case _ ⇒ ().asInstanceOf[key.MaterializedType]
-    }
-
-  def get(key: Sink[_]): key.MaterializedType =
-    key match {
-      case k: KeyedSink[_] ⇒ materializedSinks.get(k) match {
-        case Some(matSink) ⇒ matSink.asInstanceOf[key.MaterializedType]
-        case None ⇒
-          throw new IllegalArgumentException(s"Sink key [$key] doesn't exist in this flow graph")
-      }
-      case _ ⇒ ().asInstanceOf[key.MaterializedType]
-    }
+private[scaladsl] trait FlowGraphLike {
+  private[scaladsl] def graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]
+  private[scaladsl] def cyclesAllowed: Boolean
+  private[scaladsl] def disconnectedAllowed: Boolean
 }
 
 /**

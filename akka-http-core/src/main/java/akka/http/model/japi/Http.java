@@ -15,12 +15,4 @@ public final class Http {
     public static HttpExt get(ActorSystem system) {
         return (HttpExt) akka.http.Http.get(system);
     }
-    /** Create a Bind message to send to the Http Manager */
-    public static Object bind(String host, int port) {
-        return Accessors$.MODULE$.Bind(host, port);
-    }
-    /** Create a Bind message to send to the Http Manager */
-    public static Object bind(String host, int port, MaterializerSettings materializerSettings) {
-        return Accessors$.MODULE$.Bind(host, port, materializerSettings);
-    }
 }

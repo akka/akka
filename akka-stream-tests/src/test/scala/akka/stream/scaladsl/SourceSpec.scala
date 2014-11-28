@@ -70,4 +70,58 @@ class SourceSpec extends AkkaSpec {
       c2.expectError(ex)
     }
   }
+
+  "Source with additional keys" must {
+    "materialize keys properly" in {
+      val ks = Source.subscriber[Int]
+      val mk1 = new Key {
+        override type MaterializedType = String
+        override def materialize(map: MaterializedMap) = map.get(ks).toString
+      }
+      val mk2 = new Key {
+        override type MaterializedType = String
+        override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
+      }
+      val sp = StreamTestKit.SubscriberProbe[Int]()
+      val mm = ks.withKey(mk1).withKey(mk2).to(Sink(sp)).run()
+      val s = mm.get(ks)
+      mm.get(mk1) should be(s.toString)
+      mm.get(mk2) should be(s.toString.toUpperCase)
+      val p = Source.singleton(1).runWith(Sink.publisher)
+      p.subscribe(s)
+      val sub = sp.expectSubscription()
+      sub.request(1)
+      sp.expectNext(1)
+      sp.expectComplete()
+    }
+
+    "materialize keys properly when used in a graph" in {
+      val ks = Source.subscriber[Int]
+      val mk1 = new Key {
+        override type MaterializedType = String
+        override def materialize(map: MaterializedMap) = map.get(ks).toString
+      }
+      val mk2 = new Key {
+        override type MaterializedType = String
+        override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
+      }
+      val sp = StreamTestKit.SubscriberProbe[Int]()
+      val mks = ks.withKey(mk1).withKey(mk2)
+      val mm = FlowGraph { implicit b ⇒
+        import FlowGraphImplicits._
+        val bcast = Broadcast[Int]
+        mks ~> bcast ~> Sink(sp)
+        bcast ~> Sink.ignore
+      }.run()
+      val s = mm.get(ks)
+      mm.get(mk1) should be(s.toString)
+      mm.get(mk2) should be(s.toString.toUpperCase)
+      val p = Source.singleton(1).runWith(Sink.publisher)
+      p.subscribe(s)
+      val sub = sp.expectSubscription()
+      sub.request(1)
+      sp.expectNext(1)
+      sp.expectComplete()
+    }
+  }
 }

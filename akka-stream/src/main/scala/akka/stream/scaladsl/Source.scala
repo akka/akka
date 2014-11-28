@@ -73,6 +73,12 @@ trait Source[+Out] extends FlowOps[Out] {
    */
   def ++[Out2 >: Out](second: Source[Out2]): Source[Out2] = concat(second)
 
+  /**
+   * Add a key that will have a value available after materialization.
+   * The key can only use other keys if they have been added to the source
+   * before this key. This also includes the keyed source if applicable.
+   */
+  def withKey(key: Key): Source[Out]
 }
 
 object Source {
@@ -139,7 +145,7 @@ object Source {
    * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
    */
   def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
-    createSourceFromBuilder(new FlowGraphBuilder(graph.graph), block)
+    createSourceFromBuilder(new FlowGraphBuilder(graph), block)
 
   private def createSourceFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] = {
     val out = block(builder)
