@@ -128,7 +128,7 @@ public class LoggingAdapterTest {
                     LogEvent log = (LogEvent) event;
                     assertEquals(message, log.message());
                     assertEquals(level, log.level());
-                    assertEquals(mdc, log.mdc().toString());
+                    assertEquals(mdc, "" + log.mdc());
                     if(cause != null) {
                         Error error = (Error) log;
                         assertSame(cause, error.cause());
