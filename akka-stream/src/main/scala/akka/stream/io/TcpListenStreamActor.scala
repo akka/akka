@@ -10,8 +10,9 @@ import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
 import akka.stream.MaterializerSettings
 import akka.stream.impl._
+import akka.stream.scaladsl.{ Pipe, Flow }
 import akka.util.ByteString
-import org.reactivestreams.Publisher
+import org.reactivestreams.{ Processor, Publisher }
 
 import scala.util.control.NoStackTrace
 
@@ -19,8 +20,6 @@ import scala.util.control.NoStackTrace
  * INTERNAL API
  */
 private[akka] object TcpListenStreamActor {
-  class TcpListenStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
-
   def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props = {
     Props(new TcpListenStreamActor(bindCmd, requester, settings))
   }
@@ -72,7 +71,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         nextPhase(runningPhase)
         listener ! ResumeAccepting(1)
         val target = self
-        requester ! StreamTcp.TcpServerBinding(
+        requester ! StreamTcpManager.BindReply(
           localAddress,
           primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]],
           new Closeable {
@@ -80,7 +79,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
           })
         subreceive.become(running)
       case f: CommandFailed ⇒
-        val ex = new TcpListenStreamException("Bind failed")
+        val ex = new StreamTcp.IncomingTcpException("Bind failed")
         requester ! Status.Failure(ex)
         fail(ex)
     }
@@ -90,7 +89,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         pendingConnection = (c, sender())
         pump()
       case f: CommandFailed ⇒
-        fail(new TcpListenStreamException(s"Command [${f.cmd}] failed"))
+        fail(new StreamTcp.IncomingTcpException(s"Command [${f.cmd}] failed"))
       case Unbind ⇒
         cancel()
         pump()
@@ -133,7 +132,7 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
-    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, processor, processor))
+    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, Pipe(() ⇒ processor)))
   }
 
   def fail(e: Throwable): Unit = {

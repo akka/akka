@@ -4,16 +4,14 @@
 
 package akka.http
 
-import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.duration._
-import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.io.IO
-import akka.util.Timeout
 import akka.actor.ActorSystem
-import akka.pattern.ask
 import akka.http.model._
+import akka.stream.FlowMaterializer
+import akka.stream.scaladsl.{ Flow, Sink }
+import com.typesafe.config.{ ConfigFactory, Config }
 import HttpMethods._
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
@@ -21,7 +19,6 @@ object TestServer extends App {
     akka.log-dead-letters = off
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  import system.dispatcher
 
   val requestHandler: HttpRequest ⇒ HttpResponse = {
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
@@ -32,20 +29,20 @@ object TestServer extends App {
 
   implicit val materializer = FlowMaterializer()
 
-  implicit val askTimeout: Timeout = 500.millis
-  val bindingFuture = IO(Http) ? Http.Bind(interface = "localhost", port = 8080)
-  bindingFuture foreach {
-    case Http.ServerBinding(localAddress, connectionStream) ⇒
-      Source(connectionStream).foreach {
-        case Http.IncomingConnection(remoteAddress, requestPublisher, responseSubscriber) ⇒
-          println("Accepted new connection from " + remoteAddress)
-          Source(requestPublisher).map(requestHandler).to(Sink(responseSubscriber)).run()
-      }
-  }
+  val Http.ServerSource(source, key) = Http(system).bind(interface = "localhost", port = 8080)
+  val materializedMap = source.to(Sink.foreach {
+    case Http.IncomingConnection(remoteAddress, flow) ⇒
+      println("Accepted new connection from " + remoteAddress)
+      flow.join(Flow[HttpRequest].map(requestHandler)).run()
+  }).run()
 
-  println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
+  val serverBinding = Await.result(materializedMap.get(key), 3 seconds)
 
+  println(s"Server online at http://${serverBinding.localAddress.getHostName}:${serverBinding.localAddress.getPort}")
+  println("Press RETURN to stop...")
   Console.readLine()
+
+  serverBinding.close()
   system.shutdown()
 
   ////////////// helpers //////////////

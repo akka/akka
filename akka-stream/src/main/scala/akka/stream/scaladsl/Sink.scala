@@ -42,7 +42,7 @@ object Sink {
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource`.
    */
   def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
-    createSinkFromBuilder(new FlowGraphBuilder(graph.graph), block)
+    createSinkFromBuilder(new FlowGraphBuilder(graph), block)
 
   private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
     val in = block(builder)

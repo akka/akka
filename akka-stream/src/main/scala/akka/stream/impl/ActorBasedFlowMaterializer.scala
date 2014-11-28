@@ -10,7 +10,7 @@ import akka.event.Logging
 import akka.stream.impl.fusing.ActorInterpreter
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Await, Future }
+import scala.concurrent.{ Promise, ExecutionContext, Await, Future }
 import akka.actor._
 import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer }
 import akka.stream.MaterializationException
@@ -92,6 +92,13 @@ private[akka] object Ast {
     override def name = "concatFlatten"
   }
 
+  case class DirectProcessor(p: () ⇒ Processor[Any, Any]) extends AstNode {
+    override def name = "processor"
+  }
+
+  case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key) extends AstNode {
+    override def name = "processorWithKey"
+  }
   sealed trait JunctionAstNode {
     def name: String
   }
@@ -101,8 +108,8 @@ private[akka] object Ast {
   sealed trait FanOutAstNode extends JunctionAstNode
 
   // FIXME Why do we need this?
-  case object IdentityAstNode extends JunctionAstNode {
-    override def name = "identity"
+  case class IdentityAstNode(id: Int) extends JunctionAstNode {
+    override val name = s"identity$id"
   }
 
   case object Merge extends FanInAstNode {
@@ -179,19 +186,20 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   @tailrec private[this] def processorChain(topProcessor: Processor[_, _],
                                             ops: List[AstNode],
                                             flowName: String,
-                                            n: Int): Processor[_, _] =
+                                            n: Int,
+                                            materializedMap: MaterializedMap): (Processor[_, _], MaterializedMap) =
     ops match {
       case op :: tail ⇒
-        val opProcessor = processorForNode[Any, Any](op, flowName, n)
+        val (opProcessor, opMap) = processorForNode[Any, Any](op, flowName, n)
         opProcessor.subscribe(topProcessor.asInstanceOf[Subscriber[Any]])
-        processorChain(opProcessor, tail, flowName, n - 1)
+        processorChain(opProcessor, tail, flowName, n - 1, materializedMap.merge(opMap))
       case Nil ⇒
-        topProcessor
+        (topProcessor, materializedMap)
     }
 
   //FIXME Optimize the implementation of the optimizer (no joke)
   // AstNodes are in reverse order, Fusable Ops are in order
-  private[this] final def optimize(ops: List[Ast.AstNode]): (List[Ast.AstNode], Int) = {
+  private[this] final def optimize(ops: List[Ast.AstNode], mmFuture: Future[MaterializedMap]): (List[Ast.AstNode], Int) = {
     @tailrec def analyze(rest: List[Ast.AstNode], optimized: List[Ast.AstNode], fuseCandidates: List[Stage[_, _]]): (List[Ast.AstNode], Int) = {
 
       //The `verify` phase
@@ -283,13 +291,11 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       }
     }
     val result = analyze(ops, Nil, Nil)
-    //println(s"before: $ops")
-    //println(s"after: ${result._1}")
     result
   }
 
   // Ops come in reverse order
-  override def materialize[In, Out](source: Source[In], sink: Sink[Out], rawOps: List[Ast.AstNode]): MaterializedMap = {
+  override def materialize[In, Out](source: Source[In], sink: Sink[Out], rawOps: List[Ast.AstNode], keys: List[Key]): MaterializedMap = {
     val flowName = createFlowName() //FIXME: Creates Id even when it is not used in all branches below
 
     def throwUnknownType(typeName: String, s: AnyRef): Nothing =
@@ -318,25 +324,34 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       case s: Sink[_]            ⇒ throwUnknownType("Sink", s)
     }
 
-    val (sourceValue, sinkValue) =
+    val mmPromise = Promise[MaterializedMap]
+    val mmFuture = mmPromise.future
+
+    val (sourceValue, sinkValue, pipeMap) =
       if (rawOps.isEmpty) {
         if (isActive(sink)) {
           val (sub, value) = createSink(flowName)
-          (attachSource(sub, flowName), value)
+          (attachSource(sub, flowName), value, MaterializedMap.empty)
         } else if (isActive(source)) {
           val (pub, value) = createSource(flowName)
-          (value, attachSink(pub, flowName))
+          (value, attachSink(pub, flowName), MaterializedMap.empty)
         } else {
-          val id = processorForNode[In, Out](identityStageNode, flowName, 1)
-          (attachSource(id, flowName), attachSink(id, flowName))
+          val (id, empty) = processorForNode[In, Out](identityStageNode, flowName, 1)
+          (attachSource(id, flowName), attachSink(id, flowName), empty)
         }
       } else {
-        val (ops, opsSize) = if (optimizations.isEnabled) optimize(rawOps) else (rawOps, rawOps.length)
-        val last = processorForNode[Any, Out](ops.head, flowName, opsSize)
-        val first = processorChain(last, ops.tail, flowName, opsSize - 1).asInstanceOf[Processor[In, Any]]
-        (attachSource(first, flowName), attachSink(last, flowName))
+        val (ops, opsSize) = if (optimizations.isEnabled) optimize(rawOps, mmFuture) else (rawOps, rawOps.length)
+        val (last, lastMap) = processorForNode[Any, Out](ops.head, flowName, opsSize)
+        val (first, map) = processorChain(last, ops.tail, flowName, opsSize - 1, lastMap)
+        (attachSource(first.asInstanceOf[Processor[In, Any]], flowName), attachSink(last, flowName), map)
       }
-    new MaterializedPipe(source, sourceValue, sink, sinkValue)
+    val sourceMap = if (source.isInstanceOf[KeyedSource[_]]) pipeMap.updated(source, sourceValue) else pipeMap
+    val sourceSinkMap = if (sink.isInstanceOf[KeyedSink[_]]) sourceMap.updated(sink, sinkValue) else sourceMap
+
+    if (keys.isEmpty) sourceSinkMap
+    else (sourceSinkMap /: keys) {
+      case (mm, k) ⇒ mm.updated(k, k.materialize(mm))
+    }
   }
   //FIXME Should this be a dedicated AstNode?
   private[this] val identityStageNode = Ast.StageFactory(() ⇒ FlowOps.identityStage[Any], "identity")
@@ -349,8 +364,15 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   /**
    * INTERNAL API
    */
-  private[akka] def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): Processor[In, Out] =
-    ActorProcessorFactory[In, Out](actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.name}"))
+  private[akka] def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): (Processor[In, Out], MaterializedMap) = op match {
+    // FIXME #16376 should probably be replaced with an ActorFlowProcessor similar to ActorFlowSource/Sink
+    case Ast.DirectProcessor(p) ⇒ (p().asInstanceOf[Processor[In, Out]], MaterializedMap.empty)
+    case Ast.DirectProcessorWithKey(p, key) ⇒
+      val (processor, value) = p()
+      (processor.asInstanceOf[Processor[In, Out]], MaterializedMap.empty.updated(key, value))
+    case _ ⇒
+      (ActorProcessorFactory[In, Out](actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.name}")), MaterializedMap.empty)
+  }
 
   def actorOf(props: Props, name: String): ActorRef = supervisor match {
     case ref: LocalActorRef ⇒
@@ -400,8 +422,9 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         val subscriber = ActorSubscriber[In](impl)
         (List(subscriber), publishers)
 
-      case identity @ Ast.IdentityAstNode ⇒ // FIXME Why is IdentityAstNode a JunctionAStNode?
-        val id = List(processorForNode[In, Out](identityStageNode, identity.name, 1)) // FIXME is `identity.name` appropriate/unique here?
+      case identity @ Ast.IdentityAstNode(_) ⇒ // FIXME Why is IdentityAstNode a JunctionAStNode?
+        // We can safely ignore the materialized map that gets created here since it will be empty
+        val id = List(processorForNode[In, Out](identityStageNode, identity.name, 1)._1) // FIXME is `identity.name` appropriate/unique here?
         (id, id)
     }
 

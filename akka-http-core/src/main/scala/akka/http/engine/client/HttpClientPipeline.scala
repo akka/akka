@@ -8,7 +8,6 @@ import java.net.InetSocketAddress
 import scala.collection.immutable.Queue
 import akka.stream.scaladsl._
 import akka.event.LoggingAdapter
-import akka.stream.FlowMaterializer
 import akka.stream.FlattenStrategy
 import akka.stream.io.StreamTcp
 import akka.util.ByteString
@@ -19,12 +18,14 @@ import akka.http.engine.parsing.{ HttpRequestParser, HttpHeaderParser, HttpRespo
 import akka.http.engine.parsing.ParserOutput._
 import akka.http.util._
 
+import scala.concurrent.{ ExecutionContext, Future }
+
 /**
  * INTERNAL API
  */
 private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettings,
-                                       log: LoggingAdapter)(implicit fm: FlowMaterializer)
-  extends (StreamTcp.OutgoingTcpConnection ⇒ Http.OutgoingConnection) {
+                                       log: LoggingAdapter)(implicit ec: ExecutionContext)
+  extends ((StreamTcp.OutgoingTcpFlow, InetSocketAddress) ⇒ Http.OutgoingFlow) {
 
   import effectiveSettings._
 
@@ -38,23 +39,24 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
 
   val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
 
-  def apply(tcpConn: StreamTcp.OutgoingTcpConnection): Http.OutgoingConnection = {
+  def apply(tcpFlow: StreamTcp.OutgoingTcpFlow, remoteAddress: InetSocketAddress): Http.OutgoingFlow = {
     import FlowGraphImplicits._
 
-    val requestMethodByPass = new RequestMethodByPass(tcpConn.remoteAddress)
+    val httpKey = new HttpKey(tcpFlow.key)
 
-    val userIn = Source.subscriber[(HttpRequest, Any)]
-    val userOut = Sink.publisher[(HttpResponse, Any)]
+    val flowWithHttpKey = tcpFlow.flow.withKey(httpKey)
 
-    val netOut = Sink(tcpConn.outputStream)
-    val netIn = Source(tcpConn.inputStream)
+    val requestMethodByPass = new RequestMethodByPass(remoteAddress)
 
-    val pipeline = FlowGraph { implicit b ⇒
-      val bypassFanout = Broadcast[(HttpRequest, Any)]("bypassFanout")
+    val pipeline = Flow() { implicit b ⇒
+      val userIn = UndefinedSource[(HttpRequest, Any)]
+      val userOut = UndefinedSink[(HttpResponse, Any)]
+
+      val bypassFanout = Unzip[HttpRequest, Any]("bypassFanout")
       val bypassFanin = Zip[HttpResponse, Any]("bypassFanin")
 
       val requestPipeline =
-        Flow[(HttpRequest, Any)]
+        Flow[HttpRequest]
           .map(requestMethodByPass)
           .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
           .flatten(FlattenStrategy.concat)
@@ -74,24 +76,21 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
           }
 
       //FIXME: the graph is unnecessary after fixing #15957
-      userIn ~> bypassFanout ~> requestPipeline ~> netOut
-      bypassFanout ~> Flow[(HttpRequest, Any)].map(_._2) ~> bypassFanin.right
-      netIn ~> responsePipeline ~> bypassFanin.left
+      userIn ~> bypassFanout.in
+      bypassFanout.left ~> requestPipeline ~> flowWithHttpKey ~> responsePipeline ~> bypassFanin.left
+      bypassFanout.right ~> bypassFanin.right
       bypassFanin.out ~> userOut
-    }.run()
 
-    Http.OutgoingConnection(
-      tcpConn.remoteAddress,
-      tcpConn.localAddress,
-      pipeline.get(userOut),
-      pipeline.get(userIn))
+      userIn -> userOut
+    }
+
+    Http.OutgoingFlow(pipeline, httpKey)
   }
 
   class RequestMethodByPass(serverAddress: InetSocketAddress)
-    extends (((HttpRequest, Any)) ⇒ RequestRenderingContext) with (() ⇒ HttpMethod) {
+    extends ((HttpRequest) ⇒ RequestRenderingContext) with (() ⇒ HttpMethod) {
     private[this] var requestMethods = Queue.empty[HttpMethod]
-    def apply(tuple: (HttpRequest, Any)) = {
-      val request = tuple._1
+    def apply(request: HttpRequest) = {
       requestMethods = requestMethods.enqueue(request.method)
       RequestRenderingContext(request, serverAddress)
     }
@@ -101,5 +100,12 @@ private[http] class HttpClientPipeline(effectiveSettings: ClientConnectionSettin
         requestMethods = requestMethods.tail
         method
       } else HttpResponseParser.NoMethod
+  }
+
+  class HttpKey(tcpKey: Key { type MaterializedType = Future[StreamTcp.OutgoingTcpConnection] }) extends Key {
+    type MaterializedType = Future[Http.OutgoingConnection]
+
+    override def materialize(map: MaterializedMap): MaterializedType =
+      map.get(tcpKey).map(tcp ⇒ Http.OutgoingConnection(tcp.remoteAddress, tcp.localAddress))
   }
 }

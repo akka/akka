@@ -20,11 +20,4 @@ private[http] object Accessors {
 
   /** INTERNAL API */
   private[http] def Uri(uri: model.Uri): Uri = JavaUri(uri)
-  /** INTERNAL API */
-  private[http] def Bind(host: String, port: Int): AnyRef =
-    akka.http.Http.Bind(host, port, materializerSettings = None)
-
-  /** INTERNAL API */
-  private[http] def Bind(host: String, port: Int, materializerSettings: MaterializerSettings): AnyRef =
-    akka.http.Http.Bind(host, port, materializerSettings = Some(materializerSettings))
 }

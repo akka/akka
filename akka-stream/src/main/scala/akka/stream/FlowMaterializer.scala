@@ -7,6 +7,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 import akka.stream.impl._
+import akka.stream.scaladsl.Key
 
 import scala.collection.immutable
 
@@ -151,7 +152,7 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
-  def materialize[In, Out](source: scaladsl.Source[In], sink: scaladsl.Sink[Out], ops: List[Ast.AstNode]): scaladsl.MaterializedMap
+  def materialize[In, Out](source: scaladsl.Source[In], sink: scaladsl.Sink[Out], ops: List[Ast.AstNode], keys: List[Key]): scaladsl.MaterializedMap
 
   /**
    * Create publishers and subscribers for fan-in and fan-out operations.

@@ -25,19 +25,8 @@ trait ScalaRoutingDSL extends Directives {
     def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]): R
   }
 
-  def handleConnections(bindingFuture: Future[Http.ServerBinding])(implicit ec: ExecutionContext, fm: FlowMaterializer,
-                                                                   setupProvider: RoutingSetupProvider): Applicator[Future[Unit]] =
-    new Applicator[Future[Unit]] {
-      def withRoute(route: Route) = afterBinding(_ withRoute route)
-      def withSyncHandler(handler: HttpRequest ⇒ HttpResponse) = afterBinding(_ withSyncHandler handler)
-      def withAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse]) = afterBinding(_ withAsyncHandler handler)
-
-      def afterBinding(f: Applicator[Unit] ⇒ Unit): Future[Unit] =
-        bindingFuture.map(binding ⇒ f(handleConnections(binding)))
-    }
-
-  def handleConnections(binding: Http.ServerBinding)(implicit fm: FlowMaterializer,
-                                                     setupProvider: RoutingSetupProvider): Applicator[Unit] = {
+  def handleConnections(serverSource: Http.ServerSource)(implicit fm: FlowMaterializer,
+                                                         setupProvider: RoutingSetupProvider): Applicator[Unit] = {
     new Applicator[Unit] {
       def withRoute(route: Route): Unit =
         run(routeRunner(route, _))
@@ -49,14 +38,12 @@ trait ScalaRoutingDSL extends Directives {
         run(_ ⇒ handler)
 
       private def run(f: RoutingSetup ⇒ HttpRequest ⇒ Future[HttpResponse]): Unit =
-        Source(binding.connectionStream).foreach {
-          case connection @ Http.IncomingConnection(remoteAddress, requestProducer, responseConsumer) ⇒
+        serverSource.source.foreach {
+          case connection @ Http.IncomingConnection(remoteAddress, flow) ⇒
             val setup = setupProvider(connection)
             setup.routingLog.log.debug("Accepted new connection from " + remoteAddress)
             val runner = f(setup)
-            Source(requestProducer)
-              .mapAsync(request ⇒ runner(request))
-              .to(Sink(responseConsumer)).run()(fm)
+            flow.join(Flow[HttpRequest].mapAsync(request ⇒ runner(request))).run()(fm)
         }
     }
   }

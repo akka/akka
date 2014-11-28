@@ -9,10 +9,8 @@ import akka.http.server.directives.AuthenticationDirectives._
 import com.typesafe.config.{ ConfigFactory, Config }
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import akka.io.IO
 import akka.stream.FlowMaterializer
 import akka.util.Timeout
-import akka.pattern.ask
 import akka.http.Http
 import akka.http.model._
 
@@ -26,7 +24,7 @@ object TestServer extends App {
   implicit val materializer = FlowMaterializer()
 
   implicit val askTimeout: Timeout = 500.millis
-  val bindingFuture = (IO(Http) ? Http.Bind(interface = "localhost", port = 8080)).mapTo[Http.ServerBinding]
+  val serverSource = Http(system).bind(interface = "localhost", port = 8080)
 
   import ScalaRoutingDSL._
 
@@ -40,7 +38,7 @@ object TestServer extends App {
   // of #16190
   implicit val html = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
 
-  handleConnections(bindingFuture) withRoute {
+  handleConnections(serverSource) withRoute {
     get {
       path("") {
         complete(index)

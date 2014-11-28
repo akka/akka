@@ -438,6 +438,13 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
   def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Source[U] =
     new Source(delegate.flatten(strategy))
 
+  /**
+   * Add a key that will have a value available after materialization.
+   * The key can only use other keys if they have been added to the source
+   * before this key. This also includes the keyed source if applicable.
+   */
+  def withKey[T](key: javadsl.Key[T]): javadsl.Source[Out] =
+    new Source(delegate.withKey(key.asScala))
 }
 
 /**
