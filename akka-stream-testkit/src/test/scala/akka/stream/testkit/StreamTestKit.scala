@@ -90,7 +90,11 @@ object StreamTestKit {
     def sendError(cause: Exception): Unit = subscriber.onError(cause)
   }
 
-  case class SubscriberProbe[I]()(implicit system: ActorSystem) extends Subscriber[I] {
+  object SubscriberProbe {
+    def apply[I]()(implicit system: ActorSystem): SubscriberProbe[I] = new SubscriberProbe[I]()
+  }
+
+  class SubscriberProbe[I]()(implicit system: ActorSystem) extends Subscriber[I] {
     val probe = TestProbe()
 
     def expectSubscription(): Subscription = probe.expectMsgType[OnSubscribe].subscription
@@ -136,14 +140,13 @@ object StreamTestKit {
     def onNext(element: I): Unit = probe.ref ! OnNext(element)
     def onComplete(): Unit = probe.ref ! OnComplete
     def onError(cause: Throwable): Unit = probe.ref ! OnError(cause)
-
-    // Keeping equality
-    // FIXME: This and PublisherProbe should not be a case class so that we don't need this equality reversal
-    override def equals(that: Any): Boolean = this eq that.asInstanceOf[AnyRef]
-    override def hashCode(): Int = System.identityHashCode(this)
   }
 
-  case class PublisherProbe[I]()(implicit system: ActorSystem) extends Publisher[I] {
+  object PublisherProbe {
+    def apply[I]()(implicit system: ActorSystem): PublisherProbe[I] = new PublisherProbe[I]()
+  }
+
+  class PublisherProbe[I]()(implicit system: ActorSystem) extends Publisher[I] {
     val probe: TestProbe = TestProbe()
 
     def subscribe(subscriber: Subscriber[_ >: I]): Unit = {

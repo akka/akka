@@ -8,10 +8,13 @@ import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast
 import akka.stream.FlowMaterializer
 import java.util.concurrent.atomic.AtomicInteger
+import akka.stream.scaladsl.MaterializedMap
 import org.reactivestreams.Processor
 import org.reactivestreams.Publisher
 import akka.stream.stage.PushStage
 import akka.stream.stage.Context
+
+import scala.concurrent.Promise
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
@@ -30,7 +33,7 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
         override def onPush(in: Any, ctx: Context[Any]) = ctx.push(in)
       }
 
-    val processor = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
+    val (processor, _) = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
       Ast.StageFactory(mkStage, "transform"), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]

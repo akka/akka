@@ -9,7 +9,7 @@ import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.{ TransformerLike, MaterializerSettings }
+import akka.stream.MaterializerSettings
 import akka.stream.FlowMaterializer
 import akka.stream.impl._
 import akka.stream.impl.Ast._
@@ -57,7 +57,7 @@ object FlowSpec {
     optimizations: Optimizations,
     brokenMessage: Any) extends ActorBasedFlowMaterializer(settings, dispatchers, supervisor, flowNameCounter, namePrefix, optimizations) {
 
-    override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): Processor[In, Out] = {
+    override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): (Processor[In, Out], MaterializedMap) = {
       val props = op match {
         case f: Fused       ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage)).withDispatcher(settings.dispatcher)
         case Map(f)         ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Map(f)), brokenMessage))
@@ -73,7 +73,7 @@ object FlowSpec {
         case o              ⇒ ActorProcessorFactory.props(this, o)
       }
       val impl = actorOf(props, s"$flowName-$n-${op.name}")
-      ActorProcessorFactory(impl)
+      (ActorProcessorFactory(impl), MaterializedMap.empty)
     }
 
   }
