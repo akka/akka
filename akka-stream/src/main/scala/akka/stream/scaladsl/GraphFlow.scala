@@ -6,6 +6,39 @@ package akka.stream.scaladsl
 import akka.stream.impl.Ast.AstNode
 
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+
+/**
+ * INTERNAL API
+ */
+private[scaladsl] object GraphFlow {
+
+  /**
+   * Create a [[GraphFlow]] from this [[Flow]]
+   */
+  def apply[In, Out](flow: Flow[In, Out]) = flow match {
+    case gFlow: GraphFlow[In, _, _, Out] ⇒ gFlow
+    case _ ⇒ Flow() { implicit b ⇒
+      import FlowGraphImplicits._
+      val in = UndefinedSource[In]
+      val out = UndefinedSink[Out]
+      in ~> flow ~> out
+      in -> out
+    }
+  }
+
+  /**
+   * Create a [[GraphFlow]] from a seemingly disconnected [[Source]] and [[Sink]] pair.
+   */
+  def apply[I, O](sink: Sink[I], source: Source[O]) = Flow() { implicit b ⇒
+    import FlowGraphImplicits._
+    val in = UndefinedSource[I]
+    val out = UndefinedSink[O]
+    in ~> Flow[I] ~> sink
+    source ~> Flow[O] ~> out
+    in -> out
+  }
+}
 
 private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
   inPipe: Pipe[In, CIn],
@@ -14,16 +47,15 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
   out: UndefinedSink[COut],
   outPipe: Pipe[COut, Out])
   extends Flow[In, Out] {
-
   override type Repr[+O] = GraphFlow[In @uncheckedVariance, CIn, COut, O]
 
   private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphFlow[T, CIn, COut, Out] = copy(inPipe = pipe.appendPipe(inPipe))
 
   private[scaladsl] def prepend(pipe: SourcePipe[In]): GraphSource[COut, Out] = {
-    val newGraph = PartialFlowGraph(graph) { b ⇒
-      b.attachSource(in, pipe.appendPipe(inPipe))
-    }
-    GraphSource(newGraph, out, outPipe)
+    val b = new FlowGraphBuilder()
+    val (nIn, nOut) = remap(b)
+    b.attachSource(nIn, pipe.appendPipe(inPipe))
+    GraphSource(b.partialBuild(), nOut, outPipe)
   }
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): (UndefinedSource[CIn], UndefinedSink[COut]) = {
@@ -48,6 +80,7 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
         (b.partialBuild(), oOut)
       }
       GraphFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
+    case x ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   override def to(sink: Sink[Out]) = sink match {
@@ -64,6 +97,26 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
       GraphSink(inPipe, in, newGraph)
     case sink: Sink[Out] ⇒ to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
+
+  override def join(flow: Flow[Out, In]): RunnableFlow = flow match {
+    case pipe: Pipe[Out, In] ⇒ FlowGraph(graph) { b ⇒
+      b.connect(out, outPipe.via(pipe).via(inPipe), in, joining = true)
+      b.allowCycles()
+      b.allowDisconnected()
+    }
+    case gFlow: GraphFlow[Out, _, _, In] ⇒
+      FlowGraph(graph) { b ⇒
+        val (oIn, oOut) = gFlow.remap(b)
+        b.connect(out, outPipe.via(gFlow.inPipe), oIn, joining = true)
+        b.connect(oOut, gFlow.outPipe.via(inPipe), in, joining = true)
+        b.allowCycles()
+        b.allowDisconnected()
+      }
+    case x ⇒ FlowGraphInternal.throwUnsupportedValue(x)
+  }
+
+  // FIXME #16379 This key will be materalized to early
+  override def withKey(key: Key): Flow[In, Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
 }
@@ -106,6 +159,9 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
     case sink: Sink[Out] ⇒
       to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
+
+  // FIXME #16379 This key will be materalized to early
+  override def withKey(key: Key): Source[Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
 }
