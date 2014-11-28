@@ -84,7 +84,7 @@ trait FileAndResourceDirectives {
    * some other thread !).
    * If the resource cannot be found or read the Route rejects the request.
    */
-  def getFromResource(resourceName: String, contentType: ContentType, theClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader): Route =
+  def getFromResource(resourceName: String, contentType: ContentType, theClassLoader: ClassLoader = defaultClassLoader): Route =
     if (!resourceName.endsWith("/"))
       get {
         theClassLoader.getResource(resourceName) match {
@@ -175,18 +175,20 @@ trait FileAndResourceDirectives {
    * Same as "getFromDirectory" except that the file is not fetched from the file system but rather from a
    * "resource directory".
    */
-  def getFromResourceDirectory(directoryName: String)(implicit resolver: ContentTypeResolver): Route = {
+  def getFromResourceDirectory(directoryName: String, classLoader: ClassLoader = defaultClassLoader)(implicit resolver: ContentTypeResolver): Route = {
     val base = if (directoryName.isEmpty) "" else withTrailingSlash(directoryName)
 
     extractUnmatchedPath { path ⇒
       extractLog { log ⇒
         fileSystemPath(base, path, log, separator = '/') match {
           case ""           ⇒ reject
-          case resourceName ⇒ getFromResource(resourceName)
+          case resourceName ⇒ getFromResource(resourceName, resolver(resourceName), classLoader)
         }
       }
     }
   }
+
+  protected[http] def defaultClassLoader: ClassLoader = classOf[ActorSystem].getClassLoader
 }
 
 object FileAndResourceDirectives extends FileAndResourceDirectives {
@@ -250,6 +252,11 @@ object ContentTypeResolver {
           case x              ⇒ ContentType(x)
         }
       }
+    }
+
+  def apply(f: String ⇒ ContentType): ContentTypeResolver =
+    new ContentTypeResolver {
+      def apply(fileName: String): ContentType = f(fileName)
     }
 }
 
