@@ -5,17 +5,10 @@
 package akka.http
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.reactivestreams.Subscriber
-import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import akka.actor.ActorSystem
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
-import akka.io.IO
-import akka.http.model.HttpMethods._
 import akka.http.model._
 
 object TestClient extends App {
@@ -27,24 +20,14 @@ object TestClient extends App {
   import akka.http.TestClient.system.dispatcher
 
   implicit val materializer = FlowMaterializer()
-  implicit val askTimeout: Timeout = 500.millis
   val host = "spray.io"
 
   println(s"Fetching HTTP server version of host `$host` ...")
 
-  val result = for {
-    connection ← IO(Http).ask(Http.Connect(host)).mapTo[Http.OutgoingConnection]
-    response ← sendRequest(HttpRequest(GET, uri = "/"), connection)
-  } yield response.header[headers.Server]
+  val outgoingFlow = Http(system).connect(host)
+  val result = Source.singleton(HttpRequest() -> 'NoContext).via(outgoingFlow.flow).map(_._1).runWith(Sink.head)
 
-  def sendRequest(request: HttpRequest, connection: Http.OutgoingConnection): Future[HttpResponse] = {
-    Source.singleton(HttpRequest() -> 'NoContext)
-      .to(Sink(connection.requestSubscriber))
-      .run()
-    Source(connection.responsePublisher).map(_._1).runWith(Sink.head)
-  }
-
-  result onComplete {
+  result.map(_.header[headers.Server]) onComplete {
     case Success(res)   ⇒ println(s"$host is running ${res mkString ", "}")
     case Failure(error) ⇒ println(s"Error: $error")
   }

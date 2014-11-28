@@ -614,12 +614,12 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
   class TestSetup {
     val netIn = StreamTestKit.PublisherProbe[ByteString]
     val netOut = StreamTestKit.SubscriberProbe[ByteString]
-    val tcpConnection = StreamTcp.IncomingTcpConnection(null, netIn, netOut)
+    val tcpConnection = StreamTcp.IncomingTcpConnection(null, Flow(Sink(netOut), Source(netIn)))
 
     def settings = ServerSettings(system).copy(serverHeader = Some(Server(List(ProductVersion("akka-http", "test")))))
 
     val pipeline = new HttpServerPipeline(settings, NoLogging)
-    val Http.IncomingConnection(_, requestsIn, responsesOut) = pipeline(tcpConnection)
+    val Http.IncomingConnection(_, httpPipelineFlow) = pipeline(tcpConnection)
 
     def wipeDate(string: String) =
       string.fastSplit('\n').map {
@@ -627,14 +627,13 @@ class HttpServerPipelineSpec extends AkkaSpec with Matchers with BeforeAndAfterA
         case s                          ⇒ s
       }.mkString("\n")
 
-    val netInSub = netIn.expectSubscription()
-    val netOutSub = netOut.expectSubscription()
-
     val requests = StreamTestKit.SubscriberProbe[HttpRequest]
     val responses = StreamTestKit.PublisherProbe[HttpResponse]
-    requestsIn.subscribe(requests)
+    Flow(Sink(requests), Source(responses)).join(httpPipelineFlow).run()
+
+    val netInSub = netIn.expectSubscription()
+    val netOutSub = netOut.expectSubscription()
     val requestsSub = requests.expectSubscription()
-    responses.subscribe(responsesOut)
     val responsesSub = responses.expectSubscription()
 
     def expectRequest: HttpRequest = {
