@@ -96,12 +96,28 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
-    "work with one delayed failed and one nonempty publisher" in {
-      val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
+    "work with one delayed failed and first nonempty publisher" in {
+      val subscriber = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
+      subscriber.expectSubscription().request(5)
 
-      val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
+      var errorSignalled = false
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(1, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(2, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(3, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(4, TestException).isLeft
+      if (!errorSignalled) subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+    }
+
+    "work with one delayed failed and second nonempty publisher" in {
+      val subscriber = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
+      subscriber.expectSubscription().request(5)
+
+      var errorSignalled = false
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(1, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(2, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(3, TestException).isLeft
+      if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(4, TestException).isLeft
+      if (!errorSignalled) subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
     }
 
     "correctly handle async errors in secondary upstream" in {

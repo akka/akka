@@ -111,6 +111,16 @@ object StreamTestKit {
     def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
     def expectError(): Throwable = probe.expectMsgType[OnError].cause
 
+    def expectNextOrError(element: I, cause: Throwable): Either[Throwable, I] = {
+      probe.fishForMessage(hint = s"OnNext($element) or ${cause.getClass.getName}") {
+        case OnNext(n)        ⇒ true
+        case OnError(`cause`) ⇒ true
+      } match {
+        case OnNext(n: I) ⇒ Right(n)
+        case OnError(err) ⇒ Left(err)
+      }
+    }
+
     def expectErrorOrSubscriptionFollowedByError(cause: Throwable): Unit = {
       val t = expectErrorOrSubscriptionFollowedByError()
       assert(t == cause, s"expected $cause, found $cause")
