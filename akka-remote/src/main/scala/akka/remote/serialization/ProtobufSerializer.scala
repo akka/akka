@@ -4,10 +4,12 @@
 
 package akka.remote.serialization
 
-import akka.actor.{ ExtendedActorSystem, ActorRef }
+import java.util.concurrent.ConcurrentHashMap
+
+import akka.actor.{ActorRef, ExtendedActorSystem}
 import akka.remote.WireFormats.ActorRefData
-import akka.serialization.{ Serializer, Serialization }
-import com.google.protobuf.Message
+import akka.serialization.{Serialization, Serializer}
+import com.google.protobuf.{Message, Parser}
 
 object ProtobufSerializer {
 
@@ -32,18 +34,33 @@ object ProtobufSerializer {
  * This Serializer serializes `com.google.protobuf.Message`s
  */
 class ProtobufSerializer extends Serializer {
-  val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
-  def includeManifest: Boolean = true
-  def identifier = 2
+  private val serializerBinding = new ConcurrentHashMap[Class[_],Parser[Message]]()
 
-  def toBinary(obj: AnyRef): Array[Byte] = obj match {
-    case m: Message ⇒ m.toByteArray
-    case _          ⇒ throw new IllegalArgumentException("Can't serialize a non-protobuf message using protobuf [" + obj + "]")
+  override def identifier: Int = 2
+
+  override def includeManifest: Boolean = true
+
+  override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
+    manifest match {
+      case Some(clazz)=>
+        val cachedParser = serializerBinding.get(clazz)
+        if (cachedParser ne null){
+          cachedParser.parseFrom(bytes)
+        }else{
+          val parser = clazz.getField("PARSER").get(null).asInstanceOf[Parser[Message]]
+          val previousParser = serializerBinding.putIfAbsent(clazz,parser)
+          if (previousParser ne null){
+            previousParser.parseFrom(bytes)
+          }else {
+            parser.parseFrom(bytes)
+          }
+        }
+      case None => throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
+    }
   }
 
-  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef =
-    clazz match {
-      case None    ⇒ throw new IllegalArgumentException("Need a protobuf message class to be able to serialize bytes using protobuf")
-      case Some(c) ⇒ c.getDeclaredMethod("parseFrom", ARRAY_OF_BYTE_ARRAY: _*).invoke(null, bytes).asInstanceOf[Message]
-    }
+  override def toBinary(obj: AnyRef): Array[Byte] = obj match {
+    case message:Message => message.toByteArray
+    case _=>throw new IllegalArgumentException(s"Can't serialize a non-protobuf message using protobuf [$obj]")
+  }
 }
