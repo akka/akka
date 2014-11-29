@@ -192,9 +192,7 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, stream, persistence, testkit).map(_ % "compile;compile->test"),
     settings = defaultSettings ++ Seq(
       libraryDependencies ++= Dependencies.testkit
-    ) ++ settings ++ jmhSettings ++ Seq(
-      outputTarget in Jmh := target.value
-    )
+    ) ++ settings ++ jmhSettings
   )
 
   lazy val actorTests = Project(
@@ -1198,8 +1196,8 @@ object Dependencies {
   import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val scala = "2.10.4"
-    val crossScala = Seq(scala, "2.11.2")
+    val crossScala = Seq("2.10.4", "2.11.4")
+    val scala = crossScala.head
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")
     val scalaTestVersion = System.getProperty("akka.build.scalaTestVersion", "2.1.3")
