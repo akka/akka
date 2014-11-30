@@ -42,19 +42,31 @@ trait ClusterNodeMBean {
    *   "members": [
    *     {
    *       "address": "akka.tcp://system@host1:2552",
-   *       "status": "Up"
+   *       "status": "Up",
+   *       "roles": [
+   *         "frontend"
+   *       ]
    *     },
    *     {
    *       "address": "akka.tcp://system@host2:2552",
-   *       "status": "Up"
+   *       "status": "Up",
+   *       "roles": [
+   *         "frontend"
+   *       ]
    *     },
    *     {
    *       "address": "akka.tcp://system@host3:2552",
-   *       "status": "Down"
+   *       "status": "Down",
+   *       "roles": [
+   *         "backend"
+   *       ]
    *     },
    *     {
    *       "address": "akka.tcp://system@host4:2552",
-   *       "status": "Joining"
+   *       "status": "Joining",
+   *       "roles": [
+   *         "backend"
+   *       ]
    *     }
    *   ],
    *   "unreachable": [
@@ -137,7 +149,10 @@ private[akka] class ClusterJmx(cluster: Cluster, log: LoggingAdapter) {
         val members = clusterView.members.toSeq.sorted(Member.ordering).map { m ⇒
           s"""{
               |      "address": "${m.address}",
-              |      "status": "${m.status}"
+              |      "status": "${m.status}",
+              |      "roles": [
+              |        ${m.roles.map("\"" + _ + "\"").mkString(",\n        ")}
+              |      ]
               |    }""".stripMargin
         } mkString (",\n    ")
 

@@ -59,10 +59,10 @@ public class JavaTestKit {
   public static void shutdownActorSystem(ActorSystem actorSystem) {
     shutdownActorSystem(actorSystem, null, null);
   }
-  public void shutdownActorSystem(ActorSystem actorSystem, Duration duration) {
+  public static void shutdownActorSystem(ActorSystem actorSystem, Duration duration) {
     shutdownActorSystem(actorSystem, duration, null);
   }
-  public void shutdownActorSystem(ActorSystem actorSystem, Boolean verifySystemShutdown) {
+  public static void shutdownActorSystem(ActorSystem actorSystem, Boolean verifySystemShutdown) {
     shutdownActorSystem(actorSystem, null, verifySystemShutdown);
   }
 

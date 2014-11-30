@@ -17,12 +17,35 @@ object ActorPath {
     case _                               ⇒ throw new MalformedURLException("cannot parse as ActorPath: " + s)
   }
 
+  /** INTERNAL API */
+  private[akka] final val ValidSymbols = """-_.*$+:@&=,!~';"""
+
   /**
-   * This Regular Expression is used to validate a path element (Actor Name).
+   * This method is used to validate a path element (Actor Name).
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
-   * http://www.ietf.org/rfc/rfc2396.txt
+   * [[http://www.ietf.org/rfc/rfc2396.txt RFC-2396]].
+   *
+   * User defined Actor names may not start from a `$` sign - these are reserved for system names.
    */
-  val ElementRegex = """(?:[-\w:@&=+,.!~*'_;]|%\p{XDigit}{2})(?:[-\w:@&=+,.!~*'$_;]|%\p{XDigit}{2})*""".r
+  final def isValidPathElement(s: String): Boolean = {
+    def isValidChar(c: Char): Boolean =
+      (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (ValidSymbols.indexOf(c) != -1)
+
+    def isHexChar(c: Char): Boolean =
+      (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9')
+
+    val len = s.length
+    def validate(pos: Int): Boolean =
+      if (pos < len)
+        s.charAt(pos) match {
+          case c if isValidChar(c) ⇒ validate(pos + 1)
+          case '%' if pos + 2 < len && isHexChar(s.charAt(pos + 1)) && isHexChar(s.charAt(pos + 2)) ⇒ validate(pos + 3)
+          case _ ⇒ false
+        }
+      else true
+
+    len > 0 && s.charAt(0) != '$' && validate(0)
+  }
 
   private[akka] final val emptyActorPath: immutable.Iterable[String] = List("")
 }

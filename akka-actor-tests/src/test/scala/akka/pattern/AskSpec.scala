@@ -44,14 +44,14 @@ class AskSpec extends AkkaSpec {
       f.isCompleted should be(true)
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
-      }.getMessage should be("Unsupported recipient ActorRef type, question not sent to [null]")
+      }.getMessage should be("Unsupported recipient ActorRef type, question not sent to [null]. Sender[null] sent the message of type \"java.lang.Double\".")
     }
 
     "return broken promises on 0 timeout" in {
       implicit val timeout = Timeout(0 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
+      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should be(expectedMsg)
@@ -61,7 +61,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(-1000 seconds)
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ sender() ! x } }))
       val f = echo ? "foo"
-      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]" format echo
+      val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
       }.getMessage should be(expectedMsg)
@@ -82,6 +82,23 @@ class AskSpec extends AkkaSpec {
       intercept[AskTimeoutException] {
         Await.result(f, 1 second)
       }.getMessage should include(timeout.duration.toMillis.toString)
+    }
+
+    "include sender information in AskTimeout" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      implicit val sender = system.actorOf(Props.empty)
+      val f = system.actorOf(Props.empty) ? "noreply"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 second)
+      }.getMessage.contains(sender.toString) should be(true)
+    }
+
+    "include message class information in AskTimeout" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val f = system.actorOf(Props.empty) ? "noreply"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 second)
+      }.getMessage.contains("\"java.lang.String\"") should be(true)
     }
 
     "work for ActorSelection" in {

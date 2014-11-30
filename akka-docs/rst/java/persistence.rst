@@ -148,19 +148,27 @@ Recovery
 --------
 
 By default, a persistent actor is automatically recovered on start and on restart by replaying journaled messages.
-New messages sent to a persistent actor during recovery do not interfere with replayed messages. New messages will
-only be received by a persistent actor after recovery completes.
+New messages sent to a persistent actor during recovery do not interfere with replayed messages. 
+They are cached and received by a persistent actor after recovery phase completes.
 
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Automated recovery on start can be disabled by overriding ``preStart`` with an empty implementation.
+Automated recovery on start can be disabled by overriding ``preStart`` with an empty or custom implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-on-start-disabled
 
 In this case, a persistent actor must be recovered explicitly by sending it a ``Recover`` message.
 
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-explicit
+
+.. warning::
+If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
+
+In order to completely skip recovery, you can signal it with ``Recover.create(0L)``
+
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-fully-disabled
 
 If not overridden, ``preStart`` sends a ``Recover`` message to ``getSelf()``. Applications may also override
 ``preStart`` to define further ``Recover`` parameters such as an upper sequence number bound, for example.

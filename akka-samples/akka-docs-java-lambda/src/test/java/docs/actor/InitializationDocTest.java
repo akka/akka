@@ -1,20 +1,23 @@
+package docs.actor;
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package docs.actor;
 
-import akka.actor.*;
+import akka.actor.AbstractActor;
+import akka.actor.ActorRef;
+import akka.actor.ActorSystem;
+import akka.actor.Props;
+import akka.japi.pf.FI;
 import akka.japi.pf.ReceiveBuilder;
 import akka.testkit.JavaTestKit;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.Duration;
 import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 public class InitializationDocTest {
 
@@ -27,7 +30,7 @@ public class InitializationDocTest {
 
   @AfterClass
   public static void afterClass() throws Exception {
-      Await.ready(system.terminate(), Duration.create("5 seconds"));
+    Await.ready(system.terminate(), Duration.create("5 seconds"));
   }
 
   public static class MessageInitExample extends AbstractActor {
@@ -36,15 +39,46 @@ public class InitializationDocTest {
     public MessageInitExample() {
       //#messageInit
       receive(ReceiveBuilder.
-        matchEquals("init", m1 -> {
-          initializeMe = "Up and running";
-          context().become(ReceiveBuilder.
-            matchEquals("U OK?", m2 -> {
-              sender().tell(initializeMe, self());
-            }).build());
-        }).build()
-      //#messageInit
+          matchEquals("init", m1 -> {
+            initializeMe = "Up and running";
+            context().become(ReceiveBuilder.
+              matchEquals("U OK?", m2 -> {
+                sender().tell(initializeMe, self());
+              }).build());
+
+          }).build()
+        //#messageInit
       );
+    }
+  }
+
+  public class GenericMessage<T> {
+    T value;
+
+    public GenericMessage(T value) {
+      this.value = value;
+    }
+  }
+
+  public static class GenericActor extends AbstractActor {
+    public GenericActor() {
+      receive(ReceiveBuilder.match(GenericMessage.class, (GenericMessage<String> msg) -> {
+        GenericMessage<String> message = msg;
+        sender().tell(message.value.toUpperCase(), self());
+
+      }).build());
+
+
+    }
+  }
+
+  static class GenericActorWithPredicate extends AbstractActor {
+    public GenericActorWithPredicate() {
+      FI.TypedPredicate<GenericMessage<String>> typedPredicate = s -> !s.value.isEmpty();
+
+      receive(ReceiveBuilder.match(GenericMessage.class, typedPredicate, (GenericMessage<String> msg) -> {
+        sender().tell(msg.value.toUpperCase(), self());
+      }).build());
     }
   }
 
@@ -61,6 +95,32 @@ public class InitializationDocTest {
       testactor.tell("init", getRef());
       testactor.tell(msg, getRef());
       expectMsgEquals("Up and running");
+    }};
+  }
+
+  @Test
+  public void testGenericActor() {
+    new JavaTestKit(system) {{
+      ActorRef genericTestActor = system.actorOf(Props.create(GenericActor.class), "genericActor");
+      GenericMessage<String> genericMessage = new GenericMessage<String>("a");
+
+      genericTestActor.tell(genericMessage, getRef());
+      expectMsgEquals("A");
+    }};
+  }
+
+  @Test
+  public void actorShouldNotRespondForEmptyMessage() {
+    new JavaTestKit(system) {{
+      ActorRef genericTestActor = system.actorOf(Props.create(GenericActorWithPredicate.class), "genericActorWithPredicate");
+      GenericMessage<String> emptyGenericMessage = new GenericMessage<String>("");
+      GenericMessage<String> nonEmptyGenericMessage = new GenericMessage<String>("a");
+
+      genericTestActor.tell(emptyGenericMessage, getRef());
+      expectNoMsg();
+
+      genericTestActor.tell(nonEmptyGenericMessage, getRef());
+      expectMsgEquals("A");
     }};
   }
 }
