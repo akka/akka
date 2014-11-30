@@ -1,0 +1,1 @@
+enablePlugins(akka.RootSettings)

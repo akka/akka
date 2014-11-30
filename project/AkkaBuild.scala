@@ -40,11 +40,10 @@ object AkkaBuild extends Build {
   lazy val root = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ unidocSettings ++ Publish.versionSettings ++
+    settings = parentSettings ++ Release.settings ++ unidocSettings ++
       SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ scaladocSettings ++
       GraphiteBuildEvents.settings ++ Protobuf.settings ++ Unidoc.settings(Seq(samples), Seq(remoteTests)) ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
-      Publish.defaultPublishTo in ThisBuild <<= crossTarget / "repository",
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
 
       S3.host in S3.upload := "downloads.typesafe.com.s3.amazonaws.com",
@@ -231,7 +230,7 @@ object AkkaBuild extends Build {
     ) ++
     resolverSettings
 
-  lazy val baseSettings = Defaults.defaultSettings ++ Publish.settings
+  lazy val baseSettings = Defaults.defaultSettings
 
   lazy val parentSettings = baseSettings ++ Seq(
     publishArtifact := false,
