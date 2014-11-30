@@ -22,13 +22,14 @@ object Release {
   def buildReleaseCommand = Command.command("build-release") { state =>
     val extracted = Project.extract(state)
     val release = extracted.get(releaseDirectory)
+    val dist = extracted.get(Dist.distDirectory)
     val releaseVersion = extracted.get(version)
     val projectRef = extracted.get(thisProjectRef)
     val repo = extracted.get(Publish.defaultPublishTo)
     val state1 = extracted.runAggregated(publishSigned in projectRef, state)
     val (state2, Seq(api, japi)) = extracted.runTask(unidoc in Compile, state1)
     val (state3, docs) = extracted.runTask(generate in Sphinx, state2)
-    val (state4, dist) = extracted.runTask(Dist.dist, state3)
+    val (state4, _) = extracted.runTask(Dist.dist, state3)
     val (state5, activatorDist) = extracted.runTask(ActivatorDist.activatorDist in LocalProject(AkkaBuild.samples.id), state4)
 
     IO.delete(release)
@@ -37,9 +38,15 @@ object Release {
     IO.copyDirectory(api, release / "api" / "akka" / releaseVersion)
     IO.copyDirectory(japi, release / "japi" / "akka" / releaseVersion)
     IO.copyDirectory(docs, release / "docs" / "akka" / releaseVersion)
-    IO.copyFile(dist, release / "downloads" / dist.name)
+
+    // copy all distributions from dist dir to downloads dir
+    // may contain distributions from cross-builds
+    for (f <- (dist * "akka_*.zip").get)
+      IO.copyFile(f, release / "downloads" / f.name)
+
     for (f <- (activatorDist * "*.zip").get)
       IO.copyFile(f, release / "downloads" / f.name)
+
     state5
   }
 
