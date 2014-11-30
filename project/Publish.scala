@@ -1,99 +1,61 @@
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka
 
 import sbt._
 import sbt.Keys._
-import sbt.Project.Initialize
 import java.io.File
 
-object Publish {
-  final val Snapshot = "-SNAPSHOT"
+object Publish extends AutoPlugin {
 
-  val defaultPublishTo = SettingKey[File]("default-publish-to")
+  val defaultPublishTo = settingKey[File]("Default publish directory")
 
-  lazy val settings = Seq(
+  override def trigger = allRequirements
+
+  override lazy val projectSettings = Seq(
     crossPaths := false,
     pomExtra := akkaPomExtra,
-    publishTo <<= akkaPublishTo,
+    publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
     organizationName := "Typesafe Inc.",
     organizationHomepage := Some(url("http://www.typesafe.com")),
     publishMavenStyle := true,
-    // Maven central cannot allow other repos.  
-    // TODO - Make sure all artifacts are on central.
-    pomIncludeRepository := { x => false }
-  )
-
-  lazy val versionSettings = Seq(
-    commands += stampVersion
+    pomIncludeRepository := { x => false },
+    defaultPublishTo := crossTarget.value / "repository"
   )
 
   def akkaPomExtra = {
-    (<inceptionYear>2009</inceptionYear>
+    <inceptionYear>2009</inceptionYear>
     <scm>
       <url>git://github.com/akka/akka.git</url>
       <connection>scm:git:git@github.com:akka/akka.git</connection>
-    </scm>) ++ makeDevelopersXml(Map(
-        "jboner" -> "Jonas Boner",
-        "viktorklang" -> "Viktor Klang",
-        "rkuhn" -> "Roland Kuhn",
-        "pvlugter" -> "Peter Vlugter"
-        // TODO - More than the names in the last 10 commits
-      ))
-  }
-
-
-  private[this] def makeDevelopersXml(users: Map[String,String]) =
+    </scm>
     <developers>
-      { 
-        for((id, user) <- users)
-        yield <developer><id>{id}</id><name>{user}</name></developer>
-      }
+      <developer>
+        <id>akka-contributors</id>
+        <name>Akka Contributors</name>
+        <email>akka-dev@googlegroups.com</email>
+        <url>https://github.com/akka/akka/graphs/contributors</url>
+      </developer>
     </developers>
-
-  def sonatypePublishTo: Initialize[Option[Resolver]] = {
-    version { v: String =>
-      val nexus = "https://oss.sonatype.org/"
-      if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
-      else                             Some("releases" at nexus + "service/local/staging/deploy/maven2")
-    }
   }
 
-  def akkaPublishTo: Initialize[Option[Resolver]] = {
-    (defaultPublishTo, version) { (defaultPT, v) =>
-      akkaPublishRepository orElse
-      sonatypeRepo(v) orElse
-      Some(Resolver.file("Default Local Repository", defaultPT))
-    }
+  private def akkaPublishTo = Def.setting {
+    sonatypeRepo(version.value) orElse localRepo(defaultPublishTo.value)
   }
 
-  def sonatypeRepo(version: String): Option[Resolver] = {
+  private def sonatypeRepo(version: String): Option[Resolver] =
     Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
       val nexus = "https://oss.sonatype.org/"
-      if(version endsWith "-SNAPSHOT") ("snapshots" at nexus + "content/repositories/snapshots")
-      else ("releases"  at nexus + "service/local/staging/deploy/maven2")
+      if (version endsWith "-SNAPSHOT") "snapshots" at nexus + "content/repositories/snapshots"
+      else "releases" at nexus + "service/local/staging/deploy/maven2"
     }
-  }
 
-  def akkaPublishRepository: Option[Resolver] =
-      Option(System.getProperty("akka.publish.repository", null)) map { "Akka Publish Repository" at _ }
+  private def localRepo(repository: File) =
+    Some(Resolver.file("Default Local Repository", repository))
 
-  def akkaCredentials: Seq[Credentials] =
-    Option(System.getProperty("akka.publish.credentials", null)) map (f => Credentials(new File(f))) toSeq
+  private def akkaCredentials: Seq[Credentials] =
+    Option(System.getProperty("akka.publish.credentials", null)).map(f => Credentials(new File(f))).toSeq
 
-  // timestamped versions
-
-  def stampVersion = Command.command("stamp-version") { state =>
-    val extracted = Project.extract(state)
-    extracted.append(List(version in ThisBuild ~= stamp), state)
-  }
-
-  def stamp(version: String): String = {
-    if (version endsWith Snapshot) (version stripSuffix Snapshot) + "-" + timestamp(System.currentTimeMillis)
-    else version
-  }
-
-  def timestamp(time: Long): String = {
-    val format = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss")
-    format.format(new java.util.Date(time))
-  }
 }
