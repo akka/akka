@@ -5,12 +5,12 @@ import sbt._
 object Dependencies {
 
   import DependencyHelpers._
-  import DependencyHelpers.ScalaVersionDependentModuleID.post210Dependency
+  import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val scalaVersion = sys.props.get("akka.scalaVersion").getOrElse("2.10.4")
+    val crossScala = Seq("2.10.4", "2.11.4")
+    val scalaVersion = crossScala.head
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
-    val scalaZeroMQVersion = sys.props.get("akka.build.scalaZeroMQVersion").getOrElse("0.0.7")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.1.3")
     val scalaCheckVersion = sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.11.3")
   }
@@ -28,7 +28,7 @@ object Dependencies {
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
-    val zeroMQClient  = "org.zeromq"                 %% "zeromq-scala-binding"         % scalaZeroMQVersion // ApacheV2
+    val zeroMQClient  = "org.spark-project.zeromq"   %% "zeromq-scala-binding"         % "0.0.7-spark"  // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
@@ -91,7 +91,7 @@ object Dependencies {
 
   val docs = Seq(Test.scalatest, Test.junit, Test.junitIntf)
 
-  val zeroMQ = Seq(protobuf, zeroMQClient, Test.scalatest, Test.junit)
+  val zeroMQ = deps(protobuf, zeroMQClient, Test.scalatest, Test.junit)
 
   val contrib = Seq(Test.junitIntf, Test.commonsIo)
 }
