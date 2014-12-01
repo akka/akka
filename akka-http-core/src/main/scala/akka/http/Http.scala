@@ -4,109 +4,218 @@
 
 package akka.http
 
-import java.io.Closeable
 import java.net.InetSocketAddress
+import com.typesafe.config.Config
+import scala.collection.immutable
+import scala.concurrent.Future
+import akka.event.LoggingAdapter
+import akka.util.ByteString
+import akka.io.Inet
+import akka.stream.FlowMaterializer
 import akka.stream.io.StreamTcp
 import akka.stream.scaladsl._
-import scala.collection.immutable
-import akka.io.Inet
-import akka.http.engine.client.{ HttpClientPipeline, ClientConnectionSettings }
-import akka.http.engine.server.{ HttpServerPipeline, ServerSettings }
+import akka.http.engine.client.{ HttpClient, ClientConnectionSettings }
+import akka.http.engine.server.{ HttpServer, ServerSettings }
 import akka.http.model.{ ErrorInfo, HttpResponse, HttpRequest }
 import akka.actor._
 
-import scala.concurrent.Future
-
-object Http extends ExtensionKey[HttpExt] with ExtensionIdProvider {
-
-  /**
-   * A flow representing an outgoing HTTP connection, and the key used to get information about
-   * the materialized connection. The flow takes pairs of a ``HttpRequest`` and a user definable
-   * context that will be correlated with the corresponding ``HttpResponse``.
-   */
-  final case class OutgoingFlow(flow: Flow[(HttpRequest, Any), (HttpResponse, Any)],
-                                key: Key { type MaterializedType = Future[Http.OutgoingConnection] })
+class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.Extension {
+  import Http._
 
   /**
-   * The materialized result of an outgoing HTTP connection stream with a single connection as the underlying transport.
+   * Creates a [[ServerBinding]] instance which represents a prospective HTTP server binding on the given `endpoint`.
    */
-  final case class OutgoingConnection(remoteAddress: InetSocketAddress,
-                                      localAddress: InetSocketAddress)
-
-  /**
-   * A source representing an bound HTTP server socket, and the key to get information about
-   * the materialized bound socket.
-   */
-  final case class ServerSource(source: Source[IncomingConnection],
-                                key: Key { type MaterializedType = Future[ServerBinding] })
-
-  /**
-   * An incoming HTTP connection.
-   */
-  final case class IncomingConnection(remoteAddress: InetSocketAddress, stream: Flow[HttpResponse, HttpRequest])
-
-  class StreamException(val info: ErrorInfo) extends RuntimeException(info.summary)
-
-  /**
-   * The materialized result of a bound HTTP server socket.
-   */
-  private[akka] sealed abstract case class ServerBinding(localAddress: InetSocketAddress) extends Closeable
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] object ServerBinding {
-    def apply(localAddress: InetSocketAddress, closeable: Closeable): ServerBinding =
-      new ServerBinding(localAddress) {
-        override def close() = closeable.close()
+  def bind(interface: String, port: Int = 80, backlog: Int = 100,
+           options: immutable.Traversable[Inet.SocketOption] = Nil,
+           settings: Option[ServerSettings] = None,
+           log: LoggingAdapter = system.log): ServerBinding = {
+    val endpoint = new InetSocketAddress(interface, port)
+    val effectiveSettings = ServerSettings(settings)
+    val tcpBinding = StreamTcp().bind(endpoint, backlog, options, effectiveSettings.timeouts.idleTimeout)
+    new ServerBinding {
+      def localAddress(mm: MaterializedMap) = tcpBinding.localAddress(mm)
+      val connections = tcpBinding.connections map { tcpConn ⇒
+        new IncomingConnection {
+          def localAddress = tcpConn.localAddress
+          def remoteAddress = tcpConn.remoteAddress
+          def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer) =
+            tcpConn.handleWith(HttpServer.serverFlowToTransport(handler, effectiveSettings, log))
+        }
       }
+      def unbind(mm: MaterializedMap): Future[Unit] = tcpBinding.unbind(mm)
+    }
+  }
+
+  /**
+   * Transforms a given HTTP-level server [[Flow]] into a lower-level TCP transport flow.
+   */
+  def serverFlowToTransport(serverFlow: Flow[HttpRequest, HttpResponse],
+                            settings: Option[ServerSettings] = None,
+                            log: LoggingAdapter = system.log): Flow[ByteString, ByteString] = {
+    val effectiveSettings = ServerSettings(settings)
+    HttpServer.serverFlowToTransport(serverFlow, effectiveSettings, log)
+  }
+
+  /**
+   * Creates an [[OutgoingConnection]] instance representing a prospective HTTP client connection to the given endpoint.
+   */
+  def outgoingConnection(host: String, port: Int = 80,
+                         localAddress: Option[InetSocketAddress] = None,
+                         options: immutable.Traversable[Inet.SocketOption] = Nil,
+                         settings: Option[ClientConnectionSettings] = None,
+                         log: LoggingAdapter = system.log): OutgoingConnection = {
+    val effectiveSettings = ClientConnectionSettings(settings)
+    val remoteAddr = new InetSocketAddress(host, port)
+    val transportFlow = StreamTcp().outgoingConnection(remoteAddr, localAddress,
+      options, effectiveSettings.connectingTimeout, effectiveSettings.idleTimeout)
+    new OutgoingConnection {
+      def remoteAddress = remoteAddr
+      def localAddress(mm: MaterializedMap) = transportFlow.localAddress(mm)
+      val flow = HttpClient.transportToConnectionClientFlow(transportFlow.flow, remoteAddr, effectiveSettings, log)
+    }
+  }
+
+  /**
+   * Transforms the given low-level TCP client transport [[Flow]] into a higher-level HTTP client flow.
+   */
+  def transportToConnectionClientFlow(transport: Flow[ByteString, ByteString],
+                                      remoteAddress: InetSocketAddress, // TODO: removed after #16168 is cleared
+                                      settings: Option[ClientConnectionSettings] = None,
+                                      log: LoggingAdapter = system.log): Flow[HttpRequest, HttpResponse] = {
+    val effectiveSettings = ClientConnectionSettings(settings)
+    HttpClient.transportToConnectionClientFlow(transport, remoteAddress, effectiveSettings, log)
   }
 }
 
-class HttpExt(system: ExtendedActorSystem) extends Extension {
-  @volatile private[this] var clientPipelines = Map.empty[ClientConnectionSettings, HttpClientPipeline]
+object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
-  def connect(remoteAddress: InetSocketAddress,
-              localAddress: Option[InetSocketAddress],
-              options: immutable.Traversable[Inet.SocketOption],
-              settings: Option[ClientConnectionSettings]): Http.OutgoingFlow = {
-    // FIXME #16378 Where to do logging? log.debug("Attempting connection to {}", remoteAddress)
-    val effectiveSettings = ClientConnectionSettings(settings)(system)
+  /**
+   * Represents a prospective HTTP server binding.
+   */
+  trait ServerBinding {
+    /**
+     * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
+     * whose [[MaterializedMap]] is passed as parameter.
+     */
+    def localAddress(materializedMap: MaterializedMap): Future[InetSocketAddress]
 
-    val tcpFlow = StreamTcp(system).connect(remoteAddress, localAddress, options, effectiveSettings.connectingTimeout)
-    val pipeline = clientPipelines.getOrElse(effectiveSettings, {
-      val pl = new HttpClientPipeline(effectiveSettings, system.log)(system.dispatcher)
-      clientPipelines = clientPipelines.updated(effectiveSettings, pl)
-      pl
-    })
-    pipeline(tcpFlow, remoteAddress)
+    /**
+     * The stream of accepted incoming connections.
+     * Can be materialized several times but only one subscription can be "live" at one time, i.e.
+     * subsequent materializations will reject subscriptions with an [[StreamTcp.BindFailedException]] if the previous
+     * materialization still has an uncancelled subscription.
+     * Cancelling the subscription to a materialization of this source will cause the listening port to be unbound.
+     */
+    def connections: Source[IncomingConnection]
+
+    /**
+     * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
+     * [[Source]] whose [[MaterializedMap]] is passed as parameter.
+     *
+     * The produced [[Future]] is fulfilled when the unbinding has been completed.
+     */
+    def unbind(materializedMap: MaterializedMap): Future[Unit]
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      connections.to(ForeachSink(_ handleWith handler)).run()
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): MaterializedMap =
+      startHandlingWith(Flow[HttpRequest].map(handler))
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      startHandlingWith(Flow[HttpRequest].mapAsync(handler))
   }
 
-  def connect(host: String, port: Int = 80,
-              localAddress: Option[InetSocketAddress] = None,
-              options: immutable.Traversable[Inet.SocketOption] = Nil,
-              settings: Option[ClientConnectionSettings] = None): Http.OutgoingFlow =
-    connect(new InetSocketAddress(host, port), localAddress, options, settings)
+  /**
+   * Represents one accepted incoming HTTP connection.
+   */
+  sealed trait IncomingConnection {
+    /**
+     * The local address this connection is bound to.
+     */
+    def localAddress: InetSocketAddress
 
-  def bind(endpoint: InetSocketAddress,
-           backlog: Int,
-           options: immutable.Traversable[Inet.SocketOption],
-           serverSettings: Option[ServerSettings]): Http.ServerSource = {
-    import system.dispatcher
+    /**
+     * The remote address this connection is bound to.
+     */
+    def remoteAddress: InetSocketAddress
 
-    // FIXME IdleTimeout?
-    val src = StreamTcp(system).bind(endpoint, backlog, options)
-    val key = new Key {
-      override type MaterializedType = Future[Http.ServerBinding]
-      override def materialize(map: MaterializedMap) = map.get(src).map(s ⇒ Http.ServerBinding(s.localAddress, s))
-    }
-    val log = system.log
-    val effectiveSettings = ServerSettings(serverSettings)(system)
-    Http.ServerSource(src.withKey(key).map(new HttpServerPipeline(effectiveSettings, log)), key)
+    /**
+     * Handles the connection with the given flow, which is materialized exactly once
+     * and the respective [[MaterializedMap]] returned.
+     */
+    def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap
+
+    /**
+     * Handles the connection with the given handler function.
+     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     */
+    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): MaterializedMap =
+      handleWith(Flow[HttpRequest].map(handler))
+
+    /**
+     * Handles the connection with the given handler function.
+     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     */
+    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      handleWith(Flow[HttpRequest].mapAsync(handler))
   }
 
-  def bind(interface: String, port: Int = 80, backlog: Int = 100,
-           options: immutable.Traversable[Inet.SocketOption] = Nil,
-           serverSettings: Option[ServerSettings] = None): Http.ServerSource =
-    bind(new InetSocketAddress(interface, port), backlog, options, serverSettings)
+  /**
+   * Represents a prospective outgoing HTTP connection.
+   */
+  sealed trait OutgoingConnection {
+    /**
+     * The remote address this connection is or will be bound to.
+     */
+    def remoteAddress: InetSocketAddress
+
+    /**
+     * The local address of the endpoint bound by the materialization of the connection materialization
+     * whose [[MaterializedMap]] is passed as parameter.
+     */
+    def localAddress(mMap: MaterializedMap): Future[InetSocketAddress]
+
+    /**
+     * A flow representing the HTTP server on a single HTTP connection.
+     * This flow can be materialized several times, every materialization will open a new connection to the `remoteAddress`.
+     * If the connection cannot be established the materialized stream will immediately be terminated
+     * with a [[StreamTcp.ConnectionAttemptFailedException]].
+     */
+    def flow: Flow[HttpRequest, HttpResponse]
+  }
+
+  class RequestTimeoutException(val request: HttpRequest, message: String) extends RuntimeException(message)
+
+  class StreamException(val info: ErrorInfo) extends RuntimeException(info.summary)
+
+  //////////////////// EXTENSION SETUP ///////////////////
+
+  def apply()(implicit system: ActorSystem): HttpExt = super.apply(system)
+
+  def lookup() = Http
+
+  def createExtension(system: ExtendedActorSystem): HttpExt =
+    new HttpExt(system.settings.config getConfig "akka.http")(system)
 }

@@ -15,7 +15,7 @@ import akka.http.server._
 import akka.http.model._
 import StatusCodes._
 import HttpMethods._
-import ScalaRoutingDSL._
+import Directives._
 
 class ScalatestRouteTestSpec extends FreeSpec with Matchers with ScalatestRouteTest {
 

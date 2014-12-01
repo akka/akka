@@ -3,35 +3,38 @@
  */
 package akka.stream.io
 
-import java.io.Closeable
-
-import akka.actor._
+import java.net.InetSocketAddress
+import akka.stream.io.StreamTcp.ConnectionException
+import org.reactivestreams.Subscriber
+import scala.concurrent.{ Future, Promise }
+import akka.util.ByteString
 import akka.io.Tcp._
 import akka.io.{ IO, Tcp }
-import akka.stream.MaterializerSettings
+import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.scaladsl.{ Flow, Pipe }
 import akka.stream.impl._
-import akka.stream.scaladsl.{ Pipe, Flow }
-import akka.util.ByteString
-import org.reactivestreams.{ Processor, Publisher }
-
-import scala.util.control.NoStackTrace
+import akka.actor._
 
 /**
  * INTERNAL API
  */
 private[akka] object TcpListenStreamActor {
-  def props(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings): Props = {
-    Props(new TcpListenStreamActor(bindCmd, requester, settings))
+  def props(localAddressPromise: Promise[InetSocketAddress],
+            unbindPromise: Promise[() ⇒ Future[Unit]],
+            flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+            bindCmd: Tcp.Bind, materializerSettings: MaterializerSettings): Props = {
+    Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, bindCmd, materializerSettings))
   }
-
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef, settings: MaterializerSettings) extends Actor
+private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocketAddress],
+                                         unbindPromise: Promise[() ⇒ Future[Unit]],
+                                         flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+                                         bindCmd: Tcp.Bind, settings: MaterializerSettings) extends Actor
   with Pump with Stash {
-  import akka.stream.io.TcpListenStreamActor._
   import context.system
 
   object primaryOutputs extends SimpleOutputs(self, pump = this) {
@@ -48,7 +51,9 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     def getExposedPublisher = exposedPublisher
   }
 
+  private val unboundPromise = Promise[Unit]()
   private var finished = false
+
   override protected def pumpFinished(): Unit = {
     if (!finished) {
       finished = true
@@ -71,16 +76,15 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         nextPhase(runningPhase)
         listener ! ResumeAccepting(1)
         val target = self
-        requester ! StreamTcpManager.BindReply(
-          localAddress,
-          primaryOutputs.getExposedPublisher.asInstanceOf[Publisher[StreamTcp.IncomingTcpConnection]],
-          new Closeable {
-            override def close() = target ! Unbind
-          })
+        localAddressPromise.success(localAddress)
+        unbindPromise.success(() ⇒ { target ! Unbind; unboundPromise.future })
+        primaryOutputs.getExposedPublisher.subscribe(flowSubscriber.asInstanceOf[Subscriber[Any]])
         subreceive.become(running)
       case f: CommandFailed ⇒
-        val ex = new StreamTcp.IncomingTcpException("Bind failed")
-        requester ! Status.Failure(ex)
+        val ex = StreamTcp.BindFailedException
+        localAddressPromise.failure(ex)
+        unbindPromise.failure(ex)
+        flowSubscriber.onError(ex)
         fail(ex)
     }
 
@@ -89,12 +93,16 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
         pendingConnection = (c, sender())
         pump()
       case f: CommandFailed ⇒
-        fail(new StreamTcp.IncomingTcpException(s"Command [${f.cmd}] failed"))
+        val ex = new ConnectionException(s"Command [${f.cmd}] failed")
+        unbindPromise.tryFailure(ex)
+        fail(ex)
       case Unbind ⇒
-        cancel()
+        if (!closed && listener != null) listener ! Unbind
+        listener = null
         pump()
       case Unbound ⇒ // If we're unbound then just shut down
-        closed = true
+        cancel()
+        unboundPromise.trySuccess(())
         pump()
     }
 
@@ -114,7 +122,6 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
       listener ! ResumeAccepting(1)
       elem
     }
-
   }
 
   final override def receive = {
@@ -132,7 +139,19 @@ private[akka] class TcpListenStreamActor(bindCmd: Tcp.Bind, requester: ActorRef,
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
-    primaryOutputs.enqueueOutputElement(StreamTcp.IncomingTcpConnection(connected.remoteAddress, Pipe(() ⇒ processor)))
+    val conn = new StreamTcp.IncomingConnection {
+      val flow = Pipe(() ⇒ processor)
+      def localAddress = connected.localAddress
+      def remoteAddress = connected.remoteAddress
+      def handleWith(handler: Flow[ByteString, ByteString])(implicit fm: FlowMaterializer) =
+        flow.join(handler).run()
+    }
+    primaryOutputs.enqueueOutputElement(conn)
+  }
+
+  override def postStop(): Unit = {
+    unboundPromise.trySuccess(())
+    super.postStop()
   }
 
   def fail(e: Throwable): Unit = {

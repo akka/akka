@@ -17,15 +17,15 @@ object TestClient extends App {
     akka.log-dead-letters = off
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  import akka.http.TestClient.system.dispatcher
+  implicit val fm = FlowMaterializer()
+  import system.dispatcher
 
-  implicit val materializer = FlowMaterializer()
   val host = "spray.io"
 
   println(s"Fetching HTTP server version of host `$host` ...")
 
-  val outgoingFlow = Http(system).connect(host)
-  val result = Source.singleton(HttpRequest() -> 'NoContext).via(outgoingFlow.flow).map(_._1).runWith(Sink.head)
+  val connection = Http().outgoingConnection(host)
+  val result = Source.singleton(HttpRequest()).via(connection.flow).runWith(Sink.head)
 
   result.map(_.header[headers.Server]) onComplete {
     case Success(res)   ⇒ println(s"$host is running ${res mkString ", "}")

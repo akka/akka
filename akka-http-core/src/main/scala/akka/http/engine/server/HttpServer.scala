@@ -4,68 +4,40 @@
 
 package akka.http.engine.server
 
-import akka.actor.{ Props, ActorRef }
+import akka.actor.{ ActorRef, Props }
+import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.stage.PushPullStage
-import akka.util.ByteString
-import akka.stream.io.StreamTcp
 import akka.stream.FlattenStrategy
-import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
-import akka.http.model._
 import akka.http.engine.parsing.ParserOutput._
-import akka.http.Http
+import akka.http.model._
 import akka.http.util._
+import akka.http.Http
 
 import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAdapter)
-  extends (StreamTcp.IncomingTcpConnection ⇒ Http.IncomingConnection) {
-  import settings.parserSettings
+private[http] object HttpServer {
 
-  // the initial header parser we initially use for every connection,
-  // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
-  val rootParser = new HttpRequestParser(
-    parserSettings,
-    settings.rawRequestUriHeader,
-    HttpHeaderParser(parserSettings) { errorInfo ⇒
-      if (parserSettings.illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
-    })
+  def serverFlowToTransport(serverFlow: Flow[HttpRequest, HttpResponse],
+                            settings: ServerSettings,
+                            log: LoggingAdapter): Flow[ByteString, ByteString] = {
 
-  val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
+    // the initial header parser we initially use for every connection,
+    // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
+    val rootParser = new HttpRequestParser(
+      settings.parserSettings,
+      settings.rawRequestUriHeader,
+      HttpHeaderParser(settings.parserSettings) { errorInfo ⇒
+        if (settings.parserSettings.illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal request header").formatPretty)
+      })
 
-  val bypassFanout = Broadcast[RequestOutput]("bypassFanout")
-
-  val bypassMerge = new BypassMerge
-
-  val requestPreparation =
-    Flow[RequestOutput]
-      .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
-      .headAndTail
-      .collect {
-        case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
-          val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
-          val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
-          HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
-      }
-
-  val rendererPipeline =
-    Flow[ResponseRenderingContext]
-      .transform("recover", () ⇒ new ErrorsTo500ResponseRecovery(log)) // FIXME: simplify after #16394 is closed
-      .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
-      .flatten(FlattenStrategy.concat)
-      .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
-
-  def apply(tcpConn: StreamTcp.IncomingTcpConnection): Http.IncomingConnection = {
-    import FlowGraphImplicits._
-
-    val userIn = UndefinedSink[HttpRequest]
-    val userOut = UndefinedSource[HttpResponse]
+    val responseRendererFactory = new HttpResponseRendererFactory(settings.serverHeader, settings.responseHeaderSizeHint, log)
 
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
     val oneHundredContinueSource = Source[OneHundredContinue.type] {
@@ -76,28 +48,50 @@ private[http] class HttpServerPipeline(settings: ServerSettings, log: LoggingAda
       }
     }
 
-    // FIXME The whole pipeline can maybe be created up front when #16168 is fixed
-    val pipeline = Flow() { implicit b ⇒
+    val bypassFanout = Broadcast[RequestOutput]("bypassFanout")
+    val bypassMerge = new BypassMerge(settings, log)
 
-      val requestParsing = Flow[ByteString].transform("rootParser", () ⇒
-        // each connection uses a single (private) request parser instance for all its requests
-        // which builds a cache of all header instances seen on that connection
-        rootParser.createShallowCopy(() ⇒ oneHundredContinueRef))
+    val requestParsing = Flow[ByteString].transform("rootParser", () ⇒
+      // each connection uses a single (private) request parser instance for all its requests
+      // which builds a cache of all header instances seen on that connection
+      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef))
 
+    val requestPreparation =
+      Flow[RequestOutput]
+        .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
+        .headAndTail
+        .collect {
+          case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
+            val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
+            val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
+            HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
+        }
+
+    val rendererPipeline =
+      Flow[ResponseRenderingContext]
+        .transform("recover", () ⇒ new ErrorsTo500ResponseRecovery(log)) // FIXME: simplify after #16394 is closed
+        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+        .flatten(FlattenStrategy.concat)
+        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
+
+    val transportIn = UndefinedSource[ByteString]
+    val transportOut = UndefinedSink[ByteString]
+
+    import FlowGraphImplicits._
+
+    Flow() { implicit b ⇒
       //FIXME: the graph is unnecessary after fixing #15957
-      userOut ~> bypassMerge.applicationInput ~> rendererPipeline ~> tcpConn.stream ~> requestParsing ~> bypassFanout ~> requestPreparation ~> userIn
+      transportIn ~> requestParsing ~> bypassFanout ~> requestPreparation ~> serverFlow ~> bypassMerge.applicationInput ~> rendererPipeline ~> transportOut
       bypassFanout ~> bypassMerge.bypassInput
       oneHundredContinueSource ~> bypassMerge.oneHundredContinueInput
 
       b.allowCycles()
 
-      userOut -> userIn
+      transportIn -> transportOut
     }
-
-    Http.IncomingConnection(tcpConn.remoteAddress, pipeline)
   }
 
-  class BypassMerge extends FlexiMerge[ResponseRenderingContext]("BypassMerge") {
+  class BypassMerge(settings: ServerSettings, log: LoggingAdapter) extends FlexiMerge[ResponseRenderingContext]("BypassMerge") {
     import FlexiMerge._
     val bypassInput = createInputPort[RequestOutput]()
     val oneHundredContinueInput = createInputPort[OneHundredContinue.type]()
