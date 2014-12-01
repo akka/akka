@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.model._
@@ -114,11 +115,11 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength) ~~ CrLf
             renderByteStrings(r,
-              data.transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)))
+              data.section(name("checkContentLength"))(_.transform(() ⇒ new CheckContentLengthTransformer(contentLength))))
 
           case HttpEntity.Chunked(_, chunks) ⇒
             r ~~ CrLf
-            renderByteStrings(r, chunks.transform("chunkTransform", () ⇒ new ChunkTransformer))
+            renderByteStrings(r, chunks.section(name("chunkTransform"))(_.transform(() ⇒ new ChunkTransformer)))
         }
 
       renderRequestLine()

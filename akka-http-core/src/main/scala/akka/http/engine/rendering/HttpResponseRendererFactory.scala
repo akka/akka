@@ -7,6 +7,7 @@ package akka.http.engine.rendering
 import scala.annotation.tailrec
 import akka.event.LoggingAdapter
 import akka.util.ByteString
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.http.model._
@@ -155,7 +156,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderHeaders(headers.toList)
             renderEntityContentType(r, entity)
             renderContentLengthHeader(contentLength) ~~ CrLf
-            byteStrings(data.transform("checkContentLength", () ⇒ new CheckContentLengthTransformer(contentLength)))
+            byteStrings(data.section(name("checkContentLength"))(_.transform(() ⇒ new CheckContentLengthTransformer(contentLength))))
 
           case HttpEntity.CloseDelimited(_, data) ⇒
             renderHeaders(headers.toList, alwaysClose = ctx.requestMethod != HttpMethods.HEAD)
@@ -168,7 +169,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             else {
               renderHeaders(headers.toList)
               renderEntityContentType(r, entity) ~~ CrLf
-              byteStrings(chunks.transform("renderChunks", () ⇒ new ChunkTransformer))
+              byteStrings(chunks.section(name("renderChunks"))(_.transform(() ⇒ new ChunkTransformer)))
             }
         }
 

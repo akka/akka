@@ -4,7 +4,9 @@
 package akka.stream.scaladsl
 
 import scala.collection.immutable
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.impl.Ast
+import akka.stream.impl.Ast.Defaults._
 import akka.stream.impl.FlexiRouteImpl.RouteLogicFactory
 
 object FlexiRoute {
@@ -211,28 +213,27 @@ object FlexiRoute {
  *
  * @param name optional name of the junction in the [[FlowGraph]],
  */
-abstract class FlexiRoute[In](val name: Option[String]) extends RouteLogicFactory[In] {
+abstract class FlexiRoute[In](override val attributes: OperationAttributes) extends RouteLogicFactory[In] {
   import FlexiRoute._
 
-  def this(name: String) = this(Some(name))
-  def this() = this(None)
+  def this(name: String) = this(OperationAttributes.name(name))
+  def this() = this(OperationAttributes.none)
 
   private var outputCount = 0
 
   // hide the internal vertex things from subclass, and make it possible to create new instance
-  private class RouteVertex(vertexName: Option[String]) extends FlowGraphInternal.InternalVertex {
+  private class RouteVertex(override val attributes: OperationAttributes) extends FlowGraphInternal.InternalVertex {
     override def minimumInputCount = 1
     override def maximumInputCount = 1
     override def minimumOutputCount = 2
     override def maximumOutputCount = outputCount
 
-    override private[akka] val astNode = Ast.FlexiRouteNode(FlexiRoute.this.asInstanceOf[FlexiRoute[Any]])
-    override def name = vertexName
+    override private[akka] val astNode = Ast.FlexiRouteNode(FlexiRoute.this.asInstanceOf[FlexiRoute[Any]], flexiRoute and attributes)
 
-    final override private[scaladsl] def newInstance() = new RouteVertex(None)
+    final override private[scaladsl] def newInstance() = new RouteVertex(OperationAttributes.none)
   }
 
-  private[scaladsl] val vertex: FlowGraphInternal.InternalVertex = new RouteVertex(name)
+  private[scaladsl] val vertex: FlowGraphInternal.InternalVertex = new RouteVertex(attributes)
 
   /**
    * Input port of the `FlexiRoute` junction. A [[Source]] can be connected to this output
@@ -263,7 +264,7 @@ abstract class FlexiRoute[In](val name: Option[String]) extends RouteLogicFactor
    */
   override def createRouteLogic(): RouteLogic[In]
 
-  override def toString = name match {
+  override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n
     case None    ⇒ getClass.getSimpleName + "@" + Integer.toHexString(super.hashCode())
   }

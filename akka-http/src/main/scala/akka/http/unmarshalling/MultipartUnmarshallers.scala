@@ -85,7 +85,7 @@ trait MultipartUnmarshallers {
                   createStrict(mediaType, builder.result())
                 case _ ⇒
                   val bodyParts = entity.dataBytes
-                    .transform("bodyPart", () ⇒ parser)
+                    .transform(() ⇒ parser)
                     .splitWhen(_.isInstanceOf[BodyPartStart])
                     .headAndTail
                     .collect {

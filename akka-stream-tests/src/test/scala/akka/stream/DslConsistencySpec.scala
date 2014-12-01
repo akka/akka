@@ -33,7 +33,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
-      Set("create", "apply", "ops", "appendJava", "andThen") ++
+      Set("create", "apply", "ops", "appendJava", "andThen", "withAttributes") ++
       Set("asScala", "asJava")
 
   val allowMissing: Map[Class[_], Set[String]] = Map(

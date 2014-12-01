@@ -102,7 +102,7 @@ public class FlowTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5, 6, 7);
     // duplicate each element, stop after 4 elements, and emit sum to the end
-    Source.from(input).transform("publish", new Creator<Stage<Integer, Integer>>() {
+    Source.from(input).transform(new Creator<Stage<Integer, Integer>>() {
       @Override
       public PushPullStage<Integer, Integer> create() throws Exception {
         return new StatefulStage<Integer, Integer>() {
@@ -248,9 +248,24 @@ public class FlowTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseMerge() throws Exception {
-    final Flow<String, String> f1 = Flow.of(String.class).transform("f1", this.<String>op()); // javadsl
-    final Flow<String, String> f2 = Flow.of(String.class).transform("f2", this.<String>op()); // javadsl
-    final Flow<String, String> f3 = Flow.of(String.class).transform("f2", this.<String>op()); // javadsl
+    final Flow<String, String> f1 = Flow.of(String.class).section(OperationAttributes.name("f1"), new Function<Flow<String, String>, Flow<String, String>>() {
+      @Override
+      public Flow<String, String> apply(Flow<String, String> flow) {
+        return flow.transform(FlowTest.this.<String>op());
+      }
+    });
+    final Flow<String, String> f2 = Flow.of(String.class).section(OperationAttributes.name("f2"), new Function<Flow<String, String>, Flow<String, String>>() {
+      @Override
+      public Flow<String, String> apply(Flow<String, String> flow) {
+        return flow.transform(FlowTest.this.<String>op());
+      }
+    });
+    final Flow<String, String> f3 = Flow.of(String.class).section(OperationAttributes.name("f3"), new Function<Flow<String, String>, Flow<String, String>>() {
+      @Override
+      public Flow<String, String> apply(Flow<String, String> flow) {
+        return flow.transform(FlowTest.this.<String>op());
+      }
+    });
 
     final Source<String> in1 = Source.from(Arrays.asList("a", "b", "c"));
     final Source<String> in2 = Source.from(Arrays.asList("d", "e", "f"));

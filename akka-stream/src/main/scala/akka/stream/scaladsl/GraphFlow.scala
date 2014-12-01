@@ -119,6 +119,8 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
   override def withKey(key: Key): Flow[In, Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
+
+  def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
 private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Source[Out] {
@@ -164,6 +166,8 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
   override def withKey(key: Key): Source[Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
+
+  def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
 private[scaladsl] case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph) extends Sink[In] {

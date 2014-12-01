@@ -10,9 +10,10 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.impl.{ ActorBasedFlowMaterializer, ActorProcessorFactory, FanoutProcessorImpl, BlackholeSubscriber }
-import java.util.concurrent.atomic.AtomicReference
 import akka.stream.stage._
+import java.util.concurrent.atomic.AtomicReference
 
 sealed trait ActorFlowSink[-In] extends Sink[In] {
 
@@ -170,8 +171,8 @@ object OnCompleteSink {
  */
 final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends SimpleActorFlowSink[In] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) =
-    Source(flowPublisher).transform("onCompleteSink", () ⇒ new PushStage[In, Unit] {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+    val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, Unit] {
       override def onPush(elem: In, ctx: Context[Unit]): Directive = ctx.pull()
       override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
         callback(Failure(cause))
@@ -181,7 +182,13 @@ final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends Simple
         callback(OnCompleteSink.SuccessUnit)
         ctx.finish()
       }
-    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    })
+
+    Source(flowPublisher).
+      section(name("onCompleteSink"))(section).
+      to(BlackholeSink).
+      run()(materializer.withNamePrefix(flowName))
+  }
 }
 
 /**
@@ -195,7 +202,7 @@ final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In] 
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val promise = Promise[Unit]()
-    Source(flowPublisher).transform("foreach", () ⇒ new PushStage[In, Unit] {
+    val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, Unit] {
       override def onPush(elem: In, ctx: Context[Unit]): Directive = {
         f(elem)
         ctx.pull()
@@ -208,7 +215,12 @@ final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In] 
         promise.success(())
         ctx.finish()
       }
-    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    })
+
+    Source(flowPublisher).
+      section(name("foreach"))(section).
+      to(BlackholeSink).
+      run()(materializer.withNamePrefix(flowName))
     promise.future
   }
 }
@@ -226,8 +238,7 @@ final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFl
 
   override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val promise = Promise[U]()
-
-    Source(flowPublisher).transform("fold", () ⇒ new PushStage[In, U] {
+    val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, U] {
       private var aggregator = zero
 
       override def onPush(elem: In, ctx: Context[U]): Directive = {
@@ -244,8 +255,12 @@ final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFl
         promise.success(aggregator)
         ctx.finish()
       }
-    }).to(BlackholeSink).run()(materializer.withNamePrefix(flowName))
+    })
 
+    Source(flowPublisher).
+      section(name("fold"))(section).
+      to(BlackholeSink).
+      run()(materializer.withNamePrefix(flowName))
     promise.future
   }
 }

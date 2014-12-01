@@ -301,8 +301,8 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[U](name: String, mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U] =
-    new Flow(delegate.transform(name, () ⇒ mkStage.create()))
+  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U] =
+    new Flow(delegate.transform(() ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
@@ -363,6 +363,16 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    */
   def withKey[T](key: javadsl.Key[T]): Flow[In, Out] =
     new Flow(delegate.withKey(key.asScala))
+
+  /**
+   * Applies given [[OperationAttributes]] to a given section.
+   */
+  def section[I <: In, O](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[In, Out], javadsl.Flow[I, O]]): javadsl.Flow[I, O] =
+    new Flow(delegate.section(attributes.asScala) {
+      val scalaToJava = (flow: scaladsl.Flow[In, Out]) ⇒ new javadsl.Flow[In, Out](flow)
+      val javaToScala = (flow: javadsl.Flow[I, O]) ⇒ flow.asScala
+      scalaToJava andThen section.apply andThen javaToScala
+    })
 }
 
 /**

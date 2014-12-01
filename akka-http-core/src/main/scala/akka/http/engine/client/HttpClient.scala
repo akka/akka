@@ -10,6 +10,7 @@ import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.FlattenStrategy
 import akka.stream.scaladsl._
+import akka.stream.scaladsl.OperationAttributes._
 import akka.http.model.{ HttpMethod, HttpRequest, HttpResponse }
 import akka.http.engine.rendering.{ RequestRenderingContext, HttpRequestRendererFactory }
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpResponseParser }
@@ -40,14 +41,14 @@ private[http] object HttpClient {
 
     Flow[HttpRequest]
       .map(requestMethodByPass)
-      .transform("renderer", () ⇒ requestRendererFactory.newRenderer)
+      .section(name("renderer"))(_.transform(() ⇒ requestRendererFactory.newRenderer))
       .flatten(FlattenStrategy.concat)
-      .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing request stream error"))
+      .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing request stream error")))
       .via(transport)
-      .transform("rootParser", () ⇒
+      .section(name("rootParser"))(_.transform(() ⇒
         // each connection uses a single (private) response parser instance for all its responses
         // which builds a cache of all header instances seen on that connection
-        rootParser.createShallowCopy(requestMethodByPass))
+        rootParser.createShallowCopy(requestMethodByPass)))
       .splitWhen(_.isInstanceOf[MessageStart])
       .headAndTail
       .collect {

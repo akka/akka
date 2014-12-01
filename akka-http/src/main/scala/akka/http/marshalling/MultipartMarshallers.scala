@@ -37,7 +37,7 @@ trait MultipartMarshallers {
             HttpEntity(contentType, data)
           case _ ⇒
             val chunks = value.parts
-              .transform("bodyPartRenderer", () ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
+              .transform(() ⇒ BodyPartRenderer.streamed(boundary, charset.nioCharset, partHeadersSizeHint = 128, log))
               .flatten(FlattenStrategy.concat)
             HttpEntity.Chunked(contentType, chunks)
         }

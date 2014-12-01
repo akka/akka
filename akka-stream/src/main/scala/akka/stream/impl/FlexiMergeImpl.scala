@@ -5,6 +5,7 @@ package akka.stream.impl
 
 import akka.actor.Props
 import akka.stream.MaterializerSettings
+import akka.stream.scaladsl.OperationAttributes
 import akka.stream.scaladsl.FlexiMerge
 
 import scala.collection.breakOut
@@ -17,7 +18,7 @@ private[akka] object FlexiMergeImpl {
     Props(new FlexiMergeImpl(settings, inputCount, mergeLogic))
 
   trait MergeLogicFactory[Out] {
-    def name: Option[String]
+    def attributes: OperationAttributes
     def createMergeLogic(): FlexiMerge.MergeLogic[Out]
   }
 }

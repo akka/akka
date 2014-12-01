@@ -3,6 +3,7 @@
  */
 package akka.stream.tck
 
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.MaterializerSettings
 import akka.stream.impl.ActorBasedFlowMaterializer
 import akka.stream.impl.Ast
@@ -34,7 +35,7 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
       }
 
     val (processor, _) = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
-      Ast.StageFactory(mkStage, "transform"), flowName, 1)
+      Ast.StageFactory(mkStage, name("transform")), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]
   }

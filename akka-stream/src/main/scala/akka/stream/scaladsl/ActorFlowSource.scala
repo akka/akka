@@ -62,6 +62,8 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
   /** INTERNAL API */
   override private[scaladsl] def andThen[U](op: AstNode) = SourcePipe(this, List(op), Nil) //FIXME raw addition of AstNodes
+
+  def withAttributes(attr: OperationAttributes) = SourcePipe(this, Nil, Nil, attr)
 }
 
 /**

@@ -3,6 +3,8 @@
  */
 package akka.stream.impl
 
+import akka.stream.scaladsl.OperationAttributes
+
 import scala.collection.breakOut
 import akka.actor.Props
 import akka.stream.scaladsl.FlexiRoute
@@ -17,7 +19,7 @@ private[akka] object FlexiRouteImpl {
     Props(new FlexiRouteImpl(settings, outputCount, routeLogic))
 
   trait RouteLogicFactory[In] {
-    def name: Option[String]
+    def attributes: OperationAttributes
     def createRouteLogic(): FlexiRoute.RouteLogic[In]
   }
 }

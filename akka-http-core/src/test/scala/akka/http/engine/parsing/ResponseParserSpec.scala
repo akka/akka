@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import akka.stream.scaladsl._
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
 import akka.stream.FlowMaterializer
 import akka.util.ByteString
@@ -260,7 +261,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           val future =
             Source(input.toList)
               .map(ByteString.apply)
-              .transform("parser", () ⇒ newParser(requestMethod))
+              .section(name("parser"))(_.transform(() ⇒ newParser(requestMethod)))
               .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
               .headAndTail
               .collect {

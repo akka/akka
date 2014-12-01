@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.language.existentials
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Flow
 import akka.stream.stage._
@@ -22,28 +23,41 @@ private[akka] trait TimedOps {
   /**
    * INTERNAL API
    *
-   * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
+   * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
   def timed[I, O](flow: Source[I], measuredOps: Source[I] ⇒ Source[O], onComplete: FiniteDuration ⇒ Unit): Source[O] = {
     val ctx = new TimedFlowContext
 
-    val startWithTime = flow.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
-    val userFlow = measuredOps(startWithTime)
-    userFlow.transform("stopTimed", () ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Source[I]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Source[O]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+
+    val measured = ((s: Source[I]) ⇒ s) andThen
+      (_.section(name("startTimed"))(startTimed)) andThen
+      measuredOps andThen
+      (_.section(name("stopTimed"))(stopTimed))
+
+    measured(flow)
   }
 
   /**
    * INTERNAL API
    *
-   * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
+   * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
   def timed[I, O, Out](flow: Flow[I, O], measuredOps: Flow[I, O] ⇒ Flow[O, Out], onComplete: FiniteDuration ⇒ Unit): Flow[O, Out] = {
-    // todo is there any other way to provide this for Flow, without duplicating impl? (they don't share any super-type)
+    // todo is there any other way to provide this for Flow, without duplicating impl?
+    // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
     val ctx = new TimedFlowContext
 
-    val startWithTime: Flow[I, O] = flow.transform("startTimed", () ⇒ new StartTimedFlow(ctx))
-    val userFlow: Flow[O, Out] = measuredOps(startWithTime)
-    userFlow.transform("stopTimed", () ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Flow[I, O]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Flow[O, Out]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+
+    val measured = ((f: Flow[I, O]) ⇒ f) andThen
+      (_.section(name("startTimed"))(startTimed)) andThen
+      measuredOps andThen
+      (_.section(name("stopTimed"))(stopTimed))
+
+    measured(flow)
   }
 
 }
@@ -58,18 +72,23 @@ private[akka] trait TimedIntervalBetweenOps {
   import Timed._
 
   /**
-   * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
+   * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[O](flow: Source[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O] = {
-    flow.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
+    flow.section(name("timedInterval")) {
+      _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
+    }
   }
 
   /**
-   * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
+   * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
   def timedIntervalBetween[I, O](flow: Flow[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O] = {
-    // todo is there any other way to provide this for Flow / Duct, without duplicating impl? (they don't share any super-type)
-    flow.transform("timedInterval", () ⇒ new TimedIntervalTransformer[O](matching, onInterval))
+    // todo is there any other way to provide this for Flow / Duct, without duplicating impl?
+    // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
+    flow.section(name("timedInterval")) {
+      _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
+    }
   }
 }
 
