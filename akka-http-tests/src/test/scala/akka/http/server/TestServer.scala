@@ -7,26 +7,20 @@ package akka.http.server
 import akka.http.marshallers.xml.ScalaXmlSupport
 import akka.http.server.directives.AuthenticationDirectives._
 import com.typesafe.config.{ ConfigFactory, Config }
-import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
-import akka.util.Timeout
 import akka.http.Http
-import akka.http.model._
 
 object TestServer extends App {
   val testConf: Config = ConfigFactory.parseString("""
     akka.loglevel = INFO
-    akka.log-dead-letters = off
-                                                   """)
+    akka.log-dead-letters = off""")
   implicit val system = ActorSystem("ServerTest", testConf)
   import system.dispatcher
   implicit val materializer = FlowMaterializer()
 
-  implicit val askTimeout: Timeout = 500.millis
-  val serverSource = Http(system).bind(interface = "localhost", port = 8080)
-
-  import ScalaRoutingDSL._
+  import ScalaXmlSupport._
+  import Directives._
 
   def auth =
     HttpBasicAuthenticator.provideUserName {
@@ -34,11 +28,9 @@ object TestServer extends App {
       case _                                  ⇒ false
     }
 
-  // FIXME: a simple `import ScalaXmlSupport._` should suffice but currently doesn't because
-  // of #16190
-  implicit val html = ScalaXmlSupport.nodeSeqMarshaller(MediaTypes.`text/html`)
+  val binding = Http().bind(interface = "localhost", port = 8080)
 
-  handleConnections(serverSource) withRoute {
+  val materializedMap = binding startHandlingWith {
     get {
       path("") {
         complete(index)
@@ -58,9 +50,8 @@ object TestServer extends App {
   }
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
-
   Console.readLine()
-  system.shutdown()
+  binding.unbind(materializedMap).onComplete(_ ⇒ system.shutdown())
 
   lazy val index =
     <html>
