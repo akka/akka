@@ -33,10 +33,12 @@ private[akka] object Pipe {
 /**
  * Flow with one open input and one open output.
  */
-private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Key]) extends Flow[In, Out] {
+private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Key], attributes: OperationAttributes = OperationAttributes.none) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
 
-  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = Pipe(ops = op :: ops, keys) // FIXME raw addition of AstNodes
+  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = Pipe(ops = attributes.transform(op) :: ops, keys, attributes) // FIXME raw addition of AstNodes
+
+  def withAttributes(attr: OperationAttributes): Repr[Out] = this.copy(attributes = attr)
 
   private[stream] def withSink(out: Sink[Out]): SinkPipe[In] = SinkPipe(out, ops, keys)
 
@@ -79,10 +81,12 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
 /**
  * Pipe with open output and attached input. Can be used as a `Publisher`.
  */
-private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[AstNode], keys: List[Key]) extends Source[Out] {
+private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[AstNode], keys: List[Key], attributes: OperationAttributes = OperationAttributes.none) extends Source[Out] {
   override type Repr[+O] = SourcePipe[O]
 
-  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, op :: ops, keys) // FIXME raw addition of AstNodes
+  override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, attributes.transform(op) :: ops, keys, attributes) // FIXME raw addition of AstNodes
+
+  def withAttributes(attr: OperationAttributes): Repr[Out] = this.copy(attributes = attr)
 
   private[stream] def withSink(out: Sink[Out]): RunnablePipe = RunnablePipe(input, out, ops, keys)
 
