@@ -7,7 +7,6 @@ package akka.http.server
 import akka.http.model
 import model.HttpMethods._
 import model.StatusCodes
-import akka.http.server.PathMatchers.{ Segment, IntNumber }
 
 class BasicRouteSpecs extends RoutingSpec {
 
@@ -40,7 +39,6 @@ class BasicRouteSpecs extends RoutingSpec {
     val stringDirective = provide("The cat")
     val intDirective = provide(42)
     val doubleDirective = provide(23.0)
-    val symbolDirective = provide('abc)
 
     val dirStringInt = stringDirective & intDirective
     val dirStringIntDouble = dirStringInt & doubleDirective
@@ -78,7 +76,7 @@ class BasicRouteSpecs extends RoutingSpec {
   }
   "Route disjunction" should {
     "work in the happy case" in {
-      val route = sealRoute((path("abc") | path("def")) {
+      val route = Route.seal((path("abc") | path("def")) {
         completeOk
       })
 
@@ -138,7 +136,7 @@ class BasicRouteSpecs extends RoutingSpec {
   case object MyException extends RuntimeException
   "Route sealing" should {
     "catch route execution exceptions" in {
-      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+      Get("/abc") ~> Route.seal {
         get { ctx ⇒
           throw MyException
         }
@@ -147,7 +145,7 @@ class BasicRouteSpecs extends RoutingSpec {
       }
     }
     "catch route building exceptions" in {
-      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+      Get("/abc") ~> Route.seal {
         get {
           throw MyException
         }
@@ -157,7 +155,7 @@ class BasicRouteSpecs extends RoutingSpec {
     }
     "convert all rejections to responses" in {
       object MyRejection extends Rejection
-      Get("/abc") ~> ScalaRoutingDSL.sealRoute {
+      Get("/abc") ~> Route.seal {
         get {
           reject(MyRejection)
         }

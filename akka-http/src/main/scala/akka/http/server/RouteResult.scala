@@ -5,8 +5,8 @@
 package akka.http.server
 
 import scala.collection.immutable
-
-import akka.http.model.HttpResponse
+import akka.stream.scaladsl.Flow
+import akka.http.model.{ HttpRequest, HttpResponse }
 
 /**
  * The result of handling a request.
@@ -19,4 +19,7 @@ sealed trait RouteResult
 object RouteResult {
   final case class Complete(response: HttpResponse) extends RouteResult
   final case class Rejected(rejections: immutable.Seq[Rejection]) extends RouteResult
+
+  implicit def route2HandlerFlow(route: Route)(implicit setup: RoutingSetup): Flow[HttpRequest, HttpResponse] =
+    Route.handlerFlow(route)
 }

@@ -15,10 +15,5 @@ package object server {
   type PathMatcher0 = PathMatcher[Unit]
   type PathMatcher1[T] = PathMatcher[Tuple1[T]]
 
-  /**
-   * Helper for constructing a Route from a function literal.
-   */
-  def Route(f: Route): Route = f
-
   def FIXME = throw new RuntimeException("Not yet implemented")
 }

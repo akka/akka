@@ -8,7 +8,7 @@ import org.scalatest.{ WordSpec, Suite, Matchers }
 import akka.http.model.HttpResponse
 import akka.http.testkit.ScalatestRouteTest
 
-trait GenericRoutingSpec extends Matchers with ScalaRoutingDSL with ScalatestRouteTest { this: Suite ⇒
+trait GenericRoutingSpec extends Matchers with Directives with ScalatestRouteTest { this: Suite ⇒
   val Ok = HttpResponse()
   val completeOk = complete(Ok)
 

@@ -31,7 +31,7 @@ class AuthenticationDirectivesSpec extends RoutingSpec {
       } ~> check { rejection shouldEqual AuthenticationFailedRejection(CredentialsRejected, challenge) }
     }
     "reject requests with illegal Authorization header with 401" in {
-      Get() ~> RawHeader("Authorization", "bob alice") ~> sealRoute {
+      Get() ~> RawHeader("Authorization", "bob alice") ~> Route.seal {
         dontAuth { echoComplete }
       } ~> check {
         status shouldEqual StatusCodes.Unauthorized
@@ -52,7 +52,7 @@ class AuthenticationDirectivesSpec extends RoutingSpec {
     "properly handle exceptions thrown in its inner route" in {
       object TestException extends RuntimeException
       Get() ~> Authorization(BasicHttpCredentials("Alice", "")) ~> {
-        sealRoute {
+        Route.seal {
           doAuth { _ ⇒ throw TestException }
         }
       } ~> check { status shouldEqual StatusCodes.InternalServerError }
@@ -66,7 +66,7 @@ class AuthenticationDirectivesSpec extends RoutingSpec {
       }
       val bothAuth = dontAuth | otherAuth
 
-      Get() ~> sealRoute {
+      Get() ~> Route.seal {
         bothAuth { echoComplete }
       } ~> check {
         status shouldEqual StatusCodes.Unauthorized
