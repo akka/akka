@@ -7,6 +7,7 @@ package akka.http.engine.parsing
 import java.lang.{ StringBuilder ⇒ JStringBuilder }
 import scala.annotation.tailrec
 import akka.actor.ActorRef
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage.{ Context, PushPullStage }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
@@ -126,7 +127,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
 
       def expect100continueHandling[T]: Source[T] ⇒ Source[T] =
         if (expect100continue) {
-          _.transform("expect100continueTrigger", () ⇒ new PushPullStage[T, T] {
+          _.section(name("expect100continueTrigger"))(_.transform(() ⇒ new PushPullStage[T, T] {
             private var oneHundredContinueSent = false
             def onPush(elem: T, ctx: Context[T]) = ctx.push(elem)
             def onPull(ctx: Context[T]) = {
@@ -137,7 +138,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
               }
               ctx.pull()
             }
-          })
+          }))
         } else identityFunc
 
       teh match {
