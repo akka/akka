@@ -16,6 +16,7 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 import akka.stream.scaladsl._
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlowMaterializer
 import akka.stream.impl.SynchronousIterablePublisher
 import HttpEntity._
@@ -253,7 +254,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       equal(expected.stripMarginWithNewline("\r\n")).matcher[String] compose { request ⇒
         val renderer = newRenderer
         val byteStringSource = Await.result(Source.singleton(RequestRenderingContext(request, serverAddress)).
-          transform("renderer", () ⇒ renderer).
+          section(name("renderer"))(_.transform(() ⇒ renderer)).
           runWith(Sink.head), 1.second)
         val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)

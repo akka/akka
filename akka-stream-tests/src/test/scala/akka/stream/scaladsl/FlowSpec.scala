@@ -59,20 +59,20 @@ object FlowSpec {
 
     override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): (Processor[In, Out], MaterializedMap) = {
       val props = op match {
-        case f: Fused       ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage)).withDispatcher(settings.dispatcher)
-        case Map(f)         ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Map(f)), brokenMessage))
-        case Filter(p)      ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Filter(p)), brokenMessage))
-        case Drop(n)        ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Drop(n)), brokenMessage))
-        case Take(n)        ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Take(n)), brokenMessage))
-        case Collect(pf)    ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Collect(pf)), brokenMessage))
-        case Scan(z, f)     ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Scan(z, f)), brokenMessage))
-        case Expand(s, f)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Expand(s, f)), brokenMessage))
-        case Conflate(s, f) ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Conflate(s, f)), brokenMessage))
-        case Buffer(n, s)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Buffer(n, s)), brokenMessage))
-        case MapConcat(f)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.MapConcat(f)), brokenMessage))
-        case o              ⇒ ActorProcessorFactory.props(this, o)
+        case f: Fused          ⇒ Props(new BrokenActorInterpreter(settings, f.ops, brokenMessage))
+        case Map(f, _)         ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Map(f)), brokenMessage))
+        case Filter(p, _)      ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Filter(p)), brokenMessage))
+        case Drop(n, _)        ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Drop(n)), brokenMessage))
+        case Take(n, _)        ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Take(n)), brokenMessage))
+        case Collect(pf, _)    ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Collect(pf)), brokenMessage))
+        case Scan(z, f, _)     ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Scan(z, f)), brokenMessage))
+        case Expand(s, f, _)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Expand(s, f)), brokenMessage))
+        case Conflate(s, f, _) ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Conflate(s, f)), brokenMessage))
+        case Buffer(n, s, _)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.Buffer(n, s)), brokenMessage))
+        case MapConcat(f, _)   ⇒ Props(new BrokenActorInterpreter(settings, List(fusing.MapConcat(f)), brokenMessage))
+        case o                 ⇒ ActorProcessorFactory.props(this, o)
       }
-      val impl = actorOf(props, s"$flowName-$n-${op.name}")
+      val impl = actorOf(props.withDispatcher(settings.dispatcher), s"$flowName-$n-${op.attributes.name}")
       (ActorProcessorFactory(impl), MaterializedMap.empty)
     }
 

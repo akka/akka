@@ -3,8 +3,9 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlowMaterializer
+import akka.stream.OverflowStrategy
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.stage._
@@ -28,12 +29,12 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
   val apples = () ⇒ Iterator.continually(new Apple)
 
-  val f1 = Flow[String].transform("f1", op[String, String])
-  val f2 = Flow[String].transform("f2", op[String, String])
-  val f3 = Flow[String].transform("f3", op[String, String])
-  val f4 = Flow[String].transform("f4", op[String, String])
-  val f5 = Flow[String].transform("f5", op[String, String])
-  val f6 = Flow[String].transform("f6", op[String, String])
+  val f1 = Flow[String].section(name("f1"))(_.transform(op[String, String]))
+  val f2 = Flow[String].section(name("f2"))(_.transform(op[String, String]))
+  val f3 = Flow[String].section(name("f3"))(_.transform(op[String, String]))
+  val f4 = Flow[String].section(name("f4"))(_.transform(op[String, String]))
+  val f5 = Flow[String].section(name("f5"))(_.transform(op[String, String]))
+  val f6 = Flow[String].section(name("f6"))(_.transform(op[String, String]))
 
   val in1 = Source(List("a", "b", "c"))
   val in2 = Source(List("d", "e", "f"))
@@ -164,7 +165,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         val out2 = Sink.publisher[String]
         val out9 = Sink.publisher[String]
         val out10 = Sink.publisher[String]
-        def f(s: String) = Flow[String].transform(s, op[String, String])
+        def f(s: String) = Flow[String].section(name(s))(_.transform(op[String, String]))
         import FlowGraphImplicits._
 
         in7 ~> f("a") ~> b7 ~> f("b") ~> m11 ~> f("c") ~> b11 ~> f("d") ~> out2

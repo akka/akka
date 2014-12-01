@@ -25,7 +25,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "produce one-to-one transformation as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new PushStage[Int, Int] {
+        transform(() ⇒ new PushStage[Int, Int] {
           var tot = 0
           override def onPush(elem: Int, ctx: Context[Int]) = {
             tot += elem
@@ -48,7 +48,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "produce one-to-several transformation as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+        transform(() ⇒ new StatefulStage[Int, Int] {
           var tot = 0
 
           lazy val waitForNext = new State {
@@ -85,7 +85,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "produce dropping transformation as expected" in {
       val p = Source(List(1, 2, 3, 4)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new PushStage[Int, Int] {
+        transform(() ⇒ new PushStage[Int, Int] {
           var tot = 0
           override def onPush(elem: Int, ctx: Context[Int]) = {
             tot += elem
@@ -111,14 +111,14 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "produce multi-step transformation as expected" in {
       val p = Source(List("a", "bc", "def")).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new PushStage[String, Int] {
+        transform(() ⇒ new PushStage[String, Int] {
           var concat = ""
           override def onPush(elem: String, ctx: Context[Int]) = {
             concat += elem
             ctx.push(concat.length)
           }
         }).
-        transform("transform", () ⇒ new PushStage[Int, Int] {
+        transform(() ⇒ new PushStage[Int, Int] {
           var tot = 0
           override def onPush(length: Int, ctx: Context[Int]) = {
             tot += length
@@ -150,7 +150,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "support emit onUpstreamFinish" in {
       val p = Source(List("a")).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new StatefulStage[String, String] {
+        transform(() ⇒ new StatefulStage[String, String] {
           var s = ""
           override def initial = new State {
             override def onPush(element: String, ctx: Context[String]) = {
@@ -173,7 +173,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "allow early finish" in {
       val p = StreamTestKit.PublisherProbe[Int]()
       val p2 = Source(p).
-        transform("transform", () ⇒ new PushStage[Int, Int] {
+        transform(() ⇒ new PushStage[Int, Int] {
           var s = ""
           override def onPush(element: Int, ctx: Context[Int]) = {
             s += element
@@ -199,7 +199,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "report error when exception is thrown" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+        transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
             override def onPush(elem: Int, ctx: Context[Int]) = {
               if (elem == 2) {
@@ -227,7 +227,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
         map(elem ⇒ if (elem == 2) throw new IllegalArgumentException("two not allowed") else elem).
-        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+        transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
             override def onPush(elem: Int, ctx: Context[Int]) = ctx.push(elem)
           }
@@ -253,7 +253,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "support cancel as expected" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+        transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
             override def onPush(elem: Int, ctx: Context[Int]) =
               emit(Iterator(elem, elem), ctx)
@@ -275,7 +275,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     "support producing elements from empty inputs" in {
       val p = Source(List.empty[Int]).runWith(Sink.publisher)
       val p2 = Source(p).
-        transform("transform", () ⇒ new StatefulStage[Int, Int] {
+        transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
             override def onPush(elem: Int, ctx: Context[Int]) = ctx.pull()
           }
@@ -296,7 +296,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
 
     "support converting onComplete into onError" in {
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
-      Source(List(5, 1, 2, 3)).transform("transform", () ⇒ new PushStage[Int, Int] {
+      Source(List(5, 1, 2, 3)).transform(() ⇒ new PushStage[Int, Int] {
         var expectedNumberOfElements: Option[Int] = None
         var count = 0
         override def onPush(elem: Int, ctx: Context[Int]) =
@@ -326,7 +326,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "be safe to reuse" in {
-      val flow = Source(1 to 3).transform("transform", () ⇒
+      val flow = Source(1 to 3).transform(() ⇒
         new PushStage[Int, Int] {
           var count = 0
 

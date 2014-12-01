@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.impl.Ast._
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.{ TimerTransformer, TransformerLike, OverflowStrategy }
 import akka.util.Collections.EmptyImmutableSeq
 import scala.collection.immutable
@@ -70,6 +71,13 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * before this key.
    */
   def withKey(key: Key): Flow[In, Out]
+
+  /**
+   * Applies given [[OperationAttributes]] to a given section.
+   */
+  def section[I <: In, O](attributes: OperationAttributes)(section: Flow[In, Out] ⇒ Flow[I, O]): Flow[I, O] =
+    section(this.withAttributes(attributes)).withAttributes(OperationAttributes.none)
+
 }
 
 object Flow {
@@ -122,7 +130,7 @@ trait RunnableFlow {
  */
 trait FlowOps[+Out] {
   import FlowOps._
-  type Repr[+O]
+  type Repr[+O] <: FlowOps[O]
 
   /**
    * Transform this stream by applying the given function to each of the elements
@@ -199,10 +207,10 @@ trait FlowOps[+Out] {
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWithin(n: Int, d: FiniteDuration): Repr[immutable.Seq[Out]] = {
+  def groupedWithin(n: Int, d: FiniteDuration): Repr[Out]#Repr[immutable.Seq[Out]] = {
     require(n > 0, "n must be greater than 0")
     require(d > Duration.Zero)
-    timerTransform("groupedWithin", () ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
+    withAttributes(name("groupedWithin")).timerTransform(() ⇒ new TimerTransformer[Out, immutable.Seq[Out]] {
       schedulePeriodically(GroupedWithinTimerKey, d)
       var buf: Vector[Out] = Vector.empty
 
@@ -235,8 +243,8 @@ trait FlowOps[+Out] {
   /**
    * Discard the elements received within the given duration at beginning of the stream.
    */
-  def dropWithin(d: FiniteDuration): Repr[Out] =
-    timerTransform("dropWithin", () ⇒ new TimerTransformer[Out, Out] {
+  def dropWithin(d: FiniteDuration): Repr[Out]#Repr[Out] =
+    withAttributes(name("dropWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(DropWithinTimerKey, d)
 
       var delegate: TransformerLike[Out, Out] =
@@ -271,8 +279,8 @@ trait FlowOps[+Out] {
    * Note that this can be combined with [[#take]] to limit the number of elements
    * within the duration.
    */
-  def takeWithin(d: FiniteDuration): Repr[Out] =
-    timerTransform("takeWithin", () ⇒ new TimerTransformer[Out, Out] {
+  def takeWithin(d: FiniteDuration): Repr[Out]#Repr[Out] =
+    withAttributes(name("takeWithin")).timerTransform(() ⇒ new TimerTransformer[Out, Out] {
       scheduleOnce(TakeWithinTimerKey, d)
 
       var delegate: TransformerLike[Out, Out] = FlowOps.identityTransformer[Out]
@@ -331,8 +339,8 @@ trait FlowOps[+Out] {
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[T](name: String, mkStage: () ⇒ Stage[Out, T]): Repr[T] =
-    andThen(StageFactory(mkStage, name))
+  def transform[T](mkStage: () ⇒ Stage[Out, T]): Repr[T] =
+    andThen(StageFactory(mkStage))
 
   /**
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
@@ -377,7 +385,7 @@ trait FlowOps[+Out] {
    * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
    */
   def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): Repr[U] = strategy match {
-    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll)
+    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }
@@ -408,8 +416,11 @@ trait FlowOps[+Out] {
    *
    * Note that you can use [[#transform]] if you just need to transform elements time plays no role in the transformation.
    */
-  private[akka] def timerTransform[U](name: String, mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U] =
-    andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]], name))
+  private[akka] def timerTransform[U](mkStage: () ⇒ TimerTransformer[Out, U]): Repr[U] =
+    andThen(TimerTransform(mkStage.asInstanceOf[() ⇒ TimerTransformer[Any, Any]]))
+
+  /** INTERNAL API */
+  private[scaladsl] def withAttributes(attr: OperationAttributes): Repr[Out]
 
   /** INTERNAL API */
   // Storing ops in reverse order
@@ -440,4 +451,3 @@ private[stream] object FlowOps {
     override def onPush(elem: T, ctx: Context[T]): Directive = ctx.push(elem)
   }
 }
-

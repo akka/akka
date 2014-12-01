@@ -79,6 +79,13 @@ trait Source[+Out] extends FlowOps[Out] {
    * before this key. This also includes the keyed source if applicable.
    */
   def withKey(key: Key): Source[Out]
+
+  /**
+   * Applies given [[OperationAttributes]] to a given section.
+   */
+  def section[T](attributes: OperationAttributes)(section: Source[Out] ⇒ Source[T]): Source[T] =
+    section(this.withAttributes(attributes)).withAttributes(OperationAttributes.none)
+
 }
 
 object Source {

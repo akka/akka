@@ -57,21 +57,20 @@ package object util {
 
   private[http] implicit class EnhancedSource[T](val underlying: Source[T]) {
     def printEvent(marker: String): Source[T] =
-      underlying.transform("transform",
-        () ⇒ new PushStage[T, T] {
-          override def onPush(element: T, ctx: Context[T]): Directive = {
-            println(s"$marker: $element")
-            ctx.push(element)
-          }
-          override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-            println(s"$marker: Failure $cause")
-            super.onUpstreamFailure(cause, ctx)
-          }
-          override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-            println(s"$marker: Terminated")
-            super.onUpstreamFinish(ctx)
-          }
-        })
+      underlying.transform(() ⇒ new PushStage[T, T] {
+        override def onPush(element: T, ctx: Context[T]): Directive = {
+          println(s"$marker: $element")
+          ctx.push(element)
+        }
+        override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+          println(s"$marker: Failure $cause")
+          super.onUpstreamFailure(cause, ctx)
+        }
+        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+          println(s"$marker: Terminated")
+          super.onUpstreamFinish(ctx)
+        }
+      })
 
     /**
      * Drain this stream into a Vector and provide it as a future value.
