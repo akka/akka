@@ -236,21 +236,27 @@ private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[
  * INTERNAL API
  */
 private[io] object StreamTcpManager {
-  case class Connect(processorPromise: Promise[Processor[ByteString, ByteString]],
-                     localAddressPromise: Promise[InetSocketAddress],
-                     remoteAddress: InetSocketAddress,
-                     localAddress: Option[InetSocketAddress],
-                     options: immutable.Traversable[SocketOption],
-                     connectTimeout: Duration,
-                     idleTimeout: Duration)
+  /**
+   * INTERNAL API
+   */
+  private[io] case class Connect(processorPromise: Promise[Processor[ByteString, ByteString]],
+                                 localAddressPromise: Promise[InetSocketAddress],
+                                 remoteAddress: InetSocketAddress,
+                                 localAddress: Option[InetSocketAddress],
+                                 options: immutable.Traversable[SocketOption],
+                                 connectTimeout: Duration,
+                                 idleTimeout: Duration)
 
-  case class Bind(localAddressPromise: Promise[InetSocketAddress],
-                  unbindPromise: Promise[() ⇒ Future[Unit]],
-                  flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
-                  endpoint: InetSocketAddress,
-                  backlog: Int,
-                  options: immutable.Traversable[SocketOption],
-                  idleTimeout: Duration)
+  /**
+   * INTERNAL API
+   */
+  private[io] case class Bind(localAddressPromise: Promise[InetSocketAddress],
+                              unbindPromise: Promise[() ⇒ Future[Unit]],
+                              flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+                              endpoint: InetSocketAddress,
+                              backlog: Int,
+                              options: immutable.Traversable[SocketOption],
+                              idleTimeout: Duration)
 
   /**
    * INTERNAL API
