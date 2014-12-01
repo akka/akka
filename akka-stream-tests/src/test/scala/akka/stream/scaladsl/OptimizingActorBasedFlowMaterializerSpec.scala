@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.stream.impl.{ Optimizations, ActorBasedFlowMaterializer }
 import akka.stream.testkit.AkkaSpec
@@ -20,7 +21,7 @@ class OptimizingActorBasedFlowMaterializerSpec extends AkkaSpec with ImplicitSen
       val f = Source(1 to 100).
         drop(4).
         drop(5).
-        transform("identity", () ⇒ FlowOps.identityStage).
+        section(name("identity"))(_.transform(() ⇒ FlowOps.identityStage)).
         filter(_ % 2 == 0).
         map(_ * 2).
         map(identity).

@@ -9,6 +9,7 @@ import akka.stream.scaladsl.FlexiMerge.ReadAllInputsBase
 import scala.collection.immutable
 import java.util.{ List ⇒ JList }
 import akka.japi.Util.immutableIndexedSeq
+import akka.stream.impl.Ast.Defaults._
 import akka.stream.impl.FlexiMergeImpl.MergeLogicFactory
 
 object FlexiMerge {
@@ -337,20 +338,20 @@ object FlexiMerge {
  *
  * @param name optional name of the junction in the [[FlowGraph]],
  */
-abstract class FlexiMerge[In, Out](val name: Option[String]) {
+abstract class FlexiMerge[In, Out](val attributes: OperationAttributes) {
   import FlexiMerge._
   import scaladsl.FlowGraphInternal
   import akka.stream.impl.Ast
 
-  def this() = this(None)
-  def this(name: String) = this(Option(name))
+  def this(name: String) = this(OperationAttributes.name(name))
+  def this() = this(OperationAttributes.none)
 
   private var inputCount = 0
 
   def createMergeLogic(): MergeLogic[In, Out]
 
   // hide the internal vertex things from subclass, and make it possible to create new instance
-  private class FlexiMergeVertex(vertexName: Option[String]) extends FlowGraphInternal.InternalVertex {
+  private class FlexiMergeVertex(override val attributes: scaladsl.OperationAttributes) extends FlowGraphInternal.InternalVertex {
     override def minimumInputCount = 2
     override def maximumInputCount = inputCount
     override def minimumOutputCount = 1
@@ -358,22 +359,20 @@ abstract class FlexiMerge[In, Out](val name: Option[String]) {
 
     override private[akka] val astNode = {
       val factory = new MergeLogicFactory[Any] {
-        override def name: Option[String] = vertexName
+        override def attributes: scaladsl.OperationAttributes = FlexiMergeVertex.this.attributes
         override def createMergeLogic(): scaladsl.FlexiMerge.MergeLogic[Any] =
           new Internal.MergeLogicWrapper(FlexiMerge.this.createMergeLogic().asInstanceOf[MergeLogic[Any, Any]])
       }
-      Ast.FlexiMergeNode(factory)
+      Ast.FlexiMergeNode(factory, flexiMerge and attributes)
     }
 
-    override def name = vertexName
-
-    final override def newInstance() = new FlexiMergeVertex(None)
+    final override def newInstance() = new FlexiMergeVertex(attributes.withoutName)
   }
 
   /**
    * INTERNAL API
    */
-  private[akka] val vertex: FlowGraphInternal.InternalVertex = new FlexiMergeVertex(name)
+  private[akka] val vertex: FlowGraphInternal.InternalVertex = new FlexiMergeVertex(attributes.asScala)
 
   /**
    * Output port of the `FlexiMerge` junction. A [[Sink]] can be connected to this output
@@ -399,4 +398,8 @@ abstract class FlexiMerge[In, Out](val name: Option[String]) {
     new InputPort(port, parent = this)
   }
 
+  override def toString = attributes.asScala.nameLifted match {
+    case Some(n) ⇒ n
+    case None    ⇒ getClass.getSimpleName + "@" + Integer.toHexString(super.hashCode())
+  }
 }

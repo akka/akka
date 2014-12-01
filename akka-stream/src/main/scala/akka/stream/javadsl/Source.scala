@@ -390,8 +390,8 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[U](name: String, mkStage: japi.Creator[Stage[Out, U]]): javadsl.Source[U] =
-    new Source(delegate.transform(name, () ⇒ mkStage.create()))
+  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Source[U] =
+    new Source(delegate.transform(() ⇒ mkStage.create()))
 
   /**
    * Takes up to `n` elements from the stream and returns a pair containing a strict sequence of the taken element
@@ -445,6 +445,16 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    */
   def withKey[T](key: javadsl.Key[T]): javadsl.Source[Out] =
     new Source(delegate.withKey(key.asScala))
+
+  /**
+   * Applies given [[OperationAttributes]] to a given section.
+   */
+  def section[O](attributes: OperationAttributes, section: japi.Function[javadsl.Source[Out], javadsl.Source[O]]): javadsl.Source[O] =
+    new Source(delegate.section(attributes.asScala) {
+      val scalaToJava = (source: scaladsl.Source[Out]) ⇒ new javadsl.Source[Out](source)
+      val javaToScala = (source: javadsl.Source[O]) ⇒ source.asScala
+      scalaToJava andThen section.apply andThen javaToScala
+    })
 }
 
 /**

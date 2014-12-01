@@ -8,8 +8,10 @@ import akka.actor.{ ActorRef, Props }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.stage.PushPullStage
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
 import akka.stream.scaladsl._
+import akka.stream.stage.PushPullStage
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.engine.parsing.ParserOutput._
@@ -51,10 +53,10 @@ private[http] object HttpServer {
     val bypassFanout = Broadcast[RequestOutput]("bypassFanout")
     val bypassMerge = new BypassMerge(settings, log)
 
-    val requestParsing = Flow[ByteString].transform("rootParser", () ⇒
+    val requestParsing = Flow[ByteString].section(name("rootParser"))(_.transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef))
+      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef)))
 
     val requestPreparation =
       Flow[RequestOutput]
@@ -69,10 +71,10 @@ private[http] object HttpServer {
 
     val rendererPipeline =
       Flow[ResponseRenderingContext]
-        .transform("recover", () ⇒ new ErrorsTo500ResponseRecovery(log)) // FIXME: simplify after #16394 is closed
-        .transform("renderer", () ⇒ responseRendererFactory.newRenderer)
+        .section(name("recover"))(_.transform(() ⇒ new ErrorsTo500ResponseRecovery(log))) // FIXME: simplify after #16394 is closed
+        .section(name("renderer"))(_.transform(() ⇒ responseRendererFactory.newRenderer))
         .flatten(FlattenStrategy.concat)
-        .transform("errorLogger", () ⇒ errorLogger(log, "Outgoing response stream error"))
+        .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing response stream error")))
 
     val transportIn = UndefinedSource[ByteString]
     val transportOut = UndefinedSink[ByteString]

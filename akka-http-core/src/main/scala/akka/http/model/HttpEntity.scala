@@ -12,6 +12,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.util.ByteString
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream.TimerTransformer
@@ -63,7 +64,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
       }
 
     // TODO timerTransform is meant to be replaced / rewritten, it's currently private[akka]; See https://github.com/akka/akka/issues/16393
-    dataBytes.timerTransform("toStrict", transformer).runWith(Sink.head)
+    dataBytes.section(name("toStrict"))(_.timerTransform(transformer)).runWith(Sink.head)
   }
 
   /**

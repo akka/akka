@@ -5,7 +5,9 @@ package akka.stream.scaladsl
 
 import scala.annotation.varargs
 import scala.collection.immutable
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.impl.Ast
+import akka.stream.impl.Ast.Defaults._
 import akka.stream.impl.FlexiMergeImpl.MergeLogicFactory
 
 object FlexiMerge {
@@ -235,28 +237,27 @@ object FlexiMerge {
  *
  * @param name optional name of the junction in the [[FlowGraph]],
  */
-abstract class FlexiMerge[Out](val name: Option[String]) extends MergeLogicFactory[Out] {
+abstract class FlexiMerge[Out](override val attributes: OperationAttributes) extends MergeLogicFactory[Out] {
   import FlexiMerge._
 
-  def this(name: String) = this(Some(name))
-  def this() = this(None)
+  def this(name: String) = this(OperationAttributes.name(name))
+  def this() = this(OperationAttributes.none)
 
   private var inputCount = 0
 
   // hide the internal vertex things from subclass, and make it possible to create new instance
-  private class FlexiMergeVertex(vertexName: Option[String]) extends FlowGraphInternal.InternalVertex {
+  private class FlexiMergeVertex(override val attributes: OperationAttributes) extends FlowGraphInternal.InternalVertex {
     override def minimumInputCount = 2
     override def maximumInputCount = inputCount
     override def minimumOutputCount = 1
     override def maximumOutputCount = 1
 
-    override private[akka] val astNode = Ast.FlexiMergeNode(FlexiMerge.this.asInstanceOf[FlexiMerge[Any]])
-    override def name = vertexName
+    override private[akka] val astNode = Ast.FlexiMergeNode(FlexiMerge.this.asInstanceOf[FlexiMerge[Any]], flexiMerge and attributes)
 
-    final override private[scaladsl] def newInstance() = new FlexiMergeVertex(None)
+    final override private[scaladsl] def newInstance() = new FlexiMergeVertex(attributes.withoutName)
   }
 
-  private[scaladsl] val vertex: FlowGraphInternal.InternalVertex = new FlexiMergeVertex(name)
+  private[scaladsl] val vertex: FlowGraphInternal.InternalVertex = new FlexiMergeVertex(attributes)
 
   /**
    * Output port of the `FlexiMerge` junction. A [[Sink]] can be connected to this output
@@ -286,7 +287,7 @@ abstract class FlexiMerge[Out](val name: Option[String]) extends MergeLogicFacto
    */
   override def createMergeLogic(): MergeLogic[Out]
 
-  override def toString = name match {
+  override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n
     case None    ⇒ getClass.getSimpleName + "@" + Integer.toHexString(super.hashCode())
   }
