@@ -21,16 +21,11 @@ object TestServer extends App {
 
   val binding = Http().bind(interface = "localhost", port = 8080)
 
-  for (connection ← binding.connections) {
-    println("Accepted new connection from " + connection.remoteAddress)
-    connection handleWith {
-      Flow[HttpRequest] map {
-        case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
-        case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
-        case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-        case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
-      }
-    }
+  binding startHandlingWithSyncHandler {
+    case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
+    case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
+    case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
+    case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
   println(s"Server online at http://localhost:8080")
