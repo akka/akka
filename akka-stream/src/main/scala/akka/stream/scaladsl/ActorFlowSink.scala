@@ -96,6 +96,19 @@ final case class FanoutPublisherSink[In](initialBufferSize: Int, maximumBufferSi
 
 object HeadSink {
   def apply[T](): HeadSink[T] = new HeadSink[T]
+
+  /** INTERNAL API */
+  private[akka] class HeadSinkSubscriber[In](p: Promise[In]) extends Subscriber[In] {
+    private val sub = new AtomicReference[Subscription]
+    override def onSubscribe(s: Subscription): Unit =
+      if (!sub.compareAndSet(null, s)) s.cancel()
+      else s.request(1)
+
+    override def onNext(t: In): Unit = { p.trySuccess(t); sub.get.cancel() }
+    override def onError(t: Throwable): Unit = p.tryFailure(t)
+    override def onComplete(): Unit = p.tryFailure(new NoSuchElementException("empty stream"))
+  }
+
 }
 
 /**
@@ -117,15 +130,7 @@ class HeadSink[In] extends KeyedActorFlowSink[In] {
   override def isActive = true
   override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val p = Promise[In]()
-    val sub = new Subscriber[In] { // TODO #15804 verify this using the RS TCK
-      private val sub = new AtomicReference[Subscription]
-      override def onSubscribe(s: Subscription): Unit =
-        if (!sub.compareAndSet(null, s)) s.cancel()
-        else s.request(1)
-      override def onNext(t: In): Unit = { p.trySuccess(t); sub.get.cancel() }
-      override def onError(t: Throwable): Unit = p.tryFailure(t)
-      override def onComplete(): Unit = p.tryFailure(new NoSuchElementException("empty stream"))
-    }
+    val sub = new HeadSink.HeadSinkSubscriber[In](p)
     (sub, p.future)
   }
 
