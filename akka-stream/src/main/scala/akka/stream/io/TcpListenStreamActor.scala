@@ -51,7 +51,9 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     def getExposedPublisher = exposedPublisher
   }
 
+  private val unboundPromise = Promise[Unit]()
   private var finished = false
+
   override protected def pumpFinished(): Unit = {
     if (!finished) {
       finished = true
@@ -67,7 +69,6 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     var listener: ActorRef = _
     private var closed: Boolean = false
     private var pendingConnection: (Connected, ActorRef) = null
-    private val unboundPromise = Promise[Unit]()
 
     def waitBound: Receive = {
       case Bound(localAddress) ⇒
@@ -146,6 +147,11 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
         flow.join(handler).run()
     }
     primaryOutputs.enqueueOutputElement(conn)
+  }
+
+  override def postStop(): Unit = {
+    unboundPromise.trySuccess(())
+    super.postStop()
   }
 
   def fail(e: Throwable): Unit = {
