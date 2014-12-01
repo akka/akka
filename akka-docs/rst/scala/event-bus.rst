@@ -182,6 +182,19 @@ which by default will publish the messages wrapped in :class:`DeadLetter`. This
 wrapper holds the original sender, receiver and message of the envelope which
 was redirected.
 
+Some internal messages (marked with the :class:`DeadLetterSuppression` trait) will not end up as
+dead letters like normal messages. These are by design safe and expected to sometimes arrive at a terminated actor
+and since they are nothing to worry about, they are suppressed from the default dead letters logging mechanism.
+
+However, in case you find yourself in need of debugging these kinds of low level suppressed dead letters,
+it's still possible to subscribe to them explicitly:
+
+.. includecode:: code/docs/event/LoggingDocSpec.scala#suppressed-deadletters
+
+or all dead letters (including the suppressed ones):
+
+.. includecode:: code/docs/event/LoggingDocSpec.scala#all-deadletters
+
 Other Uses
 ----------
 
