@@ -19,6 +19,7 @@ import akka.stream.impl.Ast.AstNode
 import akka.stream.impl.Ast.StageFactory
 import akka.stream.impl.fusing.IteratorInterpreter
 import akka.stream.scaladsl._
+import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage._
 import akka.stream.impl
 import akka.util.ByteString
@@ -44,7 +45,7 @@ private[http] object StreamUtils {
 
       override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
     }
-    Flow[ByteString].transform("transformBytes", () ⇒ transformer)
+    Flow[ByteString].section(name("transformBytes"))(_.transform(() ⇒ transformer))
   }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
@@ -59,7 +60,7 @@ private[http] object StreamUtils {
         ctx.fail(f(cause))
     }
 
-    Flow[ByteString].transform("transformError", () ⇒ transformer)
+    Flow[ByteString].section(name("transformError"))(_.transform(() ⇒ transformer))
   }
 
   def sliceBytesTransformer(start: Long, length: Long): Flow[ByteString, ByteString] = {
@@ -90,7 +91,7 @@ private[http] object StreamUtils {
 
       override def initial: State = if (start > 0) skipping else taking(length)
     }
-    Flow[ByteString].transform("sliceBytes", () ⇒ transformer)
+    Flow[ByteString].section(name("sliceBytes"))(_.transform(() ⇒ transformer))
   }
 
   /**
@@ -182,7 +183,7 @@ private[http] object StreamUtils {
     Try {
       transformer match {
         // FIXME #16382 right now the flow can't use keys, should that be allowed?
-        case Pipe(ops, keys) if keys.isEmpty ⇒
+        case Pipe(ops, keys, _) if keys.isEmpty ⇒
           if (ops.isEmpty)
             Some(sourceData)
           else {
