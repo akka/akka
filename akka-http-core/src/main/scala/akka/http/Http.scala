@@ -115,6 +115,36 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * The produced [[Future]] is fulfilled when the unbinding has been completed.
      */
     def unbind(materializedMap: MaterializedMap): Future[Unit]
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      connections.to(ForeachSink(_ handleWith handler)).run()
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): MaterializedMap =
+      startHandlingWith(Flow[HttpRequest].map(handler))
+
+    /**
+     * Materializes the `connections` [[Source]] and handles all connections with the given flow.
+     *
+     * Note that there is no backpressure being applied to the `connections` [[Source]], i.e. all
+     * connections are being accepted at maximum rate, which, depending on the applications, might
+     * present a DoS risk!
+     */
+    def startHandlingWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      startHandlingWith(Flow[HttpRequest].mapAsync(handler))
   }
 
   /**
@@ -135,7 +165,21 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * Handles the connection with the given flow, which is materialized exactly once
      * and the respective [[MaterializedMap]] returned.
      */
-    def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit materializer: FlowMaterializer): MaterializedMap
+    def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap
+
+    /**
+     * Handles the connection with the given handler function.
+     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     */
+    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): MaterializedMap =
+      handleWith(Flow[HttpRequest].map(handler))
+
+    /**
+     * Handles the connection with the given handler function.
+     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     */
+    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap =
+      handleWith(Flow[HttpRequest].mapAsync(handler))
   }
 
   /**
