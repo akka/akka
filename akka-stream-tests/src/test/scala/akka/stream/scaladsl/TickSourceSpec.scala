@@ -49,7 +49,7 @@ class TickSourceSpec extends AkkaSpec {
       c.expectNoMsg(200.millis)
     }
 
-    "produce ticks with multiple subscribers" in {
+    "reject multiple subscribers, but keep the first" in {
       val tickGen = Iterator from 1
       val p = Source(1.second, 1.second, () ⇒ "tick-" + tickGen.next()).runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[String]()
@@ -57,28 +57,24 @@ class TickSourceSpec extends AkkaSpec {
       p.subscribe(c1)
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()
-      val sub2 = c2.expectSubscription()
+      c2.expectError()
       sub1.request(1)
-      sub2.request(2)
       c1.expectNext("tick-1")
-      c2.expectNext("tick-1")
-      c2.expectNoMsg(200.millis)
-      c2.expectNext("tick-2")
       c1.expectNoMsg(200.millis)
       sub1.request(2)
-      sub2.request(2)
-      c1.expectNext("tick-3")
-      c2.expectNext("tick-3")
+      c1.expectNext("tick-2")
       sub1.cancel()
-      sub2.cancel()
     }
 
     "signal onError when tick closure throws" in {
       val c = StreamTestKit.SubscriberProbe[String]()
-      Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace).to(Sink(c)).run()
+      val tickSource = Source[String](1.second, 1.second, () ⇒ throw new RuntimeException("tick err") with NoStackTrace)
+      val m = tickSource.to(Sink(c)).run()
+      val cancellable = m.get(tickSource)
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectError.getMessage should be("tick err")
+      awaitCond(cancellable.isCancelled)
     }
 
     "be usable with zip for a simple form of rate limiting" in {
@@ -99,6 +95,26 @@ class TickSourceSpec extends AkkaSpec {
       c.expectNext(2)
       c.expectNoMsg(200.millis)
       sub.cancel()
+    }
+
+    "be possible to cancel" in {
+      val tickGen = Iterator from 1
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val tickSource = Source(1.second, 500.millis, () ⇒ "tick-" + tickGen.next())
+      val m = tickSource.to(Sink(c)).run()
+      val cancellable = m.get(tickSource)
+      val sub = c.expectSubscription()
+      sub.request(3)
+      c.expectNoMsg(600.millis)
+      c.expectNext("tick-1")
+      c.expectNoMsg(200.millis)
+      c.expectNext("tick-2")
+      c.expectNoMsg(200.millis)
+      c.expectNext("tick-3")
+      cancellable.cancel()
+      awaitCond(cancellable.isCancelled)
+      sub.request(3)
+      c.expectComplete()
     }
 
   }
