@@ -152,7 +152,7 @@ Upon a submission of a Pull Request the Github pull request builder plugin will 
 
 This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`. From now on, whenever new commits are pushed to the Pull Request, a validation job will be automaticaly started and the results of the validation posted to the Pull Request.
 
-A Pull Request validation job can be started manually by posting `TEST THIS PLEASE` comment on the Pull Request.
+A Pull Request validation job can be started manually by posting `PLS BUILD` comment on the Pull Request.
 
 ## Source style
 
