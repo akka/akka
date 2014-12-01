@@ -11,6 +11,6 @@ Unidoc.javadocSettings
 
 OSGi.zeroMQ
 
-libraryDependencies ++= Dependencies.zeroMQ
+Dependencies.zeroMQ
 
 MimaKeys.previousArtifact := akkaPreviousArtifact("akka-zeromq").value

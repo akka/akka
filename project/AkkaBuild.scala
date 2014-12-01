@@ -37,9 +37,10 @@ object AkkaBuild extends Build {
   val enableMiMa = false
 
   lazy val buildSettings = Seq(
-    organization := "com.typesafe.akka",
-    version      := "2.4-SNAPSHOT",
-    scalaVersion := Dependencies.Versions.scalaVersion
+    organization        := "com.typesafe.akka",
+    version             := "2.4-SNAPSHOT",
+    scalaVersion        := Dependencies.Versions.scalaVersion,
+    crossScalaVersions  := Dependencies.Versions.crossScala
   )
 
   lazy val root = Project(
@@ -55,7 +56,7 @@ object AkkaBuild extends Build {
       S3.progress in S3.upload := true,
       mappings in S3.upload <<= (Release.releaseDirectory, version) map { (d, v) =>
         val downloads = d / "downloads"
-        val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz"))
+        val archivesPathFinder = downloads * s"*$v.zip"
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
 
