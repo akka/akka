@@ -81,3 +81,20 @@ The semantics of stream recovery
 A recovery element (i.e. any transformation that absorbs an ``onError`` element and turns that into more data elements or normal stream completion) acts as a bulkhead that confines a stream collapse to a given region of the flow topology. Within the collapsed region buffered elements may be lost, but the outside is not affected by the failure.
 
 This works in the same fashion as a ``try``–``catch`` expression: it marks a region in which exceptions are caught, but the exact amount of code that was skipped within this region in case of a failure might not be known precisely—the placement of statements matters.
+
+The finer points of stream materialization
+------------------------------------------
+
+.. note::
+
+  This is not yet implemented as stated here, this document illustrates intent.
+
+It is commonly necessary to parameterize a flow so that it can be materialized for different arguments, an example would be the handler Flow that is given to a server socket implementation and materialized for each incoming connection with information about the peer’s address. On the other hand it is frequently necessary to retrieve specific objects that result from materialization, for example a ``Future[Unit]`` that signals the completion of a ``ForeachSink``.
+
+It might be tempting to allow different pieces of a flow topology to access the materialization results of other pieces in order to customize their behavior, but that would violate composability and reusability as argued above. Therefore stream materialization is instead split into three phases:
+
+  * **Create:** first all execution units (Actors) are created, having access to the set of input parameters for the current materialization and producing key–value pairs that are placed in the MaterializedMap,
+  * **Resolve:** each flow element may declare derived keys that are calculated from other keys and added to the MaterializedMap; a derived key cannot depend on another derived key,
+  * **Initialize:** each flow element is finally initialized with the full MaterializedMap from the previous two phases; this will usually not do anything, but it allows certain elements to calculate their real behavior at this late stage.
+
+To avoid having to use ``Future`` values as key bindings, materialization itself may become fully asynchronous. This would allow for example the use of the bound server port within the rest of the flow, and only if the port was actually bound successfully. The downside is that some APIs will then return ``Future[MaterializedMap]]``, which means that others will have to accept this in turn in order to keep the usage burden as low as possible.
