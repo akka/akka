@@ -10,6 +10,7 @@ private[http] trait ToNameReceptacleEnhancements {
   implicit def symbol2NR(symbol: Symbol) = new NameReceptacle[String](symbol.name)
   implicit def string2NR(string: String) = new NameReceptacle[String](string)
 }
+object ToNameReceptacleEnhancements extends ToNameReceptacleEnhancements
 
 class NameReceptacle[T](val name: String) {
   def as[B] = new NameReceptacle[B](name)

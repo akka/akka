@@ -8,7 +8,7 @@ object Unidoc {
 
   lazy val JavaDoc = config("genjavadoc") extend Compile
 
-  lazy val GenJavaDocEnabled = Option(sys.props("akka.genjavadoc.enabled")) filter (_.toLowerCase == "true") map (_ => true) getOrElse false
+  lazy val GenJavaDocEnabled = Option(sys.props("akka.genjavadoc.enabled")) exists (_.toLowerCase == "true")
 
   lazy val javadocSettings =
     inConfig(JavaDoc)(Defaults.configSettings) ++
