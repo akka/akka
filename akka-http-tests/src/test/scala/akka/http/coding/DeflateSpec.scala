@@ -65,8 +65,8 @@ class DeflateSpec extends WordSpec with CodecSpecSupport {
     }
   }
 
-  def ourDeflate(bytes: ByteString): ByteString = Deflate.newCompressor.compressAndFinish(bytes)
-  def ourInflate(bytes: ByteString): ByteString = Deflate.newDecompressor.decompress(bytes)
+  def ourDeflate(bytes: ByteString): ByteString = Deflate.encode(bytes)
+  def ourInflate(bytes: ByteString): ByteString = Deflate.decode(bytes)
 
   def streamDeflate(bytes: ByteString) = {
     val output = new ByteArrayOutputStream()

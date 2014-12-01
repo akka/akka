@@ -12,12 +12,16 @@ import akka.stream.MaterializerSettings
  *
  *  Accessors for constructors with default arguments to be used from the Java implementation
  */
-private[http] object Accessors {
+object Accessors {
   /** INTERNAL API */
-  private[http] def HttpRequest(): HttpRequest = model.HttpRequest()
-  /** INTERNAL API */
-  private[http] def HttpResponse(): HttpResponse = model.HttpResponse()
+  def HttpRequest(): HttpRequest = model.HttpRequest()
 
   /** INTERNAL API */
-  private[http] def Uri(uri: model.Uri): Uri = JavaUri(uri)
+  def HttpRequest(uri: String): HttpRequest = model.HttpRequest(uri = uri)
+
+  /** INTERNAL API */
+  def HttpResponse(): HttpResponse = model.HttpResponse()
+
+  /** INTERNAL API */
+  def Uri(uri: model.Uri): Uri = JavaUri(uri)
 }

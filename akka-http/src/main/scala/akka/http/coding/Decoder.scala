@@ -21,6 +21,8 @@ trait Decoder {
   def decodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
     mapper.transformDataBytes(t, newDecodeTransfomer)
 
+  def decode(input: ByteString): ByteString = newDecompressor.decompressAndFinish(input)
+
   def newDecompressor: Decompressor
 
   def newDecodeTransfomer(): Flow[ByteString, ByteString] = {
