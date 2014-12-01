@@ -34,13 +34,30 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       (classOf[scala.Function1[_, _]],                  classOf[akka.stream.javadsl.japi.Function[_, _]]) ::
       (classOf[scala.Function1[_, _]],                  classOf[akka.stream.javadsl.japi.Creator[_]]) ::
       (classOf[scala.Function2[_, _, _]],               classOf[akka.stream.javadsl.japi.Function2[_, _, _]]) ::
-      (classOf[akka.stream.scaladsl.Source[_]],        classOf[akka.stream.javadsl.Source[_]]) ::
-      (classOf[akka.stream.scaladsl.Sink[_]],          classOf[akka.stream.javadsl.Sink[_]]) ::
-      (classOf[akka.stream.scaladsl.Flow[_, _]],       classOf[akka.stream.javadsl.Flow[_, _]]) ::
-      (classOf[akka.stream.scaladsl.FlowGraph],        classOf[akka.stream.javadsl.FlowGraph]) ::
-      (classOf[akka.stream.scaladsl.PartialFlowGraph], classOf[akka.stream.javadsl.PartialFlowGraph]) ::
+      (classOf[akka.stream.scaladsl.Source[_]],         classOf[akka.stream.javadsl.Source[_]]) ::
+      (classOf[akka.stream.scaladsl.KeyedSource[_]],    classOf[akka.stream.javadsl.KeyedSource[_, _]]) ::
+      (classOf[akka.stream.scaladsl.Sink[_]],           classOf[akka.stream.javadsl.Sink[_]]) ::
+      (classOf[akka.stream.scaladsl.KeyedSink[_]],      classOf[akka.stream.javadsl.KeyedSink[_, _]]) ::
+      (classOf[akka.stream.scaladsl.Flow[_, _]],        classOf[akka.stream.javadsl.Flow[_, _]]) ::
+      (classOf[akka.stream.scaladsl.FlowGraph],         classOf[akka.stream.javadsl.FlowGraph]) ::
+      (classOf[akka.stream.scaladsl.PartialFlowGraph],  classOf[akka.stream.javadsl.PartialFlowGraph]) ::
       Nil
   // format: ON
+
+  val sKeyedSource = classOf[scaladsl.KeyedSource[_]]
+  val jKeyedSource = classOf[javadsl.KeyedSource[_, _]]
+
+  val sKeyedSink = classOf[scaladsl.KeyedSink[_]]
+  val jKeyedSink = classOf[javadsl.KeyedSink[_, _]]
+
+  val sSource = classOf[scaladsl.Source[_]]
+  val jSource = classOf[javadsl.Source[_]]
+
+  val sSink = classOf[scaladsl.Sink[_]]
+  val jSink = classOf[javadsl.Sink[_]]
+
+  val sFlow = classOf[scaladsl.Flow[_, _]]
+  val jFlow = classOf[javadsl.Flow[_, _]]
 
   "Java DSL" must provide {
     "Source" which {
@@ -71,8 +88,8 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   // here be dragons...
 
-  private def getJMethods(jClass: Class[_]) = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName)
-  private def getSMethods(sClass: Class[_]) = sClass.getMethods.filterNot(scalaIgnore contains _.getName)
+  private def getJMethods(jClass: Class[_]): Array[Method] = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName)
+  private def getSMethods(sClass: Class[_]): Array[Method] = sClass.getMethods.filterNot(scalaIgnore contains _.getName)
 
   def runSpec(sClass: Class[_], jClass: Class[_]) {
     val jMethods = getJMethods(jClass)
@@ -97,9 +114,9 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
         alert("No match for " + row._1)
         row._2 foreach { m ⇒ alert(" > " + m.toString) }
       } else if (matches.length == 1) {
-        info("Matched: Scala:" + row._1.getName + "(" + row._1.getParameterTypes.map(_.getName).mkString(",") + ")" +
+        info("Matched: Scala:" + row._1.getName + "(" + row._1.getParameterTypes.map(_.getName).mkString(",") + "): " + returnTypeString(row._1) +
           " == " +
-          "Java:" + matches.head.j.getName + "(" + matches.head.j.getParameterTypes.map(_.getName).mkString(",") + ")")
+          "Java:" + matches.head.j.getName + "(" + matches.head.j.getParameterTypes.map(_.getName).mkString(",") + "): " + returnTypeString(matches.head.j))
       } else {
         warnings += 1
         alert("Multiple matches for " + row._1 + "!")
@@ -108,11 +125,14 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     }
 
     if (warnings > 0) {
-      jMethods foreach { m ⇒ info("  java: " + m) }
-      sMethods foreach { m ⇒ info(" scala: " + m) }
+      jMethods foreach { m ⇒ info("  java: " + m + ": " + returnTypeString(m)) }
+      sMethods foreach { m ⇒ info(" scala: " + m + ": " + returnTypeString(m)) }
       fail("Warnings were issued! Fix name / type mappings or delegation code!")
     }
   }
+
+  def returnTypeString(m: Method): String =
+    m.getReturnType.getName.drop("akka.stream.".length)
 
   sealed trait MatchResult {
     def j: Method
@@ -126,7 +146,10 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     if (nameMatch(s.getName, j.getName)) {
       if (s.getParameterTypes.length == j.getParameterTypes.length)
         if (typeMatch(s.getParameterTypes, j.getParameterTypes))
-          Match(s, j)
+          if (returnTypeMatch(s.getReturnType, j.getReturnType))
+            Match(s, j)
+          else
+            MatchFailure(s, j, "Return types don't match! " + s.getReturnType + ", " + j.getReturnType)
         else
           MatchFailure(s, j, "Types of parameters don't match!")
       else
@@ -142,6 +165,17 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       case t if `scala -> java aliases` contains t ⇒ true
       case t                                       ⇒ false
     }
+
+  /**
+   * Keyed elements in scaladsl must also be keyed elements in javadsl.
+   * If scaladsl is not a keyed type, javadsl shouldn't be as well.
+   */
+  def returnTypeMatch(s: Class[_], j: Class[_]): Boolean =
+    (sKeyedSink.isAssignableFrom(s) && jKeyedSink.isAssignableFrom(j)) ||
+      (sKeyedSource.isAssignableFrom(s) && jKeyedSource.isAssignableFrom(j)) ||
+      (sSource.isAssignableFrom(s) && jSource.isAssignableFrom(j) && !jKeyedSource.isAssignableFrom(j)) ||
+      (sSink.isAssignableFrom(s) && jSink.isAssignableFrom(j) && !jKeyedSink.isAssignableFrom(j)) ||
+      (sFlow.isAssignableFrom(s) && jFlow.isAssignableFrom(j))
 
   def typeMatch(scalaParams: Array[Class[_]], javaParams: Array[Class[_]]): Boolean =
     (scalaParams.toList, javaParams.toList) match {
