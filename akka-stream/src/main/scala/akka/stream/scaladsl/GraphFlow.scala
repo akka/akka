@@ -116,7 +116,7 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
   }
 
   // FIXME #16379 This key will be materalized to early
-  override def withKey(key: Key): Flow[In, Out] = this.copy(outPipe = outPipe.withKey(key))
+  override def withKey(key: Key[_]): Flow[In, Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
 
@@ -163,7 +163,7 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
   }
 
   // FIXME #16379 This key will be materalized to early
-  override def withKey(key: Key): Source[Out] = this.copy(outPipe = outPipe.withKey(key))
+  override def withKey(key: Key[_]): Source[Out] = this.copy(outPipe = outPipe.withKey(key))
 
   override private[scaladsl] def andThen[T](op: AstNode): Repr[T] = copy(outPipe = outPipe.andThen(op))
 

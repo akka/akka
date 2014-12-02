@@ -652,5 +652,7 @@ class FlowGraph(delegate: scaladsl.FlowGraph) extends RunnableFlow {
   override def run(materializer: FlowMaterializer): javadsl.MaterializedMap =
     new MaterializedMap(delegate.run()(materializer))
 
+  def runWith[M](key: KeyedMaterializable[M], materializer: FlowMaterializer): M =
+    delegate.runWith(key.asScala)(materializer)
 }
 

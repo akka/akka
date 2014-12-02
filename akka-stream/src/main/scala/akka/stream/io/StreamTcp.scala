@@ -141,8 +141,7 @@ class StreamTcpExt(system: ExtendedActorSystem) extends akka.actor.Extension {
            backlog: Int = 100,
            options: immutable.Traversable[SocketOption] = Nil,
            idleTimeout: Duration = Duration.Inf): ServerBinding = {
-    val connectionSource = new KeyedActorFlowSource[IncomingConnection] {
-      override type MaterializedType = (Future[InetSocketAddress], Future[() ⇒ Future[Unit]])
+    val connectionSource = new KeyedActorFlowSource[IncomingConnection, (Future[InetSocketAddress], Future[() ⇒ Future[Unit]])] {
       override def attach(flowSubscriber: Subscriber[IncomingConnection],
                           materializer: ActorBasedFlowMaterializer,
                           flowName: String): MaterializedType = {
@@ -194,9 +193,7 @@ private[akka] object StreamTcpExt {
   /**
    * INTERNAL API
    */
-  class PreMaterializedOutgoingKey extends Key {
-    type MaterializedType = Future[InetSocketAddress]
-
+  class PreMaterializedOutgoingKey extends Key[Future[InetSocketAddress]] {
     override def materialize(map: MaterializedMap) =
       throw new IllegalStateException("This key has already been materialized by the TCP Processor")
   }
