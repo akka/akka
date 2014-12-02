@@ -136,7 +136,7 @@ object Source {
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T](): KeyedSource[Subscriber[T], T] =
+  def subscriber[T](): KeyedSource[T, Subscriber[T]] =
     new KeyedSource(scaladsl.Source.subscriber)
 
   /**
@@ -145,7 +145,7 @@ object Source {
    * source.
    */
   def concat[T](first: Source[T], second: Source[T]): Source[T] =
-    new KeyedSource(scaladsl.Source.concat(first.asScala, second.asScala))
+    new Source(scaladsl.Source.concat(first.asScala, second.asScala))
 }
 
 /**
@@ -463,6 +463,6 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
  * A `Source` that will create an object during materialization that the user will need
  * to retrieve in order to access aspects of this source (could be a Subscriber, a Future/Promise, etc.).
  */
-final class KeyedSource[+Out, T](delegate: scaladsl.Source[Out]) extends Source[Out](delegate) {
-  override def asScala: scaladsl.KeyedActorFlowSource[Out] = super.asScala.asInstanceOf[scaladsl.KeyedActorFlowSource[Out]]
+final class KeyedSource[+Out, M](delegate: scaladsl.KeyedSource[Out, M]) extends Source[Out](delegate) with KeyedMaterializable[M] {
+  override def asScala: scaladsl.KeyedSource[Out, M] = super.asScala.asInstanceOf[scaladsl.KeyedSource[Out, M]]
 }

@@ -12,8 +12,7 @@ import akka.stream.FlowMaterializer
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
  * Can be used as a `Subscriber`
  */
-trait Sink[-In] {
-  type MaterializedType
+trait Sink[-In] extends Materializable {
 
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
@@ -114,4 +113,4 @@ object Sink {
  * to retrieve in order to access aspects of this sink (could be a completion Future
  * or a cancellation handle, etc.)
  */
-trait KeyedSink[-In] extends Sink[In]
+trait KeyedSink[-In, M] extends Sink[In] with KeyedMaterializable[M]

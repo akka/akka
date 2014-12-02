@@ -381,11 +381,22 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
  * Flow with attached input and output, can be executed.
  */
 trait RunnableFlow {
+  /**
+   * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
+   */
   def run(materializer: FlowMaterializer): javadsl.MaterializedMap
+
+  /**
+   * Run this flow and return the value of the [[KeyedMaterializable]].
+   */
+  def runWith[M](key: KeyedMaterializable[M], materializer: FlowMaterializer): M
 }
 
 /** INTERNAL API */
 private[akka] class RunnableFlowAdapter(runnable: scaladsl.RunnableFlow) extends RunnableFlow {
   override def run(materializer: FlowMaterializer): MaterializedMap =
     new MaterializedMap(runnable.run()(materializer))
+
+  def runWith[M](key: KeyedMaterializable[M], materializer: FlowMaterializer): M =
+    runnable.runWith(key.asScala)(materializer)
 }

@@ -70,7 +70,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * The key can only use other keys if they have been added to the flow
    * before this key.
    */
-  def withKey(key: Key): Flow[In, Out]
+  def withKey(key: Key[_]): Flow[In, Out]
 
   /**
    * Applies given [[OperationAttributes]] to a given section.
@@ -122,7 +122,16 @@ object Flow {
  * Flow with attached input and output, can be executed.
  */
 trait RunnableFlow {
+  /**
+   * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
+   */
   def run()(implicit materializer: FlowMaterializer): MaterializedMap
+
+  /**
+   * Run this flow and return the value of the [[KeyedMaterializable]].
+   */
+  def runWith(key: KeyedMaterializable[_])(implicit materializer: FlowMaterializer): key.MaterializedType =
+    this.run().get(key)
 }
 
 /**

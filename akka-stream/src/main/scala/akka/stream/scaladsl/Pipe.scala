@@ -20,7 +20,7 @@ private[akka] object Pipe {
     Pipe(List(Ast.DirectProcessor(() ⇒ p().asInstanceOf[Processor[Any, Any]])), Nil)
 
   // FIXME #16376 should probably be replaced with an ActorFlowProcessor similar to ActorFlowSource/Sink
-  private[stream] def apply[In, Out](key: Key)(p: () ⇒ (Processor[In, Out], Any)): Pipe[In, Out] =
+  private[stream] def apply[In, Out](key: Key[_])(p: () ⇒ (Processor[In, Out], Any)): Pipe[In, Out] =
     Pipe(List(Ast.DirectProcessorWithKey(() ⇒ p().asInstanceOf[(Processor[Any, Any], Any)], key)), Nil)
 
   private[stream] def apply[In, Out](source: SourcePipe[_]): Pipe[In, Out] =
@@ -33,7 +33,7 @@ private[akka] object Pipe {
 /**
  * Flow with one open input and one open output.
  */
-private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Key], attributes: OperationAttributes = OperationAttributes.none) extends Flow[In, Out] {
+private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Key[_]], attributes: OperationAttributes = OperationAttributes.none) extends Flow[In, Out] {
   override type Repr[+O] = Pipe[In @uncheckedVariance, O]
 
   override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = Pipe(ops = attributes.transform(op) :: ops, keys, attributes) // FIXME raw addition of AstNodes
@@ -62,7 +62,7 @@ private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Ke
     case x                            ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
-  override def withKey(key: Key): Pipe[In, Out] = Pipe(ops, keys :+ key)
+  override def withKey(key: Key[_]): Pipe[In, Out] = Pipe(ops, keys :+ key)
 
   private[stream] def appendPipe[T](pipe: Pipe[Out, T]): Pipe[In, T] = Pipe(pipe.ops ::: ops, keys ::: pipe.keys) // FIXME raw addition of AstNodes
 }
@@ -70,7 +70,7 @@ private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Ke
 /**
  *  Pipe with open input and attached output. Can be used as a `Subscriber`.
  */
-private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNode], keys: List[Key]) extends Sink[In] {
+private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNode], keys: List[Key[_]]) extends Sink[In] {
 
   private[stream] def withSource(in: Source[In]): RunnablePipe = RunnablePipe(in, output, ops, keys)
 
@@ -81,7 +81,7 @@ private[stream] final case class SinkPipe[-In](output: Sink[_], ops: List[AstNod
 /**
  * Pipe with open output and attached input. Can be used as a `Publisher`.
  */
-private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[AstNode], keys: List[Key], attributes: OperationAttributes = OperationAttributes.none) extends Source[Out] {
+private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[AstNode], keys: List[Key[_]], attributes: OperationAttributes = OperationAttributes.none) extends Source[Out] {
   override type Repr[+O] = SourcePipe[O]
 
   override private[scaladsl] def andThen[U](op: AstNode): Repr[U] = SourcePipe(input, attributes.transform(op) :: ops, keys, attributes) // FIXME raw addition of AstNodes
@@ -104,13 +104,13 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
     case d: Sink[Out]         ⇒ this.withSink(d)
   }
 
-  override def withKey(key: Key): SourcePipe[Out] = SourcePipe(input, ops, keys :+ key)
+  override def withKey(key: Key[_]): SourcePipe[Out] = SourcePipe(input, ops, keys :+ key)
 }
 
 /**
  * Pipe with attached input and output, can be executed.
  */
-private[stream] final case class RunnablePipe(input: Source[_], output: Sink[_], ops: List[AstNode], keys: List[Key]) extends RunnableFlow {
+private[stream] final case class RunnablePipe(input: Source[_], output: Sink[_], ops: List[AstNode], keys: List[Key[_]]) extends RunnableFlow {
   def run()(implicit materializer: FlowMaterializer): MaterializedMap =
     materializer.materialize(input, output, ops, keys)
 }

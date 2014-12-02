@@ -17,8 +17,7 @@ import akka.stream.FlowMaterializer
  * A `Source` is a set of stream processing steps that has one open output and an attached input.
  * Can be used as a `Publisher`
  */
-trait Source[+Out] extends FlowOps[Out] {
-  type MaterializedType
+trait Source[+Out] extends FlowOps[Out] with Materializable {
   override type Repr[+O] <: Source[O]
 
   /**
@@ -78,7 +77,7 @@ trait Source[+Out] extends FlowOps[Out] {
    * The key can only use other keys if they have been added to the source
    * before this key. This also includes the keyed source if applicable.
    */
-  def withKey(key: Key): Source[Out]
+  def withKey(key: Key[_]): Source[Out]
 
   /**
    * Applies given [[OperationAttributes]] to a given section.
@@ -210,4 +209,4 @@ object Source {
  * to retrieve in order to access aspects of this source (could be a Subscriber, a
  * Future/Promise, etc.).
  */
-trait KeyedSource[+Out] extends Source[Out]
+trait KeyedSource[+Out, M] extends Source[Out] with KeyedMaterializable[M]

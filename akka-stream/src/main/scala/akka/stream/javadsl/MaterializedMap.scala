@@ -18,22 +18,11 @@ class MaterializedMap(delegate: scaladsl.MaterializedMap) {
   def asScala: scaladsl.MaterializedMap = delegate
 
   /**
-   * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[akka.stream.javadsl.Source#subscriber]].
+   * Retrieve a materialized key, `Source`, `Sink` or `Key`, e.g. the `Subscriber` of a
+   * [[akka.stream.javadsl.Source#subscriber]].
    */
-  def get[T](key: javadsl.KeyedSource[_, T]): T =
-    delegate.get(key.asScala).asInstanceOf[T]
-
-  /**
-   * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[akka.stream.javadsl.Sink#publisher]].
-   */
-  def get[D](key: javadsl.KeyedSink[_, D]): D =
-    delegate.get(key.asScala).asInstanceOf[D]
-
-  /**
-   * Retrieve a materialized `Key`.
-   */
-  def get[T](key: Key[T]): T =
-    delegate.get(key.asScala).asInstanceOf[T]
+  def get[T](key: javadsl.KeyedMaterializable[T]): T =
+    delegate.get(key.asScala)
 
   /**
    * Merge two materialized maps.
@@ -46,8 +35,8 @@ class MaterializedMap(delegate: scaladsl.MaterializedMap) {
   /**
    * Update the materialized map with a new value.
    */
-  def updated(key: Object, value: Object): MaterializedMap =
-    new MaterializedMap(delegate.updated(key, value))
+  def updated(key: KeyedMaterializable[_], value: Object): MaterializedMap =
+    new MaterializedMap(delegate.updated(key.asScala, value))
 
   /**
    * Check if this map is empty.
@@ -65,10 +54,19 @@ class MaterializedMap(delegate: scaladsl.MaterializedMap) {
 /**
  * Java API
  *
+ * Common interface for keyed things that can be materialized.
+ */
+trait KeyedMaterializable[M] {
+  def asScala: scaladsl.KeyedMaterializable[M]
+}
+
+/**
+ * Java API
+ *
  * A key that is not directly tied to a sink or source instance.
  */
-class Key[T](delegate: scaladsl.Key) {
-  def asScala: scaladsl.Key = delegate
+class Key[M](delegate: scaladsl.Key[M]) extends KeyedMaterializable[M] {
+  def asScala: scaladsl.Key[M] = delegate
 
   /**
    * Materialize the value for this key. All Sink and Source keys have been materialized and exist in the map.

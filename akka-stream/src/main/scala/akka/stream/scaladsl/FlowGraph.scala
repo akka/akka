@@ -498,14 +498,14 @@ private[akka] object FlowGraphInternal {
      */
     final override def equals(other: Any): Boolean = other match {
       case v: SourceVertex ⇒ (source, v.source) match {
-        case (k1: KeyedSource[_], k2: KeyedSource[_]) ⇒ k1 == k2
-        case _                                        ⇒ super.equals(other)
+        case (k1: KeyedSource[_, _], k2: KeyedSource[_, _]) ⇒ k1 == k2
+        case _ ⇒ super.equals(other)
       }
       case _ ⇒ false
     }
     final override def hashCode: Int = source match {
-      case k: KeyedSource[_] ⇒ k.hashCode
-      case _                 ⇒ super.hashCode
+      case k: KeyedSource[_, _] ⇒ k.hashCode
+      case _                    ⇒ super.hashCode
     }
 
     final override private[scaladsl] def newInstance() = this.copy()
@@ -520,14 +520,14 @@ private[akka] object FlowGraphInternal {
      */
     final override def equals(other: Any): Boolean = other match {
       case v: SinkVertex ⇒ (sink, v.sink) match {
-        case (k1: KeyedSink[_], k2: KeyedSink[_]) ⇒ k1 == k2
-        case _                                    ⇒ super.equals(other)
+        case (k1: KeyedSink[_, _], k2: KeyedSink[_, _]) ⇒ k1 == k2
+        case _ ⇒ super.equals(other)
       }
       case _ ⇒ false
     }
     final override def hashCode: Int = sink match {
-      case k: KeyedSink[_] ⇒ k.hashCode
-      case _               ⇒ super.hashCode
+      case k: KeyedSink[_, _] ⇒ k.hashCode
+      case _                  ⇒ super.hashCode
     }
 
     final override private[scaladsl] def newInstance() = this.copy()
@@ -1056,8 +1056,8 @@ class FlowGraphBuilder private[akka] (
         s"Use individual instances instead of the same one multiple times. Nodes are: ${graph.nodes}"
 
     vertex match {
-      case v: SourceVertex if v.source.isInstanceOf[KeyedSource[_]] ⇒ require(!graph.contains(v), warningMessage(v.source))
-      case v: SinkVertex if v.sink.isInstanceOf[KeyedSink[_]] ⇒ require(!graph.contains(v), warningMessage(v.sink))
+      case v: SourceVertex if v.source.isInstanceOf[KeyedSource[_, _]] ⇒ require(!graph.contains(v), warningMessage(v.source))
+      case v: SinkVertex if v.sink.isInstanceOf[KeyedSink[_, _]] ⇒ require(!graph.contains(v), warningMessage(v.sink))
       case _ ⇒ // ok
     }
   }
