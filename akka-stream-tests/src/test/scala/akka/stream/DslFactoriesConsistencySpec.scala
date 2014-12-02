@@ -35,19 +35,19 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       (classOf[scala.Function1[_, _]],                  classOf[akka.stream.javadsl.japi.Creator[_]]) ::
       (classOf[scala.Function2[_, _, _]],               classOf[akka.stream.javadsl.japi.Function2[_, _, _]]) ::
       (classOf[akka.stream.scaladsl.Source[_]],         classOf[akka.stream.javadsl.Source[_]]) ::
-      (classOf[akka.stream.scaladsl.KeyedSource[_]],    classOf[akka.stream.javadsl.KeyedSource[_, _]]) ::
+      (classOf[akka.stream.scaladsl.KeyedSource[_, _]],    classOf[akka.stream.javadsl.KeyedSource[_, _]]) ::
       (classOf[akka.stream.scaladsl.Sink[_]],           classOf[akka.stream.javadsl.Sink[_]]) ::
-      (classOf[akka.stream.scaladsl.KeyedSink[_]],      classOf[akka.stream.javadsl.KeyedSink[_, _]]) ::
+      (classOf[akka.stream.scaladsl.KeyedSink[_, _]],      classOf[akka.stream.javadsl.KeyedSink[_, _]]) ::
       (classOf[akka.stream.scaladsl.Flow[_, _]],        classOf[akka.stream.javadsl.Flow[_, _]]) ::
       (classOf[akka.stream.scaladsl.FlowGraph],         classOf[akka.stream.javadsl.FlowGraph]) ::
       (classOf[akka.stream.scaladsl.PartialFlowGraph],  classOf[akka.stream.javadsl.PartialFlowGraph]) ::
       Nil
   // format: ON
 
-  val sKeyedSource = classOf[scaladsl.KeyedSource[_]]
+  val sKeyedSource = classOf[scaladsl.KeyedSource[_, _]]
   val jKeyedSource = classOf[javadsl.KeyedSource[_, _]]
 
-  val sKeyedSink = classOf[scaladsl.KeyedSink[_]]
+  val sKeyedSink = classOf[scaladsl.KeyedSink[_, _]]
   val jKeyedSink = classOf[javadsl.KeyedSink[_, _]]
 
   val sSource = classOf[scaladsl.Source[_]]

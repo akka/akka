@@ -39,8 +39,7 @@ import scala.util.control.NonFatal
  *
  * @see [[akka.persistence.stream.PersistentSourceSettings]]
  */
-final case class PersistentSource[Out](persistenceId: String, sourceSettings: PersistentSourceSettings = PersistentSourceSettings()) extends KeyedActorFlowSource[Out] {
-  override type MaterializedType = ActorRef
+final case class PersistentSource[Out](persistenceId: String, sourceSettings: PersistentSourceSettings = PersistentSourceSettings()) extends KeyedActorFlowSource[Out, ActorRef] {
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val (publisher, publisherRef) = create(materializer, flowName)

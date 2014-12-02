@@ -58,7 +58,7 @@ sealed trait ActorFlowSource[+Out] extends Source[Out] {
 
   override def to(sink: Sink[Out]): RunnableFlow = Pipe.empty[Out].withSource(this).to(sink)
 
-  override def withKey(key: Key): Source[Out] = Pipe.empty[Out].withSource(this).withKey(key)
+  override def withKey(key: Key[_]): Source[Out] = Pipe.empty[Out].withSource(this).withKey(key)
 
   /** INTERNAL API */
   override private[scaladsl] def andThen[U](op: AstNode) = SourcePipe(this, List(op), Nil) //FIXME raw addition of AstNodes
@@ -78,15 +78,13 @@ trait SimpleActorFlowSource[+Out] extends ActorFlowSource[Out] { // FIXME Tightl
  * to retrieve in order to access aspects of this source (could be a Subscriber, a
  * Future/Promise, etc.).
  */
-trait KeyedActorFlowSource[+Out] extends ActorFlowSource[Out] with KeyedSource[Out]
+trait KeyedActorFlowSource[+Out, M] extends ActorFlowSource[Out] with KeyedSource[Out, M]
 
 /**
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
-  override type MaterializedType = Subscriber[Out]
-
+final case class SubscriberSource[Out]() extends KeyedActorFlowSource[Out, Subscriber[Out]] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String): Subscriber[Out] =
     flowSubscriber
 
@@ -159,9 +157,7 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends KeyedActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
-  override type MaterializedType = Cancellable
-
+final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends KeyedActorFlowSource[Out, Cancellable] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val (pub, cancellable) = create(materializer, flowName)
     pub.subscribe(flowSubscriber)
@@ -188,8 +184,7 @@ final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteD
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-final case class PropsSource[Out](props: Props) extends KeyedActorFlowSource[Out] {
-  override type MaterializedType = ActorRef
+final case class PropsSource[Out](props: Props) extends KeyedActorFlowSource[Out, ActorRef] {
 
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val (publisher, publisherRef) = create(materializer, flowName)
