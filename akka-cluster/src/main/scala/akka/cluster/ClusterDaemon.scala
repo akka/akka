@@ -167,12 +167,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
     case AddOnMemberUpListener(code) ⇒
       context.actorOf(Props(classOf[OnMemberUpListener], code).withDeploy(Deploy.local))
     case PublisherCreated(publisher) ⇒
-      if (settings.MetricsEnabled) {
-        // metrics must be started after core/publisher to be able
-        // to inject the publisher ref to the ClusterMetricsCollector
-        context.actorOf(Props(classOf[ClusterMetricsCollector], publisher).
-          withDispatcher(context.props.dispatcher), name = "metrics")
-      }
+    // TODO remove this message: see metrics extension
   }
 
 }

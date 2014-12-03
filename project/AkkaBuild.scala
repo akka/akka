@@ -120,7 +120,8 @@ object AkkaBuild extends Build {
     id = "akka-cluster",
     base = file("akka-cluster"),
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test")
-  ) configs (MultiJvm)
+  ).configs (MultiJvm)
+  .settings(SigarLoader.sigarSettings: _*)
 
   lazy val slf4j = Project(
     id = "akka-slf4j",

@@ -40,7 +40,7 @@ abstract class ClusterMetricsSpec extends MultiNodeSpec(ClusterMetricsMultiJvmSp
         enterBarrier("cluster-started")
         awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should be(roles.size))
         awaitAssert(clusterView.clusterMetrics.size should be(roles.size))
-        val collector = MetricsCollector(cluster.system, cluster.settings)
+        val collector = MetricsCollector(system)
         collector.sample.metrics.size should be > (3)
         enterBarrier("after")
       }

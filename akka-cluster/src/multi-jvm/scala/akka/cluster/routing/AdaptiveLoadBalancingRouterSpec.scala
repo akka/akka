@@ -56,9 +56,11 @@ object AdaptiveLoadBalancingRouterMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-      akka.cluster.metrics.collect-interval = 1s
-      akka.cluster.metrics.gossip-interval = 1s
-      akka.cluster.metrics.moving-average-half-life = 2s
+      akka.cluster-toolbox.metrics.collector {
+        sample-interval = 1s
+        gossip-interval = 1s
+        moving-average-half-life = 2s
+      }
       akka.actor.deployment {
         /router3 = {
           router = adaptive-pool
@@ -91,6 +93,9 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
   with MultiNodeClusterSpec
   with ImplicitSender with DefaultTimeout {
   import AdaptiveLoadBalancingRouterMultiJvmSpec._
+
+  import akka.cluster.ClusterMetricsSettings
+  def metricsSetings = ClusterMetricsSettings(system.settings.config)
 
   def currentRoutees(router: ActorRef) =
     Await.result(router ? GetRoutees, timeout.duration).asInstanceOf[Routees].routees
@@ -136,7 +141,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         val router1 = startRouter("router1")
 
         // collect some metrics before we start
-        Thread.sleep(cluster.settings.MetricsInterval.toMillis * 10)
+        Thread.sleep(metricsSetings.CollectorSampleInterval.toMillis * 10)
 
         val iterationCount = 100
         1 to iterationCount foreach { _ ⇒
@@ -173,7 +178,7 @@ abstract class AdaptiveLoadBalancingRouterSpec extends MultiNodeSpec(AdaptiveLoa
         val router2 = startRouter("router2")
 
         // collect some metrics before we start
-        Thread.sleep(cluster.settings.MetricsInterval.toMillis * 10)
+        Thread.sleep(metricsSetings.CollectorSampleInterval.toMillis * 10)
 
         val iterationCount = 3000
         1 to iterationCount foreach { _ ⇒

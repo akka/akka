@@ -27,13 +27,16 @@ object Dependencies {
     val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
-    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.5"       // MIT
+    val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.7"       // MIT
+    val slf4jJul      = "org.slf4j"                   % "jul-to-slf4j"                 % "1.7.7"       // MIT
+    val slf4jLog4j    = "org.slf4j"                   % "log4j-over-slf4j"             % "1.7.7"       // MIT
     val zeroMQClient  = "org.spark-project.zeromq"   %% "zeromq-scala-binding"         % "0.0.7-spark"  // ApacheV2
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
     val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.7"         // ApacheV2
     val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
+    // TODO replace with sigarLoader
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     object Test {
@@ -59,6 +62,11 @@ object Dependencies {
       val hdrHistogram    = "org.hdrhistogram"            % "HdrHistogram"                 % "1.1.4"            % "test" // CC0
       val metricsAll      = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
     }
+    
+    object Provided {
+      // TODO remove from "test" config
+      val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.5-rev001"     %     "optional;provided;test" // ApacheV2
+    }    
   }
 
   import Compile._
