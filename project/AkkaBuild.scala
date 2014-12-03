@@ -406,7 +406,9 @@ object AkkaBuild extends Build {
   lazy val httpMarshallers = Project(
     id = "akka-http-marshallers-experimental",
     base = file("akka-http-marshallers"),
-    settings = parentSettings
+    settings = parentSettings ++ Seq(
+      version := streamAndHttpVersion
+    )
   ).aggregate(httpSprayJson, httpXml)
 
   lazy val httpXml =
@@ -426,7 +428,9 @@ object AkkaBuild extends Build {
       id = s"akka-http-$name-experimental",
       base = file(s"akka-http-marshallers/akka-http-$name"),
       dependencies = Seq(http),
-      settings = defaultSettings ++ formatSettings
+      settings = defaultSettings ++ formatSettings ++ Seq(
+        version := streamAndHttpVersion
+      )
     )
 
   lazy val httpJava = Project(
@@ -448,7 +452,9 @@ object AkkaBuild extends Build {
   lazy val httpJavaMarshallers = Project(
     id = "akka-http-java-marshallers-experimental",
     base = file("akka-http-java-marshallers"),
-    settings = parentSettings
+    settings = defaultSettings ++ parentSettings ++ Seq(
+      version := streamAndHttpVersion
+    )
   ).aggregate(httpJavaJackson)
 
   lazy val httpJavaJackson =
@@ -462,7 +468,9 @@ object AkkaBuild extends Build {
       id = s"akka-http-java-$name-experimental",
       base = file(s"akka-http-java-marshallers/akka-http-java-$name"),
       dependencies = Seq(httpJava),
-      settings = defaultSettings ++ formatSettings
+      settings = defaultSettings ++ formatSettings ++ Seq(
+        version := streamAndHttpVersion
+      )
     )
 
   lazy val httpJavaTestkit = Project(
