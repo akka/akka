@@ -6,7 +6,7 @@ package akka.stream.scaladsl
 import scala.concurrent.Await
 import scala.util.control.NoStackTrace
 
-import akka.stream.FlowMaterializer
+import akka.stream.{ OverflowStrategy, FlowMaterializer }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
 

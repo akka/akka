@@ -111,7 +111,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @tparam T materialized type of given KeyedSink
    */
   def runWith[T](source: javadsl.Source[In], sink: javadsl.KeyedSink[Out, T], materializer: FlowMaterializer): T =
-    delegate.runWith(source.asScala, sink.asScala)(materializer).asInstanceOf[T]
+    delegate.runWith(source.asScala, sink.asScala)(materializer)._2.asInstanceOf[T]
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `Sink` and run it.
@@ -121,7 +121,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @tparam T materialized type of given KeyedSource
    */
   def runWith[T](source: javadsl.KeyedSource[In, T], sink: javadsl.Sink[Out], materializer: FlowMaterializer): T =
-    delegate.runWith(source.asScala, sink.asScala)(materializer).asInstanceOf[T]
+    delegate.runWith(source.asScala, sink.asScala)(materializer)._1.asInstanceOf[T]
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
