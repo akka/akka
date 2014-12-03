@@ -208,7 +208,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * source.
    */
   def concat[Out2 >: Out](second: Source[Out2]): Source[Out2] =
-    delegate.concat(second.asScala).asJava
+    Source.concat(this, second)
 
   /**
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
