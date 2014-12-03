@@ -10,19 +10,9 @@ package akka.stream.scaladsl
 trait MaterializedMap {
 
   /**
-   * Retrieve a materialized `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
+   * Retrieve a materialized key, `Source`, `Sink` or `Key`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def get(key: Source[_]): key.MaterializedType
-
-  /**
-   * Retrieve a materialized `Sink`, e.g. the `Publisher` of a [[PublisherSink]].
-   */
-  def get(key: Sink[_]): key.MaterializedType
-
-  /**
-   * Retrieve a materialized `Key`.
-   */
-  def get(key: Key): key.MaterializedType
+  def get(key: Materializable): key.MaterializedType
 
   /**
    * Merge two materialized maps.
@@ -32,7 +22,7 @@ trait MaterializedMap {
   /**
    * Update the materialized map with a new value.
    */
-  def updated(key: AnyRef, value: Any): MaterializedMap
+  def updated(key: KeyedMaterializable[_], value: Any): MaterializedMap
 
   /**
    * Check if this map is empty.
@@ -52,12 +42,23 @@ object MaterializedMap {
 }
 
 /**
- * A key that is not directly tied to a sink or source instance.
- *
- * FIXME #16380 Clean up the overlap between Keys/Sinks/Sources
+ * Common trait for things that have a MaterializedType.
  */
-trait Key {
+trait Materializable {
   type MaterializedType
+}
+
+/**
+ * Common trait for keyed things that have a MaterializedType.
+ */
+trait KeyedMaterializable[M] extends Materializable {
+  override type MaterializedType = M
+}
+
+/**
+ * A key that is not directly tied to a sink or source instance.
+ */
+trait Key[M] extends KeyedMaterializable[M] {
 
   /**
    * Materialize the value for this key. All Sink and Source keys have been materialized and exist in the map.
@@ -66,27 +67,22 @@ trait Key {
 }
 
 private[stream] case class MaterializedMapImpl(map: Map[AnyRef, Any]) extends MaterializedMap {
-  private def failure(keyType: String, key: AnyRef) = new IllegalArgumentException(s"$keyType [$key] doesn't exist in this flow")
-
-  override def get(key: Source[_]): key.MaterializedType = key match {
-    case _: KeyedSource[_] ⇒ map.get(key) match {
-      case Some(v) ⇒ v.asInstanceOf[key.MaterializedType]
-      case None    ⇒ throw failure("Source", key)
+  private def failure(key: KeyedMaterializable[_]) = {
+    val keyType = key match {
+      case _: KeyedSource[_, _] ⇒ "Source"
+      case _: KeyedSink[_, _]   ⇒ "Sink"
+      case _: Key[_]            ⇒ "Key"
+      case _                    ⇒ "Unknown"
     }
-    case _ ⇒ ().asInstanceOf[key.MaterializedType]
+    new IllegalArgumentException(s"$keyType key [$key] doesn't exist in this flow")
   }
 
-  override def get(key: Sink[_]): key.MaterializedType = key match {
-    case _: KeyedSink[_] ⇒ map.get(key) match {
+  override def get(key: Materializable): key.MaterializedType = key match {
+    case km: KeyedMaterializable[_] ⇒ map.get(key) match {
       case Some(v) ⇒ v.asInstanceOf[key.MaterializedType]
-      case None    ⇒ throw failure("Sink", key)
+      case None    ⇒ throw failure(km)
     }
     case _ ⇒ ().asInstanceOf[key.MaterializedType]
-  }
-
-  override def get(key: Key): key.MaterializedType = map.get(key) match {
-    case Some(v) ⇒ v.asInstanceOf[key.MaterializedType]
-    case None    ⇒ throw failure("Key", key)
   }
 
   override def merge(otherMap: MaterializedMap) =
@@ -94,7 +90,7 @@ private[stream] case class MaterializedMapImpl(map: Map[AnyRef, Any]) extends Ma
     else if (otherMap.isEmpty) this
     else MaterializedMapImpl(map ++ otherMap.iterator)
 
-  override def updated(key: AnyRef, value: Any) = MaterializedMapImpl(map.updated(key, value))
+  override def updated(key: KeyedMaterializable[_], value: Any) = MaterializedMapImpl(map.updated(key, value))
 
   override def isEmpty = map.isEmpty
 
