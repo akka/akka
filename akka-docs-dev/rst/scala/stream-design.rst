@@ -69,7 +69,11 @@ Other topologies can always be expressed as a combination of a PartialFlowGraph 
 The difference between Error and Failure
 ----------------------------------------
 
-The starting point for this discussion is the [definition given by the Reactive Manifesto](http://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. This is the difference between the ``onNext`` and ``onError`` signals.
+The starting point for this discussion is the [definition given by the Reactive Manifesto](http://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via ``onNext`` while failures raise the ``onError`` signal.
+
+.. note::
+
+  Unfortunately the method name for signaling _failure_ to a Subscriber is called ``onError`` for historical reasons. Always keep in mind that the Reactive Streams interfaces (Publisher/Subscription/Subscriber) are modeling the low-level infrastructure for passing streams between execution units, and errors on this level are precisely the failures that we are talking about on the higher level that is modeled by Akka Streams.
 
 There is only limited support for treating ``onError`` in Akka Streams compared to the operators that are available for the transformation of data elements, which is intentional in the spirit of the previous paragraph. Since ``onError`` signals that the stream is collapsing, its ordering semantics are not the same as for stream completion: transformation stages of any kind will just collapse with the stream, possibly still holding elements in implicit or explicit buffers. This means that data elements emitted before a failure can still be lost if the ``onError`` overtakes them.
 
@@ -78,7 +82,7 @@ The ability for failures to propagate faster than data elements is essential for
 The semantics of stream recovery
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A recovery element (i.e. any transformation that absorbs an ``onError`` element and turns that into more data elements or normal stream completion) acts as a bulkhead that confines a stream collapse to a given region of the flow topology. Within the collapsed region buffered elements may be lost, but the outside is not affected by the failure.
+A recovery element (i.e. any transformation that absorbs an ``onError`` signal and turns that into possibly more data elements followed normal stream completion) acts as a bulkhead that confines a stream collapse to a given region of the flow topology. Within the collapsed region buffered elements may be lost, but the outside is not affected by the failure.
 
 This works in the same fashion as a ``try``–``catch`` expression: it marks a region in which exceptions are caught, but the exact amount of code that was skipped within this region in case of a failure might not be known precisely—the placement of statements matters.
 
