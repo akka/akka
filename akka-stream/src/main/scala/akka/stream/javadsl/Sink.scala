@@ -148,6 +148,6 @@ class Sink[-In](delegate: scaladsl.Sink[In]) {
  * to retrieve in order to access aspects of this sink (could be a completion Future
  * or a cancellation handle, etc.)
  */
-final class KeyedSink[-In, M](delegate: scaladsl.KeyedSink[In]) extends javadsl.Sink[In](delegate) {
-  override def asScala: scaladsl.KeyedSink[In] = super.asScala.asInstanceOf[scaladsl.KeyedSink[In]]
+final class KeyedSink[-In, M](delegate: scaladsl.KeyedSink[In, M]) extends javadsl.Sink[In](delegate) with KeyedMaterializable[M] {
+  override def asScala: scaladsl.KeyedSink[In, M] = super.asScala.asInstanceOf[scaladsl.KeyedSink[In, M]]
 }

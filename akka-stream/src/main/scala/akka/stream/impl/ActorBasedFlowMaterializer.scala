@@ -184,7 +184,7 @@ private[akka] object Ast {
     def withAttributes(attributes: OperationAttributes) =
       copy(attributes = attributes)
   }
-  case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key, attributes: OperationAttributes = processorWithKey) extends AstNode {
+  case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key[_], attributes: OperationAttributes = processorWithKey) extends AstNode {
     def withAttributes(attributes: OperationAttributes) =
       copy(attributes = attributes)
   }
@@ -360,7 +360,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   }
 
   // Ops come in reverse order
-  override def materialize[In, Out](source: Source[In], sink: Sink[Out], rawOps: List[Ast.AstNode], keys: List[Key]): MaterializedMap = {
+  override def materialize[In, Out](source: Source[In], sink: Sink[Out], rawOps: List[Ast.AstNode], keys: List[Key[_]]): MaterializedMap = {
     val flowName = createFlowName() //FIXME: Creates Id even when it is not used in all branches below
 
     def throwUnknownType(typeName: String, s: AnyRef): Nothing =
@@ -388,6 +388,10 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       case s: Source[_]          ⇒ throwUnknownType("Source", s)
       case s: Sink[_]            ⇒ throwUnknownType("Sink", s)
     }
+    def addIfKeyed(m: Materializable, v: Any, map: MaterializedMap) = m match {
+      case km: KeyedMaterializable[_] ⇒ map.updated(km, v)
+      case _                          ⇒ map
+    }
 
     val mmPromise = Promise[MaterializedMap]
     val mmFuture = mmPromise.future
@@ -410,8 +414,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
         val (first, map) = processorChain(last, ops.tail, flowName, opsSize - 1, lastMap)
         (attachSource(first.asInstanceOf[Processor[In, Any]], flowName), attachSink(last, flowName), map)
       }
-    val sourceMap = if (source.isInstanceOf[KeyedSource[_]]) pipeMap.updated(source, sourceValue) else pipeMap
-    val sourceSinkMap = if (sink.isInstanceOf[KeyedSink[_]]) sourceMap.updated(sink, sinkValue) else sourceMap
+    val sourceSinkMap = addIfKeyed(sink, sinkValue, addIfKeyed(source, sourceValue, pipeMap))
 
     if (keys.isEmpty) sourceSinkMap
     else (sourceSinkMap /: keys) {

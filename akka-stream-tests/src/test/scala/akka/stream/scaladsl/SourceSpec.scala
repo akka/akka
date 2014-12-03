@@ -74,12 +74,10 @@ class SourceSpec extends AkkaSpec {
   "Source with additional keys" must {
     "materialize keys properly" in {
       val ks = Source.subscriber[Int]
-      val mk1 = new Key {
-        override type MaterializedType = String
+      val mk1 = new Key[String] {
         override def materialize(map: MaterializedMap) = map.get(ks).toString
       }
-      val mk2 = new Key {
-        override type MaterializedType = String
+      val mk2 = new Key[String] {
         override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
       }
       val sp = StreamTestKit.SubscriberProbe[Int]()
@@ -97,12 +95,10 @@ class SourceSpec extends AkkaSpec {
 
     "materialize keys properly when used in a graph" in {
       val ks = Source.subscriber[Int]
-      val mk1 = new Key {
-        override type MaterializedType = String
+      val mk1 = new Key[String] {
         override def materialize(map: MaterializedMap) = map.get(ks).toString
       }
-      val mk2 = new Key {
-        override type MaterializedType = String
+      val mk2 = new Key[String] {
         override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
       }
       val sp = StreamTestKit.SubscriberProbe[Int]()
