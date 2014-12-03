@@ -206,7 +206,7 @@ private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[
   @volatile private var impl: Processor[I, O] = _
   private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
 
-  override def onSubscribe(s: Subscription): Unit = implFuture.onComplete {
+  override def onSubscribe(s: Subscription): Unit = setVarFuture.onComplete {
     case Success(x) ⇒ x.onSubscribe(s)
     case Failure(_) ⇒ s.cancel()
   }
