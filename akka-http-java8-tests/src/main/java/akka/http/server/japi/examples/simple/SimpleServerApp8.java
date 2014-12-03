@@ -9,7 +9,7 @@ import akka.http.server.japi.*;
 
 import java.io.IOException;
 
-public class SimpleServerApp extends HttpApp {
+public class SimpleServerApp8 extends HttpApp {
     static Parameter<Integer> x = Parameters.integer("x");
     static Parameter<Integer> y = Parameters.integer("y");
 
@@ -33,7 +33,7 @@ public class SimpleServerApp extends HttpApp {
     }
 
     public void test() {
-        handleWith(xSegment, ySegment, SimpleServerApp::multiply);
+        handleWith(xSegment, ySegment, SimpleServerApp8::multiply);
     }
 
     @Override
@@ -76,7 +76,7 @@ public class SimpleServerApp extends HttpApp {
                 // matches paths like this: /multiply/{x}/{y}
                 path("multiply", xSegment, ySegment).route(
                     // bind handler by reflection
-                    handleWith(xSegment, ySegment, SimpleServerApp::multiply)
+                    handleWith(xSegment, ySegment, SimpleServerApp8::multiply)
                 ),
                 path("multiply-methodref", xSegment, ySegment).route(
                     // bind handler by reflection
@@ -87,9 +87,10 @@ public class SimpleServerApp extends HttpApp {
 
     public static void main(String[] args) throws IOException {
         ActorSystem system = ActorSystem.create();
-        new SimpleServerApp().bindRoute("localhost", 8080, system);
+        new SimpleServerApp8().bindRoute("localhost", 8080, system);
         System.out.println("Type RETURN to exit");
         System.in.read();
         system.shutdown();
     }
 }
+
