@@ -19,9 +19,9 @@ object Sample {
     ProjectRef(file(s"akka-samples/$name"), name)
 
   private def libraryToProjectDeps(projects: Seq[Project]) =
-    projects.map(addProjectDependencies andThen excludeLibraryDependencies)
+    projects.map(addProjectDependencies andThen excludeLibraryDependencies andThen enableAutoPlugins)
 
-  private val addProjectDependencies = (project: Project) => {
+  private val addProjectDependencies = (project: Project) =>
     project.settings(
       buildDependencies := {
         val projectDependencies = libraryDependencies.value.collect {
@@ -37,9 +37,8 @@ object Sample {
         BuildDependencies(classpathWithProjectDependencies, dependencies.aggregate)
       }
     )
-  }
 
-  private val excludeLibraryDependencies = (project: Project) => {
+  private val excludeLibraryDependencies = (project: Project) =>
     project.settings(
       libraryDependencies := libraryDependencies.value.map {
         case module if module.organization == akkaOrganization =>
@@ -53,7 +52,18 @@ object Sample {
         case module => module
       }
     )
-  }
+
+  /**
+   * AutoPlugins are not enabled for externally loaded projects.
+   * This adds required settings from the AutoPlugins.
+   *
+   * Every AutoPlugin that is also meant to be applied to the
+   * transformed sample projects should have its settings added here.
+   */
+  private val enableAutoPlugins = (project: Project) =>
+    project.settings(
+      Publish.projectSettings: _*
+    )
 
   private implicit class RichLoadedDefinitions(ld: LoadedDefinitions) {
     def copy(projects: Seq[Project]) =
