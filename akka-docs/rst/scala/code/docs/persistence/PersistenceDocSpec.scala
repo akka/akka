@@ -111,11 +111,11 @@ trait PersistenceDocSpec {
   }
 
   new AnyRef {
-      trait MyProcessor1 extends PersistentActor {
-        //#recover-fully-disabled
-        override def preStart() = self ! Recover(toSequenceNr = 0L)
-        //#recover-fully-disabled
-      }
+    trait MyProcessor1 extends PersistentActor {
+      //#recover-fully-disabled
+      override def preStart() = self ! Recover(toSequenceNr = 0L)
+      //#recover-fully-disabled
+    }
   }
 
   new AnyRef {
