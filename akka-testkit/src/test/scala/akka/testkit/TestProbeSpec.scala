@@ -2,11 +2,8 @@ package akka.testkit
 
 import language.postfixOps
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-import org.scalatest.{ BeforeAndAfterEach, WordSpec }
 import akka.actor._
-import scala.concurrent.{ Future, Await }
+import scala.concurrent.{ Await }
 import scala.concurrent.duration._
 import akka.pattern.ask
 import scala.util.Try
@@ -132,6 +129,15 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       probe.expectMsg(1.seconds, Terminated(target)(false, false))
     }
 
+    "allow user-defined name" in {
+      val probe = TestProbe("worker")
+      probe.ref.path.name should startWith("worker")
+    }
+
+    "have reasonable default name" in {
+      val probe = new TestProbe(system)
+      probe.ref.path.name should startWith("testProbe")
+    }
   }
 
 }
