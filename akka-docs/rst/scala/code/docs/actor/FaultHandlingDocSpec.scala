@@ -3,11 +3,12 @@
  */
 package docs.actor
 
-import language.postfixOps
+import scala.language.postfixOps
 
 //#testkit
-import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter }
-import akka.actor.{ ActorRef, Props, Terminated }
+import akka.actor.{ ActorRef, ActorSystem, Props, Terminated }
+import akka.testkit.{ ImplicitSender, TestKit }
+import org.scalatest._
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -44,6 +45,7 @@ object FaultHandlingDocSpec {
     //#strategy2
     import akka.actor.OneForOneStrategy
     import akka.actor.SupervisorStrategy._
+
     import scala.concurrent.duration._
 
     override val supervisorStrategy =
@@ -67,6 +69,7 @@ object FaultHandlingDocSpec {
     //#default-strategy-fallback
     import akka.actor.OneForOneStrategy
     import akka.actor.SupervisorStrategy._
+
     import scala.concurrent.duration._
 
     override val supervisorStrategy =
@@ -94,11 +97,16 @@ object FaultHandlingDocSpec {
 }
 
 //#testkit
-class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
+class FaultHandlingDocSpec extends TestKit(ActorSystem("SupervisorTest"))
+  with WordSpecLike with BeforeAndAfterAll with ImplicitSender {
   //#testkit
 
-  import FaultHandlingDocSpec._
+  import docs.actor.FaultHandlingDocSpec._
   //#testkit
+
+  override def afterAll() {
+    system.shutdown()
+  }
 
   "A supervisor" must {
 
@@ -111,63 +119,59 @@ class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
       supervisor ! Props[Child]
       val child = expectMsgType[ActorRef] // retrieve answer from TestKit’s testActor
       //#create
-      EventFilter.warning(occurrences = 1) intercept {
-        //#resume
-        child ! 42 // set state to 42
-        child ! "get"
-        expectMsg(42)
 
-        child ! new ArithmeticException // crash it
-        child ! "get"
-        expectMsg(42)
-        //#resume
+      //#resume
+      child ! 42 // set state to 42
+      child ! "get"
+      expectMsg(42)
+
+      child ! new ArithmeticException // crash it
+      child ! "get"
+      expectMsg(42)
+      //#resume
+
+      //#restart
+      child ! new NullPointerException // crash it harder
+      child ! "get"
+      expectMsg(0)
+      //#restart
+
+      //#stop
+      watch(child) // have testActor watch “child”
+      child ! new IllegalArgumentException // break it
+      expectMsgPF() { case Terminated(`child`) => () }
+      //#stop
+
+      //#escalate-kill
+      supervisor ! Props[Child] // create new child
+      val child2 = expectMsgType[ActorRef]
+
+      watch(child2)
+      child2 ! "get" // verify it is alive
+      expectMsg(0)
+
+      child2 ! new Exception("CRASH") // escalate failure
+      expectMsgPF() {
+        case t @ Terminated(`child2`) if t.existenceConfirmed => ()
       }
-      EventFilter[NullPointerException](occurrences = 1) intercept {
-        //#restart
-        child ! new NullPointerException // crash it harder
-        child ! "get"
-        expectMsg(0)
-        //#restart
-      }
-      EventFilter[IllegalArgumentException](occurrences = 1) intercept {
-        //#stop
-        watch(child) // have testActor watch “child”
-        child ! new IllegalArgumentException // break it
-        expectMsgPF() { case Terminated(`child`) => () }
-        //#stop
-      }
-      EventFilter[Exception]("CRASH", occurrences = 2) intercept {
-        //#escalate-kill
-        supervisor ! Props[Child] // create new child
-        val child2 = expectMsgType[ActorRef]
+      //#escalate-kill
+      //#escalate-restart
+      val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")
 
-        watch(child2)
-        child2 ! "get" // verify it is alive
-        expectMsg(0)
+      supervisor2 ! Props[Child]
+      val child3 = expectMsgType[ActorRef]
 
-        child2 ! new Exception("CRASH") // escalate failure
-        expectMsgPF() {
-          case t @ Terminated(`child2`) if t.existenceConfirmed => ()
-        }
-        //#escalate-kill
-        //#escalate-restart
-        val supervisor2 = system.actorOf(Props[Supervisor2], "supervisor2")
+      child3 ! 23
+      child3 ! "get"
+      expectMsg(23)
 
-        supervisor2 ! Props[Child]
-        val child3 = expectMsgType[ActorRef]
-
-        child3 ! 23
-        child3 ! "get"
-        expectMsg(23)
-
-        child3 ! new Exception("CRASH")
-        child3 ! "get"
-        expectMsg(0)
-        //#escalate-restart
-      }
-      //#testkit
-      // code here
+      child3 ! new Exception("CRASH")
+      child3 ! "get"
+      expectMsg(0)
+      //#escalate-restart
     }
+    //#testkit
+    // code here
   }
 }
 //#testkit
