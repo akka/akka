@@ -28,9 +28,9 @@ final case class HttpCookie(
   // TODO: suppress running these requires for cookies created from our header parser
   require(nameChars.matchesAll(name), s"'${nameChars.firstMismatch(name).get}' not allowed in cookie name ('$name')")
   require(contentChars.matchesAll(content), s"'${contentChars.firstMismatch(content).get}' not allowed in cookie content ('$content')")
-  require(domain.isEmpty || domainChars.matchesAll(domain.get), s"'${domainChars.firstMismatch(domain.get).get}' not allowed in cookie domain ('${domain.get}')")
-  require(path.isEmpty || pathOrExtChars.matchesAll(path.get), s"'${pathOrExtChars.firstMismatch(path.get).get}' not allowed in cookie path ('${path.get}')")
-  require(extension.isEmpty || pathOrExtChars.matchesAll(extension.get), s"'${pathOrExtChars.firstMismatch(extension.get).get}' not allowed in cookie extension ('${extension.get}')")
+  require(domain.forall(domainChars.matchesAll), s"'${domainChars.firstMismatch(domain.get).get}' not allowed in cookie domain ('${domain.get}')")
+  require(path.forall(pathOrExtChars.matchesAll), s"'${pathOrExtChars.firstMismatch(path.get).get}' not allowed in cookie path ('${path.get}')")
+  require(extension.forall(pathOrExtChars.matchesAll), s"'${pathOrExtChars.firstMismatch(extension.get).get}' not allowed in cookie extension ('${extension.get}')")
 
   def render[R <: Rendering](r: R): r.type = {
     r ~~ name ~~ '=' ~~ content
