@@ -388,6 +388,11 @@ flow, a :class:`TestProbe` could be inserted as target of A, using the
 forwarding capabilities or auto-pilot described below to include a real B in
 the test setup.
 
+If you have many test probes, you can name them to get meaningful actor names
+in test logs and assertions:
+
+.. includecode:: code/docs/testkit/TestKitDocTest.java#test-probe-with-custom-name
+
 Probes may also be equipped with custom assertions to make your test code even
 more concise and clear:
 
