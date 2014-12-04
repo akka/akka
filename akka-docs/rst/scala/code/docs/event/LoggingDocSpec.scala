@@ -3,6 +3,7 @@
  */
 package docs.event
 
+import akka.actor.AllDeadLetters
 import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.Props
@@ -146,6 +147,23 @@ class LoggingDocSpec extends AkkaSpec {
       val listener = system.actorOf(Props(classOf[Listener], this))
       system.eventStream.subscribe(listener, classOf[DeadLetter])
       //#deadletters
+    }
+  }
+
+  "allow registration to suppressed dead letters" in {
+    new AnyRef {
+      import akka.actor.Props
+      val listener = system.actorOf(Props[MyActor])
+
+      //#suppressed-deadletters
+      import akka.actor.SuppressedDeadLetter
+      system.eventStream.subscribe(listener, classOf[SuppressedDeadLetter])
+      //#suppressed-deadletters
+
+      //#all-deadletters
+      import akka.actor.AllDeadLetters
+      system.eventStream.subscribe(listener, classOf[AllDeadLetters])
+      //#all-deadletters
     }
   }
 

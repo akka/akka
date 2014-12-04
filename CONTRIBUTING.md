@@ -53,17 +53,17 @@ For a Pull Request to be considered at all it has to meet these requirements:
 3. The code must be well documented in the Typesafe's standard documentation format (see the ‘Documentation’ section below).
 4. The commit messages must properly describe the changes, see further below.
 5. All Typesafe projects must include Typesafe copyright notices.  Each project can choose between one of two approaches:
-    
-    1. All source files in the project must have a Typesafe copyright notice in the file header.   
+
+    1. All source files in the project must have a Typesafe copyright notice in the file header.
     2. The Notices file for the project includes the Typesafe copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
-    
+
     Akka uses the first choice, having copyright notices in every file header.
-    
+
     Other guidelines to follow for copyright notices:
-    
+
     - Use a form of ``Copyright (C) 2011-2013 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
     - Never delete or change existing copyright notices, just add additional info.  
-    - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc. 
+    - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
 
 If these requirements are not met then the code should **not** be merged into master, or even reviewed - regardless of how good or important it is. No exceptions.
 
@@ -71,7 +71,7 @@ Whether or not a pull request (or parts of it) shall be back- or forward-ported 
 
 ## Continuous Integration
 
-Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). Typesafe has a Jenkins server farm that can be used. The CI tool should, on each push to master, build the **full** distribution and run **all** tests, and if something fails it should email out a notification with the failure report to the committer and the core team. The CI tool should also be used in conjunction with Typesafe’s Pull Request Validator (discussed below).
+Each project should be configured to use a continuous integration (CI) tool (i.e. a build server à la Jenkins). Typesafe has a [Jenkins server farm](https://jenkins.akka.io/) that can be used. The CI tool should, on each push to master, build the **full** distribution and run **all** tests, and if something fails it should email out a notification with the failure report to the committer and the core team. The CI tool should also be used in conjunction with a Pull Request validator (discussed below).
 
 ## Documentation
 
@@ -92,13 +92,13 @@ For larger projects that have invested a lot of time and resources into their cu
 
 ## External Dependencies
 
-All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0). 
+All the external runtime dependencies for the project, including transitive dependencies, must have an open source license that is equal to, or compatible with, [Apache 2](http://www.apache.org/licenses/LICENSE-2.0).
 
-This must be ensured by manually verifying the license for all the dependencies for the project: 
+This must be ensured by manually verifying the license for all the dependencies for the project:
 
 1. Whenever a committer to the project changes a version of a dependency (including Scala) in the build file.
 2. Whenever a committer to the project adds a new dependency.
-3. Whenever a new release is cut (public or private for a customer). 
+3. Whenever a new release is cut (public or private for a customer).
 
 Which licenses are compatible with Apache 2 are defined in [this doc](http://www.apache.org/legal/3party.html#category-a), where you can see that the licenses that are listed under ``Category A`` automatically compatible with Apache 2, while the ones listed under ``Category B`` needs additional action:
 
@@ -119,13 +119,13 @@ Follow these guidelines when creating public commits and writing commit messages
 1. If your work spans multiple local commits (for example; if you do safe point commits while working in a feature branch or work in a branch for long time doing merges/rebases etc.) then please do not commit it all but rewrite the history by squashing the commits into a single big commit which you write a good commit message for (like discussed in the following sections). For more info read this article: [Git Workflow](http://sandofsky.com/blog/git-workflow.html). Every commit should be able to be used in isolation, cherry picked etc.
 
 2. First line should be a descriptive sentence what the commit is doing. It should be possible to fully understand what the commit does—but not necessarily how it does it—by just reading this single line. We follow the “imperative present tense” style for commit messages ([more info here](http://tbaggery.com/2008/04/19/a-note-about-git-commit-messages.html)).
-   
+
    It is **not ok** to only list the ticket number, type "minor fix" or similar. In order to help with automatic filtering of the commit history (generating ChangeLogs, writing the migration guide, code archaeology) we use the following encoding:
    * the first character is either '!' (for breaking API changes), '+' (for non-breaking API additions) or '=' (for API-neutral commits)
    * then follows a comma-separated list of module abbreviations, formed by using the first three letters of the module name (the “akka-” prefix being stripped off), e.g. `act`, `clu`, `doc`; it is intentional that `akka-actor-tests` receives the same abbreviation as `akka-actor`. For commits modifying the project itself (sbt files or anything in `project/`) please use `pro`.
    * then follows a space character, a hash sign '#' and the ticket number
    * the rest of the line (usually there are 64 characters left) makes up the textual summary
-   
+
    If the commit is a small fix, then you are done. If not, go to 3.
 
 3. Following the single line description should be a blank line followed by an enumerated list with the details of the commit.
@@ -143,8 +143,16 @@ Example:
 
 ## How To Enforce These Guidelines?
 
-### Make Use Of Typesafe’s Pull Request Validator
-It is recommended to set up the project to use Typesafe’s [Pull Request Validator](https://github.com/typesafehub/ghpullrequest-validator) that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub. 
+### Make Use of Pull Request Validator
+Akka uses [Jenkins GitHub pull request builder plugin](https://wiki.jenkins-ci.org/display/JENKINS/GitHub+pull+request+builder+plugin) that automatically merges the code, builds it, runs the tests and comments on the Pull Request in GitHub.
+
+Upon a submission of a Pull Request the Github pull request builder plugin will post a following comment:
+
+    Can one of the repo owners verify this patch?
+
+This requires a member from a core team to start Pull Request validation process by posting comment consisting only of `OK TO TEST`. From now on, whenever new commits are pushed to the Pull Request, a validation job will be automaticaly started and the results of the validation posted to the Pull Request.
+
+A Pull Request validation job can be started manually by posting `PLS BUILD` comment on the Pull Request.
 
 ## Source style
 

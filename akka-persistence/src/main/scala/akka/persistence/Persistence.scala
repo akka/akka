@@ -47,6 +47,9 @@ final class PersistenceSettings(config: Config) {
     val redeliverInterval: FiniteDuration =
       config.getMillisDuration("at-least-once-delivery.redeliver-interval")
 
+    val redeliveryBurstLimit: Int =
+      config.getInt("at-least-once-delivery.redelivery-burst-limit")
+
     val warnAfterNumberOfUnconfirmedAttempts: Int =
       config.getInt("at-least-once-delivery.warn-after-number-of-unconfirmed-attempts")
 
