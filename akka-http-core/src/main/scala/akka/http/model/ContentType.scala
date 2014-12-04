@@ -6,6 +6,9 @@ package akka.http.model
 
 import language.implicitConversions
 import akka.http.util._
+import akka.japi.{ Option ⇒ JOption }
+
+import akka.http.model.japi.JavaMapping.Implicits._
 
 final case class ContentTypeRange(mediaRange: MediaRange, charsetRange: HttpCharsetRange) extends ValueRenderable {
   def matches(contentType: ContentType) =
@@ -41,18 +44,15 @@ final case class ContentType(mediaType: MediaType, definedCharset: Option[HttpCh
   }
   def charset: HttpCharset = definedCharset getOrElse HttpCharsets.`UTF-8`
 
-  def isCharsetDefined = definedCharset.isDefined
-  def noCharsetDefined = definedCharset.isEmpty
-
   def withMediaType(mediaType: MediaType) =
     if (mediaType != this.mediaType) copy(mediaType = mediaType) else this
   def withCharset(charset: HttpCharset) =
-    if (noCharsetDefined || charset != definedCharset.get) copy(definedCharset = Some(charset)) else this
+    if (definedCharset.isEmpty || charset != definedCharset.get) copy(definedCharset = Some(charset)) else this
   def withoutDefinedCharset =
-    if (isCharsetDefined) copy(definedCharset = None) else this
+    if (definedCharset.isDefined) copy(definedCharset = None) else this
 
   /** Java API */
-  def getDefinedCharset: japi.HttpCharset = definedCharset.orNull
+  def getDefinedCharset: JOption[japi.HttpCharset] = definedCharset.asJava
 }
 
 object ContentType {

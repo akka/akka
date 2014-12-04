@@ -4,25 +4,26 @@
 
 package akka.http.model.japi;
 
+import akka.japi.Option;
+
 /**
  * Represents an Http content-type. A content-type consists of a media-type and an optional charset.
  */
 public abstract class ContentType {
     /**
-     * Returns the media-type of the this content-type.
+     * Returns the media-type of this content-type.
      */
     public abstract MediaType mediaType();
 
     /**
-     * Returns if this content-type defines a charset.
+     * Returns the charset of this content-type.
      */
-    public abstract boolean isCharsetDefined();
+    public abstract HttpCharset charset();
 
     /**
-     * Returns the charset of this content-type if there is one or throws an exception
-     * otherwise.
+     * Returns the optionally defined charset of this content-type.
      */
-    public abstract HttpCharset getDefinedCharset();
+    public abstract Option<HttpCharset> getDefinedCharset();
 
     /**
      * Creates a content-type from a media-type and a charset.
