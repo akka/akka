@@ -44,14 +44,14 @@ class JavaApiSpec extends FreeSpec with MustMatchers {
           Accessors.Uri("/abc?name=blub&age=28&name=blub2")
             .parameters.asScala.toSeq
 
-        param1.key() must be("name")
-        param1.value() must be("blub")
+        param1.getKey must be("name")
+        param1.getValue must be("blub")
 
-        param2.key() must be("age")
-        param2.value() must be("28")
+        param2.getKey must be("age")
+        param2.getValue must be("28")
 
-        param3.key() must be("name")
-        param3.value() must be("blub2")
+        param3.getKey must be("name")
+        param3.getValue must be("blub2")
       }
       "containsParameter" in {
         val uri = Accessors.Uri("/abc?name=blub")
