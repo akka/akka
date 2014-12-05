@@ -12,7 +12,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 
 /**
- * Represents a Uri. Use the `withX` methods to create modified copies of a given instance.
+ * Represents an Uri. Use the `withX` methods to create modified copies of a given instance.
  */
 public abstract class Uri {
     /**
@@ -76,21 +76,17 @@ public abstract class Uri {
     public abstract boolean containsParameter(String key);
 
     /**
-     * Returns an Iterable of all query parameters of this Uri.
+     * Returns an `Iterable` of all query parameters of this Uri. Use the `parameterMap()`
+     * method to filter out entries with duplicated keys.
      */
-    public abstract Iterable<Parameter> parameters();
+    public abstract Iterable<Map.Entry<String, String>> parameters();
 
     /**
      * Returns a key/value map of the query parameters of this Uri. Use
-     * the `parameters()` method to returns all parameters if keys may occur
+     * the `parameters()` method to return all parameters if keys may occur
      * multiple times.
      */
     public abstract Map<String, String> parameterMap();
-
-    public static interface Parameter {
-        String key();
-        String value();
-    }
 
     /**
      * Returns the fragment part of this Uri.
