@@ -4,8 +4,12 @@
 package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
-import akka.japi.Pair;
+import akka.japi.*;
 import akka.stream.StreamTest;
+import akka.stream.javadsl.japi.Creator;
+import akka.stream.javadsl.japi.Function;
+import akka.stream.javadsl.japi.Function2;
+import akka.stream.javadsl.japi.Procedure;
 import akka.stream.stage.*;
 import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
@@ -16,6 +20,7 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
+import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
 import scala.runtime.BoxedUnit;
 
@@ -99,7 +104,7 @@ public class FlowGraphTest extends StreamTest {
 
     final Source<String> in1 = Source.from(input1);
     final Source<Integer> in2 = Source.from(input2);
-    final ZipWith<String, Integer, Pair<String,Integer>> zip = Zip.create();
+    final Zip2With<String, Integer, Pair<String,Integer>> zip = Zip.create();
     final KeyedSink<Pair<String, Integer>, Future<BoxedUnit>> out = Sink
       .foreach(new Procedure<Pair<String, Integer>>() {
         @Override
@@ -124,7 +129,7 @@ public class FlowGraphTest extends StreamTest {
 
     @SuppressWarnings("unchecked")
     final List<Pair<String, Integer>> input = Arrays.asList(new Pair<String, Integer>("A", 1),
-      new Pair<String, Integer>("B", 2), new Pair<String, Integer>("C", 3));
+                                                            new Pair<String, Integer>("B", 2), new Pair<String, Integer>("C", 3));
 
     final Iterable<String> expected1 = Arrays.asList("A", "B", "C");
     final Iterable<Integer> expected2 = Arrays.asList(1, 2, 3);
@@ -152,6 +157,61 @@ public class FlowGraphTest extends StreamTest {
     List<Object> output2 = Arrays.asList(probe2.receiveN(3));
     assertEquals(expected1, output1);
     assertEquals(expected2, output2);
+  }
+
+  @Test
+  public void mustBeAbleToUseZipWith() throws Exception {
+    final Source<Integer> in1 = Source.single(1);
+    final Source<Integer> in2 = Source.single(10);
+
+    final Zip2With<Integer, Integer, Integer> sumZip = ZipWith.create(
+
+      new Function2<Integer, Integer, Integer>() {
+        @Override public Integer apply(Integer l, Integer r) throws Exception {
+          return l + r;
+      }
+    });
+
+    final KeyedSink<Integer, Future<Integer>> out = Sink.head();
+
+    MaterializedMap mat = FlowGraph.builder()
+      .addEdge(in1, sumZip.left())
+      .addEdge(in2, sumZip.right())
+      .addEdge(sumZip.out(), out)
+      .run(materializer);
+
+    final Integer result = Await.result(mat.get(out), Duration.create(300, TimeUnit.MILLISECONDS));
+    assertEquals(11, (int) result);
+  }
+
+  @Test
+  public void mustBeAbleToUseZip4With() throws Exception {
+    final Source<Integer> in1 = Source.single(1);
+    final Source<Integer> in2 = Source.single(10);
+    final Source<Integer> in3 = Source.single(100);
+    final Source<Integer> in4 = Source.single(1000);
+
+    Function<ZipWith.Zip4WithInputs<Integer, Integer, Integer, Integer>, Integer> sum4 = new Function<ZipWith.Zip4WithInputs<Integer, Integer, Integer, Integer>, Integer>() {
+      @Override
+      public Integer apply(ZipWith.Zip4WithInputs<Integer, Integer, Integer, Integer> inputs) throws Exception {
+        return inputs.t1() + inputs.t2() + inputs.t3() + inputs.t4();
+      }
+    };
+
+    Zip4With<Integer, Integer, Integer, Integer, Integer> sum4Zip = ZipWith.create(sum4);
+
+    final KeyedSink<Integer, Future<Integer>> out = Sink.head();
+
+    MaterializedMap mat = FlowGraph.builder()
+      .addEdge(in1, sum4Zip.input1())
+      .addEdge(in2, sum4Zip.input2())
+      .addEdge(in3, sum4Zip.input3())
+      .addEdge(in4, sum4Zip.input4())
+      .addEdge(sum4Zip.out(), out)
+      .run(materializer);
+
+    final Integer result = Await.result(mat.get(out), Duration.create(300, TimeUnit.MILLISECONDS));
+    assertEquals(1111, (int) result);
   }
 
 }

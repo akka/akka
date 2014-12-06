@@ -281,26 +281,6 @@ private[akka] final class UnfairMerge(_settings: MaterializerSettings,
 /**
  * INTERNAL API
  */
-private[akka] object ZipWith {
-  def props(settings: MaterializerSettings, f: (Any, Any) ⇒ Any): Props = Props(new ZipWith(settings, f))
-}
-
-/**
- * INTERNAL API
- */
-private[akka] final class ZipWith(_settings: MaterializerSettings, f: (Any, Any) ⇒ Any) extends FanIn(_settings, inputPorts = 2) {
-  inputBunch.markAllInputs()
-
-  nextPhase(TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
-    val elem0 = inputBunch.dequeue(0)
-    val elem1 = inputBunch.dequeue(1)
-    primaryOutputs.enqueueOutputElement(f(elem0, elem1))
-  })
-}
-
-/**
- * INTERNAL API
- */
 private[akka] object Concat {
   def props(settings: MaterializerSettings): Props = Props(new Concat(settings))
 }
