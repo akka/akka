@@ -243,75 +243,39 @@ final class Balance[T](val waitForAllDownstreams: Boolean, override val attribut
 }
 
 object Zip {
+
   /**
    * Create a new `ZipWith` vertex with the specified input types and zipping-function
    * which creates `Tuple2`s.
    *
    * @param attributes optional attributes for this vertex
    */
-  def apply[A, B](attributes: OperationAttributes): ZipWith[A, B, (A, B)] =
-    new ZipWith(_toTuple.asInstanceOf[(A, B) ⇒ (A, B)], attributes)
+  def apply[A, B](attributes: OperationAttributes): Zip2With[A, B, (A, B)] =
+    new Zip2With(_toTuple.asInstanceOf[(A, B) ⇒ (A, B)], attributes)
 
   /**
    * Create a new `ZipWith` vertex with the specified input types and zipping-function
    * which creates `Tuple2`s.
    */
-  def apply[A, B]: ZipWith[A, B, (A, B)] = apply(OperationAttributes.none)
+  def apply[A, B]: Zip2With[A, B, (A, B)] = apply(OperationAttributes.none)
 
   private[this] final val _toTuple: (Any, Any) ⇒ (Any, Any) = (a, b) ⇒ (a, b)
 }
 
-object ZipWith {
-  /**
-   * Create a new `ZipWith` vertex with the specified input types.
-   *
-   * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
-   */
-  def apply[A, B, C](f: (A, B) ⇒ C, attributes: OperationAttributes = OperationAttributes.none): ZipWith[A, B, C] =
-    new ZipWith[A, B, C](f, attributes)
+/** INTERNAL API - shared base between 2 inputs ZipWith as well as boilerplate plugin generated ZipWith classes */
+private[akka] abstract class ZipWithBase[C] extends FlowGraphInternal.InternalVertex {
 
-  final class Left[A, B, C] private[akka] (private[akka] val vertex: ZipWith[A, B, C]) extends JunctionInPort[A] {
-    type NextT = C
-    override private[akka] def port = 0
-    override private[akka] def next = vertex.out
-  }
+  def attributes: OperationAttributes
 
-  final class Right[A, B, C] private[akka] (private[akka] val vertex: ZipWith[A, B, C]) extends JunctionInPort[B] {
-    type NextT = C
-    override private[akka] def port = 1
-    override private[akka] def next = vertex.out
-  }
+  /** MUST be implemented as an FunctionN value */
+  def f: Any
+  require(f.getClass.getName.contains("Function") || f.getClass.getName.contains("anonfun"),
+    "ZipWiths `f` field MUST be implemented using a FunctionN value, was: " + f.getClass) // TODO remove this check?
 
-  final class Out[A, B, C] private[akka] (private[akka] val vertex: ZipWith[A, B, C]) extends JunctionOutPort[C]
-}
+  val out = new ZipWith.Out[C](this)
 
-/**
- * Takes two streams and outputs an output stream formed from the two input streams
- * by combining corresponding elements using the supplied function.
- * If one of the two streams is longer than the other, its remaining elements are ignored.
- *
- * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
- * that multiple flows can be attached to; if you want to have multiple independent
- * junctions within the same `FlowGraph` then you will have to create multiple such
- * instances.
- */
-private[akka] final class ZipWith[A, B, C](f: (A, B) ⇒ C, override val attributes: OperationAttributes)
-  extends FlowGraphInternal.InternalVertex {
-
-  val left = new ZipWith.Left(this)
-  val right = new ZipWith.Right(this)
-  val out = new ZipWith.Out(this)
-
-  override def minimumInputCount: Int = 2
-  override def maximumInputCount: Int = 2
-  override def minimumOutputCount: Int = 1
-  override def maximumOutputCount: Int = 1
-
-  // FIXME cache
-  private[akka] override def astNode: FanInAstNode = Ast.ZipWith(f.asInstanceOf[(Any, Any) ⇒ Any], zip and attributes)
-
-  private[scaladsl] final override def newInstance() = new ZipWith[A, B, C](f = f, attributes.withoutName)
+  final override def minimumOutputCount: Int = 1
+  final override def maximumOutputCount: Int = 1
 }
 
 object Unzip {
@@ -1345,7 +1309,7 @@ object PartialFlowGraph {
  * be `run` until those are attached.
  *
  * Build a `PartialFlowGraph` by starting with one of the `apply` methods in
- * in [[FlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
+ * in [[PartialFlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
 class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex],
                                       private[scaladsl] override val cyclesAllowed: Boolean,

@@ -5,9 +5,6 @@ package akka.stream.javadsl
 
 import akka.stream._
 import akka.stream.scaladsl
-import akka.stream.impl.Ast
-
-import akka.stream._
 
 trait JunctionInPort[-T] {
   /** Convert this element to it's `scaladsl` equivalent. */
@@ -219,59 +216,27 @@ class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
 }
 
 object Zip {
-  import akka.japi.{ Pair, Function2 }
+  import akka.stream.javadsl.japi.Function2
+  import akka.japi.Pair
   /**
-   * Create a new `ZipWith` vertex with the specified input types and zipping-function
+   * Create a new anonymous `Zip2With` vertex with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
-   *
+   * Note that a `ZipWith` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
    * @param attributes optional attributes for this vertex
    */
-  def create[A, B](attributes: OperationAttributes): ZipWith[A, B, A Pair B] =
+  def create[A, B](attributes: OperationAttributes): Zip2With[A, B, A Pair B] =
     ZipWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]], attributes)
 
   /**
    * Create a new `ZipWith` vertex with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
    */
-  def create[A, B]: ZipWith[A, B, A Pair B] = create(OperationAttributes.none)
+  def create[A, B]: Zip2With[A, B, A Pair B] = create(OperationAttributes.none)
 
   private[this] final val _toPair: Function2[Any, Any, Any Pair Any] =
     new Function2[Any, Any, Any Pair Any] { override def apply(a: Any, b: Any): Any Pair Any = new Pair(a, b) }
-}
-
-object ZipWith {
-
-  /**
-   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
-   *
-   * @param f zipping-function from the input values to the output value
-   * @param attributes optional attributes for this vertex
-   */
-  def create[A, B, C](f: akka.japi.Function2[A, B, C], attributes: OperationAttributes): ZipWith[A, B, C] =
-    new ZipWith(new scaladsl.ZipWith[A, B, C](f.apply _, attributes.asScala))
-
-  /**
-   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
-   *
-   * @param f zipping-function from the input values to the output value
-   */
-  def create[A, B, C](f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
-    create(f = f, OperationAttributes.none)
-
-  final class Left[A, B, C](override val asScala: scaladsl.ZipWith.Left[A, B, C]) extends JunctionInPort[A]
-  final class Right[A, B, C](override val asScala: scaladsl.ZipWith.Right[A, B, C]) extends JunctionInPort[B]
-  final class Out[A, B, C](override val asScala: scaladsl.ZipWith.Out[A, B, C]) extends JunctionOutPort[C]
-}
-
-/**
- * Takes two streams and outputs an output stream formed from the two input streams
- * by combining corresponding elements in pairs. If one of the two streams is
- * longer than the other, its remaining elements are ignored.
- */
-final class ZipWith[A, B, C] private (val asScala: scaladsl.ZipWith[A, B, C]) {
-  val left = new ZipWith.Left[A, B, C](asScala.left)
-  val right = new ZipWith.Right[A, B, C](asScala.right)
-  val out = new ZipWith.Out[A, B, C](asScala.out)
 }
 
 object Unzip {
@@ -279,13 +244,13 @@ object Unzip {
   /**
    * Creates a new `Unzip` vertex with the specified output types and attributes.
    *
-   * @param attributes optional attributes for this vertex
+   * @param attributes attributes for this vertex
    */
   def create[A, B](attributes: OperationAttributes): Unzip[A, B] =
     new Unzip[A, B](new scaladsl.Unzip[A, B](attributes.asScala))
 
   /**
-   * Creates a new `Unzip` vertex with the specified output types.
+   * Creates a new `Unzip` vertex with the specified output types and attributes.
    */
   def create[A, B](): Unzip[A, B] = create(OperationAttributes.none)
 
@@ -335,21 +300,30 @@ final class Unzip[A, B] private (delegate: scaladsl.Unzip[A, B]) {
 
 object Concat {
   /**
-   * Create a new `Concat` vertex with the specified input types and attributes.
-   *
-   * @param attributes optional attributes for this vertex
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
    */
-  def create[T](attributes: OperationAttributes): Concat[T] = new Concat(scaladsl.Concat[T])
+  def create[T](): Concat[T] =
+    create(OperationAttributes.none)
 
   /**
-   * Create a new `Concat` vertex with the specified input types.
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
    */
-  def create[T](): Concat[T] = create(OperationAttributes.none)
+  def create[T](attributes: OperationAttributes): Concat[T] =
+    new Concat(scaladsl.Concat[T](attributes.asScala))
 
   /**
-   * Create a new `Concat` vertex with the specified input types.
+   * Create a new anonymous `Concat` vertex with the specified input types.
+   * Note that a `Concat` instance can only be used at one place (one vertex)
+   * in the `FlowGraph`. This method creates a new instance every time it
+   * is called and those instances are not `equal`.
    */
-  def create[T](clazz: Class[T]): Concat[T] = create()
+  def create[T](clazz: Class[T], attributes: OperationAttributes): Concat[T] = create(attributes)
 
   class First[T] private[akka] (delegate: scaladsl.Concat.First[T]) extends JunctionInPort[T] {
     override def asScala: scaladsl.JunctionInPort[T] = delegate
@@ -449,7 +423,6 @@ object FlowGraph {
  * Builder of [[FlowGraph]] and [[PartialFlowGraph]].
  */
 class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
-  import akka.stream.scaladsl.JavaConverters._
 
   def this() {
     this(new scaladsl.FlowGraphBuilder())
@@ -571,8 +544,9 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
 object PartialFlowGraphBuilder extends FlowGraphBuilder
 
 class PartialFlowGraph(delegate: scaladsl.PartialFlowGraph) {
-  import collection.JavaConverters._
   import akka.stream.scaladsl.JavaConverters._
+
+  import collection.JavaConverters._
 
   def asScala: scaladsl.PartialFlowGraph = delegate
 
