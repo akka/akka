@@ -275,7 +275,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           case noMatch if !optimizations.simplification || (noMatch ne orig) ⇒ orig
 
           // Two consecutive maps is equivalent to one pipelined map
-          case (second: Ast.Map) :: (first: Ast.Map) :: rest ⇒ Ast.Map(first.f andThen second.f, first.attributes and second.attributes) :: rest
+          case Ast.Map(second, secondAttributes) :: Ast.Map(first, firstAttributes) :: rest ⇒
+            Ast.Map(first andThen second, firstAttributes and secondAttributes) :: rest
 
           case noMatch ⇒ noMatch
         }
@@ -286,7 +287,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           case noMatch if !optimizations.collapsing || (noMatch ne orig) ⇒ orig
 
           // Collapses a filter and a map into a collect
-          case (map: Ast.Map) :: (fil: Ast.Filter) :: rest ⇒ Ast.Collect({ case i if fil.p(i) ⇒ map.f(i) }) :: rest
+          case Ast.Map(mapFn, mapAttributes) :: Ast.Filter(filFn, filAttributes) :: rest ⇒
+            Ast.Collect({ case i if filFn(i) ⇒ mapFn(i) }, filAttributes and mapAttributes) :: rest
 
           case noMatch ⇒ noMatch
         }
