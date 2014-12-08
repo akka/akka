@@ -129,7 +129,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   }
 
   protected def completed: Actor.Receive = {
-    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber") // FIXME "shutdown subscriber"?!
   }
 
   protected def inputOnError(e: Throwable): Unit = {
@@ -177,9 +177,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
 
   def isClosed: Boolean = downstreamCompleted
 
-  protected def createSubscription(): Subscription = {
-    new ActorSubscription(actor, subscriber)
-  }
+  protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 
   private def subscribePending(subscribers: Seq[Subscriber[Any]]): Unit =
     subscribers foreach { sub ⇒
@@ -201,15 +199,16 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
     case SubscribePending ⇒
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
+      if (elements < 1) {
+        cancel(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
+      } else {
+        downstreamDemand += elements
+        if (downstreamDemand < 1) { // Long has overflown
+          cancel(ReactiveStreamsCompliance.totalPendingDemandMustNotExceedLongMaxValueException)
+        }
 
-      downstreamDemand += elements
-      if (downstreamDemand < 0) {
-        // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
-        cancel(demandOverflowException)
+        pump.pump() // FIXME should this be called even on overflow, sounds like a bug to me
       }
-
-      pump.pump()
     case Cancel(subscription) ⇒
       downstreamCompleted = true
       exposedPublisher.shutdown(Some(new ActorPublisher.NormalShutdownException))
