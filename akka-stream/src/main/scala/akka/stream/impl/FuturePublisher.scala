@@ -28,15 +28,13 @@ private[akka] object FuturePublisher {
 
   object FutureSubscription {
     case class Cancel(subscription: FutureSubscription)
-    case class RequestMore(subscription: FutureSubscription)
+    case class RequestMore(subscription: FutureSubscription, elements: Long)
   }
 
   class FutureSubscription(ref: ActorRef) extends Subscription {
     import akka.stream.impl.FuturePublisher.FutureSubscription._
     def cancel(): Unit = ref ! Cancel(this)
-    def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
-      else ref ! RequestMore(this)
+    def request(elements: Long): Unit = ref ! RequestMore(this, elements)
     override def toString = "FutureSubscription"
   }
 }
@@ -44,11 +42,12 @@ private[akka] object FuturePublisher {
 /**
  * INTERNAL API
  */
-//FIXME why do we need to have an actor to drive a Future?
+// FIXME why do we need to have an actor to drive a Future?
 private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.FuturePublisher.FutureSubscription
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
   import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore
+  import ReactiveStreamsCompliance._
 
   var exposedPublisher: ActorPublisher[Any] = _
   var subscribers = Map.empty[Subscriber[Any], FutureSubscription]
@@ -77,42 +76,53 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
   def active: Receive = {
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-    case RequestMore(subscription) ⇒
+    case RequestMore(subscription, elements) ⇒ // FIXME we aren't tracking demand per subscription so we don't check for overflow. We should.
       if (subscriptions.contains(subscription)) {
-        subscriptionsReadyForPush += subscription
-        push(subscriptions(subscription))
+        if (elements < 1) {
+          val subscriber = subscriptions(subscription)
+          rejectDueToNonPositiveDemand(subscriber)
+          removeSubscriber(subscriber)
+        } else {
+          subscriptionsReadyForPush += subscription
+          push(subscriptions(subscription))
+        }
       }
     case Cancel(subscription) if subscriptions.contains(subscription) ⇒
       removeSubscriber(subscriptions(subscription))
     case Status.Failure(ex) ⇒
-      futureValue = Some(Failure(ex))
-      pushToAll()
+      if (futureValue.isEmpty) {
+        futureValue = Some(Failure(ex))
+        pushToAll()
+      }
     case value ⇒
-      futureValue = Some(Success(value))
-      pushToAll()
+      if (futureValue.isEmpty) {
+        futureValue = Some(Success(value))
+        pushToAll()
+      }
   }
 
   def pushToAll(): Unit = subscriptionsReadyForPush foreach { subscription ⇒ push(subscriptions(subscription)) }
 
   def push(subscriber: Subscriber[Any]): Unit = futureValue match {
     case Some(Success(value)) ⇒
-      subscriber.onNext(value)
-      subscriber.onComplete()
+
+      tryOnNext(subscriber, value)
+      tryOnComplete(subscriber)
       removeSubscriber(subscriber)
     case Some(Failure(t)) ⇒
-      subscriber.onError(t)
+      tryOnError(subscriber, t)
       removeSubscriber(subscriber)
     case None ⇒ // not completed yet
   }
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
-    if (subscribers.contains(subscriber))
-      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
+    if (subscribers.contains(subscriber)) // FIXME this is not legal AFAICT, needs to check identity, not equality
+      rejectDuplicateSubscriber(subscriber)
     else {
       val subscription = new FutureSubscription(self)
       subscribers = subscribers.updated(subscriber, subscription)
       subscriptions = subscriptions.updated(subscription, subscriber)
-      subscriber.onSubscribe(subscription)
+      tryOnSubscribe(subscriber, subscription)
     }
   }
 
@@ -127,7 +137,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerS
     }
   }
 
-  override def postStop(): Unit =
+  override def postStop(): Unit = // FIXME if something blows up, are the subscribers onErrored?
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(shutdownReason)
 

@@ -41,17 +41,6 @@ private[akka] trait SubscriptionWithCursor[T] extends Subscription with Resizabl
 
   def dispatch(element: T): Unit = subscriber.onNext(element)
 
-  /** Increases the `requested` counter, additionally providing overflow protection */
-  def moreRequested(demand: Long): Long = {
-    val sum = totalDemand + demand
-    val noOverflow = sum > 0
-
-    if (noOverflow) totalDemand = sum
-    else subscriber.onError(new IllegalStateException(s"Total pending demand ($totalDemand + $demand) would overflow `Long`, for Subscriber $subscriber! ${ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue}"))
-
-    sum
-  }
-
   var active = true
 
   /** Do not increment directly, use `moreRequested(Long)` instead (it provides overflow protection)! */
@@ -112,29 +101,43 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    */
   protected def moreRequested(subscription: S, elements: Long): Unit =
     if (subscription.active) {
-      // returns Long.MinValue if the subscription is to be terminated
-      @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long, eos: EndOfStream): Long =
-        if (requested == 0) {
-          // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
-          if ((eos ne NotReached) && buffer.count(subscription) == 0) Long.MinValue else 0
-        } else if (buffer.count(subscription) > 0) {
-          subscription.dispatch(buffer.read(subscription))
-          dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos)
-        } else if (eos ne NotReached) Long.MinValue
-        else requested
+      import ReactiveStreamsCompliance._
+      // check for illegal demand See 3.9
+      if (elements < 1) {
+        try tryOnError(subscription.subscriber, numberOfElementsInRequestMustBePositiveException)
+        finally unregisterSubscriptionInternal(subscription)
+      } else {
+        endOfStream match {
+          case eos @ (NotReached | Completed) ⇒
+            val demand = subscription.totalDemand + elements
+            //Check for overflow
+            if (demand < 1) {
+              try tryOnError(subscription.subscriber, totalPendingDemandMustNotExceedLongMaxValueException)
+              finally unregisterSubscriptionInternal(subscription)
+            } else {
+              subscription.totalDemand = demand
+              // returns Long.MinValue if the subscription is to be terminated
+              @tailrec def dispatchFromBufferAndReturnRemainingRequested(requested: Long, eos: EndOfStream): Long =
+                if (requested == 0) {
+                  // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
+                  if ((eos ne NotReached) && buffer.count(subscription) == 0) Long.MinValue else 0
+                } else if (buffer.count(subscription) > 0) {
+                  subscription.dispatch(buffer.read(subscription)) // FIXME this does not gracefully handle the case if onNext throws
+                  dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos)
+                } else if (eos ne NotReached) Long.MinValue
+                else requested
 
-      endOfStream match {
-        case eos @ (NotReached | Completed) ⇒
-          val demand = subscription.moreRequested(elements)
-          dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
-            case Long.MinValue ⇒
-              eos(subscription.subscriber)
-              unregisterSubscriptionInternal(subscription)
-            case x ⇒
-              subscription.totalDemand = x
-              requestFromUpstreamIfRequired()
-          }
-        case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+              dispatchFromBufferAndReturnRemainingRequested(demand, eos) match {
+                case Long.MinValue ⇒
+                  eos(subscription.subscriber)
+                  unregisterSubscriptionInternal(subscription)
+                case x ⇒
+                  subscription.totalDemand = x
+                  requestFromUpstreamIfRequired()
+              }
+            }
+          case ErrorCompleted(_) ⇒ // ignore, the Subscriber might not have seen our error event yet
+        }
       }
     }
 
@@ -212,20 +215,17 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
    * Register a new subscriber.
    */
   protected def registerSubscriber(subscriber: Subscriber[_ >: T]): Unit = endOfStream match {
-    case NotReached if subscriptions.exists(_.subscriber eq subscriber) ⇒
-      subscriber.onError(new IllegalStateException(s"${getClass.getSimpleName} [${this}, sub: $subscriber] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
-    case NotReached ⇒
-      val newSubscription = createSubscription(subscriber)
-      subscriptions ::= newSubscription
-      buffer.initCursor(newSubscription)
-      subscriber.onSubscribe(newSubscription)
-    case Completed if buffer.nonEmpty ⇒
-      val newSubscription = createSubscription(subscriber)
-      subscriptions ::= newSubscription
-      buffer.initCursor(newSubscription)
-      subscriber.onSubscribe(newSubscription)
-    case eos ⇒
-      eos(subscriber)
+    case NotReached if subscriptions.exists(_.subscriber eq subscriber) ⇒ ReactiveStreamsCompliance.rejectDuplicateSubscriber(subscriber)
+    case NotReached ⇒ addSubscription(subscriber)
+    case Completed if buffer.nonEmpty ⇒ addSubscription(subscriber)
+    case eos ⇒ eos(subscriber)
+  }
+
+  protected def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
+    val newSubscription = createSubscription(subscriber)
+    subscriptions ::= newSubscription
+    buffer.initCursor(newSubscription)
+    ReactiveStreamsCompliance.tryOnSubscribe(subscriber, newSubscription) // FIXME what if this throws?
   }
 
   /**
