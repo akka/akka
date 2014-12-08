@@ -130,6 +130,8 @@ It contains instructions on how to run the ``PersistentActorExample``.
   with ``context().become()`` and ``context().unbecome()``. To get the actor into the same state after
   recovery you need to take special care to perform the same state transitions with ``become`` and
   ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
+  Note that when using ``become`` from ``receiveRecover`` it will still only use the ``receiveRecover``
+  behavior when replaying the events. When replay is completed it will use the new behavior.
 
 Identifiers
 -----------
@@ -158,6 +160,15 @@ Automated recovery on start can be disabled by overriding ``preStart`` with an e
 In this case, a persistent actor must be recovered explicitly by sending it a ``Recover`` message.
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-explicit
+
+.. warning::
+
+  If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+  ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
+
+In order to completely skip recovery, you can signal it with ``Recover.create(0L)``
+
+.. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#recover-fully-disabled
 
 If not overridden, ``preStart`` sends a ``Recover`` message to ``self()``. Applications may also override
 ``preStart`` to define further ``Recover`` parameters such as an upper sequence number bound, for example.
@@ -206,7 +217,7 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistenceDocTest.java#persist-async
 
 .. note::
-  In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
+  In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync`` on all incoming messages right away,
   and handle them in the callback.
 
 .. warning::

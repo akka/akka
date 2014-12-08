@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import static java.util.Arrays.asList;
 
 class Cmd implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String data;
 
     public Cmd(String data) {
@@ -25,6 +26,7 @@ class Cmd implements Serializable {
 }
 
 class Evt implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String data;
 
     public Evt(String data) {
@@ -37,6 +39,7 @@ class Evt implements Serializable {
 }
 
 class ExampleState implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final ArrayList<String> events;
 
     public ExampleState() {

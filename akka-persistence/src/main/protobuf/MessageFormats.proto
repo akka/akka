@@ -5,20 +5,16 @@
 option java_package = "akka.persistence.serialization";
 option optimize_for = SPEED;
 
-message PersistentMessageBatch {
-  repeated PersistentMessage batch = 1;
-}
-
 message PersistentMessage {
   optional PersistentPayload payload = 1;
   optional int64 sequenceNr = 2;
   optional string persistenceId = 3;
   optional bool deleted = 4;
-  optional int32 redeliveries = 6;
-  repeated string confirms = 7;
-  optional bool confirmable = 8;
-  optional DeliveredMessage confirmMessage = 9;
-  optional string confirmTarget = 10;
+  // optional int32 redeliveries = 6; // Removed in 2.4
+  // repeated string confirms = 7; // Removed in 2.4
+  // optional bool confirmable = 8;  // Removed in 2.4
+  // optional DeliveredMessage confirmMessage = 9; // Removed in 2.4
+  // optional string confirmTarget = 10;
   optional string sender = 11;
 }
 
@@ -26,19 +22,6 @@ message PersistentPayload {
   required int32 serializerId = 1;
   required bytes payload = 2;
   optional bytes payloadManifest = 3;
-}
-
-message DeliveredMessage {
-  optional string persistenceId = 1;
-  optional string channelId = 2;
-  optional int64 persistentSequenceNr = 3;
-  optional int64 deliverySequenceNr = 4;
-  optional string channel = 5;
-}
-
-message DeliverMessage {
-  optional PersistentMessage persistent = 1;
-  optional string destination = 2;
 }
 
 message AtLeastOnceDeliverySnapshot {

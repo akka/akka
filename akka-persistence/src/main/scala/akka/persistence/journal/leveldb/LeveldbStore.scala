@@ -43,16 +43,6 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
   def writeMessages(messages: immutable.Seq[PersistentRepr]) =
     withBatch(batch ⇒ messages.foreach(message ⇒ addToMessageBatch(message, batch)))
 
-  def writeConfirmations(confirmations: immutable.Seq[PersistentConfirmation]) =
-    withBatch(batch ⇒ confirmations.foreach(confirmation ⇒ addToConfirmationBatch(confirmation, batch)))
-
-  def deleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean) = withBatch { batch ⇒
-    messageIds foreach { messageId ⇒
-      if (permanent) batch.delete(keyToBytes(Key(numericId(messageId.persistenceId), messageId.sequenceNr, 0)))
-      else batch.put(keyToBytes(deletionKey(numericId(messageId.persistenceId), messageId.sequenceNr)), Array.emptyByteArray)
-    }
-  }
-
   def deleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean) = withBatch { batch ⇒
     val nid = numericId(persistenceId)
 
@@ -64,7 +54,7 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     }
 
     fromSequenceNr to toSequenceNr foreach { sequenceNr ⇒
-      if (permanent) batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete confirmations and deletion markers, if any.
+      if (permanent) batch.delete(keyToBytes(Key(nid, sequenceNr, 0))) // TODO: delete deletion markers, if any.
       else batch.put(keyToBytes(deletionKey(nid, sequenceNr)), Array.emptyByteArray)
     }
   }
@@ -102,12 +92,6 @@ private[persistence] trait LeveldbStore extends Actor with LeveldbIdMapping with
     batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentToBytes(persistent))
   }
 
-  private def addToConfirmationBatch(confirmation: PersistentConfirmation, batch: WriteBatch): Unit = {
-    val npid = numericId(confirmation.persistenceId)
-    val ncid = numericId(confirmation.channelId)
-    batch.put(keyToBytes(Key(npid, confirmation.sequenceNr, ncid)), confirmation.channelId.getBytes("UTF-8"))
-  }
-
   override def preStart() {
     leveldb = leveldbFactory.open(leveldbDir, if (nativeLeveldb) leveldbOptions else leveldbOptions.compressionType(CompressionType.NONE))
     super.preStart()
@@ -129,8 +113,6 @@ class SharedLeveldbStore extends { val configPath = "akka.persistence.journal.le
 
   def receive = {
     case WriteMessages(msgs)                        ⇒ sender() ! writeMessages(msgs)
-    case WriteConfirmations(cnfs)                   ⇒ sender() ! writeConfirmations(cnfs)
-    case DeleteMessages(messageIds, permanent)      ⇒ sender() ! deleteMessages(messageIds, permanent)
     case DeleteMessagesTo(pid, tsnr, permanent)     ⇒ sender() ! deleteMessagesTo(pid, tsnr, permanent)
     case ReadHighestSequenceNr(pid, fromSequenceNr) ⇒ sender() ! readHighestSequenceNr(numericId(pid))
     case ReplayMessages(pid, fromSnr, toSnr, max) ⇒

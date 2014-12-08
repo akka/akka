@@ -71,6 +71,6 @@ public class PersistentActorFailureExample {
     // etc ...
 
     Thread.sleep(1000);
-    system.shutdown();
+    system.terminate();
   }
 }

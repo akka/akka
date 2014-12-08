@@ -147,4 +147,17 @@ Default interval for TestKit.awaitAssert changed to 100 ms
 Default check interval changed from 800 ms to 100 ms. You can define the interval explicitly if you need a
 longer interval.
 
+persistenceId
+=============
+
+It is now mandatory to define the ``persistenceId`` in subclasses of ``PersistentActor``, ``UntypedPersistentActor``
+and ``AbstractPersistentId``.
+
+The rationale behind this change being stricter de-coupling of your Actor hierarchy and the logical 
+"which persistent entity this actor represents".
+
+In case you want to perserve the old behavior of providing the actor's path as the default ``persistenceId``, you can easily
+implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
+
+    override def persistenceId = self.path.toStringWithoutAddress
 

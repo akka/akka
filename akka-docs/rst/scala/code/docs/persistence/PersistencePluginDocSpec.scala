@@ -4,19 +4,19 @@
 
 package docs.persistence
 
-//#plugin-imports
-
 import akka.actor.ActorSystem
-import akka.persistence._
-import akka.persistence.journal._
-import akka.persistence.snapshot._
 import akka.testkit.TestKit
 import com.typesafe.config._
 import org.scalatest.WordSpec
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+//#plugin-imports
+import akka.persistence._
+import akka.persistence.journal._
+import akka.persistence.snapshot._
+
 //#plugin-imports
 
 object PersistencePluginDocSpec {
@@ -122,15 +122,18 @@ trait SharedLeveldbPluginDocSpec {
 
 class MyJournal extends AsyncWriteJournal {
   def asyncWriteMessages(messages: Seq[PersistentRepr]): Future[Unit] = ???
-  def asyncWriteConfirmations(confirmations: Seq[PersistentConfirmation]): Future[Unit] = ???
-  def asyncDeleteMessages(messageIds: Seq[PersistentId], permanent: Boolean): Future[Unit] = ???
-  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean): Future[Unit] = ???
-  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
-  def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] = ???
+  def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long,
+                            permanent: Boolean): Future[Unit] = ???
+  def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long,
+                          toSequenceNr: Long, max: Long)(
+                            replayCallback: (PersistentRepr) => Unit): Future[Unit] = ???
+  def asyncReadHighestSequenceNr(persistenceId: String,
+                                 fromSequenceNr: Long): Future[Long] = ???
 }
 
 class MySnapshotStore extends SnapshotStore {
-  def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
+  def loadAsync(persistenceId: String,
+                criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = ???
   def saveAsync(metadata: SnapshotMetadata, snapshot: Any): Future[Unit] = ???
   def saved(metadata: SnapshotMetadata): Unit = ???
   def delete(metadata: SnapshotMetadata): Unit = ???
@@ -145,8 +148,8 @@ object PersistenceTCKDoc {
     class MyJournalSpec extends JournalSpec {
       override val config = ConfigFactory.parseString(
         """
-          |akka.persistence.journal.plugin = "my.journal.plugin"
-        """.stripMargin)
+        akka.persistence.journal.plugin = "my.journal.plugin"
+        """)
     }
     //#journal-tck-scala
   }
@@ -157,8 +160,8 @@ object PersistenceTCKDoc {
     class MySnapshotStoreSpec extends SnapshotStoreSpec {
       override val config = ConfigFactory.parseString(
         """
-          |akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
-        """.stripMargin)
+        akka.persistence.snapshot-store.plugin = "my.snapshot-store.plugin"
+        """)
     }
     //#snapshot-store-tck-scala
   }
@@ -172,8 +175,8 @@ object PersistenceTCKDoc {
     class MyJournalSpec extends JournalSpec {
       override val config = ConfigFactory.parseString(
         """
-          |akka.persistence.journal.plugin = "my.journal.plugin"
-        """.stripMargin)
+        akka.persistence.journal.plugin = "my.journal.plugin"
+        """)
 
       val storageLocations = List(
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),

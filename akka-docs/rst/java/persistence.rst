@@ -132,6 +132,8 @@ It contains instructions on how to run the ``PersistentActorExample``.
   with ``getContext().become()`` and ``getContext().unbecome()``. To get the actor into the same state after
   recovery you need to take special care to perform the same state transitions with ``become`` and
   ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
+  Note that when using ``become`` from ``receiveRecover`` it will still only use the ``receiveRecover``
+  behavior when replaying the events. When replay is completed it will use the new behavior.
 
 Identifiers
 -----------
@@ -163,8 +165,9 @@ In this case, a persistent actor must be recovered explicitly by sending it a ``
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#recover-explicit
 
 .. warning::
-If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
-``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
+
+  If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+  ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
 
 In order to completely skip recovery, you can signal it with ``Recover.create(0L)``
 
@@ -219,7 +222,7 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 .. includecode:: code/docs/persistence/PersistenceDocTest.java#persist-async
 
 .. note::
-  In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming events right away,
+  In order to implement the pattern known as "*command sourcing*" simply ``persistAsync`` all incoming messages right away,
   and handle them in the callback.
   
 .. warning::

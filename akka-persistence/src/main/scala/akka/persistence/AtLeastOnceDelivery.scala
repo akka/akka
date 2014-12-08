@@ -103,9 +103,7 @@ object AtLeastOnceDelivery {
  * serialization mechanism. It is easiest to include the bytes of the `AtLeastOnceDeliverySnapshot`
  * as a blob in your custom snapshot.
  */
-trait AtLeastOnceDelivery extends Processor {
-  // FIXME The reason for extending Processor instead of PersistentActor is
-  //       the class hierarchy for UntypedPersistentActorWithAtLeastOnceDelivery
+trait AtLeastOnceDelivery extends Eventsourced {
   import AtLeastOnceDelivery._
   import AtLeastOnceDelivery.Internal._
 
@@ -302,9 +300,9 @@ trait AtLeastOnceDelivery extends Processor {
     super.aroundPostStop()
   }
 
-  override private[persistence] def onReplaySuccess(receive: Receive, awaitReplay: Boolean): Unit = {
-    super.onReplaySuccess(receive, awaitReplay)
+  override private[persistence] def onReplaySuccess(): Unit = {
     redeliverOverdue()
+    super.onReplaySuccess()
   }
 
   /**

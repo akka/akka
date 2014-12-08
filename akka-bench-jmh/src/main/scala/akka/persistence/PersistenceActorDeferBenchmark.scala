@@ -37,8 +37,6 @@ class PersistentActorDeferBenchmark {
   var system: ActorSystem = _
 
   var probe: TestProbe = _
-  var processor: ActorRef = _
-  var processor_replyASAP: ActorRef = _
   var persistAsync_defer: ActorRef = _
   var persistAsync_defer_replyASAP: ActorRef = _
 
@@ -51,8 +49,6 @@ class PersistentActorDeferBenchmark {
     probe = TestProbe()(system)
 
     storageLocations.foreach(FileUtils.deleteDirectory)
-    processor = system.actorOf(Props(classOf[`processor, forward Persistent, like defer`], data10k.last), "p-1")
-    processor_replyASAP = system.actorOf(Props(classOf[`processor, forward Persistent, reply ASAP`], data10k.last), "p-2")
     persistAsync_defer = system.actorOf(Props(classOf[`persistAsync, defer`], data10k.last), "a-1")
     persistAsync_defer_replyASAP = system.actorOf(Props(classOf[`persistAsync, defer, respond ASAP`], data10k.last), "a-2")
   }
@@ -63,22 +59,6 @@ class PersistentActorDeferBenchmark {
     system.awaitTermination()
 
     storageLocations.foreach(FileUtils.deleteDirectory)
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(10000)
-  def tell_processor_Persistent_reply() {
-    for (i <- data10k) processor.tell(i, probe.ref)
-
-    probe.expectMsg(data10k.last)
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(10000)
-  def tell_processor_Persistent_replyASAP() {
-    for (i <- data10k) processor_replyASAP.tell(i, probe.ref)
-
-    probe.expectMsg(data10k.last)
   }
 
   @Benchmark
@@ -97,24 +77,6 @@ class PersistentActorDeferBenchmark {
     probe.expectMsg(data10k.last)
   }
 
-}
-
-class `processor, forward Persistent, like defer`(respondAfter: Int) extends Processor {
-  def receive = {
-    case n: Int =>
-      self forward Persistent(Evt(n))
-      self forward Evt(n)
-    case Persistent(p)               => // ignore
-    case Evt(n) if n == respondAfter => sender() ! respondAfter
-  }
-}
-class `processor, forward Persistent, reply ASAP`(respondAfter: Int) extends Processor {
-  def receive = {
-    case n: Int =>
-      self forward Persistent(Evt(n))
-      if (n == respondAfter) sender() ! respondAfter
-    case _ => // ignore
-  }
 }
 
 class `persistAsync, defer`(respondAfter: Int) extends PersistentActor {
