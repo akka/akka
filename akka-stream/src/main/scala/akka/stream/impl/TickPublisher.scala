@@ -29,9 +29,7 @@ private[akka] object TickPublisher {
   class TickPublisherSubscription(ref: ActorRef) extends Subscription {
     import akka.stream.impl.TickPublisher.TickPublisherSubscription._
     def cancel(): Unit = ref ! Cancel
-    def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
-      else ref ! RequestMore(elements)
+    def request(elements: Long): Unit = ref ! RequestMore(elements)
     override def toString = "TickPublisherSubscription"
   }
 
@@ -49,6 +47,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
                                   settings: MaterializerSettings, cancelled: AtomicBoolean) extends Actor with SoftShutdown {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
+  import ReactiveStreamsCompliance._
 
   var exposedPublisher: ActorPublisher[Any] = _
   private var subscriber: Subscriber[_ >: Any] = null
@@ -73,31 +72,36 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
       context.become(active)
   }
 
+  def handleError(error: Throwable): Unit = {
+    try {
+      if (!error.isInstanceOf[SpecViolation])
+        tryOnError(subscriber, error)
+    } finally {
+      subscriber = null
+      exposedPublisher.shutdown(Some(error)) // FIXME should this not be SupportsOnlyASingleSubscriber?
+      context.stop(self)
+    }
+  }
+
   def active: Receive = {
     case Tick ⇒
       try {
-        val tickElement = tick()
+        val tickElement = tick() // FIXME should we call this even if we shouldn't send it?
         if (demand > 0) {
           demand -= 1
-          subscriber.onNext(tickElement)
+          tryOnNext(subscriber, tickElement)
         }
       } catch {
-        case NonFatal(e) ⇒
-          if (subscriber ne null) {
-            subscriber.onError(e)
-            subscriber = null
-          }
-          exposedPublisher.shutdown(Some(e))
-          context.stop(self)
+        case NonFatal(e) ⇒ handleError(e)
       }
 
     case RequestMore(elements) ⇒
-      demand += elements
-      if (demand < 0) {
-        // Long has overflown, reactive-streams specification rule 3.17
-        exposedPublisher.shutdown(Some(
-          new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)))
-        context.stop(self)
+      if (elements < 1) {
+        handleError(numberOfElementsInRequestMustBePositiveException)
+      } else {
+        demand += elements
+        if (demand < 0) // Long has overflown, reactive-streams specification rule 3.17
+          handleError(totalPendingDemandMustNotExceedLongMaxValueException)
       }
 
     case Cancel ⇒
@@ -106,25 +110,23 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
 
     case SubscribePending ⇒
       exposedPublisher.takePendingSubscribers() foreach registerSubscriber
-
   }
 
-  def registerSubscriber(s: Subscriber[_ >: Any]): Unit = {
-    if (subscriber ne null) s.onError(new IllegalStateException(s"${getClass.getSimpleName} [$self, sub: $subscriber] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
-    else {
+  def registerSubscriber(s: Subscriber[_ >: Any]): Unit = subscriber match {
+    case null ⇒
       val subscription = new TickPublisherSubscription(self)
       subscriber = s
-      subscriber.onSubscribe(subscription)
-    }
+      tryOnSubscribe(s, subscription)
+    case _ ⇒
+      rejectAdditionalSubscriber(s, exposedPublisher)
   }
 
   override def postStop(): Unit = {
     tickTask.foreach(_.cancel)
     cancelled.set(true)
-    if (subscriber ne null) subscriber.onComplete()
+    if (subscriber ne null) tryOnComplete(subscriber)
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
   }
-
 }
 

@@ -20,11 +20,26 @@ private[stream] object ReactiveStreamsCompliance {
   final val TotalPendingDemandMustNotExceedLongMaxValue =
     "Total pending demand MUST NOT be > `java.lang.Long.MAX_VALUE` (see reactive-streams specification, rule 3.17)"
 
-  final def validateRequest(n: Long): Unit =
-    if (n < 1) throw new IllegalArgumentException(NumberOfElementsInRequestMustBePositiveMsg) with SpecViolation
+  final def totalPendingDemandMustNotExceedLongMaxValueException: Throwable =
+    new IllegalStateException(TotalPendingDemandMustNotExceedLongMaxValue)
 
-  final def rejectAdditionalSubscriber[T](subsriber: Subscriber[T], rejector: Publisher[T]): Unit =
-    tryOnError(subsriber, new IllegalStateException(s"$rejector $SupportsOnlyASingleSubscriber"))
+  final def numberOfElementsInRequestMustBePositiveException: Throwable =
+    new IllegalArgumentException(NumberOfElementsInRequestMustBePositiveMsg)
+
+  final def canNotSubscribeTheSameSubscriberMultipleTimesException: Throwable =
+    new IllegalStateException(CanNotSubscribeTheSameSubscriberMultipleTimes)
+
+  final def rejectDuplicateSubscriber[T](subscriber: Subscriber[T]): Unit =
+    tryOnError(subscriber, canNotSubscribeTheSameSubscriberMultipleTimesException)
+
+  final def rejectAdditionalSubscriber[T](subscriber: Subscriber[T], rejector: Publisher[T]): Unit =
+    tryOnError(subscriber, new IllegalStateException(s"$rejector $SupportsOnlyASingleSubscriber"))
+
+  final def rejectDueToOverflow[T](subscriber: Subscriber[T]): Unit =
+    tryOnError(subscriber, totalPendingDemandMustNotExceedLongMaxValueException)
+
+  final def rejectDueToNonPositiveDemand[T](subscriber: Subscriber[T]): Unit =
+    tryOnError(subscriber, numberOfElementsInRequestMustBePositiveException)
 
   sealed trait SpecViolation {
     self: Throwable ⇒

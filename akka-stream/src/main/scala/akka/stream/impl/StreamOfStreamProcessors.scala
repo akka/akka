@@ -24,9 +24,7 @@ private[akka] object MultiStreamOutputProcessor {
   case class SubstreamSubscriptionTimeout(substream: SubstreamKey)
 
   class SubstreamSubscription(val parent: ActorRef, val substreamKey: SubstreamKey) extends Subscription {
-    override def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
-      else parent ! SubstreamRequestMore(substreamKey, elements)
+    override def request(elements: Long): Unit = parent ! SubstreamRequestMore(substreamKey, elements)
     override def cancel(): Unit = parent ! SubstreamCancel(substreamKey)
     override def toString = "SubstreamSubscription" + System.identityHashCode(this)
   }

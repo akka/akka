@@ -18,7 +18,8 @@ private[akka] case object EmptyPublisher extends Publisher[Nothing] {
  * INTERNAL API
  */
 private[akka] case class ErrorPublisher(t: Throwable, name: String) extends Publisher[Nothing] {
-  override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit = subscriber.onError(t)
+  override def subscribe(subscriber: Subscriber[_ >: Nothing]): Unit =
+    ReactiveStreamsCompliance.tryOnError(subscriber, t) // FIXME how to deal with spec violations here?
   def apply[T]: Publisher[T] = this.asInstanceOf[Publisher[T]]
   override def toString: String = name
 }

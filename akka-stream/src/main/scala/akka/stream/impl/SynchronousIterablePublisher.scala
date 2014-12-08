@@ -28,49 +28,66 @@ private[akka] object SynchronousIterablePublisher {
     var pendingDemand = 0L
     var pushing = false
 
+    import ReactiveStreamsCompliance._
+
     def init(): Unit = try {
-      if (!iterator.hasNext) {
+      if (!iterator.hasNext) { // Let's be prudent and issue onComplete immediately
         cancel()
-        subscriber.onSubscribe(this)
-        subscriber.onComplete()
+        tryOnSubscribe(subscriber, this)
+        tryOnComplete(subscriber)
       } else {
-        subscriber.onSubscribe(this)
+        tryOnSubscribe(subscriber, this)
       }
     } catch {
+      case sv: SpecViolation ⇒
+        cancel()
+        throw sv.violation // I think it is prudent to "escalate" the spec violation
       case NonFatal(e) ⇒
         cancel()
-        subscriber.onError(e)
+        tryOnError(subscriber, e)
     }
 
-    override def cancel(): Unit =
-      done = true
+    override def cancel(): Unit = done = true
 
     override def request(elements: Long): Unit = {
-      if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
-      @tailrec def pushNext(): Unit = {
-        if (!done)
-          if (iterator.isEmpty) {
-            cancel()
-            subscriber.onComplete() // FIXME this is technically incorrect since if onComplete throws an Exception, we'll call onError (illegal)
-          } else if (pendingDemand > 0) {
-            pendingDemand -= 1
-            subscriber.onNext(iterator.next())
-            pushNext()
-          }
-      }
+      if (done) () // According to Reactive Streams Spec 3.6, `request` on a cancelled `Subscription` must be a NoOp
+      else if (elements < 1) { // According to Reactive Streams Spec 3.9, with non-positive demand must yield onError
+        cancel()
+        rejectDueToNonPositiveDemand(subscriber)
+      } else {
+        pendingDemand += elements
+        if (pendingDemand < 1) { // According to Reactive Streams Spec 3:17, if we overflow 2^63-1, we need to yield onError
+          cancel()
+          rejectDueToOverflow(subscriber)
+        } else if (!pushing) {
+          // According to Reactive Streams Spec 3:3, we must prevent unbounded recursion
+          try {
+            pushing = true
+            pendingDemand = elements
 
-      if (pushing)
-        pendingDemand += elements // reentrant call to requestMore from onNext // FIXME This severely lacks overflow checks
-      else {
-        try {
-          pushing = true
-          pendingDemand = elements
-          pushNext()
-        } catch {
-          case NonFatal(e) ⇒
-            cancel()
-            subscriber.onError(e)
-        } finally { pushing = false }
+            @tailrec def pushNext(): Unit =
+              if (done) ()
+              else if (iterator.isEmpty) {
+                cancel()
+                tryOnComplete(subscriber)
+              } else if (pendingDemand > 0) {
+                pendingDemand -= 1
+                tryOnNext(subscriber, iterator.next())
+                pushNext()
+              }
+
+            pushNext()
+          } catch {
+            case sv: SpecViolation ⇒
+              cancel()
+              throw sv.violation // I think it is prudent to "escalate" the spec violation
+            case NonFatal(e) ⇒
+              cancel()
+              tryOnError(subscriber, e)
+          } finally {
+            pushing = false
+          }
+        }
       }
     }
   }
@@ -96,7 +113,8 @@ private[akka] final class SynchronousIterablePublisher[T](
 
   import SynchronousIterablePublisher.IteratorSubscription
 
-  override def subscribe(subscriber: Subscriber[_ >: T]): Unit = IteratorSubscription(subscriber, iterable.iterator) //FIXME what if .iterator throws?
+  override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
+    IteratorSubscription(subscriber, try iterable.iterator catch { case NonFatal(t) ⇒ Iterator.continually(throw t) })
 
   override def toString: String = name
 }

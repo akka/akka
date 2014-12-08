@@ -17,7 +17,7 @@ private[akka] case class RequestMore(subscription: ActorSubscription[_], demand:
 /**
  * INTERNAL API
  */
-private[akka] case class Cancel(subscriptions: ActorSubscription[_])
+private[akka] case class Cancel(subscription: ActorSubscription[_])
 /**
  * INTERNAL API
  */

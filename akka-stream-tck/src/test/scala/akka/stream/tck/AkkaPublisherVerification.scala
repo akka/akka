@@ -37,9 +37,6 @@ abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEn
 
   override def skipStochasticTests() = true // TODO maybe enable?
 
-  // TODO re-enable this test once 1.0.0.RC1 is released, with https://github.com/reactive-streams/reactive-streams/pull/154
-  override def spec317_mustSignalOnErrorWhenPendingAboveLongMaxValue() = notVerified("TODO Enable this test once https://github.com/reactive-streams/reactive-streams/pull/154 is merged (ETA 1.0.0.RC1)")
-
   @AfterClass
   def shutdownActorSystem(): Unit = {
     system.shutdown()

@@ -220,17 +220,19 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundarySta
     case SubscribePending ⇒
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
-
-      // TODO centralize overflow protection
-      downstreamDemand += elements
-      if (downstreamDemand < 0) {
-        // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
+      if (elements < 1) {
         enter().finish()
-        fail(demandOverflowException)
-      } else if (upstreamWaiting) {
-        upstreamWaiting = false
-        enter().pull()
+        fail(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
+      } else {
+        downstreamDemand += elements
+        // Long has overflown
+        if (downstreamDemand < 0) {
+          enter().finish()
+          fail(ReactiveStreamsCompliance.totalPendingDemandMustNotExceedLongMaxValueException)
+        } else if (upstreamWaiting) {
+          upstreamWaiting = false
+          enter().pull()
+        }
       }
 
     case Cancel(subscription) ⇒

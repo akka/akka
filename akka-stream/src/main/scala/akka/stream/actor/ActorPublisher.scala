@@ -118,7 +118,7 @@ trait ActorPublisher[T] extends Actor {
   import akka.stream.actor.ActorPublisherMessage._
   import ActorPublisher.Internal._
   import ActorPublisherMessage._
-
+  import ReactiveStreamsCompliance._
   private val state = ActorPublisherState(context.system)
   private var subscriber: Subscriber[Any] = _
   private var demand = 0L
@@ -180,7 +180,7 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber ⇒
       if (demand > 0) {
         demand -= 1
-        subscriber.onNext(element)
+        tryOnNext(subscriber, element)
       } else
         throw new IllegalStateException(
           "onNext is not allowed when the stream has not requested elements, totalDemand was 0")
@@ -199,8 +199,8 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber ⇒
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
-        subscriber.onComplete()
-      subscriber = null // not used after onError
+        tryOnComplete(subscriber)
+      subscriber = null // not used after onComplete
     case Completed ⇒
       throw new IllegalStateException("onComplete must only be called once")
     case _: ErrorEmitted ⇒
@@ -216,7 +216,7 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber ⇒
       lifecycleState = ErrorEmitted(cause)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
-        subscriber.onError(cause)
+        tryOnError(subscriber, cause)
       subscriber = null // not used after onError
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onError must only be called once")
@@ -230,13 +230,18 @@ trait ActorPublisher[T] extends Actor {
    */
   protected[akka] override def aroundReceive(receive: Receive, msg: Any): Unit = msg match {
     case Request(n) ⇒
-      demand += n
-      if (demand < 0 && lifecycleState == Active) {
-        // Long has overflown
-        val demandOverflowException = new IllegalStateException(ReactiveStreamsCompliance.TotalPendingDemandMustNotExceedLongMaxValue)
-        onError(demandOverflowException)
-      } else
-        super.aroundReceive(receive, msg)
+      if (n < 1) {
+        if (lifecycleState == Active)
+          onError(numberOfElementsInRequestMustBePositiveException)
+        else
+          super.aroundReceive(receive, msg)
+      } else {
+        demand += n
+        if (demand < 0 && lifecycleState == Active) // Long has overflown
+          onError(totalPendingDemandMustNotExceedLongMaxValueException)
+        else
+          super.aroundReceive(receive, msg)
+      }
 
     case Subscribe(sub: Subscriber[_]) ⇒
       lifecycleState match {
@@ -245,13 +250,12 @@ trait ActorPublisher[T] extends Actor {
           subscriber = sub
           lifecycleState = Active
           sub.onSubscribe(new ActorPublisherSubscription(self))
-        case ErrorEmitted(cause) ⇒ sub.onError(cause)
-        case Completed           ⇒ sub.onComplete()
+        case ErrorEmitted(cause) ⇒ tryOnError(sub, cause)
+        case Completed           ⇒ tryOnComplete(sub)
         case Active | Canceled ⇒
-          if (subscriber == sub)
-            sub.onError(new IllegalStateException(s"ActorPublisher [$self, sub: $sub] ${ReactiveStreamsCompliance.CanNotSubscribeTheSameSubscriberMultipleTimes}"))
-          else
-            sub.onError(new IllegalStateException(s"ActorPublisher [$self] ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
+          tryOnError(sub,
+            if (subscriber eq sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
+            else ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException)
       }
 
     case Cancel ⇒
@@ -317,7 +321,7 @@ trait ActorPublisher[T] extends Actor {
    */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
-    if (lifecycleState == Active) subscriber.onComplete()
+    if (lifecycleState == Active) tryOnComplete(subscriber)
     super.aroundPostStop()
   }
 
@@ -341,10 +345,7 @@ private[akka] class ActorPublisherSubscription[T](ref: ActorRef) extends Subscri
   import ActorPublisher._
   import ActorPublisherMessage._
 
-  override def request(n: Long): Unit = {
-    ReactiveStreamsCompliance.validateRequest(n)
-    ref ! Request(n)
-  }
+  override def request(n: Long): Unit = ref ! Request(n)
   override def cancel(): Unit = ref ! Cancel
 }
 
