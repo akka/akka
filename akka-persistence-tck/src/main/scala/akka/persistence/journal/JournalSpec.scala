@@ -12,11 +12,8 @@ import com.typesafe.config._
 object JournalSpec {
   val config = ConfigFactory.parseString(
     """
-      |akka.persistence.publish-confirmations = on
-      |akka.persistence.publish-plugin-commands = on
-    """.stripMargin)
-
-  case class Confirmation(persistenceId: String, channelId: String, sequenceNr: Long) extends PersistentConfirmation
+    akka.persistence.publish-plugin-commands = on
+    """)
 }
 
 /**
@@ -50,7 +47,7 @@ trait JournalSpec extends PluginSpec {
     extension.journalFor(null)
 
   def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
-    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, deleted, confirms, senderProbe.ref))
+    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, deleted, senderProbe.ref))
 
   def writeMessages(from: Int, to: Int, pid: String, sender: ActorRef): Unit = {
     val msgs = from to to map { i ⇒ PersistentRepr(payload = s"a-${i}", sequenceNr = i, persistenceId = pid, sender = sender) }
@@ -60,7 +57,7 @@ trait JournalSpec extends PluginSpec {
 
     probe.expectMsg(WriteMessagesSuccessful)
     from to to foreach { i ⇒
-      probe.expectMsgPF() { case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`), _) ⇒ payload should be(s"a-${i}") }
+      probe.expectMsgPF() { case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, `sender`), _) ⇒ payload should be(s"a-${i}") }
     }
   }
 
@@ -140,49 +137,7 @@ trait JournalSpec extends PluginSpec {
         }
       }
     }
-    "replay confirmed messages with corresponding channel ids contained in the confirmed field" in {
-      val confs = List(Confirmation(pid, "c1", 3), Confirmation(pid, "c2", 3))
-      val lpid = pid
 
-      journal ! WriteConfirmations(confs, receiverProbe.ref)
-      receiverProbe.expectMsg(WriteConfirmationsSuccess(confs))
-
-      journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref, replayDeleted = true)
-      1 to 5 foreach { i ⇒
-        i match {
-          case 1 | 2 | 4 | 5 ⇒ receiverProbe.expectMsg(replayedMessage(i))
-          case 3 ⇒ receiverProbe.expectMsgPF() {
-            case ReplayedMessage(PersistentImpl(payload, `i`, `lpid`, false, confirms, _)) ⇒
-              confirms should have length (2)
-              confirms should contain("c1")
-              confirms should contain("c2")
-          }
-        }
-      }
-    }
-    "ignore orphan deletion markers" in {
-      val msgIds = List(PersistentIdImpl(pid, 3), PersistentIdImpl(pid, 4))
-      journal ! DeleteMessages(msgIds, true, Some(receiverProbe.ref)) // delete message
-      receiverProbe.expectMsg(DeleteMessagesSuccess(msgIds))
-
-      journal ! DeleteMessages(msgIds, false, Some(receiverProbe.ref)) // write orphan marker
-      receiverProbe.expectMsg(DeleteMessagesSuccess(msgIds))
-
-      journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      List(1, 2, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-    }
-    "ignore orphan confirmation markers" in {
-      val msgIds = List(PersistentIdImpl(pid, 3))
-      journal ! DeleteMessages(msgIds, true, Some(receiverProbe.ref)) // delete message
-      receiverProbe.expectMsg(DeleteMessagesSuccess(msgIds))
-
-      val confs = List(Confirmation(pid, "c1", 3), Confirmation(pid, "c2", 3))
-      journal ! WriteConfirmations(confs, receiverProbe.ref)
-      receiverProbe.expectMsg(WriteConfirmationsSuccess(confs))
-
-      journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      List(1, 2, 4, 5) foreach { i ⇒ receiverProbe.expectMsg(replayedMessage(i)) }
-    }
     "return a highest stored sequence number > 0 if the persistent actor has already written messages and the message log is non-empty" in {
       journal ! ReadHighestSequenceNr(3L, pid, receiverProbe.ref)
       receiverProbe.expectMsg(ReadHighestSequenceNrSuccess(5))

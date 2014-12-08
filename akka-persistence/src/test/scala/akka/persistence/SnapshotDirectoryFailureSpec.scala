@@ -11,13 +11,17 @@ import akka.actor.{ ActorInitializationException, Props, ActorRef }
 object SnapshotDirectoryFailureSpec {
   val inUseSnapshotPath = "target/inUseSnapshotPath"
 
-  class TestProcessor(name: String, probe: ActorRef) extends Processor {
+  class TestPersistentActor(name: String, probe: ActorRef) extends PersistentActor {
 
     override def persistenceId: String = name
 
     override def preStart(): Unit = ()
 
-    def receive = {
+    override def receiveRecover: Receive = {
+      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+    }
+
+    override def receiveCommand = {
       case s: String               ⇒ saveSnapshot(s)
       case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
       case other                   ⇒ probe ! other
@@ -27,8 +31,8 @@ object SnapshotDirectoryFailureSpec {
 
 class SnapshotDirectoryFailureSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotDirectoryFailureSpec", extraConfig = Some(
   s"""
-    |akka.persistence.snapshot-store.local.dir = "${SnapshotDirectoryFailureSpec.inUseSnapshotPath}"
-  """.stripMargin))) with ImplicitSender {
+  akka.persistence.snapshot-store.local.dir = "${SnapshotDirectoryFailureSpec.inUseSnapshotPath}"
+  """))) with ImplicitSender {
 
   import SnapshotDirectoryFailureSpec._
 
@@ -45,8 +49,8 @@ class SnapshotDirectoryFailureSpec extends AkkaSpec(PersistenceSpec.config("leve
   "A local snapshot store configured with an failing directory name " must {
     "throw an exception at startup" in {
       EventFilter[ActorInitializationException](occurrences = 1).intercept {
-        val processor = system.actorOf(Props(classOf[TestProcessor], "SnapshotDirectoryFailureSpec-1", testActor))
-        processor ! "blahonga"
+        val p = system.actorOf(Props(classOf[TestPersistentActor], "SnapshotDirectoryFailureSpec-1", testActor))
+        p ! "blahonga"
       }
     }
   }

@@ -58,8 +58,8 @@ object PersistentActorFailureSpec {
 
 class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem", "SnapshotFailureRobustnessSpec", extraConfig = Some(
   """
-    |akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorFailureSpec$FailingInmemJournal"
-  """.stripMargin))) with PersistenceSpec with ImplicitSender {
+  akka.persistence.journal.inmem.class = "akka.persistence.PersistentActorFailureSpec$FailingInmemJournal"
+  """))) with PersistenceSpec with ImplicitSender {
 
   import PersistentActorSpec._
   import PersistentActorFailureSpec._
@@ -67,15 +67,15 @@ class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem"
   override protected def beforeEach() {
     super.beforeEach()
 
-    val processor = namedProcessor[Behavior1Processor]
-    processor ! Cmd("a")
-    processor ! GetState
+    val persistentActor = namedPersistentActor[Behavior1PersistentActor]
+    persistentActor ! Cmd("a")
+    persistentActor ! GetState
     expectMsg(List("a-1", "a-2"))
   }
 
   "A persistent actor" must {
     "throw ActorKilledException if recovery from persisted events fail" in {
-      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1Processor], name)
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
       expectMsgType[ActorRef]
       expectMsgType[ActorKilledException]
     }

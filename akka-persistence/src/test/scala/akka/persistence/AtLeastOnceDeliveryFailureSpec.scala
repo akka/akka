@@ -70,7 +70,7 @@ object AtLeastOnceDeliveryFailureSpec {
 
     override def redeliverInterval = 500.milliseconds
 
-    override def processorId = "chaosSender"
+    override def persistenceId = "chaosSender"
 
     def receiveCommand: Receive = {
       case i: Int ⇒
@@ -101,7 +101,7 @@ object AtLeastOnceDeliveryFailureSpec {
     def receiveRecover: Receive = {
       case evt: Evt ⇒ updateState(evt)
       case RecoveryFailure(_) ⇒
-        // journal failed during recovery, throw exception to re-recover processor
+        // journal failed during recovery, throw exception to re-recover persistent actor
         throw new TestException(debugMessage("recovery failed"))
     }
 

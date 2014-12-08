@@ -48,7 +48,7 @@ trait SnapshotStoreSpec extends PluginSpec {
   }
 
   "A snapshot store" must {
-    "not load a snapshot given an invalid processor id" in {
+    "not load a snapshot given an invalid persistenceId" in {
       snapshotStore.tell(LoadSnapshot("invalid", SnapshotSelectionCriteria.Latest, Long.MaxValue), senderProbe.ref)
       senderProbe.expectMsg(LoadSnapshotResult(None, Long.MaxValue))
     }

@@ -5,17 +5,19 @@
 package doc;
 
 //#plugin-imports
-import akka.japi.pf.ReceiveBuilder;
-import scala.concurrent.Future;
-import akka.japi.Option;
-import akka.japi.Procedure;
 import akka.persistence.*;
 import akka.persistence.journal.japi.*;
 import akka.persistence.snapshot.japi.*;
 //#plugin-imports
+
 import akka.actor.*;
 import akka.persistence.journal.leveldb.SharedLeveldbJournal;
 import akka.persistence.journal.leveldb.SharedLeveldbStore;
+import akka.japi.pf.ReceiveBuilder;
+import scala.concurrent.Future;
+import akka.japi.Option;
+import akka.japi.Procedure;
+
 
 public class LambdaPersistencePluginDocTest {
 
@@ -78,16 +80,6 @@ public class LambdaPersistencePluginDocTest {
   class MyAsyncJournal extends AsyncWriteJournal {
     @Override
     public Future<Void> doAsyncWriteMessages(Iterable<PersistentRepr> messages) {
-      return null;
-    }
-
-    @Override
-    public Future<Void> doAsyncWriteConfirmations(Iterable<PersistentConfirmation> confirmations) {
-      return null;
-    }
-
-    @Override
-    public Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent) {
       return null;
     }
 

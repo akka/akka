@@ -55,7 +55,7 @@ trait SnapshotStore extends Actor {
   /**
    * Plugin API: asynchronously loads a snapshot.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId id of the persistent actor.
    * @param criteria selection criteria for loading.
    */
   def loadAsync(persistenceId: String, criteria: SnapshotSelectionCriteria): Future[Option[SelectedSnapshot]]
@@ -86,7 +86,7 @@ trait SnapshotStore extends Actor {
   /**
    * Plugin API: deletes all snapshots matching `criteria`.
    *
-   * @param persistenceId processor id.
+   * @param persistenceId id of the persistent actor.
    * @param criteria selection criteria for deleting.
    */
   def delete(persistenceId: String, criteria: SnapshotSelectionCriteria)
