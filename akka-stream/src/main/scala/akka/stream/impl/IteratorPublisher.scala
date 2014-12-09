@@ -66,11 +66,15 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: Materia
 
   def active: Receive = {
     case RequestMore(_, elements) ⇒
-      downstreamDemand += elements
-      if (downstreamDemand < 0) // Long has overflown, reactive-streams specification rule 3.17
-        stop(Errored(new IllegalStateException(TotalPendingDemandMustNotExceedLongMaxValue)))
-      else
-        push()
+      if (elements < 1)
+        stop(Errored(numberOfElementsInRequestMustBePositiveException))
+      else {
+        downstreamDemand += elements
+        if (downstreamDemand < 0) // Long has overflown, reactive-streams specification rule 3.17
+          stop(Errored(totalPendingDemandMustNotExceedLongMaxValueException))
+        else
+          push()
+      }
     case PushMore ⇒
       push()
     case _: Cancel ⇒
