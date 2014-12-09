@@ -188,9 +188,10 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings ++ ActivatorDist.settings,
-    aggregate = Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala,
-      sampleHelloKernel, sampleMainJava, sampleMainScala, sampleMultiNodeScala, osgiDiningHakkersSampleMavenTest,
-      samplePersistenceJava, samplePersistenceScala, sampleRemoteJava, sampleRemoteScala)
+    aggregate = if (!CommandLineOptions.aggregateSamples) Nil else
+      Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala,
+        sampleHelloKernel, sampleMainJava, sampleMainScala, sampleMultiNodeScala, osgiDiningHakkersSampleMavenTest,
+        samplePersistenceJava, samplePersistenceScala, sampleRemoteJava, sampleRemoteScala)
   )
 
   lazy val sampleCamelJava = Sample.project("akka-sample-camel-java")
