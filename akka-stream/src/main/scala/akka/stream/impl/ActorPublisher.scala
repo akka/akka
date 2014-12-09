@@ -89,9 +89,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
  * INTERNAL API
  */
 private[akka] class ActorSubscription[T]( final val impl: ActorRef, final val subscriber: Subscriber[_ >: T]) extends Subscription {
-  override def request(elements: Long): Unit =
-    if (elements < 1) throw new IllegalArgumentException(ReactiveStreamsCompliance.NumberOfElementsInRequestMustBePositiveMsg)
-    else impl ! RequestMore(this, elements)
+  override def request(elements: Long): Unit = impl ! RequestMore(this, elements)
   override def cancel(): Unit = impl ! Cancel(this)
 }
 

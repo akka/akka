@@ -1491,7 +1491,7 @@ object Dependencies {
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
 
-    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.M1")
+    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.M3")
 
     val publishedAkkaVersion = "2.3.7"
   }
