@@ -109,82 +109,81 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     "prime an empty parser with all defined HeaderValueParsers" in new TestSetup() {
       check {
         """   ┌─\r-\n- EmptyHeader
-          |   |               ┌─c-h-a-r-s-e-t-:- (Accept-Charset)
-          |   |       ┌─p-t---e-n-c-o-d-i-n-g-:- (Accept-Encoding)
-          |   |       |     | | ┌─l-a-n-g-u-a-g-e-:- (Accept-Language)
-          |   |       |     | └─r-a-n-g-e-s-:- (Accept-Ranges)
+          |   |               ┌─c-h-a-r-s-e-t-:- (accept-charset)
+          |   |               | | ┌─e-n-c-o-d-i-n-g-:- (accept-encoding)
+          |   |               | └─l-a-n-g-u-a-g-e-:- (accept-language)
+          |   |       ┌─p-t---r-a-n-g-e-s-:- (accept-ranges)
           |   |       |     |                ┌─\r-\n- Accept: */*
-          |   |       |     └─:-(Accept)- -*-/-*-\r-\n- Accept: */*
-          |   |       |                     ┌─a-l-l-o-w---c-r-e-d-e-n-t-i-a-l-s-:- (Access-Control-Allow-Credentials)
-          |   |       |                     | |           |   ┌─h-e-a-d-e-r-s-:- (Access-Control-Allow-Headers)
-          |   |       |                     | |           | ┌─m-e-t-h-o-d-s-:- (Access-Control-Allow-Methods)
-          |   |       |                     | |           └─o-r-i-g-i-n-:- (Access-Control-Allow-Origin)
-          |   |       |                     | | ┌─e-x-p-o-s-e---h-e-a-d-e-r-s-:- (Access-Control-Expose-Headers)
-          |   |       |                     | └─m-a-x---a-g-e-:- (Access-Control-Max-Age)
-          | ┌─a-c-c-e-s-s---c-o-n-t-r-o-l---r-e-q-u-e-s-t---h-e-a-d-e-r-s-:- (Access-Control-Request-Headers)
-          | | | |                                           └─m-e-t-h-o-d-:- (Access-Control-Request-Method)
-          | | | | ┌─l-l-o-w-:- (Allow)
-          | | | └─u-t-h-o-r-i-z-a-t-i-o-n-:- (Authorization)
-          | | |   ┌─a-c-h-e---c-o-n-t-r-o-l-:-(Cache-Control)- -m-a-x---a-g-e-=-0-\r-\n- Cache-Control: max-age=0
-          | | |   |                                             └─n-o---c-a-c-h-e-\r-\n- Cache-Control: no-cache
-          | | |   |   ┌─n-e-c-t-i-o-n-:-(Connection)- -K-e-e-p---A-l-i-v-e-\r-\n- Connection: Keep-Alive
-          | | |   |   |                                | ┌─c-l-o-s-e-\r-\n- Connection: close
-          | | |   |   |                                └─k-e-e-p---a-l-i-v-e-\r-\n- Connection: keep-alive
-          | | └─c-o-n-t-e-n-t---d-i-s-p-o-s-i-t-i-o-n-:- (Content-Disposition)
-          | |       |           |   ┌─e-n-c-o-d-i-n-g-:- (Content-Encoding)
-          | |       |           | ┌─l-e-n-g-t-h-:-(Content-Length)- -0-\r-\n- Content-Length: 0
-          | |       |           └─r-a-n-g-e-:- (Content-Range)
-          | |       |             └─t-y-p-e-:- (Content-Type)
-          | |       └─o-k-i-e-:- (Cookie)
-          |-d-a-t-e-:- (Date)
-          | |         ┌─t-a-g-:- (ETag)
-          | |     ┌─e-x-p-e-c-t-:-(Expect)- -1-0-0---c-o-n-t-i-n-u-e-\r-\n- Expect: 100-continue
-          | |   ┌─h-o-s-t-:- (Host)
-          | |   |         ┌─a-t-c-h-:- (If-Match)
-          | |   |     ┌─m-o-d-i-f-i-e-d---s-i-n-c-e-:- (If-Modified-Since)
-          | | ┌─i-f---n-o-n-e---m-a-t-c-h-:- (If-None-Match)
-          | | | |     | ┌─r-a-n-g-e-:- (If-Range)
-          | | | |     └─u-n-m-o-d-i-f-i-e-d---s-i-n-c-e-:- (If-Unmodified-Since)
-          | | | └─l-a-s-t---m-o-d-i-f-i-e-d-:- (Last-Modified)
-          | | |     | ┌─i-n-k-:- (Link)
-          | | |     └─o-c-a-t-i-o-n-:- (Location)
-          | └─o-r-i-g-i-n-:- (Origin)
-          |   |                         ┌─e-n-t-i-c-a-t-e-:- (Proxy-Authenticate)
-          |   |   ┌─p-r-o-x-y---a-u-t-h-o-r-i-z-a-t-i-o-n-:- (Proxy-Authorization)
-          |   | ┌─r-a-n-g-e-:- (Range)
-          |   | |   └─e-m-o-t-e---a-d-d-r-e-s-s-:- (Remote-Address)
-          |   | |   ┌─r-v-e-r-:- (Server)
-          |   └─s-e-t---c-o-o-k-i-e-:- (Set-Cookie)
-          |     |   ┌─t-r-a-n-s-f-e-r---e-n-c-o-d-i-n-g-:- (Transfer-Encoding)
-          |     | ┌─u-s-e-r---a-g-e-n-t-:- (User-Agent)
-          |     └─w-w-w---a-u-t-h-e-n-t-i-c-a-t-e-:- (WWW-Authenticate)
-          |       └─x---f-o-r-w-a-r-d-e-d---f-o-r-:- (X-Forwarded-For)
+          |   |       |     └─:-(accept)- -*-/-*-\r-\n- Accept: */*
+          |   |       |                                     ┌─c-r-e-d-e-n-t-i-a-l-s-:- (access-control-allow-credentials)
+          |   |       |                                   ┌─h-e-a-d-e-r-s-:- (access-control-allow-headers)
+          |   |       |                     ┌─a-l-l-o-w---m-e-t-h-o-d-s-:- (access-control-allow-methods)
+          |   |       |                     | |           └─o-r-i-g-i-n-:- (access-control-allow-origin)
+          |   |       |                     | └─e-x-p-o-s-e---h-e-a-d-e-r-s-:- (access-control-expose-headers)
+          | ┌─a-c-c-e-s-s---c-o-n-t-r-o-l---m-a-x---a-g-e-:- (access-control-max-age)
+          | |   |                           |                 ┌─h-e-a-d-e-r-s-:- (access-control-request-headers)
+          | |   |                           └─r-e-q-u-e-s-t---m-e-t-h-o-d-:- (access-control-request-method)
+          | |   └─l-l-o-w-:- (allow)
+          | |     └─u-t-h-o-r-i-z-a-t-i-o-n-:- (authorization)
+          | | ┌─a-c-h-e---c-o-n-t-r-o-l-:-(cache-control)- -m-a-x---a-g-e-=-0-\r-\n- Cache-Control: max-age=0
+          | | |                                             └─n-o---c-a-c-h-e-\r-\n- Cache-Control: no-cache
+          | | | ┌─n-n-e-c-t-i-o-n-:-(connection)- -K-e-e-p---A-l-i-v-e-\r-\n- Connection: Keep-Alive
+          | | | |   |                              | ┌─c-l-o-s-e-\r-\n- Connection: close
+          | | | |   |                              └─k-e-e-p---a-l-i-v-e-\r-\n- Connection: keep-alive
+          | | | |   |             ┌─d-i-s-p-o-s-i-t-i-o-n-:- (content-disposition)
+          | | | |   |           ┌─e-n-c-o-d-i-n-g-:- (content-encoding)
+          | | | |   └─t-e-n-t---l-e-n-g-t-h-:-(Content-Length)- -0-\r-\n- Content-Length: 0
+          | | | |               | ┌─r-a-n-g-e-:- (content-range)
+          | | | |               └─t-y-p-e-:- (content-type)
+          |-c-o-o-k-i-e-:- (cookie)
+          | |     ┌─d-a-t-e-:- (date)
+          | |     | ┌─t-a-g-:- (etag)
+          | |   ┌─e-x-p-e-c-t-:-(expect)- -1-0-0---c-o-n-t-i-n-u-e-\r-\n- Expect: 100-continue
+          | |   | └─h-o-s-t-:- (host)
+          | |   |       ┌─a-t-c-h-:- (if-match)
+          | | ┌─i-f---m-o-d-i-f-i-e-d---s-i-n-c-e-:- (if-modified-since)
+          | | |       |   ┌─n-o-n-e---m-a-t-c-h-:- (if-none-match)
+          | | |       | ┌─r-a-n-g-e-:- (if-range)
+          | | |       └─u-n-m-o-d-i-f-i-e-d---s-i-n-c-e-:- (if-unmodified-since)
+          | | |   ┌─a-s-t---m-o-d-i-f-i-e-d-:- (last-modified)
+          | | | ┌─i-n-k-:- (link)
+          | └─l-o-c-a-t-i-o-n-:- (location)
+          |   |   ┌─o-r-i-g-i-n-:- (origin)
+          |   |   |                   ┌─e-n-t-i-c-a-t-e-:- (proxy-authenticate)
+          |   | ┌─p-r-o-x-y---a-u-t-h-o-r-i-z-a-t-i-o-n-:- (proxy-authorization)
+          |   | | └─r-a-n-g-e-:- (range)
+          |   └─s-e-r-v-e-r-:- (server)
+          |     |   └─t---c-o-o-k-i-e-:- (set-cookie)
+          |     | ┌─t-r-a-n-s-f-e-r---e-n-c-o-d-i-n-g-:- (transfer-encoding)
+          |     └─u-s-e-r---a-g-e-n-t-:- (user-agent)
+          |       | ┌─w-w-w---a-u-t-h-e-n-t-i-c-a-t-e-:- (www-authenticate)
+          |       └─x---f-o-r-w-a-r-d-e-d---f-o-r-:- (x-forwarded-for)
           |""" -> parser.formatTrie
       }
-      parser.formatSizes === "607 nodes, 41 branchData rows, 56 values"
-      parser.contentHistogram ===
-        Map("Connection" -> 3, "Content-Length" -> 1, "Accept" -> 2, "Cache-Control" -> 2, "Expect" -> 1)
+      parser.formatSizes shouldEqual "592 nodes, 40 branchData rows, 55 values"
+      parser.contentHistogram shouldEqual
+        Map("connection" -> 3, "Content-Length" -> 1, "accept" -> 2, "cache-control" -> 2, "expect" -> 1)
     }
 
     "retrieve the EmptyHeader" in new TestSetup() {
-      parseAndCache("\r\n")() === HttpHeaderParser.EmptyHeader
+      parseAndCache("\r\n")() shouldEqual HttpHeaderParser.EmptyHeader
     }
 
     "retrieve a cached header with an exact header name match" in new TestSetup() {
-      parseAndCache("Connection: close\r\nx")() === Connection("close")
+      parseAndCache("Connection: close\r\nx")() shouldEqual Connection("close")
     }
 
     "retrieve a cached header with a case-insensitive header-name match" in new TestSetup() {
-      parseAndCache("Connection: close\r\nx")("coNNection: close\r\nx") === Connection("close")
+      parseAndCache("Connection: close\r\nx")("coNNection: close\r\nx") shouldEqual Connection("close")
     }
 
     "parse and cache a modelled header" in new TestSetup() {
-      parseAndCache("Host: spray.io:123\r\nx")("HOST: spray.io:123\r\nx") === Host("spray.io", 123)
+      parseAndCache("Host: spray.io:123\r\nx")("HOST: spray.io:123\r\nx") shouldEqual Host("spray.io", 123)
     }
 
     "parse and cache an invalid modelled header as RawHeader" in new TestSetup() {
-      parseAndCache("Content-Type: abc:123\r\nx")() === RawHeader("Content-Type", "abc:123")
-      parseAndCache("Origin: localhost:8080\r\nx")() === RawHeader("Origin", "localhost:8080")
+      parseAndCache("Content-Type: abc:123\r\nx")() shouldEqual RawHeader("content-type", "abc:123")
+      parseAndCache("Origin: localhost:8080\r\nx")() shouldEqual RawHeader("origin", "localhost:8080")
     }
 
     "parse and cache a raw header" in new TestSetup(primed = false) {
@@ -196,17 +195,17 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |-h-e-l-l-o-:- -b-o-b- 'Hello
           |""" -> parser.formatTrie
       }
-      ixA === ixB
-      headerA === RawHeader("Fancy-Pants", "foo")
+      ixA shouldEqual ixB
+      headerA shouldEqual RawHeader("Fancy-Pants", "foo")
       headerA should be theSameInstanceAs headerB
     }
 
     "parse and cache a modelled header with line-folding" in new TestSetup() {
-      parseAndCache("Connection: foo,\r\n bar\r\nx")("Connection: foo,\r\n bar\r\nx") === Connection("foo", "bar")
+      parseAndCache("Connection: foo,\r\n bar\r\nx")("Connection: foo,\r\n bar\r\nx") shouldEqual Connection("foo", "bar")
     }
 
     "parse and cache a header with a tab char in the value" in new TestSetup() {
-      parseAndCache("Fancy: foo\tbar\r\nx")() === RawHeader("Fancy", "foo bar")
+      parseAndCache("Fancy: foo\tbar\r\nx")() shouldEqual RawHeader("Fancy", "foo bar")
     }
 
     "produce an error message for lines with an illegal header name" in new TestSetup() {
@@ -233,8 +232,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHeaders.take(300).foldLeft(0) {
         case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + "\r\nx", rawHeader)
-      } === 99 // number of cached headers
-      parser.formatSizes === "3040 nodes, 114 branchData rows, 255 values"
+      } shouldEqual 100 // number of cache hits
+      parser.formatSizes shouldEqual "3050 nodes, 114 branchData rows, 255 values"
     }
 
     "continue parsing modelled headers even if the overall cache capacity is reached" in new TestSetup() {
@@ -245,8 +244,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHostHeaders.take(300).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
-      } === 199 // number of cached headers
-      parser.formatSizes === "3173 nodes, 186 branchData rows, 255 values"
+      } shouldEqual 12 // number of cache hits
+      parser.formatSizes shouldEqual "756 nodes, 49 branchData rows, 67 values"
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {
@@ -256,7 +255,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHeaders.take(20).foldLeft(0) {
         case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + "\r\nx", rawHeader)
-      } === 12
+      } shouldEqual 12
     }
 
     "continue parsing modelled headers even if the header-specific cache capacity is reached" in new TestSetup() {
@@ -265,7 +264,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHeaders.take(40).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
-      } === 32
+      } shouldEqual 12
     }
   }
 
@@ -273,7 +272,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
 
   def check(pair: (String, String)) = {
     val (expected, actual) = pair
-    actual === expected.stripMarginWithNewline("\n")
+    actual shouldEqual expected.stripMarginWithNewline("\n")
   }
 
   abstract class TestSetup(primed: Boolean = true) {
@@ -292,7 +291,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     def parseAndCache(lineA: String)(lineB: String = lineA): HttpHeader = {
       val (ixA, headerA) = parseLine(lineA)
       val (ixB, headerB) = parseLine(lineB)
-      ixA === ixB
+      ixA shouldEqual ixB
       headerA should be theSameInstanceAs headerB
       headerA
     }
@@ -300,9 +299,9 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
     def parseAndCache(line: String, header: HttpHeader): Int = {
       val (ixA, headerA) = parseLine(line)
       val (ixB, headerB) = parseLine(line)
-      headerA === header
-      headerB === header
-      ixA === ixB
+      headerA shouldEqual header
+      headerB shouldEqual header
+      ixA shouldEqual ixB
       if (headerA eq headerB) 1 else 0
     }
 

@@ -219,7 +219,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         path = Some("/hello"),
         httpOnly = true,
         extension = Some("fancyPants"),
-        secure = true)).toString === "Cookie: SID=31d4d96e407aad42"
+        secure = true)).toString shouldEqual "Cookie: SID=31d4d96e407aad42"
     }
 
     "Date" in {

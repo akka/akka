@@ -43,7 +43,7 @@ private[http] object CharacterClasses {
   val `pchar-base-nc` = unreserved ++ `sub-delims` ++ '@'
   val `pchar-base` = `pchar-base-nc` ++ ':' // pchar without percent
   val `query-fragment-char` = `pchar-base` ++ "/?"
-  val `strict-query-char` = `query-fragment-char` -- "&="
+  val `strict-query-char` = `query-fragment-char` -- "&=;"
   val `strict-query-char-np` = `strict-query-char` -- '+'
 
   val `relaxed-fragment-char` = VCHAR -- '%'

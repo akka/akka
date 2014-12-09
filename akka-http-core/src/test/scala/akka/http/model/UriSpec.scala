@@ -303,16 +303,16 @@ class UriSpec extends WordSpec with Matchers {
       Query("k" -> "v") shouldEqual ("k" -> "v") +: Empty
     }
     "encode special separators in query parameter names" in {
-      Query("a=b" -> "c").toString() === "a%3Db=c"
-      Query("a&b" -> "c").toString() === "a%26b=c"
-      Query("a+b" -> "c").toString() === "a%2Bb=c"
-      Query("a;b" -> "c").toString() === "a%3Bb=c"
+      Query("a=b" -> "c").toString() shouldEqual "a%3Db=c"
+      Query("a&b" -> "c").toString() shouldEqual "a%26b=c"
+      Query("a+b" -> "c").toString() shouldEqual "a%2Bb=c"
+      Query("a;b" -> "c").toString() shouldEqual "a%3Bb=c"
     }
     "encode special separators in query parameter values" in {
-      Query("a" -> "b=c").toString() === "a=b%3Dc"
-      Query("a" -> "b&c").toString() === "a=b%26c"
-      Query("a" -> "b+c").toString() === "a=b%2Bc"
-      Query("a" -> "b;c").toString() === "a=b%3Bc"
+      Query("a" -> "b=c").toString() shouldEqual "a=b%3Dc"
+      Query("a" -> "b&c").toString() shouldEqual "a=b%26c"
+      Query("a" -> "b+c").toString() shouldEqual "a=b%2Bc"
+      Query("a" -> "b;c").toString() shouldEqual "a=b%3Bc"
     }
   }
 
