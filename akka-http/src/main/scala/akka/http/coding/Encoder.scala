@@ -6,6 +6,7 @@ package akka.http.coding
 
 import akka.http.model._
 import akka.http.util.StreamUtils
+import akka.stream.stage.Stage
 import akka.util.ByteString
 import headers._
 import akka.stream.scaladsl.Flow
@@ -21,13 +22,13 @@ trait Encoder {
     else message.self
 
   def encodeData[T](t: T)(implicit mapper: DataMapper[T]): T =
-    mapper.transformDataBytes(t, newEncodeTransformer)
+    mapper.transformDataBytes(t, Flow[ByteString].transform(newEncodeTransformer))
 
   def encode(input: ByteString): ByteString = newCompressor.compressAndFinish(input)
 
   def newCompressor: Compressor
 
-  def newEncodeTransformer(): Flow[ByteString, ByteString] = {
+  def newEncodeTransformer(): Stage[ByteString, ByteString] = {
     val compressor = newCompressor
 
     def encodeChunk(bytes: ByteString): ByteString = compressor.compressAndFlush(bytes)
