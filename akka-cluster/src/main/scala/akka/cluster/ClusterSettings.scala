@@ -86,15 +86,6 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val ReduceGossipDifferentViewProbability: Int = cc.getInt("reduce-gossip-different-view-probability")
   val SchedulerTickDuration: FiniteDuration = cc.getMillisDuration("scheduler.tick-duration")
   val SchedulerTicksPerWheel: Int = cc.getInt("scheduler.ticks-per-wheel")
-  val MetricsEnabled: Boolean = cc.getBoolean("metrics.enabled")
-  val MetricsCollectorClass: String = cc.getString("metrics.collector-class")
-  val MetricsInterval: FiniteDuration = {
-    cc.getMillisDuration("metrics.collect-interval")
-  } requiring (_ > Duration.Zero, "metrics.collect-interval must be > 0")
-  val MetricsGossipInterval: FiniteDuration = cc.getMillisDuration("metrics.gossip-interval")
-  val MetricsMovingAverageHalfLife: FiniteDuration = {
-    cc.getMillisDuration("metrics.moving-average-half-life")
-  } requiring (_ > Duration.Zero, "metrics.moving-average-half-life must be > 0")
 
 }
 

@@ -2,8 +2,11 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
+// TODO move this unit to akka-cluster-toolbox/.../akka.cluster.toolbox.metrics.ClusterMetrics.scala
+
 package akka.cluster
 
+import akka.actor._
 import java.io.Closeable
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
@@ -14,19 +17,51 @@ import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.{ Try, Success, Failure }
 import akka.ConfigurationException
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.Address
-import akka.actor.DynamicAccess
-import akka.actor.ExtendedActorSystem
 import akka.cluster.MemberStatus.Up
 import akka.event.Logging
 import java.lang.management.MemoryUsage
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigObject
+import akka.event.LoggingAdapter
+import akka.util.Helpers.Requiring
+import akka.util.Helpers.ConfigOps
+import akka.dispatch.Dispatchers
 
 /**
- * INTERNAL API.
+ * Metrics extension settings. Documented in: `src/main/resources/reference.conf`.
+ */
+case class ClusterMetricsSettings(val config: Config) {
+  private val cc = config.getConfig("akka.cluster-toolbox.metrics")
+  // Extension.
+  val MetricsDispatcher: String = cc.getString("dispatcher") match {
+    case "" ⇒ Dispatchers.DefaultDispatcherId
+    case id ⇒ id
+  }
+  val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
+  //  Supervisor.
+  val SupervisorName: String = cc.getString("supervisor.name")
+  val SupervisorStrategyProvider: String = cc.getString("supervisor.strategy.provider")
+  val SupervisorStrategyConfiguration: Config = cc.getConfig("supervisor.strategy.configuration")
+  // Collector.
+  val CollectorName: String = cc.getString("collector.name")
+  val CollectorEnabled: Boolean = cc.getBoolean("collector.enabled")
+  val CollectorProvider: String = cc.getString("collector.provider")
+  val CollectorSampleInterval: FiniteDuration = {
+    cc.getMillisDuration("collector.sample-interval")
+  } requiring (_ > Duration.Zero, "collector.sample-interval must be > 0")
+  val CollectorGossipInterval: FiniteDuration = {
+    cc.getMillisDuration("collector.gossip-interval")
+  } requiring (_ > Duration.Zero, "collector.gossip-interval must be > 0")
+  val CollectorMovingAverageHalfLife: FiniteDuration = {
+    cc.getMillisDuration("collector.moving-average-half-life")
+  } requiring (_ > Duration.Zero, "collector.moving-average-half-life must be > 0")
+}
+
+/**
+ * Cluster metrics extension.
  *
  * Cluster metrics is primarily for load-balancing of nodes. It controls metrics sampling
  * at a regular frequency, prepares highly variable data for further analysis by other entities,
@@ -38,7 +73,113 @@ import java.lang.management.MemoryUsage
  * Smoothing of the data for each monitored process is delegated to the
  * [[akka.cluster.EWMA]] for exponential weighted moving average.
  */
-private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Actor with ActorLogging {
+class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
+
+  private val log: LoggingAdapter = Logging(system, getClass.getName)
+
+  val settings = ClusterMetricsSettings(system.settings.config)
+  import settings._
+
+  val strategy = system.dynamicAccess.createInstanceFor[SupervisorStrategy](
+    SupervisorStrategyProvider, immutable.Seq(classOf[Config] -> SupervisorStrategyConfiguration))
+    .getOrElse {
+      log.error(s"Configured strategy provider ${SupervisorStrategyProvider} failed to load, using default ${classOf[ClusterMetricsStrategy].getName}.")
+      new ClusterMetricsStrategy(SupervisorStrategyConfiguration)
+    }
+
+  val supervisor = system.systemActorOf(
+    Props(classOf[ClusterMetricsSupervisor]).withDispatcher(MetricsDispatcher).withDeploy(Deploy.local),
+    SupervisorName)
+
+}
+
+/**
+ * Cluster metrics extension provider.
+ */
+object ClusterMetricsExtension extends ExtensionId[ClusterMetricsExtension] with ExtensionIdProvider {
+  override def lookup = ClusterMetricsExtension
+  override def get(system: ActorSystem): ClusterMetricsExtension = super.get(system)
+  override def createExtension(system: ExtendedActorSystem): ClusterMetricsExtension = new ClusterMetricsExtension(system)
+  /** Runtime collection management. */
+  trait CollectionControlMessage extends Serializable
+  case object CollectionStartMessage extends CollectionControlMessage
+  case object CollectionStopMessage extends CollectionControlMessage
+}
+
+/**
+ * Default [[ClusterMetricsSupervisor]] strategy:
+ * A configurable [[OneForOneStrategy]] with restart-on-throwable decider.
+ */
+class ClusterMetricsStrategy(config: Config) extends OneForOneStrategy(
+  maxNrOfRetries = config.getInt("maxNrOfRetries"),
+  withinTimeRange = config.getMillisDuration("withinTimeRange"),
+  loggingEnabled = config.getBoolean("loggingEnabled"))(ClusterMetricsStrategy.metricsDecider)
+
+/**
+ * Provide custom metrics strategy resources.
+ */
+object ClusterMetricsStrategy {
+  import akka.actor.SupervisorStrategy._
+  /**
+   * [[SupervisorStrategy.Decider]] which allows to survive intermittent Sigar native method calls failures.
+   */
+  val metricsDecider: SupervisorStrategy.Decider = {
+    case _: ActorInitializationException ⇒ Stop
+    case _: ActorKilledException         ⇒ Stop
+    case _: DeathPactException           ⇒ Stop
+    case _: Throwable                    ⇒ Restart
+  }
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Actor providing customizable collector supervision.
+ */
+private[cluster] class ClusterMetricsSupervisor extends Actor with ActorLogging {
+  import ClusterMetricsExtension._
+  val metrics = ClusterMetricsExtension(context.system)
+  import metrics.settings._
+
+  override val supervisorStrategy = metrics.strategy
+
+  override def preStart() = {
+    if (CollectorEnabled) {
+      self ! CollectionStartMessage
+    } else {
+      log.warning(s"Metrics collection is disabled in configuration. Use CollectionControlMessage to enable collection at runtime.")
+    }
+  }
+
+  def childrenCreate() = {
+    childrenDelete()
+    context.actorOf(Props(classOf[ClusterMetricsCollector]), CollectorName)
+  }
+
+  def childrenDelete() = {
+    context.children foreach { child ⇒
+      context.unwatch(child)
+      context.stop(child)
+    }
+  }
+
+  override def receive = {
+    case CollectionStartMessage ⇒
+      log.info(s"Collection started.")
+      childrenCreate
+    case CollectionStopMessage ⇒
+      log.info(s"Collection stopped.")
+      childrenDelete
+  }
+
+}
+
+/**
+ * INTERNAL API.
+ *
+ * Actor responsible for periodic data sampling in the node and publication to the cluster.
+ */
+private[cluster] class ClusterMetricsCollector extends Actor with ActorLogging {
 
   import InternalClusterAction._
   import ClusterEvent._
@@ -46,8 +187,9 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   import context.dispatcher
   val cluster = Cluster(context.system)
   import cluster.{ selfAddress, scheduler, settings }
-  import cluster.settings._
   import cluster.InfoLogger._
+  val metrics = ClusterMetricsExtension(context.system)
+  import metrics.settings._
 
   /**
    * The node ring gossipped that contains only members that are Up.
@@ -62,19 +204,19 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * The metrics collector that samples data on the node.
    */
-  val collector: MetricsCollector = MetricsCollector(context.system.asInstanceOf[ExtendedActorSystem], settings)
+  val collector: MetricsCollector = MetricsCollector(context.system)
 
   /**
    * Start periodic gossip to random nodes in cluster
    */
-  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsGossipInterval,
-    MetricsGossipInterval, self, GossipTick)
+  val gossipTask = scheduler.schedule(PeriodicTasksInitialDelay max CollectorGossipInterval,
+    CollectorGossipInterval, self, GossipTick)
 
   /**
    * Start periodic metrics collection
    */
-  val metricsTask = scheduler.schedule(PeriodicTasksInitialDelay max MetricsInterval,
-    MetricsInterval, self, MetricsTick)
+  val sampleTask = scheduler.schedule(PeriodicTasksInitialDelay max CollectorSampleInterval,
+    CollectorSampleInterval, self, MetricsTick)
 
   override def preStart(): Unit = {
     cluster.subscribe(self, classOf[MemberEvent], classOf[ReachabilityEvent])
@@ -98,7 +240,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   override def postStop: Unit = {
     cluster unsubscribe self
     gossipTask.cancel()
-    metricsTask.cancel()
+    sampleTask.cancel()
     collector.close()
   }
 
@@ -167,7 +309,7 @@ private[cluster] class ClusterMetricsCollector(publisher: ActorRef) extends Acto
   /**
    * Publishes to the event stream.
    */
-  def publish(): Unit = publisher ! PublishEvent(ClusterMetricsChanged(latestGossip.nodes))
+  def publish(): Unit = context.system.eventStream publish ClusterMetricsChanged(latestGossip.nodes)
 
 }
 
@@ -227,7 +369,7 @@ private[cluster] final case class MetricsGossip(nodes: Set[NodeMetrics]) {
 private[cluster] final case class MetricsGossipEnvelope(from: Address, gossip: MetricsGossip, reply: Boolean)
   extends ClusterMessage
 
-private[cluster] object EWMA {
+object EWMA {
   /**
    * math.log(2)
    */
@@ -272,7 +414,7 @@ private[cluster] object EWMA {
  *
  */
 @SerialVersionUID(1L)
-private[cluster] final case class EWMA(value: Double, alpha: Double) {
+final case class EWMA(value: Double, alpha: Double) {
 
   require(0.0 <= alpha && alpha <= 1.0, "alpha must be between 0.0 and 1.0")
 
@@ -355,7 +497,7 @@ object Metric extends MetricNumericConverter {
    * is returned. Invalid numeric values are negative and NaN/Infinite.
    */
   def create(name: String, value: Number, decayFactor: Option[Double]): Option[Metric] =
-    if (defined(value)) Some(new Metric(name, value, ceateEWMA(value.doubleValue, decayFactor)))
+    if (defined(value)) Some(new Metric(name, value, createEWMA(value.doubleValue, decayFactor)))
     else None
 
   /**
@@ -367,7 +509,7 @@ object Metric extends MetricNumericConverter {
     case Failure(_) ⇒ None
   }
 
-  private def ceateEWMA(value: Double, decayFactor: Option[Double]): Option[EWMA] = decayFactor match {
+  def createEWMA(value: Double, decayFactor: Option[Double]): Option[EWMA] = decayFactor match {
     case Some(alpha) ⇒ Some(EWMA(value, alpha))
     case None        ⇒ None
   }
@@ -437,6 +579,7 @@ object StandardMetrics {
   final val SystemLoadAverage = "system-load-average"
   final val Processors = "processors"
   final val CpuCombined = "cpu-combined"
+  final val CpuStolen = "cpu-stolen"
 
   object HeapMemory {
 
@@ -595,14 +738,14 @@ trait MetricsCollector extends Closeable {
 class JmxMetricsCollector(address: Address, decayFactor: Double) extends MetricsCollector {
   import StandardMetrics._
 
-  private def this(cluster: Cluster) =
-    this(cluster.selfAddress,
-      EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval))
+  private def this(address: Address, settings: ClusterMetricsSettings) =
+    this(address,
+      EWMA.alpha(settings.CollectorMovingAverageHalfLife, settings.CollectorSampleInterval))
 
   /**
    * This constructor is used when creating an instance from configured FQCN
    */
-  def this(system: ActorSystem) = this(Cluster(system))
+  def this(system: ActorSystem) = this(Cluster(system).selfAddress, ClusterMetricsExtension(system).settings)
 
   private val decayFactorOption = Some(decayFactor)
 
@@ -616,13 +759,17 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
    */
   def sample(): NodeMetrics = NodeMetrics(address, newTimestamp, metrics)
 
-  def metrics: Set[Metric] = {
+  /**
+   * Generate metrics set.
+   * Creates a new instance each time.
+   */
+  def metrics(): Set[Metric] = {
     val heap = heapMemoryUsage
     Set(systemLoadAverage, heapUsed(heap), heapCommitted(heap), heapMax(heap), processors).flatten
   }
 
   /**
-   * JMX Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
+   * (JMX) Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
    * On some systems the JMX OS system load average may not be available, in which case a -1 is
    * returned from JMX, and None is returned from this method.
    * Creates a new instance each time.
@@ -692,57 +839,47 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
  * @param decay how quickly the exponential weighting of past data is decayed
  * @param sigar the org.hyperic.Sigar instance
  */
-class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef)
+import org.hyperic.sigar.Sigar
+class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: Sigar)
   extends JmxMetricsCollector(address, decayFactor) {
 
   import StandardMetrics._
+  import org.hyperic.sigar.CpuPerc
 
-  private def this(cluster: Cluster) =
-    this(cluster.selfAddress,
-      EWMA.alpha(cluster.settings.MetricsMovingAverageHalfLife, cluster.settings.MetricsInterval),
-      cluster.system.dynamicAccess.createInstanceFor[AnyRef]("org.hyperic.sigar.Sigar", Nil).get)
+  private def this(address: Address, settings: ClusterMetricsSettings) =
+    this(address,
+      EWMA.alpha(settings.CollectorMovingAverageHalfLife, settings.CollectorSampleInterval),
+      new Sigar())
 
   /**
    * This constructor is used when creating an instance from configured FQCN
    */
-  def this(system: ActorSystem) = this(Cluster(system))
+  def this(system: ActorSystem) = this(Cluster(system).selfAddress, ClusterMetricsExtension(system).settings)
 
   private val decayFactorOption = Some(decayFactor)
 
-  private val EmptyClassArray: Array[(Class[_])] = Array.empty[(Class[_])]
-  private val LoadAverage: Option[Method] = createMethodFrom(sigar, "getLoadAverage")
-  private val Cpu: Option[Method] = createMethodFrom(sigar, "getCpuPerc")
-  private val CombinedCpu: Option[Method] = Try(Cpu.get.getReturnType.getMethod("getCombined")).toOption
+  /**
+   * Verify at the end of construction that Sigar is operational.
+   */
+  metrics()
 
-  // Do something initially, in constructor, to make sure that the native library can be loaded.
-  // This will by design throw exception if sigar isn't usable
-  val pid: Long = createMethodFrom(sigar, "getPid") match {
-    case Some(method) ⇒
-      try method.invoke(sigar).asInstanceOf[Long] catch {
-        case e: InvocationTargetException if e.getCause.isInstanceOf[LinkageError] ⇒
-          // native libraries not in place
-          // don't throw fatal LinkageError, but something harmless
-          throw new IllegalArgumentException(e.getCause.toString)
-        case e: InvocationTargetException ⇒ throw e.getCause
-      }
-    case None ⇒ throw new IllegalArgumentException("Wrong version of Sigar, expected 'getPid' method")
-  }
+  // Construction complete.
 
-  override def metrics: Set[Metric] = {
-    super.metrics.filterNot(_.name == SystemLoadAverage) ++ Set(systemLoadAverage, cpuCombined).flatten
+  override def metrics(): Set[Metric] = {
+    // Must obtain cpuPerc in one shot. https://github.com/akka/akka/issues/16121
+    val cpuPerc = sigar.getCpuPerc
+    super.metrics ++ Set(cpuCombined(cpuPerc), cpuStolen(cpuPerc)).flatten
   }
 
   /**
-   * (SIGAR / JMX) Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
-   * On some systems the JMX OS system load average may not be available, in which case a -1 is returned
-   * from JMX, which means that None is returned from this method.
-   * Hyperic SIGAR provides more precise values, thus, if the library is on the classpath, it is the default.
+   * (SIGAR) Returns the OS-specific average load on the CPUs in the system, for the past 1 minute.
+   *
    * Creates a new instance each time.
    */
   override def systemLoadAverage: Option[Metric] = Metric.create(
     name = SystemLoadAverage,
-    value = Try(LoadAverage.get.invoke(sigar).asInstanceOf[Array[AnyRef]](0).asInstanceOf[Number]),
-    decayFactor = None) orElse super.systemLoadAverage
+    value = sigar.getLoadAverage()(0).asInstanceOf[Number],
+    decayFactor = None)
 
   /**
    * (SIGAR) Returns the combined CPU sum of User + Sys + Nice + Wait, in percentage. This metric can describe
@@ -754,18 +891,27 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
    *
    * Creates a new instance each time.
    */
-  def cpuCombined: Option[Metric] = Metric.create(
+  def cpuCombined(cpuPerc: CpuPerc): Option[Metric] = Metric.create(
     name = CpuCombined,
-    value = Try(CombinedCpu.get.invoke(Cpu.get.invoke(sigar)).asInstanceOf[Number]),
+    value = cpuPerc.getCombined.asInstanceOf[Number],
+    decayFactor = decayFactorOption)
+
+  /**
+   * (SIGAR) Returns the stolen CPU time. Relevant to virtual hosting environments.
+   * For details please see: [[http://en.wikipedia.org/wiki/CPU_time#Subdivision Wikipedia - CPU time subdivision]] and
+   * [[https://www.datadoghq.com/2013/08/understanding-aws-stolen-cpu-and-how-it-affects-your-apps/ Understanding AWS stolen CPU and how it affects your apps]]
+   *
+   * Creates a new instance each time.
+   */
+  def cpuStolen(cpuPerc: CpuPerc): Option[Metric] = Metric.create(
+    name = CpuStolen,
+    value = cpuPerc.getStolen.asInstanceOf[Number],
     decayFactor = decayFactorOption)
 
   /**
    * Releases any native resources associated with this instance.
    */
-  override def close(): Unit = Try(createMethodFrom(sigar, "close").get.invoke(sigar))
-
-  private def createMethodFrom(ref: AnyRef, method: String, types: Array[(Class[_])] = EmptyClassArray): Option[Method] =
-    Try(ref.getClass.getMethod(method, types: _*)).toOption
+  override def close: Unit = sigar.close
 
 }
 
@@ -776,13 +922,17 @@ class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef
  * it falls back to use JmxMetricsCollector.
  */
 private[cluster] object MetricsCollector {
-  def apply(system: ExtendedActorSystem, settings: ClusterSettings): MetricsCollector = {
-    import settings.{ MetricsCollectorClass ⇒ fqcn }
+  def apply(_system: ActorSystem): MetricsCollector = {
+    val system = _system.asInstanceOf[ExtendedActorSystem]
+    val settings = ClusterMetricsSettings(system.settings.config)
+    import settings.{ CollectorProvider ⇒ fqcn }
     def log = Logging(system, getClass.getName)
     if (fqcn == classOf[SigarMetricsCollector].getName) {
-      Try(new SigarMetricsCollector(system)) match {
-        case Success(sigarCollector) ⇒ sigarCollector
-        case Failure(e) ⇒
+      // Not using [[Try]] since any type of Sigar load failure is non-fatal in this case. 
+      try {
+        new SigarMetricsCollector(system)
+      } catch {
+        case e: Throwable ⇒
           Cluster(system).InfoLogger.logInfo(
             "Metrics will be retreived from MBeans, and may be incorrect on some platforms. " +
               "To increase metric accuracy add the 'sigar.jar' to the classpath and the appropriate " +
@@ -790,7 +940,6 @@ private[cluster] object MetricsCollector {
               e.toString)
           new JmxMetricsCollector(system)
       }
-
     } else {
       system.dynamicAccess.createInstanceFor[MetricsCollector](fqcn, List(classOf[ActorSystem] -> system)).
         recover {
@@ -799,4 +948,3 @@ private[cluster] object MetricsCollector {
     }
   }
 }
-

@@ -26,7 +26,7 @@ object OSGi {
 
   val camel = exports(Seq("akka.camel.*"))
 
-  val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
+  val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport(), sigarImport()))
 
   val osgi = exports(Seq("akka.osgi.*"))
 
@@ -61,6 +61,7 @@ object OSGi {
     val ScalaVersion(epoch, major) = version
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
   }
+  def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.4", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
 }
