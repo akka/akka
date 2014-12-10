@@ -13,6 +13,8 @@ import akka.http.model.japi.MediaRange;
 public abstract class Accept extends akka.http.model.HttpHeader {
     public abstract Iterable<MediaRange> getMediaRanges();
 
+    public abstract boolean acceptsAll();
+
     public static Accept create(MediaRange... mediaRanges) {
         return new akka.http.model.headers.Accept(akka.http.model.japi.Util.<MediaRange, akka.http.model.MediaRange>convertArray(mediaRanges));
     }

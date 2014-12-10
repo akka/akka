@@ -69,8 +69,20 @@ private[http] class RequestContextImpl(
   override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
-  override def withContentNegotiationDisabled: RequestContext =
-    copy(request = request.withHeaders(request.headers filterNot (_.isInstanceOf[headers.Accept])))
+  override def withAcceptAll: RequestContext = request.header[headers.Accept] match {
+    case Some(accept @ headers.Accept(mediaRanges)) if !accept.acceptsAll ⇒
+      mapRequest(_.mapHeaders(_.map {
+        case `accept` ⇒
+          val acceptAll =
+            if (mediaRanges.exists(_.isWildcard))
+              mediaRanges.map(mr ⇒ if (mr.isWildcard) mr.withQValue(Float.MinPositiveValue) else mr)
+            else
+              mediaRanges :+ MediaRanges.`*/*(minQ)`
+          accept.copy(mediaRanges = acceptAll)
+        case x ⇒ x
+      }))
+    case _ ⇒ this
+  }
 
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,

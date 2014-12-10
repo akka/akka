@@ -129,6 +129,7 @@ final case class Accept(mediaRanges: immutable.Seq[MediaRange]) extends japi.hea
   import Accept.mediaRangesRenderer
   def renderValue[R <: Rendering](r: R): r.type = r ~~ mediaRanges
   protected def companion = Accept
+  def acceptsAll = mediaRanges.exists(mr ⇒ mr.isWildcard && mr.qValue > 0f)
 
   /** Java API */
   def getMediaRanges: Iterable[japi.MediaRange] = mediaRanges.asJava

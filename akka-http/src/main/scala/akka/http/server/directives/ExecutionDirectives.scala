@@ -23,7 +23,7 @@ trait ExecutionDirectives {
       ctx ⇒
         import ctx.executionContext
         def handleException: PartialFunction[Throwable, Future[RouteResult]] =
-          handler andThen (_(ctx.withContentNegotiationDisabled))
+          handler andThen (_(ctx.withAcceptAll))
         try innerRouteBuilder(())(ctx).fast.recoverWith(handleException)
         catch {
           case NonFatal(e) ⇒ handleException.applyOrElse[Throwable, Future[RouteResult]](e, throw _)
@@ -42,7 +42,7 @@ trait ExecutionDirectives {
           val errorMsg = "The RejectionHandler for %s must not itself produce rejections (received %s)!"
           recoverRejections(r ⇒ sys.error(errorMsg.format(filteredRejections, r))) {
             handler(filteredRejections)
-          }(ctx.withContentNegotiationDisabled)
+          }(ctx.withAcceptAll)
         } else FastFuture.successful(RouteResult.Rejected(filteredRejections))
       }
     }
