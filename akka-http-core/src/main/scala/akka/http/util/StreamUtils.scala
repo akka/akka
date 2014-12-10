@@ -180,12 +180,15 @@ private[http] object StreamUtils {
   }
 
   def runStrict(sourceData: ByteString, transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
+    runStrict(Iterator.single(sourceData), transformer, maxByteSize, maxElements)
+
+  def runStrict(sourceData: Iterator[ByteString], transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
     Try {
       transformer match {
         // FIXME #16382 right now the flow can't use keys, should that be allowed?
         case Pipe(ops, keys, _) if keys.isEmpty ⇒
           if (ops.isEmpty)
-            Some(sourceData)
+            Some(sourceData.foldLeft(ByteString.empty)(_ ++ _))
           else {
             @tailrec def tryBuild(remaining: List[AstNode], acc: List[PushPullStage[ByteString, ByteString]]): List[PushPullStage[ByteString, ByteString]] =
               remaining match {
@@ -203,7 +206,7 @@ private[http] object StreamUtils {
             if (strictOps.isEmpty)
               None
             else {
-              val iter: Iterator[ByteString] = new IteratorInterpreter(Iterator.single(sourceData), strictOps).iterator
+              val iter: Iterator[ByteString] = new IteratorInterpreter(sourceData, strictOps).iterator
               var byteSize = 0L
               var result = ByteString.empty
               var i = 0
