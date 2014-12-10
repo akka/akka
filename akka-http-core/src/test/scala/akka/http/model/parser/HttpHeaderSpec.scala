@@ -361,6 +361,65 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Set-Cookie`(HttpCookie("foo", "bar", domain = Some("example.com"), path = Some("/this is a path with blanks"),
           extension = Some("extension with blanks"))).renderedTo(
           "foo=bar; Domain=example.com; Path=/this is a path with blanks; extension with blanks")
+
+      // test all weekdays
+      "Set-Cookie: lang=; Expires=Sun, 07 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 7, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Sunday, 07 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 7, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Sun, 07 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Mon, 08 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 8, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Monday, 08 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 8, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Mon, 08 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Tue, 09 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 9, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Tuesday, 09 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 9, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Tue, 09 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Wed, 10 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 10, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Wednesday, 10 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 10, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Wed, 10 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Thu, 11 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 11, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Thursday, 11 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 11, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Thu, 11 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Fri, 12 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 12, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Friday, 12 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 12, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Fri, 12 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Sat, 13 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 13, 0, 42, 55)), maxAge = Some(12345)))
+      "Set-Cookie: lang=; Expires=Saturday, 13 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        `Set-Cookie`(HttpCookie("lang", "", expires = Some(DateTime(2014, 12, 13, 0, 42, 55)), maxAge = Some(12345)))
+        .renderedTo("lang=; Expires=Sat, 13 Dec 2014 00:42:55 GMT; Max-Age=12345")
+
+      "Set-Cookie: lang=; Expires=Mon, 13 Dec 2014 00:42:55 GMT; Max-Age=12345" =!=
+        ErrorInfo("Illegal HTTP header 'Set-Cookie': Illegal weekday in date 2014-12-13T00:42:55", "is 'Mon' but should be 'Sat'")
+
+      "Set-Cookie: lang=; Expires=xxxx" =!=
+        ErrorInfo(
+          "Illegal HTTP header 'Set-Cookie': Invalid input 'x', expected '\\r', WSP, 'S', 'M', 'T', 'W', 'F' or '0' (line 1, column 16)",
+          "lang=; Expires=xxxx\n               ^")
+
+      // extra examples from play
+      "Set-Cookie: PLAY_FLASH=\"success=found\"; Path=/; HTTPOnly" =!=
+        `Set-Cookie`(HttpCookie("PLAY_FLASH", "success=found", path = Some("/"), httpOnly = true))
+        .renderedTo("PLAY_FLASH=success=found; Path=/; HttpOnly")
+      "Set-Cookie: PLAY_FLASH=; Expires=Sun, 07 Dec 2014 22:48:47 GMT; Path=/; HTTPOnly" =!=
+        `Set-Cookie`(HttpCookie("PLAY_FLASH", "", expires = Some(DateTime(2014, 12, 7, 22, 48, 47)), path = Some("/"), httpOnly = true))
+        .renderedTo("PLAY_FLASH=; Expires=Sun, 07 Dec 2014 22:48:47 GMT; Path=/; HttpOnly")
     }
 
     "User-Agent" in {
