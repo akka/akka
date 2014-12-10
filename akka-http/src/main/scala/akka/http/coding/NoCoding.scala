@@ -5,13 +5,15 @@
 package akka.http.coding
 
 import akka.http.model._
+import akka.http.util.StreamUtils
+import akka.stream.stage.Stage
 import akka.util.ByteString
 import headers.HttpEncodings
 
 /**
  * An encoder and decoder for the HTTP 'identity' encoding.
  */
-object NoCoding extends Coder {
+object NoCoding extends Coder with StreamDecoder {
   val encoding = HttpEncodings.identity
 
   override def encode[T <: HttpMessage](message: T)(implicit mapper: DataMapper[T]): T#Self = message.self
@@ -22,7 +24,9 @@ object NoCoding extends Coder {
   val messageFilter: HttpMessage ⇒ Boolean = _ ⇒ false
 
   def newCompressor = NoCodingCompressor
-  def newDecompressor = NoCodingDecompressor
+
+  def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ Stage[ByteString, ByteString] =
+    () ⇒ StreamUtils.limitByteChunksStage(maxBytesPerChunk)
 }
 
 object NoCodingCompressor extends Compressor {
@@ -32,8 +36,4 @@ object NoCodingCompressor extends Compressor {
 
   def compressAndFlush(input: ByteString): ByteString = input
   def compressAndFinish(input: ByteString): ByteString = input
-}
-object NoCodingDecompressor extends Decompressor {
-  def decompress(input: ByteString): ByteString = input
-  def finish(): ByteString = ByteString.empty
 }

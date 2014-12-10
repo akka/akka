@@ -4,6 +4,7 @@
 
 package akka.http.coding
 
+import akka.stream.stage.{ Directive, Context, PushStage, Stage }
 import akka.util.ByteString
 import org.scalatest.WordSpec
 import akka.http.model._
@@ -26,15 +27,15 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
   }
 
   def dummyDecompress(s: String): String = dummyDecompress(ByteString(s, "UTF8")).decodeString("UTF8")
-  def dummyDecompress(bytes: ByteString): ByteString = DummyDecompressor.decompress(bytes)
+  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes)
 
-  case object DummyDecoder extends Decoder {
+  case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress
-    def newDecompressor = DummyDecompressor
-  }
 
-  case object DummyDecompressor extends Decompressor {
-    def decompress(buffer: ByteString): ByteString = buffer ++ ByteString("compressed")
-    def finish(): ByteString = ByteString.empty
+    def newDecompressorStage(maxBytesPerChunk: Int): () ⇒ Stage[ByteString, ByteString] =
+      () ⇒ new PushStage[ByteString, ByteString] {
+        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+          ctx.push(elem ++ ByteString("compressed"))
+      }
   }
 }

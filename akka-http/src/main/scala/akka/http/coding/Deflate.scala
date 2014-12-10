@@ -4,27 +4,21 @@
 
 package akka.http.coding
 
-import java.io.OutputStream
-import java.util.zip.{ DataFormatException, ZipException, Inflater, Deflater }
+import java.util.zip.{ Inflater, Deflater }
+import akka.stream.stage._
 import akka.util.{ ByteStringBuilder, ByteString }
 
 import scala.annotation.tailrec
 import akka.http.util._
 import akka.http.model._
-import headers.HttpEncodings
+import akka.http.model.headers.HttpEncodings
 
-class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder {
+class Deflate(val messageFilter: HttpMessage ⇒ Boolean) extends Coder with StreamDecoder {
   val encoding = HttpEncodings.deflate
   def newCompressor = new DeflateCompressor
-  def newDecompressor = new DeflateDecompressor
+  def newDecompressorStage(maxBytesPerChunk: Int) = () ⇒ new DeflateDecompressor(maxBytesPerChunk)
 }
-
-/**
- * An encoder and decoder for the HTTP 'deflate' encoding.
- */
-object Deflate extends Deflate(Encoder.DefaultFilter) {
-  def apply(messageFilter: HttpMessage ⇒ Boolean) = new Deflate(messageFilter)
-}
+object Deflate extends Deflate(Encoder.DefaultFilter)
 
 class DeflateCompressor extends Compressor {
   protected lazy val deflater = new Deflater(Deflater.BEST_COMPRESSION, false)
@@ -88,27 +82,57 @@ class DeflateCompressor extends Compressor {
     new Array[Byte](size)
 }
 
-class DeflateDecompressor extends Decompressor {
-  protected lazy val inflater = new Inflater()
+class DeflateDecompressor(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends DeflateDecompressorBase(maxBytesPerChunk) {
+  protected def createInflater() = new Inflater()
 
-  def decompress(input: ByteString): ByteString =
-    try {
-      inflater.setInput(input.toArray)
-      drain(new Array[Byte](input.length * 2))
-    } catch {
-      case e: DataFormatException ⇒
-        throw new ZipException(e.getMessage.toOption getOrElse "Invalid ZLIB data format")
+  def initial: State = StartInflate
+  def afterInflate: State = StartInflate
+
+  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit = {}
+  protected def onTruncation(ctx: Context[ByteString]): Directive = ctx.finish()
+}
+
+abstract class DeflateDecompressorBase(maxBytesPerChunk: Int = Decoder.MaxBytesPerChunkDefault) extends ByteStringParserStage[ByteString] {
+  protected def createInflater(): Inflater
+  val inflater = createInflater()
+
+  protected def afterInflate: State
+  protected def afterBytesRead(buffer: Array[Byte], offset: Int, length: Int): Unit
+
+  /** Start inflating */
+  case object StartInflate extends State {
+    def onPush(data: ByteString, ctx: Context[ByteString]): Directive = {
+      require(inflater.needsInput())
+      inflater.setInput(data.toArray)
+
+      becomeWithRemaining(Inflate()(data), ByteString.empty, ctx)
     }
-
-  @tailrec protected final def drain(buffer: Array[Byte], result: ByteString = ByteString.empty): ByteString = {
-    val len = inflater.inflate(buffer)
-    if (len > 0) drain(buffer, result ++ ByteString.fromArray(buffer, 0, len))
-    else if (inflater.needsDictionary) throw new ZipException("ZLIB dictionary missing")
-    else result
   }
 
-  def finish(): ByteString = {
-    inflater.end()
-    ByteString.empty
+  /** Inflate */
+  case class Inflate()(data: ByteString) extends IntermediateState {
+    override def onPull(ctx: Context[ByteString]): Directive = {
+      val buffer = new Array[Byte](maxBytesPerChunk)
+      val read = inflater.inflate(buffer)
+      if (read > 0) {
+        afterBytesRead(buffer, 0, read)
+        ctx.push(ByteString.fromArray(buffer, 0, read))
+      } else {
+        val remaining = data.takeRight(inflater.getRemaining)
+        val next =
+          if (inflater.finished()) afterInflate
+          else StartInflate
+
+        becomeWithRemaining(next, remaining, ctx)
+      }
+    }
+    def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+      throw new IllegalStateException("Don't expect a new Element")
+  }
+
+  def becomeWithRemaining(next: State, remaining: ByteString, ctx: Context[ByteString]) = {
+    become(next)
+    if (remaining.isEmpty) current.onPull(ctx)
+    else current.onPush(remaining, ctx)
   }
 }
