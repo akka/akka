@@ -43,6 +43,17 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         }
       }
 
+      "a custom Date header" in new TestSetup() {
+        HttpResponse(200, List(Date(DateTime(2011, 8, 26, 10, 11, 59)))) should renderTo {
+          """HTTP/1.1 200 OK
+            |Date: Fri, 26 Aug 2011 10:11:59 GMT
+            |Server: akka-http/1.0.0
+            |Content-Length: 0
+            |
+            |"""
+        }
+      }
+
       "status 304 and a few headers" in new TestSetup() {
         HttpResponse(304, List(RawHeader("X-Fancy", "of course"), RawHeader("Age", "0"))) should renderTo {
           """HTTP/1.1 304 Not Modified
