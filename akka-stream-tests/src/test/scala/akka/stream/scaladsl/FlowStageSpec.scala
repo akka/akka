@@ -82,6 +82,52 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
       subscriber.expectComplete()
     }
 
+    "produce one-to-several transformation with state change" in {
+      val p =
+        Source(List(3, 2, 1, 0, 1, 12)).
+          transform(() ⇒ new StatefulStage[Int, Int] {
+            // a transformer that
+            //  - for the first element, returns n times 42
+            //  - echos the remaining elements (can be reset to the duplication state by getting `0`)
+
+            override def initial = inflate
+            lazy val inflate: State = new State {
+              override def onPush(elem: Int, ctx: Context[Int]) = {
+                emit(Iterator.fill(elem)(42), ctx, echo)
+              }
+            }
+            lazy val echo: State = new State {
+              def onPush(elem: Int, ctx: Context[Int]): Directive =
+                if (elem == 0) {
+                  become(inflate)
+                  ctx.pull()
+                } else ctx.push(elem)
+            }
+          }).runWith(Sink.publisher)
+
+      val subscriber = StreamTestKit.SubscriberProbe[Int]()
+      p.subscribe(subscriber)
+      val subscription = subscriber.expectSubscription()
+      subscription.request(50)
+
+      // inflating: 3 times 42
+      subscriber.expectNext(42)
+      subscriber.expectNext(42)
+      subscriber.expectNext(42)
+
+      // echoing
+      subscriber.expectNext(2)
+      subscriber.expectNext(1)
+
+      // reset
+      // inflating: 1 times 42
+      subscriber.expectNext(42)
+
+      // echoing
+      subscriber.expectNext(12)
+      subscriber.expectComplete()
+    }
+
     "produce dropping transformation as expected" in {
       val p = Source(List(1, 2, 3, 4)).runWith(Sink.publisher)
       val p2 = Source(p).

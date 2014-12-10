@@ -268,7 +268,8 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
       if (iter.hasNext) {
         emitting = true
         become(emittingState(iter, andThen = Become(nextState.asInstanceOf[StageState[Any, Any]])))
-      }
+      } else
+        become(nextState)
       ctx.push(elem)
     }
   }
