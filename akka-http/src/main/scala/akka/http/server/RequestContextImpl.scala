@@ -45,26 +45,26 @@ private[http] class RequestContextImpl(
   override def fail(error: Throwable): Future[RouteResult] =
     FastFuture.failed(error)
 
-  override def withRequest(req: HttpRequest): RequestContext =
-    copy(request = req)
+  override def withRequest(request: HttpRequest): RequestContext =
+    if (request != this.request) copy(request = request) else this
 
-  override def withExecutionContext(ec: ExecutionContext): RequestContext =
-    copy(executionContext = ec)
+  override def withExecutionContext(executionContext: ExecutionContext): RequestContext =
+    if (executionContext != this.executionContext) copy(executionContext = executionContext) else this
 
-  override def withFlowMaterializer(materializer: FlowMaterializer): RequestContext =
-    copy(flowMaterializer = materializer)
+  override def withFlowMaterializer(flowMaterializer: FlowMaterializer): RequestContext =
+    if (flowMaterializer != this.flowMaterializer) copy(flowMaterializer = flowMaterializer) else this
 
   override def withLog(log: LoggingAdapter): RequestContext =
-    copy(log = log)
+    if (log != this.log) copy(log = log) else this
 
   override def withSettings(settings: RoutingSettings): RequestContext =
-    copy(settings = settings)
+    if (settings != this.settings) copy(settings = settings) else this
 
   override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
 
   override def withUnmatchedPath(path: Uri.Path): RequestContext =
-    copy(unmatchedPath = path)
+    if (path != unmatchedPath) copy(unmatchedPath = path) else this
 
   override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
