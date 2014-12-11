@@ -15,6 +15,9 @@ import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.Zip
 import akka.stream.testkit.AkkaSpec
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 // TODO replace ⇒ with => and disable this intellij setting
 class FlowGraphDocSpec extends AkkaSpec {
 
@@ -87,6 +90,33 @@ class FlowGraphDocSpec extends AkkaSpec {
       }
       //#simple-graph
     }.getMessage should include("must have at least 1 outgoing edge")
+  }
+
+  "reusing a flow in a graph" in {
+    //#flow-graph-reusing-a-flow
+
+    val topHeadSink = Sink.head[Int]
+    val bottomHeadSink = Sink.head[Int]
+    val sharedDoubler = Flow[Int].map(_ * 2)
+
+    //#flow-graph-reusing-a-flow
+
+    // format: OFF
+    val g =
+    //#flow-graph-reusing-a-flow
+    FlowGraph { implicit b ⇒
+      import FlowGraphImplicits._
+      val broadcast = Broadcast[Int]
+      Source.single(1) ~> broadcast
+
+      broadcast ~> sharedDoubler ~> topHeadSink
+      broadcast ~> sharedDoubler ~> bottomHeadSink
+    }
+    //#flow-graph-reusing-a-flow
+    // format: ON
+    val map = g.run()
+    Await.result(map.get(topHeadSink), 300.millis) shouldEqual 2
+    Await.result(map.get(bottomHeadSink), 300.millis) shouldEqual 2
   }
 
 }
