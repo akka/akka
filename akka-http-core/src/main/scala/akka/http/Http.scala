@@ -32,18 +32,15 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val endpoint = new InetSocketAddress(interface, port)
     val effectiveSettings = ServerSettings(settings)
     val tcpBinding = StreamTcp().bind(endpoint, backlog, options, effectiveSettings.timeouts.idleTimeout)
-    new ServerBinding {
-      def localAddress(mm: MaterializedMap) = tcpBinding.localAddress(mm)
-      val connections = tcpBinding.connections map { tcpConn ⇒
-        new IncomingConnection {
-          def localAddress = tcpConn.localAddress
-          def remoteAddress = tcpConn.remoteAddress
-          def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer) =
+    ServerBinding(
+      tcpBinding.localAddress,
+      tcpBinding.connections map { tcpConn ⇒
+        IncomingConnection(tcpConn.localAddress, tcpConn.remoteAddress) { handler ⇒
+          implicit fm ⇒
             tcpConn.handleWith(HttpServer.serverFlowToTransport(handler, effectiveSettings, log))
         }
-      }
-      def unbind(mm: MaterializedMap): Future[Unit] = tcpBinding.unbind(mm)
-    }
+      },
+      tcpBinding.unbind)
   }
 
   /**
@@ -68,11 +65,10 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val remoteAddr = new InetSocketAddress(host, port)
     val transportFlow = StreamTcp().outgoingConnection(remoteAddr, localAddress,
       options, effectiveSettings.connectingTimeout, effectiveSettings.idleTimeout)
-    new OutgoingConnection {
-      def remoteAddress = remoteAddr
-      def localAddress(mm: MaterializedMap) = transportFlow.localAddress(mm)
-      val flow = HttpClient.transportToConnectionClientFlow(transportFlow.flow, remoteAddr, effectiveSettings, log)
-    }
+    OutgoingConnection(
+      remoteAddr,
+      transportFlow.localAddress,
+      HttpClient.transportToConnectionClientFlow(transportFlow.flow, remoteAddr, effectiveSettings, log))
   }
 
   /**
@@ -92,7 +88,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective HTTP server binding.
    */
-  trait ServerBinding {
+  sealed trait ServerBinding {
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
      * whose [[MaterializedMap]] is passed as parameter.
@@ -147,6 +143,18 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
       startHandlingWith(Flow[HttpRequest].mapAsync(handler))
   }
 
+  object ServerBinding {
+    /**
+     * Creates [[ServerBinding]] with provided attributes.
+     */
+    def apply(local: MaterializedMap ⇒ Future[InetSocketAddress], connectionSource: Source[IncomingConnection], unbindFunc: MaterializedMap ⇒ Future[Unit]): ServerBinding =
+      new ServerBinding {
+        def localAddress(materializedMap: MaterializedMap) = local(materializedMap)
+        val connections = connectionSource
+        def unbind(materializedMap: MaterializedMap) = unbindFunc(materializedMap)
+      }
+  }
+
   /**
    * Represents one accepted incoming HTTP connection.
    */
@@ -182,6 +190,18 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
       handleWith(Flow[HttpRequest].mapAsync(handler))
   }
 
+  object IncomingConnection {
+    /**
+     * Creates [[IncomingConnection]] with provided attributes.
+     */
+    def apply(local: InetSocketAddress, remote: InetSocketAddress)(block: Flow[HttpRequest, HttpResponse] ⇒ FlowMaterializer ⇒ MaterializedMap): IncomingConnection =
+      new IncomingConnection {
+        val localAddress = local
+        val remoteAddress = remote
+        def handleWith(handler: Flow[HttpRequest, HttpResponse])(implicit fm: FlowMaterializer): MaterializedMap = block(handler)(fm)
+      }
+  }
+
   /**
    * Represents a prospective outgoing HTTP connection.
    */
@@ -195,7 +215,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * The local address of the endpoint bound by the materialization of the connection materialization
      * whose [[MaterializedMap]] is passed as parameter.
      */
-    def localAddress(mMap: MaterializedMap): Future[InetSocketAddress]
+    def localAddress(materializedMap: MaterializedMap): Future[InetSocketAddress]
 
     /**
      * A flow representing the HTTP server on a single HTTP connection.
@@ -204,6 +224,18 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * with a [[StreamTcp.ConnectionAttemptFailedException]].
      */
     def flow: Flow[HttpRequest, HttpResponse]
+  }
+
+  object OutgoingConnection {
+    /**
+     * Creates [[OutgoingConnection]] with provided attributes.
+     */
+    def apply(remote: InetSocketAddress, local: MaterializedMap ⇒ Future[InetSocketAddress], requestResponseFlow: Flow[HttpRequest, HttpResponse]): OutgoingConnection =
+      new OutgoingConnection {
+        val remoteAddress = remote
+        def localAddress(materializedMap: MaterializedMap) = local(materializedMap)
+        val flow = requestResponseFlow
+      }
   }
 
   class RequestTimeoutException(val request: HttpRequest, message: String) extends RuntimeException(message)
