@@ -11,19 +11,19 @@ import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.util.Timeout
 import com.typesafe.config.Config
 import scala.concurrent.duration._
-import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplaySuccess, ReplayMessages }
-
+import akka.persistence.journal.AsyncWriteTarget.{ ReplayFailure, ReplaySuccess, ReplayMessages, WriteMessages }
 import scala.language.postfixOps
-import akka.persistence.journal.AsyncWriteTarget.ReplayFailure
 import scala.Some
 import akka.actor.OneForOneStrategy
-import akka.persistence.journal.AsyncWriteTarget.ReplayMessages
+import scala.util.control.NoStackTrace
 
 object PersistentActorFailureSpec {
+  import PersistentActorSpec.Evt
+
   class FailingInmemJournal extends AsyncWriteProxy {
     import AsyncWriteProxy.SetStore
 
-    val timeout = Timeout(5 seconds)
+    val timeout = Timeout(3 seconds)
 
     override def preStart(): Unit = {
       super.preStart()
@@ -33,6 +33,8 @@ object PersistentActorFailureSpec {
 
   class FailingInmemStore extends InmemStore {
     def failingReceive: Receive = {
+      case w: WriteMessages if isWrong(w) ⇒
+        throw new RuntimeException("Simulated Store failure") with NoStackTrace
       case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
         val readFromStore = read(pid, fromSnr, toSnr, max)
         if (readFromStore.length == 0)
@@ -40,6 +42,12 @@ object PersistentActorFailureSpec {
         else
           sender() ! ReplayFailure(new IllegalArgumentException(s"blahonga $fromSnr $toSnr"))
     }
+
+    def isWrong(w: WriteMessages): Boolean =
+      w.messages.exists {
+        case PersistentRepr(Evt(s: String), _) ⇒ s.contains("wrong")
+        case x                                 ⇒ false
+      }
 
     override def receive = failingReceive.orElse(super.receive)
   }
@@ -64,20 +72,34 @@ class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem"
   import PersistentActorSpec._
   import PersistentActorFailureSpec._
 
-  override protected def beforeEach() {
-    super.beforeEach()
-
-    val persistentActor = namedPersistentActor[Behavior1PersistentActor]
-    persistentActor ! Cmd("a")
-    persistentActor ! GetState
-    expectMsg(List("a-1", "a-2"))
-  }
-
   "A persistent actor" must {
     "throw ActorKilledException if recovery from persisted events fail" in {
+      val persistentActor = namedPersistentActor[Behavior1PersistentActor]
+      persistentActor ! Cmd("a")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2"))
+
+      // recover by creating another with same name
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
       expectMsgType[ActorRef]
       expectMsgType[ActorKilledException]
+    }
+    "throw ActorKilledException if persist fails" in {
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
+      val persistentActor = expectMsgType[ActorRef]
+      persistentActor ! Cmd("wrong")
+      expectMsgType[ActorKilledException]
+    }
+    "throw ActorKilledException if persistAsync fails" in {
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[AsyncPersistPersistentActor], name)
+      val persistentActor = expectMsgType[ActorRef]
+      persistentActor ! Cmd("a")
+      expectMsg("a") // reply before persistAsync
+      expectMsg("a-1") // reply after successful persistAsync
+      persistentActor ! Cmd("wrong")
+      expectMsg("wrong") // reply before persistAsync
+      expectMsgType[ActorKilledException]
+      expectNoMsg(500.millis)
     }
   }
 }
