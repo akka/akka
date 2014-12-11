@@ -101,14 +101,14 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#hashtags-mapConcat
   }
 
-  "simple broadcast" in {
-    trait X {
-      //#flow-graph-broadcast
-      val writeAuthors: Sink[Author] = ???
-      val writeHashtags: Sink[Hashtag] = ???
-      //#flow-graph-broadcast
-    }
+  trait HiddenDefinitions {
+    //#flow-graph-broadcast
+    val writeAuthors: Sink[Author] = ???
+    val writeHashtags: Sink[Hashtag] = ???
+    //#flow-graph-broadcast
+  }
 
+  "simple broadcast" in {
     val writeAuthors: Sink[Author] = Sink.ignore
     val writeHashtags: Sink[Hashtag] = Sink.ignore
 
@@ -193,7 +193,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     // the sumSink materialized two different futures
     // we use it as key to get the materialized value out of the materialized map
     val morningTweetsCount: Future[Int] = morningMaterialized.get(sumSink)
-    val eveningTweetsCount: Future[Int] = morningMaterialized.get(sumSink)
+    val eveningTweetsCount: Future[Int] = eveningMaterialized.get(sumSink)
     //#tweets-runnable-flow-materialized-twice
 
     val map: MaterializedMap = counterRunnableFlow.run()
@@ -202,12 +202,6 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     sum.map { c ⇒ println(s"Total tweets processed: $c") }
     //#tweets-fold-count
-
-    new AnyRef {
-      //#tweets-fold-count-oneline
-      val sum: Future[Int] = tweets.map(t ⇒ 1).runWith(sumSink)
-      //#tweets-fold-count-oneline
-    }
   }
 
 }
