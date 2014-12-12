@@ -1,22 +1,20 @@
 import com.typesafe.sbt.SbtMultiJvm
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 
-val akkaVersion = "2.3-SNAPSHOT"
-
 val project = Project(
   id = "akka-sample-cluster-java",
   base = file("."),
   settings = Project.defaultSettings ++ SbtMultiJvm.multiJvmSettings ++ Seq(
     name := "akka-sample-cluster-java",
-    version := "2.3-SNAPSHOT",
-    scalaVersion := "2.10.4",
+    version := "15v01p01",
+    // scalaVersion := provided by Typesafe Reactive Platform
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-Xlint:deprecation"),
     libraryDependencies ++= Seq(
-      "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
-      "com.typesafe.akka" %% "akka-contrib" % akkaVersion,
-      "com.typesafe.akka" %% "akka-multi-node-testkit" % akkaVersion,
-      "org.scalatest" %% "scalatest" % "2.0" % "test",
+      TypesafeLibrary.akkaCluster.value,
+      TypesafeLibrary.akkaMultiNodeTestkit.value,
+      "com.typesafe.akka" %% "akka-contrib" % "2.3.7", // akka-contrib is not part of the RP
+      "org.scalatest" %% "scalatest" % "2.2.1" % "test",
       "org.fusesource" % "sigar" % "1.6.4"),
     javaOptions in run ++= Seq(
       "-Djava.library.path=./sigar",

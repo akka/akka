@@ -1,11 +1,11 @@
 name := "akka-sample-camel-scala"
 
-version := "2.3-SNAPSHOT"
+version := "15v01p01"
 
-scalaVersion := "2.10.4"
+// scalaVersion := provided by Typesafe Reactive Platform
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-camel" % "2.3-SNAPSHOT",
+  TypesafeLibrary.akkaCamel.value,
   "org.apache.camel" % "camel-jetty" % "2.10.3",
   "org.apache.camel" % "camel-quartz" % "2.10.3",
   "org.slf4j" % "slf4j-api" % "1.7.2",
