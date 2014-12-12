@@ -60,6 +60,11 @@ public class DiningHakkersOnBecome {
       this.name = name;
       this.left = left;
       this.right = right;
+      //All hakkers start in a non-eating state
+      receive(ReceiveBuilder.matchEquals(Think, m -> {
+          System.out.println(String.format("%s starts to think", name));
+          startThinking(Duration.create(5, SECONDS));
+        }).build());
     }
 
     //When a hakker is eating, he can decide to start to think,
@@ -123,14 +128,6 @@ public class DiningHakkersOnBecome {
         left.tell(new Take(self()), self());
         right.tell(new Take(self()), self());
       }).build();
-
-    //All hakkers start in a non-eating state
-    public Hakker() {
-      receive(ReceiveBuilder.matchEquals(Think, m -> {
-        System.out.println(String.format("%s starts to think", name));
-        startThinking(Duration.create(5, SECONDS));
-      }).build());
-    }
 
     private void startThinking(FiniteDuration duration) {
       context().become(thinking);
