@@ -13,7 +13,8 @@ case class RoutingSettings(
   fileGetConditional: Boolean,
   renderVanityFooter: Boolean,
   rangeCountLimit: Int,
-  rangeCoalescingThreshold: Long)
+  rangeCoalescingThreshold: Long,
+  decodeMaxBytesPerChunk: Int)
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
   def fromSubConfig(c: Config) = apply(
@@ -21,7 +22,8 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
     c getBoolean "file-get-conditional",
     c getBoolean "render-vanity-footer",
     c getInt "range-count-limit",
-    c getBytes "range-coalescing-threshold")
+    c getBytes "range-coalescing-threshold",
+    c getIntBytes "decode-max-bytes-per-chunk")
 
   implicit def default(implicit refFactory: ActorRefFactory) =
     apply(actorSystem)
