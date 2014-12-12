@@ -15,20 +15,35 @@ import scala.language.postfixOps
 
 object SnapshotFailureRobustnessSpec {
 
-  class SaveSnapshotTestProcessor(name: String, probe: ActorRef) extends NamedProcessor(name) {
-    def receive = {
-      case Persistent(payload, snr) ⇒ saveSnapshot(payload)
-      case SaveSnapshotSuccess(md)  ⇒ probe ! md.sequenceNr
-      case SnapshotOffer(md, s)     ⇒ probe ! ((md, s))
-      case other                    ⇒ probe ! other
+  case class Cmd(payload: String)
+
+  class SaveSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
+    override def receiveRecover: Receive = {
+      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+      case other                ⇒ probe ! other
+    }
+
+    override def receiveCommand = {
+      case Cmd(payload)            ⇒ persist(payload)(_ ⇒ saveSnapshot(payload))
+      case SaveSnapshotSuccess(md) ⇒ probe ! md.sequenceNr
+      case other                   ⇒ probe ! other
     }
   }
 
-  class LoadSnapshotTestProcessor(name: String, probe: ActorRef) extends NamedProcessor(name) {
-    def receive = {
-      case Persistent(payload, snr) ⇒ probe ! s"${payload}-${snr}"
-      case SnapshotOffer(md, s)     ⇒ probe ! ((md, s))
-      case other                    ⇒ probe ! other
+  class LoadSnapshotTestPersistentActor(name: String, probe: ActorRef) extends NamedPersistentActor(name) {
+    override def receiveRecover: Receive = {
+      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+      case payload: String      ⇒ probe ! s"${payload}-${lastSequenceNr}"
+      case other                ⇒ probe ! other
+    }
+
+    override def receiveCommand = {
+      case Cmd(payload) ⇒
+        persist(payload) { _ ⇒
+          probe ! s"${payload}-${lastSequenceNr}"
+        }
+      case SnapshotOffer(md, s) ⇒ probe ! ((md, s))
+      case other                ⇒ probe ! other
     }
     override def preStart() = ()
   }
@@ -45,27 +60,27 @@ object SnapshotFailureRobustnessSpec {
 
 class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotFailureRobustnessSpec", serialization = "off", extraConfig = Some(
   """
-    |akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
-  """.stripMargin))) with PersistenceSpec with ImplicitSender {
+  akka.persistence.snapshot-store.local.class = "akka.persistence.SnapshotFailureRobustnessSpec$FailingLocalSnapshotStore"
+  """))) with PersistenceSpec with ImplicitSender {
 
   import SnapshotFailureRobustnessSpec._
 
-  "A processor with a failing snapshot" must {
+  "A persistentActor with a failing snapshot" must {
     "recover state starting from the most recent complete snapshot" in {
-      val sProcessor = system.actorOf(Props(classOf[SaveSnapshotTestProcessor], name, testActor))
+      val sPersistentActor = system.actorOf(Props(classOf[SaveSnapshotTestPersistentActor], name, testActor))
       val persistenceId = name
 
       expectMsg(RecoveryCompleted)
-      sProcessor ! Persistent("blahonga")
+      sPersistentActor ! Cmd("blahonga")
       expectMsg(1)
-      sProcessor ! Persistent("kablama")
+      sPersistentActor ! Cmd("kablama")
       expectMsg(2)
       system.eventStream.publish(TestEvent.Mute(
         EventFilter.error(start = "Error loading snapshot [")))
       system.eventStream.subscribe(testActor, classOf[Logging.Error])
       try {
-        val lProcessor = system.actorOf(Props(classOf[LoadSnapshotTestProcessor], name, testActor))
-        lProcessor ! Recover()
+        val lPersistentActor = system.actorOf(Props(classOf[LoadSnapshotTestPersistentActor], name, testActor))
+        lPersistentActor ! Recover()
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
             state should be("blahonga")

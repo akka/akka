@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import static java.util.Arrays.asList;
 
 class Cmd implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String data;
 
     public Cmd(String data) {
@@ -33,6 +34,7 @@ class Cmd implements Serializable {
 }
 
 class Evt implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final String data;
 
     public Evt(String data) {
@@ -45,6 +47,7 @@ class Evt implements Serializable {
 }
 
 class ExampleState implements Serializable {
+    private static final long serialVersionUID = 1L;
     private final ArrayList<String> events;
 
     public ExampleState() {
@@ -116,13 +119,13 @@ class ExamplePersistentActor extends AbstractPersistentActor {
 public class PersistentActorExample {
     public static void main(String... args) throws Exception {
         final ActorSystem system = ActorSystem.create("example");
-        final ActorRef processor = system.actorOf(Props.create(ExamplePersistentActor.class), "processor-4-java8");
-        processor.tell(new Cmd("foo"), null);
-        processor.tell(new Cmd("baz"), null);
-        processor.tell(new Cmd("bar"), null);
-        processor.tell("snap", null);
-        processor.tell(new Cmd("buzz"), null);
-        processor.tell("print", null);
+        final ActorRef persistentActor = system.actorOf(Props.create(ExamplePersistentActor.class), "persistentActor-4-java8");
+        persistentActor.tell(new Cmd("foo"), null);
+        persistentActor.tell(new Cmd("baz"), null);
+        persistentActor.tell(new Cmd("bar"), null);
+        persistentActor.tell("snap", null);
+        persistentActor.tell(new Cmd("buzz"), null);
+        persistentActor.tell("print", null);
 
         Thread.sleep(1000);
         system.terminate();

@@ -14,7 +14,7 @@ import scala.util.Failure
 
 /**
  * Wrapper for snapshot `data`. Snapshot `data` are the actual snapshot objects captured by
- * a [[Processor]].
+ * the persistent actor.
  *
  * @see [[SnapshotSerializer]]
  */

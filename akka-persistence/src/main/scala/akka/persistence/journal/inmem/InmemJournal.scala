@@ -78,12 +78,6 @@ private[persistence] class InmemStore extends Actor with InmemMessages {
   def receive = {
     case WriteMessages(msgs) ⇒
       sender() ! msgs.foreach(add)
-    case WriteConfirmations(cnfs) ⇒
-      sender() ! cnfs.foreach(cnf ⇒ update(cnf.persistenceId, cnf.sequenceNr)(p ⇒ p.update(confirms = cnf.channelId +: p.confirms)))
-    case DeleteMessages(msgIds, false) ⇒
-      sender() ! msgIds.foreach(msgId ⇒ update(msgId.persistenceId, msgId.sequenceNr)(_.update(deleted = true)))
-    case DeleteMessages(msgIds, true) ⇒
-      sender() ! msgIds.foreach(msgId ⇒ delete(msgId.persistenceId, msgId.sequenceNr))
     case DeleteMessagesTo(pid, tsnr, false) ⇒
       sender() ! (1L to tsnr foreach { snr ⇒ update(pid, snr)(_.update(deleted = true)) })
     case DeleteMessagesTo(pid, tsnr, true) ⇒

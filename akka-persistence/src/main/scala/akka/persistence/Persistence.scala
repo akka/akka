@@ -21,9 +21,6 @@ final class PersistenceSettings(config: Config) {
     val maxMessageBatchSize: Int =
       config.getInt("journal.max-message-batch-size")
 
-    val maxConfirmationBatchSize: Int =
-      config.getInt("journal.max-confirmation-batch-size")
-
     val maxDeletionBatchSize: Int =
       config.getInt("journal.max-deletion-batch-size")
   }
@@ -69,10 +66,6 @@ final class PersistenceSettings(config: Config) {
       config.hasPath(path) && config.getBoolean(path)
     }
 
-    val publishConfirmations: Boolean = {
-      val path = "publish-confirmations"
-      config.hasPath(path) && config.getBoolean(path)
-    }
   }
 }
 
@@ -108,58 +101,28 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
     else DefaultPluginDispatcherId
   }
 
-  private val confirmationBatchLayer = system.systemActorOf(
-    Props(classOf[DeliveredByChannelBatching], journal, settings), "confirmation-batch-layer")
-
-  private val deletionBatchLayer = system.systemActorOf(
-    Props(classOf[DeliveredByPersistentChannelBatching], journal, settings), "deletion-batch-layer")
-
   /**
-   * Creates a canonical processor id from a processor actor ref.
-   */
-  @deprecated("Use `persistenceId` instead. Processor will be removed.", since = "2.3.4")
-  def processorId(processor: ActorRef): String = id(processor)
-
-  /**
-   * Creates a canonical persistent actor id from a processor actor ref.
+   * Creates a canonical persistent actor id from a persistent actor ref.
    */
   def persistenceId(persistentActor: ActorRef): String = id(persistentActor)
 
   /**
-   * Creates a canonical channel id from a channel actor ref.
-   */
-  @deprecated("Channels will be removed. You may want to use `akka.persistence.AtLeastOnceDelivery` instead.", since = "2.3.4")
-  def channelId(channel: ActorRef): String = id(channel)
-
-  /**
-   * Returns a snapshot store for a processor identified by `persistenceId`.
+   * Returns a snapshot store for a persistent actor identified by `persistenceId`.
    */
   def snapshotStoreFor(persistenceId: String): ActorRef = {
     // Currently returns a snapshot store singleton but this methods allows for later
-    // optimizations where each processor can have its own snapshot store actor.
+    // optimizations where each persistent actor can have its own snapshot store actor.
     snapshotStore
   }
 
   /**
-   * Returns a journal for a processor identified by `persistenceId`.
+   * Returns a journal for a persistent actor identified by `persistenceId`.
    */
   def journalFor(persistenceId: String): ActorRef = {
     // Currently returns a journal singleton but this methods allows for later
-    // optimizations where each processor can have its own journal actor.
+    // optimizations where each persistent actor can have its own journal actor.
     journal
   }
-
-  /**
-   * INTERNAL API.
-   */
-  private[persistence] def confirmationBatchingJournalForChannel(channelId: String): ActorRef =
-    confirmationBatchLayer
-
-  /**
-   * INTERNAL API.
-   */
-  private[persistence] def deletionBatchingJournalForChannel(channelId: String): ActorRef =
-    deletionBatchLayer
 
   private def createPlugin(pluginType: String)(dispatcherSelector: Class[_] ⇒ String) = {
     val pluginConfigPath = config.getString(s"${pluginType}.plugin")

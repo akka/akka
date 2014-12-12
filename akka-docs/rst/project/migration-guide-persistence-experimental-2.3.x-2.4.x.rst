@@ -98,6 +98,20 @@ Using the ``PersistentActor`` instead of ``Processor`` also shifts the responsib
 to the receiver instead of the sender of the message. Previously, using ``Processor``, clients would have to wrap messages as ``Persistent(cmd)``
 manually, as well as have to be aware of the receiver being a ``Processor``, which didn't play well with transparency of the ActorRefs in general.
 
+How to migrate data from Processor to PersistentActor
+-----------------------------------------------------
+
+The recommended approach for migrating persisted messages from a ``Processor`` to events that can be replayed by
+a ``PersistentActor`` is to write a custom migration tool with a ``PersistentView`` and a ``PersistentActor``.
+Connect the ``PersistentView`` to the ``persistenceId`` of the old ``Processor`` to replay the stored persistent
+messages. Send the messages from the view to a ``PersistentActor`` with another ``persistenceId``. There you can 
+transform the old messages to domain events that the real ``PersistentActor`` will be able to understand. Store
+the events with ``persistAsync``.
+
+Note that you can implement back-pressure between the writing ``PersistentActor`` and the reading ``PersistentView``
+by turning off auto-update in the view and send custom ``Update`` messages to the view with a limited `replayMax`
+value.
+
 Removed deleteMessage
 =====================
 

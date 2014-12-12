@@ -40,34 +40,22 @@ private[persistence] trait LeveldbRecovery extends AsyncRecovery { this: Leveldb
         val nextKey = keyFromBytes(nextEntry.getKey)
         if (nextKey.sequenceNr > toSequenceNr) {
           // end iteration here
-        } else if (nextKey.channelId != 0) {
-          // phantom confirmation (just advance iterator)
+        } else if (isDeletionKey(nextKey)) {
+          // this case is needed to discard old events with deletion marker
           go(iter, nextKey, ctr, replayCallback)
         } else if (key.persistenceId == nextKey.persistenceId) {
           val msg = persistentFromBytes(nextEntry.getValue)
           val del = deletion(iter, nextKey)
-          val cnf = confirms(iter, nextKey, Nil)
           if (ctr < max) {
-            replayCallback(msg.update(confirms = cnf, deleted = del))
+            replayCallback(msg.update(deleted = del))
             go(iter, nextKey, ctr + 1L, replayCallback)
           }
         }
       }
     }
 
-    @scala.annotation.tailrec
-    def confirms(iter: DBIterator, key: Key, channelIds: List[String]): List[String] = {
-      if (iter.hasNext) {
-        val nextEntry = iter.peekNext()
-        val nextKey = keyFromBytes(nextEntry.getKey)
-        if (key.persistenceId == nextKey.persistenceId && key.sequenceNr == nextKey.sequenceNr) {
-          val nextValue = new String(nextEntry.getValue, "UTF-8")
-          iter.next()
-          confirms(iter, nextKey, nextValue :: channelIds)
-        } else channelIds
-      } else channelIds
-    }
-
+    // need to have this to be able to read journal created with 2.3.x, which
+    // supported deletion of individual events
     def deletion(iter: DBIterator, key: Key): Boolean = {
       if (iter.hasNext) {
         val nextEntry = iter.peekNext()

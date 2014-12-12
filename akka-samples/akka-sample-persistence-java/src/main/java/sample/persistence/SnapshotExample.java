@@ -14,6 +14,7 @@ import java.util.ArrayList;
 
 public class SnapshotExample {
     public static class ExampleState implements Serializable {
+        private static final long serialVersionUID = 1L;
         private final ArrayList<String> received;
 
         public ExampleState() {
