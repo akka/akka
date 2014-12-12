@@ -1,6 +1,6 @@
 name := "akka-sample-remote-scala"
 
-version := "2.3-SNAPSHOT"
+version := "15v01p01"
 
 libraryDependencies ++= Seq(
   TypesafeLibrary.akkaRemote.value
