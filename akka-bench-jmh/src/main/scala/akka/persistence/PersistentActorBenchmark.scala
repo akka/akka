@@ -28,7 +28,6 @@ class PersistentActorThroughputBenchmark {
   var probe: TestProbe = _
   var actor: ActorRef = _
   var persistPersistentActor: ActorRef = _
-  var persistProcessor: ActorRef = _
   var persistAsync1PersistentActor: ActorRef = _
   var noPersistPersistentActor: ActorRef = _
   var persistAsyncQuickReplyPersistentActor: ActorRef = _
@@ -44,8 +43,6 @@ class PersistentActorThroughputBenchmark {
     storageLocations.foreach(FileUtils.deleteDirectory)
 
     actor = system.actorOf(Props(classOf[BaselineActor], data10k.last), "a-1")
-    
-    persistProcessor = system.actorOf(Props(classOf[PersistProcessor], data10k.last), "p-1")
 
     noPersistPersistentActor = system.actorOf(Props(classOf[NoPersistPersistentActor], data10k.last), "nop-1")
     persistPersistentActor = system.actorOf(Props(classOf[PersistPersistentActor], data10k.last), "ep-1")
@@ -80,28 +77,12 @@ class PersistentActorThroughputBenchmark {
 
   @Benchmark
   @OperationsPerInvocation(10000)
-  def processor_persist_reply() {
-    for (i <- data10k) persistProcessor.tell(Persistent(i), probe.ref)
-
-    probe.expectMsg(Evt(data10k.last))
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(10000)
-  def processor_noPersist_reply() {
-    for (i <- data10k) persistProcessor.tell(i, probe.ref)
-
-    probe.expectMsg(Evt(data10k.last))
-  }
-
-  @Benchmark
-  @OperationsPerInvocation(10000)
   def persistentActor_persistAsync_reply() {
     for (i <- data10k) persistAsync1PersistentActor.tell(i, probe.ref)
 
     probe.expectMsg(Evt(data10k.last))
   }
-  
+
   @Benchmark
   @OperationsPerInvocation(10000)
   def persistentActor_noPersist_reply() {
@@ -143,12 +124,6 @@ class PersistPersistentActor(respondAfter: Int) extends PersistentActor {
     case _ => // do nothing
   }
 
-}
-class PersistProcessor(respondAfter: Int) extends Processor {
-  override def receive = {
-    case Persistent(n: Int, _) => if (n == respondAfter) sender() ! Evt(n)
-    case n: Int => if (n == respondAfter) sender() ! Evt(n)
-  }
 }
 
 class PersistAsyncPersistentActor(respondAfter: Int) extends PersistentActor {

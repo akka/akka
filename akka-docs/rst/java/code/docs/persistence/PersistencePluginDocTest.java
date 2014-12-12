@@ -4,26 +4,25 @@
 
 package docs.persistence;
 
-//#plugin-imports
-
-import akka.actor.*;
-import akka.japi.Option;
-import akka.japi.Procedure;
-import akka.persistence.*;
-import akka.persistence.japi.journal.JavaJournalSpec;
-import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
-import akka.persistence.journal.japi.AsyncWriteJournal;
-import akka.persistence.journal.leveldb.SharedLeveldbJournal;
-import akka.persistence.journal.leveldb.SharedLeveldbStore;
-import akka.persistence.snapshot.japi.SnapshotStore;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import org.iq80.leveldb.util.FileUtils;
-import scala.concurrent.Future;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import akka.actor.*;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import org.iq80.leveldb.util.FileUtils;
+import akka.persistence.japi.journal.JavaJournalSpec;
+import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
+import akka.persistence.journal.leveldb.SharedLeveldbJournal;
+import akka.persistence.journal.leveldb.SharedLeveldbStore;
+import scala.concurrent.Future;
+import akka.japi.Option;
+import akka.japi.Procedure;
+
+//#plugin-imports
+import akka.persistence.*;
+import akka.persistence.journal.japi.AsyncWriteJournal;
+import akka.persistence.snapshot.japi.SnapshotStore;
 
 //#plugin-imports
 
@@ -92,22 +91,13 @@ public class PersistencePluginDocTest {
         }
 
         @Override
-        public Future<Void> doAsyncWriteConfirmations(Iterable<PersistentConfirmation> confirmations) {
-            return null;
-        }
-
-        @Override
-        public Future<Void> doAsyncDeleteMessages(Iterable<PersistentId> messageIds, boolean permanent) {
-            return null;
-        }
-
-        @Override
         public Future<Void> doAsyncDeleteMessagesTo(String persistenceId, long toSequenceNr, boolean permanent) {
             return null;
         }
 
         @Override
-        public Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback) {
+        public Future<Void> doAsyncReplayMessages(String persistenceId, long fromSequenceNr, 
+            long toSequenceNr, long max, Procedure<PersistentRepr> replayCallback) {
             return null;
         }
 

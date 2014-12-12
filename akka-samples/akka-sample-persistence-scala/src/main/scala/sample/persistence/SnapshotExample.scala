@@ -14,7 +14,7 @@ object SnapshotExample extends App {
 
     var state = ExampleState()
 
-    def receiveCommand: Actor.Receive = {
+    def receiveCommand: Receive = {
       case "print"                               => println("current state = " + state)
       case "snap"                                => saveSnapshot(state)
       case SaveSnapshotSuccess(metadata)         => // ...
@@ -23,7 +23,7 @@ object SnapshotExample extends App {
         persist(s) { evt => state = state.updated(evt) }
     }
 
-    def receiveRecover: Actor.Receive = {
+    def receiveRecover: Receive = {
       case SnapshotOffer(_, s: ExampleState) =>
         println("offered state = " + s)
         state = s

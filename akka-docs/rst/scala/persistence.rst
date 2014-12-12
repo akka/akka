@@ -124,6 +124,8 @@ It contains instructions on how to run the ``PersistentActorExample``.
   with ``context.become()`` and ``context.unbecome()``. To get the actor into the same state after
   recovery you need to take special care to perform the same state transitions with ``become`` and
   ``unbecome`` in the ``receiveRecover`` method as you would have done in the command handler.
+  Note that when using ``become`` from ``receiveRecover`` it will still only use the ``receiveRecover``
+  behavior when replaying the events. When replay is completed it will use the new behavior.
 
 Identifiers
 -----------
@@ -154,8 +156,9 @@ In this case, a persistent actor must be recovered explicitly by sending it a ``
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-explicit
 
 .. warning::
-If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
-``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
+
+  If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+  ``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
 
 In order to completely skip recovery, you can signal it with ``Recover(toSequenceNr = OL)``
 
@@ -211,7 +214,7 @@ The ordering between events is still guaranteed ("evt-b-1" will be sent after "e
 
 .. note::
   In order to implement the pattern known as "*command sourcing*" simply call ``persistAsync(cmd)(...)`` right away on all incomming
-  messages right away, and handle them in the callback.
+  messages, and handle them in the callback.
   
 .. warning::
   The callback will not be invoked if the actor is restarted (or stopped) in between the call to
@@ -655,16 +658,6 @@ or
 .. includecode:: code/docs/persistence/PersistencePluginDocSpec.scala#shared-store-native-config
 
 in your Akka configuration. The LevelDB Java port is for testing purposes only.
-
-Miscellaneous
-=============
-
-State machines
---------------
-
-State machines can be persisted by mixing in the ``FSM`` trait into persistent actors.
-
-.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#fsm-example
 
 Configuration
 =============

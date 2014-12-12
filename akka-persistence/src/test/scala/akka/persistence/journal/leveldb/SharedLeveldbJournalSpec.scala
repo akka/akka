@@ -39,18 +39,24 @@ object SharedLeveldbJournalSpec {
       }
     """
 
-  class ExampleProcessor(probe: ActorRef, name: String) extends NamedProcessor(name) {
-    def receive = {
-      case Persistent(payload, _) ⇒ probe ! payload
+  class ExamplePersistentActor(probe: ActorRef, name: String) extends NamedPersistentActor(name) {
+    override def receiveRecover = {
+      case RecoveryCompleted ⇒ // ignore
+      case payload           ⇒ probe ! payload
+    }
+    override def receiveCommand = {
+      case payload ⇒ persist(payload) { _ ⇒
+        probe ! payload
+      }
     }
   }
 
   class ExampleApp(probe: ActorRef, storePath: ActorPath) extends Actor {
-    val processor = context.actorOf(Props(classOf[ExampleProcessor], probe, context.system.name))
+    val p = context.actorOf(Props(classOf[ExamplePersistentActor], probe, context.system.name))
 
     def receive = {
       case ActorIdentity(1, Some(store)) ⇒ SharedLeveldbJournal.setStore(store, context.system)
-      case m                             ⇒ processor forward m
+      case m                             ⇒ p forward m
     }
 
     override def preStart(): Unit = {
@@ -63,44 +69,44 @@ object SharedLeveldbJournalSpec {
 class SharedLeveldbJournalSpec extends AkkaSpec(SharedLeveldbJournalSpec.config) with Cleanup {
   import SharedLeveldbJournalSpec._
 
-  val processorASystem = ActorSystem("processorA", system.settings.config)
-  val processorBSystem = ActorSystem("processorB", system.settings.config)
+  val systemA = ActorSystem("SysA", system.settings.config)
+  val systemB = ActorSystem("SysB", system.settings.config)
 
   override protected def afterTermination() {
-    shutdown(processorASystem)
-    shutdown(processorBSystem)
+    shutdown(systemA)
+    shutdown(systemB)
     super.afterTermination()
   }
 
   "A LevelDB store" can {
     "be shared by multiple actor systems" in {
 
-      val processorAProbe = new TestProbe(processorASystem)
-      val processorBProbe = new TestProbe(processorBSystem)
+      val probeA = new TestProbe(systemA)
+      val probeB = new TestProbe(systemB)
 
       system.actorOf(Props[SharedLeveldbStore], "store")
       val storePath = RootActorPath(system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress) / "user" / "store"
 
-      val appA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, storePath))
-      val appB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, storePath))
+      val appA = systemA.actorOf(Props(classOf[ExampleApp], probeA.ref, storePath))
+      val appB = systemB.actorOf(Props(classOf[ExampleApp], probeB.ref, storePath))
 
-      appA ! Persistent("a1")
-      appB ! Persistent("b1")
+      appA ! "a1"
+      appB ! "b1"
 
-      processorAProbe.expectMsg("a1")
-      processorBProbe.expectMsg("b1")
+      probeA.expectMsg("a1")
+      probeB.expectMsg("b1")
 
-      val recoveredAppA = processorASystem.actorOf(Props(classOf[ExampleApp], processorAProbe.ref, storePath))
-      val recoveredAppB = processorBSystem.actorOf(Props(classOf[ExampleApp], processorBProbe.ref, storePath))
+      val recoveredAppA = systemA.actorOf(Props(classOf[ExampleApp], probeA.ref, storePath))
+      val recoveredAppB = systemB.actorOf(Props(classOf[ExampleApp], probeB.ref, storePath))
 
-      recoveredAppA ! Persistent("a2")
-      recoveredAppB ! Persistent("b2")
+      recoveredAppA ! "a2"
+      recoveredAppB ! "b2"
 
-      processorAProbe.expectMsg("a1")
-      processorAProbe.expectMsg("a2")
+      probeA.expectMsg("a1")
+      probeA.expectMsg("a2")
 
-      processorBProbe.expectMsg("b1")
-      processorBProbe.expectMsg("b2")
+      probeB.expectMsg("b1")
+      probeB.expectMsg("b2")
     }
   }
 }

@@ -12,7 +12,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 
 object JournalPerfSpec {
-  class BenchActor(val persistenceId: String, replyTo: ActorRef, replyAfter: Int) extends PersistentActor
+  class BenchActor(override val persistenceId: String, replyTo: ActorRef, replyAfter: Int) extends PersistentActor
     with ActorLogging {
 
     var counter = 0

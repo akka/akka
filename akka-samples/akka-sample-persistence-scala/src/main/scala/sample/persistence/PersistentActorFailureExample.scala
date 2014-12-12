@@ -9,7 +9,7 @@ object PersistentActorFailureExample extends App {
 
     var received: List[String] = Nil // state
 
-    def receiveCommand: Actor.Receive = {
+    def receiveCommand: Receive = {
       case "print" => println(s"received ${received.reverse}")
       case "boom"  => throw new Exception("boom")
       case payload: String =>
@@ -17,7 +17,7 @@ object PersistentActorFailureExample extends App {
 
     }
 
-    def receiveRecover: Actor.Receive = {
+    def receiveRecover: Receive = {
       case s: String => received = s :: received
     }
   }
@@ -49,5 +49,5 @@ object PersistentActorFailureExample extends App {
   // etc ...
 
   Thread.sleep(1000)
-  system.shutdown()
+  system.terminate()
 }

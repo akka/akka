@@ -24,9 +24,6 @@ trait AsyncRecovery {
    * as deleted. In this case a replayed message's `deleted` method must return
    * `true`.
    *
-   * The channel ids of delivery confirmations that are available for a replayed
-   * message must be contained in that message's `confirms` sequence.
-   *
    * @param persistenceId persistent actor id.
    * @param fromSequenceNr sequence number where replay should start (inclusive).
    * @param toSequenceNr sequence number where replay should end (inclusive).

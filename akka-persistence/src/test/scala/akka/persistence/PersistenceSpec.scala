@@ -35,9 +35,9 @@ trait PersistenceSpec extends BeforeAndAfterEach with Cleanup { this: AkkaSpec �
   def namePrefix: String = system.name
 
   /**
-   * Creates a processor with current name as constructor argument.
+   * Creates a persistent actor with current name as constructor argument.
    */
-  def namedProcessor[T <: NamedProcessor: ClassTag] =
+  def namedPersistentActor[T <: NamedPersistentActor: ClassTag] =
     system.actorOf(Props(implicitly[ClassTag[T]].runtimeClass, name))
 
   override protected def beforeEach() {
@@ -52,7 +52,6 @@ object PersistenceSpec {
         s"""
       akka.actor.serialize-creators = ${serialization}
       akka.actor.serialize-messages = ${serialization}
-      akka.persistence.publish-confirmations = on
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.${plugin}"
       akka.persistence.journal.leveldb.dir = "target/journal-${test}"
@@ -76,16 +75,11 @@ trait Cleanup { this: AkkaSpec ⇒
   }
 }
 
-@deprecated("Use NamedPersistentActor instead.", since = "2.3.4")
-abstract class NamedProcessor(name: String) extends Processor {
-  override def persistenceId: String = name
-}
-
 abstract class NamedPersistentActor(name: String) extends PersistentActor {
   override def persistenceId: String = name
 }
 
-trait TurnOffRecoverOnStart { this: Processor ⇒
+trait TurnOffRecoverOnStart { this: Eventsourced ⇒
   override def preStart(): Unit = ()
 }
 

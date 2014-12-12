@@ -99,17 +99,8 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
 
   "A message serializer" when {
     "not given a manifest" must {
-      "handle custom ConfirmablePersistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true, 3, List("c1", "c2"), confirmable = true, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
-        val serializer = serialization.findSerializerFor(persistent)
-
-        val bytes = serializer.toBinary(persistent)
-        val deserialized = serializer.fromBinary(bytes, None)
-
-        deserialized should be(persistent.withPayload(MyPayload(".a.")))
-      }
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true, 0, List("c1", "c2"), confirmable = false, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
+        val persistent = PersistentRepr(MyPayload("a"), 13, "p1", true, testActor)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
@@ -119,43 +110,14 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       }
     }
     "given a PersistentRepr manifest" must {
-      "handle custom ConfirmablePersistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true, 3, List("c1", "c2"), confirmable = true, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
-        val serializer = serialization.findSerializerFor(persistent)
-
-        val bytes = serializer.toBinary(persistent)
-        val deserialized = serializer.fromBinary(bytes, Some(classOf[PersistentRepr]))
-
-        deserialized should be(persistent.withPayload(MyPayload(".b.")))
-      }
       "handle custom Persistent message serialization" in {
-        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true, 3, List("c1", "c2"), confirmable = true, DeliveredByChannel("p2", "c2", 14), testActor, testActor)
+        val persistent = PersistentRepr(MyPayload("b"), 13, "p1", true, testActor)
         val serializer = serialization.findSerializerFor(persistent)
 
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[PersistentRepr]))
 
         deserialized should be(persistent.withPayload(MyPayload(".b.")))
-      }
-    }
-    "given a Confirm manifest" must {
-      "handle DeliveryByChannel message serialization" in {
-        val confirmation = DeliveredByChannel("p2", "c2", 14)
-        val serializer = serialization.findSerializerFor(confirmation)
-
-        val bytes = serializer.toBinary(confirmation)
-        val deserialized = serializer.fromBinary(bytes, Some(classOf[DeliveredByChannel]))
-
-        deserialized should be(confirmation)
-      }
-      "handle DeliveredByPersistentChannel message serialization" in {
-        val confirmation = DeliveredByPersistentChannel("c2", 14)
-        val serializer = serialization.findSerializerFor(confirmation)
-
-        val bytes = serializer.toBinary(confirmation)
-        val deserialized = serializer.fromBinary(bytes, Some(classOf[DeliveredByPersistentChannel]))
-
-        deserialized should be(confirmation)
       }
     }
 
@@ -199,12 +161,7 @@ object MessageSerializerRemotingSpec {
 
   class RemoteActor extends Actor {
     def receive = {
-      case PersistentBatch(Persistent(MyPayload(data), _) +: tail) ⇒ sender() ! s"b${data}"
-      case ConfirmablePersistent(MyPayload(data), _, _)            ⇒ sender() ! s"c${data}"
-      case Persistent(MyPayload(data), _)                          ⇒ sender() ! s"p${data}"
-      case DeliveredByChannel(pid, cid, msnr, dsnr, ep)            ⇒ sender() ! s"${pid},${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
-      case DeliveredByPersistentChannel(cid, msnr, dsnr, ep)       ⇒ sender() ! s"${cid},${msnr},${dsnr},${ep.path.name.startsWith("testActor")}"
-      case Deliver(Persistent(payload, _), dp)                     ⇒ context.actorSelection(dp) ! payload
+      case PersistentRepr(MyPayload(data), _) ⇒ sender() ! s"p${data}"
     }
   }
 
@@ -231,28 +188,8 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
 
   "A message serializer" must {
     "custom-serialize Persistent messages during remoting" in {
-      localActor ! Persistent(MyPayload("a"))
+      localActor ! PersistentRepr(MyPayload("a"))
       expectMsg("p.a.")
-    }
-    "custom-serialize ConfirmablePersistent messages during remoting" in {
-      localActor ! PersistentRepr(MyPayload("a"), confirmable = true)
-      expectMsg("c.a.")
-    }
-    "custom-serialize Persistent message batches during remoting" in {
-      localActor ! PersistentBatch(immutable.Seq(Persistent(MyPayload("a"))))
-      expectMsg("b.a.")
-    }
-    "serialize DeliveredByChannel messages during remoting" in {
-      localActor ! DeliveredByChannel("a", "b", 2, 3, testActor)
-      expectMsg("a,b,2,3,true")
-    }
-    "serialize DeliveredByPersistentChannel messages during remoting" in {
-      localActor ! DeliveredByPersistentChannel("c", 2, 3, testActor)
-      expectMsg("c,2,3,true")
-    }
-    "serialize Deliver messages during remoting" in {
-      localActor ! Deliver(Persistent("a"), ActorPath.fromString(testActor.path.toStringWithAddress(address(system))))
-      expectMsg("a")
     }
   }
 }

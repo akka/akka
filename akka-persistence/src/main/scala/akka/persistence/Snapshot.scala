@@ -13,10 +13,7 @@ package akka.persistence
  * @param timestamp time at which the snapshot was saved.
  */
 @SerialVersionUID(1L) //#snapshot-metadata
-final case class SnapshotMetadata(@deprecatedName('processorId) persistenceId: String, sequenceNr: Long, timestamp: Long = 0L) {
-  @deprecated("Use persistenceId instead.", since = "2.3.4")
-  def processorId: String = persistenceId
-}
+final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
 /**
@@ -123,10 +120,7 @@ private[persistence] object SnapshotProtocol {
    * @param criteria criteria for selecting a snapshot from which recovery should start.
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
-  final case class LoadSnapshot(@deprecatedName('processorId) persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long) {
-    @deprecated("Use persistenceId instead.", since = "2.3.4")
-    def processorId: String = persistenceId
-  }
+  final case class LoadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
 
   /**
    * Response message to a [[LoadSnapshot]] message.
@@ -156,8 +150,5 @@ private[persistence] object SnapshotProtocol {
    * @param persistenceId persistent actor id.
    * @param criteria criteria for selecting snapshots to be deleted.
    */
-  final case class DeleteSnapshots(@deprecatedName('processorId) persistenceId: String, criteria: SnapshotSelectionCriteria) {
-    @deprecated("Use persistenceId instead.", since = "2.3.4")
-    def processorId: String = persistenceId
-  }
+  final case class DeleteSnapshots(persistenceId: String, criteria: SnapshotSelectionCriteria)
 }

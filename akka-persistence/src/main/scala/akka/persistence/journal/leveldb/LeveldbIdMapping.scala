@@ -11,7 +11,7 @@ import akka.actor.Actor
 /**
  * INTERNAL API.
  *
- * LevelDB backed persistent mapping of `String`-based persistent actor and channel ids to numeric ids.
+ * LevelDB backed persistent mapping of `String`-based persistent actor ids to numeric ids.
  */
 private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â‡’
   import Key._
@@ -20,7 +20,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
   private var idMap: Map[String, Int] = Map.empty
 
   /**
-   * Get the mapped numeric id for the specified persistent actor or channel `id`. Creates and
+   * Get the mapped numeric id for the specified persistent actor `id`. Creates and
    * stores a new mapping if necessary.
    */
   def numericId(id: String): Int = idMap.get(id) match {
@@ -29,7 +29,7 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
   }
 
   private def readIdMap(): Map[String, Int] = withIterator { iter â‡’
-    iter.seek(keyToBytes(idKey(idOffset)))
+    iter.seek(keyToBytes(mappingKey(idOffset)))
     readIdMap(Map.empty, iter)
   }
 
@@ -37,16 +37,16 @@ private[persistence] trait LeveldbIdMapping extends Actor { this: LeveldbStore â
     if (!iter.hasNext) pathMap else {
       val nextEntry = iter.next()
       val nextKey = keyFromBytes(nextEntry.getKey)
-      if (!isIdKey(nextKey)) pathMap else {
+      if (!isMappingKey(nextKey)) pathMap else {
         val nextVal = new String(nextEntry.getValue, "UTF-8")
-        readIdMap(pathMap + (nextVal -> id(nextKey)), iter)
+        readIdMap(pathMap + (nextVal -> nextKey.mappingId), iter)
       }
     }
   }
 
   private def writeIdMapping(id: String, numericId: Int): Int = {
     idMap = idMap + (id -> numericId)
-    leveldb.put(keyToBytes(idKey(numericId)), id.getBytes("UTF-8"))
+    leveldb.put(keyToBytes(mappingKey(numericId)), id.getBytes("UTF-8"))
     numericId
   }
 

@@ -11,20 +11,9 @@ import akka.actor._
 /**
  * INTERNAL API.
  *
- * Messages exchanged between persistent actors, views, channels and a journal.
+ * Messages exchanged between persistent actors, views and a journal.
  */
 private[persistence] object JournalProtocol {
-  /**
-   * Request to delete messages identified by `messageIds`. If `permanent` is set to `false`,
-   * the persistent messages are marked as deleted, otherwise they are permanently deleted.
-   */
-  final case class DeleteMessages(messageIds: immutable.Seq[PersistentId], permanent: Boolean, requestor: Option[ActorRef] = None)
-
-  /**
-   * Reply message to a successful [[DeleteMessages]] request.
-   */
-  final case class DeleteMessagesSuccess(messageIds: immutable.Seq[PersistentId])
-
   /**
    * Reply message to a failed [[DeleteMessages]] request.
    */
@@ -38,27 +27,12 @@ private[persistence] object JournalProtocol {
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
 
   /**
-   * Request to write delivery confirmations.
-   */
-  final case class WriteConfirmations(confirmations: immutable.Seq[PersistentConfirmation], requestor: ActorRef)
-
-  /**
-   * Reply message to a successful [[WriteConfirmations]] request.
-   */
-  final case class WriteConfirmationsSuccess(confirmations: immutable.Seq[PersistentConfirmation])
-
-  /**
-   * Reply message to a failed [[WriteConfirmations]] request.
-   */
-  final case class WriteConfirmationsFailure(cause: Throwable)
-
-  /**
    * Request to write messages.
    *
    * @param messages messages to be written.
    * @param persistentActor write requestor.
    */
-  final case class WriteMessages(messages: immutable.Seq[Resequenceable], persistentActor: ActorRef, actorInstanceId: Int)
+  final case class WriteMessages(messages: immutable.Seq[PersistentEnvelope], persistentActor: ActorRef, actorInstanceId: Int)
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
@@ -92,16 +66,7 @@ private[persistence] object JournalProtocol {
   final case class WriteMessageFailure(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
 
   /**
-   * Request to loop a `message` back to `persistent actor`, without persisting the message. Looping of messages
-   * through a journal is required to preserve message order with persistent messages.
-   *
-   * @param message message to be looped through the journal.
-   * @param persistentActor loop requestor.
-   */
-  final case class LoopMessage(message: Any, persistentActor: ActorRef, actorInstanceId: Int)
-
-  /**
-   * Reply message to a [[LoopMessage]] request.
+   * Reply message to a [[WriteMessages]] with a non-persistent message.
    *
    * @param message looped message.
    */
