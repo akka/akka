@@ -3,6 +3,9 @@
  */
 package akka.cluster
 
+// TODO remove metrics 
+// FIXME this test is not migrated to metrics extension 
+
 import language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable

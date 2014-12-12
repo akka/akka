@@ -3,12 +3,13 @@ package sample.cluster.factorial;
 //#metrics-listener
 import akka.actor.UntypedActor;
 import akka.cluster.Cluster;
-import akka.cluster.ClusterEvent.ClusterMetricsChanged;
 import akka.cluster.ClusterEvent.CurrentClusterState;
-import akka.cluster.NodeMetrics;
-import akka.cluster.StandardMetrics;
-import akka.cluster.StandardMetrics.HeapMemory;
-import akka.cluster.StandardMetrics.Cpu;
+import akka.cluster.metrics.ClusterMetricsChanged;
+import akka.cluster.metrics.NodeMetrics;
+import akka.cluster.metrics.StandardMetrics;
+import akka.cluster.metrics.StandardMetrics.HeapMemory;
+import akka.cluster.metrics.StandardMetrics.Cpu;
+import akka.cluster.metrics.ClusterMetricsExtension;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
@@ -16,24 +17,27 @@ public class MetricsListener extends UntypedActor {
   LoggingAdapter log = Logging.getLogger(getContext().system(), this);
 
   Cluster cluster = Cluster.get(getContext().system());
+  
+  ClusterMetricsExtension extension = ClusterMetricsExtension.get(getContext().system());
 
-  //subscribe to ClusterMetricsChanged
+  
+  // Subscribe unto ClusterMetricsEvent events.
   @Override
   public void preStart() {
-    cluster.subscribe(getSelf(), ClusterMetricsChanged.class);
+	  extension.subscribe(getSelf());
   }
 
-  //re-subscribe when restart
+  // Unsubscribe from ClusterMetricsEvent events.
   @Override
   public void postStop() {
-    cluster.unsubscribe(getSelf());
+	  extension.unsubscribe(getSelf());
   }
 
 
   @Override
   public void onReceive(Object message) {
     if (message instanceof ClusterMetricsChanged) {
-      ClusterMetricsChanged clusterMetrics = (ClusterMetricsChanged) message;
+    	ClusterMetricsChanged clusterMetrics = (ClusterMetricsChanged) message;
       for (NodeMetrics nodeMetrics : clusterMetrics.getNodeMetrics()) {
         if (nodeMetrics.address().equals(cluster.selfAddress())) {
           logHeap(nodeMetrics);
@@ -42,8 +46,7 @@ public class MetricsListener extends UntypedActor {
       }
 
     } else if (message instanceof CurrentClusterState) {
-      // ignore
-
+      // Ignore.
     } else {
       unhandled(message);
     }

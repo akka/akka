@@ -6,14 +6,14 @@ import java.util.Collections;
 import akka.actor.ActorRef;
 import akka.actor.Props;
 import akka.actor.UntypedActor;
-import akka.cluster.routing.AdaptiveLoadBalancingGroup;
-import akka.cluster.routing.AdaptiveLoadBalancingPool;
+import akka.cluster.metrics.AdaptiveLoadBalancingGroup;
+import akka.cluster.metrics.AdaptiveLoadBalancingPool;
 import akka.cluster.routing.ClusterRouterGroup;
 import akka.cluster.routing.ClusterRouterGroupSettings;
 import akka.cluster.routing.ClusterRouterPool;
 import akka.cluster.routing.ClusterRouterPoolSettings;
-import akka.cluster.routing.HeapMetricsSelector;
-import akka.cluster.routing.SystemLoadAverageMetricsSelector;
+import akka.cluster.metrics.HeapMetricsSelector;
+import akka.cluster.metrics.SystemLoadAverageMetricsSelector;
 
 //not used, only for documentation
 abstract class FactorialFrontend2 extends UntypedActor {

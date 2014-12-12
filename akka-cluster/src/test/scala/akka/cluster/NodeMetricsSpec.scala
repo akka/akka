@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+// TODO remove metrics
+
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import akka.actor.Address
