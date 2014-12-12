@@ -17,7 +17,7 @@ import akka.http.util._
 
 import akka.http.model.HttpMethods._
 import akka.http.model.{ HttpEntity, HttpRequest }
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Sink, Source }
 import akka.util.ByteString
 
 import scala.util.control.NoStackTrace
@@ -104,9 +104,9 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
       val compressed = streamEncode(ByteString(array))
       val limit = 10000
       val resultBs =
-        Source.singleton(compressed)
+        Source.single(compressed)
           .via(Coder.withMaxBytesPerChunk(limit).decoderFlow)
-          .collectAll
+          .grouped(4200).runWith(Sink.head)
           .awaitResult(1.second)
 
       forAll(resultBs) { bs ⇒
