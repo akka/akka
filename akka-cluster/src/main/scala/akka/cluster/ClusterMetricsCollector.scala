@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+// TODO remove metrics 
+
 import java.io.Closeable
 import java.lang.System.{ currentTimeMillis ⇒ newTimestamp }
 import java.lang.management.{ OperatingSystemMXBean, MemoryMXBean, ManagementFactory }
@@ -302,6 +304,7 @@ private[cluster] final case class EWMA(value: Double, alpha: Double) {
  *   averages (e.g. system load average) or finite (e.g. as number of processors), are not trended.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class Metric private[cluster] (name: String, value: Number, private[cluster] val average: Option[EWMA])
   extends MetricNumericConverter {
 
@@ -348,6 +351,7 @@ final case class Metric private[cluster] (name: String, value: Number, private[c
 /**
  * Factory for creating valid Metric instances.
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 object Metric extends MetricNumericConverter {
 
   /**
@@ -385,6 +389,7 @@ object Metric extends MetricNumericConverter {
  * @param metrics the set of sampled [[akka.actor.Metric]]
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Metric] = Set.empty[Metric]) {
 
   /**
@@ -426,6 +431,7 @@ final case class NodeMetrics(address: Address, timestamp: Long, metrics: Set[Met
  * The following extractors and data structures makes it easy to consume the
  * [[akka.cluster.NodeMetrics]] in for example load balancers.
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 object StandardMetrics {
 
   // Constants for the heap related Metric names
@@ -577,6 +583,7 @@ private[cluster] trait MetricNumericConverter {
 /**
  * Implementations of cluster system metrics extends this trait.
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 trait MetricsCollector extends Closeable {
   /**
    * Samples and collects new data points.
@@ -592,6 +599,7 @@ trait MetricsCollector extends Closeable {
  * @param address The [[akka.actor.Address]] of the node being sampled
  * @param decay how quickly the exponential weighting of past data is decayed
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 class JmxMetricsCollector(address: Address, decayFactor: Double) extends MetricsCollector {
   import StandardMetrics._
 
@@ -692,6 +700,7 @@ class JmxMetricsCollector(address: Address, decayFactor: Double) extends Metrics
  * @param decay how quickly the exponential weighting of past data is decayed
  * @param sigar the org.hyperic.Sigar instance
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 class SigarMetricsCollector(address: Address, decayFactor: Double, sigar: AnyRef)
   extends JmxMetricsCollector(address, decayFactor) {
 

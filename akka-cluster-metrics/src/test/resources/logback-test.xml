@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+	<!-- Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com> -->
+
+	<variable name="pattern" value="%date{ISO8601} %-5level %logger %X{akkaSource} %X{sourceThread} - %msg%n" />
+
+	<variable name="folder" value="${user.dir}/target/metrics" />
+
+	<appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>${pattern}</pattern>
+		</encoder>
+	</appender>
+
+	<appender name="filing" class="ch.qos.logback.core.FileAppender">
+		<file>${folder}/test.log</file>
+		<append>false</append>
+		<encoder>
+			<pattern>${pattern}</pattern>
+		</encoder>
+	</appender>
+
+	<!-- Log at INFO level to suppress sigar library loading errors. -->
+	<root level="info">
+		<appender-ref ref="stdout" />
+		<appender-ref ref="filing" />
+	</root>
+
+	<!-- org.hyperic.Sigar logs missing library exception via Log4J at DEBUG level. -->
+	<logger name="org.hyperic" level="debug" />
+
+	<!-- Kamon sigar-loader is using JUL. -->
+	<!-- Propagate level changes made to a logback logger into the equivalent logger in JUL. -->
+	<contextListener class="ch.qos.logback.classic.jul.LevelChangePropagator">
+		<resetJUL>true</resetJUL>
+	</contextListener>
+
+</configuration>

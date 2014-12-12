@@ -24,13 +24,27 @@ object TransformationSampleSpecConfig extends MultiNodeConfig {
   val backend2 = role("backend2")
   val backend3 = role("backend3")
 
+  def nodeList = Seq(frontend1, frontend2, backend1, backend2, backend3)
+
+  // Extract individual sigar library for every node.
+  nodeList foreach { role ⇒
+    nodeConfig(role) {
+      ConfigFactory.parseString(s"""
+      # Disable legacy metrics in akka-cluster.
+      akka.cluster.metrics.enabled=off
+      # Enable metrics extension in akka-cluster-metrics.
+      akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
+      # Sigar native library extract location during tests.
+      akka.cluster.metrics.native-library-extract-folder=target/native/${role.name}
+      """)
+    }
+  }
+
   // this configuration will be used for all nodes
   // note that no fixed host names and ports are used
   commonConfig(ConfigFactory.parseString("""
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
-    # don't use sigar for tests, native lib not in path
-    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     """))
 
   nodeConfig(frontend1, frontend2)(

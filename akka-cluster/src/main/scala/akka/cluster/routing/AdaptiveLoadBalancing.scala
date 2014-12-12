@@ -3,6 +3,8 @@
  */
 package akka.cluster.routing
 
+// TODO remove metrics
+
 import java.util.Arrays
 import java.util.concurrent.atomic.AtomicReference
 
@@ -40,6 +42,7 @@ import akka.routing._
  * @param metricsSelector decides what probability to use for selecting a routee, based
  *   on remaining capacity as indicated by the node metrics
  */
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsSelector: MetricsSelector = MixMetricsSelector)
   extends RoutingLogic with NoSerializationVerificationNeeded {
 
@@ -126,6 +129,7 @@ final case class AdaptiveLoadBalancingRoutingLogic(system: ActorSystem, metricsS
  *   supervision, death watch and router management messages
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingPool(
   metricsSelector: MetricsSelector = MixMetricsSelector,
   val nrOfInstances: Int = 0,
@@ -206,6 +210,7 @@ final case class AdaptiveLoadBalancingPool(
  *   router management messages
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class AdaptiveLoadBalancingGroup(
   metricsSelector: MetricsSelector = MixMetricsSelector,
   paths: immutable.Iterable[String] = Nil,
@@ -246,6 +251,7 @@ final case class AdaptiveLoadBalancingGroup(
  * Low heap capacity => small weight.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 case object HeapMetricsSelector extends CapacityMetricsSelector {
   /**
    * Java API: get the singleton instance
@@ -270,6 +276,7 @@ case object HeapMetricsSelector extends CapacityMetricsSelector {
  * Low cpu capacity => small weight.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 case object CpuMetricsSelector extends CapacityMetricsSelector {
   /**
    * Java API: get the singleton instance
@@ -293,6 +300,7 @@ case object CpuMetricsSelector extends CapacityMetricsSelector {
  * Low load average capacity => small weight.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 case object SystemLoadAverageMetricsSelector extends CapacityMetricsSelector {
   /**
    * Java API: get the singleton instance
@@ -313,6 +321,7 @@ case object SystemLoadAverageMetricsSelector extends CapacityMetricsSelector {
  * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 object MixMetricsSelector extends MixMetricsSelectorBase(
   Vector(HeapMetricsSelector, CpuMetricsSelector, SystemLoadAverageMetricsSelector)) {
 
@@ -328,6 +337,7 @@ object MixMetricsSelector extends MixMetricsSelectorBase(
  * [akka.cluster.routing.CpuMetricsSelector], and [akka.cluster.routing.SystemLoadAverageMetricsSelector]
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 final case class MixMetricsSelector(
   selectors: immutable.IndexedSeq[CapacityMetricsSelector])
   extends MixMetricsSelectorBase(selectors)
@@ -336,6 +346,7 @@ final case class MixMetricsSelector(
  * Base class for MetricsSelector that combines other selectors and aggregates their capacity.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMetricsSelector])
   extends CapacityMetricsSelector {
 
@@ -358,6 +369,7 @@ abstract class MixMetricsSelectorBase(selectors: immutable.IndexedSeq[CapacityMe
 
 }
 
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 object MetricsSelector {
   def fromConfig(config: Config, dynamicAccess: DynamicAccess) =
     config.getString("metrics-selector") match {
@@ -380,6 +392,7 @@ object MetricsSelector {
  * A MetricsSelector is responsible for producing weights from the node metrics.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 trait MetricsSelector extends Serializable {
   /**
    * The weights per address, based on the the nodeMetrics.
@@ -392,6 +405,7 @@ trait MetricsSelector extends Serializable {
  * The weights are typically proportional to the remaining capacity.
  */
 @SerialVersionUID(1L)
+@deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
 abstract class CapacityMetricsSelector extends MetricsSelector {
 
   /**

@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+// TODO remove metrics 
+
 import java.io.Closeable
 import scala.collection.immutable
 import akka.actor.{ Actor, ActorRef, ActorSystemImpl, Address, Props }

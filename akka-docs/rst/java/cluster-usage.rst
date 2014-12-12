@@ -536,81 +536,9 @@ contains the full source code and instructions of how to run the **Router Exampl
 Cluster Metrics
 ^^^^^^^^^^^^^^^
 
-The member nodes of the cluster collects system health metrics and publishes that to other nodes and to 
-registered subscribers. This information is primarily used for load-balancing routers.
+The member nodes of the cluster can collect system health metrics and publish that to other cluster nodes
+and to the registered subscribers on the system event bus with the help of :doc:`cluster-metrics`.
 
-Hyperic Sigar
--------------
-
-The built-in metrics is gathered from JMX MBeans, and optionally you can use `Hyperic Sigar <http://www.hyperic.com/products/sigar>`_
-for a wider and more accurate range of metrics compared to what can be retrieved from ordinary MBeans.
-Sigar is using a native OS library. To enable usage of Sigar you need to add the directory of the native library to 
-``-Djava.libarary.path=<path_of_sigar_libs>`` add the following dependency::
-
-  <dependency>
-    <groupId>org.fusesource</groupId>
-    <artifactId>sigar</artifactId>
-    <version>@sigarVersion@</version>
-  </dependency>
-
-Download the native Sigar libraries from `Maven Central <http://repo1.maven.org/maven2/org/fusesource/sigar/@sigarVersion@/>`_
-
-Adaptive Load Balancing
------------------------
-
-The ``AdaptiveLoadBalancingPool`` / ``AdaptiveLoadBalancingGroup`` performs load balancing of messages to cluster nodes based on the cluster metrics data.
-It uses random selection of routees with probabilities derived from the remaining capacity of the corresponding node.
-It can be configured to use a specific MetricsSelector to produce the probabilities, a.k.a. weights:
-
-* ``heap`` / ``HeapMetricsSelector`` - Used and max JVM heap memory. Weights based on remaining heap capacity; (max - used) / max
-* ``load`` / ``SystemLoadAverageMetricsSelector`` - System load average for the past 1 minute, corresponding value can be found in ``top`` of Linux systems. The system is possibly nearing a bottleneck if the system load average is nearing number of cpus/cores. Weights based on remaining load capacity; 1 - (load / processors) 
-* ``cpu`` / ``CpuMetricsSelector`` - CPU utilization in percentage, sum of User + Sys + Nice + Wait. Weights based on remaining cpu capacity; 1 - utilization
-* ``mix`` / ``MixMetricsSelector`` - Combines heap, cpu and load. Weights based on mean of remaining capacity of the combined selectors.
-* Any custom implementation of ``akka.cluster.routing.MetricsSelector``
-
-The collected metrics values are smoothed with `exponential weighted moving average <http://en.wikipedia.org/wiki/Moving_average#Exponential_moving_average>`_. In the :ref:`cluster_configuration_java` you can adjust how quickly past data is decayed compared to new data.
-
-Let's take a look at this router in action. What can be more demanding than calculating factorials?
-
-The backend worker that performs the factorial calculation:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialBackend.java#backend
-
-The frontend that receives user jobs and delegates to the backends via the router:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontend.java#frontend
-
-
-As you can see, the router is defined in the same way as other routers, and in this case it is configured as follows:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/resources/factorial.conf#adaptive-router
-
-It is only router type ``adaptive`` and the ``metrics-selector`` that is specific to this router, other things work 
-in the same way as other routers.
-
-The same type of router could also have been defined in code:
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/Extra.java#router-lookup-in-code
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/Extra.java#router-deploy-in-code
-
-The `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_ tutorial named 
-`Akka Cluster Samples with Java <http://www.typesafe.com/activator/template/akka-sample-cluster-java>`_.
-contains the full source code and instructions of how to run the **Adaptive Load Balancing** sample.
-
-Subscribe to Metrics Events
----------------------------
-
-It is possible to subscribe to the metrics events directly to implement other functionality.
-
-.. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/MetricsListener.java#metrics-listener
-
-Custom Metrics Collector
-------------------------
-
-You can plug-in your own metrics collector instead of 
-``akka.cluster.SigarMetricsCollector`` or ``akka.cluster.JmxMetricsCollector``. Look at those two implementations
-for inspiration. The implementation class can be defined in the :ref:`cluster_configuration_java`.
 
 .. _cluster_jmx_java:
 

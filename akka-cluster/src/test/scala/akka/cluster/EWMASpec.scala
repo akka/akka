@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+// TODO remove metrics
+
 import language.postfixOps
 import scala.concurrent.duration._
 import akka.testkit.{ LongRunningTest, AkkaSpec }
