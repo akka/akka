@@ -23,9 +23,24 @@ case class PersistenceFailure(payload: Any, sequenceNr: Long, cause: Throwable)
 /**
  * Sent to a [[PersistentActor]] if a journal fails to replay messages or fetch that persistent actor's
  * highest sequence number. If not handled, the actor will be stopped.
+ *
+ * Contains the [[#sequenceNr]] of the message that could not be replayed, if it
+ * failed at a specific message.
+ *
+ * Contains the [[#payload]] of the message that could not be replayed, if it
+ * failed at a specific message.
  */
 @SerialVersionUID(1L)
-case class RecoveryFailure(cause: Throwable)
+case class RecoveryFailure(cause: Throwable)(failingMessage: Option[(Long, Any)]) {
+  override def toString: String = failingMessage match {
+    case Some((sequenceNr, payload)) ⇒ s"RecoveryFailure(${cause.getMessage},$sequenceNr,$payload)"
+    case None                        ⇒ s"RecoveryFailure(${cause.getMessage})"
+  }
+
+  def sequenceNr: Option[Long] = failingMessage.map { case (snr, _) ⇒ snr }
+
+  def payload: Option[Any] = failingMessage.map { case (_, payload) ⇒ payload }
+}
 
 abstract class RecoveryCompleted
 /**
