@@ -7,7 +7,6 @@ package akka.persistence
 import java.util.concurrent.atomic.AtomicInteger
 import scala.collection.immutable
 import scala.util.control.NonFatal
-import akka.actor.ActorCell
 import akka.actor.ActorKilledException
 import akka.actor.ActorLogging
 import akka.actor.Stash
@@ -47,20 +46,10 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
 
   private val instanceId: Int = Eventsourced.instanceIdCounter.getAndIncrement()
 
-  // FIXME useJournalBatching
-  //  I have a feeling that this var can be eliminated, either by just removing the functionality or by
-  // checking pendingStashingPersistInvocations > 0 in doAroundReceive.
-  //
-  //On the first suggestion: when a write is currently pending, how much do we gain in latency
-  // by submitting the persist writes immediately instead of waiting until the acknowledgement
-  // comes in? The other thought is that sync and async persistence will rarely be mixed within
-  //the same Actor, in which case this flag actually does nothing (unless I am missing something).
-
   private var journalBatch = Vector.empty[PersistentEnvelope]
   private val maxMessageBatchSize = extension.settings.journal.maxMessageBatchSize
   private var writeInProgress = false
   private var sequenceNr: Long = 0L
-
   private var _lastSequenceNr: Long = 0L
 
   private var currentState: State = recoveryPending
@@ -471,7 +460,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
    * If replay succeeds the `onReplaySuccess` callback method is called, otherwise `onReplayFailure`.
    *
    * If processing of a replayed event fails, the exception is caught and
-   * stored for being thrown later and state is changed to `recoveryFailed`.
+   * stored for later `RecoveryFailure` message and state is changed to `recoveryFailed`.
    *
    * All incoming messages are stashed.
    */
@@ -487,8 +476,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
           Eventsourced.super.aroundReceive(recoveryBehavior, p)
         } catch {
           case NonFatal(t) ⇒
-            val currentMsg = context.asInstanceOf[ActorCell].currentMessage
-            changeState(replayFailed(t, currentMsg)) // delay throwing exception to prepareRestart
+            changeState(replayFailed(recoveryBehavior, t, p))
         }
       case ReplayMessagesSuccess ⇒
         onReplaySuccess() // callback for subclass implementation
@@ -497,23 +485,23 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
       case ReplayMessagesFailure(cause) ⇒
         onReplayFailure(cause) // callback for subclass implementation
         // FIXME what happens if RecoveryFailure is handled, i.e. actor is not stopped?
-        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryFailure(cause))
+        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryFailure(cause)(None))
       case other ⇒
         internalStash.stash()
     }
   }
 
   /**
-   * Consumes remaining replayed messages and then changes to `prepareRestart`. The
-   * message that caused the exception during replay, is re-added to the mailbox and
-   * re-received in `prepareRestart` state.
+   * Consumes remaining replayed messages and then emits RecoveryFailure to the
+   * `receiveRecover` behavior.
    */
-  private def replayFailed(cause: Throwable, failureMessage: Envelope) = new State {
+  private def replayFailed(recoveryBehavior: Receive, cause: Throwable, failed: PersistentRepr) = new State {
 
     override def toString: String = "replay failed"
     override def recoveryRunning: Boolean = true
 
     override def stateReceive(receive: Receive, message: Any) = message match {
+      case ReplayedMessage(p) ⇒ updateLastSequenceNr(p)
       case ReplayMessagesFailure(_) ⇒
         replayCompleted()
         // journal couldn't tell the maximum stored sequence number, hence the next
@@ -521,27 +509,14 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         // Recover(lastSequenceNr) is sent by preRestart
         setLastSequenceNr(Long.MaxValue)
       case ReplayMessagesSuccess ⇒ replayCompleted()
-      case ReplayedMessage(p)    ⇒ updateLastSequenceNr(p)
       case r: Recover            ⇒ // ignore
       case _                     ⇒ internalStash.stash()
     }
 
     def replayCompleted(): Unit = {
-      changeState(prepareRestart(cause))
-      mailbox.enqueueFirst(self, failureMessage)
-    }
-  }
-
-  /**
-   * Re-receives the replayed message that caused an exception and re-throws that exception.
-   */
-  private def prepareRestart(cause: Throwable) = new State {
-    override def toString: String = "prepare restart"
-    override def recoveryRunning: Boolean = true
-
-    override def stateReceive(receive: Receive, message: Any) = message match {
-      case ReplayedMessage(_) ⇒ throw cause
-      case _                  ⇒ // ignore
+      // FIXME what happens if RecoveryFailure is handled, i.e. actor is not stopped?
+      Eventsourced.super.aroundReceive(recoveryBehavior,
+        RecoveryFailure(cause)(Some((failed.sequenceNr, failed.payload))))
     }
   }
 
@@ -561,7 +536,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
         internalStash.unstashAll()
         Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryCompleted)
       case ReadHighestSequenceNrFailure(cause) ⇒
-        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryFailure(cause))
+        Eventsourced.super.aroundReceive(recoveryBehavior, RecoveryFailure(cause)(None))
       case other ⇒
         internalStash.stash()
     }
