@@ -8,6 +8,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import java.net.URLEncoder
+import java.net.URLDecoder
 import akka.actor.Actor
 import akka.actor.ActorContext
 import akka.actor.ActorLogging
@@ -110,15 +111,23 @@ object DistributedPubSubMediator {
   }
 
   @SerialVersionUID(1L)
-  case object GetTopics
+  case class GetTopics()
 
   /**
    * Java API
    */
-  def getTopicsInstance = GetTopics
+  def getTopicsInstance: GetTopics = GetTopics()
 
   @SerialVersionUID(1L)
-  final case class CurrentTopics(topics: Map[String, ActorRef])
+  final case class CurrentTopics(topics: Map[String, ActorRef]) {
+    /**
+     * Java API
+     */
+    def getTopics(): java.util.Map[String, ActorRef] = {
+      import scala.collection.JavaConverters._
+      topics.asJava
+    }
+  }
 
   // Only for testing purposes, to poll/await replication
   case object Count
@@ -155,8 +164,6 @@ object DistributedPubSubMediator {
     final case class Unsubscribed(ack: UnsubscribeAck, subscriber: ActorRef)
     @SerialVersionUID(1L)
     final case class SendToOneSubscriber(msg: Any)
-    @SerialVersionUID(1L)
-    final case class Subscribers(topic: String, topicActor: ActorRef, subscribers: Set[ActorRef])
 
     @SerialVersionUID(1L)
     final case class MediatorRouterEnvelope(msg: Any) extends RouterEnvelope {
@@ -567,7 +574,7 @@ class DistributedPubSubMediator(
   }
 
   def getCurrentTopics(): Map[String, ActorRef] = {
-    context.children.map(ref ⇒ (ref.path.name, ref)).toMap
+    context.children.map(ref ⇒ (URLDecoder.decode(ref.path.name, "utf-8"), ref)).toMap
   }
 
   def registerTopic(ref: ActorRef): Unit = {
