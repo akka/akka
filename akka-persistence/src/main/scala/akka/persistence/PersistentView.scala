@@ -51,6 +51,13 @@ object Update {
 }
 
 /**
+ * INTERNAL API
+ */
+private[akka] object PersistentView {
+  private final case class ScheduledUpdate(replayMax: Long)
+}
+
+/**
  * A view replicates the persistent message stream of a [[PersistentActor]]. Implementation classes receive
  * the message stream directly from the Journal. These messages can be processed to update internal state
  * in order to maintain an (eventual consistent) view of the state of the corresponding persistent actor. A
@@ -74,6 +81,7 @@ object Update {
  *  - [[autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
  */
 trait PersistentView extends Actor with Snapshotter with Stash with StashFactory {
+  import PersistentView._
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import context.dispatcher
@@ -175,6 +183,8 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
   override def preStart(): Unit = {
     super.preStart()
     self ! Recover(replayMax = autoUpdateReplayMax)
+    if (autoUpdate) schedule = Some(context.system.scheduler.schedule(autoUpdateInterval, autoUpdateInterval,
+      self, ScheduledUpdate(autoUpdateReplayMax)))
   }
 
   /**
@@ -282,7 +292,8 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     private var stashUpdate = await
 
     override def stateReceive(receive: Receive, message: Any) = message match {
-      case Update(false, _) ⇒ // ignore
+      case ScheduledUpdate(_) ⇒ // ignore
+      case Update(false, _)   ⇒ // ignore
       case u @ Update(true, _) if !stashUpdate ⇒
         stashUpdate = true
         internalStash.stash()
@@ -299,7 +310,6 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
         onReplayComplete(await)
       case ReplayMessagesFailure(cause) ⇒
         onReplayComplete(await)
-        // FIXME what happens if RecoveryFailure is handled, i.e. actor is not stopped?
         PersistentView.super.aroundReceive(receive, RecoveryFailure(cause)(None))
       case other ⇒
         internalStash.stash()
@@ -310,8 +320,6 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
      */
     private def onReplayComplete(await: Boolean): Unit = {
       changeState(idle)
-      if (autoUpdate) schedule = Some(context.system.scheduler.scheduleOnce(autoUpdateInterval, self,
-        Update(await = false, autoUpdateReplayMax)))
       if (await) internalStash.unstashAll()
     }
   }
@@ -339,7 +347,9 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     }
 
     def replayCompleted(receive: Receive): Unit = {
-      // FIXME what happens if RecoveryFailure is handled, i.e. actor is not stopped?
+      // in case the actor resumes the state must be `idle`
+      changeState(idle)
+
       PersistentView.super.aroundReceive(receive, RecoveryFailure(cause)(Some((failed.sequenceNr, failed.payload))))
     }
   }
@@ -354,11 +364,15 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
     override def recoveryRunning: Boolean = false
 
     override def stateReceive(receive: Receive, message: Any): Unit = message match {
-      case r: Recover ⇒ // ignore
-      case Update(awaitUpdate, replayMax) ⇒
-        changeState(replayStarted(await = awaitUpdate))
-        journal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, replayMax, persistenceId, self)
-      case other ⇒ PersistentView.super.aroundReceive(receive, other)
+      case r: Recover                     ⇒ // ignore
+      case ScheduledUpdate(replayMax)     ⇒ changeStateToReplayStarted(await = false, replayMax)
+      case Update(awaitUpdate, replayMax) ⇒ changeStateToReplayStarted(awaitUpdate, replayMax)
+      case other                          ⇒ PersistentView.super.aroundReceive(receive, other)
+    }
+
+    def changeStateToReplayStarted(await: Boolean, replayMax: Long): Unit = {
+      changeState(replayStarted(await))
+      journal ! ReplayMessages(lastSequenceNr + 1L, Long.MaxValue, replayMax, persistenceId, self)
     }
   }
 
