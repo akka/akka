@@ -295,7 +295,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec
   override def stop(): Unit = {
     def ensureCompleted(): Unit = {
-      result tryComplete Failure(new ActorKilledException("Stopped"))
+      result tryComplete ActorStopResult
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
         watchers foreach { watcher ⇒
@@ -324,6 +324,8 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private case class StoppedWithPath(path: ActorPath)
 
+  val ActorStopResult = Failure(new ActorKilledException("Stopped"))
+  
   def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
