@@ -23,6 +23,8 @@ object PersistentActorFailureSpec {
   import PersistentActorSpec.Evt
   import PersistentActorSpec.ExamplePersistentActor
 
+  class SimulatedException(msg: String) extends RuntimeException(msg) with NoStackTrace
+
   class FailingInmemJournal extends AsyncWriteProxy {
     import AsyncWriteProxy.SetStore
 
@@ -38,13 +40,13 @@ object PersistentActorFailureSpec {
   class FailingInmemStore extends InmemStore {
     def failingReceive: Receive = {
       case w: WriteMessages if isWrong(w) ⇒
-        throw new RuntimeException("Simulated Store failure") with NoStackTrace
+        throw new SimulatedException("Simulated Store failure")
       case ReplayMessages(pid, fromSnr, toSnr, max) ⇒
         val readFromStore = read(pid, fromSnr, toSnr, max)
         if (readFromStore.length == 0)
           sender() ! ReplaySuccess
         else if (isCorrupt(readFromStore))
-          sender() ! ReplayFailure(new IllegalArgumentException(s"blahonga $fromSnr $toSnr"))
+          sender() ! ReplayFailure(new SimulatedException(s"blahonga $fromSnr $toSnr"))
         else {
           readFromStore.foreach(sender() ! _)
           sender() ! ReplaySuccess
@@ -79,6 +81,15 @@ object PersistentActorFailureSpec {
     }
   }
 
+  class ResumingSupervisor(testActor: ActorRef) extends Supervisor(testActor) {
+    override def supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
+      case e ⇒
+        testActor ! e
+        SupervisorStrategy.Resume
+    }
+
+  }
+
   class FailingRecovery(name: String, recoveryFailureProbe: Option[ActorRef]) extends ExamplePersistentActor(name) {
     def this(name: String) = this(name, None)
 
@@ -88,17 +99,34 @@ object PersistentActorFailureSpec {
 
     val failingRecover: Receive = {
       case Evt(data) if data == "bad" ⇒
-        throw new RuntimeException("Simulated exception from receiveRecover")
+        throw new SimulatedException("Simulated exception from receiveRecover")
 
       case r @ RecoveryFailure(cause) if recoveryFailureProbe.isDefined ⇒
         recoveryFailureProbe.foreach { _ ! r }
-        throw new ActorKilledException(cause.getMessage)
     }
 
     override def receiveRecover: Receive = failingRecover orElse super.receiveRecover
 
-    override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-      super.preRestart(reason, message)
+  }
+
+  class ThrowingActor1(name: String) extends ExamplePersistentActor(name) {
+    override val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        persist(Evt(s"${data}"))(updateState)
+        if (data == "err")
+          throw new SimulatedException("Simulated exception 1")
+    }
+  }
+
+  class ThrowingActor2(name: String) extends ExamplePersistentActor(name) {
+    override val receiveCommand: Receive = commonBehavior orElse {
+      case Cmd(data) ⇒
+        persist(Evt(s"${data}")) { evt ⇒
+          if (data == "err")
+            throw new SimulatedException("Simulated exception 1")
+          updateState(evt)
+        }
+
     }
   }
 }
@@ -164,11 +192,75 @@ class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem"
       val probe = TestProbe()
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name, Some(probe.ref))
       expectMsgType[ActorRef]
-      expectMsgType[ActorKilledException]
       val recoveryFailure = probe.expectMsgType[RecoveryFailure]
       recoveryFailure.payload should be(Some(Evt("bad")))
       recoveryFailure.sequenceNr should be(Some(3L))
     }
+    "continue by handling RecoveryFailure" in {
+      prepareFailingRecovery()
+
+      // recover by creating another with same name
+      val probe = TestProbe()
+      system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name, Some(probe.ref))
+      val persistentActor = expectMsgType[ActorRef]
+      val recoveryFailure = probe.expectMsgType[RecoveryFailure]
+      // continue
+      persistentActor ! Cmd("d")
+      persistentActor ! GetState
+      // "bad" failed, and "c" was not replayed
+      expectMsg(List("a", "b", "d"))
+    }
+    "support resume after recovery failure" in {
+      prepareFailingRecovery()
+
+      // recover by creating another with same name
+      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[FailingRecovery], name)
+      val persistentActor = expectMsgType[ActorRef]
+      expectMsgType[ActorKilledException] // from supervisor
+      // resume
+      persistentActor ! Cmd("d")
+      persistentActor ! GetState
+      // "bad" failed, and "c" was not replayed
+      expectMsg(List("a", "b", "d"))
+    }
+    "support resume after persist failure" in {
+      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[Behavior1PersistentActor], name)
+      val persistentActor = expectMsgType[ActorRef]
+      persistentActor ! Cmd("a")
+      persistentActor ! Cmd("wrong")
+      persistentActor ! Cmd("b")
+      // Behavior1PersistentActor persists 2 events per Cmd,
+      // and therefore 2 exceptions from supervisor
+      expectMsgType[ActorKilledException]
+      expectMsgType[ActorKilledException]
+      persistentActor ! Cmd("c")
+      persistentActor ! GetState
+      expectMsg(List("a-1", "a-2", "b-1", "b-2", "c-1", "c-2"))
+    }
+    "support resume when persist followed by exception" in {
+      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[ThrowingActor1], name)
+      val persistentActor = expectMsgType[ActorRef]
+      persistentActor ! Cmd("a")
+      persistentActor ! Cmd("err")
+      persistentActor ! Cmd("b")
+      expectMsgType[SimulatedException] // from supervisor
+      persistentActor ! Cmd("c")
+      persistentActor ! GetState
+      expectMsg(List("a", "err", "b", "c"))
+    }
+    "support resume when persist handler throws exception" in {
+      system.actorOf(Props(classOf[ResumingSupervisor], testActor)) ! Props(classOf[ThrowingActor2], name)
+      val persistentActor = expectMsgType[ActorRef]
+      persistentActor ! Cmd("a")
+      persistentActor ! Cmd("b")
+      persistentActor ! Cmd("err")
+      persistentActor ! Cmd("c")
+      expectMsgType[SimulatedException] // from supervisor
+      persistentActor ! Cmd("d")
+      persistentActor ! GetState
+      expectMsg(List("a", "b", "c", "d"))
+    }
+
   }
 }
 

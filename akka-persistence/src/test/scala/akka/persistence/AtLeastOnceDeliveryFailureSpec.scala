@@ -34,6 +34,7 @@ object AtLeastOnceDeliveryFailureSpec {
   case object Start
   case class Done(ints: Vector[Int])
 
+  case class Ack(i: Int)
   case class ProcessingFailure(i: Int)
   case class JournalingFailure(i: Int)
 
@@ -77,9 +78,11 @@ object AtLeastOnceDeliveryFailureSpec {
         val failureRate = if (recoveryRunning) replayProcessingFailureRate else liveProcessingFailureRate
         if (contains(i)) {
           log.debug(debugMessage(s"ignored duplicate ${i}"))
+          sender() ! Ack(i)
         } else {
           persist(MsgSent(i)) { evt ⇒
             updateState(evt)
+            sender() ! Ack(i)
             if (shouldFail(failureRate))
               throw new TestException(debugMessage(s"failed at payload ${i}"))
             else
@@ -142,16 +145,26 @@ object AtLeastOnceDeliveryFailureSpec {
 
   class ChaosApp(probe: ActorRef) extends Actor with ActorLogging {
     val destination = context.actorOf(Props(classOf[ChaosDestination], probe), "destination")
-    val snd = context.actorOf(Props(classOf[ChaosSender], destination, probe), "sender")
+    var snd = createSender()
+    var acks = Set.empty[Int]
+
+    def createSender(): ActorRef =
+      context.watch(context.actorOf(Props(classOf[ChaosSender], destination, probe), "sender"))
 
     def receive = {
-      case Start ⇒ 1 to numMessages foreach (snd ! _)
+      case Start  ⇒ 1 to numMessages foreach (snd ! _)
+      case Ack(i) ⇒ acks += i
       case ProcessingFailure(i) ⇒
         snd ! i
         log.debug(s"resent ${i} after processing failure")
       case JournalingFailure(i) ⇒
         snd ! i
         log.debug(s"resent ${i} after journaling failure")
+      case Terminated(_) ⇒
+        // snd will be stopped if ReadHighestSequenceNr fails
+        log.debug(s"sender stopped, starting it again")
+        snd = createSender()
+        1 to numMessages foreach (i ⇒ if (!acks(i)) snd ! i)
     }
   }
 }

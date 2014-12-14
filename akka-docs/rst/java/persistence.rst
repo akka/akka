@@ -122,6 +122,10 @@ When persisting events with ``persist`` it is guaranteed that the persistent act
 the ``persist`` call and the execution(s) of the associated event handler. This also holds for multiple ``persist``
 calls in context of a single command.
 
+If persistence of an event fails, the persistent actor will be stopped by throwing :class:`ActorKilledException`.
+This can be customized by handling ``PersistenceFailure`` message in ``onReceiveCommand`` and/or defining 
+``supervisorStrategy`` in parent actor.
+
 The easiest way to run this example yourself is to download `Typesafe Activator <http://www.typesafe.com/platform/getstarted>`_
 and open the tutorial named `Akka Persistence Samples with Java <http://www.typesafe.com/activator/template/akka-sample-persistence-java>`_.
 It contains instructions on how to run the ``PersistentActorExample``.
@@ -195,11 +199,11 @@ recovery has completed, before processing any other message sent to the persiste
 The persistent actor will receive a special :class:`RecoveryCompleted` message right after recovery
 and before any other received messages.
 
+.. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-completed
+
 If there is a problem with recovering the state of the actor from the journal, the actor will be 
 sent a :class:`RecoveryFailure` message that it can choose to handle in ``receiveRecover``. If the
-actor doesn't handle the :class:`RecoveryFailure` message it will be stopped.
-
-.. includecode:: code/docs/persistence/PersistenceDocTest.java#recovery-completed
+actor doesn't handle the :class:`RecoveryFailure` message it will be stopped by throwing :class:`ActorKilledException`.
 
 .. _persist-async-java:
 
