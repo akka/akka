@@ -1,10 +1,7 @@
 name := "akka-sample-main-java-lambda"
 
-version := "1.0"
-
-scalaVersion := "2.10.4"
+version := "15v01p01"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.3-SNAPSHOT"
+  TypesafeLibrary.akkaActor.value
 )
-

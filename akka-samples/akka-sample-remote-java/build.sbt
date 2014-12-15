@@ -1,10 +1,8 @@
 name := "akka-sample-remote-java"
 
-version := "2.3-SNAPSHOT"
-
-scalaVersion := "2.10.4"
+version := "15v01p01"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-remote" % "2.3-SNAPSHOT"
+  TypesafeLibrary.akkaRemote.value
 )
 
