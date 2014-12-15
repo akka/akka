@@ -211,6 +211,16 @@ class TestkitDocSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
     //#test-special-probe
   }
 
+  "demonstrate usage of test probe with custom name" in {
+    //#test-probe-with-custom-name
+    val worker = TestProbe("worker")
+    val aggregator = TestProbe("aggregator")
+
+    worker.ref.path.name should startWith("worker")
+    aggregator.ref.path.name should startWith("aggregator")
+    //#test-probe-with-custom-name
+  }
+
   "demonstrate probe watch" in {
     import akka.testkit.TestProbe
     val target = system.actorOf(Props.empty)
