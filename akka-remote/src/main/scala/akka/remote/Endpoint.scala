@@ -166,6 +166,9 @@ private[remote] object ReliableDeliverySupervisor {
   case object AttemptSysMsgRedelivery
   case class GotUid(uid: Int, remoteAddres: Address)
 
+  case object IsIdle
+  case object Idle
+
   def props(
     handleOrActive: Option[AkkaProtocolHandle],
     localAddress: Address,
@@ -280,6 +283,7 @@ private[remote] class ReliableDeliverySupervisor(
       resendAll()
       writer ! FlushAndStop
       context.become(flushWait)
+    case IsIdle ⇒ // Do not reply, we will Terminate soon, or send a GotUid
     case s: Send ⇒
       handleSend(s)
     case ack: Ack ⇒
@@ -325,6 +329,7 @@ private[remote] class ReliableDeliverySupervisor(
   def gated: Receive = {
     case Terminated(_) ⇒
       context.system.scheduler.scheduleOnce(settings.RetryGateClosedFor, self, Ungate)
+    case IsIdle ⇒ sender() ! Idle
     case Ungate ⇒
       if (resendBuffer.nonAcked.nonEmpty || resendBuffer.nacked.nonEmpty) {
         // If we talk to a system we have not talked to before (or has given up talking to in the past) stop
@@ -348,6 +353,7 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   def idle: Receive = {
+    case IsIdle ⇒ sender() ! Idle
     case s: Send ⇒
       writer = createWriter()
       // Resending will be triggered by the incoming GotUid message after the connection finished
@@ -363,6 +369,7 @@ private[remote] class ReliableDeliverySupervisor(
   }
 
   def flushWait: Receive = {
+    case IsIdle ⇒ // Do not reply, we will Terminate soon, which will do the inbound connection unstashing
     case Terminated(_) ⇒
       // Clear buffer to prevent sending system messages to dead letters -- at this point we are shutting down
       // and don't really know if they were properly delivered or not.
