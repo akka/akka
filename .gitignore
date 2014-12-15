@@ -58,6 +58,7 @@ out
 project/akka-build.properties
 project/boot/*
 project/plugins/project
+project/typesafe.properties
 redis/
 reports
 run-codefellow
