@@ -6,6 +6,8 @@ package akka.http.server
 package directives
 
 import akka.http.common.ToNameReceptacleEnhancements
+import akka.http.model.StatusCodes
+import akka.http.model.Uri.Path
 
 trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction with ToNameReceptacleEnhancements {
   import BasicDirectives._
@@ -100,6 +102,30 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   /**
    * Only passes on the request to its inner route if the request path has been matched
    * completely or only consists of exactly one remaining slash.
+   *
+   * Note that trailing slash and non-trailing slash URLs are '''not''' the same, although they often serve
+   * the same content. It is recommended to serve only one URL version and make the other redirect to it using
+   * [[redirectToTrailingSlashIfMissing]] or [[redirectToNoTrailingSlashIfPresent]] directive.
+   *
+   * For example:
+   * {{{
+   * def route = {
+   *   // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
+   *   redirectToNoTrailingSlashIfPresent(Found) {
+   *     pathPrefix("users") {
+   *       pathEnd {
+   *         // user list ...
+   *       } ~
+   *       path(UUID) { userId =>
+   *         // user profile ...
+   *       }
+   *     }
+   *   }
+   * }
+   * }}}
+   *
+   * For further information, refer to:
+   * [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
    */
   def pathEndOrSingleSlash: Directive0 = rawPathPrefix(Slash.? ~ PathEnd)
 
@@ -108,6 +134,36 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * consists of exactly one remaining slash.
    */
   def pathSingleSlash: Directive0 = pathPrefix(PathEnd)
+
+  /**
+   * If the request path doesn't end with a slash, redirect to the same uri with trailing slash in the path.
+   *
+   * '''Caveat''': [[path]] without trailing slash and [[pathEnd]] directives will not match inside of this directive.
+   */
+  def redirectToTrailingSlashIfMissing(redirectionType: StatusCodes.Redirection): Directive0 =
+    extractUri.flatMap { uri ⇒
+      if (uri.path.endsWithSlash) pass
+      else {
+        val newPath = uri.path ++ Path.SingleSlash
+        val newUri = uri.withPath(newPath)
+        redirect(newUri, redirectionType)
+      }
+    }
+
+  /**
+   * If the request path ends with a slash, redirect to the same uri without trailing slash in the path.
+   *
+   * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
+   */
+  def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCodes.Redirection): Directive0 =
+    extractUri.flatMap { uri ⇒
+      if (uri.path.endsWithSlash) {
+        val newPath = uri.path.reverse.tail.reverse
+        val newUri = uri.withPath(newPath)
+        redirect(newUri, redirectionType)
+      } else pass
+    }
+
 }
 
 object PathDirectives extends PathDirectives

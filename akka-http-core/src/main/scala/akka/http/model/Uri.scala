@@ -405,6 +405,16 @@ object Uri {
     def isEmpty: Boolean
     def startsWithSlash: Boolean
     def startsWithSegment: Boolean
+    def endsWithSlash: Boolean = {
+      import Path.{ Empty ⇒ PEmpty, _ }
+      @tailrec def check(path: Path): Boolean = path match {
+        case PEmpty              ⇒ false
+        case Slash(PEmpty)       ⇒ true
+        case Slash(tail)         ⇒ check(tail)
+        case Segment(head, tail) ⇒ check(tail)
+      }
+      check(this)
+    }
     def head: Head
     def tail: Path
     def length: Int
