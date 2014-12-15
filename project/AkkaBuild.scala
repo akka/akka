@@ -413,21 +413,21 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-camel-java"),
     dependencies = Seq(actor, camel),
     settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
-  )
+  ).setSbtFiles()
   
   lazy val camelSampleScala = Project(
     id = "akka-sample-camel-scala",
     base = file("akka-samples/akka-sample-camel-scala"),
     dependencies = Seq(actor, camel),
     settings = sampleSettings ++ Seq(libraryDependencies ++= Dependencies.camelSample)
-  )
+  ).setSbtFiles()
 
   lazy val fsmSampleScala = Project(
     id = "akka-sample-fsm-scala",
     base = file("akka-samples/akka-sample-fsm-scala"),
     dependencies = Seq(actor),
     settings = sampleSettings
-  )
+  ).setSbtFiles()
 
   lazy val mainSampleJava = Project(
     id = "akka-sample-main-java",
@@ -455,28 +455,28 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-remote-java"),
     dependencies = Seq(actor, remote),
     settings = sampleSettings
-  )
+  ).setSbtFiles()
   
   lazy val remoteSampleScala = Project(
     id = "akka-sample-remote-scala",
     base = file("akka-samples/akka-sample-remote-scala"),
     dependencies = Seq(actor, remote),
     settings = sampleSettings
-  )
+  ).setSbtFiles()
 
   lazy val persistenceSampleJava = Project(
     id = "akka-sample-persistence-java",
     base = file("akka-samples/akka-sample-persistence-java"),
     dependencies = Seq(actor, persistence),
     settings = sampleSettings
-  )
+  ).setSbtFiles()
 
   lazy val persistenceSampleScala = Project(
     id = "akka-sample-persistence-scala",
     base = file("akka-samples/akka-sample-persistence-scala"),
     dependencies = Seq(actor, persistence, stream),
     settings = sampleSettings
-  )
+  ).setSbtFiles()
 
   lazy val clusterSampleJava = Project(
     id = "akka-sample-cluster-java",
@@ -494,7 +494,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
     )
-  ) configs (MultiJvm)
+  ) configs (MultiJvm) setSbtFiles ()
   
   lazy val clusterSampleScala = Project(
     id = "akka-sample-cluster-scala",
@@ -512,7 +512,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
     )
-  ) configs (MultiJvm)
+  ) configs (MultiJvm) setSbtFiles ()
   
   lazy val multiNodeSampleScala = Project(
     id = "akka-sample-multi-node-scala",
@@ -526,7 +526,7 @@ object AkkaBuild extends Build {
         (name: String) => (src ** (name + ".conf")).get.headOption.map("-Dakka.config=" + _.absolutePath).toSeq
       }
     )
-  ) configs (MultiJvm)
+  ) configs (MultiJvm) setSbtFiles ()
 
   lazy val osgiDiningHakkersSample = Project(id = "akka-sample-osgi-dining-hakkers",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers"),
