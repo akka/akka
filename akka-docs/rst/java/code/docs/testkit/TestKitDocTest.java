@@ -286,6 +286,19 @@ public class TestKitDocTest {
   }
 
   @Test
+  public void demonstrateTestProbeWithCustomName() {
+    //#test-probe-with-custom-name
+    new JavaTestKit(system) {{
+      final TestProbe worker = new TestProbe(system, "worker");
+      final TestProbe aggregator = new TestProbe(system, "aggregator");
+
+      assertTrue(worker.ref().path().name().startsWith("worker"));
+      assertTrue(aggregator.ref().path().name().startsWith("aggregator"));
+    }};
+    //#test-probe-with-custom-name
+  }
+
+  @Test
   public void demonstrateSpecialProbe() {
     //#test-special-probe
     new JavaTestKit(system) {{

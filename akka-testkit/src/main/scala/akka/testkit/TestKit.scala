@@ -117,6 +117,11 @@ trait TestKitBase {
   def lastSender = lastMessage.sender
 
   /**
+   * Defines the testActor name.
+   */
+  protected def testActorName: String = "testActor"
+
+  /**
    * ActorRef of the test actor. Access is provided to enable e.g.
    * registration as message target.
    */
@@ -124,7 +129,7 @@ trait TestKitBase {
     val impl = system.asInstanceOf[ExtendedActorSystem]
     val ref = impl.systemActorOf(TestActor.props(queue)
       .withDispatcher(CallingThreadDispatcher.Id),
-      "testActor" + TestKit.testActorId.incrementAndGet)
+      "%s-%d".format(testActorName, TestKit.testActorId.incrementAndGet))
     awaitCond(ref match {
       case r: RepointableRef ⇒ r.isStarted
       case _                 ⇒ true
@@ -787,12 +792,16 @@ object TestKit {
 /**
  * TestKit-based probe which allows sending, reception and reply.
  */
-class TestProbe(_application: ActorSystem) extends TestKit(_application) {
+class TestProbe(_application: ActorSystem, name: String) extends TestKit(_application) {
+
+  def this(_application: ActorSystem) = this(_application, "testProbe")
 
   /**
    * Shorthand to get the testActor.
    */
   def ref = testActor
+
+  protected override def testActorName = name
 
   /**
    * Send message to an actor while using the probe's TestActor as the sender.
@@ -820,6 +829,7 @@ class TestProbe(_application: ActorSystem) extends TestKit(_application) {
 
 object TestProbe {
   def apply()(implicit system: ActorSystem) = new TestProbe(system)
+  def apply(name: String)(implicit system: ActorSystem) = new TestProbe(system, name)
 }
 
 trait ImplicitSender { this: TestKitBase ⇒
