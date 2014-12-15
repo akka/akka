@@ -68,7 +68,7 @@ overhead, and increased latency because the corrdinator is involved in the routi
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
-A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the the entry identifier modulo 
+A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the entry identifier modulo
 number of shards.
 
 Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
@@ -125,7 +125,7 @@ overhead, and increased latency because the corrdinator is involved in the routi
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping
 all nodes in the cluster.
 
-A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the the entry identifier modulo 
+A simple sharding algorithm that works fine in most cases is to take the ``hashCode`` of the entry identifier modulo
 number of shards.
 
 Messages to the entries are always sent via the local ``ShardRegion``. The ``ShardRegion`` actor reference for a
