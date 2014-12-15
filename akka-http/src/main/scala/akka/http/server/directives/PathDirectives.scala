@@ -100,6 +100,28 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
   /**
    * Only passes on the request to its inner route if the request path has been matched
    * completely or only consists of exactly one remaining slash.
+   *
+   * Note that trailing slash and non-trailing slash URLs are '''not''' the same, although they often serve
+   * the same content. It is recommended to serve only one URL version and make the other redirect to it using
+   * [[withTrailingSlash]] or [[withoutTrailingSlash]] directive.
+   *
+   * For example:
+   * {{{
+   * def route =
+   *   withoutTrailingSlash { // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
+   *     pathPrefix("users") {
+   *       pathEnd {
+   *         // user list ...
+   *       } ~
+   *       path(UUID) { userId =>
+   *         // user profile ...
+   *       }
+   *     }
+   *   }
+   * }}}
+   *
+   * For further information, refer to:
+   * [[http://googlewebmastercentral.blogspot.de/2010/04/to-slash-or-not-to-slash.html]]
    */
   def pathEndOrSingleSlash: Directive0 = rawPathPrefix(Slash.? ~ PathEnd)
 
@@ -108,6 +130,48 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * consists of exactly one remaining slash.
    */
   def pathSingleSlash: Directive0 = pathPrefix(PathEnd)
+
+  /**
+   * If the request path doesn't end with a slash, redirect to the same uri with trailing slash in the path.
+   *
+   * '''Caveat''': [[path]] without trailing slash and [[pathEnd]] directives will not match inside of this directive.
+   */
+  def withTrailingSlash: Directive0 = PathDirectives._withTrailingSlash
+
+  /**
+   * If the request path ends with a slash, redirect to the same uri without trailing slash in the path.
+   *
+   * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
+   */
+  def withoutTrailingSlash: Directive0 = PathDirectives._withoutTrailingSlash
 }
 
-object PathDirectives extends PathDirectives
+object PathDirectives extends PathDirectives {
+  import BasicDirectives._
+  import RouteDirectives._
+  import akka.http.model.StatusCodes._
+  import akka.http.model.Uri.Path
+  import Path._
+
+  private val _withTrailingSlash: Directive0 =
+    extractUri.flatMap { uri ⇒
+      if (uri.path.reverse.startsWithSlash) pass
+      else {
+        val newPath = uri.path ++ SingleSlash
+        val newUri = uri.toRelative.withPath(newPath)
+        redirect(newUri, Found)
+      }
+    }
+
+  private val _withoutTrailingSlash: Directive0 =
+    extractUri.flatMap { uri ⇒
+      uri.path.reverse match {
+        case SingleSlash ⇒ pass
+        case reversed if reversed.startsWithSlash ⇒
+          val newPath = reversed.tail.reverse
+          val newUri = uri.toRelative.withPath(newPath)
+          redirect(newUri, Found)
+        case _ ⇒ pass
+      }
+    }
+}

@@ -240,4 +240,51 @@ class PathDirectivesSpec extends RoutingSpec {
         case None ⇒ failTest("Example '" + exampleString + "' doesn't contain a test uri")
       }
   }
+
+  import akka.http.model.StatusCodes.Found
+  import akka.http.model.headers.Location
+
+  "the `withTrailingSlash` directive" should {
+    "pass if the request path already has a trailing slash" in {
+      Get("/foo/bar/") ~> withTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+    }
+
+    "redirect if the request path doesn't have a trailing slash" in {
+      Get("/foo/bar") ~> withTrailingSlash { completeOk } ~> check {
+        status shouldEqual Found
+        headers should contain(Location("/foo/bar/"))
+      }
+    }
+
+    "preserves the query and the frag when redirect" in {
+      Get("/foo/bar?query#frag") ~> withTrailingSlash { completeOk } ~> check {
+        status shouldEqual Found
+        headers should contain(Location("/foo/bar/?query#frag"))
+      }
+    }
+  }
+
+  "the `withoutTrailingSlash` directive" should {
+    "pass the root" in {
+      Get("/") ~> withoutTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+    }
+
+    "pass if the request path already doesn't have a trailing slash" in {
+      Get("/foo/bar") ~> withoutTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+    }
+
+    "redirect if the request path has a trailing slash" in {
+      Get("/foo/bar/") ~> withoutTrailingSlash { completeOk } ~> check {
+        status shouldEqual Found
+        headers should contain(Location("/foo/bar"))
+      }
+    }
+
+    "preserves the query and the frag when redirect" in {
+      Get("/foo/bar/?query#frag") ~> withoutTrailingSlash { completeOk } ~> check {
+        status shouldEqual Found
+        headers should contain(Location("/foo/bar?query#frag"))
+      }
+    }
+  }
 }
