@@ -40,7 +40,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "0.11-SNAPSHOT"
+  val streamAndHttpVersion = "1.0-SNAPSHOT"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
@@ -1637,7 +1637,6 @@ object Dependencies {
   val stream = Seq(
     // FIXME use project dependency when akka-stream-experimental-2.3.x is released
     "com.typesafe.akka" %% "akka-actor" % Versions.publishedAkkaVersion,
-    "com.typesafe.akka" %% "akka-persistence-experimental" % Versions.publishedAkkaVersion,
     reactiveStreams,
     Test.junitIntf,
     Test.scalatest)
