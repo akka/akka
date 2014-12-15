@@ -5,8 +5,9 @@
 package akka.http.server.directives
 
 import akka.http.server._
+import org.scalatest.Inside
 
-class PathDirectivesSpec extends RoutingSpec {
+class PathDirectivesSpec extends RoutingSpec with Inside {
   val echoUnmatchedPath = extractUnmatchedPath { echoComplete }
   def echoCaptureAndUnmatchedPath[T]: T ⇒ Route =
     capture ⇒ ctx ⇒ ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
@@ -240,4 +241,62 @@ class PathDirectivesSpec extends RoutingSpec {
         case None ⇒ failTest("Example '" + exampleString + "' doesn't contain a test uri")
       }
   }
+
+  import akka.http.model.StatusCodes._
+
+  "the `redirectToTrailingSlashIfMissing` directive" should {
+    val route = redirectToTrailingSlashIfMissing(Found) { completeOk }
+
+    "pass if the request path already has a trailing slash" in {
+      Get("/foo/bar/") ~> route ~> check { response shouldEqual Ok }
+    }
+
+    "redirect if the request path doesn't have a trailing slash" in {
+      Get("/foo/bar") ~> route ~> checkRedirectTo("/foo/bar/")
+    }
+
+    "preserves the query and the frag when redirect" in {
+      Get("/foo/bar?query#frag") ~> route ~> checkRedirectTo("/foo/bar/?query#frag")
+    }
+
+    "redirect with the given redirection status code" in {
+      Get("/foo/bar") ~>
+        redirectToTrailingSlashIfMissing(MovedPermanently) { completeOk } ~>
+        check { status shouldEqual MovedPermanently }
+    }
+  }
+
+  "the `redirectToNoTrailingSlashIfPresent` directive" should {
+    val route = redirectToNoTrailingSlashIfPresent(Found) { completeOk }
+
+    "pass if the request path already doesn't have a trailing slash" in {
+      Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
+    }
+
+    "redirect if the request path has a trailing slash" in {
+      Get("/foo/bar/") ~> route ~> checkRedirectTo("/foo/bar")
+    }
+
+    "preserves the query and the frag when redirect" in {
+      Get("/foo/bar/?query#frag") ~> route ~> checkRedirectTo("/foo/bar?query#frag")
+    }
+
+    "redirect with the given redirection status code" in {
+      Get("/foo/bar/") ~>
+        redirectToNoTrailingSlashIfPresent(MovedPermanently) { completeOk } ~>
+        check { status shouldEqual MovedPermanently }
+    }
+  }
+
+  import akka.http.model.headers.Location
+  import akka.http.model.Uri
+
+  private def checkRedirectTo(expectedUri: Uri) =
+    check {
+      status shouldBe a[Redirection]
+      inside(header[Location]) {
+        case Some(Location(uri)) ⇒
+          (if (expectedUri.isAbsolute) uri else uri.toRelative) shouldEqual expectedUri
+      }
+    }
 }
