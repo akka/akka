@@ -1,7 +1,7 @@
 .. _http-core-server-scala:
 
-HTTP Server
-===========
+Server API
+==========
 
 The Akka HTTP server is an embedded, stream-based, fully asynchronous, low-overhead
 HTTP/1.1 server implemented on top of `Akka Streams`_. (todo: fix link)
@@ -56,7 +56,7 @@ Starting and Stopping
 
 An Akka HTTP server is started by sending an ``Http.Bind`` command to the `akka.http.Http`_ extension:
 
-.. includecode:: code/docs/http/HttpServerExampleSpec.scala
+.. includecode:: ../code/docs/http/HttpServerExampleSpec.scala
    :include: bind-example
 
 With the ``Http.Bind`` command you specify the interface and port to bind to and register interest in handling incoming
@@ -87,7 +87,7 @@ When a new connection has been accepted it will be published by the ``Http.Serve
 Handling requests in this model means connecting the ``requestProducer`` stream with an application-defined component that
 maps requests to responses which then feeds into the ``responseConsumer``:
 
-.. includecode:: code/docs/http/HttpServerExampleSpec.scala
+.. includecode:: ../code/docs/http/HttpServerExampleSpec.scala
    :include: full-server-example
 
 In this case, a request is handled by transforming the request stream with a function ``HttpRequest => HttpResponse``

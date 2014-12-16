@@ -1,7 +1,7 @@
 .. _http-model-scala:
 
-HTTP Model
-==========
+Model
+=====
 
 The akka HTTP model contains a mostly immutable, case-class based model of the major HTTP data structures,
 like HTTP requests, responses and common headers. It also includes a parser for the latter, which is able to construct
@@ -13,7 +13,7 @@ Overview
 Since akka-http-core provides the central HTTP data structures you will find the following import in quite a
 few places around the code base (and probably your own code as well):
 
-.. includecode:: code/docs/http/ModelSpec.scala
+.. includecode:: ../code/docs/http/ModelSpec.scala
    :include: import-model
 
 This brings in scope all of the relevant things that are defined here and that you’ll want to work with, mainly:
@@ -50,7 +50,7 @@ An ``HttpRequest`` consists of
 
 Here are some examples how to construct an ``HttpRequest``:
 
-.. includecode:: code/docs/http/ModelSpec.scala
+.. includecode:: ../code/docs/http/ModelSpec.scala
    :include: construct-request
 
 All parameters of ``HttpRequest`` have default values set, so e.g. ``headers`` don't need to be specified
@@ -66,7 +66,7 @@ An ``HttpResponse`` consists of
 
 Here are some examples how to construct an ``HttpResponse``:
 
-.. includecode:: code/docs/http/ModelSpec.scala
+.. includecode:: ../code/docs/http/ModelSpec.scala
    :include: construct-response
 
 Aside from the simple ``HttpEntity`` constructors to create an entity from a fixed ``ByteString`` shown here,
@@ -141,7 +141,7 @@ as a ``RawHeader``.
 
 See these examples of how to deal with headers:
 
-.. includecode:: code/docs/http/ModelSpec.scala
+.. includecode:: ../code/docs/http/ModelSpec.scala
    :include: headers
 
 Parsing / Rendering
