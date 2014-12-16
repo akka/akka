@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-package akka.stream.io
+package akka.stream.ssl
 
 import java.nio.ByteBuffer
 import java.security.Principal
