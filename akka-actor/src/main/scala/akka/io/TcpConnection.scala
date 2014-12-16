@@ -274,7 +274,10 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
       // also see http://bugs.sun.com/view_bug.do?bug_id=4516760
       if (peerClosed || !safeShutdownOutput())
         doCloseConnection(info.handler, closeCommander, closedEvent)
-      else context.become(closing(info, closeCommander))
+      else {
+        if (pullMode && readingSuspended) resumeReading(info)
+        context.become(closing(info, closeCommander))
+      }
     case _ ⇒ // close now
       if (TraceLogging) log.debug("Got Close command, closing connection.")
       doCloseConnection(info.handler, closeCommander, closedEvent)

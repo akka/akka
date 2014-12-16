@@ -28,7 +28,7 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 
     def establishNewClientConnection(): (TestProbe, ActorRef, TestProbe, ActorRef) = {
       val connectCommander = TestProbe()
-      connectCommander.send(IO(Tcp), Connect(endpoint, options = connectOptions))
+      connectCommander.send(IO(Tcp), Connect(endpoint, options = connectOptions, pullMode = pullMode))
       val Connected(`endpoint`, localAddress) = connectCommander.expectMsgType[Connected]
       val clientHandler = TestProbe()
       connectCommander.sender() ! Register(clientHandler.ref)
@@ -51,6 +51,9 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec ⇒
 
     /** allow overriding socket options for client side channel */
     def connectOptions: immutable.Traversable[SocketOption] = Nil
+
+    /** allow overriding pull mode for the client side channel */
+    def pullMode: Boolean = false
   }
 
 }
