@@ -17,7 +17,6 @@ class FlowBufferSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 1, maxSize = 1)
-    .withFanOutBuffer(initialSize = 1, maxSize = 1)
 
   implicit val materializer = FlowMaterializer(settings)
 

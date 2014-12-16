@@ -17,7 +17,6 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withFanOutBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = FlowMaterializer(settings)
 

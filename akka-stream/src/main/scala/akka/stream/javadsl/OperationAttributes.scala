@@ -44,13 +44,6 @@ object OperationAttributes {
   }
 
   /**
-   * Specifies the initial and maximum size of the fan out buffer.
-   */
-  def fanOutBuffer(initial: Int, max: Int): OperationAttributes = new OperationAttributes {
-    private[akka] def asScala = scaladsl.OperationAttributes.fanOutBuffer(initial, max)
-  }
-
-  /**
    * Specifies the name of the dispatcher.
    */
   def dispatcher(dispatcher: String): OperationAttributes = new OperationAttributes {
