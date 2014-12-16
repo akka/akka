@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.dispatch.MailboxType
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import akka.stream.io.StreamTcpManager
+import akka.stream.impl.io.StreamTcpManager
 import akka.actor.Actor
 
 /**

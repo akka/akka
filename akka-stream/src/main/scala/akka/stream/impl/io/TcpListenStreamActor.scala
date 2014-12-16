@@ -1,19 +1,24 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-import akka.stream.io.StreamTcp.ConnectionException
-import org.reactivestreams.Subscriber
 import scala.concurrent.{ Future, Promise }
-import akka.util.ByteString
-import akka.io.Tcp._
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.Stash
 import akka.io.{ IO, Tcp }
+import akka.io.Tcp._
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.scaladsl.{ Flow, Pipe }
 import akka.stream.impl._
-import akka.actor._
+import akka.stream.scaladsl.{ Flow, Pipe }
+import akka.stream.scaladsl.StreamTcp
+import akka.util.ByteString
+import org.reactivestreams.Subscriber
+import akka.stream.ConnectionException
+import akka.stream.BindFailedException
 
 /**
  * INTERNAL API
@@ -81,7 +86,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
         primaryOutputs.getExposedPublisher.subscribe(flowSubscriber.asInstanceOf[Subscriber[Any]])
         subreceive.become(running)
       case f: CommandFailed ⇒
-        val ex = StreamTcp.BindFailedException
+        val ex = BindFailedException
         localAddressPromise.failure(ex)
         unbindPromise.failure(ex)
         flowSubscriber.onError(ex)

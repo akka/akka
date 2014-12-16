@@ -1,27 +1,26 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.impl.io
 
 import java.net.InetSocketAddress
-
 import akka.io.{ IO, Tcp }
 import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef, Status }
-import akka.stream.impl._
 import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
+import akka.stream.StreamTcpException
 import org.reactivestreams.Processor
 import akka.actor.Stash
+import akka.stream.impl._
 
 /**
  * INTERNAL API
  */
 private[akka] object TcpStreamActor {
   case object WriteAck extends Tcp.Event
-  class TcpStreamException(msg: String) extends RuntimeException(msg) with NoStackTrace
 
   def outboundProps(processorPromise: Promise[Processor[ByteString, ByteString]],
                     localAddressPromise: Promise[InetSocketAddress],
@@ -77,9 +76,9 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
       case PeerClosed ⇒
         closed = true
         readPump.pump()
-      case ErrorClosed(cause) ⇒ fail(new TcpStreamException(s"The connection closed with error $cause"))
-      case CommandFailed(cmd) ⇒ fail(new TcpStreamException(s"Tcp command [$cmd] failed"))
-      case Aborted            ⇒ fail(new TcpStreamException("The connection has been aborted"))
+      case ErrorClosed(cause) ⇒ fail(new StreamTcpException(s"The connection closed with error $cause"))
+      case CommandFailed(cmd) ⇒ fail(new StreamTcpException(s"Tcp command [$cmd] failed"))
+      case Aborted            ⇒ fail(new StreamTcpException("The connection has been aborted"))
     }
 
     override def inputsAvailable: Boolean = pendingElement ne null
@@ -237,7 +236,7 @@ private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[B
       initSteps.become(Actor.emptyBehavior)
 
     case f: CommandFailed ⇒
-      val ex = new TcpStreamException("Connection failed.")
+      val ex = new StreamTcpException("Connection failed.")
       localAddressPromise.failure(ex)
       processorPromise.failure(ex)
       fail(ex)

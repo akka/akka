@@ -12,7 +12,6 @@ import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.io.Inet
 import akka.stream.FlowMaterializer
-import akka.stream.io.StreamTcp
 import akka.stream.scaladsl._
 import akka.http.engine.client.{ HttpClient, ClientConnectionSettings }
 import akka.http.engine.server.{ HttpServer, ServerSettings }
@@ -201,7 +200,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      * A flow representing the HTTP server on a single HTTP connection.
      * This flow can be materialized several times, every materialization will open a new connection to the `remoteAddress`.
      * If the connection cannot be established the materialized stream will immediately be terminated
-     * with a [[StreamTcp.ConnectionAttemptFailedException]].
+     * with a [[akka.stream.StreamTcpException]].
      */
     def flow: Flow[HttpRequest, HttpResponse]
   }
