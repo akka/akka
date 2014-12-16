@@ -332,8 +332,18 @@ object AkkaBuild extends Build {
       generatedEpub in Sphinx <<= generatedEpub in Sphinx in LocalProject(docsDev.id) map identity,
       publishArtifact in packageSite := false
     ),
-    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTck,
-      http, httpMarshallers, httpCore, httpJava, httpJavaMarshallers, httpJavaTestkit, httpJavaTests, httpJava8Tests, httpTestkit, httpTests, docsDev)
+    aggregate = Seq(parsing, stream, streamTestkit, streamTests, streamTck, httpParent, docsDev)
+  )
+
+  lazy val httpParent = Project(
+    id = "akka-http-parent-experimental",
+    base = file("akka-http-parent"),
+    settings = parentSettings ++ Seq(
+      version := streamAndHttpVersion
+    ),
+    aggregate = Seq(
+      httpCore, http, httpMarshallers, httpTestkit, httpTests,
+      httpJava, httpJavaMarshallers, httpJavaTestkit, httpJavaTests, httpJava8Tests)
   )
 
   lazy val httpCore = Project(
