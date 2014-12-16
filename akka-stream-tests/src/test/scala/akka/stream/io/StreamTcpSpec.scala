@@ -9,8 +9,9 @@ import akka.util.ByteString
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl._
+import akka.stream.testkit.TestUtils.temporaryServerAddress
 
-class TcpFlowSpec extends AkkaSpec with TcpHelper {
+class StreamTcpSpec extends AkkaSpec with TcpHelper {
   import akka.stream.io.TcpHelper._
   var demand = 0L
 
@@ -185,7 +186,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
     val echoHandler = ForeachSink[StreamTcp.IncomingConnection] { _ handleWith Flow[ByteString] }
 
     "be able to implement echo" in {
-      val serverAddress = temporaryServerAddress
+      val serverAddress = temporaryServerAddress()
       val binding = StreamTcp().bind(serverAddress)
       val echoServerMM = binding.connections.to(echoHandler).run()
 
@@ -205,7 +206,7 @@ class TcpFlowSpec extends AkkaSpec with TcpHelper {
     }
 
     "work with a chain of echoes" in {
-      val serverAddress = temporaryServerAddress
+      val serverAddress = temporaryServerAddress()
       val binding = StreamTcp(system).bind(serverAddress)
       val echoServerMM = binding.connections.to(echoHandler).run()
 

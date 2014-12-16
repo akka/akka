@@ -1,24 +1,35 @@
 /**
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
-package akka.stream.io
+package akka.stream.scaladsl
 
 import java.net.{ InetSocketAddress, URLEncoder }
-import org.reactivestreams.{ Processor, Subscriber, Subscription }
-import scala.util.control.NoStackTrace
-import scala.util.{ Failure, Success }
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ Promise, ExecutionContext, Future }
-import akka.util.ByteString
+import scala.concurrent.duration.Duration
+import scala.util.{ Failure, Success }
+import scala.util.control.NoStackTrace
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import akka.actor.Props
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.scaladsl._
 import akka.stream.impl._
-import akka.actor._
+import akka.stream.scaladsl._
+import akka.util.ByteString
+import org.reactivestreams.{ Processor, Subscriber, Subscription }
+import akka.actor.actorRef2Scala
+import akka.stream.impl.io.TcpStreamActor
+import akka.stream.impl.io.TcpListenStreamActor
+import akka.stream.impl.io.DelayedInitProcessor
+import akka.stream.impl.io.StreamTcpManager
 
-object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
+object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
 
   /**
    * Represents a prospective TCP server binding.
@@ -43,7 +54,7 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
      * [[Source]] whose [[MaterializedMap]] is passed as parameter.
      *
-     * The produced [[Future]] is fulfilled when the unbinding has been completed.
+     * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
     def unbind(materializedMap: MaterializedMap): Future[Unit]
   }
@@ -80,7 +91,7 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective outgoing TCP connection.
    */
-  sealed trait OutgoingConnection {
+  trait OutgoingConnection {
     /**
      * The remote address this connection is or will be bound to.
      */
@@ -97,7 +108,7 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
      * This method can be called several times, every call will materialize the given flow exactly once thereby
      * triggering a new connection attempt to the `remoteAddress`.
      * If the connection cannot be established the materialized stream will immediately be terminated
-     * with a [[ConnectionAttemptFailedException]].
+     * with a [[akka.stream.StreamTcpException]].
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      */
@@ -107,35 +118,36 @@ object StreamTcp extends ExtensionId[StreamTcpExt] with ExtensionIdProvider {
      * A flow representing the server on the other side of the connection.
      * This flow can be materialized several times, every materialization will open a new connection to the
      * `remoteAddress`. If the connection cannot be established the materialized stream will immediately be terminated
-     * with a [[ConnectionAttemptFailedException]].
+     * with a [[akka.stream.StreamTcpException]].
      */
     def flow: Flow[ByteString, ByteString]
   }
 
-  case object BindFailedException extends RuntimeException with NoStackTrace
+  /**
+   * INTERNAL API
+   */
+  private[akka] class PreMaterializedOutgoingKey extends Key[Future[InetSocketAddress]] {
+    override def materialize(map: MaterializedMap) =
+      throw new IllegalStateException("This key has already been materialized by the TCP Processor")
+  }
 
-  class ConnectionException(message: String) extends RuntimeException(message)
+  def apply()(implicit system: ActorSystem): StreamTcp = super.apply(system)
 
-  class ConnectionAttemptFailedException(val endpoint: InetSocketAddress) extends ConnectionException(s"Connection attempt to $endpoint failed")
-
-  //////////////////// EXTENSION SETUP ///////////////////
-
-  def apply()(implicit system: ActorSystem): StreamTcpExt = super.apply(system)
+  override def get(system: ActorSystem): StreamTcp = super.get(system)
 
   def lookup() = StreamTcp
 
-  def createExtension(system: ExtendedActorSystem): StreamTcpExt = new StreamTcpExt(system)
+  def createExtension(system: ExtendedActorSystem): StreamTcp = new StreamTcp(system)
 }
 
-class StreamTcpExt(system: ExtendedActorSystem) extends akka.actor.Extension {
-  import StreamTcpExt._
+class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   import StreamTcp._
   import system.dispatcher
 
   private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
 
   /**
-   * Creates a [[ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
+   * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
   def bind(endpoint: InetSocketAddress,
            backlog: Int = 100,
@@ -160,7 +172,7 @@ class StreamTcpExt(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   /**
-   * Creates an [[OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
+   * Creates an [[StreamTcp.OutgoingConnection]] instance representing a prospective TCP client connection to the given endpoint.
    */
   def outgoingConnection(remoteAddress: InetSocketAddress,
                          localAddress: Option[InetSocketAddress] = None,
@@ -186,110 +198,3 @@ class StreamTcpExt(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 }
 
-/**
- * INTERNAL API
- */
-private[akka] object StreamTcpExt {
-  /**
-   * INTERNAL API
-   */
-  class PreMaterializedOutgoingKey extends Key[Future[InetSocketAddress]] {
-    override def materialize(map: MaterializedMap) =
-      throw new IllegalStateException("This key has already been materialized by the TCP Processor")
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[I, O]])(implicit ec: ExecutionContext) extends Processor[I, O] {
-  @volatile private var impl: Processor[I, O] = _
-  private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
-
-  override def onSubscribe(s: Subscription): Unit = setVarFuture.onComplete {
-    case Success(x) ⇒ x.onSubscribe(s)
-    case Failure(_) ⇒ s.cancel()
-  }
-
-  override def onError(t: Throwable): Unit = {
-    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onError(t) }
-    else impl.onError(t)
-  }
-
-  override def onComplete(): Unit = {
-    if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onComplete() }
-    else impl.onComplete()
-  }
-
-  override def onNext(t: I): Unit = impl.onNext(t)
-
-  override def subscribe(s: Subscriber[_ >: O]): Unit = setVarFuture.onComplete {
-    case Success(x) ⇒ x.subscribe(s)
-    case Failure(e) ⇒ s.onError(e)
-  }
-}
-
-/**
- * INTERNAL API
- */
-private[io] object StreamTcpManager {
-  /**
-   * INTERNAL API
-   */
-  private[io] case class Connect(processorPromise: Promise[Processor[ByteString, ByteString]],
-                                 localAddressPromise: Promise[InetSocketAddress],
-                                 remoteAddress: InetSocketAddress,
-                                 localAddress: Option[InetSocketAddress],
-                                 options: immutable.Traversable[SocketOption],
-                                 connectTimeout: Duration,
-                                 idleTimeout: Duration)
-
-  /**
-   * INTERNAL API
-   */
-  private[io] case class Bind(localAddressPromise: Promise[InetSocketAddress],
-                              unbindPromise: Promise[() ⇒ Future[Unit]],
-                              flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
-                              endpoint: InetSocketAddress,
-                              backlog: Int,
-                              options: immutable.Traversable[SocketOption],
-                              idleTimeout: Duration)
-
-  /**
-   * INTERNAL API
-   */
-  private[io] case class ExposedProcessor(processor: Processor[ByteString, ByteString])
-
-}
-
-/**
- * INTERNAL API
- */
-private[akka] class StreamTcpManager extends Actor {
-  import akka.stream.io.StreamTcpManager._
-
-  var nameCounter = 0
-  def encName(prefix: String, endpoint: InetSocketAddress) = {
-    nameCounter += 1
-    s"$prefix-$nameCounter-${URLEncoder.encode(endpoint.toString, "utf-8")}"
-  }
-
-  def receive: Receive = {
-    case Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, options, connectTimeout, _) ⇒
-      val connTimeout = connectTimeout match {
-        case x: FiniteDuration ⇒ Some(x)
-        case _                 ⇒ None
-      }
-      val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise,
-        Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
-        materializerSettings = MaterializerSettings(context.system)), name = encName("client", remoteAddress))
-      processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
-
-    case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, options, _) ⇒
-      val publisherActor = context.actorOf(TcpListenStreamActor.props(localAddressPromise, unbindPromise,
-        flowSubscriber, Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
-        MaterializerSettings(context.system)), name = encName("server", endpoint))
-      // this sends the ExposedPublisher message to the publisher actor automatically
-      ActorPublisher[Any](publisherActor)
-  }
-}
