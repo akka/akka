@@ -324,9 +324,9 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private case class StoppedWithPath(path: ActorPath)
 
-  val ActorStopResult = Failure(new ActorKilledException("Stopped"))
-  
-  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String): PromiseActorRef = {
+  private val ActorStopResult = Failure(new ActorKilledException("Stopped"))
+
+  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: ⇒ String): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
