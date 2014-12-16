@@ -14,7 +14,6 @@ object ImplicitFlowMaterializerSpec {
 
     override def flowMaterializerSettings = MaterializerSettings(context.system)
       .withInputBuffer(initialSize = 2, maxSize = 16)
-      .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
     val flow = Source(input).map(_.toUpperCase())
 

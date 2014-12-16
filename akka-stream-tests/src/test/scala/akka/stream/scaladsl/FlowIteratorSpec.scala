@@ -30,7 +30,6 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withFanOutBuffer(initialSize = 4, maxSize = 4)
 
   implicit val materializer = FlowMaterializer(settings)
 

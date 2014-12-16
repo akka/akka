@@ -166,7 +166,7 @@ object MaterializerSettings {
    * Create [[MaterializerSettings]].
    *
    * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
-   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
+   * [[MaterializerSettings#withDispatcher]]
    */
   def apply(system: ActorSystem): MaterializerSettings =
     apply(system.settings.config.getConfig("akka.stream.materializer"))
@@ -175,14 +175,12 @@ object MaterializerSettings {
    * Create [[MaterializerSettings]].
    *
    * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
-   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
+   * [[MaterializerSettings#withDispatcher]]
    */
   def apply(config: Config): MaterializerSettings =
     MaterializerSettings(
       config.getInt("initial-input-buffer-size"),
       config.getInt("max-input-buffer-size"),
-      config.getInt("initial-fan-out-buffer-size"),
-      config.getInt("max-fan-out-buffer-size"),
       config.getString("dispatcher"),
       StreamSubscriptionTimeoutSettings(config),
       config.getString("file-io-dispatcher"))
@@ -191,7 +189,7 @@ object MaterializerSettings {
    * Java API
    *
    * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
-   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
+   * [[MaterializerSettings#withDispatcher]]
    */
   def create(system: ActorSystem): MaterializerSettings =
     apply(system)
@@ -200,7 +198,7 @@ object MaterializerSettings {
    * Java API
    *
    * You can refine the configuration based settings using [[MaterializerSettings#withInputBuffer]],
-   * [[MaterializerSettings#withFanOutBuffer]], [[MaterializerSettings#withDispatcher]]
+   * [[MaterializerSettings#withDispatcher]]
    */
   def create(config: Config): MaterializerSettings =
     apply(config)
@@ -221,8 +219,6 @@ class MaterializationException(msg: String, cause: Throwable = null) extends Run
 final case class MaterializerSettings(
   initialInputBufferSize: Int,
   maxInputBufferSize: Int,
-  initialFanOutBufferSize: Int,
-  maxFanOutBufferSize: Int,
   dispatcher: String,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   fileIODispatcher: String) { // FIXME Why does this exist?!
@@ -233,17 +229,8 @@ final case class MaterializerSettings(
   require(isPowerOfTwo(maxInputBufferSize), "maxInputBufferSize must be a power of two")
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
 
-  require(initialFanOutBufferSize > 0, "initialFanOutBufferSize must be > 0")
-
-  require(maxFanOutBufferSize > 0, "maxFanOutBufferSize must be > 0")
-  require(isPowerOfTwo(maxFanOutBufferSize), "maxFanOutBufferSize must be a power of two")
-  require(initialFanOutBufferSize <= maxFanOutBufferSize, s"initialFanOutBufferSize($initialFanOutBufferSize) must be <= maxFanOutBufferSize($maxFanOutBufferSize)")
-
   def withInputBuffer(initialSize: Int, maxSize: Int): MaterializerSettings =
     copy(initialInputBufferSize = initialSize, maxInputBufferSize = maxSize)
-
-  def withFanOutBuffer(initialSize: Int, maxSize: Int): MaterializerSettings =
-    copy(initialFanOutBufferSize = initialSize, maxFanOutBufferSize = maxSize)
 
   def withDispatcher(dispatcher: String): MaterializerSettings =
     copy(dispatcher = dispatcher)

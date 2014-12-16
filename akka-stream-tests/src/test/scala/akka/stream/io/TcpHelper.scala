@@ -118,7 +118,6 @@ trait TcpHelper { this: TestKitBase ⇒
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 4, maxSize = 4)
-    .withFanOutBuffer(initialSize = 2, maxSize = 2)
 
   implicit val materializer = FlowMaterializer(settings)
 

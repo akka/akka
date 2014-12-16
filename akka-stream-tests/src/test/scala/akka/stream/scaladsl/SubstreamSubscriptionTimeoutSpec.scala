@@ -32,7 +32,6 @@ class SubstreamSubscriptionTimeoutSpec(conf: String) extends AkkaSpec(conf) {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withFanOutBuffer(initialSize = 2, maxSize = 2)
 
   implicit val dispatcher = system.dispatcher
   implicit val materializer = FlowMaterializer(settings)
