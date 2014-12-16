@@ -106,11 +106,11 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
         entity match {
           case x if x.isKnownEmpty ⇒
             renderContentLength(0) ~~ CrLf
-            Source.singleton(r.get)
+            Source.single(r.get)
 
           case HttpEntity.Strict(_, data) ⇒
             renderContentLength(data.length) ~~ CrLf
-            Source.singleton(r.get ++ data)
+            Source.single(r.get ++ data)
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderContentLength(contentLength) ~~ CrLf

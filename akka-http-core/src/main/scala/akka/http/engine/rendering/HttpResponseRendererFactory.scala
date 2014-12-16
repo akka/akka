@@ -150,7 +150,7 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
             renderEntityContentType(r, entity)
             renderContentLengthHeader(data.length) ~~ CrLf
             val entityBytes = if (noEntity) ByteString.empty else data
-            Source.singleton(r.get ++ entityBytes)
+            Source.single(r.get ++ entityBytes)
 
           case HttpEntity.Default(_, contentLength, data) ⇒
             renderHeaders(headers.toList)

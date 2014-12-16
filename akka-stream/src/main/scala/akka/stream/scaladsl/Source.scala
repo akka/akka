@@ -169,7 +169,7 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def singleton[T](element: T): Source[T] = apply(SynchronousIterablePublisher(List(element), "singleton")) // FIXME optimize
+  def single[T](element: T): Source[T] = apply(SynchronousIterablePublisher(List(element), "single")) // FIXME optimize
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
