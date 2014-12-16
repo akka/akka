@@ -91,7 +91,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective HTTP server binding.
    */
-  trait ServerBinding {
+  sealed trait ServerBinding {
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
      * whose [[MaterializedMap]] is passed as parameter.
