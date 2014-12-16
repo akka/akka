@@ -136,15 +136,17 @@ object DateTime {
 
     // compute yearday from month/monthday
     val m = month - 1
-    var d = (m % 7) * 30 + (m % 7 + 1) / 2 + day
-    val isLeap = ((year % 4 == 0) && !(year % 100 == 0)) || (year % 400 == 0)
+    val m7 = m % 7
+    var d = m7 * 30 + ((m7 + 1) >> 1) + day
+    val isLeap = isLeapYear(year)
     if (m >= 7) d += 214
     if (d >= 61) d -= 1 // skip non-existent Feb 30
     if (!isLeap && (d >= 60)) d -= 1 // skip non-existent Feb 29
 
     // convert year/yearday to days since Jan 1, 1970, 00:00:00
     val y = year - 1
-    d += y * 365 + y / 4 - y / 100 + y / 400
+    val yd = y / 100
+    d += y * 365 + (y >> 2) - yd + (yd >> 2)
     val dn = d - (1969 * 365 + 492 - 19 + 4)
     val c = (dn - 1) * 86400L + hour * 3600L + minute * 60L + second // seconds since Jan 1, 1970, 00:00:00
 
@@ -180,7 +182,7 @@ object DateTime {
     else {
       y += 100 * (d / 36524)
       d %= 36524
-      y += 4 * (d / 1461)
+      y += (d / 1461) << 2
       d %= 1461
       if (d == 1460) { y += 3; d = 365 } // last year out of 4 is long
       else {
@@ -189,14 +191,14 @@ object DateTime {
       }
     }
 
-    val isLeap = (((y & 0x03) == 0) && !(y % 100 == 0)) || (y % 400 == 0)
+    val isLeap = isLeapYear(y)
 
     // compute month/monthday from year/yearday
     if (!isLeap && (d >= 59)) d += 1 // skip non-existent Feb 29
     if (d >= 60) d += 1 // skip non-existent Feb 30
     val d214 = d % 214
     val d214_61 = d214 % 61
-    var mon = (d214 / 61) * 2 + d214_61 / 31
+    var mon = ((d214 / 61) << 1) + d214_61 / 31
     if (d > 213) mon += 7
     d = d214_61 % 31 + 1
 
@@ -210,6 +212,13 @@ object DateTime {
     new DateTime(year = y, month = mon + 1, day = d, hour = h, minute = m, second = s.toInt, weekday = w, clicks = c,
       isLeapYear = isLeap)
   }
+
+  private def isLeapYear(year: Int): Boolean =
+    ((year & 0x03) == 0) && {
+      val q = year / 100
+      val r = year % 100
+      r != 0 || (q & 0x03) == 0
+    }
 
   /**
    * Creates a new `DateTime` instance for the current point in time.
