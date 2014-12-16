@@ -1,6 +1,6 @@
 .. _http-routing-scala:
 
-HTTP Routing
-============
+Routing DSL
+===========
 
 (todo)
