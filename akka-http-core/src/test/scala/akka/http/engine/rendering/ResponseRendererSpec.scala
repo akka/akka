@@ -400,7 +400,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
     def renderTo(expected: String, close: Boolean): Matcher[ResponseRenderingContext] =
       equal(expected.stripMarginWithNewline("\r\n") -> close).matcher[(String, Boolean)] compose { ctx ⇒
         val renderer = newRenderer
-        val byteStringSource = Await.result(Source.singleton(ctx).
+        val byteStringSource = Await.result(Source.single(ctx).
           section(name("renderer"))(_.transform(() ⇒ renderer)).
           runWith(Sink.head), 1.second)
         val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)

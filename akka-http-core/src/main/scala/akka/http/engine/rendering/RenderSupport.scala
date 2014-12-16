@@ -46,7 +46,7 @@ private object RenderSupport {
 
   def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString],
                         skipEntity: Boolean = false): Source[ByteString] = {
-    val messageStart = Source.singleton(r.get)
+    val messageStart = Source.single(r.get)
     val messageBytes =
       if (!skipEntity) messageStart ++ entityBytes
       else CancelSecond(messageStart, entityBytes)

@@ -28,7 +28,7 @@ class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
     "have an op with a different dispatcher" in {
       val flow = Flow[Int].section(dispatcher("my-dispatcher"))(_.map(sendThreadNameTo(testActor)))
 
-      Source.singleton(1).via(flow).to(Sink.ignore).run()
+      Source.single(1).via(flow).to(Sink.ignore).run()
 
       receiveN(1).foreach {
         case s: String ⇒ s should include("my-dispatcher")

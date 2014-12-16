@@ -119,7 +119,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
 
     "return a 'multipart/byteranges' for a ranged request with multiple ranges if entity data source isn't reusable" in {
       val content = "Some random and not super short entity."
-      def entityData() = StreamUtils.oneTimeSource(Source.singleton(ByteString(content)))
+      def entityData() = StreamUtils.oneTimeSource(Source.single(ByteString(content)))
 
       Get() ~> addHeader(Range(ByteRange(5, 10), ByteRange(0, 1), ByteRange(1, 2))) ~> {
         wrs { complete(HttpEntity.Default(MediaTypes.`text/plain`, content.length, entityData())) }
