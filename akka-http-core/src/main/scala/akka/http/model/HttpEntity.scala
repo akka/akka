@@ -176,7 +176,7 @@ object HttpEntity {
         case Success(Some(newData)) ⇒
           copy(data = newData)
         case Success(None) ⇒
-          Chunked.fromData(contentType, Source.singleton(data).via(transformer))
+          Chunked.fromData(contentType, Source.single(data).via(transformer))
         case Failure(ex) ⇒
           Chunked(contentType, Source.failed(ex))
       }
@@ -188,7 +188,7 @@ object HttpEntity {
             throw new IllegalStateException(s"Transformer didn't produce as much bytes (${newData.length}:'${newData.utf8String}') as claimed ($newContentLength)")
           copy(data = newData)
         case Success(None) ⇒
-          Default(contentType, newContentLength, Source.singleton(data).via(transformer))
+          Default(contentType, newContentLength, Source.single(data).via(transformer))
         case Failure(ex) ⇒
           Default(contentType, newContentLength, Source.failed(ex))
       }
