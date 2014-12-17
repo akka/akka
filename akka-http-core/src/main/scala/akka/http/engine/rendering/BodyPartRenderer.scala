@@ -66,7 +66,7 @@ private[http] object BodyPartRenderer {
       override def onUpstreamFinish(ctx: Context[Source[ChunkStreamPart]]): TerminationDirective = ctx.absorbTermination()
 
       private def chunkStream(byteString: ByteString): Source[ChunkStreamPart] =
-        Source.singleton(Chunk(byteString))
+        Source.single(Chunk(byteString))
 
     }
 
