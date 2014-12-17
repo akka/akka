@@ -17,7 +17,7 @@ object GraphFlexiMergeSpec {
    * they are available. Or in other words, if all inputs have elements available at the same
    * time then in finite steps all those elements are dequeued from them.
    */
-  class Fair[T] extends FlexiMerge[T]("fairMerge") {
+  class Fair[T] extends FlexiMerge[T] {
     import FlexiMerge._
     val input1 = createInputPort[T]()
     val input2 = createInputPort[T]()
@@ -35,7 +35,7 @@ object GraphFlexiMergeSpec {
    * It never skips an input while cycling but waits on it instead (closed inputs are skipped though).
    * The fair merge above is a non-strict round-robin (skips currently unavailable inputs).
    */
-  class StrictRoundRobin[T] extends FlexiMerge[T]("roundRobinMerge") {
+  class StrictRoundRobin[T] extends FlexiMerge[T] {
     import FlexiMerge._
     val input1 = createInputPort[T]()
     val input2 = createInputPort[T]()
@@ -77,7 +77,7 @@ object GraphFlexiMergeSpec {
     }
   }
 
-  class Zip[A, B] extends FlexiMerge[(A, B)]("zip") {
+  class Zip[A, B] extends FlexiMerge[(A, B)] {
     import FlexiMerge._
     val input1 = createInputPort[A]()
     val input2 = createInputPort[B]()
@@ -107,7 +107,7 @@ object GraphFlexiMergeSpec {
   }
 }
 
-class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue) extends FlexiMerge[(A, B, C)]("triple-zip") {
+class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue) extends FlexiMerge[(A, B, C)] {
   import FlexiMerge._
   val soonCancelledInput = createInputPort[A]()
   val stableInput1 = createInputPort[B]()
@@ -221,7 +221,7 @@ class PreferringMerge extends FlexiMerge[Int] {
   }
 }
 
-class TestMerge extends FlexiMerge[String]("testMerge") {
+class TestMerge extends FlexiMerge[String] {
   import FlexiMerge._
   val input1 = createInputPort[String]()
   val input2 = createInputPort[String]()

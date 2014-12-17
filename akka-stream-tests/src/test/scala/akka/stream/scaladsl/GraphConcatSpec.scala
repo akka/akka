@@ -24,8 +24,8 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
       FlowGraph { implicit b ⇒
 
-        val concat1 = Concat[Int]("concat1")
-        val concat2 = Concat[Int]("concat2")
+        val concat1 = Concat[Int]
+        val concat2 = Concat[Int]
 
         Source(List.empty[Int]) ~> concat1.first
         Source(1 to 4) ~> concat1.second

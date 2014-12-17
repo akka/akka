@@ -50,7 +50,7 @@ private[http] object HttpServer {
       }
     }
 
-    val bypassFanout = Broadcast[RequestOutput]("bypassFanout")
+    val bypassFanout = Broadcast[RequestOutput](OperationAttributes.name("bypassFanout"))
     val bypassMerge = new BypassMerge(settings, log)
 
     val requestParsing = Flow[ByteString].section(name("rootParser"))(_.transform(() ⇒
@@ -93,7 +93,8 @@ private[http] object HttpServer {
     }
   }
 
-  class BypassMerge(settings: ServerSettings, log: LoggingAdapter) extends FlexiMerge[ResponseRenderingContext]("BypassMerge") {
+  class BypassMerge(settings: ServerSettings, log: LoggingAdapter)
+    extends FlexiMerge[ResponseRenderingContext](OperationAttributes.name("BypassMerge")) {
     import FlexiMerge._
     val bypassInput = createInputPort[RequestOutput]()
     val oneHundredContinueInput = createInputPort[OneHundredContinue.type]()

@@ -101,10 +101,6 @@ public class FlexiRouteTest {
     private final OutputPort<T, T> output1 = createOutputPort();
     private final OutputPort<T, T> output2 = createOutputPort();
 
-    public Fair() {
-      super("fairRoute");
-    }
-
     public OutputPort<T, T> output1() {
       return output1;
     }
@@ -153,10 +149,6 @@ public class FlexiRouteTest {
     private final OutputPort<T, T> output1 = createOutputPort();
     private final OutputPort<T, T> output2 = createOutputPort();
 
-    public StrictRoundRobin() {
-      super("roundRobinRoute");
-    }
-
     public OutputPort<T, T> output1() {
       return output1;
     }
@@ -202,10 +194,6 @@ public class FlexiRouteTest {
 
     public final OutputPort<Pair<A, B>, A> outputA = createOutputPort();
     public final OutputPort<Pair<A, B>, B> outputB = createOutputPort();
-
-    public Unzip() {
-      super("unzip");
-    }
 
     @Override
     public RouteLogic<Pair<A, B>, Object> createRouteLogic() {

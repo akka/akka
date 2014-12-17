@@ -66,8 +66,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val resultFuture = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]("broadcast")
-        val merge = Merge[Int]("merge")
+        val bcast = Broadcast[Int]
+        val merge = Merge[Int]
 
         Source(List(1, 2, 3)) ~> bcast
         bcast ~> merge
@@ -99,19 +99,20 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
     }
 
     "support wikipedia Topological_sorting 2" in {
+      import OperationAttributes.name
       // see https://en.wikipedia.org/wiki/Topological_sorting#mediaviewer/File:Directed_acyclic_graph.png
       val resultFuture2 = Sink.head[Seq[Int]]
       val resultFuture9 = Sink.head[Seq[Int]]
       val resultFuture10 = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
-        val b3 = Broadcast[Int]("b3")
-        val b7 = Broadcast[Int]("b7")
-        val b11 = Broadcast[Int]("b11")
-        val m8 = Merge[Int]("m8")
-        val m9 = Merge[Int]("m9")
-        val m10 = Merge[Int]("m10")
-        val m11 = Merge[Int]("m11")
+        val b3 = Broadcast[Int](name("b3"))
+        val b7 = Broadcast[Int](name("b7"))
+        val b11 = Broadcast[Int](name("b11"))
+        val m8 = Merge[Int](name("m8"))
+        val m9 = Merge[Int](name("m9"))
+        val m10 = Merge[Int](name("m10"))
+        val m11 = Merge[Int](name("m11"))
         val in3 = Source(List(3))
         val in5 = Source(List(5))
         val in7 = Source(List(7))
@@ -151,8 +152,8 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val resultFuture = Sink.head[Seq[Int]]
 
       val g = FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]("broadcast")
-        val merge = Merge[Int]("merge")
+        val bcast = Broadcast[Int]
+        val merge = Merge[Int]
 
         Source(List(1, 2, 3)) ~> Flow[Int].map(_ * 2) ~> bcast
         bcast ~> merge
@@ -184,7 +185,7 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
       val output1 = UndefinedSink[Int]
       val output2 = UndefinedSink[String]
       val partial = PartialFlowGraph { implicit builder ⇒
-        val bcast = Broadcast[String]("bcast")
+        val bcast = Broadcast[String]
         input1 ~> Flow[Int].map(_.toString) ~> bcast ~> Flow[String].map(_.toInt) ~> output1
         bcast ~> Flow[String].map("elem-" + _) ~> output2
       }

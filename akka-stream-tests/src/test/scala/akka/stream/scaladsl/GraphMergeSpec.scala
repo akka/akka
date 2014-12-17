@@ -26,9 +26,9 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph { implicit b ⇒
-        val m1 = Merge[Int]("m1")
-        val m2 = Merge[Int]("m2")
-        val m3 = Merge[Int]("m3")
+        val m1 = Merge[Int]
+        val m2 = Merge[Int]
+        val m3 = Merge[Int]
 
         source1 ~> m1 ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
         source2 ~> m1
@@ -59,7 +59,7 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
       FlowGraph { implicit b ⇒
-        val merge = Merge[Int]("merge")
+        val merge = Merge[Int]
 
         source1 ~> merge ~> Flow[Int] ~> Sink(probe)
         source2 ~> merge
@@ -132,6 +132,11 @@ class GraphMergeSpec extends TwoStreamsSetup {
     "work with one delayed failed and one nonempty publisher" in {
       // This is nondeterministic, multiple scenarios can happen
       pending
+    }
+
+    "use name in toString" in {
+      Merge[Int](OperationAttributes.name("m1")).toString should be("m1")
+      Merge[Int].toString should startWith(classOf[Merge[Int]].getName)
     }
 
   }

@@ -9,8 +9,6 @@ import akka.stream.impl.Ast
 
 import akka.stream._
 
-// elements //
-
 trait JunctionInPort[-T] {
   /** Convert this element to it's `scaladsl` equivalent. */
   def asScala: scaladsl.JunctionInPort[T]
@@ -34,37 +32,32 @@ private object JunctionPortAdapter {
 }
 
 object Merge {
-  /**
-   * Create a new anonymous `Merge` vertex with the specified output type.
-   * Note that a `Merge` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
-   */
-  def create[T](): Merge[T] = create(name = null)
 
   /**
-   * Create a new anonymous `Merge` vertex with the specified output type.
-   * Note that a `Merge` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Merge` vertex with the specified output type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](clazz: Class[T]): Merge[T] = create[T]()
+  def create[T](attributes: OperationAttributes): Merge[T] =
+    new Merge(new scaladsl.Merge[T](attributes.asScala))
 
   /**
-   * Create a named `Merge` vertex with the specified output type.
-   * Note that a `Merge` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Merge` vertex with the specified output type.
    */
-  def create[T](name: String): Merge[T] = new Merge(new scaladsl.Merge[T](OperationAttributes.name(name).asScala))
+  def create[T](): Merge[T] = create(OperationAttributes.none)
 
   /**
-   * Create a named `Merge` vertex with the specified output type.
-   * Note that a `Merge` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Merge` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T], name: String): Merge[T] = create[T](name)
+  def create[T](clazz: Class[T]): Merge[T] = create()
+
+  /**
+   * Create a new `Merge` vertex with the specified output type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
+   */
+  def create[T](clazz: Class[T], attributes: OperationAttributes): Merge[T] = create(attributes)
+
 }
 
 /**
@@ -73,6 +66,11 @@ object Merge {
  *
  * When building the [[FlowGraph]] you must connect one or more input sources
  * and one output sink to the `Merge` vertex.
+ *
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
  */
 class Merge[T] private (delegate: scaladsl.Merge[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.Merge[T] = delegate
@@ -80,36 +78,30 @@ class Merge[T] private (delegate: scaladsl.Merge[T]) extends javadsl.Junction[T]
 
 object MergePreferred {
   /**
-   * Create a new anonymous `MergePreferred` vertex with the specified output type.
-   * Note that a `MergePreferred` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `MergePreferred` vertex with the specified output type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](): MergePreferred[T] = create(name = null)
+  def create[T](attributes: OperationAttributes): MergePreferred[T] =
+    new MergePreferred(new scaladsl.MergePreferred[T](attributes.asScala))
 
   /**
-   * Create a new anonymous `MergePreferred` vertex with the specified output type.
-   * Note that a `MergePreferred` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `MergePreferred` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T]): MergePreferred[T] = create[T]()
+  def create[T](): MergePreferred[T] = create(OperationAttributes.none)
 
   /**
-   * Create a named `MergePreferred` vertex with the specified output type.
-   * Note that a `MergePreferred` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `MergePreferred` vertex with the specified output type.
    */
-  def create[T](name: String): MergePreferred[T] = new MergePreferred(new scaladsl.MergePreferred[T](OperationAttributes.name(name).asScala))
+  def create[T](clazz: Class[T]): MergePreferred[T] = create()
 
   /**
-   * Create a named `MergePreferred` vertex with the specified output type.
-   * Note that a `MergePreferred` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `MergePreferred` vertex with the specified output type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](clazz: Class[T], name: String): MergePreferred[T] = create[T](name)
+  def create[T](clazz: Class[T], attributes: OperationAttributes): MergePreferred[T] =
+    create(attributes)
 }
 
 /**
@@ -118,6 +110,11 @@ object MergePreferred {
  *
  * When building the [[FlowGraph]] you must connect one or more input streams
  * and one output sink to the `Merge` vertex.
+ *
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
  */
 class MergePreferred[T](delegate: scaladsl.MergePreferred[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.MergePreferred[T] = delegate
@@ -125,42 +122,41 @@ class MergePreferred[T](delegate: scaladsl.MergePreferred[T]) extends javadsl.Ju
 
 object Broadcast {
   /**
-   * Create a new anonymous `Broadcast` vertex with the specified input type.
-   * Note that a `Broadcast` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Broadcast` vertex with the specified input type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](): Broadcast[T] = create(name = null)
+  def create[T](attributes: OperationAttributes): Broadcast[T] =
+    new Broadcast(new scaladsl.Broadcast(attributes.asScala))
 
   /**
-   * Create a new anonymous `Broadcast` vertex with the specified input type.
-   * Note that a `Broadcast` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Broadcast` vertex with the specified input type.
    */
-  def create[T](clazz: Class[T]): Broadcast[T] = create[T]()
+  def create[T](): Broadcast[T] = create(OperationAttributes.none)
 
   /**
-   * Create a named `Broadcast` vertex with the specified input type.
-   * Note that a `Broadcast` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Broadcast` vertex with the specified input type.
    */
-  def create[T](name: String): Broadcast[T] = new Broadcast(new scaladsl.Broadcast(OperationAttributes.name(name).asScala))
+  def create[T](clazz: Class[T]): Broadcast[T] = create()
 
   /**
-   * Create a named `Broadcast` vertex with the specified input type.
-   * Note that a `Broadcast` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Broadcast` vertex with the specified input type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](clazz: Class[T], name: String): Broadcast[T] = create[T](name)
+  def create[T](clazz: Class[T], attributes: OperationAttributes): Broadcast[T] =
+    create(attributes)
 }
 
 /**
  * Fan-out the stream to several streams. Each element is produced to
  * the other streams. It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
+ *
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
  */
 class Broadcast[T](delegate: scaladsl.Broadcast[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.Broadcast[T] = delegate
@@ -168,43 +164,48 @@ class Broadcast[T](delegate: scaladsl.Broadcast[T]) extends javadsl.Junction[T] 
 
 object Balance {
   /**
-   * Create a new anonymous `Balance` vertex with the specified input type.
-   * Note that a `Balance` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Balance` vertex with the specified input type and attributes.
+   *
+   * @param waitForAllDownstreams if `true` it will not start emitting
+   *   elements to downstream outputs until all of them have requested at least one element
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](): Balance[T] = create(name = null)
+  def create[T](waitForAllDownstreams: Boolean, attributes: OperationAttributes): Balance[T] =
+    new Balance(new scaladsl.Balance(waitForAllDownstreams, attributes.asScala))
 
   /**
-   * Create a new anonymous `Balance` vertex with the specified input type.
-   * Note that a `Balance` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](clazz: Class[T]): Balance[T] = create[T]()
+  def create[T](): Balance[T] = create(false, OperationAttributes.none)
 
   /**
-   * Create a named `Balance` vertex with the specified input type.
-   * Note that a `Balance` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](name: String): Balance[T] =
-    new Balance(new scaladsl.Balance(waitForAllDownstreams = false, OperationAttributes.name(name).asScala))
+  def create[T](attributes: OperationAttributes): Balance[T] = create(false, attributes)
 
   /**
-   * Create a named `Balance` vertex with the specified input type.
-   * Note that a `Balance` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
+   * Create a new `Balance` vertex with the specified input type.
    */
-  def create[T](clazz: Class[T], name: String): Balance[T] = create[T](name)
+  def create[T](clazz: Class[T]): Balance[T] = create()
+
+  /**
+   * Create a new `Balance` vertex with the specified input type and attributes.
+   *
+   * @param attributes optional attributes for this vertex
+   */
+  def create[T](clazz: Class[T], attributes: OperationAttributes): Balance[T] =
+    create(false, attributes)
 }
 
 /**
  * Fan-out the stream to several streams. Each element is produced to
  * one of the other streams. It will not shutdown until the subscriptions for at least
  * two downstream subscribers have been established.
+ *
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
  */
 class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.Balance[T] = delegate
@@ -220,14 +221,19 @@ class Balance[T](delegate: scaladsl.Balance[T]) extends javadsl.Junction[T] {
 object Zip {
   import akka.japi.{ Pair, Function2 }
   /**
-   * Create a new anonymous `ZipWith` vertex with the specified input types and zipping-function
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function
    * which creates `akka.japi.Pair`s.
-   * Note that a ZipWith` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[A, B]: ZipWith[A, B, A Pair B] =
-    ZipWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]])
+  def create[A, B](attributes: OperationAttributes): ZipWith[A, B, A Pair B] =
+    ZipWith.create(_toPair.asInstanceOf[Function2[A, B, A Pair B]], attributes)
+
+  /**
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function
+   * which creates `akka.japi.Pair`s.
+   */
+  def create[A, B]: ZipWith[A, B, A Pair B] = create(OperationAttributes.none)
 
   private[this] final val _toPair: Function2[Any, Any, Any Pair Any] =
     new Function2[Any, Any, Any Pair Any] { override def apply(a: Any, b: Any): Any Pair Any = new Pair(a, b) }
@@ -236,22 +242,21 @@ object Zip {
 object ZipWith {
 
   /**
-   * Creates a new anonymous `ZipWith` vertex with the specified input types and zipping-function `f`.
-   * Note that a `ZipWith` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
+   *
+   * @param f zipping-function from the input values to the output value
+   * @param attributes optional attributes for this vertex
    */
-  def create[A, B, C](f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
-    create(name = null, f = f)
+  def create[A, B, C](f: akka.japi.Function2[A, B, C], attributes: OperationAttributes): ZipWith[A, B, C] =
+    new ZipWith(new scaladsl.ZipWith[A, B, C](f.apply _, attributes.asScala))
 
   /**
-   * Creates a new named `ZipWith` vertex with the specified input types and zipping-function `f`.
-   * Note that a `ZipWith` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
+   *
+   * @param f zipping-function from the input values to the output value
    */
-  def create[A, B, C](name: String, f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
-    new ZipWith(new scaladsl.ZipWith[A, B, C](OperationAttributes.name(name).asScala, f.apply _))
+  def create[A, B, C](f: akka.japi.Function2[A, B, C]): ZipWith[A, B, C] =
+    create(f = f, OperationAttributes.none)
 
   final class Left[A, B, C](override val asScala: scaladsl.ZipWith.Left[A, B, C]) extends JunctionInPort[A]
   final class Right[A, B, C](override val asScala: scaladsl.ZipWith.Right[A, B, C]) extends JunctionInPort[B]
@@ -270,16 +275,32 @@ final class ZipWith[A, B, C] private (val asScala: scaladsl.ZipWith[A, B, C]) {
 }
 
 object Unzip {
-  def create[A, B](): Unzip[A, B] = create(name = null)
 
-  def create[A, B](name: String): Unzip[A, B] =
-    new Unzip[A, B](new scaladsl.Unzip[A, B](OperationAttributes.name(name).asScala))
+  /**
+   * Creates a new `Unzip` vertex with the specified output types and attributes.
+   *
+   * @param attributes optional attributes for this vertex
+   */
+  def create[A, B](attributes: OperationAttributes): Unzip[A, B] =
+    new Unzip[A, B](new scaladsl.Unzip[A, B](attributes.asScala))
 
-  def create[A, B](left: Class[A], right: Class[B]): Unzip[A, B] =
-    create[A, B]()
+  /**
+   * Creates a new `Unzip` vertex with the specified output types.
+   */
+  def create[A, B](): Unzip[A, B] = create(OperationAttributes.none)
 
-  def create[A, B](name: String, left: Class[A], right: Class[B]): Unzip[A, B] =
-    create[A, B](name)
+  /**
+   * Creates a new `Unzip` vertex with the specified output types.
+   */
+  def create[A, B](left: Class[A], right: Class[B]): Unzip[A, B] = create[A, B]()
+
+  /**
+   * Creates a new `Unzip` vertex with the specified output types and attributes.
+   *
+   * @param attributes optional attributes for this vertex
+   */
+  def create[A, B](left: Class[A], right: Class[B], attributes: OperationAttributes): Unzip[A, B] =
+    create[A, B](attributes)
 
   class In[A, B](private val unzip: Unzip[A, B]) extends JunctionInPort[akka.japi.Pair[A, B]] {
     // this cast is safe thanks to using `ZipAs` in the Ast element, Zip will emit the expected type (Pair)
@@ -296,6 +317,12 @@ object Unzip {
   }
 }
 
+/**
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
+ */
 final class Unzip[A, B] private (delegate: scaladsl.Unzip[A, B]) {
 
   /** Convert this element to it's `scaladsl` equivalent. */
@@ -308,36 +335,21 @@ final class Unzip[A, B] private (delegate: scaladsl.Unzip[A, B]) {
 
 object Concat {
   /**
-   * Create a new anonymous `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Concat` vertex with the specified input types and attributes.
+   *
+   * @param attributes optional attributes for this vertex
    */
-  def create[T](): Concat[T] = new Concat(scaladsl.Concat[T])
+  def create[T](attributes: OperationAttributes): Concat[T] = new Concat(scaladsl.Concat[T])
 
   /**
-   * Create a new anonymous `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Concat` vertex with the specified input types.
+   */
+  def create[T](): Concat[T] = create(OperationAttributes.none)
+
+  /**
+   * Create a new `Concat` vertex with the specified input types.
    */
   def create[T](clazz: Class[T]): Concat[T] = create()
-
-  /**
-   * Create a named `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
-   */
-  def create[T](name: String): Concat[T] = new Concat(scaladsl.Concat[T](name))
-
-  /**
-   * Create a named `Concat` vertex with the specified input types.
-   * Note that a `Concat` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
-   */
-  def create[T](name: String, clazz: Class[T]): Concat[T] = create(name)
 
   class First[T] private[akka] (delegate: scaladsl.Concat.First[T]) extends JunctionInPort[T] {
     override def asScala: scaladsl.JunctionInPort[T] = delegate
@@ -355,6 +367,11 @@ object Concat {
  * Takes two streams and outputs an output stream formed from the two input streams
  * by consuming one stream first emitting all of its elements, then consuming the
  * second stream emitting all of its elements.
+ *
+ * Note that a junction instance describes exactly one place (vertex) in the `FlowGraph`
+ * that multiple flows can be attached to; if you want to have multiple independent
+ * junctions within the same `FlowGraph` then you will have to create multiple such
+ * instances.
  */
 class Concat[T] private (delegate: scaladsl.Concat[T]) {
 
@@ -370,36 +387,16 @@ class Concat[T] private (delegate: scaladsl.Concat[T]) {
 
 object UndefinedSource {
   /**
-   * Create a new anonymous `Undefinedsource` vertex with the specified input type.
-   * Note that a `Undefinedsource` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Undefinedsource` vertex with the specified output type.
    */
-  def create[T](): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](scaladsl.OperationAttributes.none))
+  def create[T](): UndefinedSource[T] =
+    new UndefinedSource[T](new scaladsl.UndefinedSource[T](scaladsl.OperationAttributes.none))
 
   /**
-   * Create a new anonymous `Undefinedsource` vertex with the specified input type.
-   * Note that a `Undefinedsource` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Undefinedsource` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T]): UndefinedSource[T] = create[T]()
+  def create[T](clazz: Class[T]): UndefinedSource[T] = create()
 
-  /**
-   * Create a named `Undefinedsource` vertex with the specified input type.
-   * Note that a `Undefinedsource` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
-   */
-  def create[T](name: String): UndefinedSource[T] = new UndefinedSource[T](new scaladsl.UndefinedSource[T](OperationAttributes.name(name).asScala))
-
-  /**
-   * Create a named `Undefinedsource` vertex with the specified input type.
-   * Note that a `Undefinedsource` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
-   */
-  def create[T](clazz: Class[T], name: String): UndefinedSource[T] = create[T](name)
 }
 
 /**
@@ -413,36 +410,15 @@ final class UndefinedSource[+T](delegate: scaladsl.UndefinedSource[T]) {
 
 object UndefinedSink {
   /**
-   * Create a new anonymous `Undefinedsink` vertex with the specified input type.
-   * Note that a `Undefinedsink` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Undefinedsink` vertex with the specified input type.
    */
-  def create[T](): UndefinedSink[T] = create(name = null)
+  def create[T](): UndefinedSink[T] =
+    new UndefinedSink[T](new scaladsl.UndefinedSink[T](OperationAttributes.none.asScala))
 
   /**
-   * Create a new anonymous `Undefinedsink` vertex with the specified input type.
-   * Note that a `Undefinedsink` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
+   * Create a new `Undefinedsource` vertex with the specified output type.
    */
-  def create[T](clazz: Class[T]): UndefinedSink[T] = create[T]()
-
-  /**
-   * Create a named `Undefinedsink` vertex with the specified input type.
-   * Note that a `Undefinedsink` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
-   */
-  def create[T](name: String): UndefinedSink[T] = new UndefinedSink[T](new scaladsl.UndefinedSink[T](OperationAttributes.name(name).asScala))
-
-  /**
-   * Create a named `Undefinedsink` vertex with the specified input type.
-   * Note that a `Undefinedsink` with a specific name can only be used at one place (one vertex)
-   * in the `FlowGraph`. Calling this method several times with the same name
-   * returns instances that are `equal`.
-   */
-  def create[T](clazz: Class[T], name: String): UndefinedSink[T] = create[T](name)
+  def create[T](clazz: Class[T]): UndefinedSink[T] = create()
 }
 
 /**
@@ -464,8 +440,7 @@ object FlowGraph {
    * The [[FlowGraphBuilder]] is mutable and not thread-safe,
    * thus you should construct your Graph and then share the constructed immutable [[FlowGraph]].
    */
-  def builder(): FlowGraphBuilder =
-    new FlowGraphBuilder()
+  def builder(): FlowGraphBuilder = new FlowGraphBuilder()
 
 }
 

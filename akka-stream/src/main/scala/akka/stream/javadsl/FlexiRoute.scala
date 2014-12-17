@@ -299,18 +299,15 @@ object FlexiRoute {
  * must not hold mutable state, since it may be shared across several materialized ``FlowGraph``
  * instances.
  *
- * Note that a `FlexiRoute` with a specific name can only be used at one place (one vertex)
- * in the `FlowGraph`. If the `name` is not specified the `FlexiRoute` instance can only
- * be used at one place (one vertex) in the `FlowGraph`.
+ * Note that a `FlexiRoute` instance can only be used at one place in the `FlowGraph` (one vertex).
  *
- * @param name optional name of the junction in the [[FlowGraph]],
+ * @param attributes optional attributes for this vertex
  */
 abstract class FlexiRoute[In, Out](val attributes: OperationAttributes) {
   import FlexiRoute._
   import scaladsl.FlowGraphInternal
   import akka.stream.impl.Ast
 
-  def this(name: String) = this(OperationAttributes.name(name))
   def this() = this(OperationAttributes.none)
 
   private var outputCount = 0
@@ -372,7 +369,7 @@ abstract class FlexiRoute[In, Out](val attributes: OperationAttributes) {
 
   override def toString = attributes.asScala.nameLifted match {
     case Some(n) ⇒ n
-    case None    ⇒ getClass.getSimpleName + "@" + Integer.toHexString(super.hashCode())
+    case None    ⇒ super.toString
   }
 
 }

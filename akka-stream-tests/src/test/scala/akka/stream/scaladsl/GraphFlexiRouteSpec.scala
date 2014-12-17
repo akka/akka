@@ -18,7 +18,7 @@ object GraphFlexiRouteSpec {
    * they are have requested elements. Or in other words, if all outputs have demand available at the same
    * time then in finite steps all elements are enqueued to them.
    */
-  class Fair[T] extends FlexiRoute[T]("fairRoute") {
+  class Fair[T] extends FlexiRoute[T] {
     import FlexiRoute._
     val out1 = createOutputPort[T]()
     val out2 = createOutputPort[T]()
@@ -43,7 +43,7 @@ object GraphFlexiRouteSpec {
    * It never skips an output while cycling but waits on it instead (closed outputs are skipped though).
    * The fair route above is a non-strict round-robin (skips currently unavailable outputs).
    */
-  class StrictRoundRobin[T] extends FlexiRoute[T]("roundRobinRoute") {
+  class StrictRoundRobin[T] extends FlexiRoute[T] {
     import FlexiRoute._
     val out1 = createOutputPort[T]()
     val out2 = createOutputPort[T]()
@@ -66,7 +66,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class Unzip[A, B] extends FlexiRoute[(A, B)]("unzip") {
+  class Unzip[A, B] extends FlexiRoute[(A, B)] {
     import FlexiRoute._
     val outA = createOutputPort[A]()
     val outB = createOutputPort[B]()
@@ -89,7 +89,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class TestRoute extends FlexiRoute[String]("testRoute") {
+  class TestRoute extends FlexiRoute[String] {
     import FlexiRoute._
     val output1 = createOutputPort[String]()
     val output2 = createOutputPort[String]()
