@@ -16,7 +16,6 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
   val settings = MaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
-    .withFanOutBuffer(initialSize = 1, maxSize = 16)
 
   implicit val materializer = FlowMaterializer(settings)
 
