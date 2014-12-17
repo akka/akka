@@ -124,8 +124,8 @@ object Source {
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def singleton[T](element: T): Source[T] =
-    new Source(scaladsl.Source.singleton(element))
+  def single[T](element: T): Source[T] =
+    new Source(scaladsl.Source.single(element))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
