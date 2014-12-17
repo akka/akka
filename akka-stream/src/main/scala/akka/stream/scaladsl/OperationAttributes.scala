@@ -36,7 +36,6 @@ case class OperationAttributes private (private val attributes: List[OperationAt
   private[akka] def settings: MaterializerSettings ⇒ MaterializerSettings =
     attributes.collect {
       case InputBuffer(initial, max) ⇒ (s: MaterializerSettings) ⇒ s.withInputBuffer(initial, max)
-      case FanOutBuffer(initial, max) ⇒ (s: MaterializerSettings) ⇒ s.withFanOutBuffer(initial, max)
       case Dispatcher(dispatcher) ⇒ (s: MaterializerSettings) ⇒ s.withDispatcher(dispatcher)
     }.reduceOption(_ andThen _).getOrElse(identity) // FIXME is this the optimal way of encoding this?
 
@@ -62,7 +61,6 @@ object OperationAttributes {
   private[OperationAttributes] trait Attribute
   private[OperationAttributes] case class Name(n: String) extends Attribute
   private[OperationAttributes] case class InputBuffer(initial: Int, max: Int) extends Attribute
-  private[OperationAttributes] case class FanOutBuffer(initial: Int, max: Int) extends Attribute
   private[OperationAttributes] case class Dispatcher(dispatcher: String) extends Attribute
 
   private[OperationAttributes] def apply(attribute: Attribute): OperationAttributes =
@@ -79,11 +77,6 @@ object OperationAttributes {
    * Specifies the initial and maximum size of the input buffer.
    */
   def inputBuffer(initial: Int, max: Int): OperationAttributes = OperationAttributes(InputBuffer(initial, max))
-
-  /**
-   * Specifies the initial and maximum size of the fan out buffer.
-   */
-  def fanOutBuffer(initial: Int, max: Int): OperationAttributes = OperationAttributes(FanOutBuffer(initial, max))
 
   /**
    * Specifies the name of the dispatcher.
