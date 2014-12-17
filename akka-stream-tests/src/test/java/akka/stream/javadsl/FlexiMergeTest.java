@@ -123,10 +123,6 @@ public class FlexiMergeTest {
     private final InputPort<T, T> input1 = createInputPort();
     private final InputPort<T, T> input2 = createInputPort();
 
-    public Fair() {
-      super("fairMerge");
-    }
-
     public InputPort<T, T> input1() {
       return input1;
     }
@@ -166,10 +162,6 @@ public class FlexiMergeTest {
 
     private final InputPort<T, T> input1 = createInputPort();
     private final InputPort<T, T> input2 = createInputPort();
-
-    public StrictRoundRobin() {
-      super("roundRobinMerge");
-    }
 
     public InputPort<T, T> input1() {
       return input1;
@@ -252,10 +244,6 @@ public class FlexiMergeTest {
 
     public final InputPort<A, Pair<A, B>> inputA = createInputPort();
     public final InputPort<B, Pair<A, B>> inputB = createInputPort();
-
-    public Zip() {
-      super("zip");
-    }
 
     @Override
     public MergeLogic<A, Pair<A, B>> createMergeLogic() {
@@ -353,10 +341,6 @@ public class FlexiMergeTest {
     public final InputPort<A, Triple<A, B, C>> inputA = createInputPort();
     public final InputPort<B, Triple<A, B, C>> inputB = createInputPort();
     public final InputPort<C, Triple<A, B, C>> inputC = createInputPort();
-
-    public TripleZip() {
-      super("triple-zip");
-    }
 
     @Override
     public MergeLogic<ReadAllInputs, Triple<A, B, C>> createMergeLogic() {

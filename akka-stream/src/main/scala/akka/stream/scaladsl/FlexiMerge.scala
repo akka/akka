@@ -231,16 +231,13 @@ object FlexiMerge {
  * must not hold mutable state, since it may be shared across several materialized ``FlowGraph``
  * instances.
  *
- * Note that a `FlexiMerge` with a specific name can only be used at one place (one vertex)
- * in the `FlowGraph`. If the `name` is not specified the `FlexiMerge` instance can only
- * be used at one place (one vertex) in the `FlowGraph`.
+ * Note that a `FlexiMerge` instance can only be used at one place in the `FlowGraph` (one vertex).
  *
- * @param name optional name of the junction in the [[FlowGraph]],
+ * @param attributes optional attributes for this vertex
  */
 abstract class FlexiMerge[Out](override val attributes: OperationAttributes) extends MergeLogicFactory[Out] {
   import FlexiMerge._
 
-  def this(name: String) = this(OperationAttributes.name(name))
   def this() = this(OperationAttributes.none)
 
   private var inputCount = 0
@@ -289,6 +286,6 @@ abstract class FlexiMerge[Out](override val attributes: OperationAttributes) ext
 
   override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n
-    case None    ⇒ getClass.getSimpleName + "@" + Integer.toHexString(super.hashCode())
+    case None    ⇒ super.toString
   }
 }
