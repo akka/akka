@@ -11,15 +11,15 @@ import akka.stream.testkit.StreamTestKit
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)
-  val inMerge = Merge[Int]("m1")
-  val outMerge = Merge[String]("m3")
+  val inMerge = Merge[Int]
+  val outMerge = Merge[String]
 
   val partialGraph = PartialFlowGraph { implicit b ⇒
     import FlowGraphImplicits._
     val source2 = Source(4 to 9)
     val source3 = Source.empty[Int]
     val source4 = Source.empty[String]
-    val m2 = Merge[Int]("m2")
+    val m2 = Merge[Int]
 
     inMerge ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(i ⇒ (i + 1).toString) ~> outMerge
     source2 ~> inMerge
@@ -231,7 +231,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         FlowGraph { implicit b ⇒
           import FlowGraphImplicits._
-          val merge = Merge[Int]("merge")
+          val merge = Merge[Int]
           source1 ~> merge ~> Sink(probe)
           source2 ~> Flow[Int].map(_ * 10) ~> merge
         }.run()

@@ -108,7 +108,7 @@ private[http] object StreamUtils {
           FlowGraph { implicit b ⇒
             import FlowGraphImplicits._
 
-            val broadcast = Broadcast[ByteString]("transformMultipleInputBroadcast")
+            val broadcast = Broadcast[ByteString](OperationAttributes.name("transformMultipleInputBroadcast"))
             input ~> broadcast
             (multiple, results).zipped.foreach { (trans, sink) ⇒
               broadcast ~> trans ~> sink
