@@ -120,8 +120,9 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |Host: x
             |
             |ABCDPATCH"""
-        }.toCharArray.map(_.toString).toSeq should rawMultiParseTo(
-          HttpRequest(PUT, "/resource/yes", List(Host("x")), "ABCD".getBytes))
+        }.toCharArray.map(_.toString).toSeq should generalRawMultiParseTo(
+          Right(HttpRequest(PUT, "/resource/yes", List(Host("x")), "ABCD".getBytes)),
+          Left(MessageStartError(400, ErrorInfo("Illegal HTTP message start"))))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -232,7 +233,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           val parser = newParser
           val result = multiParse(newParser)(Seq(prep(start + manyChunks)))
           val HttpEntity.Chunked(_, chunks) = result.head.right.get.req.entity
-          val strictChunks = chunks.collectAll.awaitResult(awaitAtMost)
+          val strictChunks = chunks.grouped(100000).runWith(Sink.head).awaitResult(awaitAtMost)
           strictChunks.size shouldEqual numChunks
         }
       }
@@ -442,7 +443,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     def multiParse(parser: HttpRequestParser)(input: Seq[String]): Seq[Either[RequestOutput, StrictEqualHttpRequest]] =
       Source(input.toList)
         .map(ByteString.apply)
-        .section(name("parser"))(_.transform(() ⇒ parser))
+        .section(name("parser"))(_.transform(() ⇒ parser.stage))
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
         .headAndTail
         .collect {
@@ -461,7 +462,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
         }
         .flatten(FlattenStrategy.concat)
         .map(strictEqualify)
-        .collectAll
+        .grouped(100000).runWith(Sink.head)
         .awaitResult(awaitAtMost)
 
     protected def parserSettings: ParserSettings = ParserSettings(system)
@@ -474,7 +475,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart]): Future[Seq[ChunkStreamPart]] =
-      data.collectAll
+      data.grouped(100000).runWith(Sink.head)
         .fast.recover { case _: NoSuchElementException ⇒ Nil }
 
     def prep(response: String) = response.stripMarginWithNewline("\r\n")
