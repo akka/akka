@@ -6,9 +6,12 @@ High-level HTTP API
 
    quick-start
    routing
+   directives
+   rejections
+   exception-handling
+   path-matchers
    marshalling
-   custom-directives
-   predefined-directives-alphabetically
-   predefined-directives-by-trait
+   directives/alphabetically
+   directives/by-trait
 
 

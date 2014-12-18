@@ -1,0 +1,62 @@
+/*
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+package docs.http.server
+
+import akka.actor.ActorSystem
+import akka.stream.FlowMaterializer
+
+import akka.http.server.{ Route, MissingCookieRejection }
+
+import scala.concurrent.ExecutionContext
+
+object MyRejectionHandler {
+  //# example-1
+  import akka.http.model._
+  import akka.http.server._
+  import StatusCodes._
+  import Directives._
+
+  implicit val myRejectionHandler = RejectionHandler {
+    case MissingCookieRejection(cookieName) :: _ =>
+      complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+  }
+
+  object MyApp {
+    implicit val system = ActorSystem()
+    import system.dispatcher
+    implicit val materializer = FlowMaterializer()
+
+    def handler = Route.handlerFlow(`<my-route-definition>`)
+  }
+  //#
+
+  def `<my-route-definition>`: Route = null
+}
+
+class RejectionHandlerExamplesSpec extends RoutingSpec {
+  import MyRejectionHandler._
+
+  "example" in {
+    Get() ~> Route.seal(reject(MissingCookieRejection("abc"))) ~> check {
+      responseAs[String] === "No cookies, no service!!!"
+    }
+  }
+
+  "example-2" in {
+    import akka.http.coding.Gzip
+
+    val route =
+      path("order") {
+        get {
+          complete("Received GET")
+        } ~
+          post {
+            decodeRequest(Gzip) {
+              complete("Received POST")
+            }
+          }
+      }
+  }
+}

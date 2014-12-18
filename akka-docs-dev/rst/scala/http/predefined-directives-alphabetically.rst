@@ -1,4 +1,0 @@
-Predefined Directives (alphabetically)
-======================================
-
-(todo)
