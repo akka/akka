@@ -5,7 +5,7 @@
 package akka.http.engine.server
 
 import scala.concurrent.duration._
-import org.scalatest.{ Inside, BeforeAndAfterAll, Matchers }
+import org.scalatest.Inside
 import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
@@ -18,7 +18,7 @@ import HttpEntity._
 import MediaTypes._
 import HttpMethods._
 
-class HttpServerSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with Inside {
+class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = FlowMaterializer()
 
   "The server implementation" should {
