@@ -37,8 +37,8 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
   def success(result: HttpHeader :: HNil): Result = Right(result.head)
   def parseError(error: ParseError): Result = Left(errorInfo(error))
   def failure(error: Throwable): Result = error match {
-    case e: IllegalUriException ⇒ Left(e.info)
-    case NonFatal(e)            ⇒ Left(ErrorInfo.fromCompoundString(e.getMessage))
+    case IllegalUriException(info) ⇒ Left(info)
+    case NonFatal(e)               ⇒ Left(ErrorInfo.fromCompoundString(e.getMessage))
   }
   def ruleNotFound(ruleName: String): Result = throw HeaderParser.RuleNotFoundException
 }

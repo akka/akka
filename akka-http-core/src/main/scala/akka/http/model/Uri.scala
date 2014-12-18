@@ -723,8 +723,7 @@ object Uri {
     if (hasDotOrDotDotSegment(path)) process(path) else path
   }
 
-  private[http] def fail(summary: String, detail: String = "") =
-    throw new IllegalUriException(summary, detail)
+  private[http] def fail(summary: String, detail: String = "") = throw IllegalUriException(summary, detail)
 
   private[http] def create(scheme: String, userinfo: String, host: Host, port: Int, path: Path, query: Query,
                            fragment: Option[String]): Uri =

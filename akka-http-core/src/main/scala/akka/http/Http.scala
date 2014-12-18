@@ -205,10 +205,6 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
     def flow: Flow[HttpRequest, HttpResponse]
   }
 
-  class RequestTimeoutException(val request: HttpRequest, message: String) extends RuntimeException(message)
-
-  class StreamException(val info: ErrorInfo) extends RuntimeException(info.summary)
-
   //////////////////// EXTENSION SETUP ///////////////////
 
   def apply()(implicit system: ActorSystem): HttpExt = super.apply(system)
