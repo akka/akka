@@ -10,38 +10,41 @@ import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.http.model._
 import headers._
-import HttpResponseParser.NoMethod
 import ParserOutput._
 
 /**
  * INTERNAL API
  */
-private[http] class HttpResponseParser(_settings: ParserSettings,
-                                       _headerParser: HttpHeaderParser,
-                                       dequeueRequestMethodForNextResponse: () ⇒ HttpMethod = () ⇒ NoMethod)
+private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser: HttpHeaderParser)
   extends HttpMessageParser[ResponseOutput](_settings, _headerParser) {
+  import HttpMessageParser._
   import settings._
 
-  private[this] var requestMethodForCurrentResponse: HttpMethod = NoMethod
+  private[this] var requestMethodForCurrentResponse: Option[HttpMethod] = None
   private[this] var statusCode: StatusCode = StatusCodes.OK
 
-  def createShallowCopy(dequeueRequestMethodForNextResponse: () ⇒ HttpMethod): HttpResponseParser =
-    new HttpResponseParser(settings, headerParser.createShallowCopy(), dequeueRequestMethodForNextResponse)
+  def createShallowCopy(): HttpResponseParser = new HttpResponseParser(settings, headerParser.createShallowCopy())
 
-  override def startNewMessage(input: ByteString, offset: Int): StateResult = {
-    requestMethodForCurrentResponse = dequeueRequestMethodForNextResponse()
-    super.startNewMessage(input, offset)
-  }
+  def setRequestMethodForNextResponse(requestMethod: HttpMethod): Unit =
+    if (requestMethodForCurrentResponse.isEmpty) requestMethodForCurrentResponse = Some(requestMethod)
 
-  def parseMessage(input: ByteString, offset: Int): StateResult =
-    if (requestMethodForCurrentResponse ne NoMethod) {
+  protected def parseMessage(input: ByteString, offset: Int): StateResult =
+    if (requestMethodForCurrentResponse.isDefined) {
       var cursor = parseProtocol(input, offset)
       if (byteChar(input, cursor) == ' ') {
         cursor = parseStatusCode(input, cursor + 1)
         cursor = parseReason(input, cursor)()
         parseHeaderLines(input, cursor)
       } else badProtocol
-    } else failMessageStart("Unexpected server response", input.drop(offset).utf8String)
+    } else {
+      emit(NeedNextRequestMethod)
+      done()
+    }
+
+  override def emit(output: ResponseOutput): Unit = {
+    if (output == MessageEnd) requestMethodForCurrentResponse = None
+    super.emit(output)
+  }
 
   def badProtocol = throw new ParsingException("The server-side HTTP version is not supported")
 
@@ -81,10 +84,11 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
     def finishEmptyResponse() = {
       emitResponseStart(emptyEntity(cth))
       setCompletionHandling(HttpMessageParser.CompletionOk)
+      emit(MessageEnd)
       startNewMessage(input, bodyStart)
     }
 
-    if (statusCode.allowsEntity && (requestMethodForCurrentResponse ne HttpMethods.HEAD)) {
+    if (statusCode.allowsEntity && (requestMethodForCurrentResponse.get != HttpMethods.HEAD)) {
       teh match {
         case None ⇒ clh match {
           case Some(`Content-Length`(contentLength)) ⇒
@@ -95,6 +99,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
               val cl = contentLength.toInt
               emitResponseStart(strictEntity(cth, input, bodyStart, cl))
               setCompletionHandling(HttpMessageParser.CompletionOk)
+              emit(MessageEnd)
               startNewMessage(input, bodyStart + cl)
             } else {
               emitResponseStart(defaultEntity(cth, contentLength))
@@ -128,11 +133,4 @@ private[http] class HttpResponseParser(_settings: ParserSettings,
       emit(EntityPart(input drop bodyStart))
     continue(parseToCloseBody)
   }
-}
-
-/**
- * INTERNAL API
- */
-private[http] object HttpResponseParser {
-  val NoMethod = HttpMethod.custom("NONE", safe = false, idempotent = false, entityAccepted = false)
 }
