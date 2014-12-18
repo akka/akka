@@ -405,6 +405,7 @@ object Uri {
     def isEmpty: Boolean
     def startsWithSlash: Boolean
     def startsWithSegment: Boolean
+    def endsWithSlash: Boolean = Path._endsWithSlash(this)
     def head: Head
     def tail: Path
     def length: Int
@@ -438,6 +439,12 @@ object Uri {
     }
     def unapply(path: Path): Option[String] = Some(path.toString)
     def unapply(uri: Uri): Option[String] = unapply(uri.path)
+    @tailrec private def _endsWithSlash(path: Path): Boolean = path match {
+      case Empty               ⇒ false
+      case Slash(Empty)        ⇒ true
+      case Slash(tail)         ⇒ _endsWithSlash(tail)
+      case Segment(head, tail) ⇒ _endsWithSlash(tail)
+    }
     sealed abstract class SlashOrEmpty extends Path {
       def startsWithSegment = false
     }

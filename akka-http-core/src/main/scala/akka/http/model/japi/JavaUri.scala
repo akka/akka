@@ -73,15 +73,8 @@ protected[model] case class JavaUri(uri: model.Uri) extends Uri {
     import model.Uri.Path
     import Path._
 
-    @tailrec def endsWithSlash(path: Path): Boolean = path match {
-      case Empty               ⇒ false
-      case Slash(Empty)        ⇒ true
-      case Slash(tail)         ⇒ endsWithSlash(tail)
-      case Segment(head, tail) ⇒ endsWithSlash(tail)
-    }
-
     val newPath =
-      if (endsWithSlash(u.path)) u.path ++ Path(segment)
+      if (u.path.endsWithSlash) u.path ++ Path(segment)
       else u.path ++ Path./(segment)
 
     u.withPath(newPath)

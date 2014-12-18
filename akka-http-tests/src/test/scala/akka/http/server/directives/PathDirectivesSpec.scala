@@ -299,7 +299,7 @@ class PathDirectivesSpec extends RoutingSpec {
 
     "redirect with the given redirection status code" in {
       Get("/foo/bar/") ~>
-        redirectTrailingSlashAppended(MovedPermanently) { completeOk } ~>
+        redirectTrailingSlashStripped(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
     }
   }
