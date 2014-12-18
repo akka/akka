@@ -241,50 +241,66 @@ class PathDirectivesSpec extends RoutingSpec {
       }
   }
 
-  import akka.http.model.StatusCodes.Found
+  import akka.http.model.StatusCodes._
   import akka.http.model.headers.Location
 
-  "the `withTrailingSlash` directive" should {
+  "the `redirectTrailingSlashAppended` directive" should {
+    val route = redirectTrailingSlashAppended(Found) { completeOk }
+
     "pass if the request path already has a trailing slash" in {
-      Get("/foo/bar/") ~> withTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+      Get("/foo/bar/") ~> route ~> check { response shouldEqual Ok }
     }
 
     "redirect if the request path doesn't have a trailing slash" in {
-      Get("/foo/bar") ~> withTrailingSlash { completeOk } ~> check {
-        status shouldEqual Found
-        headers should contain(Location("/foo/bar/"))
+      Get("/foo/bar") ~> route ~> check {
+        status shouldBe a[Redirection]
+        header[Location] shouldEqual Some(Location("http://example.com/foo/bar/"))
       }
     }
 
     "preserves the query and the frag when redirect" in {
-      Get("/foo/bar?query#frag") ~> withTrailingSlash { completeOk } ~> check {
-        status shouldEqual Found
-        headers should contain(Location("/foo/bar/?query#frag"))
+      Get("/foo/bar?query#frag") ~> route ~> check {
+        status shouldBe a[Redirection]
+        header[Location] shouldEqual Some(Location("http://example.com/foo/bar/?query#frag"))
       }
+    }
+
+    "redirect with the given redirection status code" in {
+      Get("/foo/bar") ~>
+        redirectTrailingSlashAppended(MovedPermanently) { completeOk } ~>
+        check { status shouldEqual MovedPermanently }
     }
   }
 
-  "the `withoutTrailingSlash` directive" should {
+  "the `redirectTrailingSlashStripped` directive" should {
+    val route = redirectTrailingSlashStripped(Found) { completeOk }
+
     "pass the root" in {
-      Get("/") ~> withoutTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+      Get("/") ~> route ~> check { response shouldEqual Ok }
     }
 
     "pass if the request path already doesn't have a trailing slash" in {
-      Get("/foo/bar") ~> withoutTrailingSlash { completeOk } ~> check { response shouldEqual Ok }
+      Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
     }
 
     "redirect if the request path has a trailing slash" in {
-      Get("/foo/bar/") ~> withoutTrailingSlash { completeOk } ~> check {
-        status shouldEqual Found
-        headers should contain(Location("/foo/bar"))
+      Get("/foo/bar/") ~> route ~> check {
+        status shouldBe a[Redirection]
+        header[Location] shouldEqual Some(Location("http://example.com/foo/bar"))
       }
     }
 
     "preserves the query and the frag when redirect" in {
-      Get("/foo/bar/?query#frag") ~> withoutTrailingSlash { completeOk } ~> check {
-        status shouldEqual Found
-        headers should contain(Location("/foo/bar?query#frag"))
+      Get("/foo/bar/?query#frag") ~> route ~> check {
+        status shouldBe a[Redirection]
+        header[Location] shouldEqual Some(Location("http://example.com/foo/bar?query#frag"))
       }
+    }
+
+    "redirect with the given redirection status code" in {
+      Get("/foo/bar/") ~>
+        redirectTrailingSlashAppended(MovedPermanently) { completeOk } ~>
+        check { status shouldEqual MovedPermanently }
     }
   }
 }

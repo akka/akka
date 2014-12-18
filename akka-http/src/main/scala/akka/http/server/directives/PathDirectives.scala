@@ -6,6 +6,8 @@ package akka.http.server
 package directives
 
 import akka.http.common.ToNameReceptacleEnhancements
+import akka.http.model.StatusCodes
+import akka.http.model.Uri.Path
 
 trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction with ToNameReceptacleEnhancements {
   import BasicDirectives._
@@ -103,7 +105,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * Note that trailing slash and non-trailing slash URLs are '''not''' the same, although they often serve
    * the same content. It is recommended to serve only one URL version and make the other redirect to it using
-   * [[withTrailingSlash]] or [[withoutTrailingSlash]] directive.
+   * [[redirectTrailingSlashAppended]] or [[redirectTrailingSlashStripped]] directive.
    *
    * For example:
    * {{{
@@ -136,42 +138,32 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * '''Caveat''': [[path]] without trailing slash and [[pathEnd]] directives will not match inside of this directive.
    */
-  def withTrailingSlash: Directive0 = PathDirectives._withTrailingSlash
+  def redirectTrailingSlashAppended(redirectionType: StatusCodes.Redirection): Directive0 =
+    extractUri.flatMap { uri ⇒
+      if (uri.path.reverse.startsWithSlash) pass
+      else {
+        val newPath = uri.path ++ Path.SingleSlash
+        val newUri = uri.withPath(newPath)
+        redirect(newUri, redirectionType)
+      }
+    }
 
   /**
    * If the request path ends with a slash, redirect to the same uri without trailing slash in the path.
    *
    * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
    */
-  def withoutTrailingSlash: Directive0 = PathDirectives._withoutTrailingSlash
-}
-
-object PathDirectives extends PathDirectives {
-  import BasicDirectives._
-  import RouteDirectives._
-  import akka.http.model.StatusCodes._
-  import akka.http.model.Uri.Path
-  import Path._
-
-  private val _withTrailingSlash: Directive0 =
-    extractUri.flatMap { uri ⇒
-      if (uri.path.reverse.startsWithSlash) pass
-      else {
-        val newPath = uri.path ++ SingleSlash
-        val newUri = uri.toRelative.withPath(newPath)
-        redirect(newUri, Found)
-      }
-    }
-
-  private val _withoutTrailingSlash: Directive0 =
+  def redirectTrailingSlashStripped(redirectionType: StatusCodes.Redirection): Directive0 =
     extractUri.flatMap { uri ⇒
       uri.path.reverse match {
-        case SingleSlash ⇒ pass
+        case Path.SingleSlash ⇒ pass
         case reversed if reversed.startsWithSlash ⇒
           val newPath = reversed.tail.reverse
-          val newUri = uri.toRelative.withPath(newPath)
-          redirect(newUri, Found)
+          val newUri = uri.withPath(newPath)
+          redirect(newUri, redirectionType)
         case _ ⇒ pass
       }
     }
 }
+
+object PathDirectives extends PathDirectives
