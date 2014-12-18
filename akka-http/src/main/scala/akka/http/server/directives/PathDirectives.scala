@@ -110,7 +110,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    * For example:
    * {{{
    * def route =
-   *   withoutTrailingSlash { // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
+   *   redirectTrailingSlashStripped(Found) { // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
    *     pathPrefix("users") {
    *       pathEnd {
    *         // user list ...
