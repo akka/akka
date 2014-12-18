@@ -19,6 +19,11 @@ It should be roughly:
 
 **TODO - write me**
 
+.. toctree::
+   :maxdepth: 1
+
+   stream-integration-external
+
 Motivation
 ==========
 
@@ -432,18 +437,6 @@ Flexi Route
 -----------
 **TODO - write me (feel free to move around as well)**
 
-Actor based custom elements
----------------------------
-
-ActorPublisher
-^^^^^^^^^^^^^^
-
-ActorSubscriber
-^^^^^^^^^^^^^^^
-
-
-// TODO: Implementing Reactive Streams interfaces directly vs. extending ActorPublisher / ActorSubscriber???
-
 Integrating with Actors
 =======================
 
@@ -461,4 +454,14 @@ Integration with Reactive Streams enabled libraries
 // TODO: some info about reactive streams in general
 
 // TODO: Simply runWith(Sink.publisher) and runWith(Source.subscriber) to get the corresponding reactive streams types.
+
+// TODO: fanoutPublisher
+
+ActorPublisher
+^^^^^^^^^^^^^^
+
+ActorSubscriber
+^^^^^^^^^^^^^^^
+
+// TODO: Implementing Reactive Streams interfaces directly vs. extending ActorPublisher / ActoSubscriber???
 
