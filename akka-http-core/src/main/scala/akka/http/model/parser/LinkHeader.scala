@@ -56,7 +56,7 @@ private[parser] trait LinkHeader { this: Parser with CommonRules with CommonActi
     capture(oneOrMore(!'"' ~ !';' ~ !',' ~ VCHAR)) ~> { s ⇒
       try new UriParser(s).parseUriReference()
       catch {
-        case e: IllegalUriException ⇒ throw new ParsingException(e.info.withSummaryPrepended("Illegal `Link` header relation-type"))
+        case IllegalUriException(info) ⇒ throw ParsingException(info.withSummaryPrepended("Illegal `Link` header relation-type"))
       }
       s
     }

@@ -401,7 +401,7 @@ private[parser] trait CommonRules { this: Parser with StringBuilding ⇒
   private def createDateTime(year: Int, month: Int, day: Int, hour: Int, min: Int, sec: Int, wkday: Int) = {
     val dt = DateTime(year, month, day, hour, min, sec)
     if (dt.weekday != wkday)
-      throw new ParsingException(s"Illegal weekday in date $dt: is '${DateTime.weekday(wkday)}' but " +
+      throw ParsingException(s"Illegal weekday in date $dt: is '${DateTime.weekday(wkday)}' but " +
         s"should be '${DateTime.weekday(dt.weekday)}'")
     dt
   }

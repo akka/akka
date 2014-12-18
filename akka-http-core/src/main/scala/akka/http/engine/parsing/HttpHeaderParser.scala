@@ -402,7 +402,7 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings)(warnOnIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw new IllegalHeaderException(info)) =
+  def apply(settings: HttpHeaderParser.Settings)(warnOnIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
     prime(unprimed(settings, warnOnIllegalHeader))
 
   def unprimed(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
