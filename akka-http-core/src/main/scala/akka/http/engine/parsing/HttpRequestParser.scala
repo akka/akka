@@ -11,9 +11,9 @@ import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.stage.{ Context, PushPullStage }
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import akka.http.engine.server.OneHundredContinue
 import akka.http.model.parser.CharacterClasses
 import akka.http.util.identityFunc
+import akka.http.engine.TokenSourceActor
 import akka.http.model._
 import headers._
 import StatusCodes._
@@ -27,6 +27,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                                       _headerParser: HttpHeaderParser,
                                       oneHundredContinueRef: () ⇒ Option[ActorRef] = () ⇒ None)
   extends HttpMessageParser[RequestOutput](_settings, _headerParser) {
+  import HttpMessageParser._
   import settings._
 
   private[this] var method: HttpMethod = _
@@ -105,7 +106,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
       uriBytes = input.iterator.slice(uriStart, uriEnd).toArray[Byte] // TODO: can we reduce allocations here?
       uri = Uri.parseHttpRequestTarget(uriBytes, mode = uriParsingMode)
     } catch {
-      case e: IllegalUriException ⇒ throw new ParsingException(BadRequest, e.info)
+      case IllegalUriException(info) ⇒ throw new ParsingException(BadRequest, info)
     }
     uriEnd + 1
   }
@@ -133,7 +134,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
             def onPull(ctx: Context[T]) = {
               if (!oneHundredContinueSent) {
                 val ref = oneHundredContinueRef().getOrElse(throw new IllegalStateException("oneHundredContinueRef unavailable"))
-                ref ! OneHundredContinue
+                ref ! TokenSourceActor.Trigger
                 oneHundredContinueSent = true
               }
               ctx.pull()

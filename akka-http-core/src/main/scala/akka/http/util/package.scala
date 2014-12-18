@@ -55,31 +55,25 @@ package object util {
         .flatten(FlattenStrategy.concat)
   }
 
-  private[http] implicit class EnhancedSource[T](val underlying: Source[T]) {
-    def printEvent(marker: String): Source[T] =
-      underlying.transform(() ⇒ new PushStage[T, T] {
-        override def onPush(element: T, ctx: Context[T]): Directive = {
-          println(s"$marker: $element")
-          ctx.push(element)
-        }
-        override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
-          println(s"$marker: Failure $cause")
-          super.onUpstreamFailure(cause, ctx)
-        }
-        override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
-          println(s"$marker: Terminated")
-          super.onUpstreamFinish(ctx)
-        }
-      })
-
-    /**
-     * Drain this stream into a Vector and provide it as a future value.
-     *
-     * FIXME: Should be part of akka-streams
-     */
-    def collectAll(implicit materializer: FlowMaterializer): Future[immutable.Seq[T]] =
-      underlying.fold(Vector.empty[T])(_ :+ _)
-  }
+  def printEvent[T](marker: String): Flow[T, T] =
+    Flow[T].transform(() ⇒ new PushStage[T, T] {
+      override def onPush(element: T, ctx: Context[T]): Directive = {
+        println(s"$marker: $element")
+        ctx.push(element)
+      }
+      override def onUpstreamFailure(cause: Throwable, ctx: Context[T]): TerminationDirective = {
+        println(s"$marker: Error $cause")
+        super.onUpstreamFailure(cause, ctx)
+      }
+      override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = {
+        println(s"$marker: Complete")
+        super.onUpstreamFinish(ctx)
+      }
+      override def onDownstreamFinish(ctx: Context[T]): TerminationDirective = {
+        println(s"$marker: Cancel")
+        super.onDownstreamFinish(ctx)
+      }
+    })
 
   private[http] implicit class AddFutureAwaitResult[T](future: Future[T]) {
     /** "Safe" Await.result that doesn't throw away half of the stacktrace */

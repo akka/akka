@@ -21,6 +21,7 @@ private[http] object ParserOutput {
   sealed trait ResponseOutput extends ParserOutput
   sealed trait MessageStart extends ParserOutput
   sealed trait MessageOutput extends RequestOutput with ResponseOutput
+  sealed trait ErrorOutput extends MessageOutput
 
   final case class RequestStart(
     method: HttpMethod,
@@ -44,7 +45,15 @@ private[http] object ParserOutput {
 
   final case class EntityChunk(chunk: HttpEntity.ChunkStreamPart) extends MessageOutput
 
-  final case class MessageStartError(status: StatusCode, info: ErrorInfo) extends MessageStart with MessageOutput
+  final case class MessageStartError(status: StatusCode, info: ErrorInfo) extends MessageStart with ErrorOutput
 
-  final case class EntityStreamError(info: ErrorInfo) extends MessageOutput
+  final case class EntityStreamError(info: ErrorInfo) extends ErrorOutput
+
+  //////////// meta messages ///////////
+
+  case object StreamEnd extends MessageOutput
+
+  case object NeedMoreData extends MessageOutput
+
+  case object NeedNextRequestMethod extends ResponseOutput
 }

@@ -261,7 +261,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           val future =
             Source(input.toList)
               .map(ByteString.apply)
-              .section(name("parser"))(_.transform(() ⇒ newParser(requestMethod)))
+              .section(name("parser"))(_.transform(() ⇒ newParserStage(requestMethod)))
               .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x.isInstanceOf[EntityStreamError])
               .headAndTail
               .collect {
@@ -279,14 +279,16 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
               }
               .flatten(FlattenStrategy.concat)
               .map(strictEqualify)
-              .grouped(1000).runWith(Sink.head)
+              .grouped(100000).runWith(Sink.head)
           Await.result(future, 500.millis)
         }
 
     def parserSettings: ParserSettings = ParserSettings(system)
-    def newParser(requestMethod: HttpMethod = GET) = {
-      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)(), () ⇒ requestMethod)
-      parser
+
+    def newParserStage(requestMethod: HttpMethod = GET) = {
+      val parser = new HttpResponseParser(parserSettings, HttpHeaderParser(parserSettings)())
+      parser.setRequestMethodForNextResponse(requestMethod)
+      parser.stage
     }
 
     private def compactEntity(entity: ResponseEntity): Future[ResponseEntity] =
@@ -296,7 +298,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       }
 
     private def compactEntityChunks(data: Source[ChunkStreamPart]): Future[Source[ChunkStreamPart]] =
-      data.grouped(1000).runWith(Sink.head)
+      data.grouped(100000).runWith(Sink.head)
         .fast.map(source(_: _*))
         .fast.recover { case _: NoSuchElementException ⇒ source() }
 

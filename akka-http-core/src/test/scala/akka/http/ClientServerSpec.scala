@@ -36,7 +36,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
   implicit val materializer = FlowMaterializer()
 
-  "The server-side HTTP infrastructure" should {
+  "The low-level HTTP infrastructure" should {
 
     "properly bind a server" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
@@ -70,6 +70,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val (serverIn, serverOut) = acceptConnection()
 
       val clientOutSub = clientOut.expectSubscription()
+      clientOutSub.expectRequest()
       clientOutSub.sendNext(HttpRequest(uri = "/abc"))
 
       val serverInSub = serverIn.expectSubscription()
@@ -77,12 +78,20 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
 
       val serverOutSub = serverOut.expectSubscription()
+      serverOutSub.expectRequest()
       serverOutSub.sendNext(HttpResponse(entity = "yeah"))
 
       val clientInSub = clientIn.expectSubscription()
       clientInSub.request(1)
       val response = clientIn.expectNext()
       toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+      clientOutSub.sendComplete()
+      serverInSub.request(1) // work-around for #16552
+      serverIn.expectComplete()
+      serverOutSub.expectCancellation()
+      clientInSub.request(1) // work-around for #16552
+      clientIn.expectComplete()
     }
 
     "properly complete a chunked request/response cycle" in new TestSetup {
@@ -104,6 +113,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       Await.result(chunkStream.grouped(4).runWith(Sink.head), 100.millis) shouldEqual chunks
 
       val serverOutSub = serverOut.expectSubscription()
+      serverOutSub.expectRequest()
       serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
 
       val clientInSub = clientIn.expectSubscription()
@@ -111,8 +121,42 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val HttpResponse(StatusCodes.PartialContent, List(RawHeader("Age", "42"), Server(_), Date(_)),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
       Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
+
+      clientOutSub.sendComplete()
+      serverInSub.request(1) // work-around for #16552
+      serverIn.expectComplete()
+      serverOutSub.expectCancellation()
+      clientInSub.request(1) // work-around for #16552
+      clientIn.expectComplete()
     }
 
+    "be able to deal with eager closing of the request stream on the client side" in new TestSetup {
+      val (clientOut, clientIn) = openNewClientConnection()
+      val (serverIn, serverOut) = acceptConnection()
+
+      val clientOutSub = clientOut.expectSubscription()
+      clientOutSub.sendNext(HttpRequest(uri = "/abc"))
+      clientOutSub.sendComplete() // complete early
+
+      val serverInSub = serverIn.expectSubscription()
+      serverInSub.request(1)
+      serverIn.expectNext().uri shouldEqual Uri(s"http://$hostname:$port/abc")
+
+      val serverOutSub = serverOut.expectSubscription()
+      serverOutSub.expectRequest()
+      serverOutSub.sendNext(HttpResponse(entity = "yeah"))
+
+      val clientInSub = clientIn.expectSubscription()
+      clientInSub.request(1)
+      val response = clientIn.expectNext()
+      toStrict(response.entity) shouldEqual HttpEntity("yeah")
+
+      serverInSub.request(1) // work-around for #16552
+      serverIn.expectComplete()
+      serverOutSub.expectCancellation()
+      clientInSub.request(1) // work-around for #16552
+      clientIn.expectComplete()
+    }
   }
 
   override def afterAll() = system.shutdown()
