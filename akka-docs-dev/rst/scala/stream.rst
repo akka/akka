@@ -39,7 +39,7 @@ Akka Streams provide a way for executing bounded processing pipelines, where bou
 elements in flight and in buffers at any given time. Please note that while this allows to estimate an limit memory use
 it is not strictly bound to the size in memory of these elements.
 
-We define a few key words which will be used though out the entire documentation:
+First we define the terminology which will be used though out the entire documentation:
 
 Stream
   An active process that involves moving and transforming data.
@@ -107,13 +107,67 @@ of the given sink or source.
 
 Back-pressure explained
 -----------------------
-Back-pressure in Akka Streams is always enabled and all stream processing stages adhere the same back-pressure protocol.
-While these back-pressure signals are in fact explicit in terms of protocol, they are hidden from users of the library,
-such that in normal usage one does *not* have to explicitly think about handling back-pressure, unless working with rate detached stages.
+Akka Streams implements an asynchronous non-blocking back-pressure protocol standardised by the Reactive Streams
+specification, which Akka is a founding member of.
 
-Back-pressure is defined in terms of element count which referred to as ``demand``.
+As library user you do not have to write any explicit back-pressure handling code in order for it to work - it is built
+and dealt with automatically by all of the provided Akka Streams processing stages. However is possible to include
+explicit buffers with overflow strategies that can influence the behaviour of the stream. This is especially important
+in complex processing graphs which may even sometimes even contain loops (which *must* be treated with very special
+care, as explained in :ref:`cycles-scala`).
 
-Akka Streams implement the Reactive Streams back-pressure protocol, which can be described as a dynamic push/pull model.
+The back pressure protocol is defined in terms of the number of elements a downstream ``Subscriber`` is able to receive,
+referred to as ``demand``. This demand is the *number of elements* receiver of the data, referred to as ``Subscriber``
+in Reactive Streams, and implemented by ``Sink`` in Akka Streams is able to safely consume at this point in time.
+The source of data referred to as ``Publisher`` in Reactive Streams terminology and implemented as ``Source`` in Akka
+Streams guarantees that it will never emit more elements than the received total demand for any given ``Subscriber``.
+
+.. note::
+  The Reactive Streams specification defines its protocol in terms of **Publishers** and **Subscribers**.
+  These types are *not* meant to be user facing API, instead they serve as the low level building blocks for
+  different Reactive Streams implementations.
+
+  Akka Streams implements these concepts as **Sources**, **Flows** (referred to as **Processor** in Reactive Streams)
+  and **Sinks** without exposing the Reactive Streams interfaces directly.
+  If you need to inter-op between different read :ref:`integration-with-Reactive-Streams-enabled-libraries`.
+
+The mode in which Reactive Streams back-pressure works can be colloquially described as "dynamic push / pull mode",
+since it will switch between push or pull based back-pressure models depending on if the downstream is able to cope
+with the upstreams production rate or not.
+
+To illustrate further let us consider both problem situations and how the back-pressure protocol handles them:
+
+Slow Publisher, fast Subscriber
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This is the happy case of course–we do not need to slow down the Publisher in this case. However signalling rates are
+rarely constant and could change at any point in time, suddenly ending up in a situation where the Subscriber is now
+slower than the Publisher. In order to safeguard from these situations, the back-pressure protocol must still be enabled
+during such situations, however we do not want to pay a high penalty for this safety net being enabled.
+
+The Reactive Streams protocol solves this by asynchronously signalling from the Subscriber to the Publisher
+`Request(n:Int)` signals. The protocol guarantees that the Publisher will never signal *more* than the demand it was
+signalled. Since the Subscriber however is currently faster, it will be signalling these Request messages at a higher
+rate (and possibly also batching together the demand - requesting multiple elements in one Request signal). This means
+that the Publisher should not ever have to wait (be back-pressured) with publishing its incoming elements.
+
+As we can see, in this scenario we effectively operate in so called push-mode since the Publisher can continue producing
+elements as fast as it can, since the pending demand will be recovered just-in-time while it is emitting elements.
+
+Fast Publisher, slow Subscriber
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This is the case when back-pressuring the ``Publisher`` is required, because the ``Subscriber`` is not able to cope with
+the rate at which its upstream would like to emit data elements.
+
+Since the ``Publisher`` is not allowed to signal more elements than the pending demand signalled by the ``Subscriber``,
+it will have to abide to this back-pressure by applying one of the below strategies:
+
+- not generate elements, if it is able to control their production rate,
+- try buffering the elements in a *bounded* manner until more demand is signalled,
+- drop elements until more demand is signalled,
+- tear down the stream if unable to apply any of the above strategies.
+
+As we can see, this scenario effectively means that the ``Subscriber`` will *pull* the elements from the Publisher–
+this mode of operation is referred to as pull-based back-pressure.
 
 In depth
 ========
@@ -186,10 +240,10 @@ Section configuration
 .. _working-with-graphs-scala:
 Working with Graphs
 ===================
-Akka Streams are unique in the way they handle and expose computation graphs - instead of hiding the fact that the
-processing pipeline is in fact a graph in a purely "fluent" DSL, graph operations are written in a DSL that graphically
-resembles and embraces the fact that the built pipeline is in fact a Graph. In this section we'll dive into the multiple
-ways of constructing and re-using graphs, as well as explain common pitfalls and how to avoid them.
+In Akka Streams computation graphs are not expressed using a fluent DSL like linear computations are, instead they are
+written in a more graph-resembling DSL which aims to make translating graph drawings (e.g. from notes taken
+from design discussions, or illustrations in protocol specifications) to and from code simpler. In this section we'll
+dive into the multiple ways of constructing and re-using graphs, as well as explain common pitfalls and how to avoid them.
 
 Graphs are needed whenever you want to perform any kind of fan-in ("multiple inputs") or fan-out ("multiple outputs") operations.
 Considering linear Flows to be like roads, we can picture graph operations as junctions: multiple flows being connected at a single point.
@@ -210,13 +264,13 @@ Akka Streams currently provides these junctions:
 * **Fan-out**
  - ``Broadcast[T]`` – (1 input, n outputs) signals each output given an input signal,
  - ``Balance[T]`` – (1 input => n outputs), signals one of its output ports given an input signal,
- - ``UnZip[A,B]`` – (1 input => 2 outputs), which is a specialized element which is able to split a stream of ``(A,B)`` into two streams one type ``A`` and one of type ``B``,
+ - ``UnZip[A,B]`` – (1 input => 2 outputs), which is a specialized element which is able to split a stream of ``(A,B)`` tuples into two streams one type ``A`` and one of type ``B``,
  - ``FlexiRoute[In]`` – (1 input, n outputs), which enables writing custom fan out elements using a simple DSL,
 * **Fan-in**
  - ``Merge[In]`` – (n inputs , 1 output), picks signals randomly from inputs pushing them one by one to its output,
  - ``MergePreferred[In]`` – like :class:`Merge` but if elements are available on ``preferred`` port, it picks from it, otherwise randomly from ``others``,
  - ``ZipWith[A,B,...,Out]`` – (n inputs (defined upfront), 1 output), which takes a function of n inputs that, given all inputs are signalled, transforms and emits 1 output,
-  + ``Zip[A,B,Out]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` stream,
+  + ``Zip[A,B,Out]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream,
  - ``Concat[T]`` – (2 inputs, 1 output), which enables to concatenate streams (first consume one, then the second one), thus the order of which stream is ``first`` and which ``second`` matters,
  - ``FlexiMerge[Out]`` – (n inputs, 1 output), which enables writing custom fan out elements using a simple DSL.
 
@@ -312,16 +366,22 @@ For defining a ``Flow[T]`` we need to expose both an undefined source and sink:
 
 Stream ordering
 ===============
-In Akka Streams almost all computation stages *preserve input order* of elements, this means that each output element
-``O`` is the result of some sequence of incoming ``I1,I2,I3`` elements. This property is even adhered by async operations
-such as ``mapAsync``, however an unordered version exists called ``mapAsyncUnordered`` which does not preserve this ordering.
+In Akka Streams almost all computation stages *preserve input order* of elements, this means that if inputs ``{IA1,IA2,...,IAn}``
+"cause" outputs ``{OA1,OA2,...,OAk}`` and inputs ``{IB1,IB2,...,IBm}`` "cause" outputs ``{OB1,OB2,...,OBl}`` and all of
+``IAi`` happened before all ``IBi`` then ``OAi`` happens before ``OBi``.
 
-However, in the case of Junctions which handle multiple input streams (e.g. :class:`Merge`) the output order is **not defined**,
-as different junctions may choose to implement consuming their upstreams in a multitude of ways, each being valid under
-certain circumstances. If you find yourself in need of fine grained control over order of emitted elements in fan-in
+This property is even uphold by async operations such as ``mapAsync``, however an unordered version exists
+called ``mapAsyncUnordered`` which does not preserve this ordering.
+
+However, in the case of Junctions which handle multiple input streams (e.g. :class:`Merge`) the output order is,
+in general, *not defined* for elements arriving on different input ports, that is a merge-like operation may emit ``Ai``
+before emitting ``Bi``, and it is up to its internal logic to decide the order of emitted elements. Specialized elements
+such as ``Zip`` however *do guarantee* their outputs order, as each output element depends on all upstream elements having
+been signalled already–thus the ordering in the case of zipping is defined by this property.
+
+If you find yourself in need of fine grained control over order of emitted elements in fan-in
 scenarios consider using :class:`MergePreferred` or :class:`FlexiMerge` - which gives you full control over how the
-merge is performed. One notable exception from that rule is :class:`Zip` as is only ever emits an element once all of
-its upstreams have one available, thus no reordering can occur.
+merge is performed.
 
 Streaming IO
 ============

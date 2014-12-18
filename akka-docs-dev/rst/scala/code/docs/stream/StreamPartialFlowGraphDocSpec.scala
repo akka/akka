@@ -51,7 +51,9 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
                   in3 ~> zip2.right
                          zip2.out ~> out
     }
+    //#simple-partial-flow-graph
     // format: ON
+    //#simple-partial-flow-graph
 
     val resultSink = Sink.head[Int]
 

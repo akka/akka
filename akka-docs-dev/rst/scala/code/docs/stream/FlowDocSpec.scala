@@ -56,11 +56,8 @@ class FlowDocSpec extends AkkaSpec {
     val source = Source(1 to 10)
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
-    // materialize the flow
-    val materialized: MaterializedMap = source.to(sink).run()
-
-    // get the materialized value from the running streams MaterializedMap
-    val sum: Future[Int] = materialized.get(sink)
+    // materialize the flow, getting the Sinks materialized value
+    val sum: Future[Int] = source.runWith(sink)
     //#materialization-runWith
   }
 
