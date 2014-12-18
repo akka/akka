@@ -238,10 +238,10 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` of the
-   * element that will be emitted downstream. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `Future` and the
+   * value of that future will be emitted downstreams. As many futures as requested elements by
    * downstream may run in parallel and may complete in any order, but the elements that
-   * are emitted downstream are in the same order as from upstream.
+   * are emitted downstream are in the same order as received from upstream.
    *
    * @see [[#mapAsyncUnordered]]
    */
@@ -250,11 +250,11 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
 
   /**
    * Transform this stream by applying the given function to each of the elements
-   * as they pass through this processing step. The function returns a `Future` of the
-   * element that will be emitted downstream. As many futures as requested elements by
+   * as they pass through this processing step. The function returns a `Future` and the
+   * value of that future will be emitted downstreams. As many futures as requested elements by
    * downstream may run in parallel and each processed element will be emitted dowstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
-   * in the same order as from upstream.
+   * in the same order as received from upstream.
    *
    * @see [[#mapAsync]]
    */
