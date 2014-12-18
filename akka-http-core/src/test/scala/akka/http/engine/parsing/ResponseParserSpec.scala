@@ -135,7 +135,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
       "response start" in new Test {
         Seq(start, "rest") should generalMultiParseTo(
           Right(baseResponse.withEntity(Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Illegal character 'r' in chunk start"))))
+          Left(EntityStreamError("Illegal character 'r' in chunk start")))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -182,7 +182,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
             |HT""") should generalMultiParseTo(
             Right(baseResponse.withEntity(Chunked(`application/pdf`,
               source(LastChunk("nice=true", List(RawHeader("Foo", "pip apo"), RawHeader("Bar", "xyz"))))))),
-            Left(MessageStartError(400: StatusCode, ErrorInfo("Illegal HTTP message start"))))
+            Left(MessageStartError(400: StatusCode, "Illegal HTTP message start")))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
 
@@ -194,7 +194,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
           |""") should generalMultiParseTo(
           Right(HttpResponse(headers = List(`Transfer-Encoding`(TransferEncodings.Extension("fancy"))),
             entity = HttpEntity.Chunked(`application/pdf`, source()))),
-          Left(EntityStreamError(ErrorInfo("Entity stream truncation"))))
+          Left(EntityStreamError("Entity stream truncation")))
         closeAfterResponseCompletion shouldEqual Seq(false)
       }
     }
@@ -202,17 +202,17 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
     "reject a response with" - {
       "HTTP version 1.2" in new Test {
         Seq("HTTP/1.2 200 OK\r\n") should generalMultiParseTo(Left(MessageStartError(
-          400: StatusCode, ErrorInfo("The server-side HTTP version is not supported"))))
+          400: StatusCode, "The server-side HTTP version is not supported")))
       }
 
       "an illegal status code" in new Test {
         Seq("HTTP/1", ".1 2000 Something") should generalMultiParseTo(Left(MessageStartError(
-          400: StatusCode, ErrorInfo("Illegal response status code"))))
+          400: StatusCode, "Illegal response status code")))
       }
 
       "a too-long response status reason" in new Test {
         Seq("HTTP/1.1 204 12345678", "90123456789012\r\n") should generalMultiParseTo(Left(
-          MessageStartError(400: StatusCode, ErrorInfo("Response reason phrase exceeds the configured limit of 21 characters"))))
+          MessageStartError(400: StatusCode, "Response reason phrase exceeds the configured limit of 21 characters")))
       }
     }
   }

@@ -327,7 +327,7 @@ private[http] object HttpMessageParser {
   type CompletionHandling = () ⇒ Option[ParserOutput]
   val CompletionOk: CompletionHandling = () ⇒ None
   val CompletionIsMessageStartError: CompletionHandling =
-    () ⇒ Some(ParserOutput.MessageStartError(StatusCodes.BadRequest, ErrorInfo("Illegal HTTP message start")))
+    () ⇒ Some(ParserOutput.MessageStartError(StatusCodes.BadRequest, "Illegal HTTP message start"))
   val CompletionIsEntityStreamError: CompletionHandling =
-    () ⇒ Some(ParserOutput.EntityStreamError(ErrorInfo("Entity stream truncation")))
+    () ⇒ Some(ParserOutput.EntityStreamError("Entity stream truncation"))
 }
