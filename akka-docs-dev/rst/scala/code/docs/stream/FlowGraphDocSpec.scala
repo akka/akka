@@ -33,15 +33,13 @@ class FlowGraphDocSpec extends AkkaSpec {
       val in = Source(1 to 10)
       val out = Sink.ignore
 
-      val broadcast = Broadcast[Int]
+      val bcast = Broadcast[Int]
       val merge = Merge[Int]
 
-      val f1 = Flow[Int].map(_ + 10)
-      val f3 = Flow[Int].map(_.toString)
-      val f2 = Flow[Int].map(_ + 20)
+      val f1, f2, f3, f4 = Flow[Int].map(_ + 10)
 
-      in ~> broadcast ~> f1 ~> merge
-            broadcast ~> f2 ~> merge ~> f3 ~> out
+      in ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out
+                  bcast ~> f4 ~> merge
     }
     //#simple-flow-graph
     //format: ON
