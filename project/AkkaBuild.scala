@@ -921,7 +921,7 @@ object AkkaBuild extends Build {
   lazy val docsDev = Project(
     id = "akka-docs-dev",
     base = file("akka-docs-dev"),
-    dependencies = Seq(streamTestkit % "test->test", stream, httpCore),
+    dependencies = Seq(streamTestkit % "test->test", stream, httpCore, http, httpTestkit, httpMarshallers),
     settings = defaultSettings ++ docFormatSettings ++ site.settings ++ site.sphinxSupport() ++ sphinxPreprocessing ++ Seq(
       version := streamAndHttpVersion,
       sourceDirectory in Sphinx <<= baseDirectory / "rst",
