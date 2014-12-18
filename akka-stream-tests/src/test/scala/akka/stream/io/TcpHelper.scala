@@ -18,6 +18,7 @@ import scala.collection.immutable.Queue
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.Duration
 import akka.stream.scaladsl.Source
+import akka.stream.testkit.TestUtils.temporaryServerAddress
 
 object TcpHelper {
   case class ClientWrite(bytes: ByteString)
@@ -103,14 +104,6 @@ object TcpHelper {
 
   }
 
-  // FIXME: get it from TestUtil
-  def temporaryServerAddress: InetSocketAddress = {
-    val serverSocket = ServerSocketChannel.open().socket()
-    serverSocket.bind(new InetSocketAddress("127.0.0.1", 0))
-    val address = new InetSocketAddress("127.0.0.1", serverSocket.getLocalPort)
-    serverSocket.close()
-    address
-  }
 }
 
 trait TcpHelper { this: TestKitBase ⇒
@@ -121,7 +114,7 @@ trait TcpHelper { this: TestKitBase ⇒
 
   implicit val materializer = FlowMaterializer(settings)
 
-  class Server(val address: InetSocketAddress = temporaryServerAddress) {
+  class Server(val address: InetSocketAddress = temporaryServerAddress()) {
     val serverProbe = TestProbe()
     val serverRef = system.actorOf(testServerProps(address, serverProbe.ref))
     serverProbe.expectMsgType[Tcp.Bound]

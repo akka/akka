@@ -12,7 +12,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
-import akka.stream.io.StreamTcp
+import akka.stream.scaladsl.StreamTcp
+import akka.stream.BindFailedException
 import akka.stream.FlowMaterializer
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
@@ -55,7 +56,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       binding.connections.runWith(Sink(probe2))
-      probe2.expectError(StreamTcp.BindFailedException)
+      probe2.expectError(BindFailedException)
 
       Await.result(binding.unbind(mm1), 1.second)
       val probe3 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
