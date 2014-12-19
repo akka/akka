@@ -86,7 +86,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
       if (terminated || !receivedInitialBoundary)
         ctx.finish()
       else
-        ctx.pushAndFinish(ParseError(ErrorInfo("Unexpected end of multipart entity")))
+        ctx.pushAndFinish(ParseError("Unexpected end of multipart entity"))
     } else
       ctx.pull()
   }

@@ -91,7 +91,7 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
   /**
    * Represents a prospective HTTP server binding.
    */
-  trait ServerBinding {
+  sealed trait ServerBinding {
     /**
      * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
      * whose [[MaterializedMap]] is passed as parameter.
@@ -204,10 +204,6 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
      */
     def flow: Flow[HttpRequest, HttpResponse]
   }
-
-  class RequestTimeoutException(val request: HttpRequest, message: String) extends RuntimeException(message)
-
-  class StreamException(val info: ErrorInfo) extends RuntimeException(info.summary)
 
   //////////////////// EXTENSION SETUP ///////////////////
 

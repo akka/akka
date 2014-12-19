@@ -4,7 +4,8 @@
 
 package akka.http.model
 
-import StatusCodes.{ ClientError, ServerError }
+import language.implicitConversions
+import StatusCodes.ClientError
 
 /**
  * Two-level model of error information.
@@ -30,37 +31,31 @@ object ErrorInfo {
     case Array(summary, detail) ⇒ apply(summary, detail)
     case _                      ⇒ ErrorInfo("", message)
   }
+
+  implicit def fromSummary(summary: String) = ErrorInfo(summary)
+  implicit def fromSummaryAndDetail(pair: (String, String)) = ErrorInfo(pair._1, pair._2)
 }
 
 /** Marker for exceptions that provide an ErrorInfo */
-abstract case class ExceptionWithErrorInfo(info: ErrorInfo) extends RuntimeException(info.formatPretty)
+abstract class ExceptionWithErrorInfo(info: ErrorInfo) extends RuntimeException(info.formatPretty)
 
-class IllegalUriException(info: ErrorInfo) extends ExceptionWithErrorInfo(info) {
-  def this(summary: String, detail: String = "") = this(ErrorInfo(summary, detail))
+case class IllegalUriException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+
+case class IllegalHeaderException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+
+case class InvalidContentLengthException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+
+case class ParsingException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
+
+case class IllegalRequestException(info: ErrorInfo, status: ClientError) extends ExceptionWithErrorInfo(info)
+object IllegalRequestException {
+  def apply(status: ClientError): IllegalRequestException = apply(ErrorInfo(status.defaultMessage), status)
+  def apply(status: ClientError, info: ErrorInfo): IllegalRequestException = apply(info.withFallbackSummary(status.defaultMessage), status)
+  def apply(status: ClientError, detail: String): IllegalRequestException = apply(ErrorInfo(status.defaultMessage, detail), status)
 }
 
-class IllegalHeaderException(info: ErrorInfo) extends ExceptionWithErrorInfo(info) {
-  def this(summary: String, detail: String = "") = this(ErrorInfo(summary, detail))
-}
+case class IllegalResponseException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 
-class InvalidContentLengthException(info: ErrorInfo) extends ExceptionWithErrorInfo(info) {
-  def this(summary: String, detail: String = "") = this(ErrorInfo(summary, detail))
-}
+case class EntityStreamException(info: ErrorInfo) extends ExceptionWithErrorInfo(info)
 
-class ParsingException(info: ErrorInfo) extends ExceptionWithErrorInfo(info) {
-  def this(summary: String, detail: String = "") = this(ErrorInfo(summary, detail))
-}
-
-class IllegalRequestException private (info: ErrorInfo, val status: ClientError)
-  extends ExceptionWithErrorInfo(info) {
-  def this(status: ClientError) = this(ErrorInfo(status.defaultMessage), status)
-  def this(status: ClientError, info: ErrorInfo) = this(info.withFallbackSummary(status.defaultMessage), status)
-  def this(status: ClientError, detail: String) = this(ErrorInfo(status.defaultMessage, detail), status)
-}
-
-class RequestProcessingException private (info: ErrorInfo, val status: ServerError)
-  extends ExceptionWithErrorInfo(info) {
-  def this(status: ServerError) = this(ErrorInfo(status.defaultMessage), status)
-  def this(status: ServerError, info: ErrorInfo) = this(info.withFallbackSummary(status.defaultMessage), status)
-  def this(status: ServerError, detail: String) = this(ErrorInfo(status.defaultMessage, detail), status)
-}
+case class RequestTimeoutException(request: HttpRequest, message: String) extends RuntimeException(message)

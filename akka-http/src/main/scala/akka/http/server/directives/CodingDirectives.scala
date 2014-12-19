@@ -59,9 +59,7 @@ trait CodingDirectives {
     def applyDecoder =
       mapRequest(decoder.decode(_).mapEntity(StreamUtils.mapEntityError {
         case NonFatal(e) ⇒
-          new IllegalRequestException(
-            StatusCodes.BadRequest,
-            ErrorInfo(s"The request's encoding is corrupt:\n${e.getMessage}"))
+          IllegalRequestException(StatusCodes.BadRequest, ErrorInfo("The request's encoding is corrupt", e.getMessage))
       }))
 
     requestEntityEmpty | (
