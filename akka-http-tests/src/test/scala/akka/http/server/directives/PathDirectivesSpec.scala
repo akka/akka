@@ -244,8 +244,8 @@ class PathDirectivesSpec extends RoutingSpec {
   import akka.http.model.StatusCodes._
   import akka.http.model.headers.Location
 
-  "the `redirectTrailingSlashAppended` directive" should {
-    val route = redirectTrailingSlashAppended(Found) { completeOk }
+  "the `redirectToTrailingSlashIfMissing` directive" should {
+    val route = redirectToTrailingSlashIfMissing(Found) { completeOk }
 
     "pass if the request path already has a trailing slash" in {
       Get("/foo/bar/") ~> route ~> check { response shouldEqual Ok }
@@ -267,13 +267,13 @@ class PathDirectivesSpec extends RoutingSpec {
 
     "redirect with the given redirection status code" in {
       Get("/foo/bar") ~>
-        redirectTrailingSlashAppended(MovedPermanently) { completeOk } ~>
+        redirectToTrailingSlashIfMissing(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
     }
   }
 
-  "the `redirectTrailingSlashStripped` directive" should {
-    val route = redirectTrailingSlashStripped(Found) { completeOk }
+  "the `redirectToNoTrailingSlashIfPresent` directive" should {
+    val route = redirectToNoTrailingSlashIfPresent(Found) { completeOk }
 
     "pass if the request path already doesn't have a trailing slash" in {
       Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
@@ -295,7 +295,7 @@ class PathDirectivesSpec extends RoutingSpec {
 
     "redirect with the given redirection status code" in {
       Get("/foo/bar/") ~>
-        redirectTrailingSlashStripped(MovedPermanently) { completeOk } ~>
+        redirectToNoTrailingSlashIfPresent(MovedPermanently) { completeOk } ~>
         check { status shouldEqual MovedPermanently }
     }
   }

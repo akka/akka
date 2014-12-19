@@ -105,12 +105,13 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * Note that trailing slash and non-trailing slash URLs are '''not''' the same, although they often serve
    * the same content. It is recommended to serve only one URL version and make the other redirect to it using
-   * [[redirectTrailingSlashAppended]] or [[redirectTrailingSlashStripped]] directive.
+   * [[redirectToTrailingSlashIfMissing]] or [[redirectToNoTrailingSlashIfPresent]] directive.
    *
    * For example:
    * {{{
-   * def route =
-   *   redirectTrailingSlashStripped(Found) { // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
+   * def route = {
+   *   // redirect '/users/' to '/users', '/users/:userId/' to '/users/:userId'
+   *   redirectToNoTrailingSlashIfPresent(Found) {
    *     pathPrefix("users") {
    *       pathEnd {
    *         // user list ...
@@ -120,6 +121,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *       }
    *     }
    *   }
+   * }
    * }}}
    *
    * For further information, refer to:
@@ -138,7 +140,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * '''Caveat''': [[path]] without trailing slash and [[pathEnd]] directives will not match inside of this directive.
    */
-  def redirectTrailingSlashAppended(redirectionType: StatusCodes.Redirection): Directive0 =
+  def redirectToTrailingSlashIfMissing(redirectionType: StatusCodes.Redirection): Directive0 =
     extractUri.flatMap { uri ⇒
       if (uri.path.endsWithSlash) pass
       else {
@@ -153,7 +155,7 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    *
    * '''Caveat''': [[pathSingleSlash]] directive will not match inside of this directive.
    */
-  def redirectTrailingSlashStripped(redirectionType: StatusCodes.Redirection): Directive0 =
+  def redirectToNoTrailingSlashIfPresent(redirectionType: StatusCodes.Redirection): Directive0 =
     extractUri.flatMap { uri ⇒
       if (uri.path.endsWithSlash) {
         val newPath = uri.path.reverse.tail.reverse
