@@ -155,14 +155,11 @@ trait PathDirectives extends PathMatchers with ImplicitPathMatcherConstruction w
    */
   def redirectTrailingSlashStripped(redirectionType: StatusCodes.Redirection): Directive0 =
     extractUri.flatMap { uri ⇒
-      uri.path match {
-        case Path.SingleSlash ⇒ pass
-        case path if path.endsWithSlash ⇒
-          val newPath = path.reverse.tail.reverse
-          val newUri = uri.withPath(newPath)
-          redirect(newUri, redirectionType)
-        case _ ⇒ pass
-      }
+      if (uri.path.endsWithSlash) {
+        val newPath = uri.path.reverse.tail.reverse
+        val newUri = uri.withPath(newPath)
+        redirect(newUri, redirectionType)
+      } else pass
     }
 
 }

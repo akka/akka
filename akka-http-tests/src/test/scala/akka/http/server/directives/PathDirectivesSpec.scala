@@ -275,10 +275,6 @@ class PathDirectivesSpec extends RoutingSpec {
   "the `redirectTrailingSlashStripped` directive" should {
     val route = redirectTrailingSlashStripped(Found) { completeOk }
 
-    "pass the root" in {
-      Get("/") ~> route ~> check { response shouldEqual Ok }
-    }
-
     "pass if the request path already doesn't have a trailing slash" in {
       Get("/foo/bar") ~> route ~> check { response shouldEqual Ok }
     }
