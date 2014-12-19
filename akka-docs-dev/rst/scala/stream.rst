@@ -23,6 +23,7 @@ It should be roughly:
    :maxdepth: 1
 
    stream-integration-external
+   stream-integration-reactive-streams
 
 Motivation
 ==========
@@ -447,15 +448,6 @@ Integrating with Actors
 // TODO: Use the ImplicitFlowMaterializer if you have streams starting from inside actors.
 
 // TODO: how do I create my own sources / sinks?
-
-Integration with Reactive Streams enabled libraries
-===================================================
-
-// TODO: some info about reactive streams in general
-
-// TODO: Simply runWith(Sink.publisher) and runWith(Source.subscriber) to get the corresponding reactive streams types.
-
-// TODO: fanoutPublisher
 
 ActorPublisher
 ^^^^^^^^^^^^^^
