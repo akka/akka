@@ -26,6 +26,7 @@ and for best results we recommend the following approach:
 
    stream-integration-external
    stream-integration-reactive-streams
+   stream-integration-actor
 
 Motivation
 ==========
@@ -448,18 +449,8 @@ Flexi Route
 Integrating with Actors
 =======================
 
-// TODO: Source.subscriber
-
-// TODO: Sink.publisher
-
 // TODO: Use the ImplicitFlowMaterializer if you have streams starting from inside actors.
 
 // TODO: how do I create my own sources / sinks?
 
-ActorPublisher
-^^^^^^^^^^^^^^
-ActorSubscriber
-^^^^^^^^^^^^^^^
-
-// TODO: Implementing Reactive Streams interfaces directly vs. extending ActorPublisher / ActoSubscriber???
 
