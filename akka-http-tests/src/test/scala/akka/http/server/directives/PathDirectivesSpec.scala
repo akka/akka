@@ -5,8 +5,9 @@
 package akka.http.server.directives
 
 import akka.http.server._
+import org.scalatest.Inside
 
-class PathDirectivesSpec extends RoutingSpec {
+class PathDirectivesSpec extends RoutingSpec with Inside {
   val echoUnmatchedPath = extractUnmatchedPath { echoComplete }
   def echoCaptureAndUnmatchedPath[T]: T ⇒ Route =
     capture ⇒ ctx ⇒ ctx.complete(capture.toString + ":" + ctx.unmatchedPath)
@@ -242,7 +243,6 @@ class PathDirectivesSpec extends RoutingSpec {
   }
 
   import akka.http.model.StatusCodes._
-  import akka.http.model.headers.Location
 
   "the `redirectToTrailingSlashIfMissing` directive" should {
     val route = redirectToTrailingSlashIfMissing(Found) { completeOk }
@@ -252,17 +252,11 @@ class PathDirectivesSpec extends RoutingSpec {
     }
 
     "redirect if the request path doesn't have a trailing slash" in {
-      Get("/foo/bar") ~> route ~> check {
-        status shouldBe a[Redirection]
-        header[Location] shouldEqual Some(Location("http://example.com/foo/bar/"))
-      }
+      Get("/foo/bar") ~> route ~> checkRedirectTo("/foo/bar/")
     }
 
     "preserves the query and the frag when redirect" in {
-      Get("/foo/bar?query#frag") ~> route ~> check {
-        status shouldBe a[Redirection]
-        header[Location] shouldEqual Some(Location("http://example.com/foo/bar/?query#frag"))
-      }
+      Get("/foo/bar?query#frag") ~> route ~> checkRedirectTo("/foo/bar/?query#frag")
     }
 
     "redirect with the given redirection status code" in {
@@ -280,17 +274,11 @@ class PathDirectivesSpec extends RoutingSpec {
     }
 
     "redirect if the request path has a trailing slash" in {
-      Get("/foo/bar/") ~> route ~> check {
-        status shouldBe a[Redirection]
-        header[Location] shouldEqual Some(Location("http://example.com/foo/bar"))
-      }
+      Get("/foo/bar/") ~> route ~> checkRedirectTo("/foo/bar")
     }
 
     "preserves the query and the frag when redirect" in {
-      Get("/foo/bar/?query#frag") ~> route ~> check {
-        status shouldBe a[Redirection]
-        header[Location] shouldEqual Some(Location("http://example.com/foo/bar?query#frag"))
-      }
+      Get("/foo/bar/?query#frag") ~> route ~> checkRedirectTo("/foo/bar?query#frag")
     }
 
     "redirect with the given redirection status code" in {
@@ -299,4 +287,16 @@ class PathDirectivesSpec extends RoutingSpec {
         check { status shouldEqual MovedPermanently }
     }
   }
+
+  import akka.http.model.headers.Location
+  import akka.http.model.Uri
+
+  private def checkRedirectTo(expectedUri: Uri) =
+    check {
+      status shouldBe a[Redirection]
+      inside(header[Location]) {
+        case Some(Location(uri)) ⇒
+          (if (expectedUri.isAbsolute) uri else uri.toRelative) shouldEqual expectedUri
+      }
+    }
 }
