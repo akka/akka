@@ -5,7 +5,6 @@
 package akka.http.engine.parsing
 
 import scala.annotation.tailrec
-import scala.collection.mutable.ListBuffer
 import akka.event.LoggingAdapter
 import akka.parboiled2.CharPredicate
 import akka.stream.scaladsl.Source
@@ -55,8 +54,7 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
   }
 
-  private[this] val result = new ListBuffer[Output] // transformer op is currently optimized for LinearSeqs
-  private[this] var resultIterator: Iterator[Output] = Iterator.empty
+  private[this] var output = collection.immutable.Queue.empty[Output]
   private[this] var state: ByteString ⇒ StateResult = tryParseInitialBoundary
   private[this] var receivedInitialBoundary = false
   private[this] var terminated = false
@@ -65,7 +63,6 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
     if (illegalHeaderWarnings) log.warning(errorInfo.withSummaryPrepended("Illegal multipart header").formatPretty)
 
   override def onPush(input: ByteString, ctx: Context[Output]): Directive = {
-    result.clear()
     try state(input)
     catch {
       case e: ParsingException ⇒ fail(e.info)
@@ -73,15 +70,14 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
         // we are missing a try/catch{continue} wrapper somewhere
         throw new IllegalStateException("unexpected NotEnoughDataException", NotEnoughDataException)
     }
-    resultIterator = result.iterator
-    if (resultIterator.hasNext) ctx.push(resultIterator.next())
+    if (output.nonEmpty) ctx.push(dequeue())
     else if (!terminated) ctx.pull()
     else ctx.finish()
   }
 
   override def onPull(ctx: Context[Output]): Directive = {
-    if (resultIterator.hasNext)
-      ctx.push(resultIterator.next())
+    if (output.nonEmpty)
+      ctx.push(dequeue())
     else if (ctx.isFinishing) {
       if (terminated || !receivedInitialBoundary)
         ctx.finish()
@@ -203,7 +199,13 @@ private[http] final class BodyPartParser(defaultContentType: ContentType,
 
   def emit(bytes: ByteString): Unit = if (bytes.nonEmpty) emit(EntityPart(bytes))
 
-  def emit(output: Output): Unit = result += output
+  def emit(element: Output): Unit = output = output.enqueue(element)
+
+  def dequeue(): Output = {
+    val head = output.head
+    output = output.tail
+    head
+  }
 
   def continue(input: ByteString, offset: Int)(next: (ByteString, Int) ⇒ StateResult): StateResult = {
     state =
