@@ -28,7 +28,7 @@ class RecipeKeepAlive extends RecipeSpec {
 
       import FlowGraphImplicits._
       val graph = FlowGraph { implicit builder =>
-        val unfairMerge = MergePreferred[ByteString]("keepAliveInjector")
+        val unfairMerge = MergePreferred[ByteString]
 
         dataStream ~> unfairMerge.preferred // If data is available then no keepalive is injected
         keepAliveStream ~> unfairMerge

@@ -25,7 +25,7 @@ class RecipeWorkerPool extends RecipeSpec {
           val resultsOut = UndefinedSink[Out]
 
           val balancer = Balance[In](waitForAllDownstreams = true)
-          val merge = Merge[Out]("merge")
+          val merge = Merge[Out]
 
           jobsIn ~> balancer // Jobs are fed into the balancer
           merge ~> resultsOut // the merged results are sent out

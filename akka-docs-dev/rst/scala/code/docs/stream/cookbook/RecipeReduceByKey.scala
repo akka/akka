@@ -1,5 +1,6 @@
 package docs.stream.cookbook
 
+import akka.stream.OverflowStrategy
 import akka.stream.scaladsl._
 
 import scala.concurrent.{ Await, Future }
@@ -8,6 +9,8 @@ import scala.concurrent.duration._
 class RecipeReduceByKey extends RecipeSpec {
 
   "Reduce by key recipe" must {
+
+    val MaximumDistinctWords = 1000
 
     "work with simple word count" in {
 
@@ -26,7 +29,10 @@ class RecipeReduceByKey extends RecipeSpec {
       }
 
       // get a stream of word counts
-      val counts: Source[(String, Int)] = countedWords.mapAsync(identity)
+      val counts: Source[(String, Int)] =
+        countedWords
+          .buffer(MaximumDistinctWords, OverflowStrategy.error)
+          .mapAsync(identity)
       //#word-count
 
       Await.result(counts.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
@@ -44,6 +50,7 @@ class RecipeReduceByKey extends RecipeSpec {
 
       //#reduce-by-key-general
       def reduceByKey[In, K, Out](
+        maximumGroupSize: Int,
         groupKey: (In) => K,
         foldZero: (K) => Out)(fold: (Out, In) => Out): Flow[In, (K, Out)] = {
 
@@ -55,10 +62,11 @@ class RecipeReduceByKey extends RecipeSpec {
             }
         }
 
-        reducedValues.mapAsync(identity)
+        reducedValues.buffer(maximumGroupSize, OverflowStrategy.error).mapAsync(identity)
       }
 
       val wordCounts = words.via(reduceByKey(
+        MaximumDistinctWords,
         groupKey = (word: String) => word,
         foldZero = (key: String) => 0)(fold = (count: Int, elem: String) => count + 1))
 

@@ -126,6 +126,14 @@ over the groups and using ``fold`` (remember that ``fold`` automatically materia
 on) we get a stream with elements of ``Future[String,Int]``. Now all we need is to flatten this stream, which
 can be achieved by calling ``mapAsynch(identity)``.
 
+There is one tricky issue to be noted here. The careful reader probably noticed that we put a ``buffer`` between the
+``mapAsync()`` operation that flattens the stream of futures and the actual stream of futures. The reason for this is
+that the substreams produced by ``groupBy()`` can only complete when the original upstream source completes. This means
+that ``mapAsync()`` cannot pull for more substreams because it still waits on folding futures to finish, but these
+futures never finish if the additional group streams are not consumed. This typical deadlock situation is resolved by
+this buffer which either able to contain all the group streams (which ensures that they are already running and folding)
+or fails with an explicit error instead of a silent deadlock.
+
 .. includecode:: code/docs/stream/cookbook/RecipeReduceByKey.scala#word-count
 
 By extracting the parts specific to *wordcount* into

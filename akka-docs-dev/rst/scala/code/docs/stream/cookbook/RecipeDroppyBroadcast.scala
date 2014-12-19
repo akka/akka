@@ -29,7 +29,7 @@ class RecipeDroppyBroadcast extends RecipeSpec {
 
       import FlowGraphImplicits._
       val graph = FlowGraph { implicit builder =>
-        val bcast = Broadcast[Int]("broadcast")
+        val bcast = Broadcast[Int]
 
         myElements ~> bcast
 
