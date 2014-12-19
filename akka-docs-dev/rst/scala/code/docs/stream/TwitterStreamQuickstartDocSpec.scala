@@ -26,22 +26,39 @@ import concurrent.Future
 
 import akka.stream.testkit.AkkaSpec
 
-// TODO replace ⇒ with => and disable this intellij setting
-class TwitterStreamQuickstartDocSpec extends AkkaSpec {
-
-  implicit val executionContext = system.dispatcher
-
+object TwitterStreamQuickstartDocSpec {
   //#model
   final case class Author(handle: String)
   val AkkaTeam = Author("akkateam")
+  val Akka = Hashtag("#akka")
 
   final case class Hashtag(name: String)
 
   final case class Tweet(author: Author, timestamp: Long, body: String) {
-    def hashtags: List[Hashtag] =
-      body.split(" ").toList.collect { case t if t.startsWith("#") ⇒ Hashtag(t) }
+    def hashtags: Set[Hashtag] =
+      body.split(" ").collect { case t if t.startsWith("#") ⇒ Hashtag(t) }.toSet
   }
   //#model
+
+  val tweets = Source(
+    Tweet(Author("rolandkuhn"), (new Date).getTime, "#akka rocks!") ::
+      Tweet(Author("patriknw"), (new Date).getTime, "#akka !") ::
+      Tweet(Author("bantonsson"), (new Date).getTime, "#akka !") ::
+      Tweet(Author("drewhk"), (new Date).getTime, "#akka !") ::
+      Tweet(Author("ktosopl"), (new Date).getTime, "#akka on the rocks!") ::
+      Tweet(Author("mmartynas"), (new Date).getTime, "wow #akka !") ::
+      Tweet(Author("akkateam"), (new Date).getTime, "#akka rocks!") ::
+      Tweet(Author("bananaman"), (new Date).getTime, "#bananas rock!") ::
+      Tweet(Author("appleman"), (new Date).getTime, "#apples rock!") ::
+      Tweet(Author("drama"), (new Date).getTime, "we compared #apples to #oranges!") ::
+      Nil)
+}
+
+// TODO replace ⇒ with => and disable this intellij setting
+class TwitterStreamQuickstartDocSpec extends AkkaSpec {
+  import TwitterStreamQuickstartDocSpec._
+
+  implicit val executionContext = system.dispatcher
 
   trait Example0 {
     //#tweet-source
@@ -56,33 +73,20 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#materializer-setup
   }
 
-  val tweets = Source(
-    Tweet(Author("rolandkuhn"), (new Date).getTime, "#akka rocks!") ::
-      Tweet(Author("patriknw"), (new Date).getTime, "#akka!") ::
-      Tweet(Author("bantonsson"), (new Date).getTime, "#akka!") ::
-      Tweet(Author("drewhk"), (new Date).getTime, "#akka!") ::
-      Tweet(Author("ktosopl"), (new Date).getTime, "#akka on the rocks!") ::
-      Tweet(Author("mmartynas"), (new Date).getTime, "wow #akka!") ::
-      Tweet(Author("akkateam"), (new Date).getTime, "#akka rocks!") ::
-      Tweet(Author("bananaman"), (new Date).getTime, "#bananas rock!") ::
-      Tweet(Author("appleman"), (new Date).getTime, "#apples rock!") ::
-      Tweet(Author("drama"), (new Date).getTime, "we compared #apples to #oranges!") ::
-      Nil)
-
   implicit val mat = FlowMaterializer()
 
   "filter and map" in {
     //#authors-filter-map
     val authors: Source[Author] =
       tweets
-        .filter(_.hashtags.contains("#akka"))
+        .filter(_.hashtags.contains(Akka))
         .map(_.author)
     //#authors-filter-map
 
     trait Example3 {
       //#authors-collect
       val authors: Source[Author] =
-        tweets.collect { case t if t.hashtags.contains("#akka") ⇒ t.author }
+        tweets.collect { case t if t.hashtags.contains(Akka) ⇒ t.author }
       //#authors-collect
     }
 
@@ -97,7 +101,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "mapConcat hashtags" in {
     //#hashtags-mapConcat
-    val hashtags: Source[Hashtag] = tweets.mapConcat(_.hashtags)
+    val hashtags: Source[Hashtag] = tweets.mapConcat(_.hashtags.toList)
     //#hashtags-mapConcat
   }
 
@@ -119,7 +123,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
       val b = Broadcast[Tweet]
       tweets ~> b ~> Flow[Tweet].map(_.author) ~> writeAuthors
-                b ~> Flow[Tweet].mapConcat(_.hashtags) ~> writeHashtags
+                b ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
     }
     g.run()
     //#flow-graph-broadcast
@@ -181,13 +185,13 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
     val counterRunnableFlow: RunnableFlow =
       tweetsInMinuteFromNow
-        .filter(_.hashtags contains "#akka")
+        .filter(_.hashtags contains Akka)
         .map(t ⇒ 1)
         .to(sumSink)
 
     // materialize the stream once in the morning
     val morningMaterialized = counterRunnableFlow.run()
-    // and once in the evening, reusing the 
+    // and once in the evening, reusing the
     val eveningMaterialized = counterRunnableFlow.run()
 
     // the sumSink materialized two different futures
