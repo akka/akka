@@ -66,6 +66,7 @@ private[http] object HttpServer {
             val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
             HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
         }
+        .take(Int.MaxValue) // FIXME: removing this makes the akka.http.engine.server.HttpServerSpec fail!
 
     // we need to make sure that only one element per incoming request is queueing up in front of
     // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
