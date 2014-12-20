@@ -1,3 +1,5 @@
+.. _streams-scala:
+
 Streams
 =======
 
