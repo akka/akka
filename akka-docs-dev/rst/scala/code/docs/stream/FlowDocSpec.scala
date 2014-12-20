@@ -4,10 +4,7 @@
 package docs.stream
 
 import akka.actor.Cancellable
-import akka.stream.scaladsl.MaterializedMap
-import akka.stream.scaladsl.RunnableFlow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 import concurrent.Future
@@ -61,6 +58,20 @@ class FlowDocSpec extends AkkaSpec {
     //#materialization-runWith
   }
 
+  "materializedMap is unique" in {
+    //#stream-reuse
+    // connect the Source to the Sink, obtaining a RunnableFlow
+    val sink = Sink.fold[Int, Int](0)(_ + _)
+    val runnable: RunnableFlow = Source(1 to 10).to(sink)
+
+    // get the materialized value of the FoldSink
+    val sum1: Future[Int] = runnable.run().get(sink)
+    val sum2: Future[Int] = runnable.run().get(sink)
+
+    // sum1 and sum2 are different Futures!
+    //#stream-reuse
+  }
+
   "compound source cannot be used as key" in {
     //#compound-source-is-not-keyed-runWith
     import scala.concurrent.duration._
@@ -81,5 +92,52 @@ class FlowDocSpec extends AkkaSpec {
     val timerCancellable = materialized.get(timer)
     timerCancellable.cancel()
     //#compound-source-is-not-keyed-run
+  }
+
+  "creating sources, sinks" in {
+    //#source-sink
+    // Create a source from an Iterable
+    Source(List(1, 2, 3))
+
+    // Create a source form a Future
+    Source(Future.successful("Hello Streams!"))
+
+    // Create a source from a single element
+    Source.single("only one element")
+
+    // an empty source
+    Source.empty
+
+    // Sink that folds over the stream and returns a Future
+    // of the final result in the MaterializedMap
+    Sink.fold(0)(_ + _)
+
+    // Sink that returns a Future in the MaterializedMap,
+    // containing the first element of the stream
+    Sink.head
+
+    // A Sink that consumes a stream without doing anything with the elements
+    Sink.ignore
+
+    // A Sink that executes a side-effecting call for every element of the stream
+    Sink.foreach((elem) => println(elem))
+    //#source-sink
+  }
+
+  "various ways of connecting source, sink, flow" in {
+    //#flow-connecting
+    // Explicitly creating and wiring up a Source, Sink and Flow
+    Source(1 to 6).via(Flow[Int].map(_ * 2)).to(Sink.foreach(println(_)))
+
+    // Starting from a Source
+    val source = Source(1 to 6).map(_ * 2)
+    source.to(Sink.foreach(println(_)))
+
+    // Starting from a Sink
+    val sink: Sink[Int] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
+    Source(1 to 6).to(sink)
+
+
+    //#flow-connecting
   }
 }

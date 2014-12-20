@@ -306,6 +306,8 @@ The numbers in parenthesis illustrates how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
 calls are limited by the buffer size (4) of the :class:`MaterializerSettings`.
 
+.. _reactive-streams-integration-scala:
+
 Integrating with Reactive Streams
 =================================
 
