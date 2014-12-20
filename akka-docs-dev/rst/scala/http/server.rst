@@ -4,7 +4,7 @@ Server API
 ==========
 
 The Akka HTTP server is an embedded, stream-based, fully asynchronous, low-overhead
-HTTP/1.1 server implemented on top of `Akka Streams`_. (todo: fix link)
+HTTP/1.1 server implemented on top of :ref:`streams-scala`.
 
 It sports the following features:
 
@@ -16,7 +16,6 @@ It sports the following features:
 
 .. _HTTP persistent connections: http://en.wikipedia.org/wiki/HTTP_persistent_connection
 .. _HTTP pipelining: http://en.wikipedia.org/wiki/HTTP_pipelining
-.. _Akka streams: http://akka.io/docs/
 
 
 Design Philosophy
