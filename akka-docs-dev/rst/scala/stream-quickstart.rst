@@ -1,4 +1,5 @@
 .. _quickstart-scala:
+
 Quick Start: Reactive Tweets
 ============================
 
