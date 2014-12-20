@@ -69,10 +69,10 @@ instead of modifying the existing instance, so while construction long flows, re
 .. includecode:: code/docs/stream/FlowDocSpec.scala#source-immutable
 
 .. note::
-By default Akka Streams elements support **exactly one** downstream processing stage.
-  Making fan-out (supporting multiple downstream processing stages) an explicit opt-in feature allows default stream elements to
-  be less complex and more efficient. Also it allows for greater flexibility on *how exactly* to handle the multicast scenarios,
-  by providing named fan-out elements such as broadcast (signals all down-stream elements) or balance (signals one of available down-stream elements).
+   By default Akka Streams elements support **exactly one** downstream processing stage.
+   Making fan-out (supporting multiple downstream processing stages) an explicit opt-in feature allows default stream elements to
+   be less complex and more efficient. Also it allows for greater flexibility on *how exactly* to handle the multicast scenarios,
+   by providing named fan-out elements such as broadcast (signals all down-stream elements) or balance (signals one of available down-stream elements).
 
 In the above example we used the ``runWith`` method, which both materializes the stream and returns the materialized value
 of the given sink or source.
@@ -97,13 +97,13 @@ The source of data referred to as ``Publisher`` in Reactive Streams terminology 
 Streams guarantees that it will never emit more elements than the received total demand for any given ``Subscriber``.
 
 .. note::
-The Reactive Streams specification defines its protocol in terms of **Publishers** and **Subscribers**.
-  These types are *not* meant to be user facing API, instead they serve as the low level building blocks for
-  different Reactive Streams implementations.
+   The Reactive Streams specification defines its protocol in terms of **Publishers** and **Subscribers**.
+   These types are *not* meant to be user facing API, instead they serve as the low level building blocks for
+   different Reactive Streams implementations.
 
-  Akka Streams implements these concepts as **Sources**, **Flows** (referred to as **Processor** in Reactive Streams)
-  and **Sinks** without exposing the Reactive Streams interfaces directly.
-  If you need to inter-op between different read :ref:`integration-with-Reactive-Streams-enabled-libraries`.
+   Akka Streams implements these concepts as **Sources**, **Flows** (referred to as **Processor** in Reactive Streams)
+   and **Sinks** without exposing the Reactive Streams interfaces directly.
+   If you need to inter-op between different read :ref:`integration-with-Reactive-Streams-enabled-libraries`.
 
 The mode in which Reactive Streams back-pressure works can be colloquially described as "dynamic push / pull mode",
 since it will switch between push or pull based back-pressure models depending on if the downstream is able to cope
@@ -163,5 +163,25 @@ which will be running on the thread pools they have been configured to run on - 
 :class:`MaterializationSettings` while constructing the :class:`FlowMaterializer`.
 
 .. note::
-Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,
-  yet will materialize that stage multiple times.
+   Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,
+   yet will materialize that stage multiple times.
+
+
+Stream ordering
+===============
+In Akka Streams almost all computation stages *preserve input order* of elements, this means that if inputs ``{IA1,IA2,...,IAn}``
+"cause" outputs ``{OA1,OA2,...,OAk}`` and inputs ``{IB1,IB2,...,IBm}`` "cause" outputs ``{OB1,OB2,...,OBl}`` and all of
+``IAi`` happened before all ``IBi`` then ``OAi`` happens before ``OBi``.
+
+This property is even uphold by async operations such as ``mapAsync``, however an unordered version exists
+called ``mapAsyncUnordered`` which does not preserve this ordering.
+
+However, in the case of Junctions which handle multiple input streams (e.g. :class:`Merge`) the output order is,
+in general, *not defined* for elements arriving on different input ports, that is a merge-like operation may emit ``Ai``
+before emitting ``Bi``, and it is up to its internal logic to decide the order of emitted elements. Specialized elements
+such as ``Zip`` however *do guarantee* their outputs order, as each output element depends on all upstream elements having
+been signalled already–thus the ordering in the case of zipping is defined by this property.
+
+If you find yourself in need of fine grained control over order of emitted elements in fan-in
+scenarios consider using :class:`MergePreferred` or :class:`FlexiMerge` - which gives you full control over how the
+merge is performed.
