@@ -50,7 +50,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def serverFlowToTransport(serverFlow: Flow[HttpRequest, HttpResponse],
                             settings: Option[ServerSettings] = None,
-                            log: LoggingAdapter = system.log): Flow[ByteString, ByteString] = {
+                            log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): Flow[ByteString, ByteString] = {
     val effectiveSettings = ServerSettings(settings)
     HttpServer.serverFlowToTransport(serverFlow, effectiveSettings, log)
   }

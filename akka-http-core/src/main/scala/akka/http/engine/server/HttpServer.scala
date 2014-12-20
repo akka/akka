@@ -18,6 +18,8 @@ import akka.http.engine.parsing.ParserOutput._
 import akka.http.engine.TokenSourceActor
 import akka.http.model._
 import akka.http.util._
+import akka.stream.FlowMaterializer
+import akka.stream.OverflowStrategy
 
 /**
  * INTERNAL API
@@ -26,7 +28,7 @@ private[http] object HttpServer {
 
   def serverFlowToTransport(serverFlow: Flow[HttpRequest, HttpResponse],
                             settings: ServerSettings,
-                            log: LoggingAdapter): Flow[ByteString, ByteString] = {
+                            log: LoggingAdapter)(implicit mat: FlowMaterializer): Flow[ByteString, ByteString] = {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
@@ -60,13 +62,17 @@ private[http] object HttpServer {
       Flow[RequestOutput]
         .splitWhen(x ⇒ x.isInstanceOf[MessageStart] || x == MessageEnd)
         .headAndTail
-        .collect {
+        .map {
           case (RequestStart(method, uri, protocol, headers, createEntity, _, _), entityParts) ⇒
             val effectiveUri = HttpRequest.effectiveUri(uri, headers, securedConnection = false, settings.defaultHostHeader)
             val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
             HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
-        }
-        .take(Int.MaxValue) // FIXME: removing this makes the akka.http.engine.server.HttpServerSpec fail!
+          case (_, src) ⇒ src.runWith(BlackholeSink)
+        }.collect {
+          case r: HttpRequest ⇒ r
+        }.buffer(1, OverflowStrategy.backpressure) 
+        // FIXME #16583 it is unclear why this is needed, some element probably does not propagate demand eagerly enough
+        // the failing test would be HttpServerSpec
 
     // we need to make sure that only one element per incoming request is queueing up in front of
     // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
@@ -132,7 +138,10 @@ private[http] object HttpServer {
             // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
             val close = requestStart.closeAfterResponseCompletion || requestStart.expect100ContinueResponsePending
             ctx.emit(ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
-            if (close) finish(ctx) else initialState
+            if (close) finish(ctx) else {
+              ctx.changeCompletionHandling(eagerClose)
+              initialState
+            }
 
           case (ctx, _, OneHundredContinue) ⇒
             assert(requestStart.expect100ContinueResponsePending)
