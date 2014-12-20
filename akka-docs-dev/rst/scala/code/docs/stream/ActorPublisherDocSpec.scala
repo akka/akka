@@ -48,6 +48,10 @@ object ActorPublisherDocSpec {
 
     @tailrec final def deliverBuf(): Unit =
       if (totalDemand > 0) {
+        /*
+         * totalDemand is a Long and could be larger than
+         * what buf.splitAt can accept
+         */
         if (totalDemand <= Int.MaxValue) {
           val (use, keep) = buf.splitAt(totalDemand.toInt)
           buf = keep
