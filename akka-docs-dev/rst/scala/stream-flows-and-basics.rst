@@ -28,24 +28,24 @@ Back-pressure
   In the context of Akka Streams back-pressure is always understood as *non-blocking* and *asynchronous*
 Processing Stage
   The common name for all building blocks that build up a Flow or FlowGraph.
-  Examples of a processing stage would be ``Stage`` (:class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage`,
-  :class:`DetachedStage`), operations like ``map()``, ``filter()`` and graph junctions like ``Merge`` or ``Broadcast``.
+  Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()``
+  (:class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage`) and graph junctions like ``Merge`` or ``Broadcast``.
 
 Defining and running streams
 ----------------------------
 Linear processing pipelines can be expressed in Akka Streams using the following three core abstractions:
 
 Source
-  A processing stage with *exactly one output*, emitting data elements whenever downstream processing elements are
+  A processing stage with *exactly one output*, emitting data elements whenever downstream processing stages are
   ready to receive them.
 Sink
   A processing stage with *exactly one input*, requesting and accepting data elements possibly slowing down the upstream
   producer of elements
 Flow
-  A processing stage which has *exactly one input and output*, which connects its up- and downstreams by (usually)
+  A processing stage which has *exactly one input and output*, which connects its up- and downstreams by
   transforming the data elements flowing through it.
 RunnableFlow
-  A Flow with has both ends "attached" to a Source and Sink respectively, and is ready to be ``run()``.
+  A Flow that has both ends "attached" to a Source and Sink respectively, and is ready to be ``run()``.
 
 It is possible to attach a ``Flow`` to a ``Source`` resulting in a composite source, and it is also possible to prepend
 a ``Flow`` to a ``Sink`` to get a new sink. After a stream is properly terminated by having both a source and a sink,
@@ -55,13 +55,13 @@ It is important to remember that even after constructing the ``RunnableFlow`` by
 different processing stages, no data will flow through it until it is materialized. Materialization is the process of
 allocating all resources needed to run the computation described by a Flow (in Akka Streams this will often involve
 starting up Actors). Thanks to Flows being simply a description of the processing pipeline they are *immutable,
-thread-safe, and freely shareable*, which means that it is for example safe to share send between actors, to have
+thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-in-steps
 
 After running (materializing) the ``RunnableFlow`` we get a special container object, the ``MaterializedMap``. Both
-sources and sinks are able to put specific object into this map. Whether they put something in or not is implementation
+sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
 dependent. For example a ``FoldSink`` will make a ``Future`` available in this map which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
@@ -109,10 +109,12 @@ There are various ways to wire up different parts of a stream, the following exa
 
 Back-pressure explained
 -----------------------
-Akka Streams implements an asynchronous non-blocking back-pressure protocol standardised by the Reactive Streams
+Akka Streams implements an asynchronous non-blocking back-pressure protocol standardised by the `Reactive Streams`_
 specification, which Akka is a founding member of.
 
-The user of the library does not have to write any explicit back-pressure handling code - it is built in
+.. _Reactive Streams: http://reactive-streams.org/
+
+The user of the library does not have to write any explicit back-pressure handling code — it is built in
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
 explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
 in complex processing graphs which may even sometimes even contain loops (which *must* be treated with very special
