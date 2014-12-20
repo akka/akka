@@ -1,4 +1,5 @@
 #!/bin/sh
+echo "Warning: Please note that this feature deprecated since 2.4-M1"
 exec scala "$0" "$@"
 !#
 
@@ -44,6 +45,7 @@ object Crypt {
 print("""
 akka {
   remote {
+    // secure cookies was deprecated
     secure-cookie = "%s"
     require-cookie = on
   }

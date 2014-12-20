@@ -448,27 +448,6 @@ untrusted mode when incoming via the remoting layer:
   within the same JVM), you can restrict the messages on this interface by
   marking them :class:`PossiblyHarmful` so that a client cannot forge them.
 
-Secure Cookie Handshake
------------------------
-
-Akka remoting also allows you to specify a secure cookie that will be exchanged and ensured to be identical
-in the connection handshake between the client and the server. If they are not identical then the client
-will be refused to connect to the server.
-
-The secure cookie can be any kind of string. But the recommended approach is to generate a cryptographically
-secure cookie using this script ``$AKKA_HOME/scripts/generate_config_with_secure_cookie.sh`` or from code
-using the ``akka.util.Crypt.generateSecureCookie()`` utility method.
-
-You have to ensure that both the connecting client and the server have the same secure cookie as well
-as the ``require-cookie`` option turned on.
-
-Here is an example config::
-
-    akka.remote {
-      secure-cookie = "090A030E0F0A05010900000A0C0E0C0B03050D05"
-      require-cookie = on
-    }
-
 SSL
 ---
 
