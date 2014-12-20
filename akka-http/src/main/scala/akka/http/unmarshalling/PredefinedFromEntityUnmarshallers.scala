@@ -49,8 +49,8 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
         val query = Uri.Query(string, nioCharset)
         FormData(query)
       } catch {
-        case ex: IllegalUriException ⇒
-          throw new IllegalArgumentException(ex.info.formatPretty.replace("Query,", "form content,"))
+        case IllegalUriException(info) ⇒
+          throw new IllegalArgumentException(info.formatPretty.replace("Query,", "form content,"))
       }
     }
 }

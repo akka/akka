@@ -4,10 +4,10 @@
 
 package akka.http.engine.server
 
+import scala.util.control.NonFatal
 import akka.actor.{ ActorRef, Props }
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.stage.PushPullStage
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
 import akka.stream.scaladsl._
@@ -15,11 +15,9 @@ import akka.stream.stage.PushPullStage
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.engine.parsing.ParserOutput._
+import akka.http.engine.TokenSourceActor
 import akka.http.model._
 import akka.http.util._
-import akka.http.Http
-
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -44,7 +42,7 @@ private[http] object HttpServer {
     @volatile var oneHundredContinueRef: Option[ActorRef] = None // FIXME: unnecessary after fixing #16168
     val oneHundredContinueSource = Source[OneHundredContinue.type] {
       Props {
-        val actor = new OneHundredContinueSourceActor
+        val actor = new TokenSourceActor(OneHundredContinue)
         oneHundredContinueRef = Some(actor.context.self)
         actor
       }
@@ -56,7 +54,7 @@ private[http] object HttpServer {
     val requestParsing = Flow[ByteString].section(name("rootParser"))(_.transform(() ⇒
       // each connection uses a single (private) request parser instance for all its requests
       // which builds a cache of all header instances seen on that connection
-      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef)))
+      rootParser.createShallowCopy(() ⇒ oneHundredContinueRef).stage))
 
     val requestPreparation =
       Flow[RequestOutput]
@@ -68,6 +66,15 @@ private[http] object HttpServer {
             val effectiveMethod = if (method == HttpMethods.HEAD && settings.transparentHeadRequests) HttpMethods.GET else method
             HttpRequest(effectiveMethod, effectiveUri, headers, createEntity(entityParts), protocol)
         }
+        .take(Int.MaxValue) // FIXME: removing this makes the akka.http.engine.server.HttpServerSpec fail!
+
+    // we need to make sure that only one element per incoming request is queueing up in front of
+    // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
+    // would eventually prevent us from reading the remaining request chunks from the transportIn
+    val bypass = Flow[RequestOutput].filter {
+      case (_: RequestStart | _: MessageStartError) ⇒ true
+      case _                                        ⇒ false
+    }
 
     val rendererPipeline =
       Flow[ResponseRenderingContext]
@@ -84,7 +91,7 @@ private[http] object HttpServer {
     Flow() { implicit b ⇒
       //FIXME: the graph is unnecessary after fixing #15957
       transportIn ~> requestParsing ~> bypassFanout ~> requestPreparation ~> serverFlow ~> bypassMerge.applicationInput ~> rendererPipeline ~> transportOut
-      bypassFanout ~> bypassMerge.bypassInput
+      bypassFanout ~> bypass ~> bypassMerge.bypassInput
       oneHundredContinueSource ~> bypassMerge.oneHundredContinueInput
 
       b.allowCycles()
@@ -101,18 +108,25 @@ private[http] object HttpServer {
     val applicationInput = createInputPort[HttpResponse]()
 
     def createMergeLogic() = new MergeLogic[ResponseRenderingContext] {
+      var requestStart: RequestStart = _
+
       override def inputHandles(inputCount: Int) = {
         require(inputCount == 3, s"BypassMerge must have 3 connected inputs, was $inputCount")
         Vector(bypassInput, oneHundredContinueInput, applicationInput)
       }
 
-      override val initialState = State[Any](Read(bypassInput)) {
-        case (ctx, _, requestStart: RequestStart)      ⇒ waitingForApplicationResponse(requestStart)
+      override val initialState: State[Any] = State[Any](Read(bypassInput)) {
+        case (ctx, _, requestStart: RequestStart) ⇒
+          this.requestStart = requestStart
+          ctx.changeCompletionHandling(waitingForApplicationResponseCompletionHandling)
+          waitingForApplicationResponse
         case (ctx, _, MessageStartError(status, info)) ⇒ finishWithError(ctx, "request", status, info)
-        case _                                         ⇒ SameState // drop other parser output
+        case _                                         ⇒ throw new IllegalStateException
       }
 
-      def waitingForApplicationResponse(requestStart: RequestStart): State[Any] =
+      override val initialCompletionHandling = eagerClose
+
+      val waitingForApplicationResponse =
         State[Any](ReadAny(oneHundredContinueInput, applicationInput)) {
           case (ctx, _, response: HttpResponse) ⇒
             // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
@@ -123,18 +137,20 @@ private[http] object HttpServer {
           case (ctx, _, OneHundredContinue) ⇒
             assert(requestStart.expect100ContinueResponsePending)
             ctx.emit(ResponseRenderingContext(HttpResponse(StatusCodes.Continue)))
-            waitingForApplicationResponse(requestStart.copy(expect100ContinueResponsePending = false))
+            requestStart = requestStart.copy(expect100ContinueResponsePending = false)
+            SameState
         }
 
-      override def initialCompletionHandling = CompletionHandling(
-        onComplete = (ctx, _) ⇒ { ctx.complete(); SameState },
+      val waitingForApplicationResponseCompletionHandling = CompletionHandling(
+        onComplete = {
+          case (ctx, `bypassInput`) ⇒ { requestStart = requestStart.copy(closeAfterResponseCompletion = true); SameState }
+          case (ctx, _)             ⇒ { ctx.complete(); SameState }
+        },
         onError = {
-          case (ctx, _, error: Http.StreamException) ⇒
+          case (ctx, _, EntityStreamException(errorInfo)) ⇒
             // the application has forwarded a request entity stream error to the response stream
-            finishWithError(ctx, "request", StatusCodes.BadRequest, error.info)
-          case (ctx, _, error) ⇒
-            ctx.error(error)
-            SameState
+            finishWithError(ctx, "request", StatusCodes.BadRequest, errorInfo)
+          case (ctx, _, error) ⇒ { ctx.error(error); SameState }
         })
 
       def finishWithError(ctx: MergeLogicContext, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
@@ -150,27 +166,63 @@ private[http] object HttpServer {
       }
     }
   }
-}
 
-private[server] class ErrorsTo500ResponseRecovery(log: LoggingAdapter)
-  extends PushPullStage[ResponseRenderingContext, ResponseRenderingContext] {
-  import akka.stream.stage.Context
+  /**
+   * The `Expect: 100-continue` header has a special status in HTTP.
+   * It allows the client to send an `Expect: 100-continue` header with the request and then pause request sending
+   * (i.e. hold back sending the request entity). The server reads the request headers, determines whether it wants to
+   * accept the request and responds with
+   *
+   * - `417 Expectation Failed`, if it doesn't support the `100-continue` expectation
+   * (or if the `Expect` header contains other, unsupported expectations).
+   * - a `100 Continue` response,
+   * if it is ready to accept the request entity and the client should go ahead with sending it
+   * - a final response (like a 4xx to signal some client-side error
+   * (e.g. if the request entity length is beyond the configured limit) or a 3xx redirect)
+   *
+   * Only if the client receives a `100 Continue` response from the server is it allowed to continue sending the request
+   * entity. In this case it will receive another response after having completed request sending.
+   * So this special feature breaks the normal "one request - one response" logic of HTTP!
+   * It therefore requires special handling in all HTTP stacks (client- and server-side).
+   *
+   * For us this means:
+   *
+   * - on the server-side:
+   * After having read a `Expect: 100-continue` header with the request we package up an `HttpRequest` instance and send
+   * it through to the application. Only when (and if) the application then requests data from the entity stream do we
+   * send out a `100 Continue` response and continue reading the request entity.
+   * The application can therefore determine itself whether it wants the client to send the request entity
+   * by deciding whether to look at the request entity data stream or not.
+   * If the application sends a response *without* having looked at the request entity the client receives this
+   * response *instead of* the `100 Continue` response and the server closes the connection afterwards.
+   *
+   * - on the client-side:
+   * If the user adds a `Expect: 100-continue` header to the request we need to hold back sending the entity until
+   * we've received a `100 Continue` response.
+   */
+  case object OneHundredContinue
 
-  private[this] var errorResponse: ResponseRenderingContext = _
+  final class ErrorsTo500ResponseRecovery(log: LoggingAdapter)
+    extends PushPullStage[ResponseRenderingContext, ResponseRenderingContext] {
 
-  override def onPush(elem: ResponseRenderingContext, ctx: Context[ResponseRenderingContext]) = ctx.push(elem)
+    import akka.stream.stage.Context
 
-  override def onPull(ctx: Context[ResponseRenderingContext]) =
-    if (ctx.isFinishing) ctx.pushAndFinish(errorResponse)
-    else ctx.pull()
+    private[this] var errorResponse: ResponseRenderingContext = _
 
-  override def onUpstreamFailure(error: Throwable, ctx: Context[ResponseRenderingContext]) =
-    error match {
-      case NonFatal(e) ⇒
-        log.error(e, "Internal server error, sending 500 response")
-        errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError),
-          closeAfterResponseCompletion = true)
-        ctx.absorbTermination()
-      case _ ⇒ ctx.fail(error)
-    }
+    override def onPush(elem: ResponseRenderingContext, ctx: Context[ResponseRenderingContext]) = ctx.push(elem)
+
+    override def onPull(ctx: Context[ResponseRenderingContext]) =
+      if (ctx.isFinishing) ctx.pushAndFinish(errorResponse)
+      else ctx.pull()
+
+    override def onUpstreamFailure(error: Throwable, ctx: Context[ResponseRenderingContext]) =
+      error match {
+        case NonFatal(e) ⇒
+          log.error(e, "Internal server error, sending 500 response")
+          errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError),
+            closeAfterResponseCompletion = true)
+          ctx.absorbTermination()
+        case _ ⇒ ctx.fail(error)
+      }
+  }
 }
