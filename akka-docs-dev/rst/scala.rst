@@ -8,4 +8,6 @@ Scala Documentation
 
    experimental/index
    scala/stream
-   scala/index-http
+   scala/http-core/index
+   scala/http/index
+   scala/http-testkit/testkit

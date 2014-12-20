@@ -22,9 +22,8 @@ class HttpServerExampleSpec
     implicit val materializer = FlowMaterializer()
 
     val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
-    for (connection <- serverBinding.connections) {
+    serverBinding.connections.foreach { connection ⇒ // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
-      // handle connection here
     }
     //#bind-example
   }
@@ -56,7 +55,9 @@ class HttpServerExampleSpec
     serverBinding.connections foreach { connection =>
       println("Accepted new connection from " + connection.remoteAddress)
 
-      connection handleWith { Flow[HttpRequest] map requestHandler }
+      connection handleWithSyncHandler requestHandler
+      // this is equivalent to
+      // connection handleWith { Flow[HttpRequest] map requestHandler }
     }
     //#full-server-example
   }

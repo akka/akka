@@ -1,18 +1,16 @@
 .. _http-core-server-scala:
 
-HTTP Server
-===========
+Server API
+==========
 
 The Akka HTTP server is an embedded, stream-based, fully asynchronous, low-overhead
 HTTP/1.1 server implemented on top of `Akka Streams`_. (todo: fix link)
 
 It sports the following features:
 
-- Low per-connection overhead for supporting many thousand concurrent connections
-- Efficient message parsing and processing logic for high throughput applications
 - Full support for `HTTP persistent connections`_
 - Full support for `HTTP pipelining`_
-- Full support for asynchronous HTTP streaming (including "chunked" transfer encoding) accessible through an idiomatic
+- Full support for asynchronous HTTP streaming including "chunked" transfer encoding accessible through an idiomatic
   reactive streams API
 - Optional SSL/TLS encryption
 
@@ -27,7 +25,7 @@ Design Philosophy
 Akka HTTP server is scoped with a clear focus on the essential functionality of an HTTP/1.1 server:
 
 - Connection management
-- Message parsing and header separation
+- Parsing messages and headers
 - Timeout management (for requests and connections)
 - Response ordering (for transparent pipelining support)
 
@@ -44,8 +42,8 @@ Akka HTTP server is implemented on top of Akka streams and makes heavy use of th
 implementation and also on all levels of its API.
 
 On the connection level Akka HTTP supports basically the same interface as Akka streams IO: A socket binding is
-represented as a stream of incoming connections. Each connection itself is composed of an input stream of requests and
-an output consumer of responses. The application has to provide the handler to "translate" requests into responses.
+represented as a stream of incoming connections. The application needs to provide a ``Flow[HttpRequest, HttpResponse]``
+to "translate" requests into responses.
 
 Streaming is also supported for single message entities itself. Particular kinds of ``HttpEntity``
 subclasses provide support for fixed or streamed message entities.
@@ -54,26 +52,27 @@ subclasses provide support for fixed or streamed message entities.
 Starting and Stopping
 ---------------------
 
-An Akka HTTP server is started by sending an ``Http.Bind`` command to the `akka.http.Http`_ extension:
+An Akka HTTP server is bound by invoking the ``bind`` method of the `akka.http.Http`_ extension:
 
-.. includecode:: code/docs/http/HttpServerExampleSpec.scala
+.. includecode:: ../code/docs/http/HttpServerExampleSpec.scala
    :include: bind-example
 
-With the ``Http.Bind`` command you specify the interface and port to bind to and register interest in handling incoming
-HTTP connections. Additionally the ``Http.Bind`` command also allows you to define socket options as well as a larger number
+Arguments to the ``Http.bind`` method specify the interface and port to bind to and register interest in handling incoming
+HTTP connections. Additionally, the method also allows you to define socket options as well as a larger number
 of settings for configuring the server according to your needs.
 
-The sender of the ``Http.Bind`` command (e.g. an actor you have written) will receive an ``Http.ServerBinding`` reply
-after the HTTP layer has successfully started the server at the respective endpoint. In case the bind fails (e.g.
-because the port is already busy) a ``Failure`` message is dispatched instead. As shown in the above example this works
-well with the ask pattern and Future operations.
+The result of the ``bind`` method is a ``Http.ServerBinding`` which is immediately returned. The ``ServerBinding.connections``
+returns a ``Source[IncomingConnection]`` which is used to handle incoming connections. The actual binding is only done when this
+source is materialized as part of a bigger processing pipeline. In case the bind fails (e.g. because the port is already
+busy) the error will be reported by flagging an error on the ``IncomingConnection`` stream.
 
-The ``Http.ServerBinding`` informs the binder of the actual local address of the bound socket and it contains a
-stream of incoming connections of type ``Producer[Http.IncomingConnection]``. Connections are handled by subscribing
-to the connection stream and handling the incoming connections.
+After materialization ``ServerBinding.localAddress`` returns the actual local address of the bound socket.
 
-The binding is released and the underlying listening socket is closed when all subscribers of the
-``Http.ServerBinding.connectionStream`` have cancelled their subscriptions.
+Connections are handled by materializing a pipeline which uses the ``Source[IncomingConnection]`` returned by
+``ServerBinding.connections``. The binding is released and the underlying listening socket is closed when all
+subscribers of the ``connections`` source have cancelled their subscription.
+
+(todo: explain even lower level serverFlowToTransport API)
 
 .. _akka.http.Http: @github@/akka-http-core/src/main/scala/akka/http/Http.scala
 
@@ -81,23 +80,28 @@ The binding is released and the underlying listening socket is closed when all s
 Request-Response Cycle
 ----------------------
 
-When a new connection has been accepted it will be published by the ``Http.ServerBinding.connectionStream`` as an
-``Http.IncomingConnection`` which consists of the remote address, a ``requestProducer``, and a ``responseConsumer``.
+When a new connection has been accepted it will be published by by the ``ServerBinding.connections`` source as an
+``Http.IncomingConnection`` which consists of the remote address, and methods to provide a ``Flow[HttpRequest, HttpResponse]``
+to handle requests coming in over this connection.
 
-Handling requests in this model means connecting the ``requestProducer`` stream with an application-defined component that
-maps requests to responses which then feeds into the ``responseConsumer``:
+Requests are handled by calling one of the ``IncomingConnection.handleWithX`` methods with a handler, which can either be
 
-.. includecode:: code/docs/http/HttpServerExampleSpec.scala
+  - a ``Flow[HttpRequest, HttpResponse]`` for ``handleWith``,
+  - a function ``HttpRequest => HttpResponse`` for ``handleWithSyncHandler``,
+  - or a function ``HttpRequest => Future[HttpResponse]`` for ``handleWithAsyncHandler``.
+
+.. includecode:: ../code/docs/http/HttpServerExampleSpec.scala
    :include: full-server-example
 
 In this case, a request is handled by transforming the request stream with a function ``HttpRequest => HttpResponse``
-using Akka stream's ``map`` operator. Depending on the use case, arbitrary other ways of connecting are conceivable using
-Akka stream's operators (e.g using ``mapFuture`` to allow parallel processing of several requests when HTTP pipelining is
-enabled).
+using ``handleWithSyncHandler`` (or equivalently, Akka stream's ``map`` operator). Depending on the use case, arbitrary
+other ways of connecting are conceivable using Akka stream's combinators.
 
-It's the application's responsibility to feed responses into the ``responseConsumer`` in the same order as the respective
-requests have come in. Also, each request must result in exactly one response. Using stream operators like ``map`` or
-``mapFuture`` will automatically fulfill this requirement.
+If the application provides a ``Flow``, it is also the responsibility of the application to generate exactly one response
+for every request and that the ordering of responses matches the ordering of the associated requests (which is relevant
+if HTTP pipelining is enabled where processing of multiple incoming requests may overlap). Using ``handleWithSyncHandler``
+or ``handleWithAsyncHandler`` or, instead, if using stream operators like ``map`` or ``mapFuture`` this requirement
+will automatically be fulfilled.
 
 Streaming request/response entities
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -112,8 +116,8 @@ a description of the alternatives.
 Closing a connection
 ~~~~~~~~~~~~~~~~~~~~
 
-The HTTP connection will be closed when the ``responseConsumer`` gets completed or when the ``requestProducer``'s
-subscription was cancelled and no more responses are pending.
+The HTTP connection will be closed when the handling ``Flow`` cancel its upstream subscription or the peer closes the
+connection.
 
 You can also use the value of the ``Connection`` header of a response as described below to give a hint to the
 implementation to close the connection after the completion of the response.
@@ -139,7 +143,7 @@ field of an HTTP message:
   entities don't need to define a length.
 - ``Server``: The ``Server`` header is usually added automatically and it's value can be configured. An application can
   decide to provide a custom ``Server`` header by including an explicit instance in the response.
-- ``Date``: The ``Date`` header is added automatically and will be ignored if supplied manually.
+- ``Date``: The ``Date`` header is added automatically and can be overridden by supplying it manually.
 - ``Connection``: When sending out responses the connection actor watches for a ``Connection`` header set by the
   application and acts accordingly, i.e. you can force the connection actor to close the connection after having sent
   the response by including a ``Connection("close")`` header. To unconditionally force a connection keep-alive you can
