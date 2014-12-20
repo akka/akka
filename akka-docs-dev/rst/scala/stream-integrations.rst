@@ -341,9 +341,9 @@ and another library knows how to store author handles in a database:
 Using an Akka Streams :class:`Flow` we can transform the stream and connect those:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala
-:include: authors,connect-all
+  :include: authors,connect-all
 
-    The :class:`Publisher` is used as an input :class:`Source` to the flow and the
+The :class:`Publisher` is used as an input :class:`Source` to the flow and the
 :class:`Subscriber` is used as an output :class:`Sink`.
 
 A :class:`Flow` can also be materialized to a :class:`Subscriber`, :class:`Publisher` pair:
@@ -364,7 +364,7 @@ A publisher that supports multiple subscribers can be created with ``Sink.fanout
 instead:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala
-:include: author-alert-subscriber,author-storage-subscriber
+  :include: author-alert-subscriber,author-storage-subscriber
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala#source-fanoutPublisher
 
