@@ -1,4 +1,4 @@
-.. _stream-cookbook-scala
+.. _stream-cookbook-scala:
 
 ################
 Streams Cookbook
