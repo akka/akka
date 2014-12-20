@@ -128,6 +128,8 @@ For defining a ``Flow[T]`` we need to expose both an undefined source and sink:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
 
+.. _graph-cycles-scala:
+
 Graph cycles, liveness and deadlocks
 ------------------------------------
 
