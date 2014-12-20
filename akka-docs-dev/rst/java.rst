@@ -3,7 +3,8 @@
 Java Documentation
 ==================
 
-.. toctree::
-   :maxdepth: 2
+.. note::
 
-   experimental/index
+  The documentation has not yet been ported to Java, you are welcome to read
+  the Scala version since all APIs are closely reflected between the two
+  language bindings.
