@@ -7,6 +7,7 @@ package akka.pattern
 import language.postfixOps
 
 import scala.concurrent.duration._
+import scala.concurrent.TimeoutException
 import akka.testkit._
 import org.scalatest.BeforeAndAfter
 import akka.actor.{ ActorSystem, Scheduler }
@@ -119,10 +120,26 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
       breaker().currentFailureCount should be(0)
     }
 
-    "increment failure count on callTimeout" in {
+    "throw TimeoutException on callTimeout" in {
       val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
-      breaker().withSyncCircuitBreaker(Thread.sleep(100.millis.dilated.toMillis))
-      awaitCond(breaker().currentFailureCount == 1)
+      intercept[TimeoutException] {
+        breaker().withSyncCircuitBreaker {
+          Thread.sleep(200.millis.dilated.toMillis)
+        }
+      }
+      breaker().currentFailureCount should be(1)
+    }
+
+    "increment failure count on callTimeout before call finishes" in {
+      val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
+      Future {
+        breaker().withSyncCircuitBreaker {
+          Thread.sleep(500.millis.dilated.toMillis)
+        }
+      }
+      within(300.millis) {
+        awaitCond(breaker().currentFailureCount == 1, 100.millis.dilated)
+      }
     }
   }
 
@@ -201,9 +218,19 @@ class CircuitBreakerSpec extends AkkaSpec with BeforeAndAfter {
 
     "increment failure count on callTimeout" in {
       val breaker = CircuitBreakerSpec.shortCallTimeoutCb()
-      breaker().withCircuitBreaker(Future { Thread.sleep(100.millis.dilated.toMillis); sayHi })
+
+      val fut = breaker().withCircuitBreaker(Future {
+        Thread.sleep(150.millis.dilated.toMillis);
+        throwException
+      })
       checkLatch(breaker.openLatch)
       breaker().currentFailureCount should be(1)
+      // Since the timeout should have happend before the inner code finishes
+      // we expect a timeout, not TestException
+      intercept[TimeoutException] {
+        Await.result(fut, awaitTimeout)
+      }
+
     }
   }
 

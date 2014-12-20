@@ -129,7 +129,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   override def localAddressForRemote(remote: Address): Address = Remoting.localAddressForRemote(transportMapping, remote)
 
-  val log: LoggingAdapter = Logging(system.eventStream, "Remoting")
+  val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
@@ -195,7 +195,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
         } catch {
           case e: TimeoutException ⇒
-            notifyError("Startup timed out", e)
+            notifyError("Startup timed out. This is usually related to actor system host setting or host name resolution misconfiguration.", e)
             throw e
           case NonFatal(e) ⇒
             notifyError("Startup failed", e)
@@ -439,9 +439,11 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     OneForOneStrategy(loggingEnabled = false) {
       case e @ InvalidAssociation(localAddress, remoteAddress, reason) ⇒
         keepQuarantinedOr(remoteAddress) {
+          val causedBy = if (reason.getCause == null) "" else s"Caused by: [${reason.getCause.getMessage}]"
           log.warning("Tried to associate with unreachable remote address [{}]. " +
-            "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. Reason: {}",
-            remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
+            "Address is now gated for {} ms, all messages to this address will be delivered to dead letters. " +
+            "Reason: [{}] {}",
+            remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage, causedBy)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))

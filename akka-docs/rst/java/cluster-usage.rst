@@ -624,6 +624,7 @@ From JMX you can:
 
 * see what members that are part of the cluster
 * see status of this node
+* see roles of each member
 * join this node to another node in cluster
 * mark any node in the cluster as down
 * tell any node in the cluster to leave

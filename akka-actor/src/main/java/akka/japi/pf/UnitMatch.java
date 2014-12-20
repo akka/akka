@@ -25,11 +25,11 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * case statement added.
    *
    * @param type  a type to match the argument against
-   * @param apply  an action to apply to the argument if the type matches
+   * @param apply an action to apply to the argument if the type matches
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.UnitApply)
    */
-  public static final <F, P> UnitPFBuilder<F> match(final Class<P> type, FI.UnitApply<P> apply) {
+  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type, FI.UnitApply<? extends P> apply) {
     return new UnitPFBuilder<F>().match(type, apply);
   }
 
@@ -37,15 +37,15 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * Convenience function to create a {@link UnitPFBuilder} with the first
    * case statement added.
    *
-   * @param type  a type to match the argument against
-   * @param predicate  a predicate that will be evaluated on the argument if the type matches
-   * @param apply  an action to apply to the argument if the type and predicate matches
+   * @param type      a type to match the argument against
+   * @param predicate a predicate that will be evaluated on the argument if the type matches
+   * @param apply     an action to apply to the argument if the type and predicate matches
    * @return a builder with the case statement added
    * @see UnitPFBuilder#match(Class, FI.TypedPredicate, FI.UnitApply)
    */
-  public static <F, P> UnitPFBuilder<F> match(final Class<P> type,
-                                              final FI.TypedPredicate<P> predicate,
-                                              final FI.UnitApply<P> apply) {
+  public static <F, P> UnitPFBuilder<F> match(final Class<? extends P> type,
+                                              final FI.TypedPredicate<? extends P> predicate,
+                                              final FI.UnitApply<? extends P> apply) {
     return new UnitPFBuilder<F>().match(type, predicate, apply);
   }
 
@@ -53,7 +53,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * Convenience function to create a {@link UnitPFBuilder} with the first
    * case statement added.
    *
-   * @param object  the object to compare equals with
+   * @param object the object to compare equals with
    * @param apply  an action to apply to the argument if the object compares equal
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchEquals(Object, FI.UnitApply)
@@ -67,9 +67,9 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * Convenience function to create a {@link UnitPFBuilder} with the first
    * case statement added.
    *
-   * @param object  the object to compare equals with
-   * @param predicate  a predicate that will be evaluated on the argument the object compares equal
-   * @param apply  an action to apply to the argument if the object compares equal
+   * @param object    the object to compare equals with
+   * @param predicate a predicate that will be evaluated on the argument the object compares equal
+   * @param apply     an action to apply to the argument if the object compares equal
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchEquals(Object, FI.UnitApply)
    */
@@ -83,7 +83,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
    * Convenience function to create a {@link UnitPFBuilder} with the first
    * case statement added.
    *
-   * @param apply  an action to apply to the argument
+   * @param apply an action to apply to the argument
    * @return a builder with the case statement added
    * @see UnitPFBuilder#matchAny(FI.UnitApply)
    */
@@ -94,7 +94,7 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
   /**
    * Create a {@link UnitMatch} from the builder.
    *
-   * @param builder  a builder representing the partial function
+   * @param builder a builder representing the partial function
    * @return a {@link UnitMatch} that can be reused
    */
   public static <F> UnitMatch<F> create(UnitPFBuilder<F> builder) {
@@ -107,15 +107,15 @@ public class UnitMatch<I> extends AbstractMatch<I, BoxedUnit> {
 
   /**
    * Convenience function to make the Java code more readable.
-   *
+   * <p>
    * <pre><code>
    *   UnitMatcher&lt;X&gt; matcher = UnitMatcher.create(...);
-   *
+   * <p>
    *   matcher.match(obj);
    * </code></pre>
    *
-   * @param i  the argument to apply the match to
-   * @throws scala.MatchError  if there is no match
+   * @param i the argument to apply the match to
+   * @throws scala.MatchError if there is no match
    */
   public void match(I i) throws MatchError {
     statements.apply(i);

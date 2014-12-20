@@ -172,7 +172,7 @@ To better explain what happened in the example, ``Future.sequence`` is taking th
 and turning it into a ``Future<Iterable<Integer>>``. We can then use ``map`` to work with the ``Iterable<Integer>`` directly,
 and we aggregate the sum of the ``Iterable``.
 
-The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A``s and applies a function from ``A`` to ``Future<B>``
+The ``traverse`` method is similar to ``sequence``, but it takes a sequence of ``A`` and applies a function from ``A`` to ``Future<B>``
 and returns a ``Future<Iterable<B>>``, enabling parallel ``map`` over the sequence, if you use ``Futures.future`` to create the ``Future``.
 
 .. includecode:: code/docs/future/FutureDocTest.java

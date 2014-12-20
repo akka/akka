@@ -8,7 +8,6 @@ import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import scala.collection.immutable
 import akka.actor._
-import akka.actor.ActorPath.ElementRegex
 import akka.serialization.SerializationExtension
 import akka.util.{ Unsafe, Helpers }
 
@@ -176,10 +175,10 @@ private[akka] trait Children { this: ActorCell ⇒
 
   private def checkName(name: String): String = {
     name match {
-      case null           ⇒ throw new InvalidActorNameException("actor name must not be null")
-      case ""             ⇒ throw new InvalidActorNameException("actor name must not be empty")
-      case ElementRegex() ⇒ name
-      case _              ⇒ throw new InvalidActorNameException(s"illegal actor name [$name], must conform to $ElementRegex")
+      case null                                    ⇒ throw new InvalidActorNameException("actor name must not be null")
+      case ""                                      ⇒ throw new InvalidActorNameException("actor name must not be empty")
+      case _ if ActorPath.isValidPathElement(name) ⇒ name
+      case _                                       ⇒ throw new InvalidActorNameException(s"Illegal actor name [$name]. Actor paths MUST: not start with `$$`, include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.")
     }
   }
 

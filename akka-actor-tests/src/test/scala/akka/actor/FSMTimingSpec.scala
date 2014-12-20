@@ -45,6 +45,15 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
       }
     }
 
+    "cancel a StateTimeout when actor is stopped" taggedAs TimingTest in {
+      val stoppingActor = system.actorOf(Props[StoppingActor])
+      system.eventStream.subscribe(testActor, classOf[DeadLetter])
+      stoppingActor ! TestStoppingActorStateTimeout
+      within(400 millis) {
+        expectNoMsg
+      }
+    }
+
     "allow StateTimeout override" taggedAs TimingTest in {
       // the timeout in state TestStateTimeout is 800 ms, then it will change to Initial
       within(400 millis) {
@@ -164,6 +173,7 @@ object FSMTimingSpec {
   case object TestCancelTimer extends State
   case object TestCancelStateTimerInNamedTimerMessage extends State
   case object TestCancelStateTimerInNamedTimerMessage2 extends State
+  case object TestStoppingActorStateTimeout extends State
 
   case object Tick
   case object Tock
@@ -263,6 +273,16 @@ object FSMTimingSpec {
       case Event(Cancel, _) ⇒
         whenUnhandled(NullFunction)
         goto(Initial)
+    }
+  }
+
+  class StoppingActor extends Actor with FSM[State, Int] {
+    startWith(Initial, 0)
+
+    when(Initial, 200 millis) {
+      case Event(TestStoppingActorStateTimeout, _) ⇒
+        context.stop(self)
+        stay
     }
   }
 

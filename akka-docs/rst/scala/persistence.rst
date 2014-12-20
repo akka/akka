@@ -139,19 +139,27 @@ Recovery
 --------
 
 By default, a persistent actor is automatically recovered on start and on restart by replaying journaled messages.
-New messages sent to a persistent actor during recovery do not interfere with replayed messages. New messages will
-only be received by a persistent actor after recovery completes.
+New messages sent to a persistent actor during recovery do not interfere with replayed messages. 
+They are cached and received by a persistent actor after recovery phase completes.
 
 Recovery customization
 ^^^^^^^^^^^^^^^^^^^^^^
 
-Automated recovery on start can be disabled by overriding ``preStart`` with an empty implementation.
+Automated recovery on start can be disabled by overriding ``preStart`` with an empty or custom implementation.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-on-start-disabled
 
 In this case, a persistent actor must be recovered explicitly by sending it a ``Recover()`` message.
 
 .. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-explicit
+
+.. warning::
+If ``preStart`` is overriden by an empty implementation, incoming commands will not be processed by the
+``PersistentActor`` until it receives a ``Recover`` and finishes recovery.
+
+In order to completely skip recovery, you can signal it with ``Recover(toSequenceNr = OL)``
+
+.. includecode:: code/docs/persistence/PersistenceDocSpec.scala#recover-fully-disabled
 
 If not overridden, ``preStart`` sends a ``Recover()`` message to ``self``. Applications may also override
 ``preStart`` to define further ``Recover()`` parameters such as an upper sequence number bound, for example.
@@ -412,8 +420,8 @@ the persistent actor will resend these before sending any other messages.
 
 Deliver also requires a function to pass the ``deliveryId`` into the message. A ``deliveryId`` is required to acknowledge 
 receipt of a message, and is also used in playback, when the actor is recovering so that messages received can be correctly acknowledged. 
-A function can be created to map your own ``messageId`` with ``deliveryId``s, which may come from your own domain model. 
-This function must keep track of which ``messageId``s have been acknowledged.
+A function can be created to map your own ``messageId`` to ``deliveryId``, which may come from your own domain model. 
+This function must keep track of which ``messageId`` have been acknowledged.
 Alternatively, the Persistence module provides a default sequence number implementation which can also be used as the ``deliveryId`` 
 for messages. The default sequence increases monotonically, without gaps.
 
@@ -445,6 +453,13 @@ as a blob in your custom snapshot.
 The interval between redelivery attempts is defined by the ``redeliverInterval`` method.
 The default value can be configured with the ``akka.persistence.at-least-once-delivery.redeliver-interval``
 configuration key. The method can be overridden by implementation classes to return non-default values.
+
+The maximum number of messages that will be sent at each redelivery burst is defined by the
+``redeliveryBurstLimit`` method (burst frequency is half of the redelivery interval). If there's a lot of
+unconfirmed messages (e.g. if the destination is not available for a long time), this helps to prevent an overwhelming
+amount of messages to be sent at once. The default value can be configured with the
+``akka.persistence.at-least-once-delivery.redelivery-burst-limit`` configuration key. The method can be overridden
+by implementation classes to return non-default values.
 
 After a number of delivery attempts a ``AtLeastOnceDelivery.UnconfirmedWarning`` message
 will be sent to ``self``. The re-sending will still continue, but you can choose to call

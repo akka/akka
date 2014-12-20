@@ -521,10 +521,10 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
 private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
 
-  if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-]*$"""))
+  if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
       "invalid ActorSystem name [" + name +
-        "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-')")
+        "], must contain only word characters (i.e. [a-zA-Z0-9] plus non-leading '-' or '_')")
 
   import ActorSystem._
 
@@ -603,7 +603,7 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
     dynamicAccess.createInstanceFor[LoggingFilter](LoggingFilter, arguments).get
   }
 
-  val log: LoggingAdapter = new BusLogging(eventStream, "ActorSystem(" + name + ")", this.getClass, logFilter)
+  val log: LoggingAdapter = new BusLogging(eventStream, getClass.getName + "(" + name + ")", this.getClass, logFilter)
 
   val scheduler: Scheduler = createScheduler()
 

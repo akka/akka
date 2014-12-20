@@ -13,6 +13,7 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import akka.actor.ReceiveTimeout;
 import akka.japi.Procedure;
+import akka.japi.Option;
 import akka.persistence.UntypedPersistentActor;
 
 // Doc code, compile only
@@ -64,8 +65,9 @@ public class ClusterShardingTest {
     //#counter-extractor
 
     //#counter-start
+    Option<String> roleOption = Option.none();
     ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", 
-      Props.create(Counter.class), false, messageExtractor);
+      Props.create(Counter.class), Option.java2ScalaOption(roleOption), false, messageExtractor);
     //#counter-start
 
     //#counter-usage

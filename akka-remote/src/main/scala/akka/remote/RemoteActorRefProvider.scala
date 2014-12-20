@@ -178,7 +178,7 @@ private[akka] class RemoteActorRefProvider(
     _internals = internals
     remotingTerminator ! internals
 
-    _log = Logging(eventStream, "RemoteActorRefProvider")
+    _log = Logging(eventStream, getClass.getName)
 
     // this enables reception of remote requests
     transport.start()

@@ -5,13 +5,15 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.net.Socket
+import akka.ConfigurationException
 import java.nio.channels.SocketChannel
 import akka.io.Inet._
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import scala.collection.immutable
 import scala.collection.JavaConverters._
-import akka.util.ByteString
+import akka.util.{ Helpers, ByteString }
 import akka.util.Helpers.Requiring
 import akka.actor._
 import java.lang.{ Iterable ⇒ JIterable }
@@ -543,6 +545,11 @@ class TcpExt(system: ExtendedActorSystem) extends IO.Extension {
     val MaxChannelsPerSelector: Int = if (MaxChannels == -1) -1 else math.max(MaxChannels / NrOfSelectors, 1)
     val FinishConnectRetries: Int = getInt("finish-connect-retries") requiring (_ > 0,
       "finish-connect-retries must be > 0")
+
+    val WindowsConnectionAbortWorkaroundEnabled: Boolean = getString("windows-connection-abort-workaround-enabled") match {
+      case "auto" ⇒ Helpers.isWindows
+      case _      ⇒ getBoolean("windows-connection-abort-workaround-enabled")
+    }
 
     private[this] def getIntBytes(path: String): Int = {
       val size = getBytes(path)
