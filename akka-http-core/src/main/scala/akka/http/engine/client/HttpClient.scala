@@ -156,49 +156,54 @@ private[http] object HttpClient {
         Vector(dataInput, methodBypassInput)
       }
 
+      private val stay = (ctx: MergeLogicContext) ⇒ SameState
+      private val gotoResponseReading = (ctx: MergeLogicContext) ⇒ {
+        ctx.changeCompletionHandling(responseReadingCompletionHandling)
+        responseReadingState
+      }
+      private val gotoInitial = (ctx: MergeLogicContext) ⇒ {
+        if (methodBypassCompleted) {
+          ctx.complete()
+          SameState
+        } else {
+          ctx.changeCompletionHandling(initialCompletionHandling)
+          initialState
+        }
+      }
+
       override val initialState: State[HttpMethod] =
         State(Read(methodBypassInput)) {
           case (ctx, _, method) ⇒
             parser.setRequestMethodForNextResponse(method)
             drainParser(parser.onPush(ByteString.empty), ctx,
-              onNeedNextMethod = () ⇒ SameState,
-              onNeedMoreData = () ⇒ {
-                ctx.changeCompletionHandling(responseReadingCompletionHandling)
-                responseReadingState
-              })
+              onNeedNextMethod = stay,
+              onNeedMoreData = gotoResponseReading)
         }
 
       val responseReadingState: State[ByteString] =
         State(Read(dataInput)) {
           case (ctx, _, bytes) ⇒
             drainParser(parser.onPush(bytes), ctx,
-              onNeedNextMethod = () ⇒ {
-                if (methodBypassCompleted) {
-                  ctx.complete()
-                  SameState
-                } else {
-                  ctx.changeCompletionHandling(initialCompletionHandling)
-                  initialState
-                }
-              },
-              onNeedMoreData = () ⇒ SameState)
+              onNeedNextMethod = gotoInitial,
+              onNeedMoreData = stay)
         }
 
       @tailrec def drainParser(current: ResponseOutput, ctx: MergeLogicContext,
-                               onNeedNextMethod: () ⇒ State[_], onNeedMoreData: () ⇒ State[_],
+                               onNeedNextMethod: MergeLogicContext ⇒ State[_],
+                               onNeedMoreData: MergeLogicContext ⇒ State[_],
                                b: ListBuffer[ResponseOutput] = ListBuffer.empty): State[_] = {
         def emit(output: List[ResponseOutput]): Unit = if (output.nonEmpty) ctx.emit(output)
         current match {
           case NeedNextRequestMethod ⇒
             emit(b.result())
-            onNeedNextMethod()
+            onNeedNextMethod(ctx)
           case StreamEnd ⇒
             emit(b.result())
             ctx.complete()
             SameState
           case NeedMoreData ⇒
             emit(b.result())
-            onNeedMoreData()
+            onNeedMoreData(ctx)
           case x ⇒ drainParser(parser.onPull(), ctx, onNeedNextMethod, onNeedMoreData, b += x)
         }
       }

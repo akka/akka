@@ -7,6 +7,7 @@ import akka.stream.actor.{ ActorPublisherMessage, ActorPublisher }
  * An actor publisher for producing a simple stream of singleton tokens
  * the release of which is triggered by the reception of a [[TokenSourceActor.Trigger]] message.
  */
+// FIXME #16520 move this into streams
 private[engine] class TokenSourceActor[T](token: T) extends ActorPublisher[T] {
   private var triggered = 0
 
