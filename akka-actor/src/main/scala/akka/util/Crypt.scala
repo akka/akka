@@ -5,7 +5,7 @@
 package akka.util
 
 import java.security.{ MessageDigest, SecureRandom }
-//FIXME DOCS
+@deprecated(message = "Not in use.", since = "2.4-M1")
 object Crypt {
   val hex = "0123456789ABCDEF"
   val lineSeparator = System.getProperty("line.separator")
