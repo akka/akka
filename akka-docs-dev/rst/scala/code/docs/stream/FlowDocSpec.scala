@@ -110,7 +110,7 @@ class FlowDocSpec extends AkkaSpec {
 
     // Sink that folds over the stream and returns a Future
     // of the final result in the MaterializedMap
-    Sink.fold(0)(_ + _)
+    Sink.fold[Int, Int](0)(_ + _)
 
     // Sink that returns a Future in the MaterializedMap,
     // containing the first element of the stream
@@ -120,7 +120,7 @@ class FlowDocSpec extends AkkaSpec {
     Sink.ignore
 
     // A Sink that executes a side-effecting call for every element of the stream
-    Sink.foreach((elem) => println(elem))
+    Sink.foreach[String](println(_))
     //#source-sink
   }
 
@@ -136,7 +136,6 @@ class FlowDocSpec extends AkkaSpec {
     // Starting from a Sink
     val sink: Sink[Int] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
     Source(1 to 6).to(sink)
-
 
     //#flow-connecting
   }
