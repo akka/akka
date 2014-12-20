@@ -52,8 +52,8 @@ will be inferred and
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph
 
 .. note::
-Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a FlowGraph
-  refers to the same location in the resulting graph).
+   Junction *reference equality* defines *graph node equality* (i.e. the same merge *instance* used in a FlowGraph
+   refers to the same location in the resulting graph).
 
 Notice the ``import FlowGraphImplicits._`` which brings into scope the ``~>`` operator (read as "edge", "via" or "to").
 It is also possible to construct graphs without the ``~>`` operator in case you prefer to use the graph builder explicitly:
@@ -96,8 +96,8 @@ elements, then we import it (all of its nodes and connections) explicitly to the
 the undefined elements are rewired to real sources and sinks. The graph can then be run and yields the expected result.
 
 .. warning::
-Please note that a :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
-  elements have been properly connected - this validation is performed as a runtime check during the graph's instantiation.
+   Please note that a :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
+   elements have been properly connected - this validation is performed as a runtime check during the graph's instantiation.
 
 .. _constructing-sources-sinks-flows-from-partial-graphs-scala:
 
@@ -167,9 +167,9 @@ backpressured forever, because buffer space is never recovered: the only action 
 of initial elements from ``source``.
 
 .. note::
-What we see here is that in certain cases we need to choose between boundedness and liveness. Our first example would
-  not deadlock if there would be an infinite buffer in the loop, or vice versa, if the elements in the cycle would
-  be balanced (as many elements are removed as many are injected) then there would be no deadlock.
+   What we see here is that in certain cases we need to choose between boundedness and liveness. Our first example would
+   not deadlock if there would be an infinite buffer in the loop, or vice versa, if the elements in the cycle would
+   be balanced (as many elements are removed as many are injected) then there would be no deadlock.
 
 To make our cycle both live (not deadlocking) and fair we can introduce a dropping element on the feedback arc. In this
 case we chose the ``buffer()`` operation giving it a dropping strategy ``OverflowStrategy.dropHead``.
