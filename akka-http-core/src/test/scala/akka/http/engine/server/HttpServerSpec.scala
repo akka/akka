@@ -4,8 +4,10 @@
 
 package akka.http.engine.server
 
+import scala.util.Random
+import scala.annotation.tailrec
 import scala.concurrent.duration._
-import org.scalatest.{ Inside, BeforeAndAfterAll, Matchers }
+import org.scalatest.Inside
 import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
@@ -18,7 +20,7 @@ import HttpEntity._
 import MediaTypes._
 import HttpMethods._
 
-class HttpServerSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with Inside {
+class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = FlowMaterializer()
 
   "The server implementation" should {
@@ -607,6 +609,45 @@ class HttpServerSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with 
           |
           |""".stripMarginWithNewline("\r\n")
     }
+
+    "correctly consume and render large requests and responses" in new TestSetup {
+      send("""POST / HTTP/1.1
+             |Host: example.com
+             |Content-Length: 100000
+             |
+             |""".stripMarginWithNewline("\r\n"))
+
+      val HttpRequest(POST, _, _, entity, _) = expectRequest
+      responsesSub.expectRequest()
+      responsesSub.sendNext(HttpResponse(entity = entity))
+      responsesSub.sendComplete()
+
+      netOutSub.request(1)
+      wipeDate(netOut.expectNext().utf8String) shouldEqual
+        """HTTP/1.1 200 OK
+          |Server: akka-http/test
+          |Date: XXXX
+          |Content-Type: application/octet-stream
+          |Content-Length: 100000
+          |
+          |""".stripMarginWithNewline("\r\n")
+
+      val random = new Random()
+      @tailrec def rec(bytesLeft: Int): Unit =
+        if (bytesLeft > 0) {
+          val count = math.min(random.nextInt(1000) + 1, bytesLeft)
+          val data = random.alphanumeric.take(count).mkString
+          send(data)
+          netOutSub.request(1)
+          netOut.expectNext().utf8String shouldEqual data
+          rec(bytesLeft - count)
+        }
+      rec(100000)
+
+      netInSub.sendComplete()
+      requests.expectComplete()
+      netOut.expectComplete()
+    }
   }
 
   class TestSetup {
@@ -641,7 +682,7 @@ class HttpServerSpec extends AkkaSpec with Matchers with BeforeAndAfterAll with 
     def expectNoRequest(max: FiniteDuration): Unit = requests.expectNoMsg(max)
 
     def send(data: ByteString): Unit = netInSub.sendNext(data)
-    def send(data: String): Unit = send(ByteString(data, "ASCII"))
+    def send(data: String): Unit = send(ByteString(data, "UTF8"))
 
     def closeNetworkInput(): Unit = netInSub.sendComplete()
   }

@@ -53,6 +53,7 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
 
   private[scaladsl] def prepend(pipe: SourcePipe[In]): GraphSource[COut, Out] = {
     val b = new FlowGraphBuilder()
+    b.allowCycles() // FIXME: remove after #16571 is cleared
     val (nIn, nOut) = remap(b)
     b.attachSource(nIn, pipe.appendPipe(inPipe))
     GraphSource(b.partialBuild(), nOut, outPipe)
@@ -75,6 +76,7 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
     case gFlow: GraphFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
+        b.allowCycles() // FIXME: remove after #16571 is cleared
         val (oIn, oOut) = gFlow.remap(b)
         b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
@@ -141,6 +143,7 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
     case gFlow: GraphFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
+        b.allowCycles() // FIXME: remove after #16571 is cleared
         val (oIn, oOut) = gFlow.remap(b)
         b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
