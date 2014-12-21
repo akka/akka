@@ -61,8 +61,8 @@ This is how it can be used as input :class:`Source` to a :class:`Flow`:
 
 .. includecode:: code/docs/stream/ActorPublisherDocSpec.scala#actor-publisher-usage
 
-You can only attach one subscriber to this publisher. Use ``Sink.fanoutPublisher`` to enable
-multiple subscribers.
+You can only attach one subscriber to this publisher. Use a ``Broadcast``
+element or attach a ``Sink.fanoutPublisher`` to enable multiple subscribers.
 
 ActorSubscriber
 ^^^^^^^^^^^^^^^
@@ -132,6 +132,12 @@ That means that back-pressure works as expected. For example if the ``emailServe
 is the bottleneck it will limit the rate at which incoming tweets are retrieved and
 email addresses looked up.
 
+The final piece of this pipeline is to generate the demand that pulls the tweet
+authors information through the emailing pipeline: we attach a ``Sink.ignore``
+which makes it all run. If our email process would return some interesting data
+for further transformation then we would of course not ignore it but send that
+result stream onwards for further processing or storage.
+
 Note that ``mapAsync`` preserves the order of the stream elements. In this example the order
 is not important and then we can use the more efficient ``mapAsyncUnordered``:
 
@@ -176,7 +182,7 @@ For example, if 5 elements have been requested by downstream there will be at mo
 futures in progress.
 
 ``mapAsync`` emits the future results in the same order as the input elements
-were received. That means that completed results are only emitted downstreams
+were received. That means that completed results are only emitted downstream
 when earlier results have been completed and emitted. One slow call will thereby
 delay the results of all successive calls, even though they are completed before
 the slow call.
@@ -341,9 +347,9 @@ and another library knows how to store author handles in a database:
 Using an Akka Streams :class:`Flow` we can transform the stream and connect those:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala
-:include: authors,connect-all
+  :include: authors,connect-all
 
-    The :class:`Publisher` is used as an input :class:`Source` to the flow and the
+The :class:`Publisher` is used as an input :class:`Source` to the flow and the
 :class:`Subscriber` is used as an output :class:`Sink`.
 
 A :class:`Flow` can also be materialized to a :class:`Subscriber`, :class:`Publisher` pair:
@@ -353,7 +359,7 @@ A :class:`Flow` can also be materialized to a :class:`Subscriber`, :class:`Publi
 A publisher can be connected to a subscriber with the ``subscribe`` method.
 
 It is also possible to expose a :class:`Source` as a :class:`Publisher`
-by using the ``publisher`` :class:`Sink`:
+by using the Publisher-:class:`Sink`:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala#source-publisher
 
@@ -364,7 +370,7 @@ A publisher that supports multiple subscribers can be created with ``Sink.fanout
 instead:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala
-:include: author-alert-subscriber,author-storage-subscriber
+  :include: author-alert-subscriber,author-storage-subscriber
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala#source-fanoutPublisher
 
@@ -372,7 +378,7 @@ The buffer size controls how far apart the slowest subscriber can be from the fa
 before slowing down the stream.
 
 To make the picture complete, it is also possible to expose a :class:`Sink` as a :class:`Subscriber`
-by using the ``subscriber`` :class:`Source`:
+by using the Subscriber-:class:`Source`:
 
 .. includecode:: code/docs/stream/ReactiveStreamsDocSpec.scala#sink-subscriber
 
