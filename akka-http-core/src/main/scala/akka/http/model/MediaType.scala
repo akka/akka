@@ -22,6 +22,7 @@ sealed abstract class MediaRange extends japi.MediaRange with Renderable with Wi
   def isMultipart = false
   def isText = false
   def isVideo = false
+  def isWildcard = mainType == "*"
 
   /**
    * Returns a copy of this instance with the params replaced by the given ones.
@@ -123,6 +124,7 @@ object MediaRanges extends ObjectRegistry[String, MediaRange] {
     def matches(mediaType: MediaType) = true
     def specimen = MediaTypes.`text/plain`
   }
+  val `*/*;q=MIN` = `*/*`.withQValue(Float.MinPositiveValue)
   val `application/*` = new PredefinedMediaRange("application/*") {
     def matches(mediaType: MediaType) = mediaType.isApplication
     override def isApplication = true

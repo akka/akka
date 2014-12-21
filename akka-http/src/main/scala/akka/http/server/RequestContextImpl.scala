@@ -45,32 +45,42 @@ private[http] class RequestContextImpl(
   override def fail(error: Throwable): Future[RouteResult] =
     FastFuture.failed(error)
 
-  override def withRequest(req: HttpRequest): RequestContext =
-    copy(request = req)
+  override def withRequest(request: HttpRequest): RequestContext =
+    if (request != this.request) copy(request = request) else this
 
-  override def withExecutionContext(ec: ExecutionContext): RequestContext =
-    copy(executionContext = ec)
+  override def withExecutionContext(executionContext: ExecutionContext): RequestContext =
+    if (executionContext != this.executionContext) copy(executionContext = executionContext) else this
 
-  override def withFlowMaterializer(materializer: FlowMaterializer): RequestContext =
-    copy(flowMaterializer = materializer)
+  override def withFlowMaterializer(flowMaterializer: FlowMaterializer): RequestContext =
+    if (flowMaterializer != this.flowMaterializer) copy(flowMaterializer = flowMaterializer) else this
 
   override def withLog(log: LoggingAdapter): RequestContext =
-    copy(log = log)
+    if (log != this.log) copy(log = log) else this
 
   override def withSettings(settings: RoutingSettings): RequestContext =
-    copy(settings = settings)
+    if (settings != this.settings) copy(settings = settings) else this
 
   override def mapRequest(f: HttpRequest ⇒ HttpRequest): RequestContext =
     copy(request = f(request))
 
   override def withUnmatchedPath(path: Uri.Path): RequestContext =
-    copy(unmatchedPath = path)
+    if (path != unmatchedPath) copy(unmatchedPath = path) else this
 
   override def mapUnmatchedPath(f: Uri.Path ⇒ Uri.Path): RequestContext =
     copy(unmatchedPath = f(unmatchedPath))
 
-  override def withContentNegotiationDisabled: RequestContext =
-    copy(request = request.withHeaders(request.headers filterNot (_.isInstanceOf[headers.Accept])))
+  override def withAcceptAll: RequestContext = request.header[headers.Accept] match {
+    case Some(accept @ headers.Accept(ranges)) if !accept.acceptsAll ⇒
+      mapRequest(_.mapHeaders(_.map {
+        case `accept` ⇒
+          val acceptAll =
+            if (ranges.exists(_.isWildcard)) ranges.map(r ⇒ if (r.isWildcard) MediaRanges.`*/*;q=MIN` else r)
+            else ranges :+ MediaRanges.`*/*;q=MIN`
+          accept.copy(mediaRanges = acceptAll)
+        case x ⇒ x
+      }))
+    case _ ⇒ this
+  }
 
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,

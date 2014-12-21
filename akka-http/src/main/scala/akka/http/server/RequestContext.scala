@@ -112,5 +112,5 @@ trait RequestContext {
   /**
    * Removes a potentially existing Accept header from the request headers.
    */
-  def withContentNegotiationDisabled: RequestContext
+  def withAcceptAll: RequestContext
 }
