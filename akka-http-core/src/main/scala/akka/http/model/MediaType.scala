@@ -124,7 +124,7 @@ object MediaRanges extends ObjectRegistry[String, MediaRange] {
     def matches(mediaType: MediaType) = true
     def specimen = MediaTypes.`text/plain`
   }
-  val `*/*(minQ)` = `*/*`.withQValue(Float.MinPositiveValue)
+  val `*/*;q=MIN` = `*/*`.withQValue(Float.MinPositiveValue)
   val `application/*` = new PredefinedMediaRange("application/*") {
     def matches(mediaType: MediaType) = mediaType.isApplication
     override def isApplication = true
