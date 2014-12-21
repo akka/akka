@@ -5,7 +5,8 @@
 package akka.http.server
 package directives
 
-import akka.http.model.StatusCodes
+import akka.http.model.{ MediaTypes, MediaRanges, StatusCodes }
+import akka.http.model.headers._
 
 import scala.concurrent.Future
 
@@ -63,6 +64,27 @@ class ExecutionDirectivesSpec extends RoutingSpec {
     }
     "not handle other exceptions" in {
       Get("/abc") ~>
+        get {
+          handleExceptions(handler) {
+            throw new RuntimeException
+          }
+        } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+          responseAs[String] shouldEqual "There was an internal server error."
+        }
+    }
+    "always fall back to a default content type" in {
+      Get("/abc") ~> Accept(MediaTypes.`application/json`) ~>
+        get {
+          handleExceptions(handler) {
+            throw new RuntimeException
+          }
+        } ~> check {
+          status shouldEqual StatusCodes.InternalServerError
+          responseAs[String] shouldEqual "There was an internal server error."
+        }
+
+      Get("/abc") ~> Accept(MediaTypes.`text/xml`, MediaRanges.`*/*`.withQValue(0f)) ~>
         get {
           handleExceptions(handler) {
             throw new RuntimeException
