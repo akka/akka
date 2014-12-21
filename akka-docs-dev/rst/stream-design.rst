@@ -30,6 +30,8 @@ Another aspect of materialization is that we want to support distributed stream 
 Interoperation with other Reactive Streams implementations
 ----------------------------------------------------------
 
+Akka Streams fully implement the Reactive Streams specification and interoperate with all other conformant implementations. We chose to completely separate the Reactive Streams interfaces (which we regard to be an SPI) from the user-level API. In order to obtain a :class:`Publisher` or :class:`Subscriber` from an Akka Stream topology, a corresponding :class:`PublisherSink` or :class:`SubscriberSource` must be used.
+
 All stream Processors produced by the default materialization of Akka Streams are restricted to having a single Subscriber, additional Subscribers will be rejected. The reason for this is that the stream topologies described using our DSL never require fan-out behavior from the Publisher sides of the elements, all fan-out is done using explicit elements like ``Broadcast[T]``.
 
 This means that ``Sink.fanoutPublisher`` must be used where multicast behavior is needed for interoperation with other Reactive Streams implementations.
@@ -69,11 +71,11 @@ Other topologies can always be expressed as a combination of a PartialFlowGraph 
 The difference between Error and Failure
 ----------------------------------------
 
-The starting point for this discussion is the [definition given by the Reactive Manifesto](http://www.reactivemanifesto.org/glossary#Failure). Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via ``onNext`` while failures raise the ``onError`` signal.
+The starting point for this discussion is the `definition given by the Reactive Manifesto <http://www.reactivemanifesto.org/glossary#Failure>`_. Translated to streams this means that an error is accessible within the stream as a normal data element, while a failure means that the stream itself has failed and is collapsing. In concrete terms, on the Reactive Streams interface level data elements (including errors) are signaled via ``onNext`` while failures raise the ``onError`` signal.
 
 .. note::
 
-  Unfortunately the method name for signaling _failure_ to a Subscriber is called ``onError`` for historical reasons. Always keep in mind that the Reactive Streams interfaces (Publisher/Subscription/Subscriber) are modeling the low-level infrastructure for passing streams between execution units, and errors on this level are precisely the failures that we are talking about on the higher level that is modeled by Akka Streams.
+  Unfortunately the method name for signaling *failure* to a Subscriber is called ``onError`` for historical reasons. Always keep in mind that the Reactive Streams interfaces (Publisher/Subscription/Subscriber) are modeling the low-level infrastructure for passing streams between execution units, and errors on this level are precisely the failures that we are talking about on the higher level that is modeled by Akka Streams.
 
 There is only limited support for treating ``onError`` in Akka Streams compared to the operators that are available for the transformation of data elements, which is intentional in the spirit of the previous paragraph. Since ``onError`` signals that the stream is collapsing, its ordering semantics are not the same as for stream completion: transformation stages of any kind will just collapse with the stream, possibly still holding elements in implicit or explicit buffers. This means that data elements emitted before a failure can still be lost if the ``onError`` overtakes them.
 

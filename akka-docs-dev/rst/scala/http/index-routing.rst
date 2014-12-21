@@ -13,6 +13,7 @@ HTTP Routing
    exception-handling
    path-matchers
    marshalling
+   custom-directives
    directives/alphabetically
    directives/by-trait
 

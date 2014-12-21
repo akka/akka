@@ -26,15 +26,18 @@ and making them explicit elements these elements should be rather straight forwa
 Akka Streams currently provides these junctions:
 
 * **Fan-out**
+
  - ``Broadcast[T]`` – (1 input, n outputs) signals each output given an input signal,
  - ``Balance[T]`` – (1 input => n outputs), signals one of its output ports given an input signal,
  - ``UnZip[A,B]`` – (1 input => 2 outputs), which is a specialized element which is able to split a stream of ``(A,B)`` tuples into two streams one type ``A`` and one of type ``B``,
  - ``FlexiRoute[In]`` – (1 input, n outputs), which enables writing custom fan out elements using a simple DSL,
+
 * **Fan-in**
+
  - ``Merge[In]`` – (n inputs , 1 output), picks signals randomly from inputs pushing them one by one to its output,
  - ``MergePreferred[In]`` – like :class:`Merge` but if elements are available on ``preferred`` port, it picks from it, otherwise randomly from ``others``,
  - ``ZipWith[A,B,...,Out]`` – (n inputs (defined upfront), 1 output), which takes a function of n inputs that, given all inputs are signalled, transforms and emits 1 output,
-  + ``Zip[A,B,Out]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream,
+ - ``Zip[A,B,Out]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream,
  - ``Concat[T]`` – (2 inputs, 1 output), which enables to concatenate streams (first consume one, then the second one), thus the order of which stream is ``first`` and which ``second`` matters,
  - ``FlexiMerge[Out]`` – (n inputs, 1 output), which enables writing custom fan out elements using a simple DSL.
 
@@ -60,7 +63,7 @@ It is also possible to construct graphs without the ``~>`` operator in case you 
 
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph-no-implicits
 
-By looking at the snippets above, it should be apparent that **the** :class:`b:FlowGraphBuilder` **object is mutable**.
+By looking at the snippets above, it should be apparent that **the** :class:`FlowGraphBuilder` **object is mutable**.
 It is also used (implicitly) by the ``~>`` operator, also making it a mutable operation as well.
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
 Once the FlowGraph has been constructed though, the :class:`FlowGraph` instance *is immutable, thread-safe, and freely shareable*.
@@ -180,7 +183,7 @@ If we run this example we see that
 
 * The flow of elements does not stop, there are always elements printed
 * We see that some of the numbers are printed several times over time (due to the feedback loop) but on average
-the numbers are increasing in the long term
+  the numbers are increasing in the long term
 
 This example highlights that one solution to avoid deadlocks in the presence of potentially unbalanced cycles
 (cycles where the number of circulating elements are unbounded) is to drop elements. An alternative would be to

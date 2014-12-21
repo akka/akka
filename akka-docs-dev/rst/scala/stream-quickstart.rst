@@ -6,10 +6,12 @@ Quick Start: Reactive Tweets
 A typical use case for stream processing is consuming a live stream of data that we want to extract or aggregate some
 other data from. In this example we'll consider consuming a stream of tweets and extracting information concerning Akka from them.
 
-We will also consider the problem inherent to all non-blocking streaming solutions – "*What if the subscriber is slower
-to consume the live stream of data?*" i.e. it is unable to keep up with processing the live data. Traditionally the solution
-is often to buffer the elements, but this can (and usually *will*) cause eventual buffer overflows and instability of such systems.
-Instead Akka Streams depend on internal backpressure signals that allow to control what should happen in such scenarios.
+We will also consider the problem inherent to all non-blocking streaming
+solutions: *"What if the subscriber is too slow to consume the live stream of
+data?"*. Traditionally the solution is often to buffer the elements, but this
+can—and usually will—cause eventual buffer overflows and instability of such
+systems.  Instead Akka Streams depend on internal backpressure signals that
+allow to control what should happen in such scenarios.
 
 Here's the data model we'll be working with throughout the quickstart examples:
 
