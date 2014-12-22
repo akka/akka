@@ -138,7 +138,7 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
       if (timeout.duration.length <= 0)
         Future.failed[Any](new IllegalArgumentException(s"""Timeout length must not be negative, question not sent to [$actorRef]. Sender[$sender] sent the message of type "${message.getClass.getName}"."""))
       else {
-        val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef.toString, message, sender)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef, message, sender)
         actorRef.tell(message, a)
         a.result.future
       }
@@ -159,7 +159,7 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         Future.failed[Any](
           new IllegalArgumentException(s"""Timeout length must not be negative, question not sent to [$actorSel]. Sender[$sender] sent the message of type "${message.getClass.getName}"."""))
       else {
-        val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel.toString, message, sender)
+        val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, message, sender)
         actorSel.tell(message, a)
         a.result.future
       }
@@ -299,7 +299,7 @@ private[akka] final class PromiseActorRef private (val provider: ActorRefProvide
   @tailrec
   override def stop(): Unit = {
     def ensureCompleted(): Unit = {
-      result tryComplete Failure(new ActorKilledException("Stopped"))
+      result tryComplete ActorStopResult
       val watchers = clearWatchers()
       if (!watchers.isEmpty) {
         watchers foreach { watcher ⇒
@@ -328,7 +328,9 @@ private[akka] object PromiseActorRef {
   private case object Stopped
   private final case class StoppedWithPath(path: ActorPath)
 
-  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: String, message: Any, sender: ActorRef = Actor.noSender): PromiseActorRef = {
+  private val ActorStopResult = Failure(new ActorKilledException("Stopped"))
+
+  def apply(provider: ActorRefProvider, timeout: Timeout, targetName: Any, message: Any, sender: ActorRef = Actor.noSender): PromiseActorRef = {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result)
