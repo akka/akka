@@ -116,7 +116,10 @@ case class UnacceptedResponseContentTypeRejection(supported: Set[ContentType]) e
  * Signals that the request was rejected because the service is not capable of producing a response entity whose
  * content encoding is accepted by the client
  */
-case class UnacceptedResponseEncodingRejection(supported: HttpEncoding) extends Rejection
+case class UnacceptedResponseEncodingRejection(supported: Set[HttpEncoding]) extends Rejection
+object UnacceptedResponseEncodingRejection {
+  def apply(supported: HttpEncoding): UnacceptedResponseEncodingRejection = UnacceptedResponseEncodingRejection(Set(supported))
+}
 
 /**
  * Rejection created by an [[akka.http.server.authentication.HttpAuthenticator]].
