@@ -19,24 +19,22 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testAutomaticEncodingWhenNoEncodingRequested() {
         TestRoute route =
             testRoute(
-                compressResponse(
+                encodeResponse(
                     complete("TestString")
                 )
             );
 
         TestResponse response = route.run(HttpRequest.create());
         response
-            .assertStatusCode(200)
-            .assertHeaderExists("Content-Encoding", "gzip");
+            .assertStatusCode(200);
 
-        ByteString decompressed = Coder.Gzip.decode(response.entityBytes());
-        Assert.assertEquals("TestString", decompressed.utf8String());
+        Assert.assertEquals("TestString", response.entityBytes().utf8String());
     }
     @Test
     public void testAutomaticEncodingWhenDeflateRequested() {
         TestRoute route =
             testRoute(
-                compressResponse(
+                encodeResponse(
                     complete("tester")
                 )
             );
@@ -54,7 +52,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
     public void testEncodingWhenDeflateRequestedAndGzipSupported() {
         TestRoute route =
             testRoute(
-                compressResponse(Coder.Gzip).route(
+                encodeResponse(Coder.Gzip).route(
                     complete("tester")
                 )
             );
