@@ -20,8 +20,6 @@ class GzipSpec extends CoderSpec {
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream =
     new GZIPOutputStream(underlying)
 
-  protected def corruptInputMessage: Option[String] = Some("invalid code lengths set")
-
   override def extraTests(): Unit = {
     "decode concatenated compressions" in {
       ourDecode(Seq(encode("Hello, "), encode("dear "), encode("User!")).join) should readAs("Hello, dear User!")
