@@ -119,7 +119,7 @@ private[japi] object RouteImplementation extends Directives with server.RouteCon
       }.apply(inner)
 
     case EncodeResponse(coders, children) ⇒
-      compressResponse(coders.map(_._underlyingScalaCoder()): _*).apply(apply(RouteAlternatives(children)))
+      encodeResponse(coders.map(_._underlyingScalaCoder()): _*).apply(apply(RouteAlternatives(children)))
 
     case Conditional(eTag, lastModified, children) ⇒
       conditional(eTag.asScala, lastModified.asScala).apply(apply(RouteAlternatives(children)))
