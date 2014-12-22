@@ -41,14 +41,14 @@ trait CodingDirectives {
    * If no encoders are specifically given Gzip, Deflate and NoEncoding
    * are used in this order, depending on what the client accepts.
    */
-  def compressResponse(encoders: Encoder*): Directive0 =
-    theseOrDefault(encoders).map(encodeResponse(_)).reduce(_ | _)
+  def encodeResponse(encoders: Encoder*): Directive0 =
+    theseOrDefault(encoders).map(encodeResponse).reduce(_ | _)
 
   /**
    * Wraps its inner Route with response compression if and only if the client
    * specifically requests compression with an `Accept-Encoding` header.
    */
-  def compressResponseIfRequested(): Directive0 = compressResponse(NoCoding, Gzip, Deflate)
+  def encodeResponseIfRequested(): Directive0 = encodeResponse(NoCoding, Gzip, Deflate)
 
   // decoding
 
@@ -85,7 +85,7 @@ trait CodingDirectives {
    * encoders. If the request encoding doesn't match one of the given encoders
    * the request is rejected with an `UnsupportedRequestEncodingRejection`.
    */
-  def decompressRequest(decoders: Decoder*): Directive0 =
+  def decodeRequest(decoders: Decoder*): Directive0 =
     theseOrDefault(decoders).map(decodeRequest).reduce(_ | _)
 }
 

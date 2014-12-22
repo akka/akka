@@ -234,7 +234,7 @@ class CodingDirectivesSpec extends RoutingSpec {
   }
 
   "a (encodeResponse(NoEncoding) | encodeResponse(Gzip)) compound directive" should {
-    lazy val encodeIdentityOrGzip = (encodeResponse(NoCoding) | encodeResponse(Gzip))
+    lazy val encodeIdentityOrGzip = encodeResponse(NoCoding) | encodeResponse(Gzip)
     "produce a non-encoded encoded response if the request has no Accept-Encoding header" in {
       Post() ~> {
         encodeIdentityOrGzip { completeOk }
@@ -270,53 +270,18 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the compressResponse directive" should {
-    "produce a GZIP compressed response if the request has no Accept-Encoding header" in {
+  "the encodeResponse directive" should {
+    "produce a GZIP encoded response if the request has no Accept-Encoding header" in {
       Post("/") ~> {
-        compressResponse() { yeah }
+        encodeResponse() { yeah }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
       }
     }
-    "produce a GZIP compressed response if the request has an `Accept-Encoding: gzip, deflate` header" in {
+    "produce a GZIP encoded response if the request has an `Accept-Encoding: gzip, deflate` header" in {
       Post("/") ~> `Accept-Encoding`(gzip, deflate) ~> {
-        compressResponse() { yeah }
-      } ~> check {
-        response should haveContentEncoding(gzip)
-        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
-      }
-    }
-    "produce a Deflate compressed response if the request has an `Accept-Encoding: deflate` header" in {
-      Post("/") ~> `Accept-Encoding`(deflate) ~> {
-        compressResponse() { yeah }
-      } ~> check {
-        response should haveContentEncoding(deflate)
-        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahDeflated)
-      }
-    }
-    "produce an uncompressed response if the request has an `Accept-Encoding: identity` header" in {
-      Post("/") ~> `Accept-Encoding`(identity) ~> {
-        compressResponse() { completeOk }
-      } ~> check {
-        response shouldEqual Ok
-        response should haveNoContentEncoding
-      }
-    }
-  }
-
-  "the compressResponseIfRequested directive" should {
-    "produce an uncompressed response if the request has no Accept-Encoding header" in {
-      Post("/") ~> {
-        compressResponseIfRequested() { yeah }
-      } ~> check {
-        response should haveNoContentEncoding
-        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), "Yeah!")
-      }
-    }
-    "produce a GZIP compressed response if the request has an `Accept-Encoding: deflate, gzip` header" in {
-      Post("/") ~> `Accept-Encoding`(deflate, gzip) ~> {
-        compressResponseIfRequested() { yeah }
+        encodeResponse() { yeah }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
@@ -324,15 +289,15 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
     "produce a Deflate encoded response if the request has an `Accept-Encoding: deflate` header" in {
       Post("/") ~> `Accept-Encoding`(deflate) ~> {
-        compressResponseIfRequested() { yeah }
+        encodeResponse() { yeah }
       } ~> check {
         response should haveContentEncoding(deflate)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahDeflated)
       }
     }
-    "produce an uncompressed response if the request has an `Accept-Encoding: identity` header" in {
+    "produce an unencoded response if the request has an `Accept-Encoding: identity` header" in {
       Post("/") ~> `Accept-Encoding`(identity) ~> {
-        compressResponseIfRequested() { completeOk }
+        encodeResponse() { completeOk }
       } ~> check {
         response shouldEqual Ok
         response should haveNoContentEncoding
@@ -340,26 +305,61 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the compressResponseWith directive" should {
-    "produce a response compressed with the specified Encoder if the request has a matching Accept-Encoding header" in {
-      Post("/") ~> `Accept-Encoding`(gzip) ~> {
-        compressResponse(Gzip) { yeah }
+  "the encodeResponseIfRequested directive" should {
+    "produce an unencoded response if the request has no Accept-Encoding header" in {
+      Post("/") ~> {
+        encodeResponseIfRequested() { yeah }
+      } ~> check {
+        response should haveNoContentEncoding
+        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), "Yeah!")
+      }
+    }
+    "produce a GZIP encoded response if the request has an `Accept-Encoding: deflate, gzip` header" in {
+      Post("/") ~> `Accept-Encoding`(deflate, gzip) ~> {
+        encodeResponseIfRequested() { yeah }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
       }
     }
-    "produce a response compressed with one of the specified Encoders if the request has a matching Accept-Encoding header" in {
+    "produce a Deflate encoded response if the request has an `Accept-Encoding: deflate` header" in {
       Post("/") ~> `Accept-Encoding`(deflate) ~> {
-        compressResponse(Gzip, Deflate) { yeah }
+        encodeResponseIfRequested() { yeah }
       } ~> check {
         response should haveContentEncoding(deflate)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahDeflated)
       }
     }
-    "produce a response compressed with the first of the specified Encoders if the request has no Accept-Encoding header" in {
+    "produce an unencoded response if the request has an `Accept-Encoding: identity` header" in {
+      Post("/") ~> `Accept-Encoding`(identity) ~> {
+        encodeResponseIfRequested() { completeOk }
+      } ~> check {
+        response shouldEqual Ok
+        response should haveNoContentEncoding
+      }
+    }
+  }
+
+  "the encodeResponse directive" should {
+    "produce a response encoded with the specified Encoder if the request has a matching Accept-Encoding header" in {
+      Post("/") ~> `Accept-Encoding`(gzip) ~> {
+        encodeResponse(Gzip) { yeah }
+      } ~> check {
+        response should haveContentEncoding(gzip)
+        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
+      }
+    }
+    "produce a response encoded with one of the specified Encoders if the request has a matching Accept-Encoding header" in {
+      Post("/") ~> `Accept-Encoding`(deflate) ~> {
+        encodeResponse(Gzip, Deflate) { yeah }
+      } ~> check {
+        response should haveContentEncoding(deflate)
+        responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahDeflated)
+      }
+    }
+    "produce a response encoded with the first of the specified Encoders if the request has no Accept-Encoding header" in {
       Post("/") ~> {
-        compressResponse(Gzip, Deflate) { yeah }
+        encodeResponse(Gzip, Deflate) { yeah }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), yeahGzipped)
@@ -367,82 +367,82 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
     "reject the request if it has an Accept-Encoding header with an encoding that doesn't match" in {
       Post("/") ~> `Accept-Encoding`(deflate) ~> {
-        compressResponse(Gzip) { yeah }
+        encodeResponse(Gzip) { yeah }
       } ~> check {
         rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
       }
     }
   }
 
-  "the decompressRequest directive" should {
-    "decompress the request content if it has a `Content-Encoding: gzip` header and the content is gzip encoded" in {
+  "the decodeRequest directive" should {
+    "decode the request content if it has a `Content-Encoding: gzip` header and the content is gzip encoded" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
-        decompressRequest() { echoRequestContent }
+        decodeRequest() { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
-    "decompress the request content if it has a `Content-Encoding: deflate` header and the content is deflate encoded" in {
+    "decode the request content if it has a `Content-Encoding: deflate` header and the content is deflate encoded" in {
       Post("/", helloDeflated) ~> `Content-Encoding`(deflate) ~> {
-        decompressRequest() { echoRequestContent }
+        decodeRequest() { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
-    "decompress the request content if it has a `Content-Encoding: identity` header and the content is not encoded" in {
+    "decode the request content if it has a `Content-Encoding: identity` header and the content is not encoded" in {
       Post("/", "yes") ~> `Content-Encoding`(identity) ~> {
-        decompressRequest() { echoRequestContent }
+        decodeRequest() { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "yes" }
     }
-    "decompress the request content using NoEncoding if no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decompressRequest() { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
+    "decode the request content using NoEncoding if no Content-Encoding header is present" in {
+      Post("/", "yes") ~> decodeRequest() { echoRequestContent } ~> check { responseAs[String] shouldEqual "yes" }
     }
-    "reject the request if it has a `Content-Encoding: deflate` header but the request is compressed with Gzip" in {
+    "reject the request if it has a `Content-Encoding: deflate` header but the request is encoded with Gzip" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~>
-        decompressRequest() { echoRequestContent } ~> check {
+        decodeRequest() { echoRequestContent } ~> check {
           status shouldEqual BadRequest
           responseAs[String] shouldEqual "The request's encoding is corrupt"
         }
     }
   }
 
-  "the decompressRequestWith directive" should {
-    "decompress the request content if its `Content-Encoding` header matches the specified encoder" in {
+  "the decodeRequestWith directive" should {
+    "decode the request content if its `Content-Encoding` header matches the specified encoder" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
-        decompressRequest(Gzip) { echoRequestContent }
+        decodeRequest(Gzip) { echoRequestContent }
       } ~> check { responseAs[String] shouldEqual "Hello" }
     }
     "reject the request if its `Content-Encoding` header doesn't match the specified encoder" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(deflate) ~> {
-        decompressRequest(Gzip) { echoRequestContent }
+        decodeRequest(Gzip) { echoRequestContent }
       } ~> check {
         rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
       }
     }
-    "reject the request when decompressing with GZIP and no Content-Encoding header is present" in {
-      Post("/", "yes") ~> decompressRequest(Gzip) { echoRequestContent } ~> check {
+    "reject the request when decodeing with GZIP and no Content-Encoding header is present" in {
+      Post("/", "yes") ~> decodeRequest(Gzip) { echoRequestContent } ~> check {
         rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
       }
     }
   }
 
-  "the (decompressRequest & compressResponse) compound directive" should {
-    lazy val decompressCompress = (decompressRequest() & compressResponse())
-    "decompress a GZIP compressed request and produce a GZIP compressed response if the request has no Accept-Encoding header" in {
+  "the (decodeRequest & encodeResponse) compound directive" should {
+    lazy val decodeEncode = decodeRequest() & encodeResponse()
+    "decode a GZIP encoded request and produce a GZIP encoded response if the request has no Accept-Encoding header" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
-        decompressCompress { echoRequestContent }
+        decodeEncode { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloGzipped)
       }
     }
-    "decompress a GZIP compressed request and produce a Deflate compressed response if the request has an `Accept-Encoding: deflate` header" in {
+    "decode a GZIP encoded request and produce a Deflate encoded response if the request has an `Accept-Encoding: deflate` header" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> `Accept-Encoding`(deflate) ~> {
-        decompressCompress { echoRequestContent }
+        decodeEncode { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(deflate)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloDeflated)
       }
     }
-    "decompress an uncompressed request and produce a GZIP compressed response if the request has an `Accept-Encoding: gzip` header" in {
+    "decode an unencoded request and produce a GZIP encoded response if the request has an `Accept-Encoding: gzip` header" in {
       Post("/", "Hello") ~> `Accept-Encoding`(gzip) ~> {
-        decompressCompress { echoRequestContent }
+        decodeEncode { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloGzipped)
@@ -450,18 +450,18 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
   }
 
-  "the (decompressRequest & compressResponseIfRequested) compound directive" should {
-    lazy val decompressCompressIfRequested = decompressRequest() & compressResponseIfRequested()
+  "the (decodeRequest & encodeResponseIfRequested) compound directive" should {
+    lazy val decodeEncodeIfRequested = decodeRequest() & encodeResponseIfRequested()
     "decode a GZIP encoded request and produce a non-encoded response if the request has no Accept-Encoding header" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> {
-        decompressCompressIfRequested { echoRequestContent }
+        decodeEncodeIfRequested { echoRequestContent }
       } ~> check {
         responseAs[String] shouldEqual "Hello"
       }
     }
     "decode a GZIP encoded request and produce a Deflate encoded response if the request has an `Accept-Encoding: deflate` header" in {
       Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> `Accept-Encoding`(deflate) ~> {
-        decompressCompressIfRequested { echoRequestContent }
+        decodeEncodeIfRequested { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(deflate)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloDeflated)
@@ -469,7 +469,7 @@ class CodingDirectivesSpec extends RoutingSpec {
     }
     "decode a non-encoded request and produce a GZIP encoded response if the request has an `Accept-Encoding: gzip` header" in {
       Post("/", "Hello") ~> `Accept-Encoding`(gzip) ~> {
-        decompressCompressIfRequested { echoRequestContent }
+        decodeEncodeIfRequested { echoRequestContent }
       } ~> check {
         response should haveContentEncoding(gzip)
         responseEntity shouldEqual HttpEntity(ContentType(`text/plain`, `UTF-8`), helloGzipped)
