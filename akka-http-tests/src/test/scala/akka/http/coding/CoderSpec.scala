@@ -28,7 +28,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream
 
   case object AllDataAllowed extends Exception with NoStackTrace
-  protected def corruptInputMessage: Option[String]
+  protected def corruptInputCheck: Boolean = true
 
   def extraTests(): Unit = {}
 
@@ -55,10 +55,11 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
       val request = HttpRequest(POST, entity = HttpEntity(largeText))
       Coder.decode(Coder.encode(request)) should equal(request)
     }
-    "throw an error on corrupt input" in {
-      corruptInputMessage foreach { message ⇒
-        val ex = the[DataFormatException] thrownBy ourDecode(corruptContent)
-        ex.getMessage should equal(message)
+    if (corruptInputCheck) {
+      "throw an error on corrupt input" in {
+        a[DataFormatException] should be thrownBy {
+          ourDecode(corruptContent)
+        }
       }
     }
     "not throw an error if a subsequent block is corrupt" in {

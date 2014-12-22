@@ -9,7 +9,7 @@ import java.io.{ OutputStream, InputStream }
 class NoCodingSpec extends CoderSpec {
   protected def Coder: Coder with StreamDecoder = NoCoding
 
-  protected def corruptInputMessage: Option[String] = None // all input data is valid
+  override protected def corruptInputCheck = false
 
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream = underlying
   protected def newDecodedInputStream(underlying: InputStream): InputStream = underlying
