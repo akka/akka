@@ -22,7 +22,7 @@ class HttpServerExampleSpec
     implicit val materializer = FlowMaterializer()
 
     val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
-    serverBinding.connections.foreach { connection ⇒ // foreach materializes the source
+    serverBinding.connections.foreach { connection => // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
     }
     //#bind-example
@@ -41,15 +41,15 @@ class HttpServerExampleSpec
     import akka.http.model.HttpMethods._
     import akka.stream.scaladsl.Flow
 
-    val requestHandler: HttpRequest ⇒ HttpResponse = {
-      case HttpRequest(GET, Uri.Path("/"), _, _, _) ⇒
+    val requestHandler: HttpRequest => HttpResponse = {
+      case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
         HttpResponse(
           entity = HttpEntity(MediaTypes.`text/html`,
             "<html><body>Hello world!</body></html>"))
 
-      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
-      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-      case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
+      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  => HttpResponse(entity = "PONG!")
+      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
+      case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
     }
 
     serverBinding.connections foreach { connection =>

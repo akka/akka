@@ -18,7 +18,6 @@ import akka.stream.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-// TODO replace ⇒ with => and disable this intellij setting
 class FlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
@@ -28,7 +27,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = FlowGraph { implicit b ⇒
+    val g = FlowGraph { implicit b =>
       import FlowGraphImplicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
@@ -51,7 +50,7 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "build simple graph without implicits" in {
     //#simple-flow-graph-no-implicits
-    val g = FlowGraph { b ⇒
+    val g = FlowGraph { b =>
       val in = Source(1 to 10)
       val out = Sink.ignore
 
@@ -75,7 +74,7 @@ class FlowGraphDocSpec extends AkkaSpec {
   "flow connection errors" in {
     intercept[IllegalArgumentException] {
       //#simple-graph
-      FlowGraph { implicit b ⇒
+      FlowGraph { implicit b =>
         import FlowGraphImplicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
@@ -102,7 +101,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val g =
     //#flow-graph-reusing-a-flow
-    FlowGraph { implicit b ⇒
+    FlowGraph { implicit b =>
       import FlowGraphImplicits._
       val broadcast = Broadcast[Int]
       Source.single(1) ~> broadcast

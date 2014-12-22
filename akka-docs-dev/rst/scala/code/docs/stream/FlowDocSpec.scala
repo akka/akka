@@ -12,7 +12,6 @@ import akka.stream.testkit.AkkaSpec
 
 import concurrent.Future
 
-// TODO replace ⇒ with => and disable this intellij setting
 class FlowDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
@@ -26,10 +25,10 @@ class FlowDocSpec extends AkkaSpec {
   "source is immutable" in {
     //#source-immutable
     val source = Source(1 to 10)
-    source.map(_ ⇒ 0) // has no effect on source, since it's immutable
+    source.map(_ => 0) // has no effect on source, since it's immutable
     source.runWith(Sink.fold(0)(_ + _)) // 55
 
-    val zeroes = source.map(_ ⇒ 0) // returns new Source[Int], with `map()` appended
+    val zeroes = source.map(_ => 0) // returns new Source[Int], with `map()` appended
     zeroes.runWith(Sink.fold(0)(_ + _)) // 0
     //#source-immutable
   }
@@ -66,12 +65,12 @@ class FlowDocSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case object Tick
 
-    val timer = Source(initialDelay = 1.second, interval = 1.seconds, tick = () ⇒ Tick)
+    val timer = Source(initialDelay = 1.second, interval = 1.seconds, tick = () => Tick)
 
     val timerCancel: Cancellable = Sink.ignore.runWith(timer)
     timerCancel.cancel()
 
-    val timerMap = timer.map(tick ⇒ "tick")
+    val timerMap = timer.map(tick => "tick")
     val _ = Sink.ignore.runWith(timerMap) // WRONG: returned type is not the timers Cancellable!
     //#compound-source-is-not-keyed-runWith
 

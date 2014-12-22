@@ -88,7 +88,7 @@ As library user you do not have to write any explicit back-pressure handling cod
 and dealt with automatically by all of the provided Akka Streams processing stages. However is possible to include
 explicit buffers with overflow strategies that can influence the behaviour of the stream. This is especially important
 in complex processing graphs which may even sometimes even contain loops (which *must* be treated with very special
-care, as explained in :ref:`cycles-scala`).
+care, as explained in :ref:`graph-cycles-scala`).
 
 The back pressure protocol is defined in terms of the number of elements a downstream ``Subscriber`` is able to receive,
 referred to as ``demand``. This demand is the *number of elements* receiver of the data, referred to as ``Subscriber``

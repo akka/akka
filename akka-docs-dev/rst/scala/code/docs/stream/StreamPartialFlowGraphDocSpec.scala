@@ -21,7 +21,6 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-// TODO replace ⇒ with => and disable this intellij setting
 class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
@@ -39,7 +38,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     val in3 = UndefinedSource[Int]
     val out = UndefinedSink[Int]
 
-    val pickMaxOfThree: PartialFlowGraph = PartialFlowGraph { implicit b ⇒
+    val pickMaxOfThree: PartialFlowGraph = PartialFlowGraph { implicit b =>
       import FlowGraphImplicits._
 
       val zip1 = ZipWith[Int, Int, Int](math.max _)
@@ -57,7 +56,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val resultSink = Sink.head[Int]
 
-    val g = FlowGraph { b ⇒
+    val g = FlowGraph { b =>
       // import the partial flow graph explicitly
       b.importPartialFlowGraph(pickMaxOfThree)
 
@@ -74,7 +73,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     val g2 =
       //#simple-partial-flow-graph-import-shorthand
-      FlowGraph(pickMaxOfThree) { b ⇒
+      FlowGraph(pickMaxOfThree) { b =>
         b.attachSource(in1, Source.single(1))
         b.attachSource(in2, Source.single(2))
         b.attachSource(in3, Source.single(3))
@@ -88,13 +87,13 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
-    val pairs: Source[(Int, Int)] = Source() { implicit b ⇒
+    val pairs: Source[(Int, Int)] = Source() { implicit b =>
       import FlowGraphImplicits._
 
       // prepare graph elements
       val undefinedSink = UndefinedSink[(Int, Int)]
       val zip = Zip[Int, Int]
-      def ints = Source(() ⇒ Iterator.from(1))
+      def ints = Source(() => Iterator.from(1))
 
       // connect the graph
       ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
@@ -112,7 +111,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   "build flow from partial flow graph" in {
     //#flow-from-partial-flow-graph
-    val pairUpWithToString = Flow() { implicit b ⇒
+    val pairUpWithToString = Flow() { implicit b =>
       import FlowGraphImplicits._
 
       // prepare graph elements

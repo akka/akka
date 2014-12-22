@@ -131,6 +131,8 @@ For defining a ``Flow[T]`` we need to expose both an undefined source and sink:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
 
+.. _graph-cycles-scala:
+
 Graph cycles, liveness and deadlocks
 ------------------------------------
 
@@ -166,7 +168,7 @@ that the elements in the cycles can flow.
 
 If we run the example we see that the same sequence of numbers are printed
 over and over again, but the processing does not stop. Hence, we avoided the deadlock, but ``source`` is still
-backpressured forever, because buffer space is never recovered: the only action we see is the circulation of a couple
+back-pressured forever, because buffer space is never recovered: the only action we see is the circulation of a couple
 of initial elements from ``source``.
 
 .. note::

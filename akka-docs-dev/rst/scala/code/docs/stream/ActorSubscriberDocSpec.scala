@@ -47,11 +47,11 @@ object ActorSubscriberDocSpec {
     }
 
     def receive = {
-      case OnNext(Msg(id, replyTo)) ⇒
+      case OnNext(Msg(id, replyTo)) =>
         queue += (id -> replyTo)
         assert(queue.size <= MaxQueueSize, s"queued too many: ${queue.size}")
         router.route(Work(id), self)
-      case Reply(id) ⇒
+      case Reply(id) =>
         queue(id) ! Done(id)
         queue -= id
     }
@@ -60,7 +60,7 @@ object ActorSubscriberDocSpec {
   class Worker extends Actor {
     import WorkerPool._
     def receive = {
-      case Work(id) ⇒
+      case Work(id) =>
         // ...
         sender() ! Reply(id)
     }
