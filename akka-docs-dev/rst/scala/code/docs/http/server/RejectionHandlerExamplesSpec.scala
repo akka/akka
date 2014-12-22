@@ -53,7 +53,7 @@ class RejectionHandlerExamplesSpec extends RoutingSpec {
           complete("Received GET")
         } ~
           post {
-            decodeRequest(Gzip) {
+            decodeRequestWith(Gzip) {
               complete("Received POST")
             }
           }
