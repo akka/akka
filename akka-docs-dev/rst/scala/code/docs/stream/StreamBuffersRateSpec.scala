@@ -8,6 +8,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
   implicit val mat = FlowMaterializer()
 
   "Demonstrate pipelining" in {
+    def println(s: Any) = ()
     //#pipelining
     Source(1 to 3)
       .map { i => println(s"A: $i"); i }
