@@ -57,4 +57,31 @@ class StreamBuffersRateSpec extends AkkaSpec {
     //#buffering-abstraction-leak
   }
 
+  "explcit buffers" in {
+    trait Job
+    def inboundJobsConnector(): Source[Job] = Source.empty()
+    //#explicit-buffers-backpressure
+    // Getting a stream of jobs from an imaginary external system as a Source
+    val jobs: Source[Job] = inboundJobsConnector()
+    jobs.buffer(1000, OverflowStrategy.backpressure)
+    //#explicit-buffers-backpressure
+
+    //#explicit-buffers-droptail
+    jobs.buffer(1000, OverflowStrategy.dropTail)
+    //#explicit-buffers-droptail
+
+    //#explicit-buffers-drophead
+    jobs.buffer(1000, OverflowStrategy.dropHead)
+    //#explicit-buffers-drophead
+
+    //#explicit-buffers-dropbuffer
+    jobs.buffer(1000, OverflowStrategy.dropBuffer)
+    //#explicit-buffers-dropbuffer
+
+    //#explicit-buffers-error
+    jobs.buffer(1000, OverflowStrategy.error)
+    //#explicit-buffers-error
+
+  }
+
 }
