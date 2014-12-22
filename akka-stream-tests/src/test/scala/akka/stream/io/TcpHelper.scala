@@ -3,21 +3,14 @@
  */
 package akka.stream.io
 
-import java.io.Closeable
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.io.{ IO, Tcp }
-import akka.stream.scaladsl.Flow
 import akka.stream.testkit.StreamTestKit
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.testkit.{ TestKitBase, TestProbe }
 import akka.util.ByteString
 import java.net.InetSocketAddress
-import java.nio.channels.ServerSocketChannel
-import org.reactivestreams.Processor
 import scala.collection.immutable.Queue
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration.Duration
-import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
 object TcpHelper {
