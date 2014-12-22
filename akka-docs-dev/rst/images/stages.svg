@@ -1,0 +1,1124 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="744.09448819"
+   height="1052.3622047"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.5 r10040"
+   sodipodi:docname="stages.svg">
+  <defs
+     id="defs4">
+    <marker
+       inkscape:stockid="TriangleOutL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleOutL"
+       style="overflow:visible">
+      <path
+         id="path3906"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="TriangleInL"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleInL"
+       style="overflow:visible">
+      <path
+         id="path3897"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(-0.8)" />
+    </marker>
+    <marker
+       inkscape:stockid="TriangleInM"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleInM"
+       style="overflow:visible">
+      <path
+         id="path3900"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(-0.4)" />
+    </marker>
+    <marker
+       inkscape:stockid="TriangleOutM"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="TriangleOutM"
+       style="overflow:visible">
+      <path
+         id="path3909"
+         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt"
+         transform="scale(0.4)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Send"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Send"
+       style="overflow:visible;">
+      <path
+         id="path3779"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.2) rotate(180) translate(6,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Mend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Mend"
+       style="overflow:visible;">
+      <path
+         id="path3773"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.4) rotate(180) translate(10,0)" />
+    </marker>
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lend"
+       style="overflow:visible;">
+      <path
+         id="path3767"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.0pt;"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+  </defs>
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="0.90277708"
+     inkscape:cx="350.97047"
+     inkscape:cy="531.58587"
+     inkscape:document-units="px"
+     inkscape:current-layer="g7976"
+     showgrid="false"
+     inkscape:window-width="1080"
+     inkscape:window-height="1857"
+     inkscape:window-x="1072"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid4792" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-size:24px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+       x="115.13883"
+       y="35.694141"
+       id="text5402"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan5404"
+         x="115.13883"
+         y="35.694141" /></text>
+    <g
+       id="g7452"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_conceptual.png"
+       inkscape:export-xdpi="159.14568"
+       inkscape:export-ydpi="159.14568">
+      <path
+         sodipodi:nodetypes="cccc"
+         style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-mid:url(#TriangleOutM);stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 101.02791,90.37584 61.24141,0 m 35.44356,-1e-5 62.46999,1e-5"
+         id="path5388"
+         inkscape:connector-curvature="0" />
+      <path
+         sodipodi:nodetypes="cccc"
+         style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-mid:url(#TriangleInM);stroke-miterlimit:4;stroke-dasharray:none"
+         d="m 101.00673,167.66737 60.8208,-1e-5 m 38.64576,0 59.70605,1e-5"
+         id="path5390"
+         inkscape:connector-curvature="0" />
+      <rect
+         y="76.573776"
+         x="101.09848"
+         height="104.89561"
+         width="160.10391"
+         id="rect5392"
+         style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0" />
+      <text
+         sodipodi:linespacing="125%"
+         id="text5410"
+         y="85.840805"
+         x="103.28307"
+         style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="85.840805"
+           x="103.28307"
+           id="tspan5412"
+           sodipodi:role="line">onPush(in,<tspan
+   id="tspan5432"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5418"
+         y="176.42937"
+         x="222.59912"
+         style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="176.42937"
+           x="222.59912"
+           id="tspan5420"
+           sodipodi:role="line">onPull(<tspan
+   id="tspan5434"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5422"
+         y="176.03777"
+         x="109.94077"
+         style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="176.03777"
+           x="109.94077"
+           id="tspan5424"
+           sodipodi:role="line">ctx.pull()</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5426"
+         y="85.840805"
+         x="203.80095"
+         style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="85.840805"
+           x="203.80095"
+           id="tspan5428"
+           sodipodi:role="line">ctx.push(out)</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text5438"
+         y="71.75042"
+         x="98.554909"
+         style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="71.75042"
+           x="98.554909"
+           id="tspan5440"
+           sodipodi:role="line">PushPullStage</tspan></text>
+    </g>
+    <path
+       sodipodi:nodetypes="cscsc"
+       inkscape:connector-curvature="0"
+       id="path4778"
+       d="m 565.57931,716.58153 33.14965,0 c 20.53855,0 37.18834,17.20555 37.18834,38.42968 0,21.22412 -16.64979,38.42968 -37.18834,38.42968 l -30.94132,0"
+       style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518" />
+    <rect
+       y="-807.18524"
+       x="-639.80908"
+       height="104.82307"
+       width="74.80909"
+       id="rect4780"
+       style="fill:none;stroke:#999999;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999989, 1.99999994;stroke-dashoffset:0"
+       transform="scale(-1,-1)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518" />
+    <text
+       xml:space="preserve"
+       style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+       x="564.41394"
+       y="697.32587"
+       id="text5446"
+       sodipodi:linespacing="125%"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518"><tspan
+         sodipodi:role="line"
+         id="tspan5448"
+         x="564.41394"
+         y="697.32587">Sink</tspan></text>
+    <g
+       id="g5567"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_conceptual.png"
+       inkscape:export-xdpi="159.14568"
+       inkscape:export-ydpi="159.14568">
+      <text
+         sodipodi:linespacing="125%"
+         id="text5442"
+         y="71.75042"
+         x="13.516726"
+         style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="71.75042"
+           x="13.516726"
+           id="tspan5444"
+           sodipodi:role="line">Source</tspan></text>
+      <g
+         id="g5473"
+         transform="matrix(0.55208233,0,0,0.57051073,-14.325001,33.303253)">
+        <g
+           id="g5475"
+           transform="translate(11.54579,-8.594172)">
+          <path
+             sodipodi:nodetypes="cscsc"
+             inkscape:connector-curvature="0"
+             id="path5477"
+             d="m 174.40033,243.62432 -60.04476,0 c -37.201977,0 -67.360137,-30.15815 -67.360137,-67.36013 0,-37.20197 30.15816,-67.36013 67.360137,-67.36013 l 56.04476,0"
+             style="fill:none;stroke:#000000;stroke-width:3.56365895;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)" />
+          <rect
+             y="84.812706"
+             x="39.946121"
+             height="183.7355"
+             width="135.50351"
+             id="rect5479"
+             style="fill:none;stroke:#999999;stroke-width:3.56365895;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.12731818, 3.56365908;stroke-dashoffset:0" />
+        </g>
+      </g>
+    </g>
+    <g
+       transform="translate(-1.9581434,451.15624)"
+       id="g7745" />
+    <text
+       xml:space="preserve"
+       style="font-size:12px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+       x="295.28802"
+       y="303.56815"
+       id="text7817"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan7819"></tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+       x="279.13867"
+       y="272.5462"
+       id="text7821"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan7823"
+         x="279.13867"
+         y="272.5462" /></text>
+    <g
+       id="g7867"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_map.png"
+       inkscape:export-xdpi="165.67004"
+       inkscape:export-ydpi="165.67004">
+      <g
+         transform="translate(-3.4852974,156.76955)"
+         id="g7471">
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           id="path7473"
+           inkscape:connector-curvature="0" />
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           id="path7475"
+           inkscape:connector-curvature="0" />
+        <rect
+           y="76.573776"
+           x="101.09848"
+           height="104.89561"
+           width="160.10391"
+           id="rect7477"
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text7479"
+           y="85.840805"
+           x="103.28307"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="103.28307"
+             id="tspan7481"
+             sodipodi:role="line">onPush(in,<tspan
+   id="tspan7485"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7487"
+           y="176.42937"
+           x="222.59912"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.42937"
+             x="222.59912"
+             id="tspan7489"
+             sodipodi:role="line">onPull(<tspan
+   id="tspan7491"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7493"
+           y="176.03777"
+           x="109.94077"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.03777"
+             x="109.94077"
+             id="tspan7495"
+             sodipodi:role="line">ctx.pull()</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7497"
+           y="85.840805"
+           x="203.80095"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="203.80095"
+             id="tspan7499"
+             sodipodi:role="line">ctx.push(out)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7503"
+           y="71.75042"
+           x="98.554909"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="71.75042"
+             x="98.554909"
+             id="tspan7505"
+             sodipodi:role="line">Map</tspan></text>
+      </g>
+      <text
+         sodipodi:linespacing="125%"
+         id="text7825"
+         y="266.45386"
+         x="155.63091"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="266.45386"
+           x="155.63091"
+           id="tspan7827"
+           sodipodi:role="line">f(<tspan
+   id="tspan7851"
+   style="font-style:oblique;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">in</tspan>)</tspan></text>
+    </g>
+    <g
+       id="g7888"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_filter.png"
+       inkscape:export-xdpi="165.66995"
+       inkscape:export-ydpi="165.66995">
+      <path
+         style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)"
+         d="m 100.66927,383.13415 33.14965,0 c 20.53855,0 37.18834,17.20555 37.18834,38.42968 0,21.22413 -16.64979,38.42968 -37.18834,38.42968 l -30.94132,0"
+         id="path7633"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="cscsc" />
+      <g
+         id="g7635"
+         transform="translate(-1.9581434,292.47783)">
+        <path
+           inkscape:connector-curvature="0"
+           id="path7637"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           sodipodi:nodetypes="cccc" />
+        <path
+           inkscape:connector-curvature="0"
+           id="path7639"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           sodipodi:nodetypes="cccc" />
+        <rect
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0"
+           id="rect7641"
+           width="160.10391"
+           height="104.89561"
+           x="101.09848"
+           y="76.573776" />
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="103.28307"
+           y="85.840805"
+           id="text7643"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7645"
+             x="103.28307"
+             y="85.840805">onPush(in,<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7649">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="222.59912"
+           y="176.42937"
+           id="text7651"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7653"
+             x="222.59912"
+             y="176.42937">onPull(<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7655">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="109.94077"
+           y="176.03777"
+           id="text7657"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7659"
+             x="109.94077"
+             y="176.03777">ctx.pull()</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="203.80095"
+           y="85.840805"
+           id="text7661"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7663"
+             x="203.80095"
+             y="85.840805">ctx.push(out)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="98.554909"
+           y="71.75042"
+           id="text7667"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7669"
+             x="98.554909"
+             y="71.75042">Filter</tspan></text>
+      </g>
+      <text
+         sodipodi:linespacing="125%"
+         id="text7829"
+         y="399.31555"
+         x="174.03091"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="399.31555"
+           x="174.03091"
+           id="tspan7831"
+           sodipodi:role="line">if p(in)</tspan></text>
+      <text
+         inkscape:transform-center-x="46.523113"
+         sodipodi:linespacing="125%"
+         id="text7833"
+         y="424.57706"
+         x="125.72318"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="424.57706"
+           x="125.72318"
+           id="tspan7835"
+           sodipodi:role="line">if !p(in)</tspan></text>
+    </g>
+    <g
+       id="g7911"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_doubler.png"
+       inkscape:export-xdpi="166.43703"
+       inkscape:export-ydpi="166.43703">
+      <path
+         sodipodi:nodetypes="cscsc"
+         inkscape:connector-curvature="0"
+         id="path7779"
+         d="m 254.31633,589.51423 -33.14965,0 c -20.53855,0 -37.18834,-17.20555 -37.18834,-38.42968 0,-21.22413 16.64979,-38.42968 37.18834,-38.42968 l 30.94132,0"
+         style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)" />
+      <g
+         transform="translate(-2.7414008,422.49855)"
+         id="g7781">
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           id="path7783"
+           inkscape:connector-curvature="0" />
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           id="path7785"
+           inkscape:connector-curvature="0" />
+        <rect
+           y="76.573776"
+           x="101.09848"
+           height="104.89561"
+           width="160.10391"
+           id="rect7787"
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text7789"
+           y="85.840805"
+           x="103.28307"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="103.28307"
+             id="tspan7791"
+             sodipodi:role="line">onPush(in,<tspan
+   id="tspan7795"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7797"
+           y="176.42937"
+           x="222.59912"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.42937"
+             x="222.59912"
+             id="tspan7799"
+             sodipodi:role="line">onPull(<tspan
+   id="tspan7801"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7803"
+           y="176.03777"
+           x="109.94077"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.03777"
+             x="109.94077"
+             id="tspan7805"
+             sodipodi:role="line">ctx.pull()</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7807"
+           y="85.840805"
+           x="203.80095"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="203.80095"
+             id="tspan7809"
+             sodipodi:role="line">ctx.push(out)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text7813"
+           y="71.75042"
+           x="100.55491"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="71.75042"
+             x="100.55491"
+             id="tspan7815"
+             sodipodi:role="line">Duplicator</tspan></text>
+      </g>
+      <text
+         transform="scale(0.89744775,1.114271)"
+         sodipodi:linespacing="125%"
+         id="text7837"
+         y="470.89108"
+         x="192.79729"
+         style="font-size:11.81851387px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="470.89108"
+           x="192.79729"
+           id="tspan7839"
+           sodipodi:role="line">in</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text7841"
+         y="555.71564"
+         x="189.41554"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="555.71564"
+           x="189.41554"
+           id="tspan7843"
+           sodipodi:role="line">if oneLeft</tspan></text>
+      <text
+         sodipodi:linespacing="125%"
+         id="text7845"
+         y="582.85419"
+         x="124.06164"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         xml:space="preserve"><tspan
+           y="582.85419"
+           x="124.06164"
+           id="tspan7847"
+           sodipodi:role="line">if !oneLeft</tspan></text>
+    </g>
+    <g
+       id="g7853"
+       transform="translate(-4.1027733,625.57544)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518">
+      <text
+         xml:space="preserve"
+         style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="13.516726"
+         y="71.75042"
+         id="text7855"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan7857"
+           x="13.516726"
+           y="71.75042">Source</tspan></text>
+      <g
+         transform="matrix(0.55208233,0,0,0.57051073,-14.325001,33.303253)"
+         id="g7859">
+        <g
+           transform="translate(11.54579,-8.594172)"
+           id="g7861">
+          <path
+             style="fill:none;stroke:#000000;stroke-width:3.56365895;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)"
+             d="m 174.40033,243.62432 -60.04476,0 c -37.201977,0 -67.360137,-30.15815 -67.360137,-67.36013 0,-37.20197 30.15816,-67.36013 67.360137,-67.36013 l 56.04476,0"
+             id="path7863"
+             inkscape:connector-curvature="0"
+             sodipodi:nodetypes="cscsc" />
+          <rect
+             style="fill:none;stroke:#999999;stroke-width:3.56365895;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:7.12731818, 3.56365908;stroke-dashoffset:0"
+             id="rect7865"
+             width="135.50351"
+             height="183.7355"
+             x="39.946121"
+             y="84.812706" />
+        </g>
+      </g>
+    </g>
+    <g
+       id="g7936"
+       transform="translate(307.38682,469.01886)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518">
+      <g
+         id="g7938"
+         transform="translate(-3.4852974,156.76955)">
+        <path
+           inkscape:connector-curvature="0"
+           id="path7940"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           sodipodi:nodetypes="cccc" />
+        <path
+           inkscape:connector-curvature="0"
+           id="path7942"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           sodipodi:nodetypes="cccc" />
+        <rect
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0"
+           id="rect7944"
+           width="160.10391"
+           height="104.89561"
+           x="101.09848"
+           y="76.573776" />
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="103.28307"
+           y="85.840805"
+           id="text7946"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7948"
+             x="103.28307"
+             y="85.840805">onPush(in,<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7950">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="222.59912"
+           y="176.42937"
+           id="text7952"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7954"
+             x="222.59912"
+             y="176.42937">onPull(<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7956">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="109.94077"
+           y="176.03777"
+           id="text7958"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7960"
+             x="109.94077"
+             y="176.03777">ctx.pull()</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="203.80095"
+           y="85.840805"
+           id="text7962"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7964"
+             x="203.80095"
+             y="85.840805">ctx.push(out)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="98.554909"
+           y="71.75042"
+           id="text7966"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7968"
+             x="98.554909"
+             y="71.75042">Map</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="155.63091"
+         y="266.45386"
+         id="text7970"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan7972"
+           x="155.63091"
+           y="266.45386">f(<tspan
+   style="font-style:oblique;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7974">in</tspan>)</tspan></text>
+    </g>
+    <g
+       id="g7976"
+       transform="translate(146.64292,203.28986)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.592499"
+       inkscape:export-ydpi="92.592499">
+      <path
+         style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)"
+         d="m 254.31633,589.51423 -33.14965,0 c -20.53855,0 -37.18834,-17.20555 -37.18834,-38.42968 0,-21.22413 16.64979,-38.42968 37.18834,-38.42968 l 30.94132,0"
+         id="path7978"
+         inkscape:connector-curvature="0"
+         sodipodi:nodetypes="cscsc"
+         inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+         inkscape:export-xdpi="92.557518"
+         inkscape:export-ydpi="92.557518" />
+      <g
+         id="g7980"
+         transform="translate(-2.7414008,422.49855)"
+         inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+         inkscape:export-xdpi="92.557518"
+         inkscape:export-ydpi="92.557518">
+        <path
+           inkscape:connector-curvature="0"
+           id="path7982"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           sodipodi:nodetypes="cccc" />
+        <path
+           inkscape:connector-curvature="0"
+           id="path7984"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           sodipodi:nodetypes="cccc" />
+        <rect
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0"
+           id="rect7986"
+           width="160.10391"
+           height="104.89561"
+           x="101.09848"
+           y="76.573776" />
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="103.28307"
+           y="85.840805"
+           id="text7988"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7990"
+             x="103.28307"
+             y="85.840805">onPush(in,<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7992">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="222.59912"
+           y="176.42937"
+           id="text7994"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan7996"
+             x="222.59912"
+             y="176.42937">onPull(<tspan
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'"
+   id="tspan7998">ctx</tspan>)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="109.94077"
+           y="176.03777"
+           id="text8000"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8002"
+             x="109.94077"
+             y="176.03777">ctx.pull()</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="203.80095"
+           y="85.840805"
+           id="text8004"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8006"
+             x="203.80095"
+             y="85.840805">ctx.push(out)</tspan></text>
+        <text
+           xml:space="preserve"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           x="100.55491"
+           y="71.75042"
+           id="text8008"
+           sodipodi:linespacing="125%"><tspan
+             sodipodi:role="line"
+             id="tspan8010"
+             x="100.55491"
+             y="71.75042">Duplicator</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:11.81851387px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="192.79729"
+         y="470.89108"
+         id="text8012"
+         sodipodi:linespacing="125%"
+         transform="scale(0.89744775,1.114271)"
+         inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+         inkscape:export-xdpi="92.557518"
+         inkscape:export-ydpi="92.557518"><tspan
+           sodipodi:role="line"
+           id="tspan8014"
+           x="192.79729"
+           y="470.89108">in</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="189.41554"
+         y="555.71564"
+         id="text8016"
+         sodipodi:linespacing="125%"
+         inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+         inkscape:export-xdpi="92.557518"
+         inkscape:export-ydpi="92.557518"><tspan
+           sodipodi:role="line"
+           id="tspan8018"
+           x="189.41554"
+           y="555.71564">if oneLeft</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="124.06164"
+         y="582.85419"
+         id="text8020"
+         sodipodi:linespacing="125%"
+         inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+         inkscape:export-xdpi="92.557518"
+         inkscape:export-ydpi="92.557518"><tspan
+           sodipodi:role="line"
+           id="tspan8022"
+           x="124.06164"
+           y="582.85419">if !oneLeft</tspan></text>
+    </g>
+    <g
+       id="g8024"
+       transform="translate(-14.140337,333.31058)"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_chain.png"
+       inkscape:export-xdpi="92.557518"
+       inkscape:export-ydpi="92.557518">
+      <path
+         sodipodi:nodetypes="cscsc"
+         inkscape:connector-curvature="0"
+         id="path8026"
+         d="m 100.66927,383.13415 33.14965,0 c 20.53855,0 37.18834,17.20555 37.18834,38.42968 0,21.22413 -16.64979,38.42968 -37.18834,38.42968 l -30.94132,0"
+         style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)" />
+      <g
+         transform="translate(-1.9581434,292.47783)"
+         id="g8028">
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleOutM)"
+           d="m 101.02791,90.37584 61.24141,0 35.44356,-1e-5 62.46999,1e-5"
+           id="path8030"
+           inkscape:connector-curvature="0" />
+        <path
+           sodipodi:nodetypes="cccc"
+           style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-mid:url(#TriangleInM)"
+           d="m 101.00673,167.66737 60.8208,-1e-5 38.64576,0 59.70605,1e-5"
+           id="path8032"
+           inkscape:connector-curvature="0" />
+        <rect
+           y="76.573776"
+           x="101.09848"
+           height="104.89561"
+           width="160.10391"
+           id="rect8034"
+           style="fill:none;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999997, 1.99999999;stroke-dashoffset:0" />
+        <text
+           sodipodi:linespacing="125%"
+           id="text8036"
+           y="85.840805"
+           x="103.28307"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="103.28307"
+             id="tspan8038"
+             sodipodi:role="line">onPush(in,<tspan
+   id="tspan8040"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text8042"
+           y="176.42937"
+           x="222.59912"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.42937"
+             x="222.59912"
+             id="tspan8044"
+             sodipodi:role="line">onPull(<tspan
+   id="tspan8046"
+   style="font-size:8px;font-style:oblique;fill:#888a85;-inkscape-font-specification:'Franklin Gothic Medium, Oblique'">ctx</tspan>)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text8048"
+           y="176.03777"
+           x="109.94077"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="176.03777"
+             x="109.94077"
+             id="tspan8050"
+             sodipodi:role="line">ctx.pull()</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text8052"
+           y="85.840805"
+           x="203.80095"
+           style="font-size:8px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#888a85;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="85.840805"
+             x="203.80095"
+             id="tspan8054"
+             sodipodi:role="line">ctx.push(out)</tspan></text>
+        <text
+           sodipodi:linespacing="125%"
+           id="text8056"
+           y="71.75042"
+           x="98.554909"
+           style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+           xml:space="preserve"><tspan
+             y="71.75042"
+             x="98.554909"
+             id="tspan8058"
+             sodipodi:role="line">Filter</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="174.03091"
+         y="399.31555"
+         id="text8060"
+         sodipodi:linespacing="125%"><tspan
+           sodipodi:role="line"
+           id="tspan8062"
+           x="174.03091"
+           y="399.31555">if p(in)</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:14px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#f57900;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+         x="125.72318"
+         y="424.57706"
+         id="text8064"
+         sodipodi:linespacing="125%"
+         inkscape:transform-center-x="46.523113"><tspan
+           sodipodi:role="line"
+           id="tspan8066"
+           x="125.72318"
+           y="424.57706">if !p(in)</tspan></text>
+    </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;stroke-dashoffset:0;marker-end:url(#TriangleOutM)"
+       d="m 277.57909,91.627198 33.14965,0 c 20.53855,0 37.18834,17.205552 37.18834,38.429682 0,21.22412 -16.64979,38.42968 -37.18834,38.42968 l -30.94132,0"
+       id="path8068"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cscsc"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_conceptual.png"
+       inkscape:export-xdpi="159.14568"
+       inkscape:export-ydpi="159.14568" />
+    <rect
+       transform="scale(-1,-1)"
+       style="fill:none;stroke:#999999;stroke-width:1.99999988;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:3.99999989, 1.99999994;stroke-dashoffset:0"
+       id="rect8070"
+       width="74.80909"
+       height="104.82307"
+       x="-351.80887"
+       y="-182.23091"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_conceptual.png"
+       inkscape:export-xdpi="159.14568"
+       inkscape:export-ydpi="159.14568" />
+    <text
+       sodipodi:linespacing="125%"
+       id="text8072"
+       y="72.371536"
+       x="276.41373"
+       style="font-size:9.93748188px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Franklin Gothic Medium;-inkscape-font-specification:Franklin Gothic Medium"
+       xml:space="preserve"
+       inkscape:export-filename="C:\Users\Varga\workspace\akka\akka-docs-dev\rst\images\stage_conceptual.png"
+       inkscape:export-xdpi="159.14568"
+       inkscape:export-ydpi="159.14568"><tspan
+         y="72.371536"
+         x="276.41373"
+         id="tspan8074"
+         sodipodi:role="line">Sink</tspan></text>
+  </g>
+</svg>

@@ -16,4 +16,5 @@ Streams
    stream-integrations
    stream-io
    stream-cookbook
+   ../stream-configuration
 
