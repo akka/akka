@@ -34,8 +34,8 @@ private[http] object StreamUtils {
    * Creates a transformer that will call `f` for each incoming ByteString and output its result. After the complete
    * input has been read it will call `finish` once to determine the final ByteString to post to the output.
    */
-  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Flow[ByteString, ByteString] = {
-    val transformer = new PushPullStage[ByteString, ByteString] {
+  def byteStringTransformer(f: ByteString ⇒ ByteString, finish: () ⇒ ByteString): Stage[ByteString, ByteString] = {
+    new PushPullStage[ByteString, ByteString] {
       override def onPush(element: ByteString, ctx: Context[ByteString]): Directive =
         ctx.push(f(element))
 
@@ -45,7 +45,6 @@ private[http] object StreamUtils {
 
       override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective = ctx.absorbTermination()
     }
-    Flow[ByteString].section(name("transformBytes"))(_.transform(() ⇒ transformer))
   }
 
   def failedPublisher[T](ex: Throwable): Publisher[T] =
@@ -93,6 +92,41 @@ private[http] object StreamUtils {
     }
     Flow[ByteString].section(name("sliceBytes"))(_.transform(() ⇒ transformer))
   }
+
+  def limitByteChunksStage(maxBytesPerChunk: Int): Stage[ByteString, ByteString] =
+    new StatefulStage[ByteString, ByteString] {
+      def initial = WaitingForData
+      case object WaitingForData extends State {
+        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+          if (elem.size <= maxBytesPerChunk) ctx.push(elem)
+          else {
+            become(DeliveringData(elem.drop(maxBytesPerChunk)))
+            ctx.push(elem.take(maxBytesPerChunk))
+          }
+      }
+      case class DeliveringData(remaining: ByteString) extends State {
+        def onPush(elem: ByteString, ctx: Context[ByteString]): Directive =
+          throw new IllegalStateException("Not expecting data")
+
+        override def onPull(ctx: Context[ByteString]): Directive = {
+          val toPush = remaining.take(maxBytesPerChunk)
+          val toKeep = remaining.drop(maxBytesPerChunk)
+
+          become {
+            if (toKeep.isEmpty) WaitingForData
+            else DeliveringData(toKeep)
+          }
+          if (ctx.isFinishing) ctx.pushAndFinish(toPush)
+          else ctx.push(toPush)
+        }
+      }
+
+      override def onUpstreamFinish(ctx: Context[ByteString]): TerminationDirective =
+        current match {
+          case WaitingForData    ⇒ ctx.finish()
+          case _: DeliveringData ⇒ ctx.absorbTermination()
+        }
+    }
 
   /**
    * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
@@ -180,12 +214,15 @@ private[http] object StreamUtils {
   }
 
   def runStrict(sourceData: ByteString, transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
+    runStrict(Iterator.single(sourceData), transformer, maxByteSize, maxElements)
+
+  def runStrict(sourceData: Iterator[ByteString], transformer: Flow[ByteString, ByteString], maxByteSize: Long, maxElements: Int): Try[Option[ByteString]] =
     Try {
       transformer match {
         // FIXME #16382 right now the flow can't use keys, should that be allowed?
         case Pipe(ops, keys, _) if keys.isEmpty ⇒
           if (ops.isEmpty)
-            Some(sourceData)
+            Some(sourceData.foldLeft(ByteString.empty)(_ ++ _))
           else {
             @tailrec def tryBuild(remaining: List[AstNode], acc: List[PushPullStage[ByteString, ByteString]]): List[PushPullStage[ByteString, ByteString]] =
               remaining match {
@@ -203,7 +240,7 @@ private[http] object StreamUtils {
             if (strictOps.isEmpty)
               None
             else {
-              val iter: Iterator[ByteString] = new IteratorInterpreter(Iterator.single(sourceData), strictOps).iterator
+              val iter: Iterator[ByteString] = new IteratorInterpreter(sourceData, strictOps).iterator
               var byteSize = 0L
               var result = ByteString.empty
               var i = 0

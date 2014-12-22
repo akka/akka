@@ -166,7 +166,7 @@ class CodingDirectivesSpec extends RoutingSpec {
         response should haveContentEncoding(gzip)
         chunks.size shouldEqual (11 + 1) // 11 regular + the last one
         val bytes = chunks.foldLeft(ByteString.empty)(_ ++ _.data)
-        Gzip.newDecompressor.decompress(bytes) should readAs(text)
+        Gzip.decode(bytes) should readAs(text)
       }
     }
   }

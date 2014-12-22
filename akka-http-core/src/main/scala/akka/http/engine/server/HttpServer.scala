@@ -70,9 +70,9 @@ private[http] object HttpServer {
           case (_, src) ⇒ src.runWith(BlackholeSink)
         }.collect {
           case r: HttpRequest ⇒ r
-        }.buffer(1, OverflowStrategy.backpressure) 
-        // FIXME #16583 it is unclear why this is needed, some element probably does not propagate demand eagerly enough
-        // the failing test would be HttpServerSpec
+        }.buffer(1, OverflowStrategy.backpressure)
+    // FIXME #16583 it is unclear why this is needed, some element probably does not propagate demand eagerly enough
+    // the failing test would be HttpServerSpec
 
     // we need to make sure that only one element per incoming request is queueing up in front of
     // the bypassMerge.bypassInput. Otherwise the rising backpressure against the bypassFanout
