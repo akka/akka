@@ -46,7 +46,7 @@ Flattening a stream of sequences
 all the nested elements inside the sequences separately.
 
 The ``mapConcat`` operation can be used to implement a one-to-many transformation of elements using a mapper function
-in the form of ``In ⇒ immutable.Seq[Out]``. In this case we want to map a ``Seq`` of elements to the elements in the
+in the form of ``In => immutable.Seq[Out]``. In this case we want to map a ``Seq`` of elements to the elements in the
 collection itself, so we can just call ``mapConcat(identity)``.
 
 .. includecode:: code/docs/stream/cookbook/RecipeFlattenSeq.scala#flattening-seqs
@@ -84,6 +84,8 @@ source has been depleted already). Since we only want to emit a final element it
 passing the digest ByteString to be emitted.
 
 .. includecode:: code/docs/stream/cookbook/RecipeDigest.scala#calculating-digest
+
+.. _cookbook-parse-lines-scala:
 
 Parsing lines from a stream of ByteStrings
 ------------------------------------------

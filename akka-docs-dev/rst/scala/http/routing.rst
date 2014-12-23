@@ -11,7 +11,7 @@ Routes
 The "Route" is the central concept of the routing DSL since all structures you can build with it are instances of
 a ``Route``. The type Route is defined like this::
 
-  type Route = RequestContext ⇒ Future[RouteResult]
+  type Route = RequestContext => Future[RouteResult]
 
 It's a simple alias for a function taking a ``RequestContext`` as parameter and returning a ``Future[RouteResult]``.
 
