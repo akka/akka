@@ -1,7 +1,7 @@
 .. _quickstart-scala:
 
-Quick Start: Reactive Tweets
-============================
+Quick Start Guide: Reactive Tweets
+==================================
 
 A typical use case for stream processing is consuming a live stream of data that we want to extract or aggregate some
 other data from. In this example we'll consider consuming a stream of tweets and extracting information concerning Akka from them.
@@ -73,7 +73,7 @@ combinator:
   due to the risk of deadlock (with merge being the preferred strategy), and secondly, the monad laws would not hold for
   our implementation of flatMap (due to the liveness issues).
 
-  Please note that the mapConcat requires the supplied function to return a strict collection (``f:Out⇒immutable.Seq[T]``),
+  Please note that the mapConcat requires the supplied function to return a strict collection (``f:Out=>immutable.Seq[T]``),
   whereas ``flatMap`` would have to operate on streams all the way through.
 
 
