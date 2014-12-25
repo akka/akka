@@ -104,8 +104,8 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 
 .. _constructing-sources-sinks-flows-from-partial-graphs-scala:
 
-Constructing Sources, Sinks and Flows from a Partial Graphs
------------------------------------------------------------
+Constructing Sources, Sinks and Flows from Partial Graphs
+---------------------------------------------------------
 Instead of treating a :class:`PartialFlowGraph` as simply a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such complex graph as a simpler structure,
 such as a :class:`Source`, :class:`Sink` or :class:`Flow`.
