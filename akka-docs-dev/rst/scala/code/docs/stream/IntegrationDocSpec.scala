@@ -127,7 +127,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#tweet-authors
     val authors: Source[Author] =
       tweets
-        .filter(_.hashtags.contains(Akka))
+        .filter(_.hashtags.contains(akka))
         .map(_.author)
     //#tweet-authors
 
@@ -166,7 +166,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     //#external-service-mapAsyncUnordered
     val authors: Source[Author] =
-      tweets.filter(_.hashtags.contains(Akka)).map(_.author)
+      tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     val emailAddresses: Source[String] =
       authors
@@ -199,7 +199,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val addressSystem = new AddressSystem
     val smsServer = new SmsServer(probe.ref)
 
-    val authors = tweets.filter(_.hashtags.contains(Akka)).map(_.author)
+    val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     val phoneNumbers =
       authors.mapAsync(author => addressSystem.lookupPhoneNumber(author.handle))
@@ -236,7 +236,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val addressSystem = new AddressSystem
     val smsServer = new SmsServer(probe.ref)
 
-    val authors = tweets.filter(_.hashtags.contains(Akka)).map(_.author)
+    val authors = tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     val phoneNumbers =
       authors.mapAsync(author => addressSystem.lookupPhoneNumber(author.handle))
@@ -270,9 +270,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val database = system.actorOf(Props(classOf[DatabaseService], probe.ref), "db")
 
     //#save-tweets
-    import akka.pattern.ask
-
-    val akkaTweets: Source[Tweet] = tweets.filter(_.hashtags.contains(Akka))
+    val akkaTweets: Source[Tweet] = tweets.filter(_.hashtags.contains(akka))
 
     implicit val timeout = Timeout(3.seconds)
     val saveTweets: RunnableFlow =
