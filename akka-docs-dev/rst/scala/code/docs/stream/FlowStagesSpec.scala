@@ -67,7 +67,6 @@ class FlowStagesSpec extends AkkaSpec {
             else ctx.finish()
           }
 
-
         override def onUpstreamFinish(ctx: Context[A]): TerminationDirective =
           ctx.absorbTermination()
 

@@ -29,8 +29,7 @@ import akka.stream.testkit.AkkaSpec
 object TwitterStreamQuickstartDocSpec {
   //#model
   final case class Author(handle: String)
-  val AkkaTeam = Author("akkateam")
-  val Akka = Hashtag("#akka")
+  val akka = Hashtag("#akka")
 
   final case class Hashtag(name: String)
 
@@ -78,14 +77,14 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#authors-filter-map
     val authors: Source[Author] =
       tweets
-        .filter(_.hashtags.contains(Akka))
+        .filter(_.hashtags.contains(akka))
         .map(_.author)
     //#authors-filter-map
 
     trait Example3 {
       //#authors-collect
       val authors: Source[Author] =
-        tweets.collect { case t if t.hashtags.contains(Akka) => t.author }
+        tweets.collect { case t if t.hashtags.contains(akka) => t.author }
       //#authors-collect
     }
 
@@ -167,7 +166,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     val sum: Future[Int] = map.get(sumSink)
 
-    sum.map { c => println(s"Total tweets processed: $c") }
+    sum.foreach(c => println(s"Total tweets processed: $c"))
     //#tweets-fold-count
 
     new AnyRef {
@@ -184,7 +183,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
     val counterRunnableFlow: RunnableFlow =
       tweetsInMinuteFromNow
-        .filter(_.hashtags contains Akka)
+        .filter(_.hashtags contains akka)
         .map(t => 1)
         .to(sumSink)
 
