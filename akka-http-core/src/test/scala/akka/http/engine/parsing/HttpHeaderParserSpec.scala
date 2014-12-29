@@ -110,19 +110,20 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       check {
         """   ┌─\r-\n- EmptyHeader
           |   |               ┌─c-h-a-r-s-e-t-:- (accept-charset)
-          |   |               | | ┌─e-n-c-o-d-i-n-g-:- (accept-encoding)
-          |   |               | └─l-a-n-g-u-a-g-e-:- (accept-language)
-          |   |       ┌─p-t---r-a-n-g-e-s-:- (accept-ranges)
+          |   |       ┌─p-t---e-n-c-o-d-i-n-g-:- (accept-encoding)
+          |   |       |     | | ┌─l-a-n-g-u-a-g-e-:- (accept-language)
+          |   |       |     | └─r-a-n-g-e-s-:- (accept-ranges)
           |   |       |     |                ┌─\r-\n- Accept: */*
           |   |       |     └─:-(accept)- -*-/-*-\r-\n- Accept: */*
-          |   |       |                                     ┌─c-r-e-d-e-n-t-i-a-l-s-:- (access-control-allow-credentials)
-          |   |       |                                   ┌─h-e-a-d-e-r-s-:- (access-control-allow-headers)
-          |   |       |                     ┌─a-l-l-o-w---m-e-t-h-o-d-s-:- (access-control-allow-methods)
+          |   |       |                     ┌─a-l-l-o-w---c-r-e-d-e-n-t-i-a-l-s-:- (access-control-allow-credentials)
+          |   |       |                     | |           |   ┌─h-e-a-d-e-r-s-:- (access-control-allow-headers)
+          |   |       |                     | |           | ┌─m-e-t-h-o-d-s-:- (access-control-allow-methods)
           |   |       |                     | |           └─o-r-i-g-i-n-:- (access-control-allow-origin)
-          |   |       |                     | └─e-x-p-o-s-e---h-e-a-d-e-r-s-:- (access-control-expose-headers)
-          | ┌─a-c-c-e-s-s---c-o-n-t-r-o-l---m-a-x---a-g-e-:- (access-control-max-age)
-          | |   |                           |                 ┌─h-e-a-d-e-r-s-:- (access-control-request-headers)
-          | |   |                           └─r-e-q-u-e-s-t---m-e-t-h-o-d-:- (access-control-request-method)
+          |   |       |                     | | ┌─e-x-p-o-s-e---h-e-a-d-e-r-s-:- (access-control-expose-headers)
+          |   |       |                     | └─m-a-x---a-g-e-:- (access-control-max-age)
+          | ┌─a-c-c-e-s-s---c-o-n-t-r-o-l---r-e-q-u-e-s-t---h-e-a-d-e-r-s-:- (access-control-request-headers)
+          | |   |                                           └─m-e-t-h-o-d-:- (access-control-request-method)
+          | |   | ┌─g-e-:- (age)
           | |   └─l-l-o-w-:- (allow)
           | |     └─u-t-h-o-r-i-z-a-t-i-o-n-:- (authorization)
           | | ┌─a-c-h-e---c-o-n-t-r-o-l-:-(cache-control)- -m-a-x---a-g-e-=-0-\r-\n- Cache-Control: max-age=0
@@ -138,7 +139,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |-c-o-o-k-i-e-:- (cookie)
           | |     ┌─d-a-t-e-:- (date)
           | |     | ┌─t-a-g-:- (etag)
-          | |   ┌─e-x-p-e-c-t-:-(expect)- -1-0-0---c-o-n-t-i-n-u-e-\r-\n- Expect: 100-continue
+          | |     | |   ┌─e-c-t-:-(expect)- -1-0-0---c-o-n-t-i-n-u-e-\r-\n- Expect: 100-continue
+          | |   ┌─e-x-p-i-r-e-s-:- (expires)
           | |   | └─h-o-s-t-:- (host)
           | |   |       ┌─a-t-c-h-:- (if-match)
           | | ┌─i-f---m-o-d-i-f-i-e-d---s-i-n-c-e-:- (if-modified-since)
@@ -160,7 +162,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |       └─x---f-o-r-w-a-r-d-e-d---f-o-r-:- (x-forwarded-for)
           |""" -> parser.formatTrie
       }
-      parser.formatSizes shouldEqual "592 nodes, 40 branchData rows, 55 values"
+      parser.formatSizes shouldEqual "602 nodes, 42 branchData rows, 57 values"
       parser.contentHistogram shouldEqual
         Map("connection" -> 3, "Content-Length" -> 1, "accept" -> 2, "cache-control" -> 2, "expect" -> 1)
     }
@@ -232,8 +234,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHeaders.take(300).foldLeft(0) {
         case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + "\r\nx", rawHeader)
-      } shouldEqual 100 // number of cache hits
-      parser.formatSizes shouldEqual "3050 nodes, 114 branchData rows, 255 values"
+      } shouldEqual 99 // number of cache hits
+      parser.formatSizes shouldEqual "3040 nodes, 115 branchData rows, 255 values"
     }
 
     "continue parsing modelled headers even if the overall cache capacity is reached" in new TestSetup() {
@@ -245,7 +247,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       randomHostHeaders.take(300).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
       } shouldEqual 12 // number of cache hits
-      parser.formatSizes shouldEqual "756 nodes, 49 branchData rows, 67 values"
+      parser.formatSizes shouldEqual "766 nodes, 51 branchData rows, 69 values"
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {

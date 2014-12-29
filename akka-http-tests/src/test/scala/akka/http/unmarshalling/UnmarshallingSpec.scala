@@ -65,7 +65,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
             |Content-type: text/xml
             |Age: 12
             |--XYZABC--""".stripMarginWithNewline("\r\n"))).to[Multipart.General] should haveParts(
-          Multipart.General.BodyPart.Strict(HttpEntity.empty(MediaTypes.`text/xml`), List(RawHeader("Age", "12"))))
+          Multipart.General.BodyPart.Strict(HttpEntity.empty(MediaTypes.`text/xml`), List(Age(12))))
       }
       "one non-empty part" in {
         Unmarshal(HttpEntity(`multipart/form-data` withBoundary "-",

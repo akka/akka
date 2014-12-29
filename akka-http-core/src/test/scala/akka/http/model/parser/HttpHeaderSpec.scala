@@ -114,6 +114,10 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Accept-Language: es-419, es" =!= `Accept-Language`(Language("es", "419"), Language("es"))
     }
 
+    "Age" in {
+      "Age: 3600" =!= Age(3600)
+    }
+
     "Allow" in {
       "Allow: " =!= Allow()
       "Allow: GET, PUT" =!= Allow(GET, PUT)
@@ -235,6 +239,11 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
 
     "Expect" in {
       "Expect: 100-continue" =!= Expect.`100-continue`
+    }
+
+    "Expires" in {
+      "Expires: Wed, 13 Jul 2011 08:12:31 GMT" =!= Expires(DateTime(2011, 7, 13, 8, 12, 31))
+      "Expires: 0" =!= Expires(DateTime.MinValue).renderedTo("Wed, 01 Jan 1800 00:00:00 GMT")
     }
 
     "Host" in {
