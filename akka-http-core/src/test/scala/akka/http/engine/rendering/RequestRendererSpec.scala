@@ -57,7 +57,7 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
       "POST request, a few headers (incl. a custom Host header) and no body" in new TestSetup() {
         HttpRequest(POST, "/abc/xyz", List(
           RawHeader("X-Fancy", "naa"),
-          RawHeader("Age", "0"),
+          Age(0),
           Host("spray.io", 9999))) should renderTo {
           """POST /abc/xyz HTTP/1.1
             |X-Fancy: naa
