@@ -114,11 +114,11 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.expectRequest()
-      serverOutSub.sendNext(HttpResponse(206, List(RawHeader("Age", "42")), chunkedEntity))
+      serverOutSub.sendNext(HttpResponse(206, List(Age(42)), chunkedEntity))
 
       val clientInSub = clientIn.expectSubscription()
       clientInSub.request(1)
-      val HttpResponse(StatusCodes.PartialContent, List(RawHeader("Age", "42"), Server(_), Date(_)),
+      val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
       Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
 
