@@ -110,13 +110,14 @@ object DistributedPubSubMediator {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
   }
 
+  sealed abstract class GetTopics
   @SerialVersionUID(1L)
-  case class GetTopics()
+  case object GetTopics extends GetTopics
 
   /**
    * Java API
    */
-  def getTopicsInstance: GetTopics = GetTopics()
+  def getTopicsInstance: GetTopics = GetTopics
 
   @SerialVersionUID(1L)
   final case class CurrentTopics(topics: Map[String, ActorRef]) {
