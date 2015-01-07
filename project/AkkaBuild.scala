@@ -1116,8 +1116,6 @@ object AkkaBuild extends Build {
 
     logBuffered in Test := System.getProperty("akka.logBufferedTests", "false").toBoolean,
 
-    resolvers += "Akka Repo Snapshots" at "http://repo.akka.io/snapshots", // TODO Remove once reactive streams TCK is released
-
     excludeTestNames := useExcludeTestNames,
     excludeTestTags := useExcludeTestTags,
     onlyTestTags := useOnlyTestTags,
@@ -1502,7 +1500,7 @@ object Dependencies {
     val scalaCheckVersion = System.getProperty("akka.build.scalaCheckVersion", "1.11.3")
     val scalaContinuationsVersion = System.getProperty("akka.build.scalaContinuationsVersion", "1.0.1")
 
-    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.M3")
+    val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.RC1")
 
     val publishedAkkaVersion = "2.3.7"
   }
