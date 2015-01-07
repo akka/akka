@@ -19,11 +19,11 @@ streams, such that the second one is consumed after the first one has completed)
 
 Constructing Flow Graphs
 ------------------------
-Flow graphs are built from simple Flows which serve as the linear connections within the graphs as well as Junctions
-which serve as fan-in and fan-out points for flows. Thanks to the junctions having meaningful types based on their behaviour
-and making them explicit elements these elements should be rather straight forward to use.
+Flow graphs are built from simple Flows which serve as the linear connections within the graphs as well as junctions
+which serve as fan-in and fan-out points for Flows. Thanks to the junctions having meaningful types based on their behaviour
+and making them explicit elements these elements should be rather straightforward to use.
 
-Akka Streams currently provides these junctions:
+Akka Streams currently provide these junctions:
 
 * **Fan-out**
 
@@ -37,8 +37,8 @@ Akka Streams currently provides these junctions:
  - ``Merge[In]`` – (n inputs , 1 output), picks signals randomly from inputs pushing them one by one to its output,
  - ``MergePreferred[In]`` – like :class:`Merge` but if elements are available on ``preferred`` port, it picks from it, otherwise randomly from ``others``,
  - ``ZipWith[A,B,...,Out]`` – (n inputs (defined upfront), 1 output), which takes a function of n inputs that, given all inputs are signalled, transforms and emits 1 output,
- - ``Zip[A,B,Out]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream,
- - ``Concat[T]`` – (2 inputs, 1 output), which enables to concatenate streams (first consume one, then the second one), thus the order of which stream is ``first`` and which ``second`` matters,
+ - ``Zip[A,B]`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into an ``(A,B)`` tuple stream,
+ - ``Concat[A]`` – (2 inputs, 1 output), which enables to concatenate streams (first consume one, then the second one), thus the order of which stream is ``first`` and which ``second`` matters,
  - ``FlexiMerge[Out]`` – (n inputs, 1 output), which enables writing custom fan out elements using a simple DSL.
 
 One of the goals of the FlowGraph DSL is to look similar to how one would draw a graph on a whiteboard, so that it is
@@ -63,13 +63,14 @@ It is also possible to construct graphs without the ``~>`` operator in case you 
 
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#simple-flow-graph-no-implicits
 
-By looking at the snippets above, it should be apparent that **the** :class:`FlowGraphBuilder` **object is mutable**.
+By looking at the snippets above, it should be apparent that the :class:`FlowGraphBuilder` object is *mutable*.
 It is also used (implicitly) by the ``~>`` operator, also making it a mutable operation as well.
 The reason for this design choice is to enable simpler creation of complex graphs, which may even contain cycles.
 Once the FlowGraph has been constructed though, the :class:`FlowGraph` instance *is immutable, thread-safe, and freely shareable*.
+
 Linear Flows however are always immutable and appending an operation to a Flow always returns a new Flow instance.
 This means that you can safely re-use one given Flow in multiple places in a processing graph. In the example below
-we prepare a graph that consists of two parallel streams, in which we re use the same instance of :class:`Flow`,
+we prepare a graph that consists of two parallel streams, in which we re-use the same instance of :class:`Flow`,
 yet it will properly be materialized as two connections between the corresponding Sources and Sinks:
 
 .. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-reusing-a-flow
@@ -107,7 +108,7 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 Constructing Sources, Sinks and Flows from Partial Graphs
 ---------------------------------------------------------
 Instead of treating a :class:`PartialFlowGraph` as simply a collection of flows and junctions which may not yet all be
-connected it is sometimes useful to expose such complex graph as a simpler structure,
+connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a :class:`Source`, :class:`Sink` or :class:`Flow`.
 
 In fact, these concepts can be easily expressed as special cases of a partially connected graph:
@@ -116,11 +117,11 @@ In fact, these concepts can be easily expressed as special cases of a partially 
 * :class:`Sink` is a partial flow graph with *exactly one* :class:`UndefinedSource`,
 * :class:`Flow` is a partial flow graph with *exactly one* :class:`UndefinedSource` and *exactly one* :class:`UndefinedSource`.
 
-Being able hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
+Being able to hide complex graphs inside of simple elements such as Sink / Source / Flow enables you to easily create one
 complex element and from there on treat it as simple compound stage for linear computations.
 
-In order to create a Source from a partial flow graph ``Source[T]`` provides a special apply method that takes a function
-that must return an ``UndefinedSink[T]``. This undefined sink will become "the sink that must be attached before this Source
+In order to create a Source from a partial flow graph ``Source`` provides a special apply method that takes a function
+that must return an ``UndefinedSink``. This undefined sink will become "the sink that must be attached before this Source
 can run". Refer to the example below, in which we create a Source that zips together two numbers, to see this graph
 construction in action:
 
