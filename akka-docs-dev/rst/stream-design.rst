@@ -62,7 +62,7 @@ Akka Streams must enable a library to express any stream processing utility in t
   * Flow: something with exactly one input and one output stream
   * BidirectionalFlow: something with exactly two input streams and two output streams that behave like two Flows of opposite direction
 
-Other topologies can always be expressed as a combination of a PartialFlowGraph with a set of inputs and a set of outputs. The preferred form of such expression is an object that combines these three elements, favoring object composition over class inheritance.
+Other topologies can always be expressed as a combination of a PartialFlowGraph with a set of inputs and a set of outputs. The preferred form of such an expression is an object that combines these three elements, favoring object composition over class inheritance.
 
 .. note::
 
@@ -103,4 +103,4 @@ It might be tempting to allow different pieces of a flow topology to access the 
   * **Resolve:** each flow element may declare derived keys that are calculated from other keys and added to the MaterializedMap; a derived key cannot depend on another derived key,
   * **Initialize:** each flow element is finally initialized with the full MaterializedMap from the previous two phases; this will usually not do anything, but it allows certain elements to calculate their real behavior at this late stage.
 
-To avoid having to use ``Future`` values as key bindings, materialization itself may become fully asynchronous. This would allow for example the use of the bound server port within the rest of the flow, and only if the port was actually bound successfully. The downside is that some APIs will then return ``Future[MaterializedMap]]``, which means that others will have to accept this in turn in order to keep the usage burden as low as possible.
+To avoid having to use ``Future`` values as key bindings, materialization itself may become fully asynchronous. This would allow for example the use of the bound server port within the rest of the flow, and only if the port was actually bound successfully. The downside is that some APIs will then return ``Future[MaterializedMap]``, which means that others will have to accept this in turn in order to keep the usage burden as low as possible.
