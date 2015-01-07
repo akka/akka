@@ -35,8 +35,6 @@ abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEn
 
   implicit val materializer = FlowMaterializer(MaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
 
-  override def skipStochasticTests() = true // TODO maybe enable?
-
   @AfterClass
   def shutdownActorSystem(): Unit = {
     system.shutdown()
