@@ -15,7 +15,7 @@ time. This property of bounded buffers is one of the differences from the actor 
 an unbounded, or a bounded, but dropping mailbox. Akka Stream processing entities have bounded "mailboxes" that
 do not drop.
 
-Before we move on, let's define some basic terminology which will be used though out the entire documentation:
+Before we move on, let's define some basic terminology which will be used throughout the entire documentation:
 
 Stream
   An active process that involves moving and transforming data.
@@ -24,12 +24,12 @@ Element
   downstream. Buffer sizes are always expressed as number of elements independently form the actual size of the elements.
 Back-pressure
   A means of flow-control, a way for consumers of data to notify a producer about their current availability, effectively
-  slowing down the upstream source to match their consumption speeds.
-  In the context of Akka Streams back-pressure is always understood as *non-blocking* and *asynchronous*
+  slowing down the upstream producer to match their consumption speeds.
+  In the context of Akka Streams back-pressure is always understood as *non-blocking* and *asynchronous*.
 Processing Stage
   The common name for all building blocks that build up a Flow or FlowGraph.
-  Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()``
-  (:class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage`) and graph junctions like ``Merge`` or ``Broadcast``.
+  Examples of a processing stage would be  operations like ``map()``, ``filter()``, stages added by ``transform()`` like
+  :class:`PushStage`, :class:`PushPullStage`, :class:`StatefulStage` and graph junctions like ``Merge`` or ``Broadcast``.
 
 Defining and running streams
 ----------------------------
@@ -72,7 +72,7 @@ both a ``Source`` and a ``Sink`` (in order to run a ``Flow``, since it has neith
 .. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-runWith
 
 It is worth pointing out that since processing stages are *immutable*, connecting them returns a new processing stage,
-instead of modifying the existing instance, so while construction long flows, remember to assign the new value to a variable or run it:
+instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#source-immutable
 
@@ -85,7 +85,7 @@ instead of modifying the existing instance, so while construction long flows, re
 In the above example we used the ``runWith`` method, which both materializes the stream and returns the materialized value
 of the given sink or source.
 
-Since a stream can be materialized multiple times the ``MaterializedMap`` returned is different for each materialization.
+Since a stream can be materialized multiple times, the ``MaterializedMap`` returned is different for each materialization.
 In the example below we create two running materialized instance of the stream that we described in the ``runnable``
 variable, and both materializations give us a different ``Future`` from the map even though we used the same ``sink``
 to refer to the future:
@@ -96,11 +96,11 @@ Defining sources, sinks and flows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The objects :class:`Source` and :class:`Sink` define various ways to create sources and sinks of elements. The following
-examples show some of the useful constructs (refer to the API documentation for more details):
+examples show some of the most useful constructs (refer to the API documentation for more details):
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#source-sink
 
-There are various ways to wire up different parts of a stream, the following examples show some of the available options.
+There are various ways to wire up different parts of a stream, the following examples show some of the available options:
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#flow-connecting
 
@@ -109,7 +109,7 @@ There are various ways to wire up different parts of a stream, the following exa
 
 Back-pressure explained
 -----------------------
-Akka Streams implements an asynchronous non-blocking back-pressure protocol standardised by the `Reactive Streams`_
+Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the `Reactive Streams`_
 specification, which Akka is a founding member of.
 
 .. _Reactive Streams: http://reactive-streams.org/
@@ -117,39 +117,39 @@ specification, which Akka is a founding member of.
 The user of the library does not have to write any explicit back-pressure handling code — it is built in
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
 explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
-in complex processing graphs which may even sometimes even contain loops (which *must* be treated with very special
+in complex processing graphs which may even contain loops (which *must* be treated with very special
 care, as explained in :ref:`graph-cycles-scala`).
 
 The back pressure protocol is defined in terms of the number of elements a downstream ``Subscriber`` is able to receive
 and buffer, referred to as ``demand``.
-The source of data referred to as ``Publisher`` in Reactive Streams terminology and implemented as ``Source`` in Akka
-Streams guarantees that it will never emit more elements than the received total demand for any given ``Subscriber``.
+The source of data, referred to as ``Publisher`` in Reactive Streams terminology and implemented as ``Source`` in Akka
+Streams, guarantees that it will never emit more elements than the received total demand for any given ``Subscriber``.
 
 .. note::
-   The Reactive Streams specification defines its protocol in terms of **Publishers** and **Subscribers**.
-   These types are *not* meant to be user facing API, instead they serve as the low level building blocks for
+   The Reactive Streams specification defines its protocol in terms of ``Publishers`` and ``Subscriber``s.
+   These types are **not** meant to be user facing API, instead they serve as the low level building blocks for
    different Reactive Streams implementations.
 
-   Akka Streams implements these concepts as **Sources**, **Flows** (referred to as **Processor** in Reactive Streams)
-   and **Sinks** without exposing the Reactive Streams interfaces directly.
+   Akka Streams implements these concepts as ``Source``s, ``Flow``s (referred to as ``Processor`` in Reactive Streams)
+   and ``Sink``s without exposing the Reactive Streams interfaces directly.
    If you need to integrate with other Reactive Stream libraries read :ref:`reactive-streams-integration-scala`.
 
 The mode in which Reactive Streams back-pressure works can be colloquially described as "dynamic push / pull mode",
-since it will switch between push or pull based back-pressure models depending on if the downstream is able to cope
-with the upstreams production rate or not.
+since it will switch between push and pull based back-pressure models depending on the downstream being able to cope
+with the upstream production rate or not.
 
-To illustrate further let us consider both problem situations and how the back-pressure protocol handles them:
+To illustrate this further let us consider both problem situations and how the back-pressure protocol handles them:
 
 Slow Publisher, fast Subscriber
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-This is the happy case of course–we do not need to slow down the Publisher in this case. However signalling rates are
+This is the happy case of course – we do not need to slow down the Publisher in this case. However signalling rates are
 rarely constant and could change at any point in time, suddenly ending up in a situation where the Subscriber is now
 slower than the Publisher. In order to safeguard from these situations, the back-pressure protocol must still be enabled
 during such situations, however we do not want to pay a high penalty for this safety net being enabled.
 
 The Reactive Streams protocol solves this by asynchronously signalling from the Subscriber to the Publisher
-`Request(n:Int)` signals. The protocol guarantees that the Publisher will never signal *more* than the demand it was
-signalled. Since the Subscriber however is currently faster, it will be signalling these Request messages at a higher
+``Request(n:Int)`` signals. The protocol guarantees that the Publisher will never signal *more* elements than the
+signalled demand. Since the Subscriber however is currently faster, it will be signalling these Request messages at a higher
 rate (and possibly also batching together the demand - requesting multiple elements in one Request signal). This means
 that the Publisher should not ever have to wait (be back-pressured) with publishing its incoming elements.
 
@@ -169,7 +169,7 @@ it will have to abide to this back-pressure by applying one of the below strateg
 - drop elements until more demand is signalled,
 - tear down the stream if unable to apply any of the above strategies.
 
-As we can see, this scenario effectively means that the ``Subscriber`` will *pull* the elements from the Publisher–
+As we can see, this scenario effectively means that the ``Subscriber`` will *pull* the elements from the Publisher –
 this mode of operation is referred to as pull-based back-pressure.
 
 .. _stream-materialization-scala:
@@ -199,7 +199,7 @@ which will be running on the thread pools they have been configured to run on - 
 
 Stream ordering
 ===============
-In Akka Streams almost all computation stages *preserve input order* of elements, this means that if inputs ``{IA1,IA2,...,IAn}``
+In Akka Streams almost all computation stages *preserve input order* of elements. This means that if inputs ``{IA1,IA2,...,IAn}``
 "cause" outputs ``{OA1,OA2,...,OAk}`` and inputs ``{IB1,IB2,...,IBm}`` "cause" outputs ``{OB1,OB2,...,OBl}`` and all of
 ``IAi`` happened before all ``IBi`` then ``OAi`` happens before ``OBi``.
 
@@ -207,11 +207,11 @@ This property is even uphold by async operations such as ``mapAsync``, however a
 called ``mapAsyncUnordered`` which does not preserve this ordering.
 
 However, in the case of Junctions which handle multiple input streams (e.g. :class:`Merge`) the output order is,
-in general, *not defined* for elements arriving on different input ports, that is a merge-like operation may emit ``Ai``
+in general, *not defined* for elements arriving on different input ports. That is a merge-like operation may emit ``Ai``
 before emitting ``Bi``, and it is up to its internal logic to decide the order of emitted elements. Specialized elements
 such as ``Zip`` however *do guarantee* their outputs order, as each output element depends on all upstream elements having
-been signalled already–thus the ordering in the case of zipping is defined by this property.
+been signalled already – thus the ordering in the case of zipping is defined by this property.
 
 If you find yourself in need of fine grained control over order of emitted elements in fan-in
-scenarios consider using :class:`MergePreferred` or :class:`FlexiMerge` - which gives you full control over how the
+scenarios consider using :class:`MergePreferred` or :class:`FlexiMerge` – which gives you full control over how the
 merge is performed.
