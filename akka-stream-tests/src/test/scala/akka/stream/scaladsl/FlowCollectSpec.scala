@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import java.io.{File, FileInputStream}
+
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 import akka.stream.MaterializerSettings
