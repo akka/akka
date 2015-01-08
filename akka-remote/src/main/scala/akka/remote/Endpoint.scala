@@ -197,18 +197,8 @@ private[remote] class ReliableDeliverySupervisor(
   import ReliableDeliverySupervisor._
   import context.dispatcher
 
-  var autoResendTimer: Option[Cancellable] = None
-
-  def scheduleAutoResend(): Unit = if (resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) {
-    if (autoResendTimer.isEmpty)
-      autoResendTimer = Some(context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery))
-  }
-
-  def rescheduleAutoResend(): Unit = {
-    autoResendTimer.foreach(_.cancel())
-    autoResendTimer = None
-    scheduleAutoResend()
-  }
+  val autoResendTimer = context.system.scheduler.schedule(
+    settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
@@ -227,14 +217,11 @@ private[remote] class ReliableDeliverySupervisor(
   var resendBuffer: AckedSendBuffer[Send] = _
   var lastCumulativeAck: SeqNo = _
   var seqCounter: Long = _
-  var pendingAcks = Vector.empty[Ack]
 
   def reset() {
     resendBuffer = new AckedSendBuffer[Send](settings.SysMsgBufferSize)
-    scheduleAutoResend()
     lastCumulativeAck = SeqNo(-1)
     seqCounter = 0L
-    pendingAcks = Vector.empty
   }
 
   reset()
@@ -256,11 +243,6 @@ private[remote] class ReliableDeliverySupervisor(
   // (This actor is never restarted)
   var uidConfirmed: Boolean = uid.isDefined
 
-  def unstashAcks(): Unit = {
-    pendingAcks foreach (self ! _)
-    pendingAcks = Vector.empty
-  }
-
   override def postStop(): Unit = {
     // All remaining messages in the buffer has to be delivered to dead letters. It is important to clear the sequence
     // number otherwise deadLetters will ignore it to avoid reporting system messages as dead letters while they are
@@ -270,6 +252,7 @@ private[remote] class ReliableDeliverySupervisor(
     // the remote system later.
     (resendBuffer.nacked ++ resendBuffer.nonAcked) foreach { s ⇒ context.system.deadLetters ! s.copy(seqOpt = None) }
     receiveBuffers.remove(Link(localAddress, remoteAddress))
+    autoResendTimer.cancel()
   }
 
   override def postRestart(reason: Throwable): Unit = {
@@ -287,21 +270,19 @@ private[remote] class ReliableDeliverySupervisor(
     case s: Send ⇒
       handleSend(s)
     case ack: Ack ⇒
-      if (!uidConfirmed) pendingAcks = pendingAcks :+ ack
-      else {
+      // If we are not sure about the UID just ignore the ack. Ignoring is fine.
+      if (uidConfirmed) {
         try resendBuffer = resendBuffer.acknowledge(ack)
         catch {
           case NonFatal(e) ⇒
-            throw new InvalidAssociationException(s"Error encountered while processing system message acknowledgement $resendBuffer $ack", e)
+            throw new HopelessAssociation(localAddress, remoteAddress, uid,
+              new IllegalStateException(s"Error encountered while processing system message " +
+                s"acknowledgement buffer: $resendBuffer ack: $ack", e))
         }
 
         if (lastCumulativeAck < ack.cumulativeAck) {
           lastCumulativeAck = ack.cumulativeAck
-          // Cumulative ack is progressing, we might not need to resend non-acked messages yet.
-          // If this progression stops, the timer will eventually kick in, since scheduleAutoResend
-          // does not cancel existing timers (see the "else" case).
-          rescheduleAutoResend()
-        } else scheduleAutoResend()
+        }
 
         resendNacked()
       }
@@ -318,7 +299,6 @@ private[remote] class ReliableDeliverySupervisor(
       // New system that has the same address as the old - need to start from fresh state
       uidConfirmed = true
       if (uid.exists(_ != receivedUid)) reset()
-      else unstashAcks()
       uid = Some(receivedUid)
       resendAll()
 
@@ -344,6 +324,7 @@ private[remote] class ReliableDeliverySupervisor(
         // Resending will be triggered by the incoming GotUid message after the connection finished
         context.become(receive)
       } else context.become(idle)
+    case AttemptSysMsgRedelivery               ⇒ // Ignore
     case s @ Send(msg: SystemMessage, _, _, _) ⇒ tryBuffer(s.copy(seqOpt = Some(nextSeq())))
     case s: Send                               ⇒ context.system.deadLetters ! s
     case EndpointWriter.FlushAndStop           ⇒ context.stop(self)
@@ -360,9 +341,11 @@ private[remote] class ReliableDeliverySupervisor(
       handleSend(s)
       context.become(receive)
     case AttemptSysMsgRedelivery ⇒
-      writer = createWriter()
-      // Resending will be triggered by the incoming GotUid message after the connection finished
-      context.become(receive)
+      if (resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) {
+        writer = createWriter()
+        // Resending will be triggered by the incoming GotUid message after the connection finished
+        context.become(receive)
+      }
     case EndpointWriter.FlushAndStop ⇒ context.stop(self)
     case EndpointWriter.StopReading(w, replyTo) ⇒
       replyTo ! EndpointWriter.StoppedReading(w)
@@ -384,7 +367,8 @@ private[remote] class ReliableDeliverySupervisor(
       tryBuffer(sequencedSend)
       // If we have not confirmed the remote UID we cannot transfer the system message at this point just buffer it.
       // GotUid will kick resendAll() causing the messages to be properly written
-      if (uidConfirmed) writer ! sequencedSend
+      if (uidConfirmed)
+        writer ! sequencedSend
     } else writer ! send
 
   private def resendNacked(): Unit = resendBuffer.nacked foreach { writer ! _ }
@@ -392,7 +376,6 @@ private[remote] class ReliableDeliverySupervisor(
   private def resendAll(): Unit = {
     resendNacked()
     resendBuffer.nonAcked foreach { writer ! _ }
-    rescheduleAutoResend()
   }
 
   private def tryBuffer(s: Send): Unit =
@@ -816,6 +799,8 @@ private[remote] class EndpointWriter(
       context.stop(self)
     case OutboundAck(ack) ⇒
       lastAck = Some(ack)
+      if (ackDeadline.isOverdue())
+        trySendPureAck()
     case AckIdleCheckTimer   ⇒ // Ignore
     case FlushAndStopTimeout ⇒ // ignore
     case BackoffTimer        ⇒ // ignore

@@ -1064,7 +1064,12 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite"),
 
       // Change to optimize use of ForkJoin with Akka's Mailbox
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status"),
+
+      // Changes introduced to internal remoting actors by #16623
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.unstashAcks"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks")
     )
   }
 

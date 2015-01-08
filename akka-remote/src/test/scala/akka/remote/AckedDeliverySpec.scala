@@ -130,7 +130,7 @@ class AckedDeliverySpec extends AkkaSpec {
       val b8 = b7.acknowledge(Ack(SeqNo(2)))
       b8.nonAcked should be(Vector(msg3, msg4))
 
-      val b9 = b8.acknowledge(Ack(SeqNo(5)))
+      val b9 = b8.acknowledge(Ack(SeqNo(4)))
       b9.nonAcked should be(Vector.empty)
 
     }
@@ -164,7 +164,7 @@ class AckedDeliverySpec extends AkkaSpec {
       b6.nonAcked should be(Vector())
       b6.nacked should be(Vector(msg2, msg3))
 
-      val b7 = b6.acknowledge(Ack(SeqNo(5)))
+      val b7 = b6.acknowledge(Ack(SeqNo(4)))
       b7.nonAcked should be(Vector.empty)
       b7.nacked should be(Vector.empty)
     }

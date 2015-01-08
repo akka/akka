@@ -3,6 +3,7 @@
  */
 package akka.remote.transport
 
+import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.testkit.TimingTest
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
@@ -12,8 +13,7 @@ import AkkaProtocolStressTest._
 import akka.actor._
 import scala.concurrent.duration._
 import akka.testkit._
-import akka.remote.EndpointException
-import akka.remote.{ RARP, EndpointException }
+import akka.remote.{ QuarantinedEvent, EndpointException, RARP }
 import akka.remote.transport.FailureInjectorTransportAdapter.{ One, All, Drop }
 import scala.concurrent.Await
 import akka.actor.ActorRef
@@ -32,7 +32,11 @@ import akka.dispatch.sysmsg.{ Failed, SystemMessage }
 import akka.pattern.pipe
 
 object SystemMessageDeliveryStressTest {
-  val baseConfig: Config = ConfigFactory parseString ("""
+  val msgCount = 10000
+  val burstSize = 100
+  val burstDelay = 300.millis
+
+  val baseConfig: Config = ConfigFactory parseString (s"""
     akka {
       #loglevel = DEBUG
       actor.provider = "akka.remote.RemoteActorRefProvider"
@@ -47,12 +51,14 @@ object SystemMessageDeliveryStressTest {
         heartbeat-interval = 500 ms
         acceptable-heartbeat-pause = 2 s
       }
+      remote.system-message-buffer-size = $msgCount
       ## Keep this setting tight, otherwise the test takes a long time or times out
-      remote.resend-interval = 0.5 s
+      remote.resend-interval = 500 ms
+      remote.system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
       remote.use-passive-connections = on
 
       remote.netty.tcp {
-        applied-adapters = ["gremlin"]
+        applied-adapters = ["gremlin", "trttl"]
         port = 0
       }
 
@@ -75,8 +81,11 @@ object SystemMessageDeliveryStressTest {
     }
   }
 
-  class SystemMessageSender(val msgCount: Int, val target: ActorRef) extends Actor {
+  class SystemMessageSender(val msgCount: Int, val burstSize: Int, val burstDelay: FiniteDuration, val target: ActorRef) extends Actor {
+    import context.dispatcher
+
     var counter = 0
+    var burstCounter = 0
     val targetRef = target.asInstanceOf[InternalActorRef]
 
     override def preStart(): Unit = self ! "sendnext"
@@ -85,7 +94,15 @@ object SystemMessageDeliveryStressTest {
       case "sendnext" ⇒
         targetRef.sendSystemMessage(Failed(null, null, counter))
         counter += 1
-        if (counter < msgCount) self ! "sendnext"
+        burstCounter += 1
+
+        if (counter < msgCount) {
+          if (burstCounter < burstSize) self ! "sendnext"
+          else {
+            burstCounter = 0
+            context.system.scheduler.scheduleOnce(burstDelay, self, "sendnext")
+          }
+        }
     }
   }
 
@@ -97,36 +114,66 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
   with DefaultTimeout {
   import SystemMessageDeliveryStressTest._
 
-  val systemB = ActorSystem("systemB", system.settings.config)
-  val sysMsgVerifier = new SystemMessageSequenceVerifier(system, testActor)
-  val MsgCount = 100
+  override def expectedTestDuration: FiniteDuration = 120.seconds
 
-  val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+  val systemA = system
+  val systemB = ActorSystem("systemB", system.settings.config)
+
+  val probeA = TestProbe()(systemA)
+  val probeB = TestProbe()(systemB)
+
+  val sysMsgVerifierA = new SystemMessageSequenceVerifier(systemA, probeA.ref)
+  val sysMsgVerifierB = new SystemMessageSequenceVerifier(systemB, probeB.ref)
+
+  val addressA = systemA.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
   val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
 
-  val root = RootActorPath(address)
   // We test internals here (system message delivery) so we are allowed to cheat
-  val there = RARP(systemB).provider.resolveActorRef(root / "temp" / sysMsgVerifier.path.name).asInstanceOf[InternalActorRef]
+  val targetForA = RARP(systemA).provider.resolveActorRef(RootActorPath(addressB) / "temp" / sysMsgVerifierB.path.name)
+  val targetForB = RARP(systemB).provider.resolveActorRef(RootActorPath(addressA) / "temp" / sysMsgVerifierA.path.name)
 
   override def atStartup() = {
-    system.eventStream.publish(TestEvent.Mute(
+    systemA.eventStream.publish(TestEvent.Mute(
+      EventFilter[EndpointException](),
       EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*")))
+      EventFilter.warning(pattern = "received dead .*")))
     systemB.eventStream.publish(TestEvent.Mute(
       EventFilter[EndpointException](),
       EventFilter.error(start = "AssociationError"),
-      EventFilter.warning(pattern = "received dead letter.*")))
+      EventFilter.warning(pattern = "received dead .*")))
+
+    systemA.eventStream.subscribe(probeA.ref, classOf[QuarantinedEvent])
+    systemB.eventStream.subscribe(probeB.ref, classOf[QuarantinedEvent])
   }
 
   "Remoting " + msg must {
     "guaranteed delivery and message ordering despite packet loss " taggedAs TimingTest in {
-      Await.result(RARP(systemB).provider.transport.managementCommand(One(address, Drop(0.3, 0.3))), 3.seconds.dilated)
-      systemB.actorOf(Props(classOf[SystemMessageSender], MsgCount, there))
+      import systemA.dispatcher
 
-      val toSend = (0 until MsgCount).toList
-      val received = expectMsgAllOf(45.seconds, toSend: _*)
+      val transportA = RARP(systemA).provider.transport
+      val transportB = RARP(systemB).provider.transport
 
-      received should be(toSend)
+      Await.result(transportA.managementCommand(One(addressB, Drop(0.2, 0.2))), 3.seconds.dilated)
+      Await.result(transportB.managementCommand(One(addressA, Drop(0.2, 0.2))), 3.seconds.dilated)
+
+      // Schedule peridodic disassociates
+      systemA.scheduler.schedule(1.second, 3.seconds) {
+        transportA.managementCommand(ForceDisassociateExplicitly(addressB, reason = AssociationHandle.Unknown))
+      }
+
+      systemB.scheduler.schedule(2.seconds, 3.seconds) {
+        transportB.managementCommand(ForceDisassociateExplicitly(addressA, reason = AssociationHandle.Unknown))
+      }
+
+      systemB.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForB))
+      systemA.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForA))
+
+      val toSend = (0 until msgCount).toList
+      for (m ← 0 until msgCount) {
+        probeB.expectMsg(30.seconds, m)
+        probeA.expectMsg(30.seconds, m)
+      }
+
     }
   }
 
