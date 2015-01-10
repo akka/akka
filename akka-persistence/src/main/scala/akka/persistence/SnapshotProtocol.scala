@@ -12,7 +12,8 @@ package akka.persistence
  * @param sequenceNr sequence number at which the snapshot was taken.
  * @param timestamp time at which the snapshot was saved.
  */
-@SerialVersionUID(1L) //#snapshot-metadata
+@SerialVersionUID(1L) //
+//#snapshot-metadata
 final case class SnapshotMetadata(persistenceId: String, sequenceNr: Long, timestamp: Long = 0L)
 //#snapshot-metadata
 
@@ -113,6 +114,14 @@ object SelectedSnapshot {
  * Defines messages exchanged between persistent actors and a snapshot store.
  */
 private[persistence] object SnapshotProtocol {
+
+  /** Marker trait shared by internal snapshot messages. */
+  sealed trait Message extends Protocol.Message
+  /** Internal snapshot command. */
+  sealed trait Request extends Message
+  /** Internal snapshot acknowledgement. */
+  sealed trait Response extends Message
+
   /**
    * Instructs a snapshot store to load a snapshot.
    *
@@ -121,6 +130,7 @@ private[persistence] object SnapshotProtocol {
    * @param toSequenceNr upper sequence number bound (inclusive) for recovery.
    */
   final case class LoadSnapshot(persistenceId: String, criteria: SnapshotSelectionCriteria, toSequenceNr: Long)
+    extends Request
 
   /**
    * Response message to a [[LoadSnapshot]] message.
@@ -128,6 +138,7 @@ private[persistence] object SnapshotProtocol {
    * @param snapshot loaded snapshot, if any.
    */
   final case class LoadSnapshotResult(snapshot: Option[SelectedSnapshot], toSequenceNr: Long)
+    extends Response
 
   /**
    * Instructs snapshot store to save a snapshot.
@@ -136,6 +147,7 @@ private[persistence] object SnapshotProtocol {
    * @param snapshot snapshot.
    */
   final case class SaveSnapshot(metadata: SnapshotMetadata, snapshot: Any)
+    extends Request
 
   /**
    * Instructs snapshot store to delete a snapshot.
@@ -143,6 +155,7 @@ private[persistence] object SnapshotProtocol {
    * @param metadata snapshot metadata.
    */
   final case class DeleteSnapshot(metadata: SnapshotMetadata)
+    extends Request
 
   /**
    * Instructs snapshot store to delete all snapshots that match `criteria`.
@@ -151,4 +164,5 @@ private[persistence] object SnapshotProtocol {
    * @param criteria criteria for selecting snapshots to be deleted.
    */
   final case class DeleteSnapshots(persistenceId: String, criteria: SnapshotSelectionCriteria)
+    extends Request
 }
