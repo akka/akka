@@ -14,10 +14,19 @@ import akka.actor._
  * Messages exchanged between persistent actors, views and a journal.
  */
 private[persistence] object JournalProtocol {
+
+  /** Marker trait shared by internal journal messages. */
+  sealed trait Message extends Protocol.Message
+  /** Internal journal command. */
+  sealed trait Request extends Message
+  /** Internal journal acknowledgement. */
+  sealed trait Response extends Message
+
   /**
    * Reply message to a failed [[DeleteMessages]] request.
    */
   final case class DeleteMessagesFailure(cause: Throwable)
+    extends Response
 
   /**
    * Request to delete all persistent messages with sequence numbers up to `toSequenceNr`
@@ -25,6 +34,7 @@ private[persistence] object JournalProtocol {
    * as deleted in the journal, otherwise they are permanently deleted from the journal.
    */
   final case class DeleteMessagesTo(persistenceId: String, toSequenceNr: Long, permanent: Boolean)
+    extends Request
 
   /**
    * Request to write messages.
@@ -33,12 +43,14 @@ private[persistence] object JournalProtocol {
    * @param persistentActor write requestor.
    */
   final case class WriteMessages(messages: immutable.Seq[PersistentEnvelope], persistentActor: ActorRef, actorInstanceId: Int)
+    extends Request
 
   /**
    * Reply message to a successful [[WriteMessages]] request. This reply is sent to the requestor
    * before all subsequent [[WriteMessageSuccess]] replies.
    */
   case object WriteMessagesSuccessful
+    extends Response
 
   /**
    * Reply message to a failed [[WriteMessages]] request. This reply is sent to the requestor
@@ -47,6 +59,7 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessagesFailed(cause: Throwable)
+    extends Response
 
   /**
    * Reply message to a successful [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -55,6 +68,7 @@ private[persistence] object JournalProtocol {
    * @param persistent successfully written message.
    */
   final case class WriteMessageSuccess(persistent: PersistentRepr, actorInstanceId: Int)
+    extends Response
 
   /**
    * Reply message to a failed [[WriteMessages]] request. For each contained [[PersistentRepr]] message
@@ -64,6 +78,7 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class WriteMessageFailure(message: PersistentRepr, cause: Throwable, actorInstanceId: Int)
+    extends Response
 
   /**
    * Reply message to a [[WriteMessages]] with a non-persistent message.
@@ -71,6 +86,7 @@ private[persistence] object JournalProtocol {
    * @param message looped message.
    */
   final case class LoopMessageSuccess(message: Any, actorInstanceId: Int)
+    extends Response
 
   /**
    * Request to replay messages to `persistentActor`.
@@ -83,6 +99,7 @@ private[persistence] object JournalProtocol {
    * @param replayDeleted `true` if messages marked as deleted shall be replayed.
    */
   final case class ReplayMessages(fromSequenceNr: Long, toSequenceNr: Long, max: Long, persistenceId: String, persistentActor: ActorRef, replayDeleted: Boolean = false)
+    extends Request
 
   /**
    * Reply message to a [[ReplayMessages]] request. A separate reply is sent to the requestor for each
@@ -91,18 +108,21 @@ private[persistence] object JournalProtocol {
    * @param persistent replayed message.
    */
   final case class ReplayedMessage(persistent: PersistentRepr)
+    extends Response
 
   /**
    * Reply message to a successful [[ReplayMessages]] request. This reply is sent to the requestor
    * after all [[ReplayedMessage]] have been sent (if any).
    */
   case object ReplayMessagesSuccess
+    extends Response
 
   /**
    * Reply message to a failed [[ReplayMessages]] request. This reply is sent to the requestor
    * if a replay could not be successfully completed.
    */
   final case class ReplayMessagesFailure(cause: Throwable)
+    extends Response
 
   /**
    * Request to read the highest stored sequence number of a given persistent actor.
@@ -112,6 +132,7 @@ private[persistence] object JournalProtocol {
    * @param persistentActor requesting persistent actor.
    */
   final case class ReadHighestSequenceNr(fromSequenceNr: Long = 1L, persistenceId: String, persistentActor: ActorRef)
+    extends Request
 
   /**
    * Reply message to a successful [[ReadHighestSequenceNr]] request.
@@ -119,6 +140,7 @@ private[persistence] object JournalProtocol {
    * @param highestSequenceNr read highest sequence number.
    */
   final case class ReadHighestSequenceNrSuccess(highestSequenceNr: Long)
+    extends Response
 
   /**
    * Reply message to a failed [[ReadHighestSequenceNr]] request.
@@ -126,5 +148,5 @@ private[persistence] object JournalProtocol {
    * @param cause failure cause.
    */
   final case class ReadHighestSequenceNrFailure(cause: Throwable)
+    extends Response
 }
-
