@@ -22,7 +22,7 @@ object Unidoc {
 
   val genjavadocEnabled = sys.props.get("akka.genjavadoc.enabled").getOrElse("false").toBoolean
   val (unidocSettings, javadocSettings) =
-    if (genjavadocEnabled) (scalaJavaUnidocSettings, genjavadocSettings)
+    if (genjavadocEnabled) (scalaJavaUnidocSettings, genjavadocSettings ++ Seq(unidocGenjavadocVersion in Global := "0.8"))
     else (scalaUnidocSettings, Nil)
 
   lazy val scaladocDiagramsEnabled = sys.props.get("akka.scaladoc.diagrams").getOrElse("true").toBoolean
