@@ -156,6 +156,14 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("akkaSource=[Slf4jLoggerSpec$MyLogSource]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$MyLogSource]")
     }
+
+    "include actorSystem name in sourceActorSystem" in {
+      val log = Logging(system.eventStream, classOf[MyLogSource])
+      log.info("test")
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("sourceActorSystem=[Slf4jLoggerSpec]")
+    }
   }
 
 }
