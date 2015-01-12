@@ -1076,7 +1076,12 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.autoResendTimer"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck"),
       ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.bailoutAt"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck_=")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck_="),
+      
+      // Change to improve cluster heartbeat sender, #16638
+      FilterAnyProblem("akka.cluster.HeartbeatNodeRing"),
+      FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState")
+      
     )
   }
 
