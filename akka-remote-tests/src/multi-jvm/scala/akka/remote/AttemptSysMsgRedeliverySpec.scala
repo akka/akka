@@ -57,8 +57,6 @@ class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryM
       }
       enterBarrier("blackhole")
 
-      Thread.sleep(200)
-
       runOn(first, third) {
         watch(secondRef)
       }
@@ -66,7 +64,6 @@ class AttemptSysMsgRedeliverySpec extends MultiNodeSpec(AttemptSysMsgRedeliveryM
         watch(firstRef)
       }
       enterBarrier("watch-established")
-      Thread.sleep(500)
 
       runOn(first) {
         testConductor.passThrough(first, second, Direction.Both).await
