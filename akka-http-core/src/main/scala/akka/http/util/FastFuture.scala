@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typestrict Inc. <http://www.typestrict.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.http.util
