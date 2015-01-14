@@ -54,7 +54,7 @@ object SystemMessageDeliveryStressTest {
       remote.system-message-buffer-size = $msgCount
       ## Keep this setting tight, otherwise the test takes a long time or times out
       remote.resend-interval = 500 ms
-      remote.system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
+      remote.system-message-ack-piggyback-timeout = 300 ms // Force heavy Ack traffic
       remote.use-passive-connections = on
 
       remote.netty.tcp {
@@ -153,15 +153,15 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       val transportA = RARP(systemA).provider.transport
       val transportB = RARP(systemB).provider.transport
 
-      Await.result(transportA.managementCommand(One(addressB, Drop(0.2, 0.2))), 3.seconds.dilated)
-      Await.result(transportB.managementCommand(One(addressA, Drop(0.2, 0.2))), 3.seconds.dilated)
+      Await.result(transportA.managementCommand(One(addressB, Drop(0.1, 0.1))), 3.seconds.dilated)
+      Await.result(transportB.managementCommand(One(addressA, Drop(0.1, 0.1))), 3.seconds.dilated)
 
       // Schedule peridodic disassociates
-      systemA.scheduler.schedule(1.second, 3.seconds) {
+      systemA.scheduler.schedule(1.second, 6.seconds) {
         transportA.managementCommand(ForceDisassociateExplicitly(addressB, reason = AssociationHandle.Unknown))
       }
 
-      systemB.scheduler.schedule(2.seconds, 3.seconds) {
+      systemB.scheduler.schedule(4.seconds, 6.seconds) {
         transportB.managementCommand(ForceDisassociateExplicitly(addressA, reason = AssociationHandle.Unknown))
       }
 
