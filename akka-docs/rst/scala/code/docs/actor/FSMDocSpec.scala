@@ -16,7 +16,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
   //#fsm-code-elided
   //#simple-imports
-  import akka.actor.{ Actor, ActorRef, FSM }
+  import akka.actor.{ ActorRef, FSM }
   import scala.concurrent.duration._
   //#simple-imports
   //#simple-events
@@ -106,7 +106,7 @@ class FSMDocSpec extends MyFavoriteTestFrameWorkPlusAkkaTestKit {
 
       //#transition-syntax
       onTransition {
-        case Idle -> Active => setTimer("timeout", Tick, 1 second, true)
+        case Idle -> Active => setTimer("timeout", Tick, 1 second, repeat = true)
         case Active -> _    => cancelTimer("timeout")
         case x -> Idle      => log.info("entering Idle from " + x)
       }
