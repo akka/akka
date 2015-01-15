@@ -358,7 +358,7 @@ private[akka] object ActorCell {
   final val SuspendedWaitForChildrenState = 2
 }
 
-//ACTORCELL IS 64bytes and should stay that way unless very good reason not to (machine sympathy, cache line fit)
+//ACTORCELL is NOT 64 bytes aligned, unless it is demonstrated to have a large improvement on performance
 //vars don't need volatile since it's protected with the mailbox status
 //Make sure that they are not read/written outside of a message processing (systemInvoke/invoke)
 /**
