@@ -160,10 +160,8 @@ object FlexiRoute {
      * handle cancel from downstream output.
      *
      * The `onComplete` function is called the upstream input was completed successfully.
-     * It returns next behavior or [[#SameState]] to keep current behavior.
      *
      * The `onError` function is called when the upstream input was completed with failure.
-     * It returns next behavior or [[#SameState]] to keep current behavior.
      *
      * The `onCancel` function is called when a downstream output cancels.
      * It returns next behavior or [[#SameState]] to keep current behavior.
