@@ -169,11 +169,17 @@ abstract class SystemMessageDeliveryStressTest(msg: String, cfg: String)
       systemA.actorOf(Props(classOf[SystemMessageSender], msgCount, burstSize, burstDelay, targetForA))
 
       val toSend = (0 until msgCount).toList
+      var maxDelay = 0L
+
       for (m ← 0 until msgCount) {
-        probeB.expectMsg(30.seconds, m)
-        probeA.expectMsg(30.seconds, m)
+        val start = System.currentTimeMillis()
+        probeB.expectMsg(10.minutes, m)
+        probeA.expectMsg(10.minutes, m)
+        println(s" #### $m")
+        maxDelay = math.max(maxDelay, (System.currentTimeMillis() - start) / 1000)
       }
 
+      println(s" #### MAX DELAY $maxDelay seconds")
     }
   }
 
