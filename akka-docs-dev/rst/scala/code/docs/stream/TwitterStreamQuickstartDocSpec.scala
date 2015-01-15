@@ -5,8 +5,6 @@ package docs.stream
 
 //#imports
 
-import java.util.Date
-
 import akka.actor.ActorSystem
 import akka.stream.FlowMaterializer
 import akka.stream.OverflowStrategy
@@ -19,8 +17,8 @@ import akka.stream.scaladsl.RunnableFlow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 
-import concurrent.Await
-import concurrent.Future
+import scala.concurrent.Await
+import scala.concurrent.Future
 
 //#imports
 
@@ -29,7 +27,6 @@ import akka.stream.testkit.AkkaSpec
 object TwitterStreamQuickstartDocSpec {
   //#model
   final case class Author(handle: String)
-  val akka = Hashtag("#akka")
 
   final case class Hashtag(name: String)
 
@@ -37,19 +34,21 @@ object TwitterStreamQuickstartDocSpec {
     def hashtags: Set[Hashtag] =
       body.split(" ").collect { case t if t.startsWith("#") => Hashtag(t) }.toSet
   }
+
+  val akka = Hashtag("#akka")
   //#model
 
   val tweets = Source(
-    Tweet(Author("rolandkuhn"), (new Date).getTime, "#akka rocks!") ::
-      Tweet(Author("patriknw"), (new Date).getTime, "#akka !") ::
-      Tweet(Author("bantonsson"), (new Date).getTime, "#akka !") ::
-      Tweet(Author("drewhk"), (new Date).getTime, "#akka !") ::
-      Tweet(Author("ktosopl"), (new Date).getTime, "#akka on the rocks!") ::
-      Tweet(Author("mmartynas"), (new Date).getTime, "wow #akka !") ::
-      Tweet(Author("akkateam"), (new Date).getTime, "#akka rocks!") ::
-      Tweet(Author("bananaman"), (new Date).getTime, "#bananas rock!") ::
-      Tweet(Author("appleman"), (new Date).getTime, "#apples rock!") ::
-      Tweet(Author("drama"), (new Date).getTime, "we compared #apples to #oranges!") ::
+    Tweet(Author("rolandkuhn"), System.currentTimeMillis, "#akka rocks!") ::
+      Tweet(Author("patriknw"), System.currentTimeMillis, "#akka !") ::
+      Tweet(Author("bantonsson"), System.currentTimeMillis, "#akka !") ::
+      Tweet(Author("drewhk"), System.currentTimeMillis, "#akka !") ::
+      Tweet(Author("ktosopl"), System.currentTimeMillis, "#akka on the rocks!") ::
+      Tweet(Author("mmartynas"), System.currentTimeMillis, "wow #akka !") ::
+      Tweet(Author("akkateam"), System.currentTimeMillis, "#akka rocks!") ::
+      Tweet(Author("bananaman"), System.currentTimeMillis, "#bananas rock!") ::
+      Tweet(Author("appleman"), System.currentTimeMillis, "#apples rock!") ::
+      Tweet(Author("drama"), System.currentTimeMillis, "we compared #apples to #oranges!") ::
       Nil)
 }
 
@@ -203,7 +202,6 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     val sum: Future[Int] = map.get(sumSink)
 
     sum.map { c => println(s"Total tweets processed: $c") }
-    //#tweets-fold-count
   }
 
 }
