@@ -1,4 +1,4 @@
-.. _scala-api:
+.. _stream-scala-api:
 
 Scala Documentation
 ===================
