@@ -200,6 +200,13 @@ private[remote] class ReliableDeliverySupervisor(
   val autoResendTimer = context.system.scheduler.schedule(
     settings.SysResendTimeout, settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
 
+  // Aim for a maximum of 100 resend/s = 0.1 resend/ms
+  val maxResendRate = 100.0
+  val resendLimit =
+    math.min(
+      1000,
+      math.max((settings.SysResendTimeout.toMillis * (maxResendRate / 1000.0)).toInt, 1))
+
   override val supervisorStrategy = OneForOneStrategy(loggingEnabled = false) {
     case e @ (_: AssociationProblem) ⇒ Escalate
     case NonFatal(e) ⇒
@@ -234,7 +241,7 @@ private[remote] class ReliableDeliverySupervisor(
 
   var writer: ActorRef = createWriter()
   var uid: Option[Int] = handleOrActive map { _.handshakeInfo.uid }
-  val bailoutAt: Deadline = Deadline.now + settings.InitialSysMsgDeliveryTimeout
+  var bailoutAt: Deadline = Deadline.now + settings.InitialSysMsgDeliveryTimeout
   // Processing of Acks has to be delayed until the UID after a reconnect is discovered. Depending whether the
   // UID matches the expected one, pending Acks can be processed, or must be dropped. It is guaranteed that for
   // any inbound connections (calling createWriter()) the first message from that connection is GotUid() therefore
@@ -295,6 +302,7 @@ private[remote] class ReliableDeliverySupervisor(
         context.system.scheduler.scheduleOnce(settings.SysResendTimeout, self, AttemptSysMsgRedelivery)
       context.become(idle)
     case g @ GotUid(receivedUid, _) ⇒
+      bailoutAt = Deadline.now + settings.InitialSysMsgDeliveryTimeout
       context.parent ! g
       // New system that has the same address as the old - need to start from fresh state
       uidConfirmed = true
@@ -318,7 +326,7 @@ private[remote] class ReliableDeliverySupervisor(
         // again it will be immediately quarantined due to out-of-sync system message buffer and becomes quarantined.
         // In other words, this action is safe.
         if (!uidConfirmed && bailoutAt.isOverdue())
-          throw new InvalidAssociation(localAddress, remoteAddress,
+          throw new HopelessAssociation(localAddress, remoteAddress, uid,
             new java.util.concurrent.TimeoutException("Delivery of system messages timed out and they were dropped."))
         writer = createWriter()
         // Resending will be triggered by the incoming GotUid message after the connection finished
@@ -375,7 +383,7 @@ private[remote] class ReliableDeliverySupervisor(
 
   private def resendAll(): Unit = {
     resendNacked()
-    resendBuffer.nonAcked foreach { writer ! _ }
+    resendBuffer.nonAcked.take(resendLimit) foreach { writer ! _ }
   }
 
   private def tryBuffer(s: Send): Unit =

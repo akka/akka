@@ -53,8 +53,8 @@ object SystemMessageDeliveryStressTest {
       }
       remote.system-message-buffer-size = $msgCount
       ## Keep this setting tight, otherwise the test takes a long time or times out
-      remote.resend-interval = 500 ms
-      remote.system-message-ack-piggyback-timeout = 300 ms // Force heavy Ack traffic
+      remote.resend-interval = 2 s
+      remote.system-message-ack-piggyback-timeout = 100 ms // Force heavy Ack traffic
       remote.use-passive-connections = on
 
       remote.netty.tcp {

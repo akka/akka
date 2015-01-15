@@ -471,7 +471,7 @@ private[transport] class ThrottledAssociation(
     case Event(Disassociated(info), _) ⇒
       stop() // not notifying the upstream handler is intentional: we are relying on heartbeating
     case Event(FailWith(reason), _) ⇒
-      upstreamListener notify Disassociated(reason)
+      if (upstreamListener ne null) upstreamListener notify Disassociated(reason)
       stop()
   }
 
