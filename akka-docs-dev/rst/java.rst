@@ -1,10 +1,10 @@
-.. _java-api:
+.. _stream-java-api:
 
 Java Documentation
-==================
+===================
 
-.. note::
+.. toctree::
+   :maxdepth: 2
 
-  The documentation has not yet been ported to Java, you are welcome to read
-  the Scala version since all APIs are closely reflected between the two
-  language bindings.
+   java/stream-index
+   java/http/index
