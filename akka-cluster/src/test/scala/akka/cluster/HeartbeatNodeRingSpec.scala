@@ -27,37 +27,37 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
 
     "pick specified number of nodes as receivers" in {
       val ring = HeartbeatNodeRing(cc, nodes, Set.empty, 3)
-      ring.myReceivers should be(ring.receivers(cc))
+      ring.myReceivers should ===(ring.receivers(cc))
 
       nodes foreach { n ⇒
         val receivers = ring.receivers(n)
-        receivers.size should be(3)
+        receivers.size should ===(3)
         receivers should not contain (n)
       }
     }
 
     "pick specified number of nodes + unreachable as receivers" in {
       val ring = HeartbeatNodeRing(cc, nodes, unreachable = Set(aa, dd, ee), monitoredByNrOfMembers = 3)
-      ring.myReceivers should be(ring.receivers(cc))
+      ring.myReceivers should ===(ring.receivers(cc))
 
-      ring.receivers(aa) should be(Set(bb, cc, dd, ff)) // unreachable ee skipped
-      ring.receivers(bb) should be(Set(cc, dd, ee, ff)) // unreachable aa skipped
-      ring.receivers(cc) should be(Set(dd, ee, ff, bb)) // unreachable aa skipped
-      ring.receivers(dd) should be(Set(ee, ff, aa, bb, cc))
-      ring.receivers(ee) should be(Set(ff, aa, bb, cc))
-      ring.receivers(ff) should be(Set(aa, bb, cc)) // unreachable dd and ee skipped
+      ring.receivers(aa) should ===(Set(bb, cc, dd, ff)) // unreachable ee skipped
+      ring.receivers(bb) should ===(Set(cc, dd, ee, ff)) // unreachable aa skipped
+      ring.receivers(cc) should ===(Set(dd, ee, ff, bb)) // unreachable aa skipped
+      ring.receivers(dd) should ===(Set(ee, ff, aa, bb, cc))
+      ring.receivers(ee) should ===(Set(ff, aa, bb, cc))
+      ring.receivers(ff) should ===(Set(aa, bb, cc)) // unreachable dd and ee skipped
     }
 
     "pick all except own as receivers when less than total number of nodes" in {
       val expected = Set(aa, bb, dd, ee, ff)
-      HeartbeatNodeRing(cc, nodes, Set.empty, 5).myReceivers should be(expected)
-      HeartbeatNodeRing(cc, nodes, Set.empty, 6).myReceivers should be(expected)
-      HeartbeatNodeRing(cc, nodes, Set.empty, 7).myReceivers should be(expected)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 5).myReceivers should ===(expected)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 6).myReceivers should ===(expected)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 7).myReceivers should ===(expected)
     }
 
     "pick none when alone" in {
       val ring = HeartbeatNodeRing(cc, Set(cc), Set.empty, 3)
-      ring.myReceivers should be(Set())
+      ring.myReceivers should ===(Set())
     }
 
   }

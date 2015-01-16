@@ -43,7 +43,7 @@ class DefaultCamelTest extends WordSpec with SharedCamelSystem with Matchers wit
     }
 
     "throws exception thrown by context.stop()" in {
-      exception.getMessage() should be("context");
+      exception.getMessage() should ===("context");
     }
 
     "tries to stop both template and context" in {

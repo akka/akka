@@ -53,11 +53,11 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
       record should not be (null)
       record.getMillis should not be (0)
       record.getThreadID should not be (0)
-      record.getLevel should be(logging.Level.SEVERE)
-      record.getMessage should be("Simulated error")
-      record.getThrown.isInstanceOf[RuntimeException] should be(true)
-      record.getSourceClassName should be(classOf[JavaLoggerSpec.LogProducer].getName)
-      record.getSourceMethodName should be(null)
+      record.getLevel should ===(logging.Level.SEVERE)
+      record.getMessage should ===("Simulated error")
+      record.getThrown.isInstanceOf[RuntimeException] should ===(true)
+      record.getSourceClassName should ===(classOf[JavaLoggerSpec.LogProducer].getName)
+      record.getSourceMethodName should ===(null)
     }
 
     "log info without stackTrace" in {
@@ -68,11 +68,11 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
       record should not be (null)
       record.getMillis should not be (0)
       record.getThreadID should not be (0)
-      record.getLevel should be(logging.Level.INFO)
-      record.getMessage should be("3 is the magic number")
-      record.getThrown should be(null)
-      record.getSourceClassName should be(classOf[JavaLoggerSpec.LogProducer].getName)
-      record.getSourceMethodName should be(null)
+      record.getLevel should ===(logging.Level.INFO)
+      record.getMessage should ===("3 is the magic number")
+      record.getThrown should ===(null)
+      record.getSourceClassName should ===(classOf[JavaLoggerSpec.LogProducer].getName)
+      record.getSourceMethodName should ===(null)
     }
   }
 

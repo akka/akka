@@ -19,7 +19,7 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
       tk.expectMsg(0 millis, "hello") // TestActor runs on CallingThreadDispatcher
       tk.lastMessage.sender ! "world"
       future should be('completed)
-      Await.result(future, timeout.duration) should be("world")
+      Await.result(future, timeout.duration) should ===("world")
     }
 
     "reply to messages" in {
@@ -100,13 +100,13 @@ class TestProbeSpec extends AkkaSpec with DefaultTimeout {
 
     "be able to expect primitive types" in {
       for (_ ← 1 to 7) testActor ! 42
-      expectMsgType[Int] should be(42)
-      expectMsgAnyClassOf(classOf[Int]) should be(42)
-      expectMsgAllClassOf(classOf[Int]) should be(Seq(42))
-      expectMsgAllConformingOf(classOf[Int]) should be(Seq(42))
-      expectMsgAllConformingOf(5 seconds, classOf[Int]) should be(Seq(42))
-      expectMsgAllClassOf(classOf[Int]) should be(Seq(42))
-      expectMsgAllClassOf(5 seconds, classOf[Int]) should be(Seq(42))
+      expectMsgType[Int] should ===(42)
+      expectMsgAnyClassOf(classOf[Int]) should ===(42)
+      expectMsgAllClassOf(classOf[Int]) should ===(Seq(42))
+      expectMsgAllConformingOf(classOf[Int]) should ===(Seq(42))
+      expectMsgAllConformingOf(5 seconds, classOf[Int]) should ===(Seq(42))
+      expectMsgAllClassOf(classOf[Int]) should ===(Seq(42))
+      expectMsgAllClassOf(5 seconds, classOf[Int]) should ===(Seq(42))
     }
 
     "be able to ignore primitive types" in {

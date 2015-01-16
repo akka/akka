@@ -47,7 +47,7 @@ class ListenerSpec extends AkkaSpec {
       broadcast ! "foo"
 
       Await.ready(barLatch, TestLatch.DefaultTimeout)
-      barCount.get should be(2)
+      barCount.get should ===(2)
 
       Await.ready(fooLatch, TestLatch.DefaultTimeout)
 

@@ -47,9 +47,9 @@ class LookupRemoteActorSpec extends MultiNodeSpec(LookupRemoteActorMultiJvmSpec)
           system.actorSelection(node(master) / "user" / "service-hello") ! Identify("id1")
           expectMsgType[ActorIdentity].ref.get
         }
-        hello.isInstanceOf[RemoteActorRef] should be(true)
+        hello.isInstanceOf[RemoteActorRef] should ===(true)
         val masterAddress = testConductor.getAddressFor(master).await
-        (hello ? "identify").await.asInstanceOf[ActorRef].path.address should be(masterAddress)
+        (hello ? "identify").await.asInstanceOf[ActorRef].path.address should ===(masterAddress)
       }
       enterBarrier("done")
     }

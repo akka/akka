@@ -70,8 +70,8 @@ class TailChoppingSpec extends AkkaSpec with DefaultTimeout with ImplicitSender 
 
       Await.ready(doneLatch, TestLatch.DefaultTimeout)
 
-      counter1.get should be(1)
-      counter2.get should be(1)
+      counter1.get should ===(1)
+      counter2.get should ===(1)
     }
 
     "return response from second actor after inactivity from first one" in {

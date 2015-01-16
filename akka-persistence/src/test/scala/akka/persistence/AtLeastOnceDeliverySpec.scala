@@ -306,7 +306,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
       val unconfirmed = receiveWhile(3.seconds) {
         case UnconfirmedWarning(unconfirmed) ⇒ unconfirmed
       }.flatten
-      unconfirmed.map(_.destination).toSet should be(Set(probeA.ref.path, probeB.ref.path))
+      unconfirmed.map(_.destination).toSet should ===(Set(probeA.ref.path, probeB.ref.path))
       unconfirmed.map(_.message).toSet should be(Set(Action(1, "a-1"), Action(2, "b-1"), Action(3, "b-2")))
       system.stop(snd)
     }
@@ -334,9 +334,9 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
         snd ! Req("c-" + n)
       }
       val deliverWithin = 20.seconds
-      probeA.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should be((1 to N).map(n ⇒ "a-" + n).toSet)
-      probeB.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should be((1 to N).map(n ⇒ "b-" + n).toSet)
-      probeC.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should be((1 to N).map(n ⇒ "c-" + n).toSet)
+      probeA.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "a-" + n).toSet)
+      probeB.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "b-" + n).toSet)
+      probeC.receiveN(N, deliverWithin).map { case a: Action ⇒ a.payload }.toSet should ===((1 to N).map(n ⇒ "c-" + n).toSet)
     }
 
     "limit the number of messages redelivered at once" in {
@@ -363,7 +363,7 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends AkkaSpec(config) 
         probeA.expectNoMsg(100.millis)
       }
 
-      toDeliver should be(Set.empty)
+      toDeliver should ===(Set.empty[Long])
     }
   }
 }

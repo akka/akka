@@ -47,7 +47,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
       runOn(first) {
         cluster.joinSeedNodes(Vector(first))
         awaitMembersUp(1)
-        clusterView.isSingletonCluster should be(true)
+        clusterView.isSingletonCluster should ===(true)
       }
 
       enterBarrier("after-1")
@@ -55,7 +55,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
 
     "not be singleton cluster when joined with other node" taggedAs LongRunningTest in {
       awaitClusterUp(first, second)
-      clusterView.isSingletonCluster should be(false)
+      clusterView.isSingletonCluster should ===(false)
       assertLeader(first, second)
 
       enterBarrier("after-2")
@@ -69,7 +69,7 @@ abstract class SingletonClusterSpec(multiNodeConfig: SingletonClusterMultiNodeCo
         markNodeAsUnavailable(secondAddress)
 
         awaitMembersUp(numberOfMembers = 1, canNotBePartOfMemberRing = Set(secondAddress), 30.seconds)
-        clusterView.isSingletonCluster should be(true)
+        clusterView.isSingletonCluster should ===(true)
         awaitCond(clusterView.isLeader)
       }
 

@@ -109,10 +109,10 @@ abstract class ClusterMetricsEnabledSpec extends MultiNodeSpec(ClusterMetricsEna
       "and gossip metrics around the node ring" taggedAs LongRunningTest in within(60 seconds) {
         awaitClusterUp(roles: _*)
         enterBarrier("cluster-started")
-        awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should be(roles.size))
+        awaitAssert(clusterView.members.count(_.status == MemberStatus.Up) should ===(roles.size))
         // TODO ensure same contract
-        //awaitAssert(clusterView.clusterMetrics.size should be(roles.size))
-        awaitAssert(metricsView.clusterMetrics.size should be(roles.size))
+        //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size))
+        awaitAssert(metricsView.clusterMetrics.size should ===(roles.size))
         val collector = MetricsCollector(cluster.system)
         collector.sample.metrics.size should be > (3)
         enterBarrier("after")
@@ -125,8 +125,8 @@ abstract class ClusterMetricsEnabledSpec extends MultiNodeSpec(ClusterMetricsEna
       runOn(node2, node3, node4, node5) {
         markNodeAsUnavailable(node1)
         // TODO ensure same contract
-        //awaitAssert(clusterView.clusterMetrics.size should be(roles.size - 1))
-        awaitAssert(metricsView.clusterMetrics.size should be(roles.size - 1))
+        //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size - 1))
+        awaitAssert(metricsView.clusterMetrics.size should ===(roles.size - 1))
       }
       enterBarrier("finished")
     }
@@ -149,14 +149,14 @@ abstract class ClusterMetricsDisabledSpec extends MultiNodeSpec(ClusterMetricsDi
     "not collect metrics, not publish metrics events, and not gossip metrics" taggedAs LongRunningTest in {
       awaitClusterUp(roles: _*)
       // TODO ensure same contract
-      //clusterView.clusterMetrics.size should be(0)
-      metricsView.clusterMetrics.size should be(0)
+      //clusterView.clusterMetrics.size should ===(0)
+      metricsView.clusterMetrics.size should ===(0)
       cluster.subscribe(testActor, classOf[ClusterMetricsChanged])
       expectMsgType[CurrentClusterState]
       expectNoMsg
       // TODO ensure same contract
-      //clusterView.clusterMetrics.size should be(0)
-      metricsView.clusterMetrics.size should be(0)
+      //clusterView.clusterMetrics.size should ===(0)
+      metricsView.clusterMetrics.size should ===(0)
       enterBarrier("after")
     }
   }

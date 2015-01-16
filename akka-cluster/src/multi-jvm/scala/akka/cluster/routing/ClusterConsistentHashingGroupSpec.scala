@@ -77,7 +77,7 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
         settings = ClusterRouterGroupSettings(totalInstances = 10, paths, allowLocalRoutees = true, useRole = None)).props(),
         "router")
       // it may take some time until router receives cluster member events
-      awaitAssert { currentRoutees(router).size should be(3) }
+      awaitAssert { currentRoutees(router).size should ===(3) }
       val keys = List("A", "B", "C", "D", "E", "F", "G")
       for (_ ← 1 to 10; k ← keys) { router ! k }
       enterBarrier("messages-sent")
@@ -86,11 +86,11 @@ abstract class ClusterConsistentHashingGroupSpec extends MultiNodeSpec(ClusterCo
       val b = expectMsgType[Collected].messages
       val c = expectMsgType[Collected].messages
 
-      a.intersect(b) should be(Set.empty)
-      a.intersect(c) should be(Set.empty)
-      b.intersect(c) should be(Set.empty)
+      a.intersect(b) should ===(Set.empty)
+      a.intersect(c) should ===(Set.empty)
+      b.intersect(c) should ===(Set.empty)
 
-      (a.size + b.size + c.size) should be(keys.size)
+      (a.size + b.size + c.size) should ===(keys.size)
       enterBarrier("after-2")
     }
 

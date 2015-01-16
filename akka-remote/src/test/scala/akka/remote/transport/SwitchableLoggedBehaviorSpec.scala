@@ -21,14 +21,14 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
     "execute default behavior" in {
       val behavior = defaultBehavior
 
-      Await.result(behavior(()), timeout.duration) should be(3)
+      Await.result(behavior(()), timeout.duration) should ===(3)
     }
 
     "be able to push generic behavior" in {
       val behavior = defaultBehavior
 
       behavior.push((_) ⇒ Promise.successful(4).future)
-      Await.result(behavior(()), timeout.duration) should be(4)
+      Await.result(behavior(()), timeout.duration) should ===(4)
 
       behavior.push((_) ⇒ Promise.failed(TestException).future)
       behavior(()).value match {
@@ -41,8 +41,8 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       val behavior = defaultBehavior
       behavior.pushConstant(5)
 
-      Await.result(behavior(()), timeout.duration) should be(5)
-      Await.result(behavior(()), timeout.duration) should be(5)
+      Await.result(behavior(()), timeout.duration) should ===(5)
+      Await.result(behavior(()), timeout.duration) should ===(5)
     }
 
     "be able to push failure behavior" in {
@@ -59,16 +59,16 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       val behavior = defaultBehavior
 
       behavior.pushConstant(5)
-      Await.result(behavior(()), timeout.duration) should be(5)
+      Await.result(behavior(()), timeout.duration) should ===(5)
 
       behavior.pushConstant(7)
-      Await.result(behavior(()), timeout.duration) should be(7)
+      Await.result(behavior(()), timeout.duration) should ===(7)
 
       behavior.pop()
-      Await.result(behavior(()), timeout.duration) should be(5)
+      Await.result(behavior(()), timeout.duration) should ===(5)
 
       behavior.pop()
-      Await.result(behavior(()), timeout.duration) should be(3)
+      Await.result(behavior(()), timeout.duration) should ===(3)
 
     }
 
@@ -78,7 +78,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       behavior.pop()
       behavior.pop()
 
-      Await.result(behavior(()), timeout.duration) should be(3)
+      Await.result(behavior(()), timeout.duration) should ===(3)
     }
 
     "enable delayed completition" in {
@@ -86,7 +86,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       val controlPromise = behavior.pushDelayed
       val f = behavior(())
 
-      f.isCompleted should be(false)
+      f.isCompleted should ===(false)
       controlPromise.success(())
 
       awaitCond(f.isCompleted)
@@ -97,7 +97,7 @@ class SwitchableLoggedBehaviorSpec extends AkkaSpec with DefaultTimeout {
       val behavior = new SwitchableLoggedBehavior[Int, Int]((i) ⇒ Promise.successful(3).future, (i) ⇒ logPromise.success(i))
 
       behavior(11)
-      Await.result(logPromise.future, timeout.duration) should be(11)
+      Await.result(logPromise.future, timeout.duration) should ===(11)
     }
 
   }

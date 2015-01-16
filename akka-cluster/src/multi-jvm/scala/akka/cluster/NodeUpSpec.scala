@@ -40,7 +40,7 @@ abstract class NodeUpSpec
       enterBarrier("first-join-attempt")
 
       Thread.sleep(2000)
-      clusterView.members should be(Set.empty)
+      clusterView.members should ===(Set.empty)
 
       enterBarrier("after-0")
     }
@@ -70,8 +70,8 @@ abstract class NodeUpSpec
       // let it run for a while to make sure that nothing bad happens
       for (n ← 1 to 20) {
         Thread.sleep(100.millis.dilated.toMillis)
-        unexpected.get should be(SortedSet.empty)
-        clusterView.members.forall(_.status == MemberStatus.Up) should be(true)
+        unexpected.get should ===(SortedSet.empty)
+        clusterView.members.forall(_.status == MemberStatus.Up) should ===(true)
       }
 
       enterBarrier("after-2")

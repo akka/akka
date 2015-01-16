@@ -20,7 +20,7 @@ class ActorEndpointPathTest extends WordSpec with SharedCamelSystem with Matcher
   }
 
   "findActorIn returns None" when {
-    "non existing valid path" in { find("akka://system/user/unknownactor") should be(None) }
+    "non existing valid path" in { find("akka://system/user/unknownactor") should ===(None) }
   }
   "fromCamelPath throws IllegalArgumentException" when {
     "invalid path" in {

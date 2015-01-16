@@ -28,7 +28,7 @@ class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
 
   private def myReceivers(ring: HeartbeatNodeRing): Unit = {
     val r = HeartbeatNodeRing(ring.selfAddress, ring.nodes, Set.empty, ring.monitoredByNrOfMembers)
-    r.myReceivers.isEmpty should be(false)
+    r.myReceivers.isEmpty should ===(false)
   }
 
   s"HeartbeatNodeRing of size $nodesSize" must {

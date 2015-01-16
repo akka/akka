@@ -73,7 +73,7 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       timeoutActor ! Tick
 
       Await.ready(timeoutLatch, TestLatch.DefaultTimeout)
-      count.get should be(1)
+      count.get should ===(1)
       system.stop(timeoutActor)
     }
 

@@ -15,27 +15,27 @@ class DurationConverterSpec extends WordSpec with Matchers {
   import DurationTypeConverter._
 
   "DurationTypeConverter must convert '10 nanos'" in {
-    convertTo(classOf[Duration], "10 nanos") should be(10 nanos)
+    convertTo(classOf[Duration], "10 nanos") should ===(10 nanos)
   }
 
   "DurationTypeConverter must do the roundtrip" in {
-    convertTo(classOf[Duration], (10 seconds).toString()) should be(10 seconds)
+    convertTo(classOf[Duration], (10 seconds).toString()) should ===(10 seconds)
   }
 
   "DurationTypeConverter must throw if invalid format" in {
-    tryConvertTo(classOf[Duration], "abc nanos") should be(null)
+    tryConvertTo(classOf[Duration], "abc nanos") should ===(null)
 
     intercept[TypeConversionException] {
-      mandatoryConvertTo(classOf[Duration], "abc nanos") should be(10 nanos)
-    }.getValue should be("abc nanos")
+      mandatoryConvertTo(classOf[Duration], "abc nanos") should ===(10 nanos)
+    }.getValue should ===("abc nanos")
   }
 
   "DurationTypeConverter must throw if doesn't end with time unit" in {
-    tryConvertTo(classOf[Duration], "10233") should be(null)
+    tryConvertTo(classOf[Duration], "10233") should ===(null)
 
     intercept[TypeConversionException] {
-      mandatoryConvertTo(classOf[Duration], "10233") should be(10 nanos)
-    }.getValue should be("10233")
+      mandatoryConvertTo(classOf[Duration], "10233") should ===(10 nanos)
+    }.getValue should ===("10233")
   }
 
 }

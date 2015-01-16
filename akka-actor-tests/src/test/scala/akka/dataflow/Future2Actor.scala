@@ -26,14 +26,14 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
       implicit val someActor = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
       Future(42) pipeTo testActor pipeTo testActor
       expectMsgAllOf(1 second, 42, 42)
-      lastSender should be(someActor)
+      lastSender should ===(someActor)
     }
 
     "support convenient sending with explicit sender" in {
       val someActor = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
       Future(42).to(testActor, someActor)
       expectMsgAllOf(1 second, 42)
-      lastSender should be(someActor)
+      lastSender should ===(someActor)
     }
 
     "support reply via sender" in {
@@ -43,10 +43,10 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
           case "ex" ⇒ Future(throw new AssertionError) pipeTo context.sender()
         }
       }))
-      Await.result(actor ? "do", timeout.duration) should be(31)
+      Await.result(actor ? "do", timeout.duration) should ===(31)
       intercept[ExecutionException] {
         Await.result(actor ? "ex", timeout.duration)
-      }.getCause.isInstanceOf[AssertionError] should be(true)
+      }.getCause.isInstanceOf[AssertionError] should ===(true)
     }
   }
 }

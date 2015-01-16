@@ -4,7 +4,6 @@
 package akka.testkit
 
 import language.{ postfixOps, reflectiveCalls }
-
 import org.scalatest.{ WordSpecLike, BeforeAndAfterAll }
 import org.scalatest.Matchers
 import akka.actor.ActorSystem
@@ -14,6 +13,8 @@ import scala.concurrent.Future
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.dispatch.Dispatchers
 import akka.testkit.TestEvent._
+import org.scalautils.ConversionCheckedTripleEquals
+import org.scalautils.Constraint
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""
@@ -52,7 +53,8 @@ object AkkaSpec {
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
-  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner {
+  extends TestKit(_system) with WordSpecLike with Matchers with BeforeAndAfterAll with WatchedByCoroner
+  with ConversionCheckedTripleEquals {
 
   def this(config: Config) = this(ActorSystem(AkkaSpec.getCallerName(getClass),
     ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
@@ -98,4 +100,9 @@ abstract class AkkaSpec(_system: ActorSystem)
       else messageClasses foreach mute
     }
 
+  // for ScalaTest === compare of Class objects
+  implicit def classEqualityConstraint[A, B]: Constraint[Class[A], Class[B]] =
+    new Constraint[Class[A], Class[B]] {
+      def areEqual(a: Class[A], b: Class[B]) = a == b
+    }
 }

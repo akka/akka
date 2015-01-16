@@ -17,7 +17,7 @@ class ImplicitSenderSpec
 
   "An ImplicitSender" should {
     "have testActor as its self" in {
-      self should be(testActor)
+      self should ===(testActor)
     }
   }
 }

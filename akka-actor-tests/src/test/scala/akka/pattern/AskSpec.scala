@@ -20,7 +20,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(5 seconds)
       val dead = system.actorFor("/system/deadLetters")
       val f = dead.ask(42)(1 second)
-      f.isCompleted should be(true)
+      f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
         case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
@@ -31,7 +31,7 @@ class AskSpec extends AkkaSpec {
       implicit val timeout = Timeout(5 seconds)
       val empty = system.actorFor("unknown")
       val f = empty ? 3.14
-      f.isCompleted should be(true)
+      f.isCompleted should ===(true)
       f.value.get match {
         case Failure(_: AskTimeoutException) ⇒
         case v                               ⇒ fail(v + " was not Left(AskTimeoutException)")
@@ -41,10 +41,10 @@ class AskSpec extends AkkaSpec {
     "return broken promises on unsupported ActorRefs" in {
       implicit val timeout = Timeout(5 seconds)
       val f = ask(null: ActorRef, 3.14)
-      f.isCompleted should be(true)
+      f.isCompleted should ===(true)
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
-      }.getMessage should be("Unsupported recipient ActorRef type, question not sent to [null]. Sender[null] sent the message of type \"java.lang.Double\".")
+      }.getMessage should ===("Unsupported recipient ActorRef type, question not sent to [null]. Sender[null] sent the message of type \"java.lang.Double\".")
     }
 
     "return broken promises on 0 timeout" in {
@@ -54,7 +54,7 @@ class AskSpec extends AkkaSpec {
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
-      }.getMessage should be(expectedMsg)
+      }.getMessage should ===(expectedMsg)
     }
 
     "return broken promises on < 0 timeout" in {
@@ -64,7 +64,7 @@ class AskSpec extends AkkaSpec {
       val expectedMsg = "Timeout length must not be negative, question not sent to [%s]. Sender[null] sent the message of type \"java.lang.String\"." format echo
       intercept[IllegalArgumentException] {
         Await.result(f, timeout.duration)
-      }.getMessage should be(expectedMsg)
+      }.getMessage should ===(expectedMsg)
     }
 
     "include target information in AskTimeout" in {
@@ -73,7 +73,7 @@ class AskSpec extends AkkaSpec {
       val f = silentOne ? "noreply"
       intercept[AskTimeoutException] {
         Await.result(f, 1 second)
-      }.getMessage.contains("/user/silent") should be(true)
+      }.getMessage.contains("/user/silent") should ===(true)
     }
 
     "include timeout information in AskTimeout" in {
@@ -90,7 +90,7 @@ class AskSpec extends AkkaSpec {
       val f = system.actorOf(Props.empty) ? "noreply"
       intercept[AskTimeoutException] {
         Await.result(f, 1 second)
-      }.getMessage.contains(sender.toString) should be(true)
+      }.getMessage.contains(sender.toString) should ===(true)
     }
 
     "include message class information in AskTimeout" in {
@@ -98,7 +98,7 @@ class AskSpec extends AkkaSpec {
       val f = system.actorOf(Props.empty) ? "noreply"
       intercept[AskTimeoutException] {
         Await.result(f, 1 second)
-      }.getMessage.contains("\"java.lang.String\"") should be(true)
+      }.getMessage.contains("\"java.lang.String\"") should ===(true)
     }
 
     "work for ActorSelection" in {
@@ -108,7 +108,7 @@ class AskSpec extends AkkaSpec {
       val identityFuture = (system.actorSelection("/user/select-echo") ? Identify(None))
         .mapTo[ActorIdentity].map(_.ref.get)
 
-      Await.result(identityFuture, 5 seconds) should be(echo)
+      Await.result(identityFuture, 5 seconds) should ===(echo)
     }
 
     "work when reply uses actor selection" in {
@@ -119,7 +119,7 @@ class AskSpec extends AkkaSpec {
       val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ context.actorSelection(sender().path) ! x } }), "select-echo2")
       val f = echo ? "hi"
 
-      Await.result(f, 1 seconds) should be("hi")
+      Await.result(f, 1 seconds) should ===("hi")
 
       deadListener.expectNoMsg(200 milliseconds)
     }
@@ -153,7 +153,7 @@ class AskSpec extends AkkaSpec {
       }), "select-echo4")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
-        Await.result(f, 1 seconds) should be("hi")
+        Await.result(f, 1 seconds) should ===("hi")
       }
 
       deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
@@ -174,7 +174,7 @@ class AskSpec extends AkkaSpec {
       }), "select-echo5")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
-        Await.result(f, 1 seconds) should be("hi")
+        Await.result(f, 1 seconds) should ===("hi")
       }
       deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
     }
@@ -194,7 +194,7 @@ class AskSpec extends AkkaSpec {
       }), "select-echo6")
       val f = echo ? "hi"
       intercept[AskTimeoutException] {
-        Await.result(f, 1 seconds) should be(ActorSelectionMessage("hi", Vector(SelectChildName("missing")), false))
+        Await.result(f, 1 seconds) should ===(ActorSelectionMessage("hi", Vector(SelectChildName("missing")), false))
       }
       deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
     }

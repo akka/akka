@@ -70,7 +70,7 @@ abstract class RemoteDeploymentDeathWatchSpec
       runOn(second) {
         // remote deployment to third
         val hello = system.actorOf(Props[Hello], "hello")
-        hello.path.address should be(node(third).address)
+        hello.path.address should ===(node(third).address)
         enterBarrier("hello-deployed")
 
         enterBarrier("third-crashed")

@@ -30,7 +30,7 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
   cases foreach {
     case (d, expectedValue) ⇒
       it should s"print $d nanos as $expectedValue" in {
-        d.pretty should be(expectedValue)
+        d.pretty should ===(expectedValue)
       }
   }
 
