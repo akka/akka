@@ -305,7 +305,7 @@ the first case and ``LoggerFactory.getLogger(String s)`` in the second).
 
   final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
 
-Logging Thread and Akka Source in MDC
+Logging Thread, Akka Source and Actor System in MDC
 -------------------------------------
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
@@ -332,6 +332,15 @@ information is available in the MDC with attribute name ``akkaSource``::
   <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+Finally, the actor system in which the logging was performed
+is available in the MDC with attribute name ``sourceActorSystem``::
+
+  <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceActorSystem} - %msg%n</pattern>
     </encoder>
   </appender>
 
