@@ -108,8 +108,15 @@ object Source {
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
    */
-  def from[T](graph: PartialFlowGraph, block: japi.Function[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
+  def fromGraph[T](graph: PartialFlowGraph, block: japi.Function[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
     new Source(scaladsl.Source(graph.asScala)(x ⇒ block.apply(x.asJava).asScala))
+
+  /**
+   * Creates a `Source` by using a [[FlowGraphBuilder]] from on a block that expects
+   * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
+   */
+  def fromGraph[T](block: japi.Function[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
+    new Source(scaladsl.Source()(x ⇒ block.apply(x.asJava).asScala))
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor

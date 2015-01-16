@@ -105,8 +105,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     }
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
-    Await.result(firstPair, 300.millis) should equal(1 → 2)
     //#source-from-partial-flow-graph
+    Await.result(firstPair, 300.millis) should equal(1 -> 2)
   }
 
   "build flow from partial flow graph" in {
@@ -140,6 +140,6 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     //#flow-from-partial-flow-graph
     // format: ON
 
-    Await.result(matSink, 300.millis) should equal(1 → "1")
+    Await.result(matSink, 300.millis) should equal(1 -> "1")
   }
 }

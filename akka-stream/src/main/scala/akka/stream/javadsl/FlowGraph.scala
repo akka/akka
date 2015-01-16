@@ -99,6 +99,10 @@ object MergePreferred {
    */
   def create[T](clazz: Class[T], attributes: OperationAttributes): MergePreferred[T] =
     create(attributes)
+
+  class Preferred[T] private[akka] (delegate: scaladsl.MergePreferred.Preferred[T]) extends JunctionInPort[T] {
+    override def asScala: scaladsl.JunctionInPort[T] = delegate
+  }
 }
 
 /**
@@ -115,6 +119,8 @@ object MergePreferred {
  */
 class MergePreferred[T](delegate: scaladsl.MergePreferred[T]) extends javadsl.Junction[T] {
   override def asScala: scaladsl.MergePreferred[T] = delegate
+
+  val preferred = new MergePreferred.Preferred[T](delegate.preferred)
 }
 
 object Broadcast {
@@ -409,12 +415,20 @@ final class UndefinedSink[-T](delegate: scaladsl.UndefinedSink[T]) {
 object FlowGraph {
 
   /**
-   * Start building a [[FlowGraph]].
+   * Start building a [[FlowGraph]] or [[PartialFlowGraph]].
    *
    * The [[FlowGraphBuilder]] is mutable and not thread-safe,
    * thus you should construct your Graph and then share the constructed immutable [[FlowGraph]].
    */
   def builder(): FlowGraphBuilder = new FlowGraphBuilder()
+
+  /**
+   * Continue building a [[FlowGraph]] from an existing `PartialFlowGraph`.
+   * For example you can attach undefined sources and sinks with
+   * [[FlowGraphBuilder#attachSource]] and [[FlowGraphBuilder#attachSink]]
+   */
+  def builder(partialFlowGraph: PartialFlowGraph): FlowGraphBuilder =
+    new FlowGraphBuilder(partialFlowGraph)
 
 }
 
@@ -424,6 +438,15 @@ object FlowGraph {
  */
 class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
 
+  /**
+   * Continue building a [[FlowGraph]] from an existing `PartialFlowGraph`.
+   * For example you can attach undefined sources and sinks with
+   * [[#attachSource]] and [[#attachSink]]
+   */
+  def this(partialFlowGraph: PartialFlowGraph) {
+    this(new scaladsl.FlowGraphBuilder(partialFlowGraph.asScala))
+  }
+
   def this() {
     this(new scaladsl.FlowGraphBuilder())
   }
@@ -431,60 +454,77 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
   /** Converts this Java DSL element to it's Scala DSL counterpart. */
   def asScala: scaladsl.FlowGraphBuilder = b
 
-  def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]) = {
+  def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, junctionIn.asScala)
     this
   }
+
+  def addEdge[T](source: javadsl.UndefinedSource[T], junctionIn: javadsl.JunctionInPort[T]) =
+    addEdge[T, T](source, javadsl.Flow.empty[T], junctionIn);
 
   def addEdge[In, Out](junctionOut: javadsl.JunctionOutPort[In], flow: javadsl.Flow[In, Out], sink: javadsl.UndefinedSink[Out]): FlowGraphBuilder = {
     b.addEdge(junctionOut.asScala, flow.asScala, sink.asScala)
     this
   }
 
+  def addEdge[T](junctionOut: javadsl.JunctionOutPort[T], sink: javadsl.UndefinedSink[T]): FlowGraphBuilder =
+    addEdge[T, T](junctionOut, javadsl.Flow.empty[T], sink);
+
   def addEdge[In, Out](junctionOut: javadsl.JunctionOutPort[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]): FlowGraphBuilder = {
     b.addEdge(junctionOut.asScala, flow.asScala, junctionIn.asScala)
     this
   }
+
+  def addEdge[T](junctionOut: javadsl.JunctionOutPort[T], junctionIn: javadsl.JunctionInPort[T]): FlowGraphBuilder =
+    addEdge[T, T](junctionOut, javadsl.Flow.empty[T], junctionIn);
 
   def addEdge[In, Out](source: javadsl.Source[In], flow: javadsl.Flow[In, Out], junctionIn: javadsl.JunctionInPort[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, junctionIn.asScala)
     this
   }
 
-  def addEdge[In](source: javadsl.Source[In], junctionIn: javadsl.JunctionInPort[In]): FlowGraphBuilder = {
-    b.addEdge(source.asScala, junctionIn.asScala)
-    this
-  }
-
-  def addEdge[In, Out](junctionOut: javadsl.JunctionOutPort[In], sink: Sink[In]): FlowGraphBuilder = {
-    b.addEdge(junctionOut.asScala, sink.asScala)
-    this
-  }
+  def addEdge[T](source: javadsl.Source[T], junctionIn: javadsl.JunctionInPort[T]): FlowGraphBuilder =
+    addEdge[T, T](source, javadsl.Flow.empty[T], junctionIn);
 
   def addEdge[In, Out](junctionOut: javadsl.JunctionOutPort[In], flow: javadsl.Flow[In, Out], sink: Sink[Out]): FlowGraphBuilder = {
     b.addEdge(junctionOut.asScala, flow.asScala, sink.asScala)
     this
   }
 
+  def addEdge[T](junctionOut: javadsl.JunctionOutPort[T], sink: Sink[T]): FlowGraphBuilder =
+    addEdge[T, T](junctionOut, javadsl.Flow.empty[T], sink);
+
   def addEdge[In, Out](source: javadsl.Source[In], flow: javadsl.Flow[In, Out], sink: Sink[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, sink.asScala)
     this
   }
+
+  def addEdge[T](source: javadsl.Source[T], sink: Sink[T]): FlowGraphBuilder =
+    addEdge[T, T](source, javadsl.Flow.empty[T], sink);
 
   def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], sink: javadsl.UndefinedSink[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, sink.asScala)
     this
   }
 
+  def addEdge[T](source: javadsl.UndefinedSource[T], sink: javadsl.UndefinedSink[T]): FlowGraphBuilder =
+    addEdge[T, T](source, javadsl.Flow.empty[T], sink);
+
   def addEdge[In, Out](source: javadsl.UndefinedSource[In], flow: javadsl.Flow[In, Out], sink: javadsl.Sink[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, sink.asScala)
     this
   }
 
+  def addEdge[T](source: javadsl.UndefinedSource[T], sink: javadsl.Sink[T]): FlowGraphBuilder =
+    addEdge[T, T](source, javadsl.Flow.empty[T], sink);
+
   def addEdge[In, Out](source: javadsl.Source[In], flow: javadsl.Flow[In, Out], sink: javadsl.UndefinedSink[Out]): FlowGraphBuilder = {
     b.addEdge(source.asScala, flow.asScala, sink.asScala)
     this
   }
+
+  def addEdge[T](source: javadsl.Source[T], sink: javadsl.UndefinedSink[T]): FlowGraphBuilder =
+    addEdge[T, T](source, javadsl.Flow.empty[T], sink);
 
   def attachSink[Out](token: javadsl.UndefinedSink[Out], sink: Sink[Out]): FlowGraphBuilder = {
     b.attachSink(token.asScala, sink.asScala)
@@ -511,8 +551,8 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
    * After importing you can [[#connect]] undefined sources and sinks in
    * two different `PartialFlowGraph` instances.
    */
-  def importPartialFlowGraph(partialFlowGraph: scaladsl.PartialFlowGraph): FlowGraphBuilder = {
-    b.importPartialFlowGraph(partialFlowGraph)
+  def importPartialFlowGraph(partialFlowGraph: javadsl.PartialFlowGraph): FlowGraphBuilder = {
+    b.importPartialFlowGraph(partialFlowGraph.asScala)
     this
   }
 
@@ -540,8 +580,6 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
     new MaterializedMap(b.build().run()(materializer))
 
 }
-
-object PartialFlowGraphBuilder extends FlowGraphBuilder
 
 class PartialFlowGraph(delegate: scaladsl.PartialFlowGraph) {
   import akka.stream.scaladsl.JavaConverters._
