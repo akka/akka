@@ -56,6 +56,7 @@ object Logger {
 class Slf4jLogger extends Actor with SLF4JLogging {
 
   val mdcThreadAttributeName = "sourceThread"
+  val mdcActorSystemAttributeName = "sourceActorSystem"
   val mdcAkkaSourceAttributeName = "akkaSource"
   val mdcAkkaTimestamp = "akkaTimestamp"
 
@@ -88,11 +89,13 @@ class Slf4jLogger extends Actor with SLF4JLogging {
     MDC.put(mdcAkkaSourceAttributeName, logSource)
     MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
+    MDC.put(mdcActorSystemAttributeName, actorSystemName)
     logEvent.mdc foreach { case (k, v) ⇒ MDC.put(k, String.valueOf(v)) }
     try logStatement finally {
       MDC.remove(mdcAkkaSourceAttributeName)
       MDC.remove(mdcThreadAttributeName)
       MDC.remove(mdcAkkaTimestamp)
+      MDC.remove(mdcActorSystemAttributeName)
       logEvent.mdc.keys.foreach(k ⇒ MDC.remove(k))
     }
   }
@@ -104,6 +107,8 @@ class Slf4jLogger extends Actor with SLF4JLogging {
    */
   protected def formatTimestamp(timestamp: Long): String =
     Helpers.currentTimeMillisToUTCString(timestamp)
+
+  private val actorSystemName = context.system.name
 }
 
 /**
