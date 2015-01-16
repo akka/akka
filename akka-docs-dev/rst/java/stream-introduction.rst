@@ -53,7 +53,7 @@ composition, therefore it may take some careful study of this subject until you
 feel familiar with the tools and techniques. The documentation is here to help
 and for best results we recommend the following approach:
 
-* Read the :ref:`quickstart-java` to get a feel for how streams
+* Read the :ref:`stream-quickstart-java` to get a feel for how streams
   look like and what they can do.
 * The top-down learners may want to peruse the :ref:`stream-design` at this
   point.
