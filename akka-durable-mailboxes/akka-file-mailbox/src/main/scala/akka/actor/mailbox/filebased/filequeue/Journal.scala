@@ -73,7 +73,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) 
   }
 
   def roll(xid: Int, openItems: List[QItem], queue: Iterable[QItem]) {
-    writer.close
+    writer.close()
     val tmpFile = new File(queuePath + "~~" + System.currentTimeMillis)
     open(tmpFile)
     size = 0
@@ -86,14 +86,16 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) 
       add(false, item)
     }
     if (syncJournal) writer.force(false)
-    writer.close
+    writer.close()
+    // as renameTo is not guaranteed to be able to overwrite the target file, delete it explicitly
+    queueFile.delete() 
     tmpFile.renameTo(queueFile)
-    open
+    open()
   }
 
   def close() {
-    writer.close
-    for (r ← reader) r.close
+    writer.close()
+    for (r ← reader) r.close()
     reader = None
   }
 
