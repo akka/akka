@@ -1,4 +1,4 @@
-.. _quickstart-scala:
+.. _stream-quickstart-scala:
 
 Quick Start Guide: Reactive Tweets
 ==================================
