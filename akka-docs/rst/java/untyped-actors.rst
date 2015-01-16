@@ -84,6 +84,13 @@ used constructor actually exists instead relying only on a runtime check.
 
 .. includecode:: code/docs/actor/UntypedActorDocTest.java#props-factory
 
+Another good practice is to declare what messages an Actor can receive
+as close to the actor definition as possible (e.g. as static classes
+inside the Actor or using other suitable class), which makes it easier to know
+what it can receive.
+
+.. includecode:: code/docs/actor/UntypedActorDocTest.java#messages-in-companion
+
 Creating Actors with Props
 --------------------------
 

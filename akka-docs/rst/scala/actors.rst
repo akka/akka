@@ -120,6 +120,12 @@ a reference to its enclosing scope:
 
 .. includecode:: code/docs/actor/ActorDocSpec.scala#props-factory
 
+Another good practice is to declare what messages an Actor can receive
+in the companion object of the Actor, which makes easier
+to know what it can receive:
+
+.. includecode:: code/docs/actor/ActorDocSpec.scala#messages-in-companion
+
 Creating Actors with Props
 --------------------------
 
