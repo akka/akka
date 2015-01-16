@@ -82,6 +82,24 @@ class DemoActorWrapper extends Actor {
   def receive = Actor.emptyBehavior
 }
 
+class ActorWithMessagesWrapper {
+  //#messages-in-companion
+  object MyActor {
+    case class Greeting(from: String)
+    case object Goodbye
+  }
+  class MyActor extends Actor with ActorLogging {
+    import MyActor._
+    def receive = {
+      case Greeting(greeter) => log.info(s"I was greeted by $greeter.")
+      case Goodbye => log.info("Someone said goodbye to me.")
+    }
+  }
+  //#messages-in-companion
+
+  def receive = Actor.emptyBehavior
+}
+
 class Hook extends Actor {
   var child: ActorRef = _
   //#preStart
