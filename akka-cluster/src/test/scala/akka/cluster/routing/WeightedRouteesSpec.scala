@@ -34,21 +34,21 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val weights = Map(a1 -> 1, b1 -> 3, c1 -> 10)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
-      weighted(1) should be(routeeA)
-      2 to 4 foreach { weighted(_) should be(routeeB) }
-      5 to 14 foreach { weighted(_) should be(routeeC) }
-      weighted.total should be(14)
+      weighted(1) should ===(routeeA)
+      2 to 4 foreach { weighted(_) should ===(routeeB) }
+      5 to 14 foreach { weighted(_) should ===(routeeC) }
+      weighted.total should ===(14)
     }
 
     "check boundaries" in {
       val empty = new WeightedRoutees(Vector(), a1, Map.empty)
-      empty.isEmpty should be(true)
+      empty.isEmpty should ===(true)
       intercept[IllegalArgumentException] {
         empty.total
       }
 
       val empty2 = new WeightedRoutees(Vector(routeeA), a1, Map(a1 -> 0))
-      empty2.isEmpty should be(true)
+      empty2.isEmpty should ===(true)
       intercept[IllegalArgumentException] {
         empty2.total
       }
@@ -57,7 +57,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       }
 
       val weighted = new WeightedRoutees(routees, a1, Map.empty)
-      weighted.total should be(3)
+      weighted.total should ===(3)
       intercept[IllegalArgumentException] {
         weighted(0)
       }
@@ -70,11 +70,11 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val weights = Map(a1 -> 1, b1 -> 7)
       val weighted = new WeightedRoutees(routees, a1, weights)
 
-      weighted(1) should be(routeeA)
-      2 to 8 foreach { weighted(_) should be(routeeB) }
+      weighted(1) should ===(routeeA)
+      2 to 8 foreach { weighted(_) should ===(routeeB) }
       // undefined, uses the mean of the weights, i.e. 4
-      9 to 12 foreach { weighted(_) should be(routeeC) }
-      weighted.total should be(12)
+      9 to 12 foreach { weighted(_) should ===(routeeC) }
+      weighted.total should ===(12)
     }
 
     "allocate weighted local routees" in {
@@ -82,7 +82,7 @@ class WeightedRouteesSpec extends AkkaSpec(ConfigFactory.parseString("""
       val routees2 = Vector(testActorRoutee, routeeB, routeeC)
       val weighted = new WeightedRoutees(routees2, a1, weights)
 
-      1 to 2 foreach { weighted(_) should be(testActorRoutee) }
+      1 to 2 foreach { weighted(_) should ===(testActorRoutee) }
       3 to weighted.total foreach { weighted(_) should not be (testActorRoutee) }
     }
 

@@ -173,7 +173,7 @@ abstract class Ticket1978CommunicationSpec(val cipherConfig: CipherConfig) exten
         }
 
         val f = for (i ← 1 to 1000) yield here ? (("ping", i)) mapTo classTag[((String, Int), ActorRef)]
-        Await.result(Future.sequence(f), remaining).map(_._1._1).toSet should be(Set("pong"))
+        Await.result(Future.sequence(f), remaining).map(_._1._1).toSet should ===(Set("pong"))
       }
 
     } else {

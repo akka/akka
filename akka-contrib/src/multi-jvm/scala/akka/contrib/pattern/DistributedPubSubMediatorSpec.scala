@@ -130,7 +130,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
   def awaitCount(expected: Int): Unit = {
     awaitAssert {
       mediator ! Count
-      expectMsgType[Int] should be(expected)
+      expectMsgType[Int] should ===(expected)
     }
   }
 
@@ -155,7 +155,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         // send to actor at same node
         u1 ! Whisper("/user/u2", "hello")
         expectMsg("hello")
-        lastSender should be(u2)
+        lastSender should ===(u2)
       }
 
       runOn(second) {
@@ -185,7 +185,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       runOn(second) {
         expectMsg("hi there")
-        lastSender.path.name should be("u4")
+        lastSender.path.name should ===("u4")
       }
 
       enterBarrier("after-2")
@@ -208,7 +208,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       runOn(second) {
         expectMsg("go")
-        lastSender.path.name should be("u4")
+        lastSender.path.name should ===("u4")
       }
 
       enterBarrier("after-3")
@@ -253,7 +253,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       runOn(first, second) {
         expectMsg("hi")
-        lastSender.path.name should be("u7")
+        lastSender.path.name should ===("u7")
       }
       runOn(third) {
         expectNoMsg(2.seconds)
@@ -288,11 +288,11 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
         val names = receiveWhile(messages = 2) {
           case "hello all" ⇒ lastSender.path.name
         }
-        names.toSet should be(Set("u8", "u9"))
+        names.toSet should ===(Set("u8", "u9"))
       }
       runOn(second) {
         expectMsg("hello all")
-        lastSender.path.name should be("u10")
+        lastSender.path.name should ===("u10")
       }
       runOn(third) {
         expectNoMsg(2.seconds)
@@ -342,7 +342,7 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
       runOn(first, second) {
         expectMsg("hi")
-        lastSender.path.name should be("u11")
+        lastSender.path.name should ===("u11")
       }
       runOn(third) {
         expectNoMsg(2.seconds) // sender() node should not receive a message
@@ -405,10 +405,10 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
       runOn(first) {
         mediator ! Status(versions = Map.empty)
         val deltaBuckets = expectMsgType[Delta].buckets
-        deltaBuckets.size should be(3)
-        deltaBuckets.find(_.owner == firstAddress).get.content.size should be(9)
-        deltaBuckets.find(_.owner == secondAddress).get.content.size should be(8)
-        deltaBuckets.find(_.owner == thirdAddress).get.content.size should be(2)
+        deltaBuckets.size should ===(3)
+        deltaBuckets.find(_.owner == firstAddress).get.content.size should ===(9)
+        deltaBuckets.find(_.owner == secondAddress).get.content.size should ===(8)
+        deltaBuckets.find(_.owner == thirdAddress).get.content.size should ===(2)
       }
       enterBarrier("verified-initial-delta")
 
@@ -420,16 +420,16 @@ class DistributedPubSubMediatorSpec extends MultiNodeSpec(DistributedPubSubMedia
 
         mediator ! Status(versions = Map.empty)
         val deltaBuckets1 = expectMsgType[Delta].buckets
-        deltaBuckets1.map(_.content.size).sum should be(500)
+        deltaBuckets1.map(_.content.size).sum should ===(500)
 
         mediator ! Status(versions = deltaBuckets1.map(b ⇒ b.owner -> b.version).toMap)
         val deltaBuckets2 = expectMsgType[Delta].buckets
-        deltaBuckets1.map(_.content.size).sum should be(500)
+        deltaBuckets1.map(_.content.size).sum should ===(500)
 
         mediator ! Status(versions = deltaBuckets2.map(b ⇒ b.owner -> b.version).toMap)
         val deltaBuckets3 = expectMsgType[Delta].buckets
 
-        deltaBuckets3.map(_.content.size).sum should be(9 + 8 + 2 + many - 500 - 500)
+        deltaBuckets3.map(_.content.size).sum should ===(9 + 8 + 2 + many - 500 - 500)
       }
 
       enterBarrier("verified-delta-with-many")

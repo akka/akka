@@ -26,46 +26,46 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
       {
         import config._
 
-        getString("akka.version") should be("2.4-SNAPSHOT")
-        settings.ConfigVersion should be("2.4-SNAPSHOT")
+        getString("akka.version") should ===("2.4-SNAPSHOT")
+        settings.ConfigVersion should ===("2.4-SNAPSHOT")
 
-        getBoolean("akka.daemonic") should be(false)
+        getBoolean("akka.daemonic") should ===(false)
 
         // WARNING: This setting should be off in the default reference.conf, but should be on when running
         // the test suite.
-        getBoolean("akka.actor.serialize-messages") should be(true)
-        settings.SerializeAllMessages should be(true)
+        getBoolean("akka.actor.serialize-messages") should ===(true)
+        settings.SerializeAllMessages should ===(true)
 
-        getInt("akka.scheduler.ticks-per-wheel") should be(512)
-        getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should be(10)
-        getString("akka.scheduler.implementation") should be("akka.actor.LightArrayRevolverScheduler")
+        getInt("akka.scheduler.ticks-per-wheel") should ===(512)
+        getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should ===(10)
+        getString("akka.scheduler.implementation") should ===("akka.actor.LightArrayRevolverScheduler")
 
-        getBoolean("akka.daemonic") should be(false)
-        settings.Daemonicity should be(false)
+        getBoolean("akka.daemonic") should ===(false)
+        settings.Daemonicity should ===(false)
 
-        getBoolean("akka.jvm-exit-on-fatal-error") should be(true)
-        settings.JvmExitOnFatalError should be(true)
+        getBoolean("akka.jvm-exit-on-fatal-error") should ===(true)
+        settings.JvmExitOnFatalError should ===(true)
 
-        getInt("akka.actor.deployment.default.virtual-nodes-factor") should be(10)
-        settings.DefaultVirtualNodesFactor should be(10)
+        getInt("akka.actor.deployment.default.virtual-nodes-factor") should ===(10)
+        settings.DefaultVirtualNodesFactor should ===(10)
 
-        getDuration("akka.actor.unstarted-push-timeout", TimeUnit.MILLISECONDS) should be(10.seconds.toMillis)
-        settings.UnstartedPushTimeout.duration should be(10.seconds)
+        getDuration("akka.actor.unstarted-push-timeout", TimeUnit.MILLISECONDS) should ===(10.seconds.toMillis)
+        settings.UnstartedPushTimeout.duration should ===(10.seconds)
 
-        settings.Loggers.size should be(1)
-        settings.Loggers.head should be(classOf[DefaultLogger].getName)
-        getStringList("akka.loggers").get(0) should be(classOf[DefaultLogger].getName)
+        settings.Loggers.size should ===(1)
+        settings.Loggers.head should ===(classOf[DefaultLogger].getName)
+        getStringList("akka.loggers").get(0) should ===(classOf[DefaultLogger].getName)
 
-        getDuration("akka.logger-startup-timeout", TimeUnit.MILLISECONDS) should be(5.seconds.toMillis)
-        settings.LoggerStartTimeout.duration should be(5.seconds)
+        getDuration("akka.logger-startup-timeout", TimeUnit.MILLISECONDS) should ===(5.seconds.toMillis)
+        settings.LoggerStartTimeout.duration should ===(5.seconds)
 
-        getString("akka.logging-filter") should be(classOf[DefaultLoggingFilter].getName)
+        getString("akka.logging-filter") should ===(classOf[DefaultLoggingFilter].getName)
 
-        getInt("akka.log-dead-letters") should be(10)
-        settings.LogDeadLetters should be(10)
+        getInt("akka.log-dead-letters") should ===(10)
+        settings.LogDeadLetters should ===(10)
 
-        getBoolean("akka.log-dead-letters-during-shutdown") should be(true)
-        settings.LogDeadLettersDuringShutdown should be(true)
+        getBoolean("akka.log-dead-letters-during-shutdown") should ===(true)
+        settings.LogDeadLettersDuringShutdown should ===(true)
       }
 
       {
@@ -74,27 +74,27 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         //General dispatcher config
 
         {
-          c.getString("type") should be("Dispatcher")
-          c.getString("executor") should be("default-executor")
-          c.getDuration("shutdown-timeout", TimeUnit.MILLISECONDS) should be(1 * 1000)
-          c.getInt("throughput") should be(5)
-          c.getDuration("throughput-deadline-time", TimeUnit.MILLISECONDS) should be(0)
-          c.getBoolean("attempt-teamwork") should be(true)
+          c.getString("type") should ===("Dispatcher")
+          c.getString("executor") should ===("default-executor")
+          c.getDuration("shutdown-timeout", TimeUnit.MILLISECONDS) should ===(1 * 1000)
+          c.getInt("throughput") should ===(5)
+          c.getDuration("throughput-deadline-time", TimeUnit.MILLISECONDS) should ===(0)
+          c.getBoolean("attempt-teamwork") should ===(true)
         }
 
         //Default executor config
         {
           val pool = c.getConfig("default-executor")
-          pool.getString("fallback") should be("fork-join-executor")
+          pool.getString("fallback") should ===("fork-join-executor")
         }
 
         //Fork join executor config
 
         {
           val pool = c.getConfig("fork-join-executor")
-          pool.getInt("parallelism-min") should be(8)
-          pool.getDouble("parallelism-factor") should be(3.0)
-          pool.getInt("parallelism-max") should be(64)
+          pool.getInt("parallelism-min") should ===(8)
+          pool.getDouble("parallelism-factor") should ===(3.0)
+          pool.getInt("parallelism-max") should ===(64)
         }
 
         //Thread pool executor config
@@ -102,38 +102,38 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         {
           val pool = c.getConfig("thread-pool-executor")
           import pool._
-          getDuration("keep-alive-time", TimeUnit.MILLISECONDS) should be(60 * 1000)
-          getDouble("core-pool-size-factor") should be(3.0)
-          getDouble("max-pool-size-factor") should be(3.0)
-          getInt("task-queue-size") should be(-1)
-          getString("task-queue-type") should be("linked")
-          getBoolean("allow-core-timeout") should be(true)
+          getDuration("keep-alive-time", TimeUnit.MILLISECONDS) should ===(60 * 1000)
+          getDouble("core-pool-size-factor") should ===(3.0)
+          getDouble("max-pool-size-factor") should ===(3.0)
+          getInt("task-queue-size") should ===(-1)
+          getString("task-queue-type") should ===("linked")
+          getBoolean("allow-core-timeout") should ===(true)
         }
 
         // Debug config
         {
           val debug = config.getConfig("akka.actor.debug")
           import debug._
-          getBoolean("receive") should be(false)
-          settings.AddLoggingReceive should be(false)
+          getBoolean("receive") should ===(false)
+          settings.AddLoggingReceive should ===(false)
 
-          getBoolean("autoreceive") should be(false)
-          settings.DebugAutoReceive should be(false)
+          getBoolean("autoreceive") should ===(false)
+          settings.DebugAutoReceive should ===(false)
 
-          getBoolean("lifecycle") should be(false)
-          settings.DebugLifecycle should be(false)
+          getBoolean("lifecycle") should ===(false)
+          settings.DebugLifecycle should ===(false)
 
-          getBoolean("fsm") should be(false)
-          settings.FsmDebugEvent should be(false)
+          getBoolean("fsm") should ===(false)
+          settings.FsmDebugEvent should ===(false)
 
-          getBoolean("event-stream") should be(false)
-          settings.DebugEventStream should be(false)
+          getBoolean("event-stream") should ===(false)
+          settings.DebugEventStream should ===(false)
 
-          getBoolean("unhandled") should be(false)
-          settings.DebugUnhandledMessage should be(false)
+          getBoolean("unhandled") should ===(false)
+          settings.DebugUnhandledMessage should ===(false)
 
-          getBoolean("router-misconfiguration") should be(false)
-          settings.DebugRouterMisconfiguration should be(false)
+          getBoolean("router-misconfiguration") should ===(false)
+          settings.DebugRouterMisconfiguration should ===(false)
         }
 
       }
@@ -144,9 +144,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         // general mailbox config
 
         {
-          c.getInt("mailbox-capacity") should be(1000)
-          c.getDuration("mailbox-push-timeout-time", TimeUnit.MILLISECONDS) should be(10 * 1000)
-          c.getString("mailbox-type") should be("akka.dispatch.UnboundedMailbox")
+          c.getInt("mailbox-capacity") should ===(1000)
+          c.getDuration("mailbox-push-timeout-time", TimeUnit.MILLISECONDS) should ===(10 * 1000)
+          c.getString("mailbox-type") should ===("akka.dispatch.UnboundedMailbox")
         }
       }
     }

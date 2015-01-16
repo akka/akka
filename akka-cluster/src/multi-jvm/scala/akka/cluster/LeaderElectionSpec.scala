@@ -51,7 +51,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
       awaitClusterUp(first, second, third, fourth)
 
       if (myself != controller) {
-        clusterView.isLeader should be(myself == sortedRoles.head)
+        clusterView.isLeader should ===(myself == sortedRoles.head)
         assertLeaderIn(sortedRoles)
       }
 
@@ -104,7 +104,7 @@ abstract class LeaderElectionSpec(multiNodeConfig: LeaderElectionMultiNodeConfig
           enterBarrier("after-down" + n)
           awaitMembersUp(currentRoles.size - 1)
           val nextExpectedLeader = remainingRoles.head
-          clusterView.isLeader should be(myself == nextExpectedLeader)
+          clusterView.isLeader should ===(myself == nextExpectedLeader)
           assertLeaderIn(remainingRoles)
 
           enterBarrier("completed" + n)

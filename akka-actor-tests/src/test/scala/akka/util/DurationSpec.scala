@@ -18,13 +18,13 @@ class DurationSpec extends AkkaSpec {
       val one = 1 second
       val two = one + one
       val three = 3 * one
-      (0 * one) should be(zero)
-      (2 * one) should be(two)
-      (three - two) should be(one)
-      (three / 3) should be(one)
-      (two / one) should be(2)
-      (one + zero) should be(one)
-      (one / 1000000) should be(1.micro)
+      (0 * one) should ===(zero)
+      (2 * one) should ===(two)
+      (three - two) should ===(one)
+      (three / 3) should ===(one)
+      (two / one) should ===(2)
+      (one + zero) should ===(one)
+      (one / 1000000) should ===(1.micro)
     }
 
     "respect correct treatment of infinities" in {
@@ -32,21 +32,21 @@ class DurationSpec extends AkkaSpec {
       val inf = Duration.Inf
       val minf = Duration.MinusInf
       val undefined = Duration.Undefined
-      (-inf) should be(minf)
-      (minf + inf) should be(undefined)
-      (inf - inf) should be(undefined)
-      (inf + minf) should be(undefined)
-      (minf - minf) should be(undefined)
-      (inf + inf) should be(inf)
-      (inf - minf) should be(inf)
-      (minf - inf) should be(minf)
-      (minf + minf) should be(minf)
+      (-inf) should ===(minf)
+      (minf + inf) should ===(undefined)
+      (inf - inf) should ===(undefined)
+      (inf + minf) should ===(undefined)
+      (minf - minf) should ===(undefined)
+      (inf + inf) should ===(inf)
+      (inf - minf) should ===(inf)
+      (minf - inf) should ===(minf)
+      (minf + minf) should ===(minf)
       assert(inf == inf)
       assert(minf == minf)
-      inf.compareTo(inf) should be(0)
-      inf.compareTo(one) should be(1)
-      minf.compareTo(minf) should be(0)
-      minf.compareTo(one) should be(-1)
+      inf.compareTo(inf) should ===(0)
+      inf.compareTo(one) should ===(1)
+      minf.compareTo(minf) should ===(0)
+      minf.compareTo(one) should ===(-1)
       assert(inf != minf)
       assert(minf != inf)
       assert(one != inf)
@@ -58,7 +58,7 @@ class DurationSpec extends AkkaSpec {
         val x = unit.convert(Long.MaxValue, NANOSECONDS)
         val dur = Duration(x, unit)
         val mdur = Duration(-x, unit)
-        -mdur should be(dur)
+        -mdur should ===(dur)
         intercept[IllegalArgumentException] { Duration(x + 10000000d, unit) }
         intercept[IllegalArgumentException] { Duration(-x - 10000000d, unit) }
         if (unit != NANOSECONDS) {

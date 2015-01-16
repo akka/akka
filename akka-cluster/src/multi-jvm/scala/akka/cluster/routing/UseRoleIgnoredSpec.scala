@@ -101,7 +101,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
           props(Props[SomeActor]),
           "router-2")
 
-        awaitAssert(currentRoutees(router).size should be(4))
+        awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -110,10 +110,10 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
-        replies(first) should be(0) // should not be deployed locally, does not have required role
+        replies(first) should ===(0) // should not be deployed locally, does not have required role
         replies(second) should be > 0
         replies(third) should be > 0
-        replies.values.sum should be(iterationCount)
+        replies.values.sum should ===(iterationCount)
       }
 
       enterBarrier("after-2")
@@ -130,7 +130,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
           props(Props[SomeActor]),
           "router-3")
 
-        awaitAssert(currentRoutees(router).size should be(4))
+        awaitAssert(currentRoutees(router).size should ===(4))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -139,10 +139,10 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
 
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
-        replies(first) should be(0) // should not be deployed locally, does not have required role
+        replies(first) should ===(0) // should not be deployed locally, does not have required role
         replies(second) should be > 0
         replies(third) should be > 0
-        replies.values.sum should be(iterationCount)
+        replies.values.sum should ===(iterationCount)
       }
 
       enterBarrier("after-3")
@@ -159,7 +159,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
           props(Props[SomeActor]),
           "router-4")
 
-        awaitAssert(currentRoutees(router).size should be(2))
+        awaitAssert(currentRoutees(router).size should ===(2))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -169,9 +169,9 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         val replies = receiveReplies(PoolRoutee, iterationCount)
 
         replies(first) should be > 0
-        replies(second) should be(0)
-        replies(third) should be(0)
-        replies.values.sum should be(iterationCount)
+        replies(second) should ===(0)
+        replies(third) should ===(0)
+        replies.values.sum should ===(iterationCount)
       }
 
       enterBarrier("after-4")
@@ -188,7 +188,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
           props(Props[SomeActor]),
           "router-5")
 
-        awaitAssert(currentRoutees(router).size should be(6))
+        awaitAssert(currentRoutees(router).size should ===(6))
 
         val iterationCount = 10
         for (i ← 0 until iterationCount) {
@@ -200,7 +200,7 @@ abstract class UseRoleIgnoredSpec extends MultiNodeSpec(UseRoleIgnoredMultiJvmSp
         replies(first) should be > 0
         replies(second) should be > 0
         replies(third) should be > 0
-        replies.values.sum should be(iterationCount)
+        replies.values.sum should ===(iterationCount)
       }
 
       enterBarrier("after-5")

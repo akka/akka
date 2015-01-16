@@ -10,8 +10,8 @@ class SerializationChecksPlainRemotingSpec extends AkkaSpec {
   "Settings serialize-messages and serialize-creators" must {
 
     "be on for tests" in {
-      system.settings.SerializeAllCreators should be(true)
-      system.settings.SerializeAllMessages should be(true)
+      system.settings.SerializeAllCreators should ===(true)
+      system.settings.SerializeAllMessages should ===(true)
     }
 
   }

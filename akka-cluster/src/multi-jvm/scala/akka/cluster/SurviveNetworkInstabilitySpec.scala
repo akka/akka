@@ -87,7 +87,7 @@ abstract class SurviveNetworkInstabilitySpec
 
   def assertUnreachable(subjects: RoleName*): Unit = {
     val expected = subjects.toSet map address
-    awaitAssert(clusterView.unreachableMembers.map(_.address) should be(expected))
+    awaitAssert(clusterView.unreachableMembers.map(_.address) should ===(expected))
   }
 
   system.actorOf(Props[Echo], "echo")
@@ -281,7 +281,7 @@ abstract class SurviveNetworkInstabilitySpec
         // system messages and quarantine
         system.actorSelection("/user/watcher") ! "boom"
         within(10.seconds) {
-          expectMsgType[QuarantinedEvent].address should be(address(second))
+          expectMsgType[QuarantinedEvent].address should ===(address(second))
         }
         system.eventStream.unsubscribe(testActor, classOf[QuarantinedEvent])
       }
@@ -327,8 +327,8 @@ abstract class SurviveNetworkInstabilitySpec
       runOn(side1AfterJoin: _*) {
         // side2 removed
         val expected = (side1AfterJoin map address).toSet
-        awaitAssert(clusterView.members.map(_.address) should be(expected))
-        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should be(
+        awaitAssert(clusterView.members.map(_.address) should ===(expected))
+        awaitAssert(clusterView.members.collectFirst { case m if m.address == address(eighth) ⇒ m.status } should ===(
           Some(MemberStatus.Up)))
       }
 
@@ -346,12 +346,12 @@ abstract class SurviveNetworkInstabilitySpec
 
       runOn(side1AfterJoin: _*) {
         val expected = (side1AfterJoin map address).toSet
-        clusterView.members.map(_.address) should be(expected)
+        clusterView.members.map(_.address) should ===(expected)
       }
 
       runOn(side2: _*) {
         val expected = ((side2 ++ side1) map address).toSet
-        clusterView.members.map(_.address) should be(expected)
+        clusterView.members.map(_.address) should ===(expected)
         assertUnreachable(side1: _*)
       }
 

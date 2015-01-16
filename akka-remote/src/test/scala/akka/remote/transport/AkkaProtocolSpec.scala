@@ -152,13 +152,13 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = expectMsgPF() {
         case InboundAssociation(h: AkkaProtocolHandle) ⇒
-          h.handshakeInfo.uid should be(33)
+          h.handshakeInfo.uid should ===(33)
           h
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      failureDetector.called should be(true)
+      failureDetector.called should ===(true)
 
       // Heartbeat was sent in response to Associate
       awaitCond(lastActivityIsHeartbeat(registry))
@@ -166,7 +166,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
       reader ! testPayload
 
       expectMsgPF() {
-        case InboundPayload(p) ⇒ p should be(testEnvelope)
+        case InboundPayload(p) ⇒ p should ===(testEnvelope)
       }
     }
 
@@ -210,21 +210,21 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
         refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, 42, None))
-      failureDetector.called should be(true)
+      failureDetector.called should ===(true)
 
       // keeps sending heartbeats
       awaitCond(lastActivityIsHeartbeat(registry))
 
-      statusPromise.isCompleted should be(false)
+      statusPromise.isCompleted should ===(false)
 
       // finish connection by sending back an associate message
       reader ! testAssociate(33, None)
 
       Await.result(statusPromise.future, 3.seconds) match {
         case h: AkkaProtocolHandle ⇒
-          h.remoteAddress should be(remoteAkkaAddress)
-          h.localAddress should be(localAkkaAddress)
-          h.handshakeInfo.uid should be(33)
+          h.remoteAddress should ===(remoteAkkaAddress)
+          h.localAddress should ===(localAkkaAddress)
+          h.handshakeInfo.uid should ===(33)
 
         case _ ⇒ fail()
       }
@@ -266,14 +266,14 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = expectMsgPF() {
         case InboundAssociation(h: AkkaProtocolHandle) ⇒
-          h.handshakeInfo.uid should be(33)
-          h.handshakeInfo.cookie should be(Some("abcde"))
+          h.handshakeInfo.uid should ===(33)
+          h.handshakeInfo.cookie should ===(Some("abcde"))
           h
       }
 
       wrappedHandle.readHandlerPromise.success(ActorHandleEventListener(testActor))
 
-      failureDetector.called should be(true)
+      failureDetector.called should ===(true)
 
       // Heartbeat was sent in response to Associate
       awaitCond(lastActivityIsHeartbeat(registry))
@@ -320,8 +320,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should be(remoteAkkaAddress)
-          h.localAddress should be(localAkkaAddress)
+          h.remoteAddress should ===(remoteAkkaAddress)
+          h.localAddress should ===(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -356,8 +356,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should be(remoteAkkaAddress)
-          h.localAddress should be(localAkkaAddress)
+          h.remoteAddress should ===(remoteAkkaAddress)
+          h.localAddress should ===(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -392,8 +392,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should be(remoteAkkaAddress)
-          h.localAddress should be(localAkkaAddress)
+          h.remoteAddress should ===(remoteAkkaAddress)
+          h.localAddress should ===(localAkkaAddress)
           h
 
         case _ ⇒ fail()
@@ -431,8 +431,8 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = "akka.remote.Re
 
       val wrappedHandle = Await.result(statusPromise.future, 3.seconds) match {
         case h: AssociationHandle ⇒
-          h.remoteAddress should be(remoteAkkaAddress)
-          h.localAddress should be(localAkkaAddress)
+          h.remoteAddress should ===(remoteAkkaAddress)
+          h.localAddress should ===(localAkkaAddress)
           h
 
         case _ ⇒ fail()

@@ -9,7 +9,7 @@ class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {
   "A TestKit" must {
 
     "correctly dilate times" taggedAs TimingTest in {
-      1.second.dilated.toNanos should be(1000000000L * testKitSettings.TestTimeFactor)
+      1.second.dilated.toNanos should ===(1000000000L * testKitSettings.TestTimeFactor)
 
       val probe = TestProbe()
       val now = System.nanoTime
@@ -21,10 +21,10 @@ class TestTimeSpec extends AkkaSpec(Map("akka.test.timefactor" -> 2.0)) {
     }
 
     "awaitAssert must throw correctly" in {
-      awaitAssert("foo" should be("foo"))
+      awaitAssert("foo" should ===("foo"))
       within(300.millis, 2.seconds) {
         intercept[TestFailedException] {
-          awaitAssert("foo" should be("bar"), 500.millis, 300.millis)
+          awaitAssert("foo" should ===("bar"), 500.millis, 300.millis)
         }
       }
     }

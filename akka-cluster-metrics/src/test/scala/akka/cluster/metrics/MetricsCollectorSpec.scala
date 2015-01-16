@@ -32,8 +32,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
         val merged12 = sample2 flatMap (latest ⇒ sample1 collect {
           case peer if latest sameAs peer ⇒
             val m = peer :+ latest
-            m.value should be(latest.value)
-            m.isSmooth should be(peer.isSmooth || latest.isSmooth)
+            m.value should ===(latest.value)
+            m.isSmooth should ===(peer.isSmooth || latest.isSmooth)
             m
         })
 
@@ -42,8 +42,8 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
         val merged34 = sample4 flatMap (latest ⇒ sample3 collect {
           case peer if latest sameAs peer ⇒
             val m = peer :+ latest
-            m.value should be(latest.value)
-            m.isSmooth should be(peer.isSmooth || latest.isSmooth)
+            m.value should ===(latest.value)
+            m.isSmooth should ===(peer.isSmooth || latest.isSmooth)
             m
         })
       }
@@ -86,9 +86,9 @@ class MetricsCollectorSpec extends AkkaSpec(MetricsConfig.defaultEnabled) with I
       // it's not present on all platforms
       val c = collector.asInstanceOf[JmxMetricsCollector]
       val heap = c.heapMemoryUsage
-      c.heapUsed(heap).isDefined should be(true)
-      c.heapCommitted(heap).isDefined should be(true)
-      c.processors.isDefined should be(true)
+      c.heapUsed(heap).isDefined should ===(true)
+      c.heapCommitted(heap).isDefined should ===(true)
+      c.processors.isDefined should ===(true)
     }
 
     "collect 50 node metrics samples in an acceptable duration" taggedAs LongRunningTest in within(10 seconds) {

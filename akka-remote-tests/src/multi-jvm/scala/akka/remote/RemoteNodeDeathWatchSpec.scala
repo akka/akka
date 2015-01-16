@@ -124,7 +124,7 @@ abstract class RemoteNodeDeathWatchSpec
         enterBarrier("watch-established-1")
 
         sleep()
-        expectMsgType[WrappedTerminated].t.actor should be(subject)
+        expectMsgType[WrappedTerminated].t.actor should ===(subject)
       }
 
       runOn(second) {
@@ -248,7 +248,7 @@ abstract class RemoteNodeDeathWatchSpec
         system.stop(s2)
         enterBarrier("stop-s2-4")
 
-        expectMsgType[WrappedTerminated].t.actor should be(subject2)
+        expectMsgType[WrappedTerminated].t.actor should ===(subject2)
       }
 
       runOn(third) {
@@ -335,8 +335,8 @@ abstract class RemoteNodeDeathWatchSpec
         enterBarrier("watch-established-5")
         enterBarrier("stopped-5")
 
-        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet should be(Set(a1, a2))
-        p3.expectMsgType[WrappedTerminated](5 seconds).t.actor should be(a3)
+        p1.receiveN(2, 5 seconds).collect { case WrappedTerminated(t) ⇒ t.actor }.toSet should ===(Set(a1, a2))
+        p3.expectMsgType[WrappedTerminated](5 seconds).t.actor should ===(a3)
         p2.expectNoMsg(2 seconds)
         enterBarrier("terminated-verified-5")
 
@@ -383,7 +383,7 @@ abstract class RemoteNodeDeathWatchSpec
 
         log.info("exit second")
         testConductor.exit(second, 0).await
-        expectMsgType[WrappedTerminated](15 seconds).t.actor should be(subject)
+        expectMsgType[WrappedTerminated](15 seconds).t.actor should ===(subject)
 
         // verify that things are cleaned up, and heartbeating is stopped
         assertCleanup()

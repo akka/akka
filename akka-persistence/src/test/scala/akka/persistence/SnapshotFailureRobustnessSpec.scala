@@ -83,7 +83,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
         lPersistentActor ! Recover()
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
-            state should be("blahonga")
+            state should ===("blahonga")
             timestamp should be > (0L)
         }
         expectMsg("kablama-2")

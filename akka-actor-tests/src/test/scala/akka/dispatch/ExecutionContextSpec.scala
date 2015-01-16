@@ -31,7 +31,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "be able to use Batching" in {
-      system.dispatcher.isInstanceOf[BatchingExecutor] should be(true)
+      system.dispatcher.isInstanceOf[BatchingExecutor] should ===(true)
 
       import system.dispatcher
 
@@ -55,11 +55,11 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
         }
         callingThreadLock.compareAndSet(1, 0) // Disable the lock
       }
-      Await.result(p.future, timeout.duration) should be(())
+      Await.result(p.future, timeout.duration) should ===(())
     }
 
     "be able to avoid starvation when Batching is used and Await/blocking is called" in {
-      system.dispatcher.isInstanceOf[BatchingExecutor] should be(true)
+      system.dispatcher.isInstanceOf[BatchingExecutor] should ===(true)
       import system.dispatcher
 
       def batchable[T](f: ⇒ T)(implicit ec: ExecutionContext): Unit = ec.execute(new Batchable {
@@ -93,15 +93,15 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       awaitCond(counter.get == 2)
       perform(_ + 4)
       perform(_ * 2)
-      sec.size should be(2)
+      sec.size should ===(2)
       Thread.sleep(500)
-      sec.size should be(2)
-      counter.get should be(2)
+      sec.size should ===(2)
+      counter.get should ===(2)
       sec.resume()
       awaitCond(counter.get == 12)
       perform(_ * 2)
       awaitCond(counter.get == 24)
-      sec.isEmpty should be(true)
+      sec.isEmpty should ===(true)
     }
 
     "execute 'throughput' number of tasks per sweep" in {
@@ -118,11 +118,11 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
       val total = 1000
       1 to total foreach { _ ⇒ perform(_ + 1) }
-      sec.size() should be(total)
+      sec.size() should ===(total)
       sec.resume()
       awaitCond(counter.get == total)
-      submissions.get should be(total / throughput)
-      sec.isEmpty should be(true)
+      submissions.get should ===(total / throughput)
+      sec.isEmpty should ===(true)
     }
 
     "execute tasks in serial" in {
@@ -133,7 +133,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 
       1 to total foreach { i ⇒ perform(c ⇒ if (c == (i - 1)) c + 1 else c) }
       awaitCond(counter.get == total)
-      sec.isEmpty should be(true)
+      sec.isEmpty should ===(true)
     }
 
     "relinquish thread when suspended" in {
@@ -151,13 +151,13 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       1 to 10 foreach { _ ⇒ perform(identity) }
       perform(x ⇒ { sec.suspend(); x * 2 })
       perform(_ + 8)
-      sec.size should be(13)
+      sec.size should ===(13)
       sec.resume()
       awaitCond(counter.get == 2)
       sec.resume()
       awaitCond(counter.get == 10)
-      sec.isEmpty should be(true)
-      submissions.get should be(2)
+      sec.isEmpty should ===(true)
+      submissions.get should ===(2)
     }
   }
 }
