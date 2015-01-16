@@ -8,7 +8,7 @@ object Dependencies {
   import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val crossScala = Seq("2.10.4", "2.11.4")
+    val crossScala = Seq("2.11.5", "2.10.4")
     val scalaVersion = crossScala.head
     val scalaStmVersion  = sys.props.get("akka.build.scalaStmVersion").getOrElse("0.7")
     val scalaTestVersion = sys.props.get("akka.build.scalaTestVersion").getOrElse("2.1.3")
