@@ -452,7 +452,9 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
         }
         Stop
 
-      case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
+      case HopelessAssociation(localAddress, remoteAddress, Some(uid), reason) ⇒
+        log.error(reason, "Association to [{}] with UID [{}] irrecoverably failed. Quarantining address.",
+          remoteAddress, uid)
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
@@ -672,7 +674,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), refuseUid, endpoint)
     else {
       endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
-      endpoints.removePolicy(handle.remoteAddress)
+      if (!endpoints.hasWritableEndpointFor(handle.remoteAddress))
+        endpoints.removePolicy(handle.remoteAddress)
     }
   }
 
