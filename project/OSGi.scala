@@ -38,8 +38,6 @@ object OSGi {
 
   val testkit = exports(Seq("akka.testkit.*"))
 
-  val zeroMQ = exports(Seq("akka.zeromq.*"), imports = Seq(protobufImport()) )
-
   val osgiOptionalImports = Seq(
     // needed because testkit is normally not used in the application bundle,
     // but it should still be included as transitive dependency and used by BundleDelegatingClassLoader

@@ -484,12 +484,3 @@ akka-testkit
 .. literalinclude:: ../../../akka-testkit/src/main/resources/reference.conf
    :language: none
 
-.. _config-akka-zeromq:
-
-akka-zeromq
-~~~~~~~~~~~
-
-.. literalinclude:: ../../../akka-zeromq/src/main/resources/reference.conf
-   :language: none
-
-
