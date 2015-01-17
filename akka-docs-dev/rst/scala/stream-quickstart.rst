@@ -46,7 +46,7 @@ familiar to anyone who has used the Scala Collections library, however they oper
 Finally in order to :ref:`materialize <stream-materialization-scala>` and run the stream computation we need to attach
 the Flow to a :class:`Sink[T]` that will get the flow running. The simplest way to do this is to call
 ``runWith(sink)`` on a ``Source[Out]``. For convenience a number of common Sinks are predefined and collected as methods on
-the :class:``Sink`` `companion object <http://doc.akka.io/api/akka-stream-and-http-experimental/1.0-M2-SNAPSHOT/#akka.stream.scaladsl.Sink$>`_.
+the :class:``Sink`` `companion object <http://doc.akka.io/api/akka-stream-and-http-experimental/1.0-M2/#akka.stream.scaladsl.Sink$>`_.
 For now let's simply print each author:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#authors-foreachsink-println
