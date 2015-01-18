@@ -157,7 +157,7 @@ Using FlexiMerge
 ----------------
 :class:`FlexiMerge` can be used to describe a fan-in element which contains some logic about which upstream stage the
 merge should consume elements. It is recommended to create your custom fan-in stage as a separate class, name it
-apropriately to the behavior it is exposing and reuse it this way – similarily as you would use built-in fan-in stages.
+appropriately to the behavior it is exposing and reuse it this way – similarily as you would use built-in fan-in stages.
 
 The first flexi merge example we are going to implement is a so-called "preferring merge", in which one
 of the input ports is *preferred*, e.g. if the merge could pull from the preferred or another secondary input port,
@@ -185,7 +185,7 @@ validate the number of connected input ports, e.g. in our preferring merge we on
 Next we implement the ``initialState`` method, which returns the behaviour of the merge stage. A ``MergeLogic#State``
 defines the behaviour of the merge by signaling which input ports it is interested in consuming, and how to handle
 the element once it has been pulled from its upstream. Signalling which input port we are interested in pulling data
-from is done by using an apropriate *read condition*. Available *read conditions* include:
+from is done by using an appropriate *read condition*. Available *read conditions* include:
 
 - ``Read(input)`` - reads from only the given input,
 - ``ReadAny(inputs)`` – reads from any of the given inputs,
