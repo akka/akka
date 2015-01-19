@@ -19,13 +19,14 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
   val cc = UniqueAddress(Address("akka.tcp", "sys", "cc", 2552), 3)
   val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4)
   val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5)
+  val ff = UniqueAddress(Address("akka.tcp", "sys", "ff", 2552), 6)
 
-  val nodes = Set(aa, bb, cc, dd, ee)
+  val nodes = Set(aa, bb, cc, dd, ee, ff)
 
   "A HashedNodeRing" must {
 
     "pick specified number of nodes as receivers" in {
-      val ring = HeartbeatNodeRing(cc, nodes, 3)
+      val ring = HeartbeatNodeRing(cc, nodes, Set.empty, 3)
       ring.myReceivers should be(ring.receivers(cc))
 
       nodes foreach { n ⇒
@@ -35,15 +36,27 @@ class HeartbeatNodeRingSpec extends WordSpec with Matchers {
       }
     }
 
+    "pick specified number of nodes + unreachable as receivers" in {
+      val ring = HeartbeatNodeRing(cc, nodes, unreachable = Set(aa, dd, ee), monitoredByNrOfMembers = 3)
+      ring.myReceivers should be(ring.receivers(cc))
+
+      ring.receivers(aa) should be(Set(bb, cc, dd, ff)) // unreachable ee skipped
+      ring.receivers(bb) should be(Set(cc, dd, ee, ff)) // unreachable aa skipped
+      ring.receivers(cc) should be(Set(dd, ee, ff, bb)) // unreachable aa skipped
+      ring.receivers(dd) should be(Set(ee, ff, aa, bb, cc))
+      ring.receivers(ee) should be(Set(ff, aa, bb, cc))
+      ring.receivers(ff) should be(Set(aa, bb, cc)) // unreachable dd and ee skipped
+    }
+
     "pick all except own as receivers when less than total number of nodes" in {
-      val expected = Set(aa, bb, dd, ee)
-      HeartbeatNodeRing(cc, nodes, 4).myReceivers should be(expected)
-      HeartbeatNodeRing(cc, nodes, 5).myReceivers should be(expected)
-      HeartbeatNodeRing(cc, nodes, 6).myReceivers should be(expected)
+      val expected = Set(aa, bb, dd, ee, ff)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 5).myReceivers should be(expected)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 6).myReceivers should be(expected)
+      HeartbeatNodeRing(cc, nodes, Set.empty, 7).myReceivers should be(expected)
     }
 
     "pick none when alone" in {
-      val ring = HeartbeatNodeRing(cc, Set(cc), 3)
+      val ring = HeartbeatNodeRing(cc, Set(cc), Set.empty, 3)
       ring.myReceivers should be(Set())
     }
 
