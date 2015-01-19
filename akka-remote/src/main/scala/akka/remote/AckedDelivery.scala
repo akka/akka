@@ -99,6 +99,8 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
    * @return An updated buffer containing the remaining unacknowledged messages
    */
   def acknowledge(ack: Ack): AckedSendBuffer[T] = {
+    if (ack.cumulativeAck > maxSeq)
+      throw new IllegalArgumentException(s"Highest SEQ so far was $maxSeq but cumulative ACK is ${ack.cumulativeAck}")
     val newNacked = (nacked ++ nonAcked) filter { m ⇒ ack.nacks(m.seq) }
     if (newNacked.size < ack.nacks.size) throw new ResendUnfulfillableException
     else this.copy(
@@ -121,7 +123,7 @@ final case class AckedSendBuffer[T <: HasSequenceNumber](
     this.copy(nonAcked = this.nonAcked :+ msg, maxSeq = msg.seq)
   }
 
-  override def toString = nonAcked.map(_.seq).mkString("[", ", ", "]")
+  override def toString = s"[$maxSeq ${nonAcked.map(_.seq).mkString("{", ", ", "}")}]"
 }
 
 /**
