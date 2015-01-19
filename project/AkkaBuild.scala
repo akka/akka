@@ -347,7 +347,7 @@ object AkkaBuild extends Build {
 
   lazy val mimaIgnoredProblems = {
     Seq(
-      // add filters here, see release-2.2 branch
+      // add filters here, see release-2.3 branch
      )
   }
 
