@@ -405,7 +405,7 @@ object AkkaBuild extends Build {
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
           fsmSampleScala, persistenceSampleJava, persistenceSampleScala,
-          multiNodeSampleScala, helloKernelSample, osgiDiningHakkersSample)
+          multiNodeSampleScala, osgiDiningHakkersSample)
   )
 
   lazy val camelSampleJava = Project(
@@ -443,12 +443,16 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   )
 
+  /* FIXME helloKernelSample is not included due to conflicting dependency to
+           bouncycastle openpgp from sbt-native-packager and sbt-pgp
+           java.lang.NoSuchMethodError: org.bouncycastle.openpgp.PGPSecretKeyRing
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
     settings = sampleSettings
   )
+  */
 
   lazy val remoteSampleJava = Project(
     id = "akka-sample-remote-java",
