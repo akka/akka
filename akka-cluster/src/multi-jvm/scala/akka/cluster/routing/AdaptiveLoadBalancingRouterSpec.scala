@@ -4,6 +4,8 @@
 
 package akka.cluster.routing
 
+// TODO remove metrics 
+
 import language.postfixOps
 import java.lang.management.ManagementFactory
 import scala.concurrent.Await

@@ -28,6 +28,8 @@ object OSGi {
 
   val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
 
+  val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(protobufImport(),kamonImport(),sigarImport()))
+
   val osgi = exports(Seq("akka.osgi.*"))
 
   val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
@@ -59,6 +61,8 @@ object OSGi {
     val ScalaVersion(epoch, major) = version
     versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
   }
+  def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
+  def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
   def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
 }

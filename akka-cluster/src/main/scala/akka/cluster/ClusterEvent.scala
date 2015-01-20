@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+// TODO remove metrics
+
 import language.postfixOps
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
@@ -190,6 +192,7 @@ object ClusterEvent {
   /**
    * Current snapshot of cluster node metrics. Published to subscribers.
    */
+  @deprecated("Superseded by akka.cluster.metrics (in akka-cluster-metrics jar)", "2.4")
   final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterDomainEvent {
     /**
      * Java API

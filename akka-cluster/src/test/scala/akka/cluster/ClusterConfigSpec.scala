@@ -47,6 +47,7 @@ class ClusterConfigSpec extends AkkaSpec {
       ReduceGossipDifferentViewProbability should be(400)
       SchedulerTickDuration should be(33 millis)
       SchedulerTicksPerWheel should be(512)
+      // TODO remove metrics
       MetricsEnabled should be(true)
       MetricsCollectorClass should be(classOf[SigarMetricsCollector].getName)
       MetricsInterval should be(3 seconds)

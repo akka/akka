@@ -62,7 +62,7 @@ object AkkaBuild extends Build {
 
       validatePullRequest <<= (unidoc in Compile, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
     ),
-    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j, agent,
+    aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, slf4j, agent,
       persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
   )
 
@@ -122,6 +122,12 @@ object AkkaBuild extends Build {
     dependencies = Seq(remote, remoteTests % "test->test" , testkit % "test->test")
   ) configs (MultiJvm)
 
+  lazy val clusterMetrics = Project(
+    id = "akka-cluster-metrics",
+    base = file("akka-cluster-metrics"),
+    dependencies = Seq(cluster % "compile->compile;test->test;multi-jvm->multi-jvm", slf4j % "test->compile")
+  ) configs (MultiJvm)
+
   lazy val slf4j = Project(
     id = "akka-slf4j",
     base = file("akka-slf4j"),
@@ -168,9 +174,9 @@ object AkkaBuild extends Build {
     id = "akka-docs",
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
-      remote % "compile;test->test", cluster, slf4j, agent, camel, osgi,
+      remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
       persistence % "compile;test->test", persistenceTck)
-  )
+    )
 
   lazy val contrib = Project(
     id = "akka-contrib",

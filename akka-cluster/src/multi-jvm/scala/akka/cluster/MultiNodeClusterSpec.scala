@@ -3,6 +3,8 @@
  */
 package akka.cluster
 
+// TODO remove metrics
+
 import language.implicitConversions
 import org.scalatest.{ Suite, Outcome, Canceled }
 import org.scalatest.exceptions.TestCanceledException

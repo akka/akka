@@ -26,6 +26,22 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
+  def nodeList = Seq(first, second, third)
+
+  // Extract individual sigar library for every node.
+  nodeList foreach { role ⇒
+    nodeConfig(role) {
+      ConfigFactory.parseString(s"""
+      # Disable legacy metrics in akka-cluster.
+      akka.cluster.metrics.enabled=off
+      # Enable metrics extension in akka-cluster-metrics.
+      akka.extensions=["akka.cluster.metrics.ClusterMetricsExtension"]
+      # Sigar native library extract location during tests.
+      akka.cluster.metrics.native-library-extract-folder=target/native/${role.name}
+      """)
+    }
+  }
+
   // this configuration will be used for all nodes
   // note that no fixed host names and ports are used
   commonConfig(ConfigFactory.parseString("""
@@ -33,8 +49,6 @@ object StatsSampleSingleMasterSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "akka.cluster.ClusterActorRefProvider"
     akka.remote.log-remote-lifecycle-events = off
     akka.cluster.roles = [compute]
-    # don't use sigar for tests, native lib not in path
-    akka.cluster.metrics.collector-class = akka.cluster.JmxMetricsCollector
     #//#router-deploy-config
     akka.actor.deployment {
       /singleton/statsService/workerRouter {

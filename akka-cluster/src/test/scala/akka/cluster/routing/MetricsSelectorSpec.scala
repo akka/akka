@@ -4,6 +4,8 @@
 
 package akka.cluster.routing
 
+// TODO remove metrics
+
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 

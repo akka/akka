@@ -4,6 +4,8 @@
 
 package akka.cluster
 
+// TODO remove metrics 
+
 import akka.remote.testkit.{ MultiNodeSpec, MultiNodeConfig }
 import com.typesafe.config.ConfigFactory
 import akka.testkit.LongRunningTest

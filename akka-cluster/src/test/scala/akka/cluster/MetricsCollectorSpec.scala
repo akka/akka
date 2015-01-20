@@ -5,6 +5,8 @@
 
 package akka.cluster
 
+// TODO remove metrics
+
 import scala.language.postfixOps
 
 import scala.collection.immutable

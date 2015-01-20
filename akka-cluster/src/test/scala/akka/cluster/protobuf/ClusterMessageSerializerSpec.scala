@@ -3,6 +3,8 @@
  */
 package akka.cluster.protobuf
 
+// TODO remove metrics
+
 import akka.cluster._
 import akka.actor.{ ExtendedActorSystem, Address }
 import collection.immutable.SortedSet
