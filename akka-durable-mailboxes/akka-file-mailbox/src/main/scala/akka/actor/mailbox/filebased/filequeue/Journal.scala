@@ -88,7 +88,7 @@ class Journal(queuePath: String, syncJournal: ⇒ Boolean, log: LoggingAdapter) 
     if (syncJournal) writer.force(false)
     writer.close()
     // as renameTo is not guaranteed to be able to overwrite the target file, delete it explicitly
-    queueFile.delete() 
+    queueFile.delete()
     tmpFile.renameTo(queueFile)
     open()
   }
