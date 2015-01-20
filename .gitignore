@@ -74,3 +74,6 @@ tm.out
 worker*.log
 *-shim.sbt
 test-output
+
+# Default sigar library extract location.
+native/

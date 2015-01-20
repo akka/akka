@@ -1,0 +1,73 @@
+/**
+ * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ */
+
+option java_package = "akka.cluster.metrics.protobuf.msg";
+option optimize_for = SPEED;
+
+/****************************************
+ * Metrics Gossip Messages
+ ****************************************/
+
+/**
+ * Metrics Gossip Envelope
+ */
+message MetricsGossipEnvelope {
+  required Address from = 1;
+  required MetricsGossip gossip = 2;
+  required bool reply = 3;
+}
+
+/**
+ * Metrics Gossip
+ */
+message MetricsGossip {
+  repeated Address allAddresses = 1;
+  repeated string allMetricNames = 2;
+  repeated NodeMetrics nodeMetrics = 3;
+}
+
+/**
+ * Node Metrics
+ */
+message NodeMetrics {
+  enum NumberType {
+    Serialized = 0;
+    Double = 1;
+    Float = 2;
+    Integer = 3;
+    Long = 4;
+  }
+  message Number {
+    required NumberType type = 1;
+    optional uint32 value32 = 2;
+    optional uint64 value64 = 3;
+    optional bytes serialized = 4;
+  }
+  message EWMA {
+    required double value = 1;
+    required double alpha = 2;
+  }
+  message Metric {
+    required int32 nameIndex = 1;
+    required Number number = 2;
+    optional EWMA ewma = 3;
+  }
+  required int32 addressIndex = 1;
+  required int64 timestamp = 2;
+  repeated Metric metrics = 3;
+}
+
+/****************************************
+ * Common Datatypes and Messages
+ ****************************************/
+
+/**
+ * Defines a remote address.
+ */
+message Address {
+  required string system = 1;
+  required string hostname = 2;
+  required uint32 port = 3;
+  optional string protocol = 4;
+}

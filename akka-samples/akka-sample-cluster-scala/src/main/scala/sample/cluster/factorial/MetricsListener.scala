@@ -1,25 +1,26 @@
 package sample.cluster.factorial
 
+//#metrics-listener
 import akka.actor.ActorLogging
 import akka.actor.Actor
-
-//#metrics-listener
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent.ClusterMetricsChanged
+import akka.cluster.metrics.ClusterMetricsEvent
+import akka.cluster.metrics.ClusterMetricsChanged
 import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.NodeMetrics
-import akka.cluster.StandardMetrics.HeapMemory
-import akka.cluster.StandardMetrics.Cpu
+import akka.cluster.metrics.NodeMetrics
+import akka.cluster.metrics.StandardMetrics.HeapMemory
+import akka.cluster.metrics.StandardMetrics.Cpu
+import akka.cluster.metrics.ClusterMetricsExtension
 
 class MetricsListener extends Actor with ActorLogging {
   val selfAddress = Cluster(context.system).selfAddress
+  val extension = ClusterMetricsExtension(context.system)
 
-  // subscribe to ClusterMetricsChanged
-  // re-subscribe when restart
-  override def preStart(): Unit =
-    Cluster(context.system).subscribe(self, classOf[ClusterMetricsChanged])
-  override def postStop(): Unit =
-    Cluster(context.system).unsubscribe(self)
+  // Subscribe unto ClusterMetricsEvent events.
+  override def preStart(): Unit = extension.subscribe(self)
+  
+  // Unsubscribe from ClusterMetricsEvent events.
+  override def postStop(): Unit = extension.unsubscribe(self)
 
   def receive = {
     case ClusterMetricsChanged(clusterMetrics) =>
@@ -27,21 +28,19 @@ class MetricsListener extends Actor with ActorLogging {
         logHeap(nodeMetrics)
         logCpu(nodeMetrics)
       }
-    case state: CurrentClusterState => // ignore
+    case state: CurrentClusterState => // Ignore.
   }
 
   def logHeap(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
     case HeapMemory(address, timestamp, used, committed, max) =>
       log.info("Used heap: {} MB", used.doubleValue / 1024 / 1024)
-    case _ => // no heap info
+    case _ => // No heap info.
   }
 
   def logCpu(nodeMetrics: NodeMetrics): Unit = nodeMetrics match {
-    case Cpu(address, timestamp, Some(systemLoadAverage), cpuCombined, processors) =>
+    case Cpu(address, timestamp, Some(systemLoadAverage), cpuCombined, cpuStolen, processors) =>
       log.info("Load: {} ({} processors)", systemLoadAverage, processors)
-    case _ => // no cpu info
+    case _ => // No cpu info.
   }
 }
-
 //#metrics-listener
-

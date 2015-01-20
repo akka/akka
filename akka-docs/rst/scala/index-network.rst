@@ -6,6 +6,7 @@ Networking
 
    ../common/cluster
    cluster-usage
+   cluster-metrics
    remoting
    serialization
    io

@@ -8,8 +8,8 @@ abstract class FactorialFrontend2 extends Actor {
   //#router-lookup-in-code
   import akka.cluster.routing.ClusterRouterGroup
   import akka.cluster.routing.ClusterRouterGroupSettings
-  import akka.cluster.routing.AdaptiveLoadBalancingGroup
-  import akka.cluster.routing.HeapMetricsSelector
+  import akka.cluster.metrics.AdaptiveLoadBalancingGroup
+  import akka.cluster.metrics.HeapMetricsSelector
 
   val backend = context.actorOf(
     ClusterRouterGroup(AdaptiveLoadBalancingGroup(HeapMetricsSelector),
@@ -25,8 +25,8 @@ abstract class FactorialFrontend3 extends Actor {
   //#router-deploy-in-code
   import akka.cluster.routing.ClusterRouterPool
   import akka.cluster.routing.ClusterRouterPoolSettings
-  import akka.cluster.routing.AdaptiveLoadBalancingPool
-  import akka.cluster.routing.SystemLoadAverageMetricsSelector
+  import akka.cluster.metrics.AdaptiveLoadBalancingPool
+  import akka.cluster.metrics.SystemLoadAverageMetricsSelector
 
   val backend = context.actorOf(
     ClusterRouterPool(AdaptiveLoadBalancingPool(

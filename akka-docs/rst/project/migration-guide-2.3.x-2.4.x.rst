@@ -165,3 +165,17 @@ Secure Cookies
 
 `Secure cookies` feature was deprecated.
 
+New Cluster Metrics Extension 
+=============================
+Previously, cluster metrics functionality was located in the ``akka-cluster`` jar.
+Now it is split out and moved into a separate akka module: ``akka-cluster-metrics`` jar.
+The module comes with few enhancements, such as use of Kamon sigar-loader 
+for native library provisioning as well as use of statistical averaging of metrics data.
+Note that both old and new metrics configuration entries in the ``reference.conf`` 
+are still in the same name space ``akka.cluster.metrics`` but are not compatible.
+Make sure to disable legacy metrics in akka-cluster: ``akka.cluster.metrics.enabled=off``,
+since it is still enabled in akka-cluster by default (for compatibility with past releases).
+Router configuration entries have also changed for the module, they use prefix ``cluster-metrics-``:
+``cluster-metrics-adaptive-pool`` and ``cluster-metrics-adaptive-group``
+Metrics extension classes and objects are located in the new package ``akka.cluster.metrics``. 
+Please see :ref:`Scala <cluster-metrics-scala>`, :ref:`Java <cluster-metrics-java>` for more information.

@@ -64,6 +64,7 @@ object SphinxDoc {
           case _          => s
         }),
         "sigarVersion" -> Dependencies.Compile.sigar.revision,
+        "sigarLoaderVersion" -> Dependencies.Compile.Provided.sigarLoader.revision,
         "github" -> GitHub.url(v)
       )
     },
