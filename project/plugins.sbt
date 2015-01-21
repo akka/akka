@@ -1,4 +1,4 @@
-resolvers += Classpaths.typesafeResolver
+resolvers += Classpaths.typesafeReleases
 
 resolvers += "jgit-repo" at "http://download.eclipse.org/jgit/maven"
 
@@ -24,6 +24,8 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.3.1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "0.6.2")
 
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.1.6")
+
+addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.1.7")
 
 // stats reporting
 libraryDependencies += "com.timgroup" % "java-statsd-client" % "2.0.0"
