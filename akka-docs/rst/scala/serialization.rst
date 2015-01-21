@@ -40,7 +40,7 @@ Akka provides serializers for :class:`java.io.Serializable` and `protobuf
 :class:`com.google.protobuf.GeneratedMessage` by default (the latter only if
 depending on the akka-remote module), so normally you don't need to add
 configuration for that; since :class:`com.google.protobuf.GeneratedMessage`
-implements :class:`java.io.Serializable`, protobuf messages will always by
+implements :class:`java.io.Serializable`, protobuf messages will always be
 serialized using the protobuf protocol unless specifically overridden. In order
 to disable a default serializer, map its marker type to “none”::
 
