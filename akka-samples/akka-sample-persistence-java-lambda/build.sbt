@@ -2,7 +2,7 @@ name := "akka-sample-persistence-java-lambda"
 
 version := "1.0"
 
-scalaVersion := "2.10.4"
+scalaVersion := "2.11.5"
 
 javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint")
 
