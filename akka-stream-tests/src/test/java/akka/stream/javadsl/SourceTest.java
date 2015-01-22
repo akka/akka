@@ -4,6 +4,7 @@
 package akka.stream.javadsl;
 
 import akka.actor.ActorRef;
+import akka.actor.Cancellable;
 import akka.dispatch.Foreach;
 import akka.dispatch.Futures;
 import akka.dispatch.OnSuccess;
@@ -414,12 +415,13 @@ public class SourceTest extends StreamTest {
         return "tick-" + (count++);
       }
     };
-    Source.from(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick)
-      .foreach(new Procedure<String>() {
-        public void apply(String elem) {
-          probe.getRef().tell(elem, ActorRef.noSender());
-        }
-      }, materializer);
+    KeyedSource<String, Cancellable> tickSource = Source.from(FiniteDuration.create(1, TimeUnit.SECONDS), FiniteDuration.create(500, TimeUnit.MILLISECONDS), tick);
+    MaterializedMap map = tickSource.to(Sink.foreach(new Procedure<String>() {
+      public void apply(String elem) {
+        probe.getRef().tell(elem, ActorRef.noSender());
+      }
+    })).run(materializer);
+    Cancellable cancellable = map.get(tickSource); // validates we can obtain the cancellable
     probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick-1");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));

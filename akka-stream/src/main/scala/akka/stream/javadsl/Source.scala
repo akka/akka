@@ -4,8 +4,7 @@
 package akka.stream.javadsl
 
 import java.util.concurrent.Callable
-import akka.actor.ActorRef
-import akka.actor.Props
+import akka.actor.{ Cancellable, ActorRef, Props }
 import akka.japi.Util
 import akka.stream._
 import akka.stream.scaladsl.PropsSource
@@ -102,8 +101,8 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.Source[O] =
-    new Source(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
+  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.KeyedSource[O, Cancellable] =
+    new KeyedSource(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects

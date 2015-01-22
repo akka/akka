@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import java.io.{File, FileInputStream}
+import java.io.{ File, FileInputStream }
 
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
