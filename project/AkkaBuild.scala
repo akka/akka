@@ -188,9 +188,10 @@ object AkkaBuild extends Build {
     id = "akka-samples",
     base = file("akka-samples"),
     settings = parentSettings ++ ActivatorDist.settings,
+    // FIXME osgiDiningHakkersSampleMavenTest temporarily removed from aggregate due to #16703
     aggregate = if (!CommandLineOptions.aggregateSamples) Nil else
       Seq(sampleCamelJava, sampleCamelScala, sampleClusterJava, sampleClusterScala, sampleFsmScala,
-        sampleHelloKernel, sampleMainJava, sampleMainScala, sampleMultiNodeScala, osgiDiningHakkersSampleMavenTest,
+        sampleHelloKernel, sampleMainJava, sampleMainScala, sampleMultiNodeScala,
         samplePersistenceJava, samplePersistenceScala, sampleRemoteJava, sampleRemoteScala)
   )
 
