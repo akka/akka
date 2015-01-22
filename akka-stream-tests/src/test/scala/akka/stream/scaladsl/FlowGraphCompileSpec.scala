@@ -440,6 +440,32 @@ class FlowGraphCompileSpec extends AkkaSpec {
         }
       }
 
+      "Junction is connected through GraphFlow" in {
+        val gflow = Flow[Int, String]() { implicit builder ⇒
+          import FlowGraphImplicits._
+
+          val in = UndefinedSource[Int]
+          val out = UndefinedSink[String]
+
+          in ~> Flow[Int].map(_.toString) ~> out
+
+          (in, out)
+        }
+
+        val sink = Sink.fold[Int, Int](0)(_ + _)
+        val graph = FlowGraph { implicit builder ⇒
+          import FlowGraphImplicits._
+
+          val merge = Merge[Int]
+
+          Source(List(1, 2, 3)) ~> merge
+          Source.empty[Int] ~> merge
+          merge ~> gflow.map(_.toInt) ~> sink
+        }
+
+        graph.run()
+      }
+
       "UndefinedSource is connected directly" in {
         PartialFlowGraph { implicit b ⇒
           import FlowGraphImplicits._
@@ -459,6 +485,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
           UndefinedSource[Int] ~> Flow[Int] ~> UndefinedSink[Int]
         }
       }
+
     }
 
     "build partial with only undefined sources and sinks" in {

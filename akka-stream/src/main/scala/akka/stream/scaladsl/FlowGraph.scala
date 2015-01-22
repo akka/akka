@@ -702,6 +702,8 @@ class FlowGraphBuilder private[akka] (
         connect(tOut, flow, tIn)
       case (pipe: Pipe[In, Out], sink: Sink[Out]) ⇒
         addPipeToSinkEdge(junctionOut, pipe, sink)
+      case (gf: GraphFlow[_, Out, _, _], sink: Sink[Out]) ⇒
+        addPipeToSinkEdge(junctionOut, gf.inPipe, sink)
       case x ⇒ throwUnsupportedValue(x)
     }
     this
