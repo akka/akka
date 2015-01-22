@@ -16,12 +16,12 @@
   <dependencies>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor_2.10</artifactId>
+      <artifactId>akka-actor_2.11</artifactId>
       <version>2.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-testkit_2.10</artifactId>
+      <artifactId>akka-testkit_2.11</artifactId>
       <version>2.4-SNAPSHOT</version>
     </dependency>
     <dependency>
