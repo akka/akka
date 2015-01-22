@@ -61,9 +61,11 @@ object Sample {
    * transformed sample projects should have its settings added here.
    */
   private val enableAutoPlugins = (project: Project) =>
-    project.settings(
-      Publish.projectSettings: _*
-    )
+    project.settings((
+      MiMa.projectSettings ++
+      Publish.projectSettings ++
+      ValidatePullRequest.projectSettings
+    ): _*)
 
   private implicit class RichLoadedDefinitions(ld: LoadedDefinitions) {
     def copy(projects: Seq[Project]) =

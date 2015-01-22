@@ -16,15 +16,8 @@ import akka.Unidoc.unidocSettings
 import com.typesafe.sbt.S3Plugin.S3
 import com.typesafe.sbt.S3Plugin.s3Settings
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
-import com.typesafe.sbt.site.SphinxSupport
-import com.typesafe.sbt.site.SphinxSupport.Sphinx
-import com.typesafe.tools.mima.plugin.MimaKeys.binaryIssueFilters
-import com.typesafe.tools.mima.plugin.MimaKeys.previousArtifact
-import com.typesafe.tools.mima.plugin.MimaKeys.reportBinaryIssues
-import com.typesafe.tools.mima.plugin.MimaPlugin.mimaDefaultSettings
 import sbt.Keys._
 import sbt._
-import sbtunidoc.Plugin.UnidocKeys.unidoc
 
 object AkkaBuild extends Build {
   System.setProperty("akka.mode", "test") // Is there better place for this?
@@ -47,7 +40,7 @@ object AkkaBuild extends Build {
     id = "akka",
     base = file("."),
     settings = parentSettings ++ Release.settings ++ unidocSettings ++
-      SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ scaladocSettings ++
+      SphinxDoc.akkaSettings ++ Dist.settings ++ s3Settings ++ scaladocSettings ++
       GraphiteBuildEvents.settings ++ Protobuf.settings ++ Unidoc.settings(Seq(samples), Seq(remoteTests)) ++ Seq(
       parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", "false").toBoolean,
       Dist.distExclude := Seq(actorTests.id, docs.id, samples.id, osgi.id),
@@ -58,9 +51,7 @@ object AkkaBuild extends Build {
         val downloads = d / "downloads"
         val archivesPathFinder = downloads * s"*$v.zip"
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
-      },
-
-      validatePullRequest <<= (unidoc in Compile, SphinxSupport.generate in Sphinx in docs) map { (_, _) => }
+      }
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, slf4j, agent,
       persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
@@ -73,7 +64,7 @@ object AkkaBuild extends Build {
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
       persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit)
-  )
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val actor = Project(
     id = "akka-actor",
@@ -96,7 +87,7 @@ object AkkaBuild extends Build {
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
     dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test")
-  )
+  ).disablePlugins(ValidatePullRequest)
 
   lazy val remote = Project(
     id = "akka-remote",
@@ -219,7 +210,6 @@ object AkkaBuild extends Build {
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-maven-test"),
     settings = Seq(
       publishArtifact := false,
-      reportBinaryIssues := (), // disable bin comp check
       // force publication of artifacts to local maven repo, so latest versions can be used when running maven tests
       compile in Compile <<=
         (publishM2 in actor, publishM2 in testkit, publishM2 in remote, publishM2 in cluster, publishM2 in osgi,
@@ -246,8 +236,7 @@ object AkkaBuild extends Build {
   lazy val baseSettings = Defaults.defaultSettings
 
   lazy val parentSettings = baseSettings ++ Seq(
-    publishArtifact := false,
-    reportBinaryIssues := () // disable bin comp check
+    publishArtifact := false
   )
 
   lazy val experimentalSettings = Seq(
@@ -290,7 +279,7 @@ object AkkaBuild extends Build {
     pomIncludeRepository := (_ => false) // do not leak internal repositories during staging
   )
 
-  lazy val defaultSettings = baseSettings ++ mimaSettings ++ resolverSettings ++ TestExtras.Filter.settings ++
+  lazy val defaultSettings = baseSettings ++ resolverSettings ++ TestExtras.Filter.settings ++
     Protobuf.settings ++ Seq(
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-deprecation", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
@@ -337,31 +326,10 @@ object AkkaBuild extends Build {
 
     // -v Log "test run started" / "test started" / "test run finished" events on log level "info" instead of "debug".
     // -a Show stack traces and exception class name for AssertionErrors.
-    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a"),
-
-    validatePullRequestTask,
-    validatePullRequest <<= validatePullRequest.dependsOn(test in Test),
-    // add reportBinaryIssues to validatePullRequest on minor version maintenance branch
-    validatePullRequest <<= validatePullRequest.dependsOn(reportBinaryIssues)
+    testOptions += Tests.Argument(TestFrameworks.JUnit, "-v", "-a")
   ) ++
     mavenLocalResolverSettings ++
     JUnitFileReporting.settings ++ StatsDMetrics.settings
-
-  val validatePullRequest = TaskKey[Unit]("validate-pull-request", "Additional tasks for pull request validation")
-  // the tasks that to run for validation is defined in defaultSettings
-  val validatePullRequestTask = validatePullRequest := ()
-
-  lazy val mimaIgnoredProblems = {
-    Seq(
-      // add filters here, see release-2.3 branch
-     )
-  }
-
-  lazy val mimaSettings = mimaDefaultSettings ++ Seq(
-    // MiMa
-    previousArtifact := None,
-    binaryIssueFilters ++= mimaIgnoredProblems
-  )
 
   def akkaPreviousArtifact(id: String): Def.Initialize[Option[sbt.ModuleID]] = Def.setting {
     if (enableMiMa) {
