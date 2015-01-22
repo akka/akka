@@ -17,10 +17,10 @@
         <paxexam.version>2.6.0</paxexam.version>
         <paxswissbox.version>1.6.0</paxswissbox.version>
         <protobuf.version>2.5.0</protobuf.version>
-        <scala.version>2.10.4</scala.version>
-        <scala.dep.version>2.10</scala.dep.version>
-        <scalatest.version>2.0</scalatest.version>
-        <typesafe.config.version>1.2.0</typesafe.config.version>
+        <scala.version>2.11.5</scala.version>
+        <scala.dep.version>2.11</scala.dep.version>
+        <scalatest.version>2.2.3</scalatest.version>
+        <typesafe.config.version>1.2.1</typesafe.config.version>
         <leveldb.version>0.7</leveldb.version>
         <leveldbjni.version>1.7</leveldbjni.version>
         <uncommons-maths.version>1.2.2</uncommons-maths.version>
