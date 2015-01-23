@@ -10,6 +10,7 @@ import java.net.InetSocketAddress
 import java.net.SocketAddress
 
 object TestUtils { // FIXME: remove once going back to project dependencies
+  import scala.language.reflectiveCalls
   // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
   type GeneralSocket = {
     def bind(sa: SocketAddress): Unit

@@ -105,7 +105,8 @@ private[akka] class FanoutProcessorImpl(
   }
 
   override def fail(e: Throwable): Unit = {
-    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    // FIXME: escalate to supervisor
+    log.debug("fail {} due to: {}", self, e.getMessage)
     primaryInputs.cancel()
     primaryOutputs.cancel(e)
     // Stopping will happen after flush
