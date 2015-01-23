@@ -7,8 +7,8 @@ import akka.actor.Props
 import akka.stream.MaterializerSettings
 import akka.stream.scaladsl.OperationAttributes
 import akka.stream.scaladsl.FlexiMerge
-
 import scala.collection.breakOut
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -44,7 +44,10 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
 
   override protected val inputBunch = new FanIn.InputBunch(inputPorts, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = {
-      changeBehavior(completion.onError(ctx, inputMapping(input), e))
+      changeBehavior(try completion.onError(ctx, inputMapping(input), e)
+      catch {
+        case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
+      })
       cancel(input)
     }
 
@@ -149,7 +152,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
 
         changeBehavior(behavior.onInput(ctx, inputHandles.head, read.mkResult(Map(values: _*))))
 
-        // must be triggered after emiting the accumulated out value
+        // must be triggered after emitting the accumulated out value
         triggerCompletionAfterRead(inputHandles)
     }
 
@@ -167,7 +170,10 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
     if (inputBunch.isDepleted(inputHandle.portIndex))
       triggerCompletion(inputHandle)
 
-  private def triggerCompletion(inputHandle: InputHandle) {
-    changeBehavior(completion.onComplete(ctx, inputHandle))
-  }
+  private def triggerCompletion(inputHandle: InputHandle): Unit =
+    changeBehavior(try completion.onComplete(ctx, inputHandle)
+    catch {
+      case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
+    })
+
 }
