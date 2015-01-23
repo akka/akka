@@ -19,6 +19,7 @@ import akka.util.ByteString
 import org.reactivestreams.Subscriber
 import akka.stream.ConnectionException
 import akka.stream.BindFailedException
+import akka.actor.ActorLogging
 
 /**
  * INTERNAL API
@@ -39,7 +40,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
                                          bindCmd: Tcp.Bind, settings: MaterializerSettings) extends Actor
-  with Pump with Stash {
+  with Pump with Stash with ActorLogging {
   import context.system
 
   object primaryOutputs extends SimpleOutputs(self, pump = this) {
@@ -160,6 +161,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
   }
 
   def fail(e: Throwable): Unit = {
+    log.debug("fail {} due to: {}", self, e.getMessage)
     incomingConnections.cancel()
     primaryOutputs.cancel(e)
   }
