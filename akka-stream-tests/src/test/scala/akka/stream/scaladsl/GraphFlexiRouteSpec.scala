@@ -94,6 +94,7 @@ object GraphFlexiRouteSpec {
     val output1 = createOutputPort[String]()
     val output2 = createOutputPort[String]()
     val output3 = createOutputPort[String]()
+    var throwFromOnComplete = false
 
     def createRouteLogic: RouteLogic[String] = new RouteLogic[String] {
       val handles = Vector(output1, output2, output3)
@@ -105,6 +106,10 @@ object GraphFlexiRouteSpec {
             ctx.error(new RuntimeException("err") with NoStackTrace)
           else if (element == "err-output1")
             ctx.error(output1, new RuntimeException("err-1") with NoStackTrace)
+          else if (element == "exc")
+            throw new RuntimeException("exc") with NoStackTrace
+          else if (element == "onComplete-exc")
+            throwFromOnComplete = true
           else if (element == "complete")
             ctx.complete()
           else
@@ -115,6 +120,8 @@ object GraphFlexiRouteSpec {
 
       override def initialCompletionHandling = CompletionHandling(
         onComplete = { ctx ⇒
+          if (throwFromOnComplete)
+            throw new RuntimeException("onComplete-exc") with NoStackTrace
           handles.foreach { output ⇒
             if (ctx.isDemandAvailable(output))
               ctx.emit(output, "onComplete")
@@ -311,6 +318,43 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.sendComplete()
       s2.expectNext("onComplete")
       s2.expectComplete()
+    }
+
+    "emit error for user thrown exception" in {
+      val fixture = new TestFixture
+      import fixture._
+
+      sub1.request(1)
+      s1.expectNext("onInput: a")
+      sub2.request(1)
+      s2.expectNext("onInput: b")
+
+      sub1.request(5)
+      sub2.request(5)
+      autoPublisher.sendNext("exc")
+
+      s1.expectError().getMessage should be("exc")
+      s2.expectError().getMessage should be("exc")
+
+      autoPublisher.subscription.expectCancellation()
+    }
+
+    "emit error for user thrown exception in onComplete" in {
+      val fixture = new TestFixture
+      import fixture._
+
+      sub1.request(1)
+      s1.expectNext("onInput: a")
+      sub2.request(1)
+      s2.expectNext("onInput: b")
+
+      sub1.request(5)
+      sub2.request(5)
+      autoPublisher.sendNext("onComplete-exc")
+      autoPublisher.sendComplete()
+
+      s1.expectError().getMessage should be("onComplete-exc")
+      s2.expectError().getMessage should be("onComplete-exc")
     }
 
     "handle cancel from output" in {

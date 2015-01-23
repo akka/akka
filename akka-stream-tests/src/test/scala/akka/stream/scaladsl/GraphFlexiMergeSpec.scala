@@ -230,6 +230,7 @@ class TestMerge extends FlexiMerge[String] {
   def createMergeLogic: MergeLogic[String] = new MergeLogic[String] {
     val handles = Vector(input1, input2, input3)
     override def inputHandles(inputCount: Int) = handles
+    var throwFromOnComplete = false
 
     override def initialState = State[String](ReadAny(handles)) {
       (ctx, input, element) ⇒
@@ -237,8 +238,12 @@ class TestMerge extends FlexiMerge[String] {
           ctx.cancel(input)
         else if (element == "err")
           ctx.error(new RuntimeException("err") with NoStackTrace)
+        else if (element == "exc")
+          throw new RuntimeException("exc") with NoStackTrace
         else if (element == "complete")
           ctx.complete()
+        else if (element == "onComplete-exc")
+          throwFromOnComplete = true
         else
           ctx.emit("onInput: " + element)
 
@@ -247,6 +252,8 @@ class TestMerge extends FlexiMerge[String] {
 
     override def initialCompletionHandling = CompletionHandling(
       onComplete = { (ctx, input) ⇒
+        if (throwFromOnComplete)
+          throw new RuntimeException("onComplete-exc") with NoStackTrace
         if (ctx.isDemandAvailable)
           ctx.emit("onComplete: " + input.portIndex)
         SameState
@@ -640,6 +647,69 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext("onInput: a")
       s.expectNext("onInput: b")
       s.expectError().getMessage should be("err")
+    }
+
+    "emit error for user thrown exception" in {
+      val m = FlowGraph { implicit b ⇒
+        val merge = new TestMerge
+        Source(List("a", "exc")) ~> merge.input1
+        Source(List("b", "c")) ~> merge.input2
+        Source.empty[String] ~> merge.input3
+        merge.out ~> out1
+      }.run()
+
+      val s = SubscriberProbe[String]
+      val p = m.get(out1)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(10)
+      s.expectNext("onInput: a")
+      s.expectNext("onInput: b")
+      s.expectError().getMessage should be("exc")
+    }
+
+    "emit error for user thrown exception in onComplete" in {
+      val m = FlowGraph { implicit b ⇒
+        val merge = new TestMerge
+        Source(List("a", "onComplete-exc")) ~> merge.input1
+        Source(List("b", "c")) ~> merge.input2
+        Source.empty[String] ~> merge.input3
+        merge.out ~> out1
+      }.run()
+
+      val s = SubscriberProbe[String]
+      val p = m.get(out1)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(10)
+      s.expectNext("onInput: a")
+      s.expectNext("onInput: b")
+      s.expectError().getMessage should be("onComplete-exc")
+    }
+
+    "emit error for user thrown exception in onComplete 2" in {
+      val publisher = PublisherProbe[String]
+      val m = FlowGraph { implicit b ⇒
+        val merge = new TestMerge
+        Source.empty[String] ~> merge.input1
+        Source(publisher) ~> merge.input2
+        Source.empty[String] ~> merge.input3
+        merge.out ~> out1
+      }.run()
+
+      val autoPublisher = new AutoPublisher(publisher)
+      autoPublisher.sendNext("onComplete-exc")
+      autoPublisher.sendNext("a")
+
+      val s = SubscriberProbe[String]
+      val p = m.get(out1)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(1)
+      s.expectNext("onInput: a")
+
+      autoPublisher.sendComplete()
+      s.expectError().getMessage should be("onComplete-exc")
     }
 
     "support complete from onInput" in {

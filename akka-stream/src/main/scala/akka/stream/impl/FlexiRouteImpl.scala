@@ -4,12 +4,12 @@
 package akka.stream.impl
 
 import akka.stream.scaladsl.OperationAttributes
-
 import scala.collection.breakOut
 import akka.actor.Props
 import akka.stream.scaladsl.FlexiRoute
 import akka.stream.MaterializerSettings
 import akka.stream.impl.FanOut.OutputBunch
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -45,17 +45,20 @@ private[akka] class FlexiRouteImpl(_settings: MaterializerSettings,
 
   override protected val outputBunch = new OutputBunch(outputPorts, self, this) {
     override def onCancel(output: Int): Unit =
-      changeBehavior(completion.onCancel(ctx, outputMapping(output)))
+      changeBehavior(try completion.onCancel(ctx, outputMapping(output))
+      catch {
+        case NonFatal(e) ⇒ fail(e); routeLogic.SameState
+      })
   }
 
   override protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
     override def onError(e: Throwable): Unit = {
-      completion.onError(ctx, e)
+      try completion.onError(ctx, e) catch { case NonFatal(e) ⇒ fail(e) }
       fail(e)
     }
 
     override def onComplete(): Unit = {
-      completion.onComplete(ctx)
+      try completion.onComplete(ctx) catch { case NonFatal(e) ⇒ fail(e) }
       super.onComplete()
     }
   }
