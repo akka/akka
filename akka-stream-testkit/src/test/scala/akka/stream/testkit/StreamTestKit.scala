@@ -3,6 +3,7 @@
  */
 package akka.stream.testkit
 
+import scala.language.existentials
 import akka.actor.ActorSystem
 import akka.stream.impl.{ EmptyPublisher, ErrorPublisher }
 import akka.testkit.TestProbe

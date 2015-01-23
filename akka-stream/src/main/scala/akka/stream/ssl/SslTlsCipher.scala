@@ -360,7 +360,8 @@ class SslTlsCipherActor(val requester: ActorRef, val sessionNegotioation: SslTls
   override def receive = inputSubstreamManagement orElse outputSubstreamManagement
 
   protected def fail(e: Throwable): Unit = {
-    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    // FIXME: escalate to supervisor
+    if (tracing) log.debug("fail {} due to: {}", self, e.getMessage)
     failInputs(e)
     failOutputs(e)
     context.stop(self)
