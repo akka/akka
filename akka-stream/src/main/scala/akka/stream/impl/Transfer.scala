@@ -135,7 +135,7 @@ private[akka] object Always extends TransferState {
 /**
  * INTERNAL API
  */
-private[akka] case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
+private[akka] final case class TransferPhase(precondition: TransferState)(val action: () ⇒ Unit)
 
 /**
  * INTERNAL API

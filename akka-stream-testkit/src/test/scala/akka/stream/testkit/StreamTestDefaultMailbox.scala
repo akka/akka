@@ -16,7 +16,7 @@ import akka.actor.Actor
  * This mailbox is only used in tests to verify that stream actors are using
  * the dispatcher defined in MaterializerSettings.
  */
-private[akka] case class StreamTestDefaultMailbox() extends MailboxType with ProducesMessageQueue[UnboundedMailbox.MessageQueue] {
+private[akka] final case class StreamTestDefaultMailbox() extends MailboxType with ProducesMessageQueue[UnboundedMailbox.MessageQueue] {
 
   def this(settings: ActorSystem.Settings, config: Config) = this()
 

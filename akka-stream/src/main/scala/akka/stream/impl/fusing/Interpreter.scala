@@ -386,6 +386,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       case Completing ⇒ padding + "---|"
       case Cancelling ⇒ padding + "|---"
       case Failing(e) ⇒ padding + s"---X ${e.getMessage}"
+      case other      ⇒ padding + s"---? $state"
     }
     println(icon)
   }

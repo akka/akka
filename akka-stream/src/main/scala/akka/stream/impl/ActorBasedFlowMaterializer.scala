@@ -159,11 +159,11 @@ private[akka] object Ast {
     override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
-  case class DirectProcessor(p: () ⇒ Processor[Any, Any], attributes: OperationAttributes = processor) extends AstNode {
+  final case class DirectProcessor(p: () ⇒ Processor[Any, Any], attributes: OperationAttributes = processor) extends AstNode {
     override def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
-  case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key[_], attributes: OperationAttributes = processorWithKey) extends AstNode {
+  final case class DirectProcessorWithKey(p: () ⇒ (Processor[Any, Any], Any), key: Key[_], attributes: OperationAttributes = processorWithKey) extends AstNode {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
   }
 
@@ -206,7 +206,7 @@ private[akka] object Ast {
   final case class Zip22With[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22](f: Function22[T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, T11, T12, T13, T14, T15, T16, T17, T18, T19, T20, T21, T22, Any], attributes: OperationAttributes) extends ZipWith
 
   // FIXME Why do we need this?
-  case class IdentityAstNode(attributes: OperationAttributes) extends JunctionAstNode
+  final case class IdentityAstNode(attributes: OperationAttributes) extends JunctionAstNode
 
   final case class Merge(attributes: OperationAttributes) extends FanInAstNode
   final case class MergePreferred(attributes: OperationAttributes) extends FanInAstNode
@@ -544,7 +544,7 @@ private[akka] class FlowNameCounter extends Extension {
 private[akka] object StreamSupervisor {
   def props(settings: MaterializerSettings): Props = Props(new StreamSupervisor(settings))
 
-  case class Materialize(props: Props, name: String)
+  final case class Materialize(props: Props, name: String) extends DeadLetterSuppression
 }
 
 private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Actor {
