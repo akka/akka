@@ -10,7 +10,7 @@ import akka.stream.impl.Ast.AstNode
  * Holds attributes which can be used to alter [[Flow]] or [[FlowGraph]]
  * materialization.
  */
-case class OperationAttributes private (private val attributes: List[OperationAttributes.Attribute] = Nil) {
+final case class OperationAttributes private (private val attributes: List[OperationAttributes.Attribute] = Nil) {
 
   import OperationAttributes._
 
@@ -59,9 +59,9 @@ case class OperationAttributes private (private val attributes: List[OperationAt
 object OperationAttributes {
 
   private[OperationAttributes] trait Attribute
-  private[OperationAttributes] case class Name(n: String) extends Attribute
-  private[OperationAttributes] case class InputBuffer(initial: Int, max: Int) extends Attribute
-  private[OperationAttributes] case class Dispatcher(dispatcher: String) extends Attribute
+  private[OperationAttributes] final case class Name(n: String) extends Attribute
+  private[OperationAttributes] final case class InputBuffer(initial: Int, max: Int) extends Attribute
+  private[OperationAttributes] final case class Dispatcher(dispatcher: String) extends Attribute
 
   private[OperationAttributes] def apply(attribute: Attribute): OperationAttributes =
     apply(List(attribute))

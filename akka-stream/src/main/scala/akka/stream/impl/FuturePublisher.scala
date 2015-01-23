@@ -7,17 +7,16 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Status
 import akka.actor.SupervisorStrategy
 import akka.stream.MaterializerSettings
-
 import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -27,8 +26,8 @@ private[akka] object FuturePublisher {
     Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher)
 
   object FutureSubscription {
-    case class Cancel(subscription: FutureSubscription)
-    case class RequestMore(subscription: FutureSubscription, elements: Long)
+    final case class Cancel(subscription: FutureSubscription) extends DeadLetterSuppression
+    final case class RequestMore(subscription: FutureSubscription, elements: Long) extends DeadLetterSuppression
   }
 
   class FutureSubscription(ref: ActorRef) extends Subscription {

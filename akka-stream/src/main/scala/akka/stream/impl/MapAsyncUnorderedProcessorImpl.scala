@@ -9,6 +9,7 @@ import akka.stream.MaterializerSettings
 import akka.stream.MaterializerSettings
 import akka.pattern.pipe
 import akka.actor.Props
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -17,8 +18,8 @@ private[akka] object MapAsyncUnorderedProcessorImpl {
   def props(settings: MaterializerSettings, f: Any ⇒ Future[Any]): Props =
     Props(new MapAsyncUnorderedProcessorImpl(settings, f))
 
-  case class FutureElement(element: Any)
-  case class FutureFailure(cause: Throwable)
+  final case class FutureElement(element: Any) extends DeadLetterSuppression
+  final case class FutureFailure(cause: Throwable) extends DeadLetterSuppression
 }
 
 /**

@@ -35,8 +35,8 @@ private[akka] final case class Collect[In, Out](pf: PartialFunction[In, Out]) ex
   import Collect.NotApplied
   override def onPush(elem: In, ctx: Context[Out]): Directive =
     pf.applyOrElse(elem, NotApplied) match {
-      case NotApplied  ⇒ ctx.pull()
-      case result: Out ⇒ ctx.push(result)
+      case NotApplied             ⇒ ctx.pull()
+      case result: Out @unchecked ⇒ ctx.push(result)
     }
 }
 

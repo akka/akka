@@ -1202,11 +1202,12 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
 
     type E = Edge[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex]
 
-    case class Memo(visited: Set[E] = Set.empty,
-                    downstreamSubscriber: Map[E, Subscriber[Any]] = Map.empty,
-                    upstreamPublishers: Map[E, Publisher[Any]] = Map.empty,
-                    sources: Map[SourceVertex, SinkPipe[Any]] = Map.empty,
-                    materializedMap: MaterializedMap = MaterializedMap.empty)
+    final case class Memo(
+      visited: Set[E] = Set.empty,
+      downstreamSubscriber: Map[E, Subscriber[Any]] = Map.empty,
+      upstreamPublishers: Map[E, Publisher[Any]] = Map.empty,
+      sources: Map[SourceVertex, SinkPipe[Any]] = Map.empty,
+      materializedMap: MaterializedMap = MaterializedMap.empty)
 
     val result = startingNodes.foldLeft(Memo()) {
       case (memo, start) ⇒

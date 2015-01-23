@@ -4,22 +4,22 @@
 package akka.stream.impl
 
 import scala.collection.immutable
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.stream.MaterializerSettings
 import org.reactivestreams.Subscription
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
  */
 private[akka] object FanOut {
 
-  case class SubstreamRequestMore(id: Int, demand: Long)
-  case class SubstreamCancel(id: Int)
-  case class SubstreamSubscribePending(id: Int)
+  final case class SubstreamRequestMore(id: Int, demand: Long) extends DeadLetterSuppression
+  final case class SubstreamCancel(id: Int) extends DeadLetterSuppression
+  final case class SubstreamSubscribePending(id: Int) extends DeadLetterSuppression
 
   class SubstreamSubscription(val parent: ActorRef, val id: Int) extends Subscription {
     override def request(elements: Long): Unit =
@@ -33,7 +33,7 @@ private[akka] object FanOut {
     override def createSubscription(): Subscription = new SubstreamSubscription(actor, id)
   }
 
-  case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]])
+  final case class ExposedPublishers(publishers: immutable.Seq[ActorPublisher[Any]]) extends DeadLetterSuppression
 
   class OutputBunch(outputCount: Int, impl: ActorRef, pump: Pump) {
     private var bunchCancelled = false

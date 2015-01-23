@@ -8,16 +8,17 @@ import akka.actor.Props
 import akka.stream.MaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import org.reactivestreams.{ Subscription, Subscriber }
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
  */
 private[akka] object FanIn {
 
-  case class OnError(id: Int, cause: Throwable)
-  case class OnComplete(id: Int)
-  case class OnNext(id: Int, e: Any)
-  case class OnSubscribe(id: Int, subscription: Subscription)
+  final case class OnError(id: Int, cause: Throwable) extends DeadLetterSuppression
+  final case class OnComplete(id: Int) extends DeadLetterSuppression
+  final case class OnNext(id: Int, e: Any) extends DeadLetterSuppression
+  final case class OnSubscribe(id: Int, subscription: Subscription) extends DeadLetterSuppression
 
   private[akka] final case class SubInput[T](impl: ActorRef, id: Int) extends Subscriber[T] {
     override def onError(cause: Throwable): Unit = impl ! OnError(id, cause)

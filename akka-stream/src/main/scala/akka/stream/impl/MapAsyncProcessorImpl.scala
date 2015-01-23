@@ -12,6 +12,7 @@ import akka.stream.MaterializerSettings
 import akka.pattern.pipe
 import scala.annotation.tailrec
 import akka.actor.Props
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -29,8 +30,8 @@ private[akka] object MapAsyncProcessorImpl {
     }
   }
 
-  case class FutureElement(seqNo: Long, element: Any)
-  case class FutureFailure(cause: Throwable)
+  final case class FutureElement(seqNo: Long, element: Any) extends DeadLetterSuppression
+  final case class FutureFailure(cause: Throwable) extends DeadLetterSuppression
 }
 
 /**

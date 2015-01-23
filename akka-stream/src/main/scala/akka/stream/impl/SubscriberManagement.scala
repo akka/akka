@@ -26,7 +26,7 @@ private[akka] object SubscriberManagement {
     def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onComplete()
   }
 
-  case class ErrorCompleted(cause: Throwable) extends EndOfStream {
+  final case class ErrorCompleted(cause: Throwable) extends EndOfStream {
     def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
   }
 

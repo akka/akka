@@ -16,9 +16,9 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.UntypedActor
-
 import concurrent.duration.Duration
 import concurrent.duration.FiniteDuration
+import akka.actor.DeadLetterSuppression
 
 object ActorPublisher {
 
@@ -33,18 +33,18 @@ object ActorPublisher {
    * INTERNAL API
    */
   private[akka] object Internal {
-    case class Subscribe(subscriber: Subscriber[Any])
+    final case class Subscribe(subscriber: Subscriber[Any]) extends DeadLetterSuppression
 
     sealed trait LifecycleState
     case object PreSubscriber extends LifecycleState
     case object Active extends LifecycleState
     case object Canceled extends LifecycleState
     case object Completed extends LifecycleState
-    case class ErrorEmitted(cause: Throwable) extends LifecycleState
+    final case class ErrorEmitted(cause: Throwable) extends LifecycleState
   }
 }
 
-sealed abstract class ActorPublisherMessage
+sealed abstract class ActorPublisherMessage extends DeadLetterSuppression
 
 object ActorPublisherMessage {
   /**
@@ -52,19 +52,19 @@ object ActorPublisherMessage {
    * more elements.
    * @param n number of requested elements
    */
-  @SerialVersionUID(1L) case class Request(n: Long) extends ActorPublisherMessage
+  @SerialVersionUID(1L) final case class Request(n: Long) extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
    * subscription.
    */
-  @SerialVersionUID(1L) case object Cancel extends ActorPublisherMessage
+  @SerialVersionUID(1L) final case object Cancel extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
    * Once the actor receives this message, this publisher will already be in cancelled state, thus the actor should clean-up and stop itself.
    */
-  @SerialVersionUID(1L) case object SubscriptionTimeoutExceeded extends ActorPublisherMessage
+  @SerialVersionUID(1L) final case object SubscriptionTimeoutExceeded extends ActorPublisherMessage
 
   /**
    * Java API: get the singleton instance of the `Cancel` message
@@ -330,7 +330,7 @@ trait ActorPublisher[T] extends Actor {
 /**
  * INTERNAL API
  */
-private[akka] case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[T] {
+private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publisher[T] {
   import ActorPublisher._
   import ActorPublisher.Internal._
 
@@ -363,7 +363,7 @@ private[akka] object ActorPublisherState extends ExtensionId[ActorPublisherState
   override def createExtension(system: ExtendedActorSystem): ActorPublisherState =
     new ActorPublisherState
 
-  case class State(subscriber: Option[Subscriber[Any]], demand: Long, lifecycleState: LifecycleState)
+  final case class State(subscriber: Option[Subscriber[Any]], demand: Long, lifecycleState: LifecycleState)
 
 }
 

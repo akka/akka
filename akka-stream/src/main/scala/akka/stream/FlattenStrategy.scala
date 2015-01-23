@@ -17,5 +17,5 @@ object FlattenStrategy {
    */
   def concat[T]: FlattenStrategy[scaladsl.Source[T], T] = Concat[T]()
 
-  private[akka] case class Concat[T]() extends FlattenStrategy[scaladsl.Source[T], T]
+  private[akka] final case class Concat[T]() extends FlattenStrategy[scaladsl.Source[T], T]
 }

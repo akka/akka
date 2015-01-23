@@ -20,6 +20,7 @@ import akka.stream.scaladsl.StreamTcp
 import akka.util.ByteString
 import org.reactivestreams.Processor
 import org.reactivestreams.Subscriber
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -28,29 +29,34 @@ private[akka] object StreamTcpManager {
   /**
    * INTERNAL API
    */
-  private[akka] case class Connect(processorPromise: Promise[Processor[ByteString, ByteString]],
-                                   localAddressPromise: Promise[InetSocketAddress],
-                                   remoteAddress: InetSocketAddress,
-                                   localAddress: Option[InetSocketAddress],
-                                   options: immutable.Traversable[SocketOption],
-                                   connectTimeout: Duration,
-                                   idleTimeout: Duration)
+  private[akka] final case class Connect(
+    processorPromise: Promise[Processor[ByteString, ByteString]],
+    localAddressPromise: Promise[InetSocketAddress],
+    remoteAddress: InetSocketAddress,
+    localAddress: Option[InetSocketAddress],
+    options: immutable.Traversable[SocketOption],
+    connectTimeout: Duration,
+    idleTimeout: Duration)
+    extends DeadLetterSuppression
 
   /**
    * INTERNAL API
    */
-  private[akka] case class Bind(localAddressPromise: Promise[InetSocketAddress],
-                                unbindPromise: Promise[() ⇒ Future[Unit]],
-                                flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
-                                endpoint: InetSocketAddress,
-                                backlog: Int,
-                                options: immutable.Traversable[SocketOption],
-                                idleTimeout: Duration)
+  private[akka] final case class Bind(
+    localAddressPromise: Promise[InetSocketAddress],
+    unbindPromise: Promise[() ⇒ Future[Unit]],
+    flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
+    endpoint: InetSocketAddress,
+    backlog: Int,
+    options: immutable.Traversable[SocketOption],
+    idleTimeout: Duration)
+    extends DeadLetterSuppression
 
   /**
    * INTERNAL API
    */
-  private[akka] case class ExposedProcessor(processor: Processor[ByteString, ByteString])
+  private[akka] final case class ExposedProcessor(processor: Processor[ByteString, ByteString])
+    extends DeadLetterSuppression
 
 }
 

@@ -4,15 +4,15 @@
 package akka.stream
 
 import akka.actor.{ ActorContext, Cancellable }
-
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
+import akka.actor.DeadLetterSuppression
 
 /**
  * Transformer with support for scheduling keyed (named) timer events.
  */
 // TODO: TimerTransformer is meant to be replaced; See https://github.com/akka/akka/issues/16410
-@deprecated("TimerTransformer is meant to be replaced; See https://github.com/akka/akka/issues/16410")
+@deprecated("TimerTransformer is meant to be replaced; See https://github.com/akka/akka/issues/16410", "1.0-M1")
 private[akka] abstract class TimerTransformer[-T, +U] extends TransformerLike[T, U] {
   import TimerTransformer._
   private val timers = mutable.Map[Any, Timer]()
@@ -118,14 +118,14 @@ private[akka] abstract class TimerTransformer[-T, +U] extends TransformerLike[T,
  * INTERNAL API
  */
 private object TimerTransformer {
-  case class Scheduled(timerKey: Any, timerId: Int, repeating: Boolean)
+  final case class Scheduled(timerKey: Any, timerId: Int, repeating: Boolean) extends DeadLetterSuppression
 
   sealed trait Queued
-  case class QueuedSchedule(timerKey: Any, interval: FiniteDuration) extends Queued
-  case class QueuedScheduleOnce(timerKey: Any, delay: FiniteDuration) extends Queued
-  case class QueuedCancelTimer(timerKey: Any) extends Queued
+  final case class QueuedSchedule(timerKey: Any, interval: FiniteDuration) extends Queued
+  final case class QueuedScheduleOnce(timerKey: Any, delay: FiniteDuration) extends Queued
+  final case class QueuedCancelTimer(timerKey: Any) extends Queued
 
-  case class Timer(id: Int, task: Cancellable)
+  final case class Timer(id: Int, task: Cancellable)
 
 }
 

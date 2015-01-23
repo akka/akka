@@ -66,7 +66,7 @@ trait Key[M] extends KeyedMaterializable[M] {
   def materialize(map: MaterializedMap): MaterializedType
 }
 
-private[stream] case class MaterializedMapImpl(map: Map[AnyRef, Any]) extends MaterializedMap {
+private[stream] final case class MaterializedMapImpl(map: Map[AnyRef, Any]) extends MaterializedMap {
   private def failure(key: KeyedMaterializable[_]) = {
     val keyType = key match {
       case _: KeyedSource[_, _] ⇒ "Source"

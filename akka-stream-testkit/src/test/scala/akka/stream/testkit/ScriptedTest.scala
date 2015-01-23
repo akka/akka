@@ -37,7 +37,7 @@ trait ScriptedTest extends Matchers {
     }
   }
 
-  case class Script[In, Out](
+  final case class Script[In, Out](
     providedInputs: Vector[In],
     expectedOutputs: Vector[Out],
     jumps: Vector[Int],
@@ -129,7 +129,7 @@ trait ScriptedTest extends Matchers {
         case _ ⇒ false // Ignore
       }
       val d = downstream.probe.receiveWhile(1.milliseconds) {
-        case OnNext(elem: Out) ⇒
+        case OnNext(elem: Out @unchecked) ⇒
           debugLog(s"operation produces [$elem]")
           if (outstandingDemand == 0) fail("operation produced while there was no demand")
           outstandingDemand -= 1

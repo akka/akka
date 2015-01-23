@@ -14,6 +14,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.UntypedActor
+import akka.actor.DeadLetterSuppression
 
 object ActorSubscriber {
 
@@ -26,15 +27,16 @@ object ActorSubscriber {
   /**
    * INTERNAL API
    */
-  @SerialVersionUID(1L) private[akka] case class OnSubscribe(subscription: Subscription)
+  @SerialVersionUID(1L) private[akka] final case class OnSubscribe(subscription: Subscription)
+    extends DeadLetterSuppression
 
 }
 
-sealed abstract class ActorSubscriberMessage
+sealed abstract class ActorSubscriberMessage extends DeadLetterSuppression
 
 object ActorSubscriberMessage {
-  @SerialVersionUID(1L) case class OnNext(element: Any) extends ActorSubscriberMessage
-  @SerialVersionUID(1L) case class OnError(cause: Throwable) extends ActorSubscriberMessage
+  @SerialVersionUID(1L) final case class OnNext(element: Any) extends ActorSubscriberMessage
+  @SerialVersionUID(1L) final case class OnError(cause: Throwable) extends ActorSubscriberMessage
   @SerialVersionUID(1L) case object OnComplete extends ActorSubscriberMessage
 
   /**
@@ -98,7 +100,7 @@ object WatermarkRequestStrategy {
  * Requests up to the `highWatermark` when the `remainingRequested` is
  * below the `lowWatermark`. This a good strategy when the actor performs work itself.
  */
-case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) extends RequestStrategy {
+final case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) extends RequestStrategy {
 
   /**
    * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
@@ -213,7 +215,7 @@ trait ActorSubscriber extends Actor {
    */
   protected[akka] override def aroundPostRestart(reason: Throwable): Unit = {
     state.get(self) foreach { s ⇒
-      // restore previous state 
+      // restore previous state
       subscription = s.subscription
       requested = s.requested
       canceled = s.canceled
@@ -290,7 +292,7 @@ private[akka] object ActorSubscriberState extends ExtensionId[ActorSubscriberSta
   override def createExtension(system: ExtendedActorSystem): ActorSubscriberState =
     new ActorSubscriberState
 
-  case class State(subscription: Option[Subscription], requested: Long, canceled: Boolean)
+  final case class State(subscription: Option[Subscription], requested: Long, canceled: Boolean)
 
 }
 
