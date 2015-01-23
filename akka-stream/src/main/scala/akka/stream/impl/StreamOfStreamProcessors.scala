@@ -6,22 +6,22 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorLogging
 import akka.actor.Cancellable
-
 import akka.actor.{ Actor, ActorRef }
 import akka.stream.MaterializerSettings
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
  */
 private[akka] object MultiStreamOutputProcessor {
-  case class SubstreamKey(id: Long)
-  case class SubstreamRequestMore(substream: SubstreamKey, demand: Long)
-  case class SubstreamCancel(substream: SubstreamKey)
-  case class SubstreamSubscribe(substream: SubstreamKey, subscriber: Subscriber[Any])
-  case class SubstreamSubscriptionTimeout(substream: SubstreamKey)
+  final case class SubstreamKey(id: Long)
+  final case class SubstreamRequestMore(substream: SubstreamKey, demand: Long) extends DeadLetterSuppression
+  final case class SubstreamCancel(substream: SubstreamKey) extends DeadLetterSuppression
+  final case class SubstreamSubscribe(substream: SubstreamKey, subscriber: Subscriber[Any]) extends DeadLetterSuppression
+  final case class SubstreamSubscriptionTimeout(substream: SubstreamKey) extends DeadLetterSuppression
 
   class SubstreamSubscription(val parent: ActorRef, val substreamKey: SubstreamKey) extends Subscription {
     override def request(elements: Long): Unit = parent ! SubstreamRequestMore(substreamKey, elements)
@@ -191,7 +191,7 @@ private[akka] abstract class MultiStreamOutputProcessor(_settings: MaterializerS
     super.pumpFinished()
   }
 
-  override def activeReceive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse outputSubstreamManagement
+  override def activeReceive: Receive = primaryInputs.subreceive orElse primaryOutputs.subreceive orElse outputSubstreamManagement
 }
 
 /**
@@ -205,10 +205,10 @@ private[akka] object TwoStreamInputProcessor {
     override def onSubscribe(subscription: Subscription): Unit = impl ! OtherStreamOnSubscribe(subscription)
   }
 
-  case object OtherStreamOnComplete
-  case class OtherStreamOnNext(element: Any)
-  case class OtherStreamOnSubscribe(subscription: Subscription)
-  case class OtherStreamOnError(ex: Throwable)
+  case object OtherStreamOnComplete extends DeadLetterSuppression
+  final case class OtherStreamOnNext(element: Any) extends DeadLetterSuppression
+  final case class OtherStreamOnSubscribe(subscription: Subscription) extends DeadLetterSuppression
+  final case class OtherStreamOnError(ex: Throwable) extends DeadLetterSuppression
 }
 
 /**

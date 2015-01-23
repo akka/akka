@@ -40,7 +40,7 @@ private[scaladsl] object GraphFlow {
   }
 }
 
-private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
+private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
   inPipe: Pipe[In, CIn],
   in: UndefinedSource[CIn],
   graph: PartialFlowGraph,
@@ -125,7 +125,7 @@ private[scaladsl] case class GraphFlow[-In, CIn, COut, +Out](
   def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
-private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Source[Out] {
+private[scaladsl] final case class GraphSource[COut, +Out](graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Source[Out] {
   override type Repr[+O] = GraphSource[COut, O]
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): UndefinedSink[COut] = {
@@ -173,7 +173,7 @@ private[scaladsl] case class GraphSource[COut, +Out](graph: PartialFlowGraph, ou
   def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
-private[scaladsl] case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph) extends Sink[In] {
+private[scaladsl] final case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph) extends Sink[In] {
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): UndefinedSource[CIn] = {
     val nIn = UndefinedSource[CIn]

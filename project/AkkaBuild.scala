@@ -1502,7 +1502,7 @@ object Dependencies {
 
     val reactiveStreamsVersion = System.getProperty("akka.build.reactiveStreamsVersion", "1.0.0.RC1")
 
-    val publishedAkkaVersion = "2.3.7"
+    val publishedAkkaVersion = "2.3.9"
   }
 
   object Compile {
