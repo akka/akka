@@ -342,7 +342,7 @@ the first case and ``LoggerFactory.getLogger(s: String)`` in the second).
   val log = Logging(system.eventStream, "my.nice.string")
 
 Logging Thread, Akka Source and Actor System in MDC
--------------------------------------
+---------------------------------------------------
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
 Mapped Diagnostic Context (MDC) with attribute name ``sourceThread``.
@@ -385,7 +385,7 @@ For more details on what this attribute contains—also for non-actors—please 
 
 
 More accurate timestamps for log output in MDC
-------------------------------------------------
+----------------------------------------------
 
 Akka's logging is asynchronous which means that the timestamp of a log entry is taken from
 when the underlying logger implementation is called, which can be surprising at first.
