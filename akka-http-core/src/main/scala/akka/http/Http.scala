@@ -32,7 +32,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
     val effectiveSettings = ServerSettings(settings)
     val tcpBinding = StreamTcp().bind(endpoint, backlog, options, effectiveSettings.timeouts.idleTimeout)
     new ServerBinding {
-      def localAddress(mm: MaterializedMap) = tcpBinding.localAddress(mm)
+      def localAddress(mm: MaterializedMap): Future[InetSocketAddress] = tcpBinding.localAddress(mm)
       val connections = tcpBinding.connections map { tcpConn ⇒
         new IncomingConnection {
           def localAddress = tcpConn.localAddress

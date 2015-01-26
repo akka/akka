@@ -89,7 +89,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
       case f: CommandFailed ⇒
         val ex = BindFailedException
         localAddressPromise.failure(ex)
-        unbindPromise.failure(ex)
+        unbindPromise.success(() ⇒ Future.successful(()))
         try tryOnError(flowSubscriber, ex)
         finally fail(ex)
     }
@@ -100,7 +100,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
         pump()
       case f: CommandFailed ⇒
         val ex = new ConnectionException(s"Command [${f.cmd}] failed")
-        unbindPromise.tryFailure(ex)
+        if (f.cmd.isInstanceOf[Unbind.type]) unboundPromise.tryFailure(BindFailedException)
         fail(ex)
       case Unbind ⇒
         if (!closed && listener != null) listener ! Unbind

@@ -3,11 +3,13 @@
  */
 package akka.stream.io
 
+import akka.stream.BindFailedException
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.util.ByteString
 import akka.stream.scaladsl.Flow
-import akka.stream.testkit.AkkaSpec
+import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 import akka.stream.scaladsl._
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
@@ -231,6 +233,45 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       Await.result(resultFuture, 5.seconds) should be(expectedOutput)
       Await.result(binding.unbind(echoServerMM), 3.seconds)
       Await.result(echoServerFinish, 1.second)
+    }
+
+    "bind and unbind correctly" in {
+      val address = temporaryServerAddress()
+      val binding = StreamTcp(system).bind(address)
+      val probe1 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val mm1 = binding.connections.to(Sink(probe1)).run()
+      probe1.expectSubscription()
+
+      // Bind succeeded, we have a local address
+      Await.result(binding.localAddress(mm1), 1.second)
+
+      val probe2 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val mm2 = binding.connections.to(Sink(probe2)).run()
+      probe2.expectErrorOrSubscriptionFollowedByError(BindFailedException)
+
+      val probe3 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val mm3 = binding.connections.to(Sink(probe3)).run()
+      probe3.expectErrorOrSubscriptionFollowedByError()
+
+      // The unbind should NOT fail even though the bind failed.
+      Await.result(binding.unbind(mm2), 1.second)
+      Await.result(binding.unbind(mm3), 1.second)
+
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.localAddress(mm2), 1.second) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.localAddress(mm3), 1.second) }
+
+      // Now unbind first
+      Await.result(binding.unbind(mm1), 1.second)
+      probe1.expectComplete()
+
+      val probe4 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
+      val mm4 = binding.connections.to(Sink(probe4)).run()
+      probe4.expectSubscription()
+
+      // Bind succeeded, we have a local address
+      Await.result(binding.localAddress(mm4), 1.second)
+      // clean up
+      Await.result(binding.unbind(mm4), 1.second)
     }
 
   }
