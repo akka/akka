@@ -10,6 +10,7 @@ import akka.stream.impl.Ast
 import akka.stream.impl.Ast.FanInAstNode
 import akka.stream.impl.{ DirectedGraphBuilder, Edge }
 import akka.stream.impl.Ast.Defaults._
+import akka.stream.scaladsl.FlowGraphInternal.InternalVertex
 import akka.stream.scaladsl.OperationAttributes._
 import org.reactivestreams._
 
@@ -1300,6 +1301,16 @@ object PartialFlowGraph {
   def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
     apply(new FlowGraphBuilder(partialFlowGraph))(block)
 
+  def apply(p: Ports, requireAllPorts: Boolean = true)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
+    val partial = apply(block)
+    
+    // TODO: validation could point out which ones are not connected here
+    // TODO: We could also have "OptionalInput", have not thought that one through yet though
+    if (requireAllPorts)
+      require(p.allPorts.forall(partial.graph.contains(_)), s"PartialFlowGraph using $p must contain all ports contained within this Ports object")
+    partial
+  }
+
   private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
     // FlowGraphBuilder does a full import on the passed graph, so no defensive copy needed
     block(builder)
@@ -1487,4 +1498,41 @@ object FlowGraphImplicits {
     def ~>(sink: Sink[Out]): Unit =
       builder.addEdge(source, flow, sink)
   }
+}
+
+trait Ports {
+  private var inputs: List[UndefinedSource[_]] = Nil
+  private var outputs: List[UndefinedSink[_]] = Nil
+
+  // TODO draft - could simply be also defined on Undefined elements
+  implicit class DefinableSink[T](undefined: UndefinedSink[T]) {
+    def apply(s: Sink[T])(implicit builder: FlowGraphBuilder) = builder.attachSink(undefined, s) // TODO `apply` or `attach`?
+  }
+  // TODO draft - could simply be also defined on Undefined elements
+  implicit class DefinableSource[T](undefined: UndefinedSource[T]) {
+    def apply(s: Source[T])(implicit builder: FlowGraphBuilder) = builder.attachSource(undefined, s) // TODO `apply` or `attach`?
+  }
+
+  // TODO: input / output words match "Ports" nicely, but maybe keeping undefinedSource adds "less words"?
+  protected def Input[T]: UndefinedSource[T] = {
+    val port = UndefinedSource[T]
+    inputs = port :: inputs
+    port
+  }
+
+  protected def Output[T]: UndefinedSink[T] = {
+    val port = UndefinedSink[T]
+    outputs = port :: outputs
+    port
+  }
+
+  // TODO probably "nope."
+  def connect(g: PartialFlowGraph): FlowGraph = {
+    FlowGraph(g) { b ⇒
+      ???
+    }
+  }
+
+  // for validating all were connected, in case we want to make sure (I'd say most common case?)
+  private[stream] def allPorts: List[InternalVertex] = inputs ::: outputs
 }
