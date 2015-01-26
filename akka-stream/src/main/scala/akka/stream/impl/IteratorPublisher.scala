@@ -27,7 +27,7 @@ private[akka] object IteratorPublisher {
   private case object Initialized extends State
   private case object Cancelled extends StopState
   private case object Completed extends StopState
-  private case class Errored(cause: Throwable) extends StopState
+  private final case class Errored(cause: Throwable) extends StopState
 }
 
 /**
