@@ -12,12 +12,11 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.StreamTcp
+import akka.stream.scaladsl._
 import akka.stream.BindFailedException
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
-import akka.stream.scaladsl._
 import akka.http.engine.client.ClientConnectionSettings
 import akka.http.engine.server.ServerSettings
 import akka.http.model._
@@ -42,27 +41,52 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val (hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      binding.connections.runWith(Sink(probe))
-      val sub = probe.expectSubscription() // if we get it we are bound
+      val mm = binding.connections.to(Sink(probe)).run()
+      val sub = probe.expectSubscription()
+      // if the future finishes successfully, we are bound
+      val address = Await.result(binding.localAddress(mm), 1.second)
       sub.cancel()
     }
 
-    "report failure if bind fails" in pendingUntilFixed { // FIXME: "unpend"!
+    "report failure if bind fails" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       val mm1 = binding.connections.to(Sink(probe1)).run()
       probe1.expectSubscription()
 
-      val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      binding.connections.runWith(Sink(probe2))
-      probe2.expectError(BindFailedException)
+      // Bind succeeded, we have a local address
+      Await.result(binding.localAddress(mm1), 1.second)
 
-      Await.result(binding.unbind(mm1), 1.second)
+      val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+      val mm2 = binding.connections.to(Sink(probe2)).run()
+      probe2.expectErrorOrSubscriptionFollowedByError()
+
       val probe3 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       val mm3 = binding.connections.to(Sink(probe3)).run()
-      probe3.expectSubscription() // we bound a second time, which means the previous unbind was successful
+      probe3.expectErrorOrSubscriptionFollowedByError()
+
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.localAddress(mm2), 1.second) }
+      an[BindFailedException] shouldBe thrownBy { Await.result(binding.localAddress(mm3), 1.second) }
+
+      // The unbind should NOT fail even though the bind failed.
+      Await.result(binding.unbind(mm2), 1.second)
       Await.result(binding.unbind(mm3), 1.second)
+
+      // Now unbind the first
+      Await.result(binding.unbind(mm1), 1.second)
+      probe1.expectComplete()
+
+      if (!akka.util.Helpers.isWindows) {
+        val probe4 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
+        val mm4 = binding.connections.to(Sink(probe4)).run()
+        probe4.expectSubscription()
+
+        // Bind succeeded, we have a local address
+        Await.result(binding.localAddress(mm4), 1.second)
+        // clean up
+        Await.result(binding.unbind(mm4), 1.second)
+      }
     }
 
     "properly complete a simple request/response cycle" in new TestSetup {
