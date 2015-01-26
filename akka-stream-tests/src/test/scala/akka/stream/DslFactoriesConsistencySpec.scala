@@ -22,6 +22,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
     ("apply" → "create") ::
       ("apply" → "of") ::
       ("apply" → "from") ::
+      ("apply" -> "fromGraph") ::
       Nil
 
   // format: OFF
@@ -88,8 +89,18 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
 
   // here be dragons...
 
-  private def getJMethods(jClass: Class[_]): Array[Method] = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName)
-  private def getSMethods(sClass: Class[_]): Array[Method] = sClass.getMethods.filterNot(scalaIgnore contains _.getName)
+  private def getJMethods(jClass: Class[_]): Array[Method] = jClass.getDeclaredMethods.filterNot(javaIgnore contains _.getName).filter(include)
+  private def getSMethods(sClass: Class[_]): Array[Method] = sClass.getMethods.filterNot(scalaIgnore contains _.getName).filter(include)
+
+  private def include(m: Method): Boolean = {
+    if (m.getDeclaringClass == akka.stream.scaladsl.Source.getClass
+      && m.getName == "apply"
+      && m.getParameterTypes.length == 1
+      && m.getParameterTypes()(0) == classOf[scala.Function1[akka.stream.scaladsl.FlowGraphBuilder, akka.stream.scaladsl.UndefinedSink[_]]])
+      false // conflict between two Source.apply(Function1)
+    else
+      true
+  }
 
   def runSpec(sClass: Class[_], jClass: Class[_]) {
     val jMethods = getJMethods(jClass)
