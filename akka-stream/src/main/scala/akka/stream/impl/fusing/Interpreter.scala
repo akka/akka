@@ -185,6 +185,15 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     table
   }
 
+  private def updateJumpBacks(lastNonCompletedIndex: Int): Unit = {
+    var pos = lastNonCompletedIndex
+    // For every jump that would jump over us we change them to jump into us
+    while (jumpBacks(pos) < lastNonCompletedIndex && pos < pipeline.length) {
+      jumpBacks(pos) = lastNonCompletedIndex
+      pos += 1
+    }
+  }
+
   private sealed trait State extends DetachedContext[Any] with BoundaryContext {
     final def progress(): Unit = {
       advance()
@@ -264,6 +273,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     }
 
     override def absorbTermination(): TerminationDirective = {
+      updateJumpBacks(activeOpIndex)
       currentOp.holding = false
       finish()
     }
@@ -330,7 +340,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def absorbTermination(): TerminationDirective = {
       currentOp.terminationPending = true
       currentOp.holding = false
-      // FIXME: This state is potentially corrupted by the jumpBackTable (not updated when jumping over)
+      updateJumpBacks(activeOpIndex)
       if (currentOp.allowedToPush) currentOp.onPull(ctx = Pulling)
       else exit()
       null
@@ -367,6 +377,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def absorbTermination(): TerminationDirective = {
       currentOp.terminationPending = true
       currentOp.holding = false
+      updateJumpBacks(activeOpIndex)
       if (currentOp.allowedToPush) currentOp.onPull(ctx = Pulling)
       else exit()
       null
