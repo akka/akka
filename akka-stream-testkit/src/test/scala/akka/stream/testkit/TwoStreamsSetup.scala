@@ -14,9 +14,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   implicit val materializer = FlowMaterializer(settings)
 
-  case class TE(message: String) extends RuntimeException(message) with NoStackTrace
-
-  val TestException = TE("test")
+  val TestException = new RuntimeException("test") with NoStackTrace
 
   type Outputs
 
