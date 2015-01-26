@@ -15,7 +15,7 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
   implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
     Unmarshaller {
       case HttpEntity.Strict(_, data) ⇒ FastFuture.successful(data)
-      case entity                     ⇒ entity.dataBytes.fold(ByteString.empty)(_ ++ _)
+      case entity                     ⇒ entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
     }
 
   implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,

@@ -270,7 +270,7 @@ private[http] object StreamUtils {
  */
 private[http] class EnhancedByteStringSource(val byteStringStream: Source[ByteString]) extends AnyVal {
   def join(implicit materializer: FlowMaterializer): Future[ByteString] =
-    byteStringStream.fold(ByteString.empty)(_ ++ _)
+    byteStringStream.runFold(ByteString.empty)(_ ++ _)
   def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
 }

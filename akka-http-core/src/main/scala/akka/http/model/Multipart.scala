@@ -58,7 +58,7 @@ object Multipart {
 
   private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP])(f: BP ⇒ Future[BPS])(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Vector[BPS]] =
     // TODO: move to Vector `:+` when https://issues.scala-lang.org/browse/SI-8930 is fixed
-    parts.fold(new VectorBuilder[Future[BPS]]) {
+    parts.runFold(new VectorBuilder[Future[BPS]]) {
       case (builder, part) ⇒ builder += f(part)
     }.fast.flatMap(builder ⇒ FastFuture.sequence(builder.result()))
 
