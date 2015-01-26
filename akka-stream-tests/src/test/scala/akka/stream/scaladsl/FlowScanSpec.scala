@@ -23,7 +23,7 @@ class FlowScanSpec extends AkkaSpec {
   "A Scan" must {
 
     def scan(s: Source[Int], duration: Duration = 5.seconds): immutable.Seq[Int] =
-      Await.result(s.scan(0)(_ + _).fold(immutable.Seq.empty[Int])(_ :+ _), duration)
+      Await.result(s.scan(0)(_ + _).runFold(immutable.Seq.empty[Int])(_ :+ _), duration)
 
     "Scan" in {
       val v = Vector.fill(random.nextInt(100, 1000))(random.nextInt())

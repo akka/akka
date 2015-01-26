@@ -29,7 +29,7 @@ class PublisherSinkSpec extends AkkaSpec {
       }.run()
 
       Seq(p1, p2) map { sink ⇒
-        Source(m.get(sink)).map(identity).fold(0)(_ + _)
+        Source(m.get(sink)).map(identity).runFold(0)(_ + _)
       } zip Seq(30, 15) foreach {
         case (future, result) ⇒ whenReady(future)(_ shouldBe result)
       }
