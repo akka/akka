@@ -65,7 +65,7 @@ public class FlowTest extends StreamTest {
           }
         });
 
-    ints.via(flow1.via(flow2)).fold("", new Function2<String, String, String>() {
+    ints.via(flow1.via(flow2)).runFold("", new Function2<String, String, String>() {
           public String apply(String acc, String elem) {
             return acc + elem;
           }
@@ -116,7 +116,7 @@ public class FlowTest extends StreamTest {
         };
       }
     });
-    Source.from(input).via(flow).foreach(new Procedure<Integer>() {
+    Source.from(input).via(flow).runForeach(new Procedure<Integer>() {
       public void apply(Integer elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -142,10 +142,10 @@ public class FlowTest extends StreamTest {
         return elem.substring(0, 1);
       }
     });
-    Source.from(input).via(slsFlow).foreach(new Procedure<Pair<String, Source<String>>>() {
+    Source.from(input).via(slsFlow).runForeach(new Procedure<Pair<String, Source<String>>>() {
       @Override
       public void apply(final Pair<String, Source<String>> pair) throws Exception {
-        pair.second().foreach(new Procedure<String>() {
+        pair.second().runForeach(new Procedure<String>() {
           @Override
           public void apply(String elem) throws Exception {
             probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
@@ -179,7 +179,7 @@ public class FlowTest extends StreamTest {
         return elem.equals(".");
       }
     });
-    Source.from(input).via(flow).foreach(new Procedure<Source<String>>() {
+    Source.from(input).via(flow).runForeach(new Procedure<Source<String>>() {
       @Override
       public void apply(Source<String> subStream) throws Exception {
         subStream.filter(new Predicate<String>() {
@@ -187,7 +187,7 @@ public class FlowTest extends StreamTest {
           public boolean test(String elem) {
             return !elem.equals(".");
           }
-        }).grouped(10).foreach(new Procedure<List<String>>() {
+        }).grouped(10).runForeach(new Procedure<List<String>>() {
           @Override
           public void apply(List<String> chunk) throws Exception {
             probe.getRef().tell(chunk, ActorRef.noSender());
@@ -342,7 +342,7 @@ public class FlowTest extends StreamTest {
     final Source<String> in1 = Source.from(input1);
     final Source<String> in2 = Source.from(input2);
     final Flow<String, String> flow = Flow.of(String.class);
-    in1.via(flow.concat(in2)).foreach(new Procedure<String>() {
+    in1.via(flow.concat(in2)).runForeach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -413,7 +413,7 @@ public class FlowTest extends StreamTest {
         return aggr + in;
       }
     });
-    Future <String> future = Source.from(input).via(flow).fold("", new Function2<String, String, String>() {
+    Future <String> future = Source.from(input).via(flow).runFold("", new Function2<String, String, String>() {
       @Override
       public String apply(String aggr, String in) throws Exception {
         return aggr + in;
@@ -454,7 +454,7 @@ public class FlowTest extends StreamTest {
         return Futures.successful(elem.toUpperCase());
       }
     });
-    Source.from(input).via(flow).foreach(new Procedure<String>() {
+    Source.from(input).via(flow).runForeach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }

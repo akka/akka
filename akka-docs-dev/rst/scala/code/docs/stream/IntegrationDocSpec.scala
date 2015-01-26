@@ -307,7 +307,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
       .mapAsync(service.convert)
-      .foreach(elem => println(s"after: $elem"))
+      .runForeach(elem => println(s"after: $elem"))
     //#sometimes-slow-mapAsync
 
     probe.expectMsg("after: A")
@@ -339,7 +339,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
       .mapAsyncUnordered(service.convert)
-      .foreach(elem => println(s"after: $elem"))
+      .runForeach(elem => println(s"after: $elem"))
     //#sometimes-slow-mapAsyncUnordered
 
     probe.receiveN(10).toSet should be(Set(

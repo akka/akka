@@ -92,7 +92,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#authors-foreachsink-println
 
     //#authors-foreach-println
-    authors.foreach(println)
+    authors.runForeach(println)
     //#authors-foreach-println
   }
 
@@ -149,7 +149,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       val completion: Future[Unit] =
         Source(1 to 10)
           .map(i => { println(s"map => $i"); i })
-          .foreach { i => readLine(s"Element = $i; continue reading? [press enter]\n") }
+          .runForeach { i => readLine(s"Element = $i; continue reading? [press enter]\n") }
 
       Await.ready(completion, 1.minute)
       //#backpressure-by-readline
