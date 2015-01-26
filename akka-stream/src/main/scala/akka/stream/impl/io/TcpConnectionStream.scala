@@ -7,13 +7,12 @@ import java.net.InetSocketAddress
 import akka.io.{ IO, Tcp }
 import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
-import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef, Status }
+import akka.actor._
 import akka.util.ByteString
 import akka.io.Tcp._
 import akka.stream.MaterializerSettings
 import akka.stream.StreamTcpException
 import org.reactivestreams.Processor
-import akka.actor.Stash
 import akka.stream.impl._
 
 /**
@@ -64,21 +63,8 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     def handleRead: Receive = {
       case Received(data) ⇒
         pendingElement = data
-        readPump.pump()
-      case Closed ⇒
-        closed = true
-        tcpOutputs.complete()
-        writePump.pump()
-        readPump.pump()
-      case ConfirmedClosed ⇒
-        closed = true
-        readPump.pump()
-      case PeerClosed ⇒
-        closed = true
-        readPump.pump()
-      case ErrorClosed(cause) ⇒ fail(new StreamTcpException(s"The connection closed with error $cause"))
-      case CommandFailed(cmd) ⇒ fail(new StreamTcpException(s"Tcp command [$cmd] failed"))
-      case Aborted            ⇒ fail(new StreamTcpException("The connection has been aborted"))
+        if (closed) connection ! ResumeReading
+        else readPump.pump()
     }
 
     override def inputsAvailable: Boolean = pendingElement ne null
@@ -86,8 +72,17 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     override def isClosed: Boolean = closed
 
     override def cancel(): Unit = {
-      closed = true
-      pendingElement = null
+      if (!closed) {
+        closed = true
+        pendingElement = null
+        if (tcpOutputs.isClosed && (connection ne null))
+          // FIXME: https://github.com/akka/akka/issues/16723
+          // This close is ignored by the TCP actor in the state after ConfirmClose
+          // We can only send Abort here, but that results in RST packets
+          connection ! Close
+        else
+          connection ! ResumeReading
+      }
     }
 
     override def dequeueInputElement(): Any = {
@@ -104,6 +99,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     private var pendingDemand = true
     private var connection: ActorRef = _
 
+    def isClosed: Boolean = closed
     private def initialized: Boolean = connection ne null
 
     def setConnection(c: ActorRef): Unit = {
@@ -121,14 +117,19 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
 
     }
 
-    override def isClosed: Boolean = closed
     override def cancel(e: Throwable): Unit = {
       if (!closed && initialized) connection ! Abort
       closed = true
     }
     override def complete(): Unit = {
-      if (!closed && initialized) connection ! ConfirmedClose
-      closed = true
+      if (!closed && initialized) {
+        closed = true
+        if (tcpInputs.isClosed)
+          connection ! Close
+        else
+          connection ! ConfirmedClose
+
+      }
     }
     override def enqueueOutputElement(elem: Any): Unit = {
       connection ! Write(elem.asInstanceOf[ByteString], WriteAck)
@@ -148,6 +149,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
 
     override protected def pumpFinished(): Unit = {
       tcpOutputs.complete()
+      primaryInputs.cancel()
       tryShutdown()
     }
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
@@ -177,7 +179,29 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
   }
 
   def activeReceive =
-    primaryInputs.subreceive orElse primaryOutputs.subreceive orElse tcpInputs.subreceive orElse tcpOutputs.subreceive
+    primaryInputs.subreceive orElse
+      primaryOutputs.subreceive orElse
+      tcpInputs.subreceive orElse
+      tcpOutputs.subreceive orElse
+      closeHandling
+
+  def closeHandling: Receive = {
+    case Closed ⇒
+      tcpInputs.cancel()
+      tcpOutputs.complete()
+      writePump.pump()
+      readPump.pump()
+    case ConfirmedClosed ⇒
+      tcpInputs.cancel()
+      readPump.pump()
+    case PeerClosed ⇒
+      tcpInputs.cancel()
+      primaryOutputs.complete()
+      readPump.pump()
+    case ErrorClosed(cause) ⇒ fail(new StreamTcpException(s"The connection closed with error $cause"))
+    case CommandFailed(cmd) ⇒ fail(new StreamTcpException(s"Tcp command [$cmd] failed"))
+    case Aborted            ⇒ fail(new StreamTcpException("The connection has been aborted"))
+  }
 
   readPump.nextPhase(readPump.running)
   writePump.nextPhase(writePump.running)
@@ -189,8 +213,18 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
     primaryOutputs.cancel(e)
   }
 
-  def tryShutdown(): Unit = if (primaryInputs.isClosed && tcpInputs.isClosed && tcpOutputs.isClosed) context.stop(self)
+  def tryShutdown(): Unit =
+    if (primaryInputs.isClosed && tcpInputs.isClosed && tcpOutputs.isClosed)
+      context.stop(self)
 
+  override def postStop(): Unit = {
+    // Close if it has not yet been done
+    tcpInputs.cancel()
+    tcpOutputs.complete()
+    primaryInputs.cancel()
+    primaryOutputs.complete()
+    super.postStop() // Remember, we have a Stash
+  }
 }
 
 /**

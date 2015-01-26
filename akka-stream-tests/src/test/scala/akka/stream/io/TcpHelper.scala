@@ -4,6 +4,7 @@
 package akka.stream.io
 
 import akka.actor.{ Actor, ActorRef, Props }
+import akka.io.Tcp.{ ResumeReading, Register, ConnectionClosed, Closed }
 import akka.io.{ IO, Tcp }
 import akka.stream.testkit.StreamTestKit
 import akka.stream.{ FlowMaterializer, MaterializerSettings }
@@ -17,6 +18,11 @@ object TcpHelper {
   case class ClientWrite(bytes: ByteString)
   case class ClientRead(count: Int, readTo: ActorRef)
   case class ClientClose(cmd: Tcp.CloseCommand)
+
+  // FIXME: Workaround object just to force a ResumeReading that will poll for a possibly pending close event
+  // See https://github.com/akka/akka/issues/16552
+  // remove this and corresponding code path once above is fixed
+  case class PingClose(requester: ActorRef)
 
   case object WriteAck extends Tcp.Event
 
@@ -66,7 +72,11 @@ object TcpHelper {
           toRead = 0
           readTo = context.system.deadLetters
         } else connection ! Tcp.ResumeReading
-
+      case PingClose(requester) ⇒
+        readTo = requester
+        connection ! ResumeReading
+      case c: ConnectionClosed ⇒
+        readTo ! c
       case ClientClose(cmd) ⇒
         if (!writePending) connection ! cmd
         else closeAfterWrite = Some(cmd)
@@ -118,6 +128,7 @@ trait TcpHelper { this: TestKitBase ⇒
 
   class ServerConnection(val connectionActor: ActorRef) {
     val connectionProbe = TestProbe()
+
     def write(bytes: ByteString): Unit = connectionActor ! ClientWrite(bytes)
 
     def read(count: Int): Unit = connectionActor ! ClientRead(count, connectionProbe.ref)
@@ -126,6 +137,16 @@ trait TcpHelper { this: TestKitBase ⇒
     def confirmedClose(): Unit = connectionActor ! ClientClose(Tcp.ConfirmedClose)
     def close(): Unit = connectionActor ! ClientClose(Tcp.Close)
     def abort(): Unit = connectionActor ! ClientClose(Tcp.Abort)
+
+    def expectClosed(expected: ConnectionClosed): Unit = expectClosed(_ == expected)
+
+    def expectClosed(p: (ConnectionClosed) ⇒ Boolean): Unit = {
+      connectionActor ! PingClose(connectionProbe.ref)
+      connectionProbe.fishForMessage() {
+        case c: ConnectionClosed if p(c) ⇒ true
+        case other                       ⇒ false
+      }
+    }
   }
 
   class TcpReadProbe() {
