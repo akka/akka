@@ -151,13 +151,13 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
 }
 
 /**
- * Elements are produced from the tick closure periodically with the specified interval.
+ * Elements are emitted periodically with the specified interval.
  * The tick element will be delivered to downstream consumers that has requested any elements.
  * If a consumer has not requested any elements at the point in time when the tick
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Out) extends KeyedActorFlowSource[Out, Cancellable] { // FIXME Why does this have anything to do with Actors?
+final case class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out) extends KeyedActorFlowSource[Out, Cancellable] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorBasedFlowMaterializer, flowName: String) = {
     val (pub, cancellable) = create(materializer, flowName)
     pub.subscribe(flowSubscriber)
