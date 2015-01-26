@@ -16,7 +16,7 @@ import akka.actor.DeadLetterSuppression
  * INTERNAL API
  */
 private[akka] object TickPublisher {
-  def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any,
+  def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
             settings: MaterializerSettings, cancelled: AtomicBoolean): Props =
     Props(new TickPublisher(initialDelay, interval, tick, settings, cancelled)).withDispatcher(settings.dispatcher)
 
@@ -38,11 +38,11 @@ private[akka] object TickPublisher {
 /**
  * INTERNAL API
  *
- * Elements are produced from the tick closure periodically with the specified interval. Supports only one subscriber.
+ * Elements are emitted with the specified interval. Supports only one subscriber.
  * The subscriber will receive the tick element if it has requested any elements,
  * otherwise the tick element is dropped.
  */
-private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: () ⇒ Any,
+private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
                                   settings: MaterializerSettings, cancelled: AtomicBoolean) extends Actor with SoftShutdown {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
@@ -85,10 +85,9 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   def active: Receive = {
     case Tick ⇒
       try {
-        val tickElement = tick() // FIXME should we call this even if we shouldn't send it?
         if (demand > 0) {
           demand -= 1
-          tryOnNext(subscriber, tickElement)
+          tryOnNext(subscriber, tick)
         }
       } catch {
         case NonFatal(e) ⇒ handleError(e)
