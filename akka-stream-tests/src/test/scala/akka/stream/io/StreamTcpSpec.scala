@@ -3,6 +3,8 @@
  */
 package akka.stream.io
 
+import akka.io.Tcp._
+
 import akka.stream.BindFailedException
 
 import scala.concurrent.Await
@@ -70,7 +72,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
     }
 
-    "half close the connection when output stream is closed" in {
+    "work when client closes write, then remote closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
 
@@ -79,58 +81,203 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
+
+      // Close client side write
       tcpWriteProbe.close()
-      // FIXME: expect PeerClosed on server
+      serverConnection.expectClosed(PeerClosed)
+
+      // Server can still write
       serverConnection.write(testData)
       tcpReadProbe.read(5) should be(testData)
+
+      // Close server side write
       serverConnection.confirmedClose()
       tcpReadProbe.subscriberProbe.expectComplete()
+
+      serverConnection.expectClosed(ConfirmedClosed)
+      serverConnection.expectTerminated()
     }
 
-    "stop reading when the input stream is cancelled" in {
-      val server = new Server()
+    "work when remote closes write, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
       Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
-      tcpReadProbe.close()
-      // FIXME: expect PeerClosed on server
+      // Server can still write
       serverConnection.write(testData)
-      tcpReadProbe.subscriberProbe.expectNoMsg(1.second)
-      serverConnection.read(5)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Close server side write
+      serverConnection.confirmedClose()
+      tcpReadProbe.subscriberProbe.expectComplete()
+
+      // Client can still write
       tcpWriteProbe.write(testData)
+      serverConnection.read(5)
       serverConnection.waitRead() should be(testData)
+
+      // Close client side write
       tcpWriteProbe.close()
+      serverConnection.expectClosed(ConfirmedClosed)
+      serverConnection.expectTerminated()
     }
 
-    "keep write side open when remote half-closes" in {
-      val server = new Server()
+    "work when client closes read, then client closes write" in {
       val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
 
       val tcpWriteProbe = new TcpWriteProbe()
       val tcpReadProbe = new TcpReadProbe()
-
       Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
       val serverConnection = server.waitAccept()
 
-      // FIXME: here (and above tests) add a chitChat() method ensuring this works even after prior communication
-      // there should be a chitchat and non-chitchat version
+      // Server can still write
+      serverConnection.write(testData)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Close client side read
+      tcpReadProbe.tcpReadSubscription.cancel()
+
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
+
+      // Close client side write
+      tcpWriteProbe.close()
+
+      // Need a write on the server side to detect the close event
+      serverConnection.write(testData)
+      serverConnection.write(testData)
+      serverConnection.expectClosed(_.isErrorClosed)
+      serverConnection.expectTerminated()
+    }
+
+    "work when client closes write, then client closes read" in {
+      val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
+
+      val tcpWriteProbe = new TcpWriteProbe()
+      val tcpReadProbe = new TcpReadProbe()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      val serverConnection = server.waitAccept()
+
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
+
+      // Close client side write
+      tcpWriteProbe.close()
+      serverConnection.expectClosed(PeerClosed)
+
+      // Server can still write
+      serverConnection.write(testData)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Close client side read
+      tcpReadProbe.tcpReadSubscription.cancel()
+
+      // Need a write on the server side to detect the close event
+      serverConnection.write(testData)
+      serverConnection.write(testData)
+      serverConnection.expectClosed(_.isErrorClosed)
+      serverConnection.expectTerminated()
+    }
+
+    "work when client closes read, then server closes write, then client closes write" in {
+      val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
+
+      val tcpWriteProbe = new TcpWriteProbe()
+      val tcpReadProbe = new TcpReadProbe()
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      val serverConnection = server.waitAccept()
+
+      // Server can still write
+      serverConnection.write(testData)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Close client side read
+      tcpReadProbe.tcpReadSubscription.cancel()
+
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
 
       serverConnection.confirmedClose()
-      tcpReadProbe.subscriberProbe.expectCompletedOrSubscriptionFollowedByComplete()
 
-      serverConnection.read(5)
-      tcpWriteProbe.write(testData)
-      serverConnection.waitRead() should be(testData)
-
+      // Close client side write
       tcpWriteProbe.close()
-      // FIXME: expect closed event
+      serverConnection.expectClosed(ConfirmedClosed)
+      serverConnection.expectTerminated()
     }
 
-    "shut down both streams when connection is completely closed" in {
+    "shut everything down if client signals error" in {
+      val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
+
+      val tcpWriteProbe = new TcpWriteProbe()
+      val tcpReadProbe = new TcpReadProbe()
+
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      val serverConnection = server.waitAccept()
+
+      // Server can still write
+      serverConnection.write(testData)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
+
+      // Cause error
+      tcpWriteProbe.tcpWriteSubscription.sendError(new IllegalStateException("test"))
+
+      tcpReadProbe.subscriberProbe.expectError()
+      serverConnection.expectClosed(_.isErrorClosed)
+      serverConnection.expectTerminated()
+    }
+
+    "shut everything down if client signals error after remote has closed write" in {
+      val testData = ByteString(1, 2, 3, 4, 5)
+      val server = new Server()
+
+      val tcpWriteProbe = new TcpWriteProbe()
+      val tcpReadProbe = new TcpReadProbe()
+
+      Source(tcpWriteProbe.publisherProbe).via(StreamTcp().outgoingConnection(server.address).flow).to(Sink(tcpReadProbe.subscriberProbe)).run()
+      val serverConnection = server.waitAccept()
+
+      // Server can still write
+      serverConnection.write(testData)
+      tcpReadProbe.read(5) should be(testData)
+
+      // Close remote side write
+      serverConnection.confirmedClose()
+      tcpReadProbe.subscriberProbe.expectComplete()
+
+      // Client can still write
+      tcpWriteProbe.write(testData)
+      serverConnection.read(5)
+      serverConnection.waitRead() should be(testData)
+
+      tcpWriteProbe.tcpWriteSubscription.sendError(new IllegalStateException("test"))
+      serverConnection.expectClosed(_.isErrorClosed)
+      serverConnection.expectTerminated()
+    }
+
+    "shut down both streams when connection is aborted remotely" in {
       // Client gets a PeerClosed event and does not know that the write side is also closed
       val testData = ByteString(1, 2, 3, 4, 5)
       val server = new Server()
@@ -144,10 +291,8 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       serverConnection.abort()
       tcpReadProbe.subscriberProbe.expectErrorOrSubscriptionFollowedByError()
       tcpWriteProbe.tcpWriteSubscription.expectCancellation()
-    }
 
-    "close the connection when input stream and oputput streams are closed" in {
-      pending
+      serverConnection.expectTerminated()
     }
 
     "materialize correctly when used in multiple flows" in {
