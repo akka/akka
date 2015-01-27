@@ -42,12 +42,12 @@ private[http] object HttpClient {
     /*
       Basic Stream Setup
       ==================
-    
+
       requestIn                                            +----------+
-      +-----------------------------------------------+--->|  Termi-  |   requestRendering         
+      +-----------------------------------------------+--->|  Termi-  |   requestRendering
                                                       |    |  nation  +---------------------> |
                    +-------------------------------------->|  Merge   |                       |
-                   | Termination Backchannel          |    +----------+                       |  TCP- 
+                   | Termination Backchannel          |    +----------+                       |  TCP-
                    |                                  |                                       |  level
                    |                                  | Method                                |  client
                    |                +------------+    | Bypass                                |  flow
@@ -122,13 +122,13 @@ private[http] object HttpClient {
       }
 
       override def initialCompletionHandling = CompletionHandling(
-        onComplete = {
+        onUpstreamFinish = {
           case (ctx, `requestInput`) ⇒ SameState
           case (ctx, `terminationBackchannelInput`) ⇒
-            ctx.complete()
+            ctx.finish()
             SameState
         },
-        onError = defaultCompletionHandling.onError)
+        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
     }
   }
 
@@ -163,7 +163,7 @@ private[http] object HttpClient {
       }
       private val gotoInitial = (ctx: MergeLogicContext) ⇒ {
         if (methodBypassCompleted) {
-          ctx.complete()
+          ctx.finish()
           SameState
         } else {
           ctx.changeCompletionHandling(initialCompletionHandling)
@@ -199,7 +199,7 @@ private[http] object HttpClient {
             onNeedNextMethod(ctx)
           case StreamEnd ⇒
             emit(b.result())
-            ctx.complete()
+            ctx.finish()
             SameState
           case NeedMoreData ⇒
             emit(b.result())
@@ -209,25 +209,25 @@ private[http] object HttpClient {
       }
 
       override val initialCompletionHandling = CompletionHandling(
-        onComplete = (ctx, _) ⇒ { ctx.complete(); SameState },
-        onError = defaultCompletionHandling.onError)
+        onUpstreamFinish = (ctx, _) ⇒ { ctx.finish(); SameState },
+        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
 
       val responseReadingCompletionHandling = CompletionHandling(
-        onComplete = {
+        onUpstreamFinish = {
           case (ctx, `methodBypassInput`) ⇒
             methodBypassCompleted = true
             SameState
           case (ctx, `dataInput`) ⇒
             if (parser.onUpstreamFinish()) {
-              ctx.complete()
+              ctx.finish()
             } else {
               // not pretty but because the FlexiMerge doesn't let us emit from here (#16565)
               // we need to funnel the error through the error channel
-              ctx.error(new ResponseParsingError(parser.onPull().asInstanceOf[ErrorOutput]))
+              ctx.fail(new ResponseParsingError(parser.onPull().asInstanceOf[ErrorOutput]))
             }
             SameState
         },
-        onError = defaultCompletionHandling.onError)
+        onUpstreamFailure = defaultCompletionHandling.onUpstreamFailure)
     }
   }
 

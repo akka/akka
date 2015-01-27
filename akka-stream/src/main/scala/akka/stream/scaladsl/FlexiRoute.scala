@@ -74,7 +74,7 @@ object FlexiRoute {
 
   /**
    * The possibly stateful logic that reads from the input and enables emitting to downstream
-   * via the defined [[State]]. Handles completion, error and cancel via the defined
+   * via the defined [[State]]. Handles completion, failure and cancel via the defined
    * [[CompletionHandling]].
    *
    * Concrete instance is supposed to be created by implementing [[FlexiRoute#createRouteLogic]].
@@ -105,22 +105,22 @@ object FlexiRoute {
       /**
        * Complete the given downstream successfully.
        */
-      def complete(output: OutputHandle): Unit
+      def finish(output: OutputHandle): Unit
 
       /**
        * Complete all downstreams successfully and cancel upstream.
        */
-      def complete(): Unit
+      def finish(): Unit
 
       /**
        * Complete the given downstream with failure.
        */
-      def error(output: OutputHandle, cause: Throwable): Unit
+      def fail(output: OutputHandle, cause: Throwable): Unit
 
       /**
        * Complete all downstreams with failure and cancel upstream.
        */
-      def error(cause: Throwable): Unit
+      def fail(cause: Throwable): Unit
 
       /**
        * Replace current [[CompletionHandling]].
@@ -156,38 +156,38 @@ object FlexiRoute {
     }
 
     /**
-     * How to handle completion or error from upstream input and how to
+     * How to handle completion or failure from upstream input and how to
      * handle cancel from downstream output.
      *
-     * The `onComplete` function is called the upstream input was completed successfully.
+     * The `onUpstreamFinish` function is called the upstream input was completed successfully.
      *
-     * The `onError` function is called when the upstream input was completed with failure.
+     * The `onUpstreamFailure` function is called when the upstream input was completed with failure.
      *
-     * The `onCancel` function is called when a downstream output cancels.
+     * The `onDownstreamFinish` function is called when a downstream output cancels.
      * It returns next behavior or [[#SameState]] to keep current behavior.
      */
     sealed case class CompletionHandling(
-      onComplete: RouteLogicContext[Any] ⇒ Unit,
-      onError: (RouteLogicContext[Any], Throwable) ⇒ Unit,
-      onCancel: (RouteLogicContext[Any], OutputHandle) ⇒ State[_])
+      onUpstreamFinish: RouteLogicContext[Any] ⇒ Unit,
+      onUpstreamFailure: (RouteLogicContext[Any], Throwable) ⇒ Unit,
+      onDownstreamFinish: (RouteLogicContext[Any], OutputHandle) ⇒ State[_])
 
     /**
      * When an output cancels it continues with remaining outputs.
      * Error or completion from upstream are immediately propagated.
      */
     val defaultCompletionHandling: CompletionHandling = CompletionHandling(
-      onComplete = _ ⇒ (),
-      onError = (ctx, cause) ⇒ (),
-      onCancel = (ctx, _) ⇒ SameState)
+      onUpstreamFinish = _ ⇒ (),
+      onUpstreamFailure = (ctx, cause) ⇒ (),
+      onDownstreamFinish = (ctx, _) ⇒ SameState)
 
     /**
      * Completes as soon as any output cancels.
      * Error or completion from upstream are immediately propagated.
      */
     val eagerClose: CompletionHandling = CompletionHandling(
-      onComplete = _ ⇒ (),
-      onError = (ctx, cause) ⇒ (),
-      onCancel = (ctx, _) ⇒ { ctx.complete(); SameState })
+      onUpstreamFinish = _ ⇒ (),
+      onUpstreamFailure = (ctx, cause) ⇒ (),
+      onDownstreamFinish = (ctx, _) ⇒ { ctx.finish(); SameState })
 
   }
 

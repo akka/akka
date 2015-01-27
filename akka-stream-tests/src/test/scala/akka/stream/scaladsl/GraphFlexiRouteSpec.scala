@@ -103,15 +103,15 @@ object GraphFlexiRouteSpec {
       override def initialState = State[String](DemandFromAny(handles)) {
         (ctx, preferred, element) ⇒
           if (element == "err")
-            ctx.error(new RuntimeException("err") with NoStackTrace)
+            ctx.fail(new RuntimeException("err") with NoStackTrace)
           else if (element == "err-output1")
-            ctx.error(output1, new RuntimeException("err-1") with NoStackTrace)
+            ctx.fail(output1, new RuntimeException("err-1") with NoStackTrace)
           else if (element == "exc")
             throw new RuntimeException("exc") with NoStackTrace
-          else if (element == "onComplete-exc")
+          else if (element == "onUpstreamFinish-exc")
             throwFromOnComplete = true
-          else if (element == "complete")
-            ctx.complete()
+          else if (element == "finish")
+            ctx.finish()
           else
             ctx.emit(preferred, "onInput: " + element)
 
@@ -119,15 +119,15 @@ object GraphFlexiRouteSpec {
       }
 
       override def initialCompletionHandling = CompletionHandling(
-        onComplete = { ctx ⇒
+        onUpstreamFinish = { ctx ⇒
           if (throwFromOnComplete)
-            throw new RuntimeException("onComplete-exc") with NoStackTrace
+            throw new RuntimeException("onUpstreamFinish-exc") with NoStackTrace
           handles.foreach { output ⇒
             if (ctx.isDemandAvailable(output))
-              ctx.emit(output, "onComplete")
+              ctx.emit(output, "onUpstreamFinish")
           }
         },
-        onError = { (ctx, cause) ⇒
+        onUpstreamFailure = { (ctx, cause) ⇒
           cause match {
             case _: IllegalArgumentException ⇒ // swallow
             case _ ⇒
@@ -137,10 +137,10 @@ object GraphFlexiRouteSpec {
               }
           }
         },
-        onCancel = { (ctx, cancelledOutput) ⇒
+        onDownstreamFinish = { (ctx, cancelledOutput) ⇒
           handles.foreach { output ⇒
             if (output != cancelledOutput && ctx.isDemandAvailable(output))
-              ctx.emit(output, "onCancel: " + cancelledOutput.portIndex)
+              ctx.emit(output, "onDownstreamFinish: " + cancelledOutput.portIndex)
           }
           SameState
         })
@@ -267,11 +267,11 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "support complete of downstreams and cancel of upstream" in {
+    "support finish of downstreams and cancel of upstream" in {
       val fixture = new TestFixture
       import fixture._
 
-      autoPublisher.sendNext("complete")
+      autoPublisher.sendNext("finish")
 
       sub1.request(1)
       s1.expectNext("onInput: a")
@@ -316,7 +316,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s1.expectError().getMessage should be("err-1")
 
       autoPublisher.sendComplete()
-      s2.expectNext("onComplete")
+      s2.expectNext("onUpstreamFinish")
       s2.expectComplete()
     }
 
@@ -339,7 +339,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       autoPublisher.subscription.expectCancellation()
     }
 
-    "emit error for user thrown exception in onComplete" in {
+    "emit error for user thrown exception in onUpstreamFinish" in {
       val fixture = new TestFixture
       import fixture._
 
@@ -350,11 +350,11 @@ class GraphFlexiRouteSpec extends AkkaSpec {
 
       sub1.request(5)
       sub2.request(5)
-      autoPublisher.sendNext("onComplete-exc")
+      autoPublisher.sendNext("onUpstreamFinish-exc")
       autoPublisher.sendComplete()
 
-      s1.expectError().getMessage should be("onComplete-exc")
-      s2.expectError().getMessage should be("onComplete-exc")
+      s1.expectError().getMessage should be("onUpstreamFinish-exc")
+      s2.expectError().getMessage should be("onUpstreamFinish-exc")
     }
 
     "handle cancel from output" in {
@@ -370,7 +370,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      s2.expectNext("onCancel: 0")
+      s2.expectNext("onDownstreamFinish: 0")
       s1.expectNoMsg(200.millis)
 
       autoPublisher.sendNext("c")
@@ -380,7 +380,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s2.expectComplete()
     }
 
-    "handle complete from upstream input" in {
+    "handle finish from upstream input" in {
       val fixture = new TestFixture
       import fixture._
 
@@ -393,8 +393,8 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       autoPublisher.sendComplete()
 
-      s1.expectNext("onComplete")
-      s2.expectNext("onComplete")
+      s1.expectNext("onUpstreamFinish")
+      s2.expectNext("onUpstreamFinish")
 
       s1.expectComplete()
       s2.expectComplete()
@@ -433,7 +433,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      s2.expectNext("onCancel: 0")
+      s2.expectNext("onDownstreamFinish: 0")
       sub2.cancel()
 
       autoPublisher.subscription.expectCancellation()
@@ -450,7 +450,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
 
       sub1.request(2)
       sub2.request(2)
-      autoPublisher.sendNext("complete")
+      autoPublisher.sendNext("finish")
       s1.expectComplete()
       s2.expectComplete()
       autoPublisher.subscription.expectCancellation()

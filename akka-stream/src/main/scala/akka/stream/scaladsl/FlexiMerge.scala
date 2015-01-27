@@ -109,7 +109,7 @@ object FlexiMerge {
 
   /**
    * The possibly stateful logic that reads from input via the defined [[MergeLogic#State]] and
-   * handles completion and error via the defined [[MergeLogic#CompletionHandling]].
+   * handles completion and failure via the defined [[MergeLogic#CompletionHandling]].
    *
    * Concrete instance is supposed to be created by implementing [[FlexiMerge#createMergeLogic]].
    */
@@ -139,12 +139,12 @@ object FlexiMerge {
       /**
        * Complete this stream successfully. Upstream subscriptions will be cancelled.
        */
-      def complete(): Unit
+      def finish(): Unit
 
       /**
        * Complete this stream with failure. Upstream subscriptions will be cancelled.
        */
-      def error(cause: Throwable): Unit
+      def fail(cause: Throwable): Unit
 
       /**
        * Cancel a specific upstream input stream.
@@ -184,37 +184,37 @@ object FlexiMerge {
     }
 
     /**
-     * How to handle completion or error from upstream input.
+     * How to handle completion or failure from upstream input.
      *
-     * The `onComplete` function is called when an upstream input was completed successfully.
+     * The `onUpstreamFinish` function is called when an upstream input was completed successfully.
      * It returns next behavior or [[#SameState]] to keep current behavior.
-     * A completion can be propagated downstream with [[MergeLogicContext#complete]],
+     * A completion can be propagated downstream with [[MergeLogicContext#finish]],
      * or it can be swallowed to continue with remaining inputs.
      *
-     * The `onError` function is called when an upstream input was completed with failure.
+     * The `onUpstreamFailure` function is called when an upstream input was completed with failure.
      * It returns next behavior or [[#SameState]] to keep current behavior.
-     * An error can be propagated downstream with [[MergeLogicContext#error]],
+     * A failure can be propagated downstream with [[MergeLogicContext#fail]],
      * or it can be swallowed to continue with remaining inputs.
      */
     sealed case class CompletionHandling(
-      onComplete: (MergeLogicContext, InputHandle) ⇒ State[_],
-      onError: (MergeLogicContext, InputHandle, Throwable) ⇒ State[_])
+      onUpstreamFinish: (MergeLogicContext, InputHandle) ⇒ State[_],
+      onUpstreamFailure: (MergeLogicContext, InputHandle, Throwable) ⇒ State[_])
 
     /**
      * Will continue to operate until a read becomes unsatisfiable, then it completes.
      * Errors are immediately propagated.
      */
     val defaultCompletionHandling: CompletionHandling = CompletionHandling(
-      onComplete = (_, _) ⇒ SameState,
-      onError = (ctx, _, cause) ⇒ { ctx.error(cause); SameState })
+      onUpstreamFinish = (_, _) ⇒ SameState,
+      onUpstreamFailure = (ctx, _, cause) ⇒ { ctx.fail(cause); SameState })
 
     /**
      * Completes as soon as any input completes.
      * Errors are immediately propagated.
      */
     def eagerClose: CompletionHandling = CompletionHandling(
-      onComplete = (ctx, _) ⇒ { ctx.complete(); SameState },
-      onError = (ctx, _, cause) ⇒ { ctx.error(cause); SameState })
+      onUpstreamFinish = (ctx, _) ⇒ { ctx.finish(); SameState },
+      onUpstreamFailure = (ctx, _, cause) ⇒ { ctx.fail(cause); SameState })
   }
 
 }

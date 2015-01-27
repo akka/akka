@@ -95,22 +95,22 @@ object FlexiRoute {
     /**
      * Complete the given downstream successfully.
      */
-    def complete(output: OutputHandle): Unit
+    def finish(output: OutputHandle): Unit
 
     /**
      * Complete all downstreams successfully and cancel upstream.
      */
-    def complete(): Unit
+    def finish(): Unit
 
     /**
      * Complete the given downstream with failure.
      */
-    def error(output: OutputHandle, cause: Throwable): Unit
+    def fail(output: OutputHandle, cause: Throwable): Unit
 
     /**
      * Complete all downstreams with failure and cancel upstream.
      */
-    def error(cause: Throwable): Unit
+    def fail(cause: Throwable): Unit
 
     /**
      * Replace current [[CompletionHandling]].
@@ -119,22 +119,22 @@ object FlexiRoute {
   }
 
   /**
-   * How to handle completion or error from upstream input and how to
+   * How to handle completion or failure from upstream input and how to
    * handle cancel from downstream output.
    *
-   * The `onComplete` method is called the upstream input was completed successfully.
+   * The `onUpstreamFinish` method is called the upstream input was completed successfully.
    * It returns next behavior or [[#sameState]] to keep current behavior.
    *
-   * The `onError` method is called when the upstream input was completed with failure.
+   * The `onUpstreamFailure` method is called when the upstream input was completed with failure.
    * It returns next behavior or [[#SameState]] to keep current behavior.
    *
-   * The `onCancel` method is called when a downstream output cancels.
+   * The `onDownstreamFinish` method is called when a downstream output cancels.
    * It returns next behavior or [[#sameState]] to keep current behavior.
    */
   abstract class CompletionHandling[In] {
-    def onComplete(ctx: RouteLogicContext[In, Any]): Unit
-    def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit
-    def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _]
+    def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit
+    def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit
+    def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _]
   }
 
   /**
@@ -153,7 +153,7 @@ object FlexiRoute {
 
   /**
    * The possibly stateful logic that reads from the input and enables emitting to downstream
-   * via the defined [[State]]. Handles completion, error and cancel via the defined
+   * via the defined [[State]]. Handles completion, failure and cancel via the defined
    * [[CompletionHandling]].
    *
    * Concrete instance is supposed to be created by implementing [[FlexiRoute#createRouteLogic]].
@@ -195,9 +195,9 @@ object FlexiRoute {
      */
     def defaultCompletionHandling: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onComplete(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] =
+        override def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit = ()
+        override def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
+        override def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] =
           sameState
       }
 
@@ -207,10 +207,10 @@ object FlexiRoute {
      */
     def eagerClose[A]: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onComplete(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] = {
-          ctx.complete()
+        override def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit = ()
+        override def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
+        override def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] = {
+          ctx.finish()
           sameState
         }
       }
@@ -249,14 +249,14 @@ object FlexiRoute {
       private def wrapCompletionHandling[Out](
         delegateCompletionHandling: FlexiRoute.CompletionHandling[In]): CompletionHandling =
         CompletionHandling(
-          onComplete = ctx ⇒ {
-            delegateCompletionHandling.onComplete(new RouteLogicContextWrapper(ctx))
+          onUpstreamFinish = ctx ⇒ {
+            delegateCompletionHandling.onUpstreamFinish(new RouteLogicContextWrapper(ctx))
           },
-          onError = (ctx, cause) ⇒ {
-            delegateCompletionHandling.onError(new RouteLogicContextWrapper(ctx), cause)
+          onUpstreamFailure = (ctx, cause) ⇒ {
+            delegateCompletionHandling.onUpstreamFailure(new RouteLogicContextWrapper(ctx), cause)
           },
-          onCancel = (ctx, outputHandle) ⇒ {
-            val newDelegateState = delegateCompletionHandling.onCancel(
+          onDownstreamFinish = (ctx, outputHandle) ⇒ {
+            val newDelegateState = delegateCompletionHandling.onDownstreamFinish(
               new RouteLogicContextWrapper(ctx), asJava(outputHandle))
             wrapState(newDelegateState)
           })
@@ -267,10 +267,10 @@ object FlexiRoute {
       class RouteLogicContextWrapper[Out](delegate: RouteLogicContext[Out]) extends FlexiRoute.RouteLogicContext[In, Out] {
         override def isDemandAvailable(output: OutputHandle): Boolean = delegate.isDemandAvailable(output)
         override def emit(output: OutputHandle, elem: Out): Unit = delegate.emit(output, elem)
-        override def complete(): Unit = delegate.complete()
-        override def complete(output: OutputHandle): Unit = delegate.complete(output)
-        override def error(cause: Throwable): Unit = delegate.error(cause)
-        override def error(output: OutputHandle, cause: Throwable): Unit = delegate.error(output, cause)
+        override def finish(): Unit = delegate.finish()
+        override def finish(output: OutputHandle): Unit = delegate.finish(output)
+        override def fail(cause: Throwable): Unit = delegate.fail(cause)
+        override def fail(output: OutputHandle, cause: Throwable): Unit = delegate.fail(output, cause)
         override def changeCompletionHandling(completion: FlexiRoute.CompletionHandling[In]): Unit =
           delegate.changeCompletionHandling(wrapCompletionHandling(completion))
       }

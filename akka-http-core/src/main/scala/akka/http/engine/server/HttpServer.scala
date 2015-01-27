@@ -151,15 +151,15 @@ private[http] object HttpServer {
         }
 
       val waitingForApplicationResponseCompletionHandling = CompletionHandling(
-        onComplete = {
+        onUpstreamFinish = {
           case (ctx, `bypassInput`) ⇒ { requestStart = requestStart.copy(closeAfterResponseCompletion = true); SameState }
-          case (ctx, _)             ⇒ { ctx.complete(); SameState }
+          case (ctx, _)             ⇒ { ctx.finish(); SameState }
         },
-        onError = {
+        onUpstreamFailure = {
           case (ctx, _, EntityStreamException(errorInfo)) ⇒
             // the application has forwarded a request entity stream error to the response stream
             finishWithError(ctx, "request", StatusCodes.BadRequest, errorInfo)
-          case (ctx, _, error) ⇒ { ctx.error(error); SameState }
+          case (ctx, _, error) ⇒ { ctx.fail(error); SameState }
         })
 
       def finishWithError(ctx: MergeLogicContext, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
@@ -170,7 +170,7 @@ private[http] object HttpServer {
       }
 
       def finish(ctx: MergeLogicContext): State[Any] = {
-        ctx.complete() // shouldn't this return a `State` rather than `Unit`?
+        ctx.finish() // shouldn't this return a `State` rather than `Unit`?
         SameState // it seems weird to stay in the same state after completion
       }
     }
