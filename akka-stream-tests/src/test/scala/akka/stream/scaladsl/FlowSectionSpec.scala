@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
@@ -15,7 +15,7 @@ object FlowSectionSpec {
 
 class FlowSectionSpec extends AkkaSpec(FlowSectionSpec.config) {
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "A flow" can {
 

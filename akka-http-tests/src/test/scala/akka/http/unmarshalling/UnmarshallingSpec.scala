@@ -12,7 +12,7 @@ import scala.concurrent.{ Future, Await }
 import org.scalatest.matchers.Matcher
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.model._
 import akka.http.util._
@@ -22,7 +22,7 @@ import FastFuture._
 
 class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with ScalatestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   import system.dispatcher
 
   "The PredefinedFromEntityUnmarshallers." - {

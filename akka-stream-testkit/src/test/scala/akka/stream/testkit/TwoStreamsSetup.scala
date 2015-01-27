@@ -1,18 +1,18 @@
 package akka.stream.testkit
 
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   val TestException = new RuntimeException("test") with NoStackTrace
 

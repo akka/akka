@@ -17,7 +17,7 @@ import javax.net.ssl.SSLSession
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl._
 import akka.util.ByteString
 import akka.util.ByteStringBuilder
@@ -97,7 +97,7 @@ class SslTlsCipherActor(val requester: ActorRef, val sessionNegotioation: SslTls
   with MultiStreamOutputProcessorLike
   with MultiStreamInputProcessorLike {
 
-  override val subscriptionTimeoutSettings = MaterializerSettings(context.system).subscriptionTimeoutSettings
+  override val subscriptionTimeoutSettings = ActorFlowMaterializerSettings(context.system).subscriptionTimeoutSettings
 
   def this(requester: ActorRef, sessionNegotioation: SslTlsCipher.SessionNegotiation) =
     this(requester, sessionNegotioation, false)

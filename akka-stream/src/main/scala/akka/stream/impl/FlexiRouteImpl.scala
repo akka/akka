@@ -7,7 +7,7 @@ import akka.stream.scaladsl.OperationAttributes
 import scala.collection.breakOut
 import akka.actor.Props
 import akka.stream.scaladsl.FlexiRoute
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.FanOut.OutputBunch
 import scala.util.control.NonFatal
 
@@ -15,7 +15,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] object FlexiRouteImpl {
-  def props(settings: MaterializerSettings, outputCount: Int, routeLogic: FlexiRoute.RouteLogic[Any]): Props =
+  def props(settings: ActorFlowMaterializerSettings, outputCount: Int, routeLogic: FlexiRoute.RouteLogic[Any]): Props =
     Props(new FlexiRouteImpl(settings, outputCount, routeLogic))
 
   trait RouteLogicFactory[In] {
@@ -27,7 +27,7 @@ private[akka] object FlexiRouteImpl {
 /**
  * INTERNAL API
  */
-private[akka] class FlexiRouteImpl(_settings: MaterializerSettings,
+private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
                                    outputCount: Int,
                                    routeLogic: FlexiRoute.RouteLogic[Any])
   extends FanOut(_settings, outputCount) {

@@ -3,14 +3,14 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 import akka.stream.testkit.AkkaSpec
 import org.scalatest.concurrent.ScalaFutures._
 
 class PublisherSinkSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "A PublisherSink" must {
 

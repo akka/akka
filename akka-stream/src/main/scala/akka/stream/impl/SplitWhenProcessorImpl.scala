@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.Source
 import akka.actor.Props
 
@@ -11,14 +11,14 @@ import akka.actor.Props
  * INTERNAL API
  */
 private[akka] object SplitWhenProcessorImpl {
-  def props(settings: MaterializerSettings, splitPredicate: Any ⇒ Boolean): Props =
+  def props(settings: ActorFlowMaterializerSettings, splitPredicate: Any ⇒ Boolean): Props =
     Props(new SplitWhenProcessorImpl(settings, splitPredicate))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class SplitWhenProcessorImpl(_settings: MaterializerSettings, val splitPredicate: Any ⇒ Boolean)
+private[akka] class SplitWhenProcessorImpl(_settings: ActorFlowMaterializerSettings, val splitPredicate: Any ⇒ Boolean)
   extends MultiStreamOutputProcessor(_settings) {
 
   import MultiStreamOutputProcessor._

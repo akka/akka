@@ -9,8 +9,8 @@ import akka.stream.stage.Stage
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor._
-import akka.stream.MaterializerSettings
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorFlowMaterializer
 import akka.stream.impl._
 import akka.stream.impl.Ast._
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
@@ -32,7 +32,7 @@ object FlowSpec {
   case class BrokenMessage(msg: String)
 
   class BrokenActorInterpreter(
-    _settings: MaterializerSettings,
+    _settings: ActorFlowMaterializerSettings,
     _ops: Seq[Stage[_, _]],
     brokenMessage: Any)
     extends ActorInterpreter(_settings, _ops) {
@@ -48,14 +48,13 @@ object FlowSpec {
     }
   }
 
-  class BrokenFlowMaterializer(
-    settings: MaterializerSettings,
+  class BrokenActorFlowMaterializer(
+    settings: ActorFlowMaterializerSettings,
     dispatchers: Dispatchers,
     supervisor: ActorRef,
     flowNameCounter: AtomicLong,
     namePrefix: String,
-    optimizations: Optimizations,
-    brokenMessage: Any) extends ActorBasedFlowMaterializer(settings, dispatchers, supervisor, flowNameCounter, namePrefix, optimizations) {
+    brokenMessage: Any) extends ActorFlowMaterializerImpl(settings, dispatchers, supervisor, flowNameCounter, namePrefix) {
 
     override def processorForNode[In, Out](op: AstNode, flowName: String, n: Int): (Processor[In, Out], MaterializedMap) = {
       val props = op match {
@@ -78,8 +77,8 @@ object FlowSpec {
 
   }
 
-  def createBrokenFlowMaterializer(settings: MaterializerSettings, brokenMessage: Any)(implicit context: ActorRefFactory): BrokenFlowMaterializer = {
-    new BrokenFlowMaterializer(
+  def createBrokenActorFlowMaterializer(settings: ActorFlowMaterializerSettings, brokenMessage: Any)(implicit context: ActorRefFactory): BrokenActorFlowMaterializer = {
+    new BrokenActorFlowMaterializer(
       settings,
       {
         context match {
@@ -93,7 +92,6 @@ object FlowSpec {
       context.actorOf(StreamSupervisor.props(settings).withDispatcher(settings.dispatcher)),
       flowNameCounter,
       "brokenflow",
-      Optimizations.none,
       brokenMessage)
   }
 }
@@ -101,17 +99,17 @@ object FlowSpec {
 class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
   import FlowSpec._
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = FlowMaterializer(settings)
+  implicit val mat = ActorFlowMaterializer(settings)
 
   val identity: Flow[Any, Any] ⇒ Flow[Any, Any] = in ⇒ in.map(e ⇒ e)
   val identity2: Flow[Any, Any] ⇒ Flow[Any, Any] = in ⇒ identity(in)
 
-  val toPublisher: (Source[Any], FlowMaterializer) ⇒ Publisher[Any] =
+  val toPublisher: (Source[Any], ActorFlowMaterializer) ⇒ Publisher[Any] =
     (f, m) ⇒ f.runWith(Sink.publisher)(m)
-  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (Source[Out], FlowMaterializer) ⇒ Publisher[Out] =
+  def toFanoutPublisher[In, Out](initialBufferSize: Int, maximumBufferSize: Int): (Source[Out], ActorFlowMaterializer) ⇒ Publisher[Out] =
     (f, m) ⇒ f.runWith(Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))(m)
 
   def materializeIntoSubscriberAndPublisher[In, Out](flow: Flow[In, Out]): (Subscriber[In], Publisher[Out]) = {
@@ -572,7 +570,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
   "A broken Flow" must {
     "cancel upstream and call onError on current and future downstream subscribers if an internal error occurs" in {
-      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1), (s, f) ⇒ createBrokenFlowMaterializer(s, "a3")(f),
+      new ChainSetup(identity, settings.copy(initialInputBufferSize = 1), (s, f) ⇒ createBrokenActorFlowMaterializer(s, "a3")(f),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 16)) {
 
         def checkError(sprobe: StreamTestKit.SubscriberProbe[Any]): Unit = {

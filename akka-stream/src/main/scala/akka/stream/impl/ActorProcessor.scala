@@ -6,7 +6,7 @@ package akka.stream.impl
 import java.util.Arrays
 
 import akka.actor._
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
 import org.reactivestreams.{ Subscriber, Subscription, Processor }
@@ -220,7 +220,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
 /**
  * INTERNAL API
  */
-private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettings)
+private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMaterializerSettings)
   extends Actor
   with ActorLogging
   with Pump

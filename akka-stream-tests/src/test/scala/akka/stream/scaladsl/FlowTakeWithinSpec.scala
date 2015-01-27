@@ -5,13 +5,13 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 
 class FlowTakeWithinSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "A TakeWithin" must {
 

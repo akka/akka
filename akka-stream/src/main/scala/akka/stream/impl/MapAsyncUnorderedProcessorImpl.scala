@@ -5,8 +5,8 @@ package akka.stream.impl
 
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-import akka.stream.MaterializerSettings
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.pattern.pipe
 import akka.actor.Props
 import akka.actor.DeadLetterSuppression
@@ -15,7 +15,7 @@ import akka.actor.DeadLetterSuppression
  * INTERNAL API
  */
 private[akka] object MapAsyncUnorderedProcessorImpl {
-  def props(settings: MaterializerSettings, f: Any ⇒ Future[Any]): Props =
+  def props(settings: ActorFlowMaterializerSettings, f: Any ⇒ Future[Any]): Props =
     Props(new MapAsyncUnorderedProcessorImpl(settings, f))
 
   final case class FutureElement(element: Any) extends DeadLetterSuppression
@@ -25,7 +25,7 @@ private[akka] object MapAsyncUnorderedProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class MapAsyncUnorderedProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any])
+private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMaterializerSettings, f: Any ⇒ Future[Any])
   extends ActorProcessorImpl(_settings) {
   import MapAsyncUnorderedProcessorImpl._
 

@@ -7,18 +7,18 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.OverflowStrategy
 import akka.stream.OverflowStrategy.Error.BufferOverflowException
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
 class FlowBufferSpec extends AkkaSpec {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 1, maxSize = 1)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "Buffer" must {
 

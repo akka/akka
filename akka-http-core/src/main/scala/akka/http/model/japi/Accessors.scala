@@ -5,7 +5,6 @@
 package akka.http.model.japi
 
 import akka.http.model
-import akka.stream.MaterializerSettings
 
 /**
  *  INTERNAL API

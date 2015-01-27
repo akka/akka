@@ -2,17 +2,17 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 
-import akka.stream.{ OverflowStrategy, MaterializerSettings }
-import akka.stream.FlowMaterializer
+import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.FlowGraphImplicits._
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 
 class GraphUnzipSpec extends AkkaSpec {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "A unzip" must {
 

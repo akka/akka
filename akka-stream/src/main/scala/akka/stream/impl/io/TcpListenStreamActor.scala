@@ -11,7 +11,7 @@ import akka.actor.Props
 import akka.actor.Stash
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl._
 import akka.stream.scaladsl.{ Flow, Pipe }
 import akka.stream.scaladsl.StreamTcp
@@ -28,7 +28,7 @@ private[akka] object TcpListenStreamActor {
   def props(localAddressPromise: Promise[InetSocketAddress],
             unbindPromise: Promise[() ⇒ Future[Unit]],
             flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
-            bindCmd: Tcp.Bind, materializerSettings: MaterializerSettings): Props = {
+            bindCmd: Tcp.Bind, materializerSettings: ActorFlowMaterializerSettings): Props = {
     Props(new TcpListenStreamActor(localAddressPromise, unbindPromise, flowSubscriber, bindCmd, materializerSettings))
   }
 }
@@ -39,7 +39,7 @@ private[akka] object TcpListenStreamActor {
 private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocketAddress],
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
-                                         bindCmd: Tcp.Bind, settings: MaterializerSettings) extends Actor
+                                         bindCmd: Tcp.Bind, settings: ActorFlowMaterializerSettings) extends Actor
   with Pump with Stash with ActorLogging {
   import context.system
 

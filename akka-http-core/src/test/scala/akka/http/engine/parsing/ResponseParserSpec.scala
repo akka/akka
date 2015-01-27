@@ -12,7 +12,7 @@ import org.scalatest.matchers.Matcher
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.util._
@@ -34,7 +34,7 @@ class ResponseParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   val ServerOnTheMove = StatusCodes.custom(331, "Server on the move")
 
   "The response parsing logic should" - {

@@ -4,10 +4,10 @@
 package akka.stream.tck
 
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.MaterializerSettings
-import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.impl.ActorFlowMaterializerImpl
 import akka.stream.impl.Ast
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import java.util.concurrent.atomic.AtomicInteger
 import akka.stream.scaladsl.MaterializedMap
 import org.reactivestreams.Processor
@@ -22,10 +22,10 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
   val processorCounter = new AtomicInteger
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
-    val settings = MaterializerSettings(system)
+    val settings = ActorFlowMaterializerSettings(system)
       .withInputBuffer(initialSize = maxBufferSize / 2, maxSize = maxBufferSize)
 
-    implicit val materializer = FlowMaterializer(settings)(system)
+    implicit val materializer = ActorFlowMaterializer(settings)(system)
 
     val flowName = getClass.getSimpleName + "-" + processorCounter.incrementAndGet()
 
@@ -34,14 +34,14 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
         override def onPush(in: Any, ctx: Context[Any]) = ctx.push(in)
       }
 
-    val (processor, _) = materializer.asInstanceOf[ActorBasedFlowMaterializer].processorForNode(
+    val (processor, _) = materializer.asInstanceOf[ActorFlowMaterializerImpl].processorForNode(
       Ast.StageFactory(mkStage, name("transform")), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]
   }
 
   override def createHelperPublisher(elements: Long): Publisher[Int] = {
-    implicit val mat = FlowMaterializer()(system)
+    implicit val mat = ActorFlowMaterializer()(system)
 
     createSimpleIntPublisher(elements)(mat)
   }

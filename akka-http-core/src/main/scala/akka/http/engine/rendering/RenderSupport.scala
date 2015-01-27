@@ -5,7 +5,7 @@
 package akka.http.engine.rendering
 
 import akka.parboiled2.CharUtils
-import akka.stream.impl.ActorBasedFlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
@@ -34,7 +34,7 @@ private object RenderSupport {
   // allows us to not take a FlowMaterializer but delegate the cancellation to the point when the whole stream
   // materializes
   private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleActorFlowSource[T] {
-    override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
+    override def attach(flowSubscriber: Subscriber[T], materializer: ActorFlowMaterializer, flowName: String): Unit = {
       first.to(Sink(flowSubscriber)).run()(materializer)
       second.to(Sink.cancelled).run()(materializer)
     }

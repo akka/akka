@@ -6,8 +6,8 @@ package akka.stream.scaladsl
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.testkit.{ EventFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
@@ -15,10 +15,10 @@ import akka.stream.stage._
 
 class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.receive=off\nakka.loglevel=INFO")) {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 2)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {

@@ -7,7 +7,7 @@ package akka.http
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.util.{ Failure, Success }
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.http.model._
 
@@ -17,7 +17,7 @@ object TestClient extends App {
     akka.log-dead-letters = off
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = FlowMaterializer()
+  implicit val fm = ActorFlowMaterializer()
   import system.dispatcher
 
   val host = "spray.io"

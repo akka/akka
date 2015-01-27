@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.TimeUnit;
 import org.reactivestreams.Publisher;
 import akka.actor.ActorSystem;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorFlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.javadsl.FlexiMerge;
 import scala.concurrent.Await;
@@ -30,7 +30,7 @@ public class FlexiMergeTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final FlowMaterializer materializer = FlowMaterializer.create(system);
+  final ActorFlowMaterializer materializer = ActorFlowMaterializer.create(system);
 
   final Source<String> in1 = Source.from(Arrays.asList("a", "b", "c", "d"));
   final Source<String> in2 = Source.from(Arrays.asList("e", "f"));

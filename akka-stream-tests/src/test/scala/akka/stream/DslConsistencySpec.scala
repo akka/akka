@@ -50,7 +50,7 @@ class DslConsistencySpec extends WordSpec with Matchers {
     jFlowGraphClass → Set("graph", "cyclesAllowed"),
     jPartialFlowGraphClass → Set("graph", "cyclesAllowed", "disconnectedAllowed"))
 
-  def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[FlowMaterializer])
+  def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorFlowMaterializer])
 
   def assertHasMethod(c: Class[_], name: String): Unit = {
     // include class name to get better error message

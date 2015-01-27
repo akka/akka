@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.Ast.AstNode
 
 /**
@@ -33,10 +33,10 @@ final case class OperationAttributes private (private val attributes: List[Opera
     case _          ⇒ "unknown-operation"
   }
 
-  private[akka] def settings: MaterializerSettings ⇒ MaterializerSettings =
+  private[akka] def settings: ActorFlowMaterializerSettings ⇒ ActorFlowMaterializerSettings =
     attributes.collect {
-      case InputBuffer(initial, max) ⇒ (s: MaterializerSettings) ⇒ s.withInputBuffer(initial, max)
-      case Dispatcher(dispatcher) ⇒ (s: MaterializerSettings) ⇒ s.withDispatcher(dispatcher)
+      case InputBuffer(initial, max) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withInputBuffer(initial, max)
+      case Dispatcher(dispatcher) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withDispatcher(dispatcher)
     }.reduceOption(_ andThen _).getOrElse(identity) // FIXME is this the optimal way of encoding this?
 
   private[akka] def transform(node: AstNode): AstNode =

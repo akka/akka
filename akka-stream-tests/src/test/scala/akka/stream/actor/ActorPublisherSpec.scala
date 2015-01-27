@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.FlowGraph
 import akka.stream.scaladsl.FlowGraphImplicits
 import akka.stream.scaladsl.Merge
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
@@ -256,7 +256,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work together with Flow and ActorSubscriber" in {
-      implicit val materializer = FlowMaterializer()
+      implicit val materializer = ActorFlowMaterializer()
       val probe = TestProbe()
 
       val source = Source[Int](senderProps)
@@ -285,7 +285,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "work in a FlowGraph" in {
-      implicit val materializer = FlowMaterializer()
+      implicit val materializer = ActorFlowMaterializer()
       val probe1 = TestProbe()
       val probe2 = TestProbe()
 
@@ -325,7 +325,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "be able to define a subscription-timeout, after which it should shut down" in {
-      implicit val materializer = FlowMaterializer()
+      implicit val materializer = ActorFlowMaterializer()
       val timeout = 150.millis
       val a = system.actorOf(timeoutingProps(testActor, timeout))
       val pub = ActorPublisher(a)
@@ -345,7 +345,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
     }
 
     "be able to define a subscription-timeout, which is cancelled by the first incoming Subscriber" in {
-      implicit val materializer = FlowMaterializer()
+      implicit val materializer = ActorFlowMaterializer()
       val timeout = 500.millis
       val sub = StreamTestKit.SubscriberProbe[Int]()
 

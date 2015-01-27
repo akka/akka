@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.actor.Props
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
 import org.reactivestreams.{ Subscription, Subscriber }
 import akka.actor.DeadLetterSuppression
@@ -197,7 +197,7 @@ private[akka] object FanIn {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanIn(val settings: MaterializerSettings, val inputPorts: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, val inputPorts: Int) extends Actor with ActorLogging with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
@@ -240,14 +240,14 @@ private[akka] abstract class FanIn(val settings: MaterializerSettings, val input
  * INTERNAL API
  */
 private[akka] object FairMerge {
-  def props(settings: MaterializerSettings, inputPorts: Int): Props =
+  def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
     Props(new FairMerge(settings, inputPorts))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class FairMerge(_settings: MaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
+private[akka] final class FairMerge(_settings: ActorFlowMaterializerSettings, _inputPorts: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
@@ -263,14 +263,14 @@ private[akka] final class FairMerge(_settings: MaterializerSettings, _inputPorts
 private[akka] object UnfairMerge {
   val DefaultPreferred = 0
 
-  def props(settings: MaterializerSettings, inputPorts: Int): Props =
+  def props(settings: ActorFlowMaterializerSettings, inputPorts: Int): Props =
     Props(new UnfairMerge(settings, inputPorts, DefaultPreferred))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class UnfairMerge(_settings: MaterializerSettings,
+private[akka] final class UnfairMerge(_settings: ActorFlowMaterializerSettings,
                                       _inputPorts: Int,
                                       val preferred: Int) extends FanIn(_settings, _inputPorts) {
   inputBunch.markAllInputs()
@@ -285,13 +285,13 @@ private[akka] final class UnfairMerge(_settings: MaterializerSettings,
  * INTERNAL API
  */
 private[akka] object Concat {
-  def props(settings: MaterializerSettings): Props = Props(new Concat(settings))
+  def props(settings: ActorFlowMaterializerSettings): Props = Props(new Concat(settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final class Concat(_settings: MaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
+private[akka] final class Concat(_settings: ActorFlowMaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
   val First = 0
   val Second = 1
 

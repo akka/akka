@@ -4,17 +4,17 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import FlowGraphImplicits._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
 class GraphBalanceSpec extends AkkaSpec {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "A balance" must {
 

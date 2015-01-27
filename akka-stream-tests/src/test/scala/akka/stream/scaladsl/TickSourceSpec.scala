@@ -5,14 +5,14 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 
 class TickSourceSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "A Flow based on tick publisher" must {
     "produce ticks" in {

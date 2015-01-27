@@ -1,7 +1,7 @@
 package akka.stream.scaladsl
 
 import FlowGraphImplicits._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.AutoPublisher
 import akka.stream.testkit.StreamTestKit.OnNext
@@ -271,7 +271,7 @@ class TestMerge extends FlexiMerge[String] {
 class GraphFlexiMergeSpec extends AkkaSpec {
   import GraphFlexiMergeSpec._
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   val in1 = Source(List("a", "b", "c", "d"))
   val in2 = Source(List("e", "f"))

@@ -8,8 +8,8 @@ import akka.event.Logging
 import scala.collection.immutable
 import scala.concurrent.duration._
 import akka.actor.ActorSystem
-import akka.stream.MaterializerSettings
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
@@ -57,7 +57,7 @@ abstract class AkkaSubscriberWhiteboxVerification[T](val system: ActorSystem, en
 trait AkkaSubscriberVerificationLike {
   implicit def system: ActorSystem
 
-  implicit val materializer = FlowMaterializer(MaterializerSettings(system))
+  implicit val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system))
 
   def createSimpleIntPublisher(elements: Long): Publisher[Int] = {
     val iterable: immutable.Iterable[Int] =

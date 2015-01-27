@@ -13,7 +13,7 @@ import scala.concurrent.duration.FiniteDuration
 import akka.actor.Actor
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.ActorProcessor
 import akka.stream.impl.ActorPublisher
 import akka.stream.scaladsl.StreamTcp
@@ -80,13 +80,13 @@ private[akka] class StreamTcpManager extends Actor {
       }
       val processorActor = context.actorOf(TcpStreamActor.outboundProps(processorPromise, localAddressPromise,
         Tcp.Connect(remoteAddress, localAddress, options, connTimeout, pullMode = true),
-        materializerSettings = MaterializerSettings(context.system)), name = encName("client", remoteAddress))
+        materializerSettings = ActorFlowMaterializerSettings(context.system)), name = encName("client", remoteAddress))
       processorActor ! ExposedProcessor(ActorProcessor[ByteString, ByteString](processorActor))
 
     case Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, options, _) ⇒
       val publisherActor = context.actorOf(TcpListenStreamActor.props(localAddressPromise, unbindPromise,
         flowSubscriber, Tcp.Bind(context.system.deadLetters, endpoint, backlog, options, pullMode = true),
-        MaterializerSettings(context.system)), name = encName("server", endpoint))
+        ActorFlowMaterializerSettings(context.system)), name = encName("server", endpoint))
       // this sends the ExposedPublisher message to the publisher actor automatically
       ActorPublisher[Any](publisherActor)
   }

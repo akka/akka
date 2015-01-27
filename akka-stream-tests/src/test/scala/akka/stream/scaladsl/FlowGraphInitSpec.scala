@@ -3,7 +3,7 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 
 import scala.concurrent.Await
@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 class FlowGraphInitSpec extends AkkaSpec {
 
   import system.dispatcher
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "Initialization of FlowGraph" should {
     "be thread safe" in {

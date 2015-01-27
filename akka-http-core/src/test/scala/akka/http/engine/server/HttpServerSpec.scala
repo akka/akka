@@ -11,7 +11,7 @@ import org.scalatest.Inside
 import akka.event.NoLogging
 import akka.util.ByteString
 import akka.stream.scaladsl._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.http.model._
 import akka.http.util._
@@ -21,7 +21,7 @@ import MediaTypes._
 import HttpMethods._
 
 class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "The server implementation" should {
 

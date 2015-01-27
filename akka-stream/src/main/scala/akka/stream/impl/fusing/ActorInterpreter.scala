@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 import java.util.Arrays
 import akka.actor.{ Actor, ActorRef }
 import akka.event.Logging
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnError, OnComplete }
 import akka.stream.impl._
@@ -255,14 +255,14 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
  * INTERNAL API
  */
 private[akka] object ActorInterpreter {
-  def props(settings: MaterializerSettings, ops: Seq[Stage[_, _]]): Props =
+  def props(settings: ActorFlowMaterializerSettings, ops: Seq[Stage[_, _]]): Props =
     Props(new ActorInterpreter(settings, ops))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorInterpreter(val settings: MaterializerSettings, val ops: Seq[Stage[_, _]])
+private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings, val ops: Seq[Stage[_, _]])
   extends Actor with ActorLogging {
 
   private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize)

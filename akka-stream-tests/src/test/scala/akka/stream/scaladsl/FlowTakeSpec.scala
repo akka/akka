@@ -5,8 +5,8 @@ package akka.stream.scaladsl
 
 import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriberMessage.OnComplete
 import akka.stream.actor.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
@@ -16,10 +16,10 @@ import akka.stream.testkit.StreamTestKit
 
 class FlowTakeSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   muteDeadLetters(classOf[OnNext], OnComplete.getClass, classOf[RequestMore])()
 

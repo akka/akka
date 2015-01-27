@@ -1,21 +1,21 @@
 package akka.stream.testkit
 
 import akka.actor.{ ActorRefFactory, ActorSystem }
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 class ChainSetup[In, Out](
   stream: Flow[In, In] ⇒ Flow[In, Out],
-  val settings: MaterializerSettings,
-  materializer: FlowMaterializer,
-  toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
+  val settings: ActorFlowMaterializerSettings,
+  materializer: ActorFlowMaterializer,
+  toPublisher: (Source[Out], ActorFlowMaterializer) ⇒ Publisher[Out])(implicit val system: ActorSystem) {
 
-  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: MaterializerSettings, toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
-    this(stream, settings, FlowMaterializer(settings)(system), toPublisher)(system)
+  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: ActorFlowMaterializerSettings, toPublisher: (Source[Out], ActorFlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+    this(stream, settings, ActorFlowMaterializer(settings)(system), toPublisher)(system)
 
-  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: MaterializerSettings, materializerCreator: (MaterializerSettings, ActorRefFactory) ⇒ FlowMaterializer, toPublisher: (Source[Out], FlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
+  def this(stream: Flow[In, In] ⇒ Flow[In, Out], settings: ActorFlowMaterializerSettings, materializerCreator: (ActorFlowMaterializerSettings, ActorRefFactory) ⇒ ActorFlowMaterializer, toPublisher: (Source[Out], ActorFlowMaterializer) ⇒ Publisher[Out])(implicit system: ActorSystem) =
     this(stream, settings, materializerCreator(settings, system), toPublisher)(system)
 
   val upstream = StreamTestKit.PublisherProbe[In]()

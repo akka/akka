@@ -8,7 +8,7 @@ import scala.collection.immutable
 import scala.collection.immutable.TreeSet
 import scala.concurrent.Future
 import scala.util.control.NonFatal
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.pattern.pipe
 import scala.annotation.tailrec
 import akka.actor.Props
@@ -19,7 +19,7 @@ import akka.actor.DeadLetterSuppression
  */
 private[akka] object MapAsyncProcessorImpl {
 
-  def props(settings: MaterializerSettings, f: Any ⇒ Future[Any]): Props =
+  def props(settings: ActorFlowMaterializerSettings, f: Any ⇒ Future[Any]): Props =
     Props(new MapAsyncProcessorImpl(settings, f))
 
   object FutureElement {
@@ -37,7 +37,7 @@ private[akka] object MapAsyncProcessorImpl {
 /**
  * INTERNAL API
  */
-private[akka] class MapAsyncProcessorImpl(_settings: MaterializerSettings, f: Any ⇒ Future[Any])
+private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettings, f: Any ⇒ Future[Any])
   extends ActorProcessorImpl(_settings) {
   import MapAsyncProcessorImpl._
 

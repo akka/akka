@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
@@ -18,7 +18,7 @@ object FlowGraphCompileSpec {
 class FlowGraphCompileSpec extends AkkaSpec {
   import FlowGraphCompileSpec._
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   def op[In, Out]: () ⇒ PushStage[In, Out] = { () ⇒
     new PushStage[In, Out] {

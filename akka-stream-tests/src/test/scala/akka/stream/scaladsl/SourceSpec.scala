@@ -6,13 +6,13 @@ package akka.stream.scaladsl
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 
 class SourceSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "Singleton Source" must {
     "produce element" in {

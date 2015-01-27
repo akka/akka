@@ -14,7 +14,7 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.StreamTcp
 import akka.stream.BindFailedException
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.scaladsl._
@@ -34,7 +34,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
   import system.dispatcher
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "The low-level HTTP infrastructure" should {
 
