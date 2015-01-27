@@ -4,20 +4,19 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
-import akka.stream.impl.{ Optimizations, ActorBasedFlowMaterializer }
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Optimizations }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit._
 
 import scala.concurrent.duration._
 import scala.concurrent.Await
 
-class OptimizingActorBasedFlowMaterializerSpec extends AkkaSpec with ImplicitSender {
+class OptimizingActorFlowMaterializerSpec extends AkkaSpec with ImplicitSender {
 
-  "ActorBasedFlowMaterializer" must {
+  "ActorFlowMaterializer" must {
     //FIXME Add more and meaningful tests to verify that optimizations occur and have the same semantics as the non-optimized code
     "optimize filter + map" in {
-      implicit val mat = FlowMaterializer().asInstanceOf[ActorBasedFlowMaterializer].copy(optimizations = Optimizations.all)
+      implicit val mat = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).withOptimizations(Optimizations.all))
       val f = Source(1 to 100).
         drop(4).
         drop(5).
@@ -42,7 +41,7 @@ class OptimizingActorBasedFlowMaterializerSpec extends AkkaSpec with ImplicitSen
     }
 
     "optimize map + map" in {
-      implicit val mat = FlowMaterializer().asInstanceOf[ActorBasedFlowMaterializer].copy(optimizations = Optimizations.all)
+      implicit val mat = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).withOptimizations(Optimizations.all))
 
       val fl = Source(1 to 100).map(_ + 2).map(_ * 2).fold(0)(_ + _)
       val expected = (1 to 100).map(_ + 2).map(_ * 2).fold(0)(_ + _)

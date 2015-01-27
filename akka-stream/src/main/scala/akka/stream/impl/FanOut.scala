@@ -8,7 +8,7 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.Subscription
 import akka.actor.DeadLetterSuppression
 
@@ -227,7 +227,7 @@ private[akka] object FanOut {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanOut(val settings: MaterializerSettings, val outputPorts: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings, val outputPorts: Int) extends Actor with ActorLogging with Pump {
   import FanOut._
 
   protected val outputBunch = new OutputBunch(outputPorts, self, this)
@@ -270,14 +270,14 @@ private[akka] abstract class FanOut(val settings: MaterializerSettings, val outp
  * INTERNAL API
  */
 private[akka] object Broadcast {
-  def props(settings: MaterializerSettings, outputPorts: Int): Props =
+  def props(settings: ActorFlowMaterializerSettings, outputPorts: Int): Props =
     Props(new Broadcast(settings, outputPorts))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
+private[akka] class Broadcast(_settings: ActorFlowMaterializerSettings, _outputPorts: Int) extends FanOut(_settings, _outputPorts) {
   outputBunch.markAllOutputs()
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
@@ -290,14 +290,14 @@ private[akka] class Broadcast(_settings: MaterializerSettings, _outputPorts: Int
  * INTERNAL API
  */
 private[akka] object Balance {
-  def props(settings: MaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
+  def props(settings: ActorFlowMaterializerSettings, outputPorts: Int, waitForAllDownstreams: Boolean): Props =
     Props(new Balance(settings, outputPorts, waitForAllDownstreams))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
+private[akka] class Balance(_settings: ActorFlowMaterializerSettings, _outputPorts: Int, waitForAllDownstreams: Boolean) extends FanOut(_settings, _outputPorts) {
   outputBunch.markAllOutputs()
 
   val runningPhase = TransferPhase(primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs) { () ⇒
@@ -317,14 +317,14 @@ private[akka] class Balance(_settings: MaterializerSettings, _outputPorts: Int, 
  * INTERNAL API
  */
 private[akka] object Unzip {
-  def props(settings: MaterializerSettings): Props =
+  def props(settings: ActorFlowMaterializerSettings): Props =
     Props(new Unzip(settings))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_settings, outputPorts = 2) {
+private[akka] class Unzip(_settings: ActorFlowMaterializerSettings) extends FanOut(_settings, outputPorts = 2) {
   outputBunch.markAllOutputs()
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒

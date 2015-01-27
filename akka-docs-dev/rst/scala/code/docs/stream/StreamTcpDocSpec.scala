@@ -21,12 +21,12 @@ class StreamTcpDocSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
 
   //#setup
-  import akka.stream.FlowMaterializer
+  import akka.stream.ActorFlowMaterializer
   import akka.stream.scaladsl.StreamTcp
   import akka.stream.scaladsl.StreamTcp._
 
   implicit val sys = ActorSystem("stream-tcp-system")
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
   //#setup
 
   val localhost = new InetSocketAddress("127.0.0.1", 8888)

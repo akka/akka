@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestLatch
@@ -16,7 +16,7 @@ import akka.testkit.TestProbe
 
 class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "A Flow with mapAsyncUnordered" must {
 

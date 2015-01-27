@@ -19,12 +19,12 @@ Here's the data model we'll be working with throughout the quickstart examples:
 
 Transforming and consuming simple streams
 -----------------------------------------
-In order to prepare our environment by creating an :class:`ActorSystem` and :class:`FlowMaterializer`,
+In order to prepare our environment by creating an :class:`ActorSystem` and :class:`ActorFlowMaterializer`,
 which will be responsible for materializing and running the streams we are about to create:
 
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#materializer-setup
 
-The :class:`FlowMaterializer` can optionally take :class:`MaterializerSettings` which can be used to define
+The :class:`ActorFlowMaterializer` can optionally take :class:`ActorFlowMaterializerSettings` which can be used to define
 materialization properties, such as default buffer sizes (see also :ref:`stream-buffering-explained-scala`), the dispatcher to
 be used by the pipeline etc. These can be overridden on an element-by-element basis or for an entire section, but this
 will be discussed in depth in :ref:`stream-section-configuration`.
@@ -146,7 +146,7 @@ First, we prepare the :class:`FoldSink` which will be used to sum all ``Int`` el
 Next we connect the ``tweets`` stream though a ``map`` step which converts each tweet into the number ``1``,
 finally we connect the flow ``to`` the previously prepared Sink. Notice that this step does *not* yet materialize the
 processing pipeline, it merely prepares the description of the Flow, which is now connected to a Sink, and therefore can
-be ``run()``, as indicated by its type: :class:`RunnableFlow`. Next we call ``run()`` which uses the implicit :class:`FlowMaterializer`
+be ``run()``, as indicated by its type: :class:`RunnableFlow`. Next we call ``run()`` which uses the implicit :class:`ActorFlowMaterializer`
 to materialize and run the flow. The value returned by calling ``run()`` on a ``RunnableFlow`` or ``FlowGraph`` is ``MaterializedMap``,
 which can be used to retrieve materialized values from the running stream.
 

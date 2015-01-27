@@ -10,8 +10,9 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.impl.{ ActorBasedFlowMaterializer, ActorProcessorFactory, FanoutProcessorImpl, BlackholeSubscriber }
+import akka.stream.impl.{ ActorProcessorFactory, FanoutProcessorImpl, BlackholeSubscriber }
 import akka.stream.stage._
 import java.util.concurrent.atomic.AtomicReference
 
@@ -19,22 +20,22 @@ sealed trait ActorFlowSink[-In] extends Sink[In] {
 
   /**
    * Attach this sink to the given [[org.reactivestreams.Publisher]]. Using the given
-   * [[FlowMaterializer]] is completely optional, especially if this sink belongs to
+   * [[ActorFlowMaterializer]] is completely optional, especially if this sink belongs to
    * a different Reactive Streams implementation. It is the responsibility of the
-   * caller to provide a suitable FlowMaterializer that can be used for running
+   * caller to provide a suitable ActorFlowMaterializer that can be used for running
    * Flows if necessary.
    *
    * @param flowPublisher the Publisher to consume elements from
-   * @param materializer a FlowMaterializer that may be used for creating flows
+   * @param materializer a ActorFlowMaterializer that may be used for creating flows
    * @param flowName the name of the current flow, which should be used in log statements or error messages
    */
-  def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorBasedFlowMaterializer, flowName: String): MaterializedType
+  def attach(flowPublisher: Publisher[In @uncheckedVariance], materializer: ActorFlowMaterializer, flowName: String): MaterializedType
 
   /**
    * This method is only used for Sinks that return true from [[#isActive]], which then must
    * implement it.
    */
-  def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Subscriber[In] @uncheckedVariance, MaterializedType) =
+  def create(materializer: ActorFlowMaterializer, flowName: String): (Subscriber[In] @uncheckedVariance, MaterializedType) =
     throw new UnsupportedOperationException(s"forgot to implement create() for $getClass that says isActive==true")
 
   /**
@@ -77,14 +78,14 @@ object PublisherSink {
  */
 class PublisherSink[In] extends KeyedActorFlowSink[In, Publisher[In]] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = flowPublisher
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = flowPublisher
 
   override def toString: String = "PublisherSink"
 }
 
 final case class FanoutPublisherSink[In](initialBufferSize: Int, maximumBufferSize: Int) extends KeyedActorFlowSink[In, Publisher[In]] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = {
     val fanoutActor = materializer.actorOf(
       Props(new FanoutProcessorImpl(materializer.settings, initialBufferSize, maximumBufferSize)), s"$flowName-fanoutPublisher")
     val fanoutProcessor = ActorProcessorFactory[In, In](fanoutActor)
@@ -119,13 +120,13 @@ object HeadSink {
  */
 class HeadSink[In] extends KeyedActorFlowSink[In, Future[In]] {
 
-  def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = {
     val (sub, f) = create(materializer, flowName)
     flowPublisher.subscribe(sub)
     f
   }
   override def isActive = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def create(materializer: ActorFlowMaterializer, flowName: String) = {
     val p = Promise[In]()
     val sub = new HeadSink.HeadSinkSubscriber[In](p)
     (sub, p.future)
@@ -139,10 +140,10 @@ class HeadSink[In] extends KeyedActorFlowSink[In, Future[In]] {
  * elements.
  */
 final case object BlackholeSink extends SimpleActorFlowSink[Any] {
-  override def attach(flowPublisher: Publisher[Any], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+  override def attach(flowPublisher: Publisher[Any], materializer: ActorFlowMaterializer, flowName: String): Unit =
     flowPublisher.subscribe(create(materializer, flowName)._1)
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) =
+  override def create(materializer: ActorFlowMaterializer, flowName: String) =
     (new BlackholeSubscriber[Any](materializer.settings.maxInputBufferSize), ())
 }
 
@@ -150,10 +151,10 @@ final case object BlackholeSink extends SimpleActorFlowSink[Any] {
  * Attaches a subscriber to this stream.
  */
 final case class SubscriberSink[In](subscriber: Subscriber[In]) extends SimpleActorFlowSink[In] {
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) =
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) =
     flowPublisher.subscribe(subscriber)
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = (subscriber, ())
+  override def create(materializer: ActorFlowMaterializer, flowName: String) = (subscriber, ())
 }
 
 object OnCompleteSink {
@@ -167,7 +168,7 @@ object OnCompleteSink {
  */
 final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends SimpleActorFlowSink[In] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = {
     val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, Unit] {
       override def onPush(elem: In, ctx: Context[Unit]): Directive = ctx.pull()
       override def onUpstreamFailure(cause: Throwable, ctx: Context[Unit]): TerminationDirective = {
@@ -194,7 +195,7 @@ final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends Simple
  */
 final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In, Future[Unit]] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = {
     val promise = Promise[Unit]()
     val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, Unit] {
       override def onPush(elem: In, ctx: Context[Unit]): Directive = {
@@ -228,7 +229,7 @@ final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In, 
  */
 final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFlowSink[In, Future[U]] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String) = {
     val promise = Promise[U]()
     val section = (s: Source[In]) ⇒ s.transform(() ⇒ new PushStage[In, U] {
       private var aggregator = zero
@@ -262,7 +263,7 @@ final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFl
  */
 final case object CancelSink extends SimpleActorFlowSink[Any] {
 
-  override def attach(flowPublisher: Publisher[Any], materializer: ActorBasedFlowMaterializer, flowName: String): Unit = {
+  override def attach(flowPublisher: Publisher[Any], materializer: ActorFlowMaterializer, flowName: String): Unit = {
     flowPublisher.subscribe(new Subscriber[Any] {
       override def onError(t: Throwable): Unit = ()
       override def onSubscribe(s: Subscription): Unit = s.cancel()
@@ -278,14 +279,14 @@ final case object CancelSink extends SimpleActorFlowSink[Any] {
  */
 final case class PropsSink[In](props: Props) extends KeyedActorFlowSink[In, ActorRef] {
 
-  override def attach(flowPublisher: Publisher[In], materializer: ActorBasedFlowMaterializer, flowName: String): ActorRef = {
+  override def attach(flowPublisher: Publisher[In], materializer: ActorFlowMaterializer, flowName: String): ActorRef = {
     val (subscriber, subscriberRef) = create(materializer, flowName)
     flowPublisher.subscribe(subscriber)
     subscriberRef
   }
 
   override def isActive: Boolean = true
-  override def create(materializer: ActorBasedFlowMaterializer, flowName: String) = {
+  override def create(materializer: ActorFlowMaterializer, flowName: String) = {
     val subscriberRef = materializer.actorOf(props, name = s"$flowName-props")
     (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
   }

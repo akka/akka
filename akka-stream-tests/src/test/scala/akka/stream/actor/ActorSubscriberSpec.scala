@@ -5,7 +5,7 @@ package akka.stream.actor
 
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.routing.{ ActorRefRoutee, RoundRobinRoutingLogic, Router }
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
@@ -95,7 +95,7 @@ class ActorSubscriberSpec extends AkkaSpec with ImplicitSender {
   import ActorSubscriberMessage._
   import ActorSubscriberSpec._
 
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "An ActorSubscriber" must {
 

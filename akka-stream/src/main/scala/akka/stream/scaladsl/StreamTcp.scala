@@ -18,12 +18,12 @@ import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.io.Inet.SocketOption
 import akka.io.Tcp
-import akka.stream.{ FlowMaterializer, MaterializerSettings }
+import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.impl._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
-import akka.actor.actorRef2Scala
 import akka.stream.impl.io.TcpStreamActor
 import akka.stream.impl.io.TcpListenStreamActor
 import akka.stream.impl.io.DelayedInitProcessor
@@ -155,7 +155,7 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
            idleTimeout: Duration = Duration.Inf): ServerBinding = {
     val connectionSource = new KeyedActorFlowSource[IncomingConnection, (Future[InetSocketAddress], Future[() ⇒ Future[Unit]])] {
       override def attach(flowSubscriber: Subscriber[IncomingConnection],
-                          materializer: ActorBasedFlowMaterializer,
+                          materializer: ActorFlowMaterializer,
                           flowName: String): MaterializedType = {
         val localAddressPromise = Promise[InetSocketAddress]()
         val unbindPromise = Promise[() ⇒ Future[Unit]]()

@@ -3,7 +3,7 @@
  */
 package docs.stream
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.FlowGraph
@@ -25,7 +25,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "build with open ports" in {
     // format: OFF

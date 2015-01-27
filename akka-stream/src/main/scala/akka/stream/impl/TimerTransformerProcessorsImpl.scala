@@ -4,13 +4,13 @@
 package akka.stream.impl
 
 import java.util.LinkedList
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.TimerTransformer
 import scala.util.control.NonFatal
 import akka.actor.Props
 
 private[akka] object TimerTransformerProcessorsImpl {
-  def props(settings: MaterializerSettings, transformer: TimerTransformer[Any, Any]): Props =
+  def props(settings: ActorFlowMaterializerSettings, transformer: TimerTransformer[Any, Any]): Props =
     Props(new TimerTransformerProcessorsImpl(settings, transformer))
 }
 
@@ -18,7 +18,7 @@ private[akka] object TimerTransformerProcessorsImpl {
  * INTERNAL API
  */
 private[akka] class TimerTransformerProcessorsImpl(
-  _settings: MaterializerSettings,
+  _settings: ActorFlowMaterializerSettings,
   transformer: TimerTransformer[Any, Any])
   extends ActorProcessorImpl(_settings) with Emit {
   import TimerTransformer._

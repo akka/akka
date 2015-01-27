@@ -10,7 +10,7 @@ import akka.http.marshallers.xml.ScalaXmlSupport._
 import scala.collection.immutable.ListMap
 import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Source
 import akka.http.util._
 import akka.http.model._
@@ -20,7 +20,7 @@ import MediaTypes._
 
 class MarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll with MultipartMarshallers with MarshallingTestUtils {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   import system.dispatcher
 
   "The PredefinedToEntityMarshallers." - {

@@ -8,7 +8,7 @@ import scala.util.control.NonFatal
 import akka.actor.Actor
 import akka.actor.Props
 import akka.event.Logging
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 
 import org.reactivestreams.Subscriber
 
@@ -16,7 +16,7 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 private[akka] object IteratorPublisher {
-  def props(iterator: Iterator[Any], settings: MaterializerSettings): Props =
+  def props(iterator: Iterator[Any], settings: ActorFlowMaterializerSettings): Props =
     Props(new IteratorPublisher(iterator, settings)).withDispatcher(settings.dispatcher)
 
   private case object PushMore
@@ -34,7 +34,7 @@ private[akka] object IteratorPublisher {
  * INTERNAL API
  * Elements are produced from the iterator.
  */
-private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: MaterializerSettings) extends Actor {
+private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: ActorFlowMaterializerSettings) extends Actor {
   import IteratorPublisher._
   import ReactiveStreamsCompliance._
 

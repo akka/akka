@@ -3,8 +3,8 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.testkit.StreamTestKit
@@ -35,10 +35,10 @@ class GraphFlowSpec extends AkkaSpec {
 
   import GraphFlowSpec._
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   def validateProbe(probe: SubscriberProbe[Int], requests: Int, result: Set[Int]): Unit = {
     val subscription = probe.expectSubscription()
