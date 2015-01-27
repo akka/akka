@@ -14,11 +14,15 @@ import akka.stream.stage._
 import org.reactivestreams.{ Subscriber, Subscription }
 import scala.util.control.NonFatal
 import akka.actor.Props
+import akka.actor.ActorLogging
+import akka.event.LoggingAdapter
 
 /**
  * INTERNAL API
  */
-private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundaryStage {
+private[akka] class BatchingActorInputBoundary(val size: Int)
+  extends BoundaryStage {
+
   require(size > 0, "buffer size cannot be zero")
   require((size & (size - 1)) == 0, "buffer size must be a power of two")
 
@@ -143,7 +147,8 @@ private[akka] class BatchingActorInputBoundary(val size: Int) extends BoundarySt
 /**
  * INTERNAL API
  */
-private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundaryStage {
+private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boolean, log: LoggingAdapter)
+  extends BoundaryStage {
 
   private var exposedPublisher: ActorPublisher[Any] = _
 
@@ -172,6 +177,8 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef) extends BoundarySta
   def fail(e: Throwable): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
+      if (debugLogging)
+        log.debug("fail due to: {}", e.getMessage)
       if (subscriber ne null) subscriber.onError(e)
       if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
     }
@@ -256,10 +263,10 @@ private[akka] object ActorInterpreter {
  * INTERNAL API
  */
 private[akka] class ActorInterpreter(val settings: MaterializerSettings, val ops: Seq[Stage[_, _]])
-  extends Actor {
+  extends Actor with ActorLogging {
 
   private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize)
-  private val downstream = new ActorOutputBoundary(self)
+  private val downstream = new ActorOutputBoundary(self, settings.debugLogging, log)
   private val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream)
   interpreter.init()
 

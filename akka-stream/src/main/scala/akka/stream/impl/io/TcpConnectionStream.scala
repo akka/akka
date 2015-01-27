@@ -185,7 +185,8 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
   writePump.nextPhase(writePump.running)
 
   def fail(e: Throwable): Unit = {
-    log.debug("fail {} due to: {}", self, e.getMessage)
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     tcpInputs.cancel()
     tcpOutputs.cancel(e)
     primaryInputs.cancel()

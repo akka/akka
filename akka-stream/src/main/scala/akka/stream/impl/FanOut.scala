@@ -245,7 +245,8 @@ private[akka] abstract class FanOut(val settings: MaterializerSettings, val outp
 
   protected def fail(e: Throwable): Unit = {
     // FIXME: escalate to supervisor
-    log.debug("fail {} due to: {}", self, e.getMessage)
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     outputBunch.cancel(e)
     context.stop(self)
