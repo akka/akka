@@ -95,14 +95,14 @@ object Source {
     new Source(scaladsl.Source(future))
 
   /**
-   * Elements are produced from the tick closure periodically with the specified interval.
+   * Elements are emitted periodically with the specified interval.
    * The tick element will be delivered to downstream consumers that has requested any elements.
    * If a consumer has not requested any elements at the point in time when the tick
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Callable[O]): javadsl.KeyedSource[O, Cancellable] =
-    new KeyedSource(scaladsl.Source(initialDelay, interval, () ⇒ tick.call()))
+  def from[O](initialDelay: FiniteDuration, interval: FiniteDuration, tick: O): javadsl.KeyedSource[O, Cancellable] =
+    new KeyedSource(scaladsl.Source(initialDelay, interval, tick))
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
