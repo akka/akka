@@ -244,7 +244,9 @@ private[akka] abstract class FanOut(val settings: MaterializerSettings, val outp
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    // FIXME: escalate to supervisor
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     outputBunch.cancel(e)
     context.stop(self)
