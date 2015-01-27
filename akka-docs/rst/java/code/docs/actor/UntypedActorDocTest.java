@@ -535,6 +535,31 @@ public class UntypedActorDocTest {
     //#props-factory
   }
 
+  static
+  //#messages-in-companion
+  public class DemoMessagesActor extends UntypedActor {
+
+    static public class Greeting {
+      private final String from;
+
+      public Greeting(String from) {
+        this.from = from;
+      }
+
+      public String getGreeter() {
+        return from;
+      }
+    }
+
+    public void onReceive(Object message) throws Exception {
+      if (message instanceof Greeting) {
+        getSender().tell("Hello " + ((Greeting) message).getGreeter(), getSelf());
+      } else
+        unhandled(message);
+    }
+  }
+  //#messages-in-companion
+
   public static class MyActor extends UntypedActor {
 
     final String s;
