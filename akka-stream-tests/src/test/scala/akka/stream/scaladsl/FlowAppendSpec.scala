@@ -4,16 +4,16 @@
 package akka.stream.scaladsl
 
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import org.reactivestreams.Subscriber
 import org.scalatest.Matchers
 
 class FlowAppendSpec extends AkkaSpec with River {
 
-  val settings = MaterializerSettings(system)
-  implicit val materializer = FlowMaterializer(settings)
+  val settings = ActorFlowMaterializerSettings(system)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "Flow" should {
     "append Flow" in riverOf[String] { subscriber ⇒

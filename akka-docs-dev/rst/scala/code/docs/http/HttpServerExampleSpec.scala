@@ -16,10 +16,10 @@ class HttpServerExampleSpec
   "binding example" in {
     //#bind-example
     import akka.http.Http
-    import akka.stream.FlowMaterializer
+    import akka.stream.ActorFlowMaterializer
 
     implicit val system = ActorSystem()
-    implicit val materializer = FlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
 
     val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
     serverBinding.connections.foreach { connection => // foreach materializes the source
@@ -30,10 +30,10 @@ class HttpServerExampleSpec
 
   "full-server-example" in {
     import akka.http.Http
-    import akka.stream.FlowMaterializer
+    import akka.stream.ActorFlowMaterializer
 
     implicit val system = ActorSystem()
-    implicit val materializer = FlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
 
     val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
 

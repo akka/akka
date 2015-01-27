@@ -1,7 +1,7 @@
 package akka.stream.impl
 
 import akka.actor.{ Actor, ActorRef }
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.Subscriber
 
 /**
@@ -91,7 +91,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
  * INTERNAL API
  */
 private[akka] class FanoutProcessorImpl(
-  _settings: MaterializerSettings,
+  _settings: ActorFlowMaterializerSettings,
   initialFanoutBufferSize: Int,
   maximumFanoutBufferSize: Int) extends ActorProcessorImpl(_settings) {
 

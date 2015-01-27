@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
+import akka.stream.ActorFlowMaterializer
 import akka.stream.FlowMaterializer
 import akka.http.client.RequestBuilding
 import akka.http.util.FastFuture
@@ -41,7 +42,7 @@ trait RouteTest extends RequestBuilding with RouteTestResultComponent with Marsh
   }
   implicit val system = createActorSystem()
   implicit def executor = system.dispatcher
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   def cleanUp(): Unit = system.shutdown()
 

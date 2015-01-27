@@ -9,7 +9,7 @@ import akka.actor.Props
 import akka.routing.ActorRefRoutee
 import akka.routing.RoundRobinRoutingLogic
 import akka.routing.Router
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.actor.ActorSubscriber
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.actor.MaxInFlightRequestStrategy
@@ -72,7 +72,7 @@ object ActorSubscriberDocSpec {
 class ActorSubscriberDocSpec extends AkkaSpec {
   import ActorSubscriberDocSpec._
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "illustrate usage of ActorSubscriber" in {
     val replyTo = testActor

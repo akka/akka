@@ -7,7 +7,7 @@ import akka.event.Logging
 
 import scala.collection.{ mutable, immutable }
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.AkkaSpec
@@ -40,7 +40,7 @@ abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env
   override def createErrorStatePublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
 
-  def createSimpleIntPublisher(elements: Long)(implicit mat: FlowMaterializer): Publisher[Int] = {
+  def createSimpleIntPublisher(elements: Long)(implicit mat: ActorFlowMaterializer): Publisher[Int] = {
     val iterable: immutable.Iterable[Int] =
       if (elements == Long.MaxValue) 1 to Int.MaxValue
       else 0 until elements.toInt

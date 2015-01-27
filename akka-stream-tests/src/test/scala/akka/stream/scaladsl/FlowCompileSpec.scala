@@ -6,8 +6,8 @@ package akka.stream.scaladsl
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 
 class FlowCompileSpec extends AkkaSpec {
@@ -17,7 +17,7 @@ class FlowCompileSpec extends AkkaSpec {
 
   import scala.concurrent.ExecutionContext.Implicits.global
   val intFut = Source(Future { 3 })
-  implicit val materializer = FlowMaterializer(MaterializerSettings(system))
+  implicit val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system))
 
   "Flow" should {
     "should not run" in {

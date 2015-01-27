@@ -3,7 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.Source
 import akka.actor.Props
 
@@ -11,14 +11,14 @@ import akka.actor.Props
  * INTERNAL API
  */
 private[akka] object GroupByProcessorImpl {
-  def props(settings: MaterializerSettings, keyFor: Any ⇒ Any): Props =
+  def props(settings: ActorFlowMaterializerSettings, keyFor: Any ⇒ Any): Props =
     Props(new GroupByProcessorImpl(settings, keyFor))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class GroupByProcessorImpl(settings: MaterializerSettings, val keyFor: Any ⇒ Any)
+private[akka] class GroupByProcessorImpl(settings: ActorFlowMaterializerSettings, val keyFor: Any ⇒ Any)
   extends MultiStreamOutputProcessor(settings) {
 
   import MultiStreamOutputProcessor._

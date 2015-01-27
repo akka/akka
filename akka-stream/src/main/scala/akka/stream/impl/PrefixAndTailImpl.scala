@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import scala.collection.immutable
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.Source
 import akka.actor.Props
 
@@ -12,14 +12,14 @@ import akka.actor.Props
  * INTERNAL API
  */
 private[akka] object PrefixAndTailImpl {
-  def props(settings: MaterializerSettings, takeMax: Int): Props =
+  def props(settings: ActorFlowMaterializerSettings, takeMax: Int): Props =
     Props(new PrefixAndTailImpl(settings, takeMax))
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class PrefixAndTailImpl(_settings: MaterializerSettings, val takeMax: Int)
+private[akka] class PrefixAndTailImpl(_settings: ActorFlowMaterializerSettings, val takeMax: Int)
   extends MultiStreamOutputProcessor(_settings) {
 
   import MultiStreamOutputProcessor._

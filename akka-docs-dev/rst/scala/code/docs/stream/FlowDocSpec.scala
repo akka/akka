@@ -14,10 +14,10 @@ class FlowDocSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
 
   //#imports
-  import akka.stream.FlowMaterializer
+  import akka.stream.ActorFlowMaterializer
   //#imports
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "source is immutable" in {
     //#source-immutable

@@ -9,6 +9,7 @@ import akka.http.Http.ServerBinding
 import akka.actor.ActorSystem
 import akka.http.Http
 import akka.http.server.japi.impl.RouteImplementation
+import akka.stream.ActorFlowMaterializer
 import akka.stream.FlowMaterializer
 import akka.stream.javadsl.MaterializedMap
 
@@ -18,7 +19,7 @@ trait HttpServiceBase {
    */
   def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem): MaterializedMap = {
     implicit val sys = system
-    implicit val mat = FlowMaterializer()
+    implicit val mat = ActorFlowMaterializer()
     handleConnectionsWithRoute(Http(system).bind(interface, port), route, system, mat)
   }
 

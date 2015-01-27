@@ -3,7 +3,7 @@
  */
 package docs.stream
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
@@ -15,7 +15,7 @@ import scala.util.control.NoStackTrace
 class FlexiDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "implement zip using readall" in {
     //#fleximerge-zip-readall

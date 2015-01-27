@@ -9,16 +9,16 @@ import scala.concurrent.forkjoin.ThreadLocalRandom.{ current ⇒ random }
 
 import scala.collection.immutable
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 
 class FlowScanSpec extends AkkaSpec {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "A Scan" must {
 

@@ -254,7 +254,7 @@ is ``completed`` before ``g``, but still emitted afterwards.
 
 The numbers in parenthesis illustrates how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
-calls are limited by the buffer size (4) of the :class:`MaterializerSettings`.
+calls are limited by the buffer size (4) of the :class:`ActorFlowMaterializerSettings`.
 
 Here is how we can use the same service with ``mapAsyncUnordered``:
 
@@ -310,7 +310,7 @@ Note that ``after`` lines are not in the same order as the ``before`` lines. For
 
 The numbers in parenthesis illustrates how many calls that are in progress at
 the same time. Here the downstream demand and thereby the number of concurrent
-calls are limited by the buffer size (4) of the :class:`MaterializerSettings`.
+calls are limited by the buffer size (4) of the :class:`ActorFlowMaterializerSettings`.
 
 .. _reactive-streams-integration-scala:
 
