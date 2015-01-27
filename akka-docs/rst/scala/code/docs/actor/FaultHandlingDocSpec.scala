@@ -18,8 +18,6 @@ object FaultHandlingDocSpec {
   import akka.actor.Actor
 
   //#child
-  //#supervisor
-  //#supervisor
   class Supervisor extends Actor {
     //#strategy
     import akka.actor.OneForOneStrategy
@@ -81,7 +79,6 @@ object FaultHandlingDocSpec {
 
     def receive = Actor.emptyBehavior
   }
-  //#supervisor
 
   //#child
   class Child extends Actor {
@@ -109,10 +106,9 @@ class FaultHandlingDocSpec extends TestKit(ActorSystem("FaultHandlingDocSpec", t
   override def afterAll() {
     system.terminate()
   }
-  //#testkit
 
   "A supervisor" must "apply the chosen strategy for its child" in {
-    //#testkit
+	  //#testkit
 
     //#create
     val supervisor = system.actorOf(Props[Supervisor], "supervisor")
