@@ -8,14 +8,14 @@ import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import org.scalatest.concurrent.ScalaFutures
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.http.unmarshalling.Unmarshal
 import akka.http.marshalling.Marshal
 import akka.http.model._
 
 class FormDataSpec extends WordSpec with Matchers with ScalaFutures with BeforeAndAfterAll {
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
   import system.dispatcher
 
   val formData = FormData(Map("surname" -> "Smith", "age" -> "42"))
