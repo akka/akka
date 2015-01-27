@@ -15,6 +15,7 @@ import akka.stream.StreamTcpException
 import org.reactivestreams.Processor
 import akka.actor.Stash
 import akka.stream.impl._
+import akka.actor.ActorLogging
 
 /**
  * INTERNAL API
@@ -36,7 +37,8 @@ private[akka] object TcpStreamActor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor with Stash {
+private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor with Stash
+  with ActorLogging {
 
   import TcpStreamActor._
 
@@ -183,6 +185,8 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
   writePump.nextPhase(writePump.running)
 
   def fail(e: Throwable): Unit = {
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     tcpInputs.cancel()
     tcpOutputs.cancel(e)
     primaryInputs.cancel()

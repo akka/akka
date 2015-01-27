@@ -250,7 +250,9 @@ private[akka] abstract class ActorProcessorImpl(val settings: MaterializerSettin
   protected def onError(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    log.error(e, "failure during processing") // FIXME: escalate to supervisor instead
+    // FIXME: escalate to supervisor
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     primaryOutputs.cancel(e)
     context.stop(self)
