@@ -29,8 +29,8 @@ class GraphJunctionAttributesSpec extends AkkaSpec {
       val source = Source[(SlowTick, List[FastTick])]() { implicit b ⇒
         import FlowGraphImplicits._
 
-        val slow = Source(0.seconds, 100.millis, () ⇒ SlowTick)
-        val fast = Source(0.seconds, 10.millis, () ⇒ FastTick)
+        val slow = Source(0.seconds, 100.millis, SlowTick)
+        val fast = Source(0.seconds, 10.millis, FastTick)
         val sink = UndefinedSink[(SlowTick, List[FastTick])]
 
         val zip = Zip[SlowTick, List[FastTick]](inputBuffer(1, 1))

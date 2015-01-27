@@ -48,10 +48,10 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
       val zipper = ZipWith[Tick, Int, Int]((tick, count) => count)
 
-      Source(initialDelay = 1.second, interval = 1.second, () => "message!")
+      Source(initialDelay = 1.second, interval = 1.second, "message!")
         .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.right
 
-      Source(initialDelay = 3.second, interval = 3.second, () => Tick()) ~> zipper.left
+      Source(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.left
 
       zipper.out ~> Sink.foreach(println)
     }
