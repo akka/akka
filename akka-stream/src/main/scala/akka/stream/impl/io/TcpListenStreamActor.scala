@@ -161,7 +161,8 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
   }
 
   def fail(e: Throwable): Unit = {
-    log.debug("fail {} due to: {}", self, e.getMessage)
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     incomingConnections.cancel()
     primaryOutputs.cancel(e)
   }

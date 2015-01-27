@@ -214,7 +214,8 @@ private[akka] abstract class FanIn(val settings: MaterializerSettings, val input
 
   protected def fail(e: Throwable): Unit = {
     // FIXME: escalate to supervisor
-    log.debug("fail {} due to: {}", self, e.getMessage)
+    if (settings.debugLogging)
+      log.debug("fail due to: {}", e.getMessage)
     inputBunch.cancel()
     primaryOutputs.cancel(e)
     context.stop(self)

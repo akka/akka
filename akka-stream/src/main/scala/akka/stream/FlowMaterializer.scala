@@ -183,7 +183,8 @@ object MaterializerSettings {
       config.getInt("max-input-buffer-size"),
       config.getString("dispatcher"),
       StreamSubscriptionTimeoutSettings(config),
-      config.getString("file-io-dispatcher"))
+      config.getString("file-io-dispatcher"),
+      config.getBoolean("debug-logging"))
 
   /**
    * Java API
@@ -221,7 +222,8 @@ final case class MaterializerSettings(
   maxInputBufferSize: Int,
   dispatcher: String,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  fileIODispatcher: String) { // FIXME Why does this exist?!
+  fileIODispatcher: String, // FIXME Why does this exist?!
+  debugLogging: Boolean) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
@@ -234,6 +236,9 @@ final case class MaterializerSettings(
 
   def withDispatcher(dispatcher: String): MaterializerSettings =
     copy(dispatcher = dispatcher)
+
+  def withDebugLogging(enable: Boolean): MaterializerSettings =
+    copy(debugLogging = enable)
 
   private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0 // FIXME this considers 0 a power of 2
 }
