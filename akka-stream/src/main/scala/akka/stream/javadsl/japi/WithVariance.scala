@@ -46,6 +46,15 @@ trait Procedure[-T] {
 }
 
 /**
+ * A Procedure is like a Function2, but it doesn't produce a return value.
+ */
+@SerialVersionUID(1L) // FIXME: add variance to akka.japi and remove this akka.stream.japi!
+trait Procedure2[-T1, -T2] {
+  @throws(classOf[Exception])
+  def apply(first: T1, second: T2): Unit
+}
+
+/**
  * Java API: Defines a criteria and determines whether the parameter meets this criteria.
  */
 @SerialVersionUID(1L) // FIXME: add variance to akka.japi and remove this akka.stream.japi!

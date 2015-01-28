@@ -4,19 +4,7 @@
 package docs.stream
 
 import akka.stream.FlowMaterializer
-import akka.stream.scaladsl.Broadcast
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.FlowGraph
-import akka.stream.scaladsl.FlowGraphImplicits
-import akka.stream.scaladsl.PartialFlowGraph
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.UndefinedSink
-import akka.stream.scaladsl.UndefinedSource
-import akka.stream.scaladsl.Zip
-import akka.stream.scaladsl.ZipWith
-import akka.stream.scaladsl.Merge
-import akka.stream.scaladsl.Ports
+import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 import scala.concurrent.Await
@@ -90,20 +78,17 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
     val pairs: Source[(Int, Int)] = Source() { implicit b =>
-      import FlowGraphImplicits._
+      out =>
+        import FlowGraphImplicits._
 
-      // prepare graph elements
-      val undefinedSink = UndefinedSink[(Int, Int)]
-      val zip = Zip[Int, Int]
-      def ints = Source(() => Iterator.from(1))
+        // prepare graph elements
+        val zip = Zip[Int, Int]
+        def ints = Source(() => Iterator.from(1))
 
-      // connect the graph
-      ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
-      ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.right
-      zip.out ~> undefinedSink
-
-      // expose undefined sink
-      undefinedSink
+        // connect the graph
+        ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
+        ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.right
+        zip.out ~> out
     }
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
@@ -137,7 +122,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
-      //#flow-from-partial-flow-graph
+    //#flow-from-partial-flow-graph
     pairUpWithToString.runWith(Source(List(1)), Sink.head)
     //#flow-from-partial-flow-graph
     // format: ON
@@ -145,61 +130,4 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     Await.result(matSink, 300.millis) should equal(1 -> "1")
   }
 
-  "help users in providing complex ports" in {
-    object AudioPorts extends Ports {
-      val nums = Input[Int] // TODO: use I / O words or keep sinks/sources?
-      val words = Input[String]
-
-      val out = Output[String]
-    }
-
-    // building
-    val g = PartialFlowGraph(AudioPorts) { implicit b ⇒
-      import FlowGraphImplicits._
-      val merge = Merge[String]
-      // format: OFF
-      AudioPorts.nums ~> Flow[Int].map(_.toString) ~> merge
-                                  AudioPorts.words ~> merge ~> AudioPorts.out
-      // format: ON
-    }
-
-    // connecting, current style:
-    FlowGraph(g) { b ⇒
-      b.attachSource(AudioPorts.nums, Source(1 to 10))
-      b.attachSource(AudioPorts.words, Source((1 to 10).map(_.toString)))
-      b.attachSink(AudioPorts.out, Sink.ignore)
-    }.run()
-
-    // connecting, proposed style for Ports:
-    FlowGraph(g) { implicit b ⇒
-      import AudioPorts._
-
-      AudioPorts.nums(Source(1 to 10))( /* implicit */ b)
-      AudioPorts.words(Source((1 to 10).map(_.toString)))
-      AudioPorts.out(Sink.ignore)
-    }.run()
-  }
-
-  "throw when not all Ports ports are connected" in {
-    case object AudioPorts extends Ports {
-      val nums = Input[Int]
-      val words = Input[String]
-
-      val out = Output[String]
-    }
-
-    val ex = intercept[IllegalArgumentException] {
-      PartialFlowGraph(AudioPorts) { implicit b ⇒
-        import FlowGraphImplicits._
-        val merge = Merge[String]
-        // format: OFF
-        AudioPorts.nums ~> Flow[Int].map(_.toString) ~> merge
-                                    AudioPorts.words ~> merge ~> Sink.ignore
-        // format: ON
-      }
-    }
-
-    ex.getMessage should include("must contain all ports")
-
-  }
 }

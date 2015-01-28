@@ -42,8 +42,8 @@ object Sink {
    * Creates a `Sink` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSource`.
    */
-  def create[T]()(block: japi.Function[FlowGraphBuilder, UndefinedSource[T]]): Sink[T] =
-    new Sink(scaladsl.Sink.apply() { b ⇒ block.apply(b.asJava).asScala })
+  def create[T]()(block: japi.Procedure2[FlowGraphBuilder, UndefinedSource[T]]): Sink[T] =
+    new Sink(scaladsl.Sink.apply() { b ⇒ in ⇒ block.apply(b.asJava, in.asJava) })
 
   /**
    * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects
