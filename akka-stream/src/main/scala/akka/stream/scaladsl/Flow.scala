@@ -115,7 +115,7 @@ object Flow {
   /**
    * Create a [[Flow]] from a seemingly disconnected [[Source]] and [[Sink]] pair.
    */
-  def apply[I, O](sink: Sink[I], source: Source[O]): Flow[I, O] = GraphFlow(sink, source)
+  def apply[I, O](sink: Sink[I], source: Source[O]): Flow[I, O] = GraphBackedFlow(sink, source)
 }
 
 /**

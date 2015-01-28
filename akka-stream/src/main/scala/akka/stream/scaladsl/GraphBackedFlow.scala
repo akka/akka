@@ -11,13 +11,13 @@ import scala.collection.immutable
 /**
  * INTERNAL API
  */
-private[scaladsl] object GraphFlow {
+private[scaladsl] object GraphBackedFlow {
 
   /**
-   * Create a [[GraphFlow]] from this [[Flow]]
+   * Create a [[GraphBackedFlow]] from this [[Flow]]
    */
   def apply[In, Out](flow: Flow[In, Out]) = flow match {
-    case gFlow: GraphFlow[In, _, _, Out] ⇒ gFlow
+    case gFlow: GraphBackedFlow[In, _, _, Out] ⇒ gFlow
     case _ ⇒ Flow() { implicit b ⇒
       import FlowGraphImplicits._
       val in = UndefinedSource[In]
@@ -28,7 +28,7 @@ private[scaladsl] object GraphFlow {
   }
 
   /**
-   * Create a [[GraphFlow]] from a seemingly disconnected [[Source]] and [[Sink]] pair.
+   * Create a [[GraphBackedFlow]] from a seemingly disconnected [[Source]] and [[Sink]] pair.
    */
   def apply[I, O](sink: Sink[I], source: Source[O]) = Flow() { implicit b ⇒
     import FlowGraphImplicits._
@@ -40,23 +40,23 @@ private[scaladsl] object GraphFlow {
   }
 }
 
-private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
+private[scaladsl] final case class GraphBackedFlow[-In, CIn, COut, +Out](
   inPipe: Pipe[In, CIn],
   in: UndefinedSource[CIn],
   graph: PartialFlowGraph,
   out: UndefinedSink[COut],
   outPipe: Pipe[COut, Out])
   extends Flow[In, Out] {
-  override type Repr[+O] = GraphFlow[In @uncheckedVariance, CIn, COut, O]
+  override type Repr[+O] = GraphBackedFlow[In @uncheckedVariance, CIn, COut, O]
 
-  private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphFlow[T, CIn, COut, Out] = copy(inPipe = pipe.appendPipe(inPipe))
+  private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphBackedFlow[T, CIn, COut, Out] = copy(inPipe = pipe.appendPipe(inPipe))
 
-  private[scaladsl] def prepend(pipe: SourcePipe[In]): GraphSource[COut, Out] = {
+  private[scaladsl] def prepend(pipe: SourcePipe[In]): GraphBackedSource[COut, Out] = {
     val b = new FlowGraphBuilder()
     b.allowCycles() // FIXME: remove after #16571 is cleared
     val (nIn, nOut) = remap(b)
     b.attachSource(nIn, pipe.appendPipe(inPipe))
-    GraphSource(b.partialBuild(), nOut, outPipe)
+    GraphBackedSource(b.partialBuild(), nOut, outPipe)
   }
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): (UndefinedSource[CIn], UndefinedSink[COut]) = {
@@ -74,14 +74,14 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
 
   def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
-    case gFlow: GraphFlow[Out, _, _, T] ⇒
+    case gFlow: GraphBackedFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
         b.allowCycles() // FIXME: remove after #16571 is cleared
         val (oIn, oOut) = gFlow.remap(b)
         b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
       }
-      GraphFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
+      GraphBackedFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
     case x ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
@@ -90,13 +90,13 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
       val newGraph = PartialFlowGraph(this.graph) { builder ⇒
         builder.attachSink(out, outPipe.to(sinkPipe))
       }
-      GraphSink(inPipe, in, newGraph)
-    case gSink: GraphSink[Out, Out] ⇒
+      GraphBackedSink(inPipe, in, newGraph)
+    case gSink: GraphBackedSink[Out, Out] ⇒
       val newGraph = PartialFlowGraph(graph) { b ⇒
         val oIn = gSink.remap(b)
         b.connect(out, outPipe.via(gSink.inPipe), oIn)
       }
-      GraphSink(inPipe, in, newGraph)
+      GraphBackedSink(inPipe, in, newGraph)
     case sink: Sink[Out] ⇒ to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
   }
 
@@ -106,7 +106,7 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
       b.allowCycles()
       b.allowDisconnected()
     }
-    case gFlow: GraphFlow[Out, _, _, In] ⇒
+    case gFlow: GraphBackedFlow[Out, _, _, In] ⇒
       FlowGraph(graph) { b ⇒
         val (oIn, oOut) = gFlow.remap(b)
         b.connect(out, outPipe.via(gFlow.inPipe), oIn, joining = true)
@@ -125,8 +125,8 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
   def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
-private[scaladsl] final case class GraphSource[COut, +Out](graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Source[Out] {
-  override type Repr[+O] = GraphSource[COut, O]
+private[scaladsl] final case class GraphBackedSource[COut, +Out](graph: PartialFlowGraph, out: UndefinedSink[COut], outPipe: Pipe[COut, Out]) extends Source[Out] {
+  override type Repr[+O] = GraphBackedSource[COut, O]
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): UndefinedSink[COut] = {
     val nOut = UndefinedSink[COut]
@@ -141,14 +141,14 @@ private[scaladsl] final case class GraphSource[COut, +Out](graph: PartialFlowGra
 
   override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
-    case gFlow: GraphFlow[Out, _, _, T] ⇒
+    case gFlow: GraphBackedFlow[Out, _, _, T] ⇒
       val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
         b.allowCycles() // FIXME: remove after #16571 is cleared
         val (oIn, oOut) = gFlow.remap(b)
         b.connect(out, outPipe.via(gFlow.inPipe), oIn)
         (b.partialBuild(), oOut)
       }
-      GraphSource(newGraph, nOut, gFlow.outPipe)
+      GraphBackedSource(newGraph, nOut, gFlow.outPipe)
   }
 
   override def to(sink: Sink[Out]): RunnableFlow = sink match {
@@ -156,7 +156,7 @@ private[scaladsl] final case class GraphSource[COut, +Out](graph: PartialFlowGra
       FlowGraph(this.graph) { implicit builder ⇒
         builder.attachSink(out, outPipe.to(sinkPipe))
       }
-    case gSink: GraphSink[Out, _] ⇒
+    case gSink: GraphBackedSink[Out, _] ⇒
       FlowGraph(graph) { b ⇒
         val oIn = gSink.remap(b)
         b.connect(out, outPipe.via(gSink.inPipe), oIn)
@@ -173,7 +173,7 @@ private[scaladsl] final case class GraphSource[COut, +Out](graph: PartialFlowGra
   def withAttributes(attr: OperationAttributes): Repr[Out] = copy(outPipe = outPipe.withAttributes(attr))
 }
 
-private[scaladsl] final case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph) extends Sink[In] {
+private[scaladsl] final case class GraphBackedSink[-In, CIn](inPipe: Pipe[In, CIn], in: UndefinedSource[CIn], graph: PartialFlowGraph) extends Sink[In] {
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): UndefinedSource[CIn] = {
     val nIn = UndefinedSource[CIn]
@@ -187,8 +187,8 @@ private[scaladsl] final case class GraphSink[-In, CIn](inPipe: Pipe[In, CIn], in
     }
   }
 
-  private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphSink[T, CIn] = {
-    GraphSink(pipe.appendPipe(inPipe), in, graph)
+  private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphBackedSink[T, CIn] = {
+    GraphBackedSink(pipe.appendPipe(inPipe), in, graph)
   }
 
   private[scaladsl] def importAndConnect(builder: FlowGraphBuilder, oOut: UndefinedSink[In @uncheckedVariance]): Unit = {

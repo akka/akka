@@ -9,7 +9,7 @@ import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.testkit.StreamTestKit
 
-object GraphFlowSpec {
+object GraphBackedFlowSpec {
   val source1 = Source(0 to 3)
   val inMerge = Merge[Int]
   val outMerge = Merge[String]
@@ -31,9 +31,9 @@ object GraphFlowSpec {
   val stdResult = Set(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 }
 
-class GraphFlowSpec extends AkkaSpec {
+class GraphBackedFlowSpec extends AkkaSpec {
 
-  import GraphFlowSpec._
+  import GraphBackedFlowSpec._
 
   val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
@@ -90,7 +90,7 @@ class GraphFlowSpec extends AkkaSpec {
         validateProbe(probe, stdRequests, stdResult)
       }
 
-      "work with another GraphFlow" in {
+      "work with another GraphBackedFlow" in {
         val in1 = UndefinedSource[Int]
         val out1 = UndefinedSink[String]
 
@@ -188,7 +188,7 @@ class GraphFlowSpec extends AkkaSpec {
         validateProbe(probe, stdRequests, stdResult)
       }
 
-      "work with an GraphFlow" in {
+      "work with an GraphBackedFlow" in {
         val out1 = UndefinedSink[String]
 
         val in2 = UndefinedSource[String]
@@ -292,7 +292,7 @@ class GraphFlowSpec extends AkkaSpec {
         validateProbe(probe, stdRequests, stdResult)
       }
 
-      "work with a GraphFlow" in {
+      "work with a GraphBackedFlow" in {
         val in1 = UndefinedSource[Int]
         val out1 = UndefinedSink[String]
 

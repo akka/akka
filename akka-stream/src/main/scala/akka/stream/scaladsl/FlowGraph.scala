@@ -619,7 +619,7 @@ class FlowGraphBuilder private[akka] (
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(source, junctionIn.vertex, pipe, inputPort = junctionIn.port, outputPort = UnlabeledPort)
-      case gflow: GraphFlow[In, _, _, Out] ⇒
+      case gflow: GraphBackedFlow[In, _, _, Out] ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(source, tOut)
@@ -638,7 +638,7 @@ class FlowGraphBuilder private[akka] (
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(junctionOut.vertex, sink, pipe, inputPort = UnlabeledPort, outputPort = junctionOut.port)
-      case gflow: GraphFlow[In, _, _, Out] ⇒
+      case gflow: GraphBackedFlow[In, _, _, Out] ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(junctionOut, tOut)
@@ -658,7 +658,7 @@ class FlowGraphBuilder private[akka] (
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(junctionOut.vertex, junctionIn.vertex, pipe, inputPort = junctionIn.port, outputPort = junctionOut.port)
-      case gflow: GraphFlow[In, _, _, Out] ⇒
+      case gflow: GraphBackedFlow[In, _, _, Out] ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(junctionOut, tOut)
@@ -675,7 +675,7 @@ class FlowGraphBuilder private[akka] (
     (source, flow) match {
       case (spipe: SourcePipe[In], pipe: Pipe[In, Out]) ⇒
         addSourceToPipeEdge(spipe.input, Pipe(spipe).appendPipe(pipe), junctionIn)
-      case (gsource: GraphSource[_, In], _) ⇒
+      case (gsource: GraphBackedSource[_, In], _) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(gsource, tOut)
@@ -694,7 +694,7 @@ class FlowGraphBuilder private[akka] (
     (flow, sink) match {
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
         addPipeToSinkEdge(junctionOut, pipe.appendPipe(Pipe(spipe)), spipe.output)
-      case (_, gsink: GraphSink[Out, _]) ⇒
+      case (_, gsink: GraphBackedSink[Out, _]) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(tIn, gsink)
@@ -702,7 +702,7 @@ class FlowGraphBuilder private[akka] (
         connect(tOut, flow, tIn)
       case (pipe: Pipe[In, Out], sink: Sink[Out]) ⇒
         addPipeToSinkEdge(junctionOut, pipe, sink)
-      case (gf: GraphFlow[_, Out, _, _], sink: Sink[Out]) ⇒
+      case (gf: GraphBackedFlow[_, Out, _, _], sink: Sink[Out]) ⇒
         addPipeToSinkEdge(junctionOut, gf.inPipe, sink)
       case x ⇒ throwUnsupportedValue(x)
     }
@@ -726,7 +726,7 @@ class FlowGraphBuilder private[akka] (
         val newPipe = pipe.via(Pipe(sinkPipe))
         val snk = sinkPipe.output
         addEdge(source, newPipe, snk) // recursive, but now it is a Source-Pipe-Sink
-      case (_, gflow: GraphFlow[In, _, _, Out], _) ⇒
+      case (_, gflow: GraphBackedFlow[In, _, _, Out], _) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(source, tOut)
@@ -746,7 +746,7 @@ class FlowGraphBuilder private[akka] (
     flow match {
       case pipe: Pipe[In, Out] ⇒
         addGraphEdge(source, sink, pipe, inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case gflow: GraphFlow[In, _, _, Out] ⇒
+      case gflow: GraphBackedFlow[In, _, _, Out] ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(source, tOut)
@@ -763,13 +763,13 @@ class FlowGraphBuilder private[akka] (
     (flow, sink) match {
       case (pipe: Pipe[In, Out], spipe: SinkPipe[Out]) ⇒
         addGraphEdge(source, SinkVertex(spipe.output), pipe.appendPipe(Pipe(spipe)), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case (gflow: GraphFlow[In, _, _, Out], _) ⇒
+      case (gflow: GraphBackedFlow[In, _, _, Out], _) ⇒
         val tOut = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
         addEdge(source, tOut)
         addEdge(tIn, sink)
         connect(tOut, gflow, tIn)
-      case (_, gSink: GraphSink[Out, _]) ⇒
+      case (_, gSink: GraphBackedSink[Out, _]) ⇒
         val oOut = UndefinedSink[Out]
         addEdge(source, flow, oOut)
         gSink.importAndConnect(this, oOut)
@@ -786,7 +786,7 @@ class FlowGraphBuilder private[akka] (
     (flow, source) match {
       case (pipe: Pipe[In, Out], spipe: SourcePipe[Out]) ⇒
         addGraphEdge(SourceVertex(spipe.input), sink, Pipe(spipe).appendPipe(pipe), inputPort = UnlabeledPort, outputPort = UnlabeledPort)
-      case (_, gsource: GraphSource[_, In]) ⇒
+      case (_, gsource: GraphBackedSource[_, In]) ⇒
         val tOut1 = UndefinedSource[In]
         val tOut2 = UndefinedSink[In]
         val tIn = UndefinedSource[Out]
@@ -841,7 +841,7 @@ class FlowGraphBuilder private[akka] (
           case spipe: SinkPipe[Out] ⇒
             val pipe = edge.label.pipe.appendPipe(Pipe(spipe))
             addOrReplaceSinkEdge(edge.from.label, SinkVertex(spipe.output), pipe, edge.label.inputPort, edge.label.outputPort)
-          case gsink: GraphSink[Out, _] ⇒
+          case gsink: GraphBackedSink[Out, _] ⇒
             gsink.importAndConnect(this, token)
           case sink: Sink[Out] ⇒
             addOrReplaceSinkEdge(edge.from.label, SinkVertex(sink), edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
@@ -861,7 +861,7 @@ class FlowGraphBuilder private[akka] (
           case spipe: SourcePipe[In] ⇒
             val pipe = Pipe(spipe).appendPipe(edge.label.pipe)
             addOrReplaceSourceEdge(SourceVertex(spipe.input), edge.to.label, pipe, edge.label.inputPort, edge.label.outputPort)
-          case gsource: GraphSource[_, In] ⇒
+          case gsource: GraphBackedSource[_, In] ⇒
             gsource.importAndConnect(this, token)
           case source: Source[In] ⇒
             addOrReplaceSourceEdge(SourceVertex(source), edge.to.label, edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
@@ -924,7 +924,7 @@ class FlowGraphBuilder private[akka] (
           val newPipe = outEdge.label.pipe.appendPipe(pipe.asInstanceOf[Pipe[Any, Nothing]]).appendPipe(inEdge.label.pipe)
           addOrReplaceGraphEdge(outEdge.from.label, inEdge.to.label, newPipe, inEdge.label.inputPort, outEdge.label.outputPort)
         }
-      case gflow: GraphFlow[A, _, _, B] ⇒
+      case gflow: GraphBackedFlow[A, _, _, B] ⇒
         require(joining == false, "Graph flows should have been split up to pipes while joining")
         gflow.importAndConnect(this, out, in)
       case x ⇒ throwUnsupportedValue(x)
@@ -1336,7 +1336,7 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    */
   def toSource[O](out: UndefinedSink[O]): Source[O] = {
     checkUndefinedSinksAndSources(sources = Nil, sinks = List(out), description = "Source")
-    GraphSource(this, out, Pipe.empty[O])
+    GraphBackedSource(this, out, Pipe.empty[O])
   }
 
   /**
@@ -1345,7 +1345,7 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    */
   def toFlow[I, O](in: UndefinedSource[I], out: UndefinedSink[O]): Flow[I, O] = {
     checkUndefinedSinksAndSources(sources = List(in), sinks = List(out), description = "Flow")
-    GraphFlow(Pipe.empty[I], in, this, out, Pipe.empty[O])
+    GraphBackedFlow(Pipe.empty[I], in, this, out, Pipe.empty[O])
   }
 
   /**
@@ -1354,7 +1354,7 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    */
   def toSink[I](in: UndefinedSource[I]): Sink[I] = {
     checkUndefinedSinksAndSources(sources = List(in), sinks = Nil, description = "Sink")
-    GraphSink(Pipe.empty[I], in, this)
+    GraphBackedSink(Pipe.empty[I], in, this)
   }
 
   private def checkUndefinedSinksAndSources(sources: List[UndefinedSource[_]], sinks: List[UndefinedSink[_]], description: String): Unit = {

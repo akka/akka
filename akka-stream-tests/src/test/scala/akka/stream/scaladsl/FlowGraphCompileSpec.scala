@@ -440,7 +440,7 @@ class FlowGraphCompileSpec extends AkkaSpec {
         }
       }
 
-      "Junction is connected through GraphFlow" in {
+      "Junction is connected through GraphBackedFlow" in {
         val gflow = Flow[Int, String]() { implicit builder ⇒
           import FlowGraphImplicits._
 
