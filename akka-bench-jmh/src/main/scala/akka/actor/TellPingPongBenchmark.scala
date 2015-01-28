@@ -54,7 +54,7 @@ class TellPingPongBenchmark {
   @OutputTimeUnit(TimeUnit.MILLISECONDS)
   @BenchmarkMode(Array(Mode.Throughput))
   @OperationsPerInvocation(200000) // twice as much messages are sent, because ping<->pong
-  @GenerateMicroBenchmark
+  @Benchmark
   def tell_100000_msgs_a() {
     waiter ! AwaitUntil(100000)
     worker.tell("ping", waiter)
@@ -65,7 +65,7 @@ class TellPingPongBenchmark {
   @OutputTimeUnit(TimeUnit.MICROSECONDS)
   @BenchmarkMode(Array(Mode.SampleTime))
   @OperationsPerInvocation(200000) // twice as much messages are sent, because ping<->pong
-  @GenerateMicroBenchmark
+  @Benchmark
   def tell_100000_msgs_b() {
     waiter ! AwaitUntil(100000)
     worker.tell("ping", waiter)

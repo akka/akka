@@ -60,27 +60,27 @@ class EventStreamSubscriptionsBenchmark {
   }
 
   @Threads(1)
-  @GenerateMicroBenchmark
+  @Benchmark
   def subscribe_unsubscribe_same_actor_1_thread() {
     eventStream.subscribe(subs, channelA)
     eventStream.unsubscribe(subs)
   }
 
   @Threads(8)
-  @GenerateMicroBenchmark
+  @Benchmark
   def subscribe_unsubscribe_same_actor_8_threads() {
     eventStream.subscribe(subs, channelA)
     eventStream.unsubscribe(subs)
   }
 
   @Group("subscribe_vs_unsubscribe")
-  @GenerateMicroBenchmark
+  @Benchmark
   def subscribing_in_group_vs_unsubscribing() {
     eventStream.subscribe(subs, channelA)
   }
 
   @Group("subscribe_vs_unsubscribe")
-  @GenerateMicroBenchmark
+  @Benchmark
   def unsubscribing_in_group_vs_subscribing() {
     eventStream.unsubscribe(subs)
   }

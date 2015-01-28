@@ -4,10 +4,10 @@
 
 package akka.event
 
-import org.openjdk.jmh.annotations._
-import com.typesafe.config.ConfigFactory
-import akka.actor.{ActorRef, ActorSystem}
+import akka.actor.ActorSystem
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
@@ -67,25 +67,25 @@ class EventStreamPublishingBenchmark {
   }
 
   @Threads(1)
-  @GenerateMicroBenchmark
+  @Benchmark
   def publish_matching_events_to_event_stream_1_thread() {
     eventStream.publish(a)
   }
 
   @Threads(8)
-  @GenerateMicroBenchmark
+  @Benchmark
   def publish_matching_events_to_event_stream_8_threads() {
     eventStream.publish(a)
   }
 
   @Threads(1)
-  @GenerateMicroBenchmark
+  @Benchmark
   def publish_notMatching_events_to_event_stream_1_threads() {
     eventStream.publish(c)
   }
 
   @Threads(8)
-  @GenerateMicroBenchmark
+  @Benchmark
   def publish_notMatching_events_to_event_stream_8_threads() {
     eventStream.publish(c)
   }
