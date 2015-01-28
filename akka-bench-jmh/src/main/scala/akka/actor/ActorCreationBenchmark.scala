@@ -54,7 +54,7 @@ class ActorCreationBenchmark {
 
   import ActorCreationPerfSpec._
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(100000)
   def actor_creation_time_for_actorOf_Props_EmptyActor__each_time_new__100k_actors() {
     val propsCreator = () => Props[EmptyActor]
@@ -62,7 +62,7 @@ class ActorCreationBenchmark {
     test(propsCreator)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(100000)
   def actor_creation_time_for_actorOf_Props_EmptyActor__each_time_same__100k_actors() {
     val p = Props[EmptyActor]
@@ -71,7 +71,7 @@ class ActorCreationBenchmark {
     test(propsCreator)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(100000)
   def actor_creation_time_for_actorOf_Props_new_EmptyActor__each_time_new__100k_actors() {
     val propsCreator = () => { Props(new EmptyActor) }
@@ -79,7 +79,7 @@ class ActorCreationBenchmark {
     test(propsCreator)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(100000)
   def actor_creation_time_for_actorOf_Props_new_EmptyActor__each_time_same__100k_actors() {
     val p = Props(new EmptyActor)
@@ -95,7 +95,7 @@ class ActorCreationBenchmark {
     test(propsCreator)
   }
 
-  @GenerateMicroBenchmark
+  @Benchmark
   @OperationsPerInvocation(100000)
   def actor_creation_time_for_actorOf_Props_classOf_EmptyArgsActor__each_time_same__100k_actors() {
     val p = Props(classOf[EmptyArgsActor], 4711, 1729)

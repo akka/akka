@@ -81,7 +81,8 @@ object AkkaBuild extends Build {
       validatePullRequest <<= Seq(SphinxSupport.generate in Sphinx in docsDev,
         test in Test in stream, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
         test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
-        test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev).dependOn,
+        test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
+        compile in Compile in benchJmh).dependOn,
       aggregate in publishM2 := false // REMOVE DURING MERGE INTO release-2.3
     ),
     aggregate = Seq(streamAndHttp) // FIXME DURING MERGE INTO release-2.3
@@ -198,7 +199,8 @@ object AkkaBuild extends Build {
     base = file("akka-bench-jmh"),
     dependencies = Seq(actor, stream, persistence, testkit).map(_ % "compile;compile->test"),
     settings = defaultSettings ++ Seq(
-      libraryDependencies ++= Dependencies.testkit
+      libraryDependencies ++= Dependencies.testkit,
+      publishArtifact in Compile := false
     ) ++ settings ++ jmhSettings
   )
 
