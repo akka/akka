@@ -115,8 +115,8 @@ object Source {
    * Creates a `Source` by using a [[FlowGraphBuilder]] from on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
    */
-  def fromGraph[T](block: japi.Function[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
-    new Source(scaladsl.Source()(x ⇒ block.apply(x.asJava).asScala))
+  def fromGraph[T](block: japi.Procedure2[FlowGraphBuilder, UndefinedSink[T]]): Source[T] =
+    new Source(scaladsl.Source()(x ⇒ out ⇒ block.apply(x.asJava, out.asJava)))
 
   /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor

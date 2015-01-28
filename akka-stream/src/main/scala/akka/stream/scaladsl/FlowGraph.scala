@@ -10,6 +10,7 @@ import akka.stream.impl.Ast
 import akka.stream.impl.Ast.FanInAstNode
 import akka.stream.impl.{ DirectedGraphBuilder, Edge }
 import akka.stream.impl.Ast.Defaults._
+import akka.stream.scaladsl.FlowGraphInternal.InternalVertex
 import akka.stream.scaladsl.OperationAttributes._
 import org.reactivestreams._
 
@@ -1300,6 +1301,17 @@ object PartialFlowGraph {
   def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
     apply(new FlowGraphBuilder(partialFlowGraph))(block)
 
+  def apply[P <: Ports](p: P, requireAllPorts: Boolean = true)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph = {
+    val partial = apply(block(_)(p))
+
+    // TODO: validation could point out which ones are not connected here
+    // TODO: We could also have "OptionalInput", have not thought that one through yet though
+    if (requireAllPorts)
+      p.validateAllIncluded(partial)
+
+    partial
+  }
+
   private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
     // FlowGraphBuilder does a full import on the passed graph, so no defensive copy needed
     block(builder)
@@ -1404,6 +1416,10 @@ object FlowGraphImplicits {
     def ~>(sink: UndefinedSink[Out])(implicit builder: FlowGraphBuilder): Unit =
       builder.addEdge(source, sink)
 
+    /** Attaches this [[Source]] to the [[UndefinedSource]]. */
+    def ~>(undefined: UndefinedSource[Out])(implicit builder: FlowGraphBuilder): Unit =
+      builder.attachSource(undefined, source)
+
     def ~>(sink: Sink[Out])(implicit builder: FlowGraphBuilder): Unit =
       builder.addEdge(source, sink)
   }
@@ -1472,6 +1488,14 @@ object FlowGraphImplicits {
       builder.addEdge(source, sink)
   }
 
+  implicit class UndefinedSinkOps[In](val undefined: UndefinedSink[In]) extends AnyVal {
+
+    /** Attaches this [[Sink]] to the [[UndefinedSink]]. */
+    def ~>(sink: Sink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.attachSink(undefined, sink)
+
+  }
+
   class UndefinedSourceNextStep[In, Out](source: UndefinedSource[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
     def ~>[T](otherFlow: Flow[Out, T]): UndefinedSourceNextStep[In, T] =
       new UndefinedSourceNextStep(source, flow.via(otherFlow), builder)
@@ -1487,4 +1511,39 @@ object FlowGraphImplicits {
     def ~>(sink: Sink[Out]): Unit =
       builder.addEdge(source, flow, sink)
   }
+}
+
+trait Ports {
+  private var inputs: List[UndefinedSource[_]] = Nil
+  private var outputs: List[UndefinedSink[_]] = Nil
+
+  // TODO: input / output words match "Ports" nicely, but maybe keeping undefinedSource adds "less words"?
+  protected def InputPort[T]: UndefinedSource[T] = {
+    val port = UndefinedSource[T]
+    inputs = port :: inputs
+    port
+  }
+
+  protected def OutputPort[T]: UndefinedSink[T] = {
+    val port = UndefinedSink[T]
+    outputs = port :: outputs
+    port
+  }
+
+  /**
+   * INTERNAL API
+   * @throws IllegalArgumentException when not all ports are included in the given graph
+   */
+  private[akka] def validateAllIncluded(graph: FlowGraphLike): Unit =
+    require(allPorts.forall(graph.graph.contains(_)),
+      s"PartialFlowGraph using ${this} must contain all ports contained within this Ports object")
+
+  // for validating all were connected, in case we want to make sure (I'd say most common case?)
+  /** INTERNAL API */
+  private[stream] def allPorts: List[InternalVertex] = inputs ::: outputs
+}
+
+object OutputPort {
+  def apply[T] = UndefinedSink[T]
+
 }

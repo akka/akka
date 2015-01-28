@@ -29,12 +29,23 @@ object Sink {
    */
   def apply[T](subscriber: Subscriber[T]): Sink[T] = SubscriberSink(subscriber)
 
+  //  /**
+  //   * Creates a `Sink` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
+  //   * returns the `UndefinedSource`.
+  //   */
+  //  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
+  //    createSinkFromBuilder(new FlowGraphBuilder(), block)
+
   /**
-   * Creates a `Sink` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
-   * returns the `UndefinedSource`.
+   * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
+   * returns the `UndefinedSink`.
    */
-  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
-    createSinkFromBuilder(new FlowGraphBuilder(), block)
+  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSource[T] ⇒ Unit): Sink[T] = {
+    val in = UndefinedSource[T]
+    val builder = new FlowGraphBuilder()
+    block(builder)(in)
+    builder.partialBuild().toSink(in)
+  }
 
   /**
    * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects

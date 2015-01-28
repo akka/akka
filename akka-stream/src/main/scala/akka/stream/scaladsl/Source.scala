@@ -139,12 +139,23 @@ object Source {
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): TickSource[T] =
     TickSource(initialDelay, interval, tick)
 
+  //  /**
+  //   * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
+  //   * returns the `UndefinedSink`.
+  //   */
+  //  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
+  //    createSourceFromBuilder(new FlowGraphBuilder(), block)
+
   /**
    * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSink`.
    */
-  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
-    createSourceFromBuilder(new FlowGraphBuilder(), block)
+  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T] ⇒ Unit): Source[T] = {
+    val out = UndefinedSink[T]
+    val builder = new FlowGraphBuilder()
+    block(builder)(out)
+    builder.partialBuild().toSource(out)
+  }
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
@@ -188,13 +199,13 @@ object Source {
    * source.
    */
   def concat[T](source1: Source[T], source2: Source[T]): Source[T] = {
-    val output = UndefinedSink[T]
     val concat = Concat[T]
     Source() { b ⇒
-      b.addEdge(source1, Pipe.empty[T], concat.first)
-        .addEdge(source2, Pipe.empty[T], concat.second)
-        .addEdge(concat.out, Pipe.empty[T], output)
-      output
+      output ⇒
+        b.addEdge(source1, Pipe.empty[T], concat.first)
+          .addEdge(source2, Pipe.empty[T], concat.second)
+          .addEdge(concat.out, Pipe.empty[T], output)
+        output
     }
   }
 
