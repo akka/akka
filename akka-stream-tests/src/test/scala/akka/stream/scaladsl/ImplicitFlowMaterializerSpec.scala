@@ -21,7 +21,7 @@ object ImplicitFlowMaterializerSpec {
       case "run" ⇒
         // run takes an implicit FlowMaterializer parameter, which is provided by ImplicitFlowMaterializer
         import context.dispatcher
-        flow.fold("")(_ + _) pipeTo sender()
+        flow.runFold("")(_ + _) pipeTo sender()
     }
   }
 }

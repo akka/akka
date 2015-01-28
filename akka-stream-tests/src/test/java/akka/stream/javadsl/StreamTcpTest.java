@@ -63,7 +63,7 @@ public class StreamTcpTest extends StreamTest {
     final Source<ByteString> responseStream =
       Source.from(testInput).via(StreamTcp.get(system).outgoingConnection(serverAddress).flow());
     
-    final Future<ByteString> resultFuture = responseStream.fold(
+    final Future<ByteString> resultFuture = responseStream.runFold(
         ByteString.empty(), new Function2<ByteString, ByteString, ByteString>() {
           public ByteString apply(ByteString acc, ByteString elem) {
             return acc.concat(elem);
