@@ -3,8 +3,8 @@
  */
 package akka.stream.javadsl
 
+import akka.stream._
 import akka.stream.scaladsl
-import akka.stream.javadsl.japi
 
 object ZipWith {
 
@@ -14,60 +14,14 @@ object ZipWith {
    * @param f zipping-function from the input values to the output value
    * @param attributes optional attributes for this vertex
    */
-  def create[A, B, Out](f: japi.Function2[A, B, Out], attributes: OperationAttributes): Zip2With[A, B, Out] =
-    new Zip2With(new scaladsl.Zip2With[A, B, Out](f.apply _, attributes.asScala))
-
-  /**
-   * Create a new `ZipWith` vertex with the specified input types and zipping-function `f`.
-   *
-   * @param f zipping-function from the input values to the output value
-   * Creates a new named `ZipWith` vertex with the specified input types and zipping-function `f`.
-   * Note that a `ZipWith` instance can only be used at one place (one vertex)
-   * in the `FlowGraph`. This method creates a new instance every time it
-   * is called and those instances are not `equal`.
-   */
-  def create[A, B, Out](f: japi.Function2[A, B, Out]): Zip2With[A, B, Out] =
-    create(f, OperationAttributes.none)
+  def create[A, B, Out](f: japi.Function2[A, B, Out]): Graph[FanInShape2[A, B, Out], Unit] =
+    scaladsl.ZipWith(f.apply _)
 
 
-  [3..#/** Create a new `ZipWith` specialized for 1 input streams. */
-  def create[[#T1#], Out](f: japi.Function[Zip1WithInputs[[#T1#]], Out]) =
-    new Zip1With(new scaladsl.Zip1With[[#T1#], Out](([#t1#]) ⇒ f.apply(new Zip1WithInputs[[#T1#]]([#t1#])), scaladsl.OperationAttributes.none))#
+  [3..20#/** Create a new `ZipWith` specialized for 1 input streams. */
+  def create[[#T1#], Out](f: japi.Function1[[#T1#], Out]): Graph[FanInShape1[[#T1#], Out], Unit] =
+    scaladsl.ZipWith(f.apply _)#
+    
   ]
 
-  // CLASS BOILERPLATE
-
-  sealed trait ZipWithInputs
-  [2..#final class Zip1WithInputs[[#T1#]]([#val t1: T1#]) extends ZipWithInputs#
-  ]
-
-  [#final class Input1[T1, Out] private[akka] (val asScala: scaladsl.ZipWith.Input1[T1, Out]) extends JunctionInPort[T1]#
-  ]
-
-  final class Left[A, B, Out](override val asScala: scaladsl.ZipWith.Left[A, B, Out]) extends JunctionInPort[A]
-  final class Right[A, B, Out](override val asScala: scaladsl.ZipWith.Right[A, B, Out]) extends JunctionInPort[B]
-  final class Out[Out](override val asScala: scaladsl.ZipWith.Out[Out]) extends JunctionOutPort[Out]
 }
-
-/**
- * Takes two streams and outputs an output stream formed from the two input streams
- * by combining corresponding elements in pairs. If one of the two streams is
- * longer than the other, its remaining elements are ignored.
- */
-final class Zip2With[A, B, Out] private[akka] (val asScala: scaladsl.Zip2With[A, B, Out]) {
-  val left = new ZipWith.Left[A, B, Out](asScala.left)
-  val right = new ZipWith.Right[A, B, Out](asScala.right)
-  val out = new ZipWith.Out[Out](asScala.out)
-}
-
-[3..#/**
- * Takes multiple streams and outputs an output stream formed from the two input streams
- * by combining corresponding elements in pairs. If one of the two streams is
- * longer than the other, its remaining elements are ignored.
- */
-final class Zip1With[[#T1#], Out] private[akka] (val asScala: scaladsl.Zip1With[[#T1#], Out]) {
-  val out = new ZipWith.Out[Out](asScala.out)
-  [#val input1 = new ZipWith.Input1[T1, Out](asScala.input1)#
-  ]
-}#
-]

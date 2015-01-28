@@ -10,6 +10,8 @@ import org.scalatest.WordSpec
 import akka.http.model._
 import headers._
 import HttpMethods.POST
+import akka.http.util._
+import scala.concurrent.duration._
 
 class DecoderSpec extends WordSpec with CodecSpecSupport {
 
@@ -22,12 +24,12 @@ class DecoderSpec extends WordSpec with CodecSpecSupport {
       val request = HttpRequest(POST, entity = HttpEntity(smallText), headers = List(`Content-Encoding`(DummyDecoder.encoding)))
       val decoded = DummyDecoder.decode(request)
       decoded.headers shouldEqual Nil
-      decoded.entity shouldEqual HttpEntity(dummyDecompress(smallText))
+      decoded.entity.toStrict(1.second).awaitResult(1.second) shouldEqual HttpEntity(dummyDecompress(smallText))
     }
   }
 
   def dummyDecompress(s: String): String = dummyDecompress(ByteString(s, "UTF8")).decodeString("UTF8")
-  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes)
+  def dummyDecompress(bytes: ByteString): ByteString = DummyDecoder.decode(bytes).awaitResult(1.second)
 
   case object DummyDecoder extends StreamDecoder {
     val encoding = HttpEncodings.compress

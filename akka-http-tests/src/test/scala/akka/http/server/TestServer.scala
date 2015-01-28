@@ -28,9 +28,7 @@ object TestServer extends App {
       case _                                  ⇒ false
     }
 
-  val binding = Http().bind(interface = "localhost", port = 8080)
-
-  val materializedMap = binding startHandlingWith {
+  val bindingFuture = Http().bindAndstartHandlingWith({
     get {
       path("") {
         complete(index)
@@ -47,11 +45,12 @@ object TestServer extends App {
           complete(sys.error("BOOM!"))
         }
     }
-  }
+  }, interface = "localhost", port = 8080)
 
   println(s"Server online at http://localhost:8080/\nPress RETURN to stop...")
   Console.readLine()
-  binding.unbind(materializedMap).onComplete(_ ⇒ system.shutdown())
+
+  bindingFuture.flatMap(_.unbind()).onComplete(_ ⇒ system.shutdown())
 
   lazy val index =
     <html>

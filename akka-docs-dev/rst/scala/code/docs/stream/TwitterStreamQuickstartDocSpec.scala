@@ -8,14 +8,7 @@ package docs.stream
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.Broadcast
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.FlowGraph
-import akka.stream.scaladsl.FlowGraphImplicits
-import akka.stream.scaladsl.MaterializedMap
-import akka.stream.scaladsl.RunnableFlow
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl._
 
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -57,9 +50,12 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   implicit val executionContext = system.dispatcher
 
+  // Disable println
+  def println(s: Any): Unit = ()
+
   trait Example0 {
     //#tweet-source
-    val tweets: Source[Tweet]
+    val tweets: Source[Tweet, Unit]
     //#tweet-source
   }
 
@@ -74,7 +70,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "filter and map" in {
     //#authors-filter-map
-    val authors: Source[Author] =
+    val authors: Source[Author, Unit] =
       tweets
         .filter(_.hashtags.contains(akka))
         .map(_.author)
@@ -82,7 +78,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     trait Example3 {
       //#authors-collect
-      val authors: Source[Author] =
+      val authors: Source[Author, Unit] =
         tweets.collect { case t if t.hashtags.contains(akka) => t.author }
       //#authors-collect
     }
@@ -98,29 +94,30 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "mapConcat hashtags" in {
     //#hashtags-mapConcat
-    val hashtags: Source[Hashtag] = tweets.mapConcat(_.hashtags.toList)
+    val hashtags: Source[Hashtag, Unit] = tweets.mapConcat(_.hashtags.toList)
     //#hashtags-mapConcat
   }
 
   trait HiddenDefinitions {
     //#flow-graph-broadcast
-    val writeAuthors: Sink[Author] = ???
-    val writeHashtags: Sink[Hashtag] = ???
+    val writeAuthors: Sink[Author, Unit] = ???
+    val writeHashtags: Sink[Hashtag, Unit] = ???
     //#flow-graph-broadcast
   }
 
   "simple broadcast" in {
-    val writeAuthors: Sink[Author] = Sink.ignore
-    val writeHashtags: Sink[Hashtag] = Sink.ignore
+    val writeAuthors: Sink[Author, Unit] = Sink.ignore
+    val writeHashtags: Sink[Hashtag, Unit] = Sink.ignore
 
     // format: OFF
     //#flow-graph-broadcast
-    val g = FlowGraph { implicit builder =>
-      import FlowGraphImplicits._
+    val g = FlowGraph.closed() { implicit b =>
+      import FlowGraph.Implicits._
 
-      val b = Broadcast[Tweet]
-      tweets ~> b ~> Flow[Tweet].map(_.author) ~> writeAuthors
-                b ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
+      val bcast = b.add(Broadcast[Tweet](2))
+      tweets ~> bcast.in
+      bcast.out(0) ~> Flow[Tweet].map(_.author) ~> writeAuthors 
+      bcast.out(1) ~> Flow[Tweet].mapConcat(_.hashtags.toList) ~> writeHashtags
     }
     g.run()
     //#flow-graph-broadcast
@@ -160,10 +157,9 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
     //#tweets-fold-count
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
 
-    val counter: RunnableFlow = tweets.map(t => 1).to(sumSink)
-    val map: MaterializedMap = counter.run()
+    val counter: RunnableFlow[Future[Int]] = tweets.map(t => 1).toMat(sumSink)(Keep.right)
 
-    val sum: Future[Int] = map.get(sumSink)
+    val sum: Future[Int] = counter.run()
 
     sum.foreach(c => println(s"Total tweets processed: $c"))
     //#tweets-fold-count
@@ -180,26 +176,20 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
     //#tweets-runnable-flow-materialized-twice
     val sumSink = Sink.fold[Int, Int](0)(_ + _)
-    val counterRunnableFlow: RunnableFlow =
+    val counterRunnableFlow: RunnableFlow[Future[Int]] =
       tweetsInMinuteFromNow
         .filter(_.hashtags contains akka)
         .map(t => 1)
-        .to(sumSink)
+        .toMat(sumSink)(Keep.right)
 
     // materialize the stream once in the morning
-    val morningMaterialized = counterRunnableFlow.run()
-    // and once in the evening, reusing the
-    val eveningMaterialized = counterRunnableFlow.run()
+    val morningTweetsCount: Future[Int] = counterRunnableFlow.run()
+    // and once in the evening, reusing the flow
+    val eveningTweetsCount: Future[Int] = counterRunnableFlow.run()
 
-    // the sumSink materialized two different futures
-    // we use it as key to get the materialized value out of the materialized map
-    val morningTweetsCount: Future[Int] = morningMaterialized.get(sumSink)
-    val eveningTweetsCount: Future[Int] = eveningMaterialized.get(sumSink)
     //#tweets-runnable-flow-materialized-twice
 
-    val map: MaterializedMap = counterRunnableFlow.run()
-
-    val sum: Future[Int] = map.get(sumSink)
+    val sum: Future[Int] = counterRunnableFlow.run()
 
     sum.map { c => println(s"Total tweets processed: $c") }
   }

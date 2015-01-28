@@ -6,18 +6,6 @@ package akka.http.model.japi;
 
 import static akka.pattern.Patterns.ask;
 
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.dispatch.Foreach;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.FlowMaterializer;
-import scala.concurrent.Future;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-
 public abstract class JavaTestServer {
 
 // FIXME Java Http API

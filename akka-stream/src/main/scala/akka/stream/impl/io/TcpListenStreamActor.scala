@@ -12,7 +12,7 @@ import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
 import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl._
-import akka.stream.scaladsl.{ Flow, Pipe }
+import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.StreamTcp
 import akka.util.ByteString
 import org.reactivestreams.Subscriber
@@ -143,13 +143,10 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     val (connected: Connected, connection: ActorRef) = incomingConnections.dequeueInputElement()
     val tcpStreamActor = context.actorOf(TcpStreamActor.inboundProps(connection, settings))
     val processor = ActorProcessor[ByteString, ByteString](tcpStreamActor)
-    val conn = new StreamTcp.IncomingConnection {
-      val flow = Pipe(() ⇒ processor)
-      def localAddress = connected.localAddress
-      def remoteAddress = connected.remoteAddress
-      def handleWith(handler: Flow[ByteString, ByteString])(implicit fm: FlowMaterializer) =
-        flow.join(handler).run()
-    }
+    val conn = StreamTcp.IncomingConnection(
+      connected.localAddress,
+      connected.remoteAddress,
+      Flow[ByteString].andThenMat(() ⇒ (processor, ())))
     primaryOutputs.enqueueOutputElement(conn)
   }
 

@@ -118,7 +118,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
                   clh: Option[`Content-Length`], cth: Option[`Content-Type`], teh: Option[`Transfer-Encoding`],
                   expect100continue: Boolean, hostHeaderPresent: Boolean, closeAfterResponseCompletion: Boolean): StateResult =
     if (hostHeaderPresent || protocol == HttpProtocols.`HTTP/1.0`) {
-      def emitRequestStart(createEntity: Source[RequestOutput] ⇒ RequestEntity,
+      def emitRequestStart(createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
                            headers: List[HttpHeader] = headers) = {
         val allHeaders =
           if (rawRequestUriHeader) `Raw-Request-URI`(new String(uriBytes, HttpCharsets.`US-ASCII`.nioCharset)) :: headers
@@ -126,7 +126,7 @@ private[http] class HttpRequestParser(_settings: ParserSettings,
         emit(RequestStart(method, uri, protocol, allHeaders, createEntity, expect100continue, closeAfterResponseCompletion))
       }
 
-      def expect100continueHandling[T]: Source[T] ⇒ Source[T] =
+      def expect100continueHandling[T]: Source[T, Unit] ⇒ Source[T, Unit] =
         if (expect100continue) {
           _.section(name("expect100continueTrigger"))(_.transform(() ⇒ new PushPullStage[T, T] {
             private var oneHundredContinueSent = false

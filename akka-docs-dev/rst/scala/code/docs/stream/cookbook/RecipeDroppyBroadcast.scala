@@ -16,30 +16,26 @@ class RecipeDroppyBroadcast extends RecipeSpec {
 
       val sub1 = SubscriberProbe[Int]()
       val sub2 = SubscriberProbe[Int]()
+      val futureSink = Sink.head[Seq[Int]]
       val mySink1 = Sink(sub1)
       val mySink2 = Sink(sub2)
-      val futureSink = Sink.head[Seq[Int]]
-      val mySink3 = Flow[Int].grouped(200).to(futureSink)
+      val mySink3 = Flow[Int].grouped(200).toMat(futureSink)(Keep.right)
 
       //#droppy-bcast
-      // Makes a sink drop elements if too slow
-      def droppySink[T](sink: Sink[T], bufferSize: Int): Sink[T] = {
-        Flow[T].buffer(bufferSize, OverflowStrategy.dropHead).to(sink)
-      }
+      val graph = FlowGraph.closed(mySink1, mySink2, mySink3)((_, _, _)) { implicit b =>
+        (sink1, sink2, sink3) =>
+          import FlowGraph.Implicits._
 
-      import FlowGraphImplicits._
-      val graph = FlowGraph { implicit builder =>
-        val bcast = Broadcast[Int]
+          val bcast = b.add(Broadcast[Int](3))
+          myElements ~> bcast
 
-        myElements ~> bcast
-
-        bcast ~> droppySink(mySink1, 10)
-        bcast ~> droppySink(mySink2, 10)
-        bcast ~> droppySink(mySink3, 10)
+          bcast.buffer(10, OverflowStrategy.dropHead) ~> sink1
+          bcast.buffer(10, OverflowStrategy.dropHead) ~> sink2
+          bcast.buffer(10, OverflowStrategy.dropHead) ~> sink3
       }
       //#droppy-bcast
 
-      Await.result(graph.run().get(futureSink), 3.seconds).sum should be(5050)
+      Await.result(graph.run()._3, 3.seconds).sum should be(5050)
 
       sub1.expectSubscription().request(10)
       sub2.expectSubscription().request(10)

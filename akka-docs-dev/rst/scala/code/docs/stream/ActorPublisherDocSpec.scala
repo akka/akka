@@ -7,8 +7,7 @@ import scala.annotation.tailrec
 import akka.actor.Props
 import akka.stream.ActorFlowMaterializer
 import akka.stream.actor.ActorPublisher
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit.AkkaSpec
 
 object ActorPublisherDocSpec {
@@ -78,13 +77,12 @@ class ActorPublisherDocSpec extends AkkaSpec {
 
     //#actor-publisher-usage
     val jobManagerSource = Source[JobManager.Job](JobManager.props)
-    val materializedMap = jobManagerSource
+    val ref = Flow[JobManager.Job]
       .map(_.payload.toUpperCase)
       .map { elem => println(elem); elem }
       .to(Sink.ignore)
-      .run()
+      .runWith(jobManagerSource)
 
-    val ref = materializedMap.get(jobManagerSource)
     ref ! JobManager.Job("a")
     ref ! JobManager.Job("b")
     ref ! JobManager.Job("c")

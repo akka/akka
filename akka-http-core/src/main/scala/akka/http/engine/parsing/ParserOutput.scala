@@ -28,7 +28,7 @@ private[http] object ParserOutput {
     uri: Uri,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Source[RequestOutput] ⇒ RequestEntity,
+    createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
     expect100ContinueResponsePending: Boolean,
     closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
 
@@ -36,7 +36,7 @@ private[http] object ParserOutput {
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
-    createEntity: Source[ResponseOutput] ⇒ ResponseEntity,
+    createEntity: Source[ResponseOutput, Unit] ⇒ ResponseEntity,
     closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput
