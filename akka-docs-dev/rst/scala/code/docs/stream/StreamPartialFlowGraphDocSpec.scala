@@ -90,20 +90,17 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
     val pairs: Source[(Int, Int)] = Source() { implicit b =>
-      import FlowGraphImplicits._
+      out =>
+        import FlowGraphImplicits._
 
-      // prepare graph elements
-      val undefinedSink = UndefinedSink[(Int, Int)]
-      val zip = Zip[Int, Int]
-      def ints = Source(() => Iterator.from(1))
+        // prepare graph elements
+        val zip = Zip[Int, Int]
+        def ints = Source(() => Iterator.from(1))
 
-      // connect the graph
-      ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
-      ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.right
-      zip.out ~> undefinedSink
-
-      // expose undefined sink
-      undefinedSink
+        // connect the graph
+        ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
+        ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.right
+        zip.out ~> out
     }
 
     val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
@@ -137,7 +134,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
 
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
-      //#flow-from-partial-flow-graph
+    //#flow-from-partial-flow-graph
     pairUpWithToString.runWith(Source(List(1)), Sink.head)
     //#flow-from-partial-flow-graph
     // format: ON

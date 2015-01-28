@@ -6,9 +6,12 @@ package akka.stream.scaladsl
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
+import akka.stream.scaladsl.{Source, FlowGraph, PartialFlowGraph}
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.stage._
+
+import scala.concurrent.Await
 
 object FlowGraphCompileSpec {
   class Fruit
@@ -526,6 +529,66 @@ class FlowGraphCompileSpec extends AkkaSpec {
         b.connect(output2, f2, input2)
       }.run()
     }
-
+    
+    case object AudioPorts extends Ports {
+      val nums = InputPort[Int] // TODO: I think I'd even propose this style over createInputport...
+      val words = InputPort[String] // TODO: this is a bit more than just UndefinedSink, the type is the same
+                                    //       should we introduce a new type only to make sure someone doesnt use UndefinedSink[] here?
+                                    //       it would be then excluded from the "are all sinks defined" check (could be good, 
+                                    //       but maybe should be explicit - maybe OptionalInputPort[] ?
+  
+      val out = OutputPort[String]
+    }
+  
+    "help users in providing complex ports" in {
+      // building
+      val g = PartialFlowGraph(AudioPorts) { implicit b ⇒ ports ⇒
+          import FlowGraphImplicits._
+  
+          val merge = Merge[String]
+        
+          // format: OFF
+          ports.nums ~> Flow[Int].map(_.toString) ~> merge
+                                      ports.words ~> merge ~> ports.out
+          // format: ON
+      }
+  
+      // connecting:
+      FlowGraph(g) { implicit b ⇒
+        import FlowGraphImplicits._
+  
+        // format: OFF
+        Source(1 to 10)                   ~> AudioPorts.nums
+        Source((1 to 10).map(_.toString)) ~> AudioPorts.words
+                                             AudioPorts.out ~> Sink.head
+        // format: ON
+      }.run()
+    }
+  
+    "throw when not all Ports ports are connected" in {
+      case object AudioPorts extends Ports {
+        val nums = InputPort[Int]
+        val words = InputPort[String]
+  
+        val out = OutputPort[String]
+      }
+  
+      val ex = intercept[IllegalArgumentException] {
+        PartialFlowGraph(AudioPorts) { implicit b ⇒
+          ports ⇒
+            import FlowGraphImplicits._
+            val merge = Merge[String]
+            
+            // format: OFF
+            ports.nums ~> Flow[Int].map(_.toString) ~> merge
+                                        ports.words ~> merge
+            // format: ON
+        }
+      }
+  
+      ex.getMessage should include("must contain all ports")
+    }
+    
+    
   }
 }
