@@ -4,41 +4,41 @@
 
 package akka.http.server.japi
 
-import akka.http.Http.ServerBinding
-
 import akka.actor.ActorSystem
-import akka.http.Http
+import akka.http.{ server, Http }
+import akka.http.Http.ServerBinding
 import akka.http.server.japi.impl.RouteImplementation
 import akka.stream.ActorFlowMaterializer
-import akka.stream.FlowMaterializer
-import akka.stream.javadsl.MaterializedMap
+import akka.stream.scaladsl.{ Keep, Sink }
+
+import scala.concurrent.Future
 
 trait HttpServiceBase {
   /**
    * Starts a server on the given interface and port and uses the route to handle incoming requests.
    */
-  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem): MaterializedMap = {
+  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem): Future[ServerBinding] = {
     implicit val sys = system
     implicit val mat = ActorFlowMaterializer()
-    handleConnectionsWithRoute(Http(system).bind(interface, port), route, system, mat)
+    handleConnectionsWithRoute(interface, port, route, system, mat)
   }
 
   /**
    * Starts a server on the given interface and port and uses the route to handle incoming requests.
    */
-  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): MaterializedMap =
-    handleConnectionsWithRoute(Http(system).bind(interface, port), route, system, flowMaterializer)
+  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: ActorFlowMaterializer): Future[ServerBinding] =
+    handleConnectionsWithRoute(interface, port, route, system, flowMaterializer)
 
   /**
    * Uses the route to handle incoming connections and requests for the ServerBinding.
    */
-  def handleConnectionsWithRoute(serverBinding: ServerBinding, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): MaterializedMap = {
+  def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: ActorFlowMaterializer): Future[ServerBinding] = {
     implicit val sys = system
     implicit val mat = flowMaterializer
 
     import system.dispatcher
-    val map = serverBinding.startHandlingWith(RouteImplementation(route))
-    new MaterializedMap(map)
+    val r: server.Route = RouteImplementation(route)
+    Http(system).bind(interface, port).toMat(Sink.foreach(_.handleWith(r)))(Keep.left).run()(flowMaterializer)
   }
 }
 

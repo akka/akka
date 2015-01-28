@@ -19,14 +19,12 @@ object TestServer extends App {
   implicit val system = ActorSystem("ServerTest", testConf)
   implicit val fm = ActorFlowMaterializer()
 
-  val binding = Http().bind(interface = "localhost", port = 8080)
-
-  binding startHandlingWithSyncHandler {
+  val binding = Http().bindAndStartHandlingWithSyncHandler({
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
     case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
     case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
     case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
-  }
+  }, interface = "localhost", port = 8080)
 
   println(s"Server online at http://localhost:8080")
   println("Press RETURN to stop...")

@@ -6,20 +6,16 @@ package docs.stream
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
 import akka.actor.ActorSystem
-import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.Concat
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.FlowGraphImplicits
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.StreamTcp
-import akka.stream.scaladsl.StreamTcp._
-import akka.stream.scaladsl.UndefinedSink
-import akka.stream.scaladsl.UndefinedSource
+import akka.stream._
+import akka.stream.scaladsl._
 import akka.stream.stage.{ PushStage, Directive, Context }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
 import cookbook.RecipeParseLines
+import StreamTcp._
+
+import scala.concurrent.Future
 
 class StreamTcpDocSpec extends AkkaSpec {
 
@@ -34,11 +30,9 @@ class StreamTcpDocSpec extends AkkaSpec {
   "simple server connection" ignore {
     //#echo-server-simple-bind
     val localhost = new InetSocketAddress("127.0.0.1", 8888)
-    val binding = StreamTcp().bind(localhost)
-    //#echo-server-simple-bind
-
     //#echo-server-simple-handle
-    val connections: Source[IncomingConnection] = binding.connections
+    val connections: Source[IncomingConnection, Future[ServerBinding]] = StreamTcp().bind(localhost)
+    //#echo-server-simple-bind
 
     connections runForeach { connection =>
       println(s"New connection from: ${connection.remoteAddress}")
@@ -53,19 +47,35 @@ class StreamTcpDocSpec extends AkkaSpec {
     //#echo-server-simple-handle
   }
 
-  "actually working client-server CLI app" in {
+  "simple repl client" ignore {
+    val sys: ActorSystem = ???
+
+    //#repl-client
+    val connection: Flow[ByteString, ByteString, Future[OutgoingConnection]] = StreamTcp().outgoingConnection(localhost)
+
+    val repl = Flow[ByteString]
+      .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+      .map(text => println("Server: " + text))
+      .map(_ => readLine("> "))
+      .map {
+        case "q" =>
+          sys.shutdown(); ByteString("BYE")
+        case text => ByteString(s"$text")
+      }
+
+    connection.join(repl)
+    //#repl-client
+  }
+
+  "initial server banner echo server" ignore {
+    val connections = StreamTcp().bind(localhost)
     val serverProbe = TestProbe()
 
-    val binding = StreamTcp().bind(localhost)
     //#welcome-banner-chat-server
-    binding.connections runForeach { connection =>
+    connections runForeach { connection =>
 
       val serverLogic = Flow() { implicit b =>
-        import FlowGraphImplicits._
-
-        // to be filled in by StreamTCP
-        val in = UndefinedSource[ByteString]
-        val out = UndefinedSink[ByteString]
+        import FlowGraph.Implicits._
 
         // server logic, parses incoming commands
         val commandParser = new PushStage[String, String] {
@@ -81,23 +91,22 @@ class StreamTcpDocSpec extends AkkaSpec {
         val welcomeMsg = s"Welcome to: $localAddress, you are: $remoteAddress!\n"
 
         val welcome = Source.single(ByteString(welcomeMsg))
-        val echo = Flow[ByteString]
+        val echo = b.add(Flow[ByteString]
           .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
           //#welcome-banner-chat-server
           .map { command ⇒ serverProbe.ref ! command; command }
           //#welcome-banner-chat-server
           .transform(() ⇒ commandParser)
           .map(_ + "\n")
-          .map(ByteString(_))
+          .map(ByteString(_)))
 
-        val concat = Concat[ByteString]
+        val concat = b.add(Concat[ByteString]())
         // first we emit the welcome message,
-        welcome ~> concat.first
+        welcome ~> concat.in(0)
         // then we continue using the echo-logic Flow
-        in ~> echo ~> concat.second
+        echo.outlet ~> concat.in(1)
 
-        concat.out ~> out
-        (in, out)
+        (echo.inlet, concat.out)
       }
 
       connection.handleWith(serverLogic)
@@ -114,7 +123,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     }
 
     //#repl-client
-    val connection: OutgoingConnection = StreamTcp().outgoingConnection(localhost)
+    val connection = StreamTcp().outgoingConnection(localhost)
 
     val replParser = new PushStage[String, ByteString] {
       override def onPush(elem: String, ctx: Context[ByteString]): Directive = {
@@ -131,7 +140,7 @@ class StreamTcpDocSpec extends AkkaSpec {
       .map(_ => readLine("> "))
       .transform(() ⇒ replParser)
 
-    connection.handleWith(repl)
+    connection.join(repl)
     //#repl-client
 
     serverProbe.expectMsg("Hello world")

@@ -5,16 +5,12 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
+
+import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.stream.impl._
-import akka.stream.scaladsl.Key
-import scala.collection.immutable
-import akka.actor.ActorContext
-import akka.actor.ActorRefFactory
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
+import akka.stream.scaladsl.RunnableFlow
 import com.typesafe.config.Config
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
+
 import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.ActorRef
@@ -35,11 +31,11 @@ object ActorFlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: Option[ActorFlowMaterializerSettings] = None, namePrefix: Option[String] = None)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
+  def apply(materializerSettings: Option[ActorFlowMaterializerSettings] = None, namePrefix: Option[String] = None, optimizations: Optimizations = Optimizations.none)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
     val system = actorSystemOf(context)
 
     val settings = materializerSettings getOrElse ActorFlowMaterializerSettings(system)
-    apply(settings, namePrefix.getOrElse("flow"))(context)
+    apply(settings, namePrefix.getOrElse("flow"), optimizations)(context)
   }
 
   /**
@@ -53,7 +49,7 @@ object ActorFlowMaterializer {
    * the processing steps. The default `namePrefix` is `"flow"`. The actor names are built up of
    * `namePrefix-flowNumber-flowStepNumber-stepName`.
    */
-  def apply(materializerSettings: ActorFlowMaterializerSettings, namePrefix: String)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
+  def apply(materializerSettings: ActorFlowMaterializerSettings, namePrefix: String, optimizations: Optimizations)(implicit context: ActorRefFactory): ActorFlowMaterializer = {
     val system = actorSystemOf(context)
 
     new ActorFlowMaterializerImpl(
@@ -61,7 +57,8 @@ object ActorFlowMaterializer {
       system.dispatchers,
       context.actorOf(StreamSupervisor.props(materializerSettings).withDispatcher(materializerSettings.dispatcher)),
       FlowNameCounter(system).counter,
-      namePrefix)
+      namePrefix,
+      optimizations)
   }
 
   /**
@@ -161,12 +158,7 @@ abstract class FlowMaterializer {
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
-  def materialize[In, Out](source: scaladsl.Source[In], sink: scaladsl.Sink[Out], ops: List[Ast.AstNode], keys: List[Key[_]]): scaladsl.MaterializedMap
-
-  /**
-   * Create publishers and subscribers for fan-in and fan-out operations.
-   */
-  def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
+  def materialize[Mat](runnable: RunnableFlow[Mat]): Mat
 
 }
 
@@ -199,7 +191,6 @@ object ActorFlowMaterializerSettings {
       dispatcher = config.getString("dispatcher"),
       supervisionDecider = Supervision.stoppingDecider,
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
-      fileIODispatcher = config.getString("file-io-dispatcher"),
       debugLogging = config.getBoolean("debug-logging"),
       optimizations = Optimizations.none)
 
@@ -234,14 +225,12 @@ final case class ActorFlowMaterializerSettings(
   dispatcher: String,
   supervisionDecider: Supervision.Decider,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  fileIODispatcher: String, // FIXME Why does this exist?!
   debugLogging: Boolean,
   optimizations: Optimizations) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
 
-  require(maxInputBufferSize > 0, "maxInputBufferSize must be > 0")
-  require(isPowerOfTwo(maxInputBufferSize), "maxInputBufferSize must be a power of two")
+  requirePowerOfTwo(maxInputBufferSize, "maxInputBufferSize")
   require(initialInputBufferSize <= maxInputBufferSize, s"initialInputBufferSize($initialInputBufferSize) must be <= maxInputBufferSize($maxInputBufferSize)")
 
   def withInputBuffer(initialSize: Int, maxSize: Int): ActorFlowMaterializerSettings =
@@ -272,11 +261,14 @@ final case class ActorFlowMaterializerSettings(
   def withOptimizations(optimizations: Optimizations): ActorFlowMaterializerSettings =
     copy(optimizations = optimizations)
 
-  private def isPowerOfTwo(n: Integer): Boolean = (n & (n - 1)) == 0 // FIXME this considers 0 a power of 2
+  private def requirePowerOfTwo(n: Integer, name: String): Unit = {
+    require(n > 0, s"$name must be > 0")
+    require((n & (n - 1)) == 0, s"$name must be a power of two")
+  }
 }
 
 object StreamSubscriptionTimeoutSettings {
-  import StreamSubscriptionTimeoutTerminationMode._
+  import akka.stream.StreamSubscriptionTimeoutTerminationMode._
 
   /** Java API */
   def create(config: Config): StreamSubscriptionTimeoutSettings =

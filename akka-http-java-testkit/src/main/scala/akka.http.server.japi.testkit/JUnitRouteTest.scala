@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import akka.actor.ActorSystem
 import akka.http.model.HttpResponse
 import akka.stream.ActorFlowMaterializer
-import akka.stream.FlowMaterializer
 
 /**
  * A RouteTest that uses JUnit assertions.
@@ -20,7 +19,7 @@ import akka.stream.FlowMaterializer
 abstract class JUnitRouteTestBase extends RouteTest {
   protected def systemResource: ActorSystemResource
   implicit def system: ActorSystem = systemResource.system
-  implicit def materializer: FlowMaterializer = systemResource.materializer
+  implicit def materializer: ActorFlowMaterializer = systemResource.materializer
 
   protected def createTestResponse(response: HttpResponse): TestResponse =
     new TestResponse(response, awaitDuration)(system.dispatcher, materializer) {
@@ -47,13 +46,13 @@ abstract class JUnitRouteTest extends JUnitRouteTestBase {
 
 class ActorSystemResource extends ExternalResource {
   protected def createSystem(): ActorSystem = ActorSystem()
-  protected def createFlowMaterializer(system: ActorSystem): FlowMaterializer = ActorFlowMaterializer()(system)
+  protected def createFlowMaterializer(system: ActorSystem): ActorFlowMaterializer = ActorFlowMaterializer()(system)
 
   implicit def system: ActorSystem = _system
-  implicit def materializer: FlowMaterializer = _materializer
+  implicit def materializer: ActorFlowMaterializer = _materializer
 
   private[this] var _system: ActorSystem = null
-  private[this] var _materializer: FlowMaterializer = null
+  private[this] var _materializer: ActorFlowMaterializer = null
 
   override def before(): Unit = {
     require((_system eq null) && (_materializer eq null))

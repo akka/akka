@@ -39,7 +39,7 @@ class FlowMapBenchmark {
 
   implicit val system = ActorSystem("test", config)
 
-  var materializer: FlowMaterializer = _
+  var materializer: ActorFlowMaterializer = _
 
 
   // manual, and not via @Param, because we want @OperationsPerInvocation on our tests
@@ -49,7 +49,7 @@ class FlowMapBenchmark {
   final val successFailure = Success(new Exception)
 
   // safe to be benchmark scoped because the flows we construct in this bench are stateless
-  var flow: Source[Int] = _
+  var flow: Source[Int, Unit] = _
 
   @Param(Array("2", "8")) // todo
   val initialInputBufferSize = 0
@@ -85,7 +85,7 @@ class FlowMapBenchmark {
   }
 
   // source setup
-  private def mkMaps[O](source: Source[O], count: Int)(op: O ⇒ O): Source[O] = {
+  private def mkMaps[O](source: Source[O, Unit], count: Int)(op: O ⇒ O): Source[O, Unit] = {
     var f = source
     for (i ← 1 to count)
       f = f.map(op)

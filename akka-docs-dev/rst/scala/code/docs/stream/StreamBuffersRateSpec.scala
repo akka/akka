@@ -43,15 +43,15 @@ class StreamBuffersRateSpec extends AkkaSpec {
     import scala.concurrent.duration._
     case class Tick()
 
-    FlowGraph { implicit b =>
-      import FlowGraphImplicits._
+    FlowGraph.closed() { implicit b =>
+      import FlowGraph.Implicits._
 
-      val zipper = ZipWith[Tick, Int, Int]((tick, count) => count)
+      val zipper = b.add(ZipWith[Tick, Int, Int]((tick, count) => count))
+
+      Source(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.in0
 
       Source(initialDelay = 1.second, interval = 1.second, "message!")
-        .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.right
-
-      Source(initialDelay = 3.second, interval = 3.second, Tick()) ~> zipper.left
+        .conflate(seed = (_) => 1)((count, _) => count + 1) ~> zipper.in1
 
       zipper.out ~> Sink.foreach(println)
     }
@@ -60,10 +60,10 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
   "explcit buffers" in {
     trait Job
-    def inboundJobsConnector(): Source[Job] = Source.empty()
+    def inboundJobsConnector(): Source[Job, Unit] = Source.empty()
     //#explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
-    val jobs: Source[Job] = inboundJobsConnector()
+    val jobs: Source[Job, Unit] = inboundJobsConnector()
     jobs.buffer(1000, OverflowStrategy.backpressure)
     //#explicit-buffers-backpressure
 

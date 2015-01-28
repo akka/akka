@@ -1,0 +1,28 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.javadsl
+
+import akka.stream.scaladsl
+import akka.stream.{ Inlet, Outlet, Shape, Graph }
+import akka.stream.scaladsl.JavaConverters._
+import akka.japi.Pair
+
+trait FlowCreate {
+
+  import language.implicitConversions
+  private implicit def p[A, B](pair: Pair[A, B]): (A, B) = pair.first -> pair.second
+
+  def create[I, O](block: japi.Function[FlowGraph.Builder, Inlet[I] Pair Outlet[O]]): Flow[I, O, Unit] =
+    new Flow(scaladsl.Flow() { b ⇒ block.apply(b.asJava) })
+
+  def create[I, O, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder, S, Inlet[I] Pair Outlet[O]]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow(g1) { b ⇒ s => block.apply(b.asJava, s) })
+
+  [3..21#def create[I, O, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
+      block: japi.Function2[FlowGraph.Builder, [#S1#], Inlet[I] Pair Outlet[O]]): Flow[I, O, M] =
+    new Flow(scaladsl.Flow([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) })#
+  
+  ]
+
+}

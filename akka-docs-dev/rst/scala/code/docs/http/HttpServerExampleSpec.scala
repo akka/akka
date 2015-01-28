@@ -21,9 +21,10 @@ class HttpServerExampleSpec
     implicit val system = ActorSystem()
     implicit val materializer = ActorFlowMaterializer()
 
-    val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
-    serverBinding.connections.runForeach { connection => // foreach materializes the source
+    val serverSource = Http(system).bind(interface = "localhost", port = 8080)
+    serverSource.runForeach { connection => // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
+      // ... and then actually handle the connection
     }
     //#bind-example
   }
@@ -35,11 +36,11 @@ class HttpServerExampleSpec
     implicit val system = ActorSystem()
     implicit val materializer = ActorFlowMaterializer()
 
-    val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
+    val serverSource = Http(system).bind(interface = "localhost", port = 8080)
 
     //#full-server-example
     import akka.http.model.HttpMethods._
-    import akka.stream.scaladsl.Flow
+    import akka.stream.scaladsl.{ Flow, Sink }
 
     val requestHandler: HttpRequest => HttpResponse = {
       case HttpRequest(GET, Uri.Path("/"), _, _, _) =>
@@ -52,13 +53,13 @@ class HttpServerExampleSpec
       case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
     }
 
-    serverBinding.connections runForeach { connection =>
+    val bindingFuture = serverSource.to(Sink.foreach { connection =>
       println("Accepted new connection from " + connection.remoteAddress)
 
       connection handleWithSyncHandler requestHandler
       // this is equivalent to
       // connection handleWith { Flow[HttpRequest] map requestHandler }
-    }
+    }).run()
     //#full-server-example
   }
 }

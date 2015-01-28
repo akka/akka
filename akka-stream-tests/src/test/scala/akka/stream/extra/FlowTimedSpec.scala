@@ -75,7 +75,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
     "measure time it between elements matching a predicate" in {
       val probe = TestProbe()
 
-      val flow: Flow[Int, Long] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
+      val flow: Flow[Int, Long, _] = Flow[Int].map(_.toLong).timedIntervalBetween(in ⇒ in % 2 == 1, d ⇒ probe.ref ! d)
 
       val c1 = StreamTestKit.SubscriberProbe[Long]()
       Source(List(1, 2, 3)).via(flow).runWith(Sink(c1))
@@ -95,7 +95,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val probe = TestProbe()
 
       // making sure the types come out as expected
-      val flow: Flow[Int, String] =
+      val flow: Flow[Int, String, _] =
         Flow[Int].
           timed(_.
             map(_.toDouble).
@@ -108,7 +108,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = flowOut.subscribe(c1)
 
-      val p = Source(0 to 100).runWith(Sink.publisher)
+      val p = Source(0 to 100).runWith(Sink.publisher())
       p.subscribe(flowIn)
 
       val s = c1.expectSubscription()

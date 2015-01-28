@@ -43,7 +43,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
   val impl = new Fixture {
     override def tweets: Publisher[Tweet] =
-      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.publisher)
+      TwitterStreamQuickstartDocSpec.tweets.runWith(Sink.publisher())
 
     override def storage = SubscriberProbe[Author]
 
@@ -95,7 +95,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
 
     //#source-publisher
     val authorPublisher: Publisher[Author] =
-      Source(tweets).via(authors).runWith(Sink.publisher)
+      Source(tweets).via(authors).runWith(Sink.publisher())
 
     authorPublisher.subscribe(storage)
     //#source-publisher

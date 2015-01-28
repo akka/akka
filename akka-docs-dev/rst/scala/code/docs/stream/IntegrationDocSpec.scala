@@ -133,21 +133,21 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val emailServer = new EmailServer(probe.ref)
 
     //#tweet-authors
-    val authors: Source[Author] =
+    val authors: Source[Author, Unit] =
       tweets
         .filter(_.hashtags.contains(akka))
         .map(_.author)
     //#tweet-authors
 
     //#email-addresses-mapAsync
-    val emailAddresses: Source[String] =
+    val emailAddresses: Source[String, Unit] =
       authors
         .mapAsync(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
     //#email-addresses-mapAsync
 
     //#send-emails
-    val sendEmails: RunnableFlow =
+    val sendEmails: RunnableFlow[Unit] =
       emailAddresses
         .mapAsync { address =>
           emailServer.send(
@@ -169,14 +169,14 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
-    val authors: Source[Author] =
+    val authors: Source[Author, Unit] =
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
     //#email-addresses-mapAsync-supervision
     import OperationAttributes.supervisionStrategy
     import Supervision.resumingDecider
 
-    val emailAddresses: Source[String] =
+    val emailAddresses: Source[String, Unit] =
       authors.section(supervisionStrategy(resumingDecider)) {
         _.mapAsync(author => addressSystem.lookupEmail(author.handle))
       }
@@ -189,15 +189,15 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val emailServer = new EmailServer(probe.ref)
 
     //#external-service-mapAsyncUnordered
-    val authors: Source[Author] =
+    val authors: Source[Author, Unit] =
       tweets.filter(_.hashtags.contains(akka)).map(_.author)
 
-    val emailAddresses: Source[String] =
+    val emailAddresses: Source[String, Unit] =
       authors
         .mapAsyncUnordered(author => addressSystem.lookupEmail(author.handle))
         .collect { case Some(emailAddress) => emailAddress }
 
-    val sendEmails: RunnableFlow =
+    val sendEmails: RunnableFlow[Unit] =
       emailAddresses
         .mapAsyncUnordered { address =>
           emailServer.send(
@@ -232,7 +232,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     //#blocking-mapAsync
     val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
 
-    val sendTextMessages: RunnableFlow =
+    val sendTextMessages: RunnableFlow[Unit] =
       phoneNumbers
         .mapAsync { phoneNo =>
           Future {
@@ -267,7 +267,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         .collect { case Some(phoneNo) => phoneNo }
 
     //#blocking-map
-    val sendTextMessages: RunnableFlow =
+    val sendTextMessages: RunnableFlow[Unit] =
       phoneNumbers
         .section(OperationAttributes.dispatcher("blocking-dispatcher")) {
           _.map { phoneNo =>
@@ -294,10 +294,10 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     val database = system.actorOf(Props(classOf[DatabaseService], probe.ref), "db")
 
     //#save-tweets
-    val akkaTweets: Source[Tweet] = tweets.filter(_.hashtags.contains(akka))
+    val akkaTweets: Source[Tweet, Unit] = tweets.filter(_.hashtags.contains(akka))
 
     implicit val timeout = Timeout(3.seconds)
-    val saveTweets: RunnableFlow =
+    val saveTweets: RunnableFlow[Unit] =
       akkaTweets
         .mapAsync(tweet => database ? Save(tweet))
         .to(Sink.ignore)

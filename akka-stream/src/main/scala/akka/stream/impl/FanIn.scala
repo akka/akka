@@ -7,8 +7,12 @@ import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.actor.Props
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.{ ActorSubscriberMessage, ActorSubscriber }
+import akka.stream.scaladsl.FlexiMerge.MergeLogic
+import akka.stream.{ InPort, Shape }
 import org.reactivestreams.{ Subscription, Subscriber }
 import akka.actor.DeadLetterSuppression
+
+import scala.collection.immutable
 
 /**
  * INTERNAL API
@@ -44,6 +48,15 @@ private[akka] object FanIn {
     private val completed = Array.ofDim[Boolean](inputCount)
     private var markedDepleted = 0
     private val cancelled = Array.ofDim[Boolean](inputCount)
+
+    override def toString: String =
+      s"""|InputBunch
+          |  marked:    ${marked.mkString(", ")}
+          |  pending:   ${pending.mkString(", ")}
+          |  depleted:  ${depleted.mkString(", ")}
+          |  completed: ${completed.mkString(", ")}
+          |  cancelled: ${cancelled.mkString(", ")}
+          |    mark=$markCount pend=$markedPending depl=$markedDepleted pref=$preferredId""".stripMargin
 
     private var preferredId = 0
 
@@ -138,13 +151,12 @@ private[akka] object FanIn {
       dequeueAndYield(idToDequeue())
 
     def dequeueAndYield(id: Int): Any = {
-      val id = idToDequeue()
       preferredId = id + 1
       if (preferredId == inputCount) preferredId = 0
       dequeue(id)
     }
 
-    def dequeueAndPrefer(preferred: Int): Any = {
+    def dequeuePrefering(preferred: Int): Any = {
       preferredId = preferred
       val id = idToDequeue()
       dequeue(id)
@@ -197,11 +209,11 @@ private[akka] object FanIn {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, val inputPorts: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, val inputCount: Int) extends Actor with ActorLogging with Pump {
   import FanIn._
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
-  protected val inputBunch = new InputBunch(inputPorts, settings.maxInputBufferSize, this) {
+  protected val inputBunch = new InputBunch(inputCount, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = fail(e)
   }
 
@@ -232,7 +244,7 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
     throw new IllegalStateException("This actor cannot be restarted")
   }
 
-  def receive = inputBunch.subreceive orElse primaryOutputs.subreceive
+  def receive = inputBunch.subreceive.orElse[Any, Unit](primaryOutputs.subreceive)
 
 }
 
@@ -276,9 +288,17 @@ private[akka] final class UnfairMerge(_settings: ActorFlowMaterializerSettings,
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AnyOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒
-    val elem = inputBunch.dequeueAndPrefer(preferred)
+    val elem = inputBunch.dequeuePrefering(preferred)
     primaryOutputs.enqueueOutputElement(elem)
   })
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object FlexiMerge {
+  def props[T, S <: Shape](settings: ActorFlowMaterializerSettings, ports: S, mergeLogic: MergeLogic[T]): Props =
+    Props(new FlexiMergeImpl(settings, ports, mergeLogic))
 }
 
 /**
@@ -291,7 +311,7 @@ private[akka] object Concat {
 /**
  * INTERNAL API
  */
-private[akka] final class Concat(_settings: ActorFlowMaterializerSettings) extends FanIn(_settings, inputPorts = 2) {
+private[akka] final class Concat(_settings: ActorFlowMaterializerSettings) extends FanIn(_settings, inputCount = 2) {
   val First = 0
   val Second = 1
 
