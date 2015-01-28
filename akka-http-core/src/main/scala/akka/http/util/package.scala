@@ -9,7 +9,7 @@ import language.higherKinds
 import scala.collection.immutable
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import akka.stream.{ FlowMaterializer, FlattenStrategy }
+import akka.stream.{ ActorFlowMaterializer, FlattenStrategy }
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 import scala.concurrent.duration.Duration
@@ -40,22 +40,22 @@ package object util {
   private[http] implicit def enhanceRegex(regex: Regex): EnhancedRegex = new EnhancedRegex(regex)
   private[http] implicit def enhanceByteStrings(byteStrings: TraversableOnce[ByteString]): EnhancedByteStringTraversableOnce =
     new EnhancedByteStringTraversableOnce(byteStrings)
-  private[http] implicit def enhanceByteStrings(byteStrings: Source[ByteString]): EnhancedByteStringSource =
+  private[http] implicit def enhanceByteStrings[Mat](byteStrings: Source[ByteString, Mat]): EnhancedByteStringSource[Mat] =
     new EnhancedByteStringSource(byteStrings)
 
-  private[http] implicit class SourceWithHeadAndTail[T](val underlying: Source[Source[T]]) extends AnyVal {
-    def headAndTail: Source[(T, Source[T])] =
+  private[http] implicit class SourceWithHeadAndTail[T, Mat](val underlying: Source[Source[T, Unit], Mat]) extends AnyVal {
+    def headAndTail: Source[(T, Source[T, Unit]), Mat] =
       underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
         .flatten(FlattenStrategy.concat)
   }
 
-  private[http] implicit class FlowWithHeadAndTail[In, Out](val underlying: Flow[In, Source[Out]]) extends AnyVal {
-    def headAndTail: Flow[In, (Out, Source[Out])] =
+  private[http] implicit class FlowWithHeadAndTail[In, Out, Mat](val underlying: Flow[In, Source[Out, Unit], Mat]) extends AnyVal {
+    def headAndTail: Flow[In, (Out, Source[Out, Unit]), Mat] =
       underlying.map { _.prefixAndTail(1).map { case (prefix, tail) ⇒ (prefix.head, tail) } }
         .flatten(FlattenStrategy.concat)
   }
 
-  def printEvent[T](marker: String): Flow[T, T] =
+  def printEvent[T](marker: String): Flow[T, T, Unit] =
     Flow[T].transform(() ⇒ new PushStage[T, T] {
       override def onPush(element: T, ctx: Context[T]): Directive = {
         println(s"$marker: $element")
