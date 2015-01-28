@@ -140,7 +140,7 @@ object ActorSystem {
   def apply(name: String, config: Option[Config] = None, classLoader: Option[ClassLoader] = None, defaultExecutionContext: Option[ExecutionContext] = None): ActorSystem = {
     val cl = classLoader.getOrElse(findClassLoader())
     val appConfig = config.getOrElse(ConfigFactory.load(cl))
-    new ActorSystemImpl(name, appConfig, cl, defaultExecutionContext).start()
+    new ActorSystemImpl(name, appConfig, cl, defaultExecutionContext, None).start()
   }
 
   /**
@@ -519,7 +519,12 @@ abstract class ExtendedActorSystem extends ActorSystem {
 
 }
 
-private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config, classLoader: ClassLoader, defaultExecutionContext: Option[ExecutionContext]) extends ExtendedActorSystem {
+private[akka] class ActorSystemImpl(
+  val name: String,
+  applicationConfig: Config,
+  classLoader: ClassLoader,
+  defaultExecutionContext: Option[ExecutionContext],
+  val guardianProps: Option[Props]) extends ExtendedActorSystem {
 
   if (!name.matches("""^[a-zA-Z0-9][a-zA-Z0-9-_]*$"""))
     throw new IllegalArgumentException(
@@ -577,9 +582,13 @@ private[akka] class ActorSystemImpl(val name: String, applicationConfig: Config,
 
   def systemActorOf(props: Props, name: String): ActorRef = systemGuardian.underlying.attachChild(props, name, systemService = true)
 
-  def actorOf(props: Props, name: String): ActorRef = guardian.underlying.attachChild(props, name, systemService = false)
+  def actorOf(props: Props, name: String): ActorRef =
+    if (guardianProps.isEmpty) guardian.underlying.attachChild(props, name, systemService = false)
+    else throw new UnsupportedOperationException("cannot create top-level actor from the outside on ActorSystem with custom user guardian")
 
-  def actorOf(props: Props): ActorRef = guardian.underlying.attachChild(props, systemService = false)
+  def actorOf(props: Props): ActorRef =
+    if (guardianProps.isEmpty) guardian.underlying.attachChild(props, systemService = false)
+    else throw new UnsupportedOperationException("cannot create top-level actor from the outside on ActorSystem with custom user guardian")
 
   def stop(actor: ActorRef): Unit = {
     val path = actor.path
