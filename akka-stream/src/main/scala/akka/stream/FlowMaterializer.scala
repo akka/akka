@@ -7,8 +7,7 @@ import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 import akka.stream.impl._
-import akka.stream.scaladsl.Key
-
+import akka.stream.scaladsl.RunnableFlow
 import scala.collection.immutable
 
 import akka.actor.ActorContext
@@ -152,12 +151,7 @@ abstract class FlowMaterializer(val settings: MaterializerSettings) {
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
-  def materialize[In, Out](source: scaladsl.Source[In], sink: scaladsl.Sink[Out], ops: List[Ast.AstNode], keys: List[Key[_]]): scaladsl.MaterializedMap
-
-  /**
-   * Create publishers and subscribers for fan-in and fan-out operations.
-   */
-  def materializeJunction[In, Out](op: Ast.JunctionAstNode, inputCount: Int, outputCount: Int): (immutable.Seq[Subscriber[In]], immutable.Seq[Publisher[Out]])
+  def materialize[Mat](runnable: RunnableFlow[Mat]): Mat
 
 }
 
@@ -183,7 +177,6 @@ object MaterializerSettings {
       config.getInt("max-input-buffer-size"),
       config.getString("dispatcher"),
       StreamSubscriptionTimeoutSettings(config),
-      config.getString("file-io-dispatcher"),
       config.getBoolean("debug-logging"))
 
   /**
@@ -222,7 +215,6 @@ final case class MaterializerSettings(
   maxInputBufferSize: Int,
   dispatcher: String,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
-  fileIODispatcher: String, // FIXME Why does this exist?!
   debugLogging: Boolean) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")

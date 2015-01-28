@@ -6,6 +6,7 @@ package akka.http
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
+import akka.stream.impl.{ PublisherSink, SubscriberSource }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -40,9 +41,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
     "properly bind a server" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
-      val binding = Http().bind(hostname, port)
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      binding.connections.runWith(Sink(probe))
+      Http().bind(hostname, port).runWith(Sink(probe))
       val sub = probe.expectSubscription() // if we get it we are bound
       sub.cancel()
     }
@@ -51,18 +51,18 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val (hostname, port) = temporaryServerHostnameAndPort()
       val binding = Http().bind(hostname, port)
       val probe1 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      val mm1 = binding.connections.to(Sink(probe1)).run()
+      val b1 = Await.result(binding.toMat(Sink(probe1))(Keep.left).run(), 3.seconds)
       probe1.expectSubscription()
 
       val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      binding.connections.runWith(Sink(probe2))
+      binding.runWith(Sink(probe2))
       probe2.expectError(BindFailedException)
 
-      Await.result(binding.unbind(mm1), 1.second)
+      Await.result(b1.unbind(), 1.second)
       val probe3 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
-      val mm3 = binding.connections.to(Sink(probe3)).run()
+      val b3 = Await.result(binding.toMat(Sink(probe3))(Keep.left).run(), 3.seconds)
       probe3.expectSubscription() // we bound a second time, which means the previous unbind was successful
-      Await.result(binding.unbind(mm3), 1.second)
+      Await.result(b3.unbind(), 1.second)
     }
 
     "properly complete a simple request/response cycle" in new TestSetup {
@@ -110,7 +110,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       private val HttpRequest(POST, uri, List(Accept(Seq(MediaRanges.`*/*`)), Host(_, _), `User-Agent`(_)),
         Chunked(`chunkedContentType`, chunkStream), HttpProtocols.`HTTP/1.1`) = serverIn.expectNext()
       uri shouldEqual Uri(s"http://$hostname:$port/chunked")
-      Await.result(chunkStream.grouped(4).runWith(Sink.head), 100.millis) shouldEqual chunks
+      Await.result(chunkStream.grouped(4).runWith(Sink.head()), 100.millis) shouldEqual chunks
 
       val serverOutSub = serverOut.expectSubscription()
       serverOutSub.expectRequest()
@@ -120,7 +120,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       clientInSub.request(1)
       val HttpResponse(StatusCodes.PartialContent, List(Age(42), Server(_), Date(_)),
         Chunked(`chunkedContentType`, chunkStream2), HttpProtocols.`HTTP/1.1`) = clientIn.expectNext()
-      Await.result(chunkStream2.grouped(1000).runWith(Sink.head), 100.millis) shouldEqual chunks
+      Await.result(chunkStream2.grouped(1000).runWith(Sink.head()), 100.millis) shouldEqual chunks
 
       clientOutSub.sendComplete()
       serverInSub.request(1) // work-around for #16552
@@ -170,7 +170,7 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       val settings = configOverrides.toOption.map(ServerSettings.apply)
       val binding = Http().bind(hostname, port, settings = settings)
       val probe = StreamTestKit.SubscriberProbe[Http.IncomingConnection]
-      binding.connections.runWith(Sink(probe))
+      binding.runWith(Sink(probe))
       probe
     }
     val connSourceSub = connSource.expectSubscription()
@@ -178,23 +178,35 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     def openNewClientConnection(settings: Option[ClientConnectionSettings] = None): (PublisherProbe[HttpRequest], SubscriberProbe[HttpResponse]) = {
       val requestPublisherProbe = StreamTestKit.PublisherProbe[HttpRequest]()
       val responseSubscriberProbe = StreamTestKit.SubscriberProbe[HttpResponse]()
-      val connection = Http().outgoingConnection(hostname, port, settings = settings)
+
+      val connectionFuture = Source(requestPublisherProbe)
+        .viaMat(Http().outgoingConnection(hostname, port, settings = settings))(Keep.right)
+        .to(Sink(responseSubscriberProbe)).run()
+
+      val connection = Await.result(connectionFuture, 3.seconds)
+
       connection.remoteAddress.getHostName shouldEqual hostname
       connection.remoteAddress.getPort shouldEqual port
-      Source(requestPublisherProbe).via(connection.flow).runWith(Sink(responseSubscriberProbe))
       requestPublisherProbe -> responseSubscriberProbe
     }
 
     def acceptConnection(): (SubscriberProbe[HttpRequest], PublisherProbe[HttpResponse]) = {
       connSourceSub.request(1)
       val incomingConnection = connSource.expectNext()
-      val sink = PublisherSink[HttpRequest]()
-      val source = SubscriberSource[HttpResponse]()
-      val mm = incomingConnection.handleWith(Flow(sink, source))
+      val sink = Sink.publisher[HttpRequest]
+      val source = Source.subscriber[HttpResponse]
+
+      val handler = Flow(sink, source)(Keep.both) { implicit b ⇒
+        (snk, src) ⇒
+          (snk.inlet, src.outlet)
+      }
+
+      val (pub, sub) = incomingConnection.handleWith(handler)
       val requestSubscriberProbe = StreamTestKit.SubscriberProbe[HttpRequest]()
       val responsePublisherProbe = StreamTestKit.PublisherProbe[HttpResponse]()
-      mm.get(sink).subscribe(requestSubscriberProbe)
-      responsePublisherProbe.subscribe(mm.get(source))
+
+      pub.subscribe(requestSubscriberProbe)
+      responsePublisherProbe.subscribe(sub)
       requestSubscriberProbe -> responsePublisherProbe
     }
 

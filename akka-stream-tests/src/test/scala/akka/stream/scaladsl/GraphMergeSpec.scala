@@ -3,18 +3,25 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.{ FlowMaterializer, MaterializerSettings, Inlet, Outlet }
+
 import scala.concurrent.duration._
 
-import akka.stream.scaladsl.FlowGraphImplicits._
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.TwoStreamsSetup
+import akka.stream.testkit.{ TwoStreamsSetup, AkkaSpec, StreamTestKit }
 
 class GraphMergeSpec extends TwoStreamsSetup {
+  import FlowGraph.Implicits._
 
   override type Outputs = Int
-  val op = Merge[Int]
-  override def operationUnderTestLeft = op
-  override def operationUnderTestRight = op
+
+  override def fixture(b: FlowGraph.Builder): Fixture = new Fixture(b: FlowGraph.Builder) {
+    val merge = b add Merge[Outputs](2)
+
+    override def left: Inlet[Outputs] = merge.in(0)
+    override def right: Inlet[Outputs] = merge.in(1)
+    override def out: Outlet[Outputs] = merge.out
+
+  }
 
   "merge" must {
 
@@ -25,14 +32,15 @@ class GraphMergeSpec extends TwoStreamsSetup {
       val source3 = Source(List[Int]())
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val m1 = Merge[Int]
-        val m2 = Merge[Int]
-        val m3 = Merge[Int]
+      FlowGraph.closed() { implicit b ⇒
+        val m1 = b.add(Merge[Int](2))
+        val m2 = b.add(Merge[Int](2))
 
-        source1 ~> m1 ~> Flow[Int].map(_ * 2) ~> m2 ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
-        source2 ~> m1
-        source3 ~> m2
+        source1 ~> m1.in(0)
+        m1.out ~> Flow[Int].map(_ * 2) ~> m2.in(0)
+        m2.out ~> Flow[Int].map(_ / 2).map(_ + 1) ~> Sink(probe)
+        source2 ~> m1.in(1)
+        source3 ~> m2.in(1)
 
       }.run()
 
@@ -58,15 +66,16 @@ class GraphMergeSpec extends TwoStreamsSetup {
 
       val probe = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val merge = Merge[Int]
+      FlowGraph.closed() { implicit b ⇒
+        val merge = b.add(Merge[Int](6))
 
-        source1 ~> merge ~> Flow[Int] ~> Sink(probe)
-        source2 ~> merge
-        source3 ~> merge
-        source4 ~> merge
-        source5 ~> merge
-        source6 ~> merge
+        source1 ~> merge.in(0)
+        source2 ~> merge.in(1)
+        source3 ~> merge.in(2)
+        source4 ~> merge.in(3)
+        source5 ~> merge.in(4)
+        source6 ~> merge.in(5)
+        merge.out ~> Sink(probe)
 
       }.run()
 
@@ -132,11 +141,6 @@ class GraphMergeSpec extends TwoStreamsSetup {
     "work with one delayed failed and one nonempty publisher" in {
       // This is nondeterministic, multiple scenarios can happen
       pending
-    }
-
-    "use name in toString" in {
-      Merge[Int](OperationAttributes.name("m1")).toString should be("m1")
-      Merge[Int].toString should startWith(classOf[Merge[Int]].getName)
     }
 
   }

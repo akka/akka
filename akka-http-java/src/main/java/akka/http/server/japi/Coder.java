@@ -7,7 +7,9 @@ package akka.http.server.japi;
 import akka.http.coding.Deflate$;
 import akka.http.coding.Gzip$;
 import akka.http.coding.NoCoding$;
+import akka.stream.FlowMaterializer;
 import akka.util.ByteString;
+import scala.concurrent.Future;
 
 /**
  * A coder is an implementation of the predefined encoders/decoders defined for HTTP.
@@ -24,8 +26,8 @@ public enum Coder {
     public ByteString encode(ByteString input) {
         return underlying.encode(input);
     }
-    public ByteString decode(ByteString input) {
-        return underlying.decode(input);
+    public Future<ByteString> decode(ByteString input, FlowMaterializer mat) {
+        return underlying.decode(input, mat);
     }
     public akka.http.coding.Coder _underlyingScalaCoder() {
         return underlying;

@@ -1,0 +1,36 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.impl
+
+import akka.actor.Props
+import akka.stream._
+import akka.stream.impl.Junctions.FanInModule
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.scaladsl.OperationAttributes
+import akka.stream.scaladsl.OperationAttributes._
+
+/** Boilerplate generated Junctions */
+object GenJunctions {
+
+  sealed trait ZipWithModule {
+    /** Allows hiding the boilerplate Props creation from the materializer */
+    def props(settings: MaterializerSettings): Props
+  }
+
+  [2..20#
+  final case class ZipWith1Module[[#A1#], B](
+    shape: FanInShape1[[#A1#], B],
+    f: ([#A1#]) ⇒ B,
+    override val attributes: OperationAttributes = name("zipWith1")) extends FanInModule with ZipWithModule {
+
+    override def withAttributes(attr: OperationAttributes): Module = copy(attributes = attr)
+
+    override def carbonCopy: Module = ZipWith1Module(shape.deepCopy(), f, attributes)
+
+    override def props(settings: MaterializerSettings): Props =
+      Props(new Zip1With(settings, f.asInstanceOf[Function1[[#Any#], Any]]))
+  }#
+  ]
+
+}

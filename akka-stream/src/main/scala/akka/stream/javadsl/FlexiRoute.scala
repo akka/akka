@@ -8,40 +8,13 @@ import akka.stream.scaladsl
 import scala.collection.immutable
 import java.util.{ List ⇒ JList }
 import akka.japi.Util.immutableIndexedSeq
-import akka.stream.impl.Ast.Defaults._
-import akka.stream.impl.FlexiRouteImpl.RouteLogicFactory
+import akka.stream._
+import akka.stream.impl.StreamLayout
+import akka.stream.impl.Junctions.FlexiRouteModule
 
 object FlexiRoute {
 
-  /**
-   * @see [[OutputPort]]
-   */
-  sealed trait OutputHandle extends scaladsl.FlexiRoute.OutputHandle
-
-  /**
-   * An `OutputPort` can be connected to a [[Sink]] with the [[FlowGraphBuilder]].
-   * The `OutputPort` is also an [[OutputHandle]] which you use to define to which
-   * downstream output to emit an element.
-   */
-  class OutputPort[In, Out] private[akka] (val port: Int, parent: FlexiRoute[In, _])
-    extends JunctionOutPort[Out] with OutputHandle {
-
-    def handle: OutputHandle = this
-
-    override val asScala: scaladsl.JunctionOutPort[Out] = new scaladsl.JunctionOutPort[Out] {
-      override def port: Int = OutputPort.this.port
-      override def vertex = parent.vertex
-    }
-
-    /**
-     * INTERNAL API
-     */
-    override private[akka] def portIndex: Int = port
-
-    override def toString: String = s"OutputPort($port)"
-  }
-
-  sealed trait DemandCondition
+  sealed trait DemandCondition[T]
 
   /**
    * Demand condition for the [[State]] that will be
@@ -52,7 +25,7 @@ object FlexiRoute {
    * has been completed. `IllegalArgumentException` is thrown if
    * that is not obeyed.
    */
-  class DemandFrom(val output: OutputHandle) extends DemandCondition
+  class DemandFrom[T](val output: Outlet[T]) extends DemandCondition[Outlet[T]]
 
   /**
    * Demand condition for the [[State]] that will be
@@ -62,7 +35,7 @@ object FlexiRoute {
    * Cancelled and completed inputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
-  class DemandFromAny(val outputs: JList[OutputHandle]) extends DemandCondition
+  class DemandFromAny(val outputs: JList[OutPort]) extends DemandCondition[OutPort]
 
   /**
    * Demand condition for the [[State]] that will be
@@ -72,30 +45,30 @@ object FlexiRoute {
    * Cancelled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
-  class DemandFromAll(val outputs: JList[OutputHandle]) extends DemandCondition
+  class DemandFromAll(val outputs: JList[OutPort]) extends DemandCondition[Unit]
 
   /**
    * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
    * The context provides means for performing side effects, such as emitting elements
    * downstream.
    */
-  trait RouteLogicContext[In, Out] {
+  trait RouteLogicContext[In] {
     /**
      * @return `true` if at least one element has been requested by the given downstream (output).
      */
-    def isDemandAvailable(output: OutputHandle): Boolean
+    def isDemandAvailable(output: OutPort): Boolean
 
     /**
      * Emit one element downstream. It is only allowed to `emit` when
      * [[#isDemandAvailable]] is `true` for the given `output`, otherwise
      * `IllegalArgumentException` is thrown.
      */
-    def emit(output: OutputHandle, elem: Out): Unit
+    def emit[T](output: Outlet[T], elem: T): Unit
 
     /**
      * Complete the given downstream successfully.
      */
-    def complete(output: OutputHandle): Unit
+    def complete(output: OutPort): Unit
 
     /**
      * Complete all downstreams successfully and cancel upstream.
@@ -105,7 +78,7 @@ object FlexiRoute {
     /**
      * Complete the given downstream with failure.
      */
-    def error(output: OutputHandle, cause: Throwable): Unit
+    def error(output: OutPort, cause: Throwable): Unit
 
     /**
      * Complete all downstreams with failure and cancel upstream.
@@ -132,9 +105,9 @@ object FlexiRoute {
    * It returns next behavior or [[#sameState]] to keep current behavior.
    */
   abstract class CompletionHandling[In] {
-    def onComplete(ctx: RouteLogicContext[In, Any]): Unit
-    def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit
-    def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _]
+    def onComplete(ctx: RouteLogicContext[In]): Unit
+    def onError(ctx: RouteLogicContext[In], cause: Throwable): Unit
+    def onCancel(ctx: RouteLogicContext[In], output: OutPort): State[_, In]
   }
 
   /**
@@ -147,8 +120,8 @@ object FlexiRoute {
    * The `onInput` method is called when an `element` was read from upstream.
    * The function returns next behavior or [[#sameState]] to keep current behavior.
    */
-  abstract class State[In, Out](val condition: DemandCondition) {
-    def onInput(ctx: RouteLogicContext[In, Out], preferredOutput: OutputHandle, element: In): State[In, _]
+  abstract class State[T, In](val condition: DemandCondition[T]) {
+    def onInput(ctx: RouteLogicContext[In], output: T, element: In): State[_, In]
   }
 
   /**
@@ -158,20 +131,20 @@ object FlexiRoute {
    *
    * Concrete instance is supposed to be created by implementing [[FlexiRoute#createRouteLogic]].
    */
-  abstract class RouteLogic[In, Out] {
-    def outputHandles(outputCount: Int): JList[OutputHandle]
-    def initialState: State[In, Out]
+  abstract class RouteLogic[In] {
+
+    def initialState: State[_, In]
     def initialCompletionHandling: CompletionHandling[In] = defaultCompletionHandling
 
     /**
      * Return this from [[State]] `onInput` to use same state for next element.
      */
-    def sameState[A]: State[In, A] = FlexiRoute.sameStateInstance.asInstanceOf[State[In, A]]
+    def sameState[T]: State[T, In] = FlexiRoute.sameStateInstance.asInstanceOf[State[T, In]]
 
     /**
      * Convenience to create a [[DemandFromAny]] condition.
      */
-    @varargs def demandFromAny(outputs: OutputHandle*): DemandFromAny = {
+    @varargs def demandFromAny(outputs: OutPort*): DemandFromAny = {
       import scala.collection.JavaConverters._
       new DemandFromAny(outputs.asJava)
     }
@@ -179,7 +152,7 @@ object FlexiRoute {
     /**
      * Convenience to create a [[DemandFromAll]] condition.
      */
-    @varargs def demandFromAll(outputs: OutputHandle*): DemandFromAll = {
+    @varargs def demandFromAll(outputs: OutPort*): DemandFromAll = {
       import scala.collection.JavaConverters._
       new DemandFromAll(outputs.asJava)
     }
@@ -187,7 +160,7 @@ object FlexiRoute {
     /**
      * Convenience to create a [[DemandFrom]] condition.
      */
-    def demandFrom(output: OutputHandle): DemandFrom = new DemandFrom(output)
+    def demandFrom[T](output: Outlet[T]): DemandFrom[T] = new DemandFrom(output)
 
     /**
      * When an output cancels it continues with remaining outputs.
@@ -195,9 +168,9 @@ object FlexiRoute {
      */
     def defaultCompletionHandling: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onComplete(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] =
+        override def onComplete(ctx: RouteLogicContext[In]): Unit = ()
+        override def onError(ctx: RouteLogicContext[In], cause: Throwable): Unit = ()
+        override def onCancel(ctx: RouteLogicContext[In], output: OutPort): State[_, In] =
           sameState
       }
 
@@ -207,17 +180,17 @@ object FlexiRoute {
      */
     def eagerClose[A]: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onComplete(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onError(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onCancel(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] = {
+        override def onComplete(ctx: RouteLogicContext[In]): Unit = ()
+        override def onError(ctx: RouteLogicContext[In], cause: Throwable): Unit = ()
+        override def onCancel(ctx: RouteLogicContext[In], output: OutPort): State[_, In] = {
           ctx.complete()
           sameState
         }
       }
   }
 
-  private val sameStateInstance = new State[Any, Any](new DemandFromAny(java.util.Collections.emptyList[OutputHandle])) {
-    override def onInput(ctx: RouteLogicContext[Any, Any], output: OutputHandle, element: Any): State[Any, Any] =
+  private val sameStateInstance = new State[OutPort, Any](new DemandFromAny(java.util.Collections.emptyList[OutPort])) {
+    override def onInput(ctx: RouteLogicContext[Any], output: OutPort, element: Any): State[_, Any] =
       throw new UnsupportedOperationException("SameState.onInput should not be called")
 
     override def toString: String = "SameState"
@@ -227,26 +200,24 @@ object FlexiRoute {
    * INTERNAL API
    */
   private[akka] object Internal {
-    class RouteLogicWrapper[In](delegate: RouteLogic[In, _]) extends scaladsl.FlexiRoute.RouteLogic[In] {
-      override def outputHandles(outputCount: Int): immutable.IndexedSeq[scaladsl.FlexiRoute.OutputHandle] =
-        immutableIndexedSeq(delegate.outputHandles(outputCount))
+    class RouteLogicWrapper[In](delegate: RouteLogic[In]) extends scaladsl.FlexiRoute.RouteLogic[In] {
 
       override def initialState: this.State[_] = wrapState(delegate.initialState)
 
       override def initialCompletionHandling: this.CompletionHandling =
         wrapCompletionHandling(delegate.initialCompletionHandling)
 
-      private def wrapState[Out](delegateState: FlexiRoute.State[In, Out]): State[Out] =
+      private def wrapState[T](delegateState: FlexiRoute.State[T, In]): State[T] =
         if (sameStateInstance == delegateState)
           SameState
         else
-          State(convertDemandCondition(delegateState.condition)) { (ctx, outputHandle, elem) ⇒
+          State[T](convertDemandCondition(delegateState.condition)) { (ctx, outputHandle, elem) ⇒
             val newDelegateState =
-              delegateState.onInput(new RouteLogicContextWrapper(ctx), asJava(outputHandle), elem)
+              delegateState.onInput(new RouteLogicContextWrapper(ctx), outputHandle, elem)
             wrapState(newDelegateState)
           }
 
-      private def wrapCompletionHandling[Out](
+      private def wrapCompletionHandling(
         delegateCompletionHandling: FlexiRoute.CompletionHandling[In]): CompletionHandling =
         CompletionHandling(
           onComplete = ctx ⇒ {
@@ -257,31 +228,30 @@ object FlexiRoute {
           },
           onCancel = (ctx, outputHandle) ⇒ {
             val newDelegateState = delegateCompletionHandling.onCancel(
-              new RouteLogicContextWrapper(ctx), asJava(outputHandle))
+              new RouteLogicContextWrapper(ctx), outputHandle)
             wrapState(newDelegateState)
           })
 
-      private def asJava(outputHandle: scaladsl.FlexiRoute.OutputHandle): OutputHandle =
-        outputHandle.asInstanceOf[OutputHandle]
-
-      class RouteLogicContextWrapper[Out](delegate: RouteLogicContext[Out]) extends FlexiRoute.RouteLogicContext[In, Out] {
-        override def isDemandAvailable(output: OutputHandle): Boolean = delegate.isDemandAvailable(output)
-        override def emit(output: OutputHandle, elem: Out): Unit = delegate.emit(output, elem)
+      class RouteLogicContextWrapper(delegate: RouteLogicContext) extends FlexiRoute.RouteLogicContext[In] {
+        override def isDemandAvailable(output: OutPort): Boolean = delegate.isDemandAvailable(output)
+        override def emit[T](output: Outlet[T], elem: T): Unit = delegate.emit(output)(elem)
         override def complete(): Unit = delegate.complete()
-        override def complete(output: OutputHandle): Unit = delegate.complete(output)
+        override def complete(output: OutPort): Unit = delegate.complete(output)
         override def error(cause: Throwable): Unit = delegate.error(cause)
-        override def error(output: OutputHandle, cause: Throwable): Unit = delegate.error(output, cause)
+        override def error(output: OutPort, cause: Throwable): Unit = delegate.error(output, cause)
         override def changeCompletionHandling(completion: FlexiRoute.CompletionHandling[In]): Unit =
           delegate.changeCompletionHandling(wrapCompletionHandling(completion))
       }
 
     }
 
-    def convertDemandCondition(condition: DemandCondition): scaladsl.FlexiRoute.DemandCondition =
+    private def toAnyRefSeq(l: JList[OutPort]) = immutableIndexedSeq(l).asInstanceOf[immutable.Seq[Outlet[AnyRef]]]
+
+    def convertDemandCondition[T](condition: DemandCondition[T]): scaladsl.FlexiRoute.DemandCondition[T] =
       condition match {
         case c: DemandFromAny ⇒ scaladsl.FlexiRoute.DemandFromAny(immutableIndexedSeq(c.outputs))
         case c: DemandFromAll ⇒ scaladsl.FlexiRoute.DemandFromAll(immutableIndexedSeq(c.outputs))
-        case c: DemandFrom    ⇒ scaladsl.FlexiRoute.DemandFrom(c.output)
+        case c: DemandFrom[_] ⇒ scaladsl.FlexiRoute.DemandFrom(c.output)
       }
 
   }
@@ -303,69 +273,16 @@ object FlexiRoute {
  *
  * @param attributes optional attributes for this vertex
  */
-abstract class FlexiRoute[In, Out](val attributes: OperationAttributes) {
+abstract class FlexiRoute[In, S <: Shape](val shape: S, val attributes: OperationAttributes) extends Graph[S, Unit] {
   import FlexiRoute._
-  import scaladsl.FlowGraphInternal
-  import akka.stream.impl.Ast
 
-  def this() = this(OperationAttributes.none)
-
-  private var outputCount = 0
-
-  // hide the internal vertex things from subclass, and make it possible to create new instance
-  private class RouteVertex(override val attributes: scaladsl.OperationAttributes) extends FlowGraphInternal.InternalVertex {
-    override def minimumInputCount = 1
-    override def maximumInputCount = 1
-    override def minimumOutputCount = 2
-    override def maximumOutputCount = outputCount
-
-    override private[akka] val astNode = {
-      val factory = new RouteLogicFactory[Any] {
-        override def attributes: scaladsl.OperationAttributes = RouteVertex.this.attributes
-        override def createRouteLogic(): scaladsl.FlexiRoute.RouteLogic[Any] =
-          new Internal.RouteLogicWrapper(FlexiRoute.this.createRouteLogic().asInstanceOf[RouteLogic[Any, Any]])
-      }
-      Ast.FlexiRouteNode(factory, flexiRoute and attributes)
-    }
-
-    final override def newInstance() = new RouteVertex(attributes.withoutName)
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] val vertex: FlowGraphInternal.InternalVertex = new RouteVertex(attributes.asScala)
-
-  /**
-   * Input port of the `FlexiRoute` junction. A [[Source]] can be connected to this output
-   * with the [[FlowGraphBuilder]].
-   */
-  val in: JunctionInPort[In] = new JunctionInPort[In] {
-    override val asScala: scaladsl.JunctionInPort[In] = new scaladsl.JunctionInPort[In] {
-      override def vertex = FlexiRoute.this.vertex
-      type NextT = Nothing
-      override def next = scaladsl.NoNext
-    }
-  }
-
-  /**
-   * Concrete subclass is supposed to define one or more output ports and
-   * they are created by calling this method. Each [[FlexiRoute.OutputPort]] can be
-   * connected to a [[Sink]] with the [[FlowGraphBuilder]].
-   * The `OutputPort` is also an [[FlexiRoute.OutputHandle]] which you use to define to which
-   * downstream output to emit an element.
-   */
-  protected final def createOutputPort[T](): OutputPort[In, T] = {
-    val port = outputCount
-    outputCount += 1
-    new OutputPort(port, parent = this)
-  }
+  val module: StreamLayout.Module = new FlexiRouteModule(shape, (s: S) ⇒ new Internal.RouteLogicWrapper(createRouteLogic(s)))
 
   /**
    * Create the stateful logic that will be used when reading input elements
    * and emitting output elements. Create a new instance every time.
    */
-  def createRouteLogic(): RouteLogic[In, Out]
+  def createRouteLogic(s: S): RouteLogic[In]
 
   override def toString = attributes.asScala.nameLifted match {
     case Some(n) ⇒ n

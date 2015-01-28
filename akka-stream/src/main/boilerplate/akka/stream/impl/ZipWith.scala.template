@@ -1,29 +1,17 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.stream.impl
 
+import scala.collection.immutable
 import akka.actor.Props
-import akka.stream.MaterializerSettings
+import akka.stream.{ MaterializerSettings, Shape, Inlet, Outlet }
+import akka.stream.impl.GenJunctions._
 
-/**
- * INTERNAL API
- */
-private[akka] object ZipWith {
+[2..20#/** INTERNAL API */
+private[akka] final class Zip1With(_settings: MaterializerSettings, f: Function1[[#Any#], Any])
+  extends FanIn(_settings, inputCount = 1) {
 
-  /** @param f MUST be a FunctionN type. */
-  def props(settings: MaterializerSettings, f: Any): Props = f match {
-    [2..#case f1: Function1[[#Any#], Any] => Props(new Zip1With(settings, f1))#
-    ]
-  }
-
-  [2..#def props(settings: MaterializerSettings, f: Function1[[#Any#], Any]): Props =
-    Props(new Zip1With(settings, f))#
-  ]
-}
-
-[2..#/** INTERNAL API */
-private[akka] final class Zip1With(_settings: MaterializerSettings, f: Function1[[#Any#], Any]) extends FanIn(_settings, inputPorts = 1) {
   inputBunch.markAllInputs()
 
   nextPhase(TransferPhase(inputBunch.AllOfMarkedInputs && primaryOutputs.NeedsDemand) { () ⇒

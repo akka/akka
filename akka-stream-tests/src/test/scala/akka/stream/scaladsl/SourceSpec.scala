@@ -5,10 +5,12 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.stream.FlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
+import akka.stream.impl.PublisherSource
+import akka.stream.testkit.StreamTestKit.PublisherProbe
+import akka.stream.testkit.StreamTestKit.SubscriberProbe
 
 class SourceSpec extends AkkaSpec {
 
@@ -16,7 +18,7 @@ class SourceSpec extends AkkaSpec {
 
   "Singleton Source" must {
     "produce element" in {
-      val p = Source.single(1).runWith(Sink.publisher)
+      val p = Source.single(1).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -26,7 +28,7 @@ class SourceSpec extends AkkaSpec {
     }
 
     "produce elements to later subscriber" in {
-      val p = Source.single(1).runWith(Sink.publisher)
+      val p = Source.single(1).runWith(Sink.publisher())
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c1)
@@ -46,7 +48,7 @@ class SourceSpec extends AkkaSpec {
 
   "Empty Source" must {
     "complete immediately" in {
-      val p = Source.empty.runWith(Sink.publisher)
+      val p = Source.empty.runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectComplete()
@@ -60,7 +62,7 @@ class SourceSpec extends AkkaSpec {
   "Failed Source" must {
     "emit error immediately" in {
       val ex = new RuntimeException with NoStackTrace
-      val p = Source.failed(ex).runWith(Sink.publisher)
+      val p = Source.failed(ex).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectError(ex)
@@ -71,53 +73,39 @@ class SourceSpec extends AkkaSpec {
     }
   }
 
-  "Source with additional keys" must {
-    "materialize keys properly" in {
-      val ks = Source.subscriber[Int]
-      val mk1 = new Key[String] {
-        override def materialize(map: MaterializedMap) = map.get(ks).toString
-      }
-      val mk2 = new Key[String] {
-        override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
-      }
-      val sp = StreamTestKit.SubscriberProbe[Int]()
-      val mm = ks.withKey(mk1).withKey(mk2).to(Sink(sp)).run()
-      val s = mm.get(ks)
-      mm.get(mk1) should be(s.toString)
-      mm.get(mk2) should be(s.toString.toUpperCase)
-      val p = Source.single(1).runWith(Sink.publisher)
-      p.subscribe(s)
-      val sub = sp.expectSubscription()
-      sub.request(1)
-      sp.expectNext(1)
-      sp.expectComplete()
-    }
+  "Composite Source" must {
+    "merge from many inputs" in {
+      val probes = Seq.fill(5)(PublisherProbe[Int])
+      val source = Source.subscriber[Int]
+      val out = SubscriberProbe[Int]
 
-    "materialize keys properly when used in a graph" in {
-      val ks = Source.subscriber[Int]
-      val mk1 = new Key[String] {
-        override def materialize(map: MaterializedMap) = map.get(ks).toString
+      val s = Source(source, source, source, source, source)(Seq(_, _, _, _, _)) { implicit b ⇒
+        (i0, i1, i2, i3, i4) ⇒
+          import FlowGraph.Implicits._
+          val m = b.add(Merge[Int](5))
+          i0.outlet ~> m.in(0)
+          i1.outlet ~> m.in(1)
+          i2.outlet ~> m.in(2)
+          i3.outlet ~> m.in(3)
+          i4.outlet ~> m.in(4)
+          m.out
+      }.to(Sink(out)).run()
+
+      for (i ← 0 to 4) probes(i).subscribe(s(i))
+      val sub = out.expectSubscription()
+      sub.request(10)
+
+      val subs = for (i ← 0 to 4) {
+        val s = probes(i).expectSubscription()
+        s.expectRequest()
+        s.sendNext(i)
+        s.sendComplete()
       }
-      val mk2 = new Key[String] {
-        override def materialize(map: MaterializedMap) = map.get(mk1).toUpperCase
-      }
-      val sp = StreamTestKit.SubscriberProbe[Int]()
-      val mks = ks.withKey(mk1).withKey(mk2)
-      val mm = FlowGraph { implicit b ⇒
-        import FlowGraphImplicits._
-        val bcast = Broadcast[Int]
-        mks ~> bcast ~> Sink(sp)
-        bcast ~> Sink.ignore
-      }.run()
-      val s = mm.get(ks)
-      mm.get(mk1) should be(s.toString)
-      mm.get(mk2) should be(s.toString.toUpperCase)
-      val p = Source.single(1).runWith(Sink.publisher)
-      p.subscribe(s)
-      val sub = sp.expectSubscription()
-      sub.request(1)
-      sp.expectNext(1)
-      sp.expectComplete()
+
+      val gotten = for (_ ← 0 to 4) yield out.expectNext()
+      gotten.toSet should ===(Set(0, 1, 2, 3, 4))
+      out.expectComplete()
     }
   }
+
 }

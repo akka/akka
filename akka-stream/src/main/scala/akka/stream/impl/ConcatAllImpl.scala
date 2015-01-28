@@ -25,7 +25,7 @@ private[akka] class ConcatAllImpl(materializer: FlowMaterializer)
 
   val takeNextSubstream = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
     val Extract.Source(source) = primaryInputs.dequeueInputElement()
-    val publisher = source.runWith(Sink.publisher)(materializer)
+    val publisher = source.runWith(Sink.publisher())(materializer)
     // FIXME we can pass the flow to createSubstreamInput (but avoiding copy impl now)
     val inputs = createAndSubscribeSubstreamInput(publisher)
     nextPhase(streamSubstream(inputs))

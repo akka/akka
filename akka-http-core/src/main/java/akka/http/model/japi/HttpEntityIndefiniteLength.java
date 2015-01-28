@@ -11,5 +11,5 @@ import akka.stream.scaladsl.Source;
  * Represents an entity without a predetermined content-length to use in a BodyParts.
  */
 public abstract class HttpEntityIndefiniteLength implements BodyPartEntity {
-    public abstract Source<ByteString> data();
+    public abstract Source<ByteString, scala.Unit> data();
 }

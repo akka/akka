@@ -1,9 +1,8 @@
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
-import FlowGraphImplicits._
 import akka.stream.{ OverflowStrategy, MaterializerSettings }
 import akka.stream.FlowMaterializer
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
@@ -16,16 +15,17 @@ class GraphBroadcastSpec extends AkkaSpec {
   implicit val materializer = FlowMaterializer(settings)
 
   "A broadcast" must {
+    import FlowGraph.Implicits._
 
     "broadcast to other subscriber" in {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]
-        Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c1)
-        bcast ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
+      FlowGraph.closed() { implicit b ⇒
+        val bcast = b.add(Broadcast[Int](2))
+        Source(List(1, 2, 3)) ~> bcast.in
+        bcast.out(0) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c1)
+        bcast.out(1) ~> Flow[Int].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -47,38 +47,85 @@ class GraphBroadcastSpec extends AkkaSpec {
     }
 
     "work with n-way broadcast" in {
-      val f1 = Sink.head[Seq[Int]]
-      val f2 = Sink.head[Seq[Int]]
-      val f3 = Sink.head[Seq[Int]]
-      val f4 = Sink.head[Seq[Int]]
-      val f5 = Sink.head[Seq[Int]]
+      val headSink = Sink.head[Seq[Int]]
 
-      val g = FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]
-        Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int].grouped(5) ~> f1
-        bcast ~> Flow[Int].grouped(5) ~> f2
-        bcast ~> Flow[Int].grouped(5) ~> f3
-        bcast ~> Flow[Int].grouped(5) ~> f4
-        bcast ~> Flow[Int].grouped(5) ~> f5
-      }.run()
+      import system.dispatcher
+      val result = FlowGraph.closed(
+        headSink,
+        headSink,
+        headSink,
+        headSink,
+        headSink)(
+          (fut1, fut2, fut3, fut4, fut5) ⇒ Future.sequence(List(fut1, fut2, fut3, fut4, fut5))) { implicit b ⇒
+            (p1, p2, p3, p4, p5) ⇒
+              val bcast = b.add(Broadcast[Int](5))
+              Source(List(1, 2, 3)) ~> bcast.in
+              bcast.out(0).grouped(5) ~> p1.inlet
+              bcast.out(1).grouped(5) ~> p2.inlet
+              bcast.out(2).grouped(5) ~> p3.inlet
+              bcast.out(3).grouped(5) ~> p4.inlet
+              bcast.out(4).grouped(5) ~> p5.inlet
+          }.run()
 
-      Await.result(g.get(f1), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.get(f2), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.get(f3), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.get(f4), 3.seconds) should be(List(1, 2, 3))
-      Await.result(g.get(f5), 3.seconds) should be(List(1, 2, 3))
+      Await.result(result, 3.seconds) should be(List.fill(5)(List(1, 2, 3)))
+    }
+
+    "work with 22-way broadcast" in {
+      type T = Seq[Int]
+      type FT = Future[Seq[Int]]
+      val headSink: Sink[T, FT] = Sink.head[T]
+
+      import system.dispatcher
+      val combine: (FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT, FT) ⇒ Future[Seq[Seq[Int]]] =
+        (f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22) ⇒
+          Future.sequence(List(f1, f2, f3, f4, f5, f6, f7, f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22))
+
+      val result = FlowGraph.closed(
+        headSink, headSink, headSink, headSink, headSink,
+        headSink, headSink, headSink, headSink, headSink,
+        headSink, headSink, headSink, headSink, headSink,
+        headSink, headSink, headSink, headSink, headSink,
+        headSink, headSink)(combine) {
+          implicit b ⇒
+            (p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18, p19, p20, p21, p22) ⇒
+              val bcast = b.add(Broadcast[Int](22))
+              Source(List(1, 2, 3)) ~> bcast.in
+              bcast.out(0).grouped(5) ~> p1.inlet
+              bcast.out(1).grouped(5) ~> p2.inlet
+              bcast.out(2).grouped(5) ~> p3.inlet
+              bcast.out(3).grouped(5) ~> p4.inlet
+              bcast.out(4).grouped(5) ~> p5.inlet
+              bcast.out(5).grouped(5) ~> p6.inlet
+              bcast.out(6).grouped(5) ~> p7.inlet
+              bcast.out(7).grouped(5) ~> p8.inlet
+              bcast.out(8).grouped(5) ~> p9.inlet
+              bcast.out(9).grouped(5) ~> p10.inlet
+              bcast.out(10).grouped(5) ~> p11.inlet
+              bcast.out(11).grouped(5) ~> p12.inlet
+              bcast.out(12).grouped(5) ~> p13.inlet
+              bcast.out(13).grouped(5) ~> p14.inlet
+              bcast.out(14).grouped(5) ~> p15.inlet
+              bcast.out(15).grouped(5) ~> p16.inlet
+              bcast.out(16).grouped(5) ~> p17.inlet
+              bcast.out(17).grouped(5) ~> p18.inlet
+              bcast.out(18).grouped(5) ~> p19.inlet
+              bcast.out(19).grouped(5) ~> p20.inlet
+              bcast.out(20).grouped(5) ~> p21.inlet
+              bcast.out(21).grouped(5) ~> p22.inlet
+        }.run()
+
+      Await.result(result, 3.seconds) should be(List.fill(22)(List(1, 2, 3)))
     }
 
     "produce to other even though downstream cancels" in {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]
-        Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int] ~> Sink(c1)
-        bcast ~> Flow[Int] ~> Sink(c2)
+      FlowGraph.closed() { implicit b ⇒
+        val bcast = b.add(Broadcast[Int](2))
+        Source(List(1, 2, 3)) ~> bcast.in
+        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
+        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -95,11 +142,11 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]
-        Source(List(1, 2, 3)) ~> bcast
-        bcast ~> Flow[Int] ~> Sink(c1)
-        bcast ~> Flow[Int] ~> Sink(c2)
+      FlowGraph.closed() { implicit b ⇒
+        val bcast = b.add(Broadcast[Int](2))
+        Source(List(1, 2, 3)) ~> bcast.in
+        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
+        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -117,11 +164,11 @@ class GraphBroadcastSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        val bcast = Broadcast[Int]
-        Source(p1.getPublisher) ~> bcast
-        bcast ~> Flow[Int] ~> Sink(c1)
-        bcast ~> Flow[Int] ~> Sink(c2)
+      FlowGraph.closed() { implicit b ⇒
+        val bcast = b.add(Broadcast[Int](2))
+        Source(p1.getPublisher) ~> bcast.in
+        bcast.out(0) ~> Flow[Int] ~> Sink(c1)
+        bcast.out(1) ~> Flow[Int] ~> Sink(c2)
       }.run()
 
       val bsub = p1.expectSubscription()

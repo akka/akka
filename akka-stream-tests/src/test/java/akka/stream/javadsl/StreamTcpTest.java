@@ -14,14 +14,11 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+import scala.runtime.BoxedUnit;
 
-import akka.stream.BindFailedException;
-import akka.stream.StreamTcpException;
-import akka.stream.StreamTest;
-import akka.stream.javadsl.StreamTcp.IncomingConnection;
-import akka.stream.javadsl.StreamTcp.ServerBinding;
-import akka.stream.javadsl.japi.Function2;
-import akka.stream.javadsl.japi.Procedure;
+import akka.stream.*;
+import akka.stream.javadsl.StreamTcp.*;
+import akka.stream.javadsl.japi.*;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.testkit.TestUtils;
 import akka.util.ByteString;
@@ -35,7 +32,7 @@ public class StreamTcpTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource = new AkkaJUnitActorSystemResource("StreamTcpTest",
     AkkaSpec.testConf());
   
-  final Sink<IncomingConnection> echoHandler =
+  final Sink<IncomingConnection, Future<BoxedUnit>> echoHandler =
       Sink.foreach(new Procedure<IncomingConnection>() {
         public void apply(IncomingConnection conn) {
           conn.handleWith(Flow.<ByteString>empty(), materializer);
@@ -51,73 +48,61 @@ public class StreamTcpTest extends StreamTest {
 
   @Test
   public void mustWorkInHappyCase() throws Exception {
-    
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final ServerBinding binding = StreamTcp.get(system).bind(serverAddress);
+    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system).bind(serverAddress);
     
-    final MaterializedMap materializedServer = binding.connections().to(echoHandler).run(materializer);
-    final Future<InetSocketAddress> serverFuture = binding.localAddress(materializedServer);
-    final InetSocketAddress s = Await.result(serverFuture, FiniteDuration.create(5, TimeUnit.SECONDS));
-    assertEquals(s.getPort(), serverAddress.getPort());
+    final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
+    assertEquals(b.localAddress().getPort(), serverAddress.getPort());
     
-    final Source<ByteString> responseStream =
-      Source.from(testInput).via(StreamTcp.get(system).outgoingConnection(serverAddress).flow());
-    
-    final Future<ByteString> resultFuture = responseStream.runFold(
-        ByteString.empty(), new Function2<ByteString, ByteString, ByteString>() {
-          public ByteString apply(ByteString acc, ByteString elem) {
-            return acc.concat(elem);
-          }
-        }, materializer);
+    final Future<ByteString> resultFuture = Source
+        .from(testInput)
+        .via(StreamTcp.get(system).outgoingConnection(serverAddress))
+        .runFold(ByteString.empty(),
+            new Function2<ByteString, ByteString, ByteString>() {
+              public ByteString apply(ByteString acc, ByteString elem) {
+                return acc.concat(elem);
+              }
+            }, materializer);
     
     final byte[] result = Await.result(resultFuture, FiniteDuration.create(5, TimeUnit.SECONDS)).toArray();
     for (int i = 0; i < testInput.size(); i ++) {
       assertEquals(testInput.get(i).head(), result[i]);  
     }
-    
   }
   
   @Test
   public void mustReportServerBindFailure() throws Exception {
-    
     final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final ServerBinding binding = StreamTcp.get(system).bind(serverAddress);
+    final Source<IncomingConnection, Future<ServerBinding>> binding = StreamTcp.get(system).bind(serverAddress);
     
-    final MaterializedMap materializedServer = binding.connections().to(echoHandler).run(materializer);
-    final Future<InetSocketAddress> serverFuture = binding.localAddress(materializedServer);
-    final InetSocketAddress s = Await.result(serverFuture, FiniteDuration.create(5, TimeUnit.SECONDS));
-    assertEquals(s.getPort(), serverAddress.getPort());
-    
-    // bind again, to same port
-    final MaterializedMap materializedServer2 = binding.connections().to(echoHandler).run(materializer);
-    final Future<InetSocketAddress> serverFuture2 = binding.localAddress(materializedServer2);
-    boolean bindFailed = false;
+    final Future<ServerBinding> future = binding.to(echoHandler).run(materializer);
+    final ServerBinding b = Await.result(future, FiniteDuration.create(5, TimeUnit.SECONDS));
+    assertEquals(b.localAddress().getPort(), serverAddress.getPort());
+
     try {
-      Await.result(serverFuture2, FiniteDuration.create(5, TimeUnit.SECONDS));
+      Await.result(binding.to(echoHandler).run(materializer), FiniteDuration.create(5, TimeUnit.SECONDS));
+      assertTrue("Expected BindFailedException, but nothing was reported", false);
     } catch (BindFailedException e) {
-      // as expected
-      bindFailed = true;
+      // expected
     }
-    assertTrue("Expected BindFailedException, but nothing was reported", bindFailed);
   }
   
   @Test
   public void mustReportClientConnectFailure() throws Exception {
-    
-    final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress("127.0.0.1", false);
-    final Source<ByteString> responseStream =
-      Source.from(testInput).via(StreamTcp.get(system).outgoingConnection(serverAddress).flow());
-    final Future<ByteString> resultFuture = responseStream.runWith(Sink.<ByteString>head(), materializer);
-    
-    boolean streamTcpException = false;
+    final InetSocketAddress serverAddress = TestUtils.temporaryServerAddress(
+        "127.0.0.1", false);
     try {
-      Await.result(resultFuture, FiniteDuration.create(5, TimeUnit.SECONDS));
-    } catch (StreamTcpException e) { 
-      // as expected
-      streamTcpException = true;
+      Await.result(
+          Source.from(testInput)
+              .via(StreamTcp.get(system).outgoingConnection(serverAddress), Keep.<BoxedUnit, Future<OutgoingConnection>> right())
+              .to(Sink.<ByteString> ignore())
+              .run(materializer),
+          FiniteDuration.create(5, TimeUnit.SECONDS));
+      assertTrue("Expected StreamTcpException, but nothing was reported", false);
+    } catch (StreamTcpException e) {
+      // expected
     }
-    assertTrue("Expected StreamTcpException, but nothing was reported", streamTcpException);
-    
   }
 
 }

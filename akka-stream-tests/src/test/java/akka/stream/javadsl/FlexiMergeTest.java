@@ -6,20 +6,25 @@ package akka.stream.javadsl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.HashSet;
+
 import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 
 import java.util.concurrent.TimeUnit;
+
 import org.reactivestreams.Publisher;
+
 import akka.actor.ActorSystem;
-import akka.stream.FlowMaterializer;
+import akka.stream.*;
+import akka.stream.javadsl.FlowGraph.Builder;
+import akka.stream.javadsl.japi.Procedure2;
 import akka.stream.testkit.AkkaSpec;
-import akka.stream.javadsl.FlexiMerge;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
+import scala.runtime.BoxedUnit;
 import akka.japi.Pair;
 
 public class FlexiMergeTest {
@@ -32,20 +37,27 @@ public class FlexiMergeTest {
 
   final FlowMaterializer materializer = FlowMaterializer.create(system);
 
-  final Source<String> in1 = Source.from(Arrays.asList("a", "b", "c", "d"));
-  final Source<String> in2 = Source.from(Arrays.asList("e", "f"));
+  final Source<String, BoxedUnit> in1 = Source.from(Arrays.asList("a", "b", "c", "d"));
+  final Source<String, BoxedUnit> in2 = Source.from(Arrays.asList("e", "f"));
 
-  final KeyedSink<String, Publisher<String>> out1 = Sink.publisher();
+  final Sink<String, Publisher<String>> out1 = Sink.publisher();
 
   @Test
   public void mustBuildSimpleFairMerge() throws Exception {
-    Fair<String> merge = new Fair<String>();
+    final Future<List<String>> all = FlowGraph
+        .factory()
+        .closed(Sink.<List<String>> head(),
+            new Procedure2<Builder, SinkShape<List<String>>>() {
+              @Override
+              public void apply(Builder b, SinkShape<List<String>> sink)
+                  throws Exception {
+                final UniformFanInShape<String, String> merge = b.graph(new Fair<String>());
+                b.edge(b.source(in1), merge.in(0));
+                b.edge(b.source(in2), merge.in(1));
+                b.flow(merge.out(), Flow.of(String.class).grouped(10), sink.inlet());
+              }
+            }).run(materializer);
 
-    MaterializedMap m = FlowGraph.builder().addEdge(in1, merge.input1()).addEdge(in2, merge.input2())
-        .addEdge(merge.out(), out1).build().run(materializer);
-
-    final Publisher<String> pub = m.get(out1);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
     final List<String> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
         new HashSet<String>(Arrays.asList("a", "b", "c", "d", "e", "f")), 
@@ -54,13 +66,20 @@ public class FlexiMergeTest {
   
   @Test
   public void mustBuildSimpleRoundRobinMerge() throws Exception {
-    StrictRoundRobin<String> merge = new StrictRoundRobin<String>();
+    final Future<List<String>> all = FlowGraph
+        .factory()
+        .closed(Sink.<List<String>> head(),
+            new Procedure2<Builder, SinkShape<List<String>>>() {
+              @Override
+              public void apply(Builder b, SinkShape<List<String>> sink)
+                  throws Exception {
+                final UniformFanInShape<String, String> merge = b.graph(new StrictRoundRobin<String>());
+                b.edge(b.source(in1), merge.in(0));
+                b.edge(b.source(in2), merge.in(1));
+                b.flow(merge.out(), Flow.of(String.class).grouped(10), sink.inlet());
+              }
+            }).run(materializer);
 
-    MaterializedMap m = FlowGraph.builder().addEdge(in1, merge.input1()).addEdge(in2, merge.input2())
-        .addEdge(merge.out(), out1).build().run(materializer);
-
-    final Publisher<String> pub = m.get(out1);
-    final Future<List<String>> all = Source.from(pub).grouped(100).runWith(Sink.<List<String>>head(), materializer);
     final List<String> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(Arrays.asList("a", "e", "b", "f", "c", "d"), result);
   }
@@ -68,18 +87,23 @@ public class FlexiMergeTest {
   @Test
   @SuppressWarnings("unchecked")
   public void mustBuildSimpleZip() throws Exception {
-    Zip<Integer, String> zip = new Zip<Integer, String>();
+    final Source<Integer, BoxedUnit> inA = Source.from(Arrays.asList(1, 2, 3, 4));
+    final Source<String, BoxedUnit> inB = Source.from(Arrays.asList("a", "b", "c"));
+
+    final Future<List<Pair<Integer, String>>> all = FlowGraph
+        .factory()
+        .closed(Sink.<List<Pair<Integer, String>>> head(),
+            new Procedure2<Builder, SinkShape<List<Pair<Integer, String>>>>() {
+              @Override
+              public void apply(Builder b, SinkShape<List<Pair<Integer, String>>> sink)
+                  throws Exception {
+                final FanInShape2<Integer, String, Pair<Integer, String>> zip = b.graph(new Zip<Integer, String>());
+                b.edge(b.source(inA), zip.in0());
+                b.edge(b.source(inB), zip.in1());
+                b.flow(zip.out(), Flow.<Pair<Integer, String>> create().grouped(10), sink.inlet());
+              }
+            }).run(materializer);
     
-    Source<Integer> inA = Source.from(Arrays.asList(1, 2, 3, 4));
-    Source<String> inB = Source.from(Arrays.asList("a", "b", "c"));
-    KeyedSink<Pair<Integer, String>, Publisher<Pair<Integer, String>>> out = Sink.publisher();
-
-    MaterializedMap m = FlowGraph.builder().addEdge(inA, zip.inputA).addEdge(inB, zip.inputB)
-        .addEdge(zip.out(), out).build().run(materializer);
-
-    final Publisher<Pair<Integer, String>> pub = m.get(out);
-    final Future<List<Pair<Integer, String>>> all = Source.from(pub).grouped(100).
-        runWith(Sink.<List<Pair<Integer, String>>>head(), materializer);
     final List<Pair<Integer, String>> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
         Arrays.asList(new Pair(1, "a"), new Pair(2, "b"), new Pair(3, "c")),
@@ -89,23 +113,26 @@ public class FlexiMergeTest {
   @Test
   @SuppressWarnings("unchecked")
   public void mustBuildTripleZipUsingReadAll() throws Exception {
-    TripleZip<Long, Integer, String> zip = new TripleZip<Long, Integer, String>();
+    final Source<Long, BoxedUnit> inA = Source.from(Arrays.asList(1L, 2L, 3L, 4L));
+    final Source<Integer, BoxedUnit> inB = Source.from(Arrays.asList(1, 2, 3, 4));
+    final Source<String, BoxedUnit> inC = Source.from(Arrays.asList("a", "b", "c"));
 
-    Source<Long> inA = Source.from(Arrays.asList(1L, 2L, 3L, 4L));
-    Source<Integer> inB = Source.from(Arrays.asList(1, 2, 3, 4));
-    Source<String> inC = Source.from(Arrays.asList("a", "b", "c"));
-    KeyedSink<Triple<Long, Integer, String>, Publisher<Triple<Long, Integer, String>>> out = Sink.publisher();
+    final Future<List<Triple<Long, Integer, String>>> all = FlowGraph
+        .factory()
+        .closed(Sink.<List<Triple<Long, Integer, String>>> head(),
+            new Procedure2<Builder, SinkShape<List<Triple<Long, Integer, String>>>>() {
+              @Override
+              public void apply(Builder b, SinkShape<List<Triple<Long, Integer, String>>> sink)
+                  throws Exception {
+                final FanInShape3<Long, Integer, String, Triple<Long, Integer, String>> zip =
+                    b.graph(new TripleZip<Long, Integer, String>());
+                b.edge(b.source(inA), zip.in0());
+                b.edge(b.source(inB), zip.in1());
+                b.edge(b.source(inC), zip.in2());
+                b.flow(zip.out(), Flow.<Triple<Long, Integer, String>> create().grouped(10), sink.inlet());
+              }
+            }).run(materializer);
 
-    MaterializedMap m = FlowGraph.builder()
-      .addEdge(inA, zip.inputA)
-      .addEdge(inB, zip.inputB)
-      .addEdge(inC, zip.inputC)
-      .addEdge(zip.out(), out)
-      .build().run(materializer);
-
-    final Publisher<Triple<Long, Integer, String>> pub = m.get(out);
-    final Future<List<Triple<Long, Integer, String>>> all = Source.from(pub).grouped(100).
-        runWith(Sink.<List<Triple<Long, Integer, String>>>head(), materializer);
     final List<Triple<Long, Integer, String>> result = Await.result(all, Duration.apply(3, TimeUnit.SECONDS));
     assertEquals(
         Arrays.asList(new Triple(1L, 1, "a"), new Triple(2L, 2, "b"), new Triple(3L, 3, "c")),
@@ -118,32 +145,18 @@ public class FlexiMergeTest {
    * elements available at the same time then in finite steps all those elements
    * are dequeued from them.
    */
-  static public class Fair<T> extends FlexiMerge<T, T> {
-
-    private final InputPort<T, T> input1 = createInputPort();
-    private final InputPort<T, T> input2 = createInputPort();
-
-    public InputPort<T, T> input1() {
-      return input1;
+  static public class Fair<T> extends FlexiMerge<T, T, UniformFanInShape<T, T>> {
+    public Fair() {
+      super(new UniformFanInShape<T, T>(2), OperationAttributes.name("Fair"));
     }
-
-    public InputPort<T, T> input2() {
-      return input2;
-    }
-
     @Override
-    public MergeLogic<T, T> createMergeLogic() {
+    public MergeLogic<T, T> createMergeLogic(final UniformFanInShape<T, T> s) {
       return new MergeLogic<T, T>() {
         @Override
-        public List<InputHandle> inputHandles(int inputCount) {
-          return Arrays.asList(input1.handle(), input2.handle());
-        }
-
-        @Override
         public State<T, T> initialState() {
-          return new State<T, T>(readAny(input1, input2)) {
+          return new State<T, T>(this.<T>readAny(s.in(0), s.in(1))) {
             @Override
-            public State<T, T> onInput(MergeLogicContext<T> ctx, InputHandle inputHandle, T element) {
+            public State<T, T> onInput(MergeLogicContext<T> ctx, InPort in, T element) {
               ctx.emit(element);
               return sameState();
             }
@@ -158,70 +171,55 @@ public class FlexiMergeTest {
    * inputs are skipped though). The fair merge above is a non-strict
    * round-robin (skips currently unavailable inputs).
    */
-  static public class StrictRoundRobin<T> extends FlexiMerge<T, T> {
-
-    private final InputPort<T, T> input1 = createInputPort();
-    private final InputPort<T, T> input2 = createInputPort();
-
-    public InputPort<T, T> input1() {
-      return input1;
+  static public class StrictRoundRobin<T> extends FlexiMerge<T, T, UniformFanInShape<T, T>> {
+    public StrictRoundRobin() {
+      super(new UniformFanInShape<T, T>(2), OperationAttributes.name("StrictRoundRobin"));
     }
-
-    public InputPort<T, T> input2() {
-      return input2;
-    }
-
     @Override
-    public MergeLogic<T, T> createMergeLogic() {
+    public MergeLogic<T, T> createMergeLogic(final UniformFanInShape<T, T> s) {
       return new MergeLogic<T, T>() {
-        @Override
-        public List<InputHandle> inputHandles(int inputCount) {
-          return Arrays.asList(input1.handle(), input2.handle());
-        }
-
         private final CompletionHandling<T> emitOtherOnClose = new CompletionHandling<T>() {
           @Override
-          public State<T, T> onComplete(MergeLogicContext<T> ctx, InputHandle input) {
+          public State<T, T> onComplete(MergeLogicContext<T> ctx, InPort input) {
             ctx.changeCompletionHandling(defaultCompletionHandling());
             return readRemaining(other(input));
           }
-
           @Override
-          public State<T, T> onError(MergeLogicContext<T> ctx, InputHandle inputHandle, Throwable cause) {
+          public State<T, T> onError(MergeLogicContext<T> ctx, InPort inputHandle, Throwable cause) {
             ctx.error(cause);
             return sameState();
           }
         };
 
-        private InputHandle other(InputHandle input) {
-          if (input == input1)
-            return input2;
+        private Inlet<T> other(InPort input) {
+          if (input == s.in(0))
+            return s.in(1);
           else
-            return input1;
+            return s.in(0);
         }
 
-        private final State<T, T> read1 = new State<T, T>(read(input1)) {
+        private final State<T, T> read1 = new State<T, T>(read(s.in(0))) {
           @Override
-          public State<T, T> onInput(MergeLogicContext<T> ctx, InputHandle inputHandle, T element) {
+          public State<T, T> onInput(MergeLogicContext<T> ctx, InPort inputHandle, T element) {
             ctx.emit(element);
             return read2;
           }
         };
 
-        private final State<T, T> read2 = new State<T, T>(read(input2)) {
+        private final State<T, T> read2 = new State<T, T>(read(s.in(1))) {
           @Override
-          public State<T, T> onInput(MergeLogicContext<T> ctx, InputHandle inputHandle, T element) {
+          public State<T, T> onInput(MergeLogicContext<T> ctx, InPort inputHandle, T element) {
             ctx.emit(element);
             return read1;
           }
         };
 
-        private State<T, T> readRemaining(InputHandle input) {
+        private State<T, T> readRemaining(Inlet<T> input) {
           return new State<T, T>(read(input)) {
             @Override
-            public State<T, T> onInput(MergeLogicContext<T> ctx, InputHandle inputHandle, T element) {
+            public State<T, T> onInput(MergeLogicContext<T> ctx, InPort inputHandle, T element) {
               ctx.emit(element);
-              return sameState();
+              return this;
             }
           };
         }
@@ -240,35 +238,27 @@ public class FlexiMergeTest {
     }
   }
   
-  static public class Zip<A, B> extends FlexiMerge<A, Pair<A, B>> {
-
-    public final InputPort<A, Pair<A, B>> inputA = createInputPort();
-    public final InputPort<B, Pair<A, B>> inputB = createInputPort();
-
+  static public class Zip<A, B> extends FlexiMerge<A, Pair<A, B>, FanInShape2<A, B, Pair<A, B>>> {
+    public Zip() {
+      super(new FanInShape2<A, B, Pair<A, B>>("Zip"), OperationAttributes.name("Zip"));
+    }
     @Override
-    public MergeLogic<A, Pair<A, B>> createMergeLogic() {
+    public MergeLogic<A, Pair<A, B>> createMergeLogic(final FanInShape2<A, B, Pair<A, B>> s) {
       return new MergeLogic<A, Pair<A, B>>() {
         
         private A lastInA = null;
         
-        @Override
-        public List<InputHandle> inputHandles(int inputCount) {
-          if(inputCount != 2) 
-            throw new IllegalArgumentException("Zip must have two connected inputs, was " + inputCount);
-          return Arrays.asList(inputA.handle(), inputB.handle());
-        }
-
-        private final State<A, Pair<A, B>> readA = new State<A, Pair<A, B>>(read(inputA)) {
+        private final State<A, Pair<A, B>> readA = new State<A, Pair<A, B>>(read(s.in0())) {
           @Override
-          public State<B, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InputHandle inputHandle, A element) {
+          public State<B, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, A element) {
             lastInA = element;
             return readB;
           }
         };
         
-        private final State<B, Pair<A, B>> readB = new State<B, Pair<A, B>>(read(inputB)) {
+        private final State<B, Pair<A, B>> readB = new State<B, Pair<A, B>>(read(s.in1())) {
           @Override
-          public State<A, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InputHandle inputHandle, B element) {
+          public State<A, Pair<A, B>> onInput(MergeLogicContext<Pair<A, B>> ctx, InPort inputHandle, B element) {
             ctx.emit(new Pair<A, B>(lastInA, element));
             return readA;
           }
@@ -336,35 +326,25 @@ public class FlexiMergeTest {
     }
   }
 
-  static public class TripleZip<A, B, C> extends FlexiMerge<FlexiMerge.ReadAllInputs, Triple<A, B, C>> {
-
-    public final InputPort<A, Triple<A, B, C>> inputA = createInputPort();
-    public final InputPort<B, Triple<A, B, C>> inputB = createInputPort();
-    public final InputPort<C, Triple<A, B, C>> inputC = createInputPort();
-
+  static public class TripleZip<A, B, C> extends FlexiMerge<FlexiMerge.ReadAllInputs, Triple<A, B, C>, FanInShape3<A, B, C, Triple<A, B, C>>> {
+    public TripleZip() {
+      super(new FanInShape3<A, B, C, Triple<A, B, C>>("TripleZip"), OperationAttributes.name("TripleZip"));
+    }
     @Override
-    public MergeLogic<ReadAllInputs, Triple<A, B, C>> createMergeLogic() {
+    public MergeLogic<ReadAllInputs, Triple<A, B, C>> createMergeLogic(final FanInShape3<A, B, C, Triple<A, B, C>> s) {
       return new MergeLogic<ReadAllInputs, Triple<A, B, C>>() {
-
-        @Override
-        public List<InputHandle> inputHandles(int inputCount) {
-          if (inputCount != 3)
-            throw new IllegalArgumentException("TripleZip must have 3 connected inputs, was " + inputCount);
-          return Arrays.asList(inputA.handle(), inputB.handle(), inputC.handle());
-        }
-
         @Override
         public State<ReadAllInputs, Triple<A, B, C>> initialState() {
-          return new State<ReadAllInputs, Triple<A, B, C>>(readAll(inputA, inputB, inputC)) {
+          return new State<ReadAllInputs, Triple<A, B, C>>(readAll(s.in0(), s.in1(), s.in2())) {
             @Override
-            public State<ReadAllInputs, Triple<A, B, C>> onInput(MergeLogicContext<Triple<A, B, C>> ctx, InputHandle input, ReadAllInputs inputs) {
-              final A a = inputs.getOrDefault(inputA, null);
-              final B b = inputs.getOrDefault(inputB, null);
-              final C c = inputs.getOrDefault(inputC, null);
+            public State<ReadAllInputs, Triple<A, B, C>> onInput(MergeLogicContext<Triple<A, B, C>> ctx, InPort input, ReadAllInputs inputs) {
+              final A a = inputs.getOrDefault(s.in0(), null);
+              final B b = inputs.getOrDefault(s.in1(), null);
+              final C c = inputs.getOrDefault(s.in2(), null);
 
               ctx.emit(new Triple<A, B, C>(a, b, c));
 
-              return sameState();
+              return this;
             }
           };
         }

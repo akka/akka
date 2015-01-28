@@ -3,37 +3,16 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.impl.StreamLayout
+import akka.stream.{ Outlet, Shape, OutPort, Graph }
 import scala.collection.immutable
-import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.impl.Ast
-import akka.stream.impl.Ast.Defaults._
-import akka.stream.impl.FlexiRouteImpl.RouteLogicFactory
+import akka.stream.impl.Junctions.FlexiRouteModule
 
 object FlexiRoute {
 
-  /**
-   * @see [[OutputPort]]
-   */
-  trait OutputHandle {
-    private[akka] def portIndex: Int
-  }
+  import akka.stream.impl.StreamLayout
 
-  /**
-   * An `OutputPort` can be connected to a [[Sink]] with the [[FlowGraphBuilder]].
-   * The `OutputPort` is also an [[OutputHandle]] which you use to define to which
-   * downstream output to emit an element.
-   */
-  class OutputPort[In, Out] private[akka] (override private[akka] val port: Int, parent: FlexiRoute[In])
-    extends JunctionOutPort[Out] with OutputHandle {
-
-    override private[akka] def vertex = parent.vertex
-
-    override private[akka] def portIndex: Int = port
-
-    override def toString: String = s"OutputPort($port)"
-  }
-
-  sealed trait DemandCondition
+  sealed trait DemandCondition[+T]
 
   /**
    * Demand condition for the [[RouteLogic#State]] that will be
@@ -44,10 +23,11 @@ object FlexiRoute {
    * has been completed. `IllegalArgumentException` is thrown if
    * that is not obeyed.
    */
-  final case class DemandFrom(output: OutputHandle) extends DemandCondition
+  final case class DemandFrom[+T](output: Outlet[T]) extends DemandCondition[Outlet[T]]
 
   object DemandFromAny {
-    def apply(outputs: immutable.Seq[OutputHandle]): DemandFromAny = new DemandFromAny(outputs: _*)
+    def apply(outputs: OutPort*): DemandFromAny = new DemandFromAny(outputs.to[immutable.Seq])
+    def apply(p: Shape): DemandFromAny = new DemandFromAny(p.outlets)
   }
   /**
    * Demand condition for the [[RouteLogic#State]] that will be
@@ -57,10 +37,11 @@ object FlexiRoute {
    * Cancelled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
-  final case class DemandFromAny(outputs: OutputHandle*) extends DemandCondition
+  final case class DemandFromAny(outputs: immutable.Seq[OutPort]) extends DemandCondition[OutPort]
 
   object DemandFromAll {
-    def apply(outputs: immutable.Seq[OutputHandle]): DemandFromAll = new DemandFromAll(outputs: _*)
+    def apply(outputs: OutPort*): DemandFromAll = new DemandFromAll(outputs.to[immutable.Seq])
+    def apply(p: Shape): DemandFromAll = new DemandFromAll(p.outlets)
   }
   /**
    * Demand condition for the [[RouteLogic#State]] that will be
@@ -70,7 +51,7 @@ object FlexiRoute {
    * Cancelled and completed outputs are not used, i.e. it is allowed
    * to specify them in the list of `outputs`.
    */
-  final case class DemandFromAll(outputs: OutputHandle*) extends DemandCondition
+  final case class DemandFromAll(outputs: immutable.Seq[OutPort]) extends DemandCondition[Unit]
 
   /**
    * The possibly stateful logic that reads from the input and enables emitting to downstream
@@ -80,7 +61,6 @@ object FlexiRoute {
    * Concrete instance is supposed to be created by implementing [[FlexiRoute#createRouteLogic]].
    */
   abstract class RouteLogic[In] {
-    def outputHandles(outputCount: Int): immutable.IndexedSeq[OutputHandle]
     def initialState: State[_]
     def initialCompletionHandling: CompletionHandling = defaultCompletionHandling
 
@@ -89,23 +69,23 @@ object FlexiRoute {
      * The context provides means for performing side effects, such as emitting elements
      * downstream.
      */
-    trait RouteLogicContext[Out] {
+    trait RouteLogicContext {
       /**
        * @return `true` if at least one element has been requested by the given downstream (output).
        */
-      def isDemandAvailable(output: OutputHandle): Boolean
+      def isDemandAvailable(output: OutPort): Boolean
 
       /**
        * Emit one element downstream. It is only allowed to `emit` when
        * [[#isDemandAvailable]] is `true` for the given `output`, otherwise
        * `IllegalArgumentException` is thrown.
        */
-      def emit(output: OutputHandle, elem: Out): Unit
+      def emit[Out](output: Outlet[Out])(elem: Out): Unit
 
       /**
        * Complete the given downstream successfully.
        */
-      def complete(output: OutputHandle): Unit
+      def complete(output: OutPort): Unit
 
       /**
        * Complete all downstreams successfully and cancel upstream.
@@ -115,7 +95,7 @@ object FlexiRoute {
       /**
        * Complete the given downstream with failure.
        */
-      def error(output: OutputHandle, cause: Throwable): Unit
+      def error(output: OutPort, cause: Throwable): Unit
 
       /**
        * Complete all downstreams with failure and cancel upstream.
@@ -138,15 +118,15 @@ object FlexiRoute {
      * The `onInput` function is called when an `element` was read from upstream.
      * The function returns next behavior or [[#SameState]] to keep current behavior.
      */
-    sealed case class State[Out](val condition: DemandCondition)(
-      val onInput: (RouteLogicContext[Out], OutputHandle, In) ⇒ State[_])
+    sealed case class State[Out](condition: DemandCondition[Out])(
+      val onInput: (RouteLogicContext, Out, In) ⇒ State[_])
 
     /**
      * Return this from [[State]] `onInput` to use same state for next element.
      */
-    def SameState[In]: State[In] = sameStateInstance.asInstanceOf[State[In]]
+    def SameState[T]: State[T] = sameStateInstance.asInstanceOf[State[T]]
 
-    private val sameStateInstance = new State[Any](DemandFromAny(Nil))((_, _, _) ⇒
+    private val sameStateInstance = new State(DemandFromAny(Nil))((_, _, _) ⇒
       throw new UnsupportedOperationException("SameState.onInput should not be called")) {
 
       // unique instance, don't use case class
@@ -167,9 +147,9 @@ object FlexiRoute {
      * It returns next behavior or [[#SameState]] to keep current behavior.
      */
     sealed case class CompletionHandling(
-      onComplete: RouteLogicContext[Any] ⇒ Unit,
-      onError: (RouteLogicContext[Any], Throwable) ⇒ Unit,
-      onCancel: (RouteLogicContext[Any], OutputHandle) ⇒ State[_])
+      onComplete: RouteLogicContext ⇒ Unit,
+      onError: (RouteLogicContext, Throwable) ⇒ Unit,
+      onCancel: (RouteLogicContext, OutPort) ⇒ State[_])
 
     /**
      * When an output cancels it continues with remaining outputs.
@@ -209,55 +189,46 @@ object FlexiRoute {
  *
  * @param attributes optional attributes for this vertex
  */
-abstract class FlexiRoute[In](override val attributes: OperationAttributes) extends RouteLogicFactory[In] {
-  import FlexiRoute._
+abstract class FlexiRoute[In, S <: Shape](val shape: S, attributes: OperationAttributes) extends Graph[S, Unit] {
+  import akka.stream.scaladsl.FlexiRoute._
 
-  def this() = this(OperationAttributes.none)
-
-  private var outputCount = 0
-
-  // hide the internal vertex things from subclass, and make it possible to create new instance
-  private class RouteVertex(override val attributes: OperationAttributes) extends FlowGraphInternal.InternalVertex {
-    override def minimumInputCount = 1
-    override def maximumInputCount = 1
-    override def minimumOutputCount = 2
-    override def maximumOutputCount = outputCount
-
-    override private[akka] val astNode = Ast.FlexiRouteNode(FlexiRoute.this.asInstanceOf[FlexiRoute[Any]], flexiRoute and attributes)
-
-    final override private[scaladsl] def newInstance() = new RouteVertex(OperationAttributes.none)
-  }
-
-  private[scaladsl] val vertex: FlowGraphInternal.InternalVertex = new RouteVertex(attributes)
+  val module: StreamLayout.Module = new FlexiRouteModule(shape, createRouteLogic)
 
   /**
-   * Input port of the `FlexiRoute` junction. A [[Source]] can be connected to this output
-   * with the [[FlowGraphBuilder]].
+   * This allows a type-safe mini-DSL for selecting one of several ports, very useful in
+   * conjunction with DemandFromAny(...):
+   *
+   * {{{
+   * State(DemandFromAny(p1, p2, p2)) { (ctx, out, element) =>
+   *   ctx.emit((p1 | p2 | p3)(out))(element)
+   * }
+   * }}}
+   *
+   * This will ensure that the either of the three ports would accept the type of `element`.
    */
-  val in: JunctionInPort[In] = new JunctionInPort[In] {
-    override type NextT = Nothing
-    override private[akka] def next = NoNext
-    override private[akka] def vertex = FlexiRoute.this.vertex
+  implicit class PortUnion[L](left: Outlet[L]) {
+    def |[R <: L](right: Outlet[R]): InnerPortUnion[R] = new InnerPortUnion(Map((left, left.asInstanceOf[Outlet[R]]), (right, right)))
+    /*
+     * It would be nicer to use `Map[OutP, OutPort[_ <: T]]` to get rid of the casts,
+     * but unfortunately this kills the compiler (and quite violently so).
+     */
+    class InnerPortUnion[T] private[PortUnion] (ports: Map[OutPort, Outlet[T]]) {
+      def |[R <: T](right: Outlet[R]): InnerPortUnion[R] = new InnerPortUnion(ports.asInstanceOf[Map[OutPort, Outlet[R]]].updated(right, right))
+      def apply(p: OutPort) = ports get p match {
+        case Some(p) ⇒ p
+        case None    ⇒ throw new IllegalStateException(s"port $p was not among the allowed ones (${ports.keys.mkString(", ")})")
+      }
+      def all: Iterable[Outlet[T]] = ports.values
+    }
   }
 
-  /**
-   * Concrete subclass is supposed to define one or more output ports and
-   * they are created by calling this method. Each [[FlexiRoute.OutputPort]] can be
-   * connected to a [[Sink]] with the [[FlowGraphBuilder]].
-   * The `OutputPort` is also an [[FlexiRoute.OutputHandle]] which you use to define to which
-   * downstream output to emit an element.
-   */
-  protected final def createOutputPort[T](): OutputPort[In, T] = {
-    val port = outputCount
-    outputCount += 1
-    new OutputPort(port, parent = this)
-  }
+  type PortT = S
 
   /**
    * Create the stateful logic that will be used when reading input elements
    * and emitting output elements. Create a new instance every time.
    */
-  override def createRouteLogic(): RouteLogic[In]
+  def createRouteLogic(s: S): RouteLogic[In]
 
   override def toString = attributes.nameLifted match {
     case Some(n) ⇒ n

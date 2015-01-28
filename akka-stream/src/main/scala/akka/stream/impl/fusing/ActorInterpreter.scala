@@ -99,18 +99,22 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
     inputBufferElements = 0
   }
 
-  private def onComplete(): Unit = {
-    upstreamCompleted = true
-    subreceive.become(completed)
-    if (inputBufferElements == 0) enter().finish()
-  }
+  private def onComplete(): Unit =
+    if (!upstreamCompleted) {
+      upstreamCompleted = true
+      subreceive.become(completed)
+      if (inputBufferElements == 0) enter().finish()
+    }
 
   private def onSubscribe(subscription: Subscription): Unit = {
     assert(subscription != null)
-    upstream = subscription
-    // Prefetch
-    upstream.request(inputBuffer.length)
-    subreceive.become(upstreamRunning)
+    if (upstreamCompleted) subscription.cancel()
+    else {
+      upstream = subscription
+      // Prefetch
+      upstream.request(inputBuffer.length)
+      subreceive.become(upstreamRunning)
+    }
   }
 
   private def onError(e: Throwable): Unit = {
@@ -270,7 +274,7 @@ private[akka] class ActorInterpreter(val settings: MaterializerSettings, val ops
   private val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream)
   interpreter.init()
 
-  def receive: Receive = upstream.subreceive orElse downstream.subreceive
+  def receive: Receive = upstream.subreceive.orElse[Any, Unit](downstream.subreceive)
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     super.aroundReceive(receive, msg)

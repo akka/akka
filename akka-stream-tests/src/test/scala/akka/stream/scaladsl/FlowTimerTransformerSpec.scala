@@ -30,7 +30,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           }
           override def isComplete: Boolean = !isTimerActive("tick")
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -74,7 +74,7 @@ class FlowTimerTransformerSpec extends AkkaSpec {
           def onNext(element: Int) = Nil
           override def onTimer(timerKey: Any) =
             throw exception
-        }).runWith(Sink.publisher)
+        }).runWith(Sink.publisher())
 
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)

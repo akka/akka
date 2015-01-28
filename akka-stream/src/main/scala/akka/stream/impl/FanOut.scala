@@ -3,6 +3,9 @@
  */
 package akka.stream.impl
 
+import akka.stream.scaladsl.FlexiRoute.RouteLogic
+import akka.stream.Shape
+
 import scala.collection.immutable
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -48,6 +51,15 @@ private[akka] object FanOut {
     private var markedCancelled = 0
     private val completed = Array.ofDim[Boolean](outputCount)
     private val errored = Array.ofDim[Boolean](outputCount)
+
+    override def toString: String =
+      s"""|OutputBunch
+          |  marked:    ${marked.mkString(", ")}
+          |  pending:   ${pending.mkString(", ")}
+          |  errored:   ${errored.mkString(", ")}
+          |  completed: ${completed.mkString(", ")}
+          |  cancelled: ${cancelled.mkString(", ")}
+          |    mark=$markedCount pend=$markedPending depl=$markedCancelled pref=$preferredId unmark=$unmarkCancelled""".stripMargin
 
     private var unmarkCancelled = true
 
@@ -227,10 +239,10 @@ private[akka] object FanOut {
 /**
  * INTERNAL API
  */
-private[akka] abstract class FanOut(val settings: MaterializerSettings, val outputPorts: Int) extends Actor with ActorLogging with Pump {
+private[akka] abstract class FanOut(val settings: MaterializerSettings, val outputCount: Int) extends Actor with ActorLogging with Pump {
   import FanOut._
 
-  protected val outputBunch = new OutputBunch(outputPorts, self, this)
+  protected val outputBunch = new OutputBunch(outputCount, self, this)
   protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
     override def onError(e: Throwable): Unit = fail(e)
   }
@@ -262,8 +274,7 @@ private[akka] abstract class FanOut(val settings: MaterializerSettings, val outp
     throw new IllegalStateException("This actor cannot be restarted")
   }
 
-  def receive = primaryInputs.subreceive orElse outputBunch.subreceive
-
+  def receive = primaryInputs.subreceive.orElse[Any, Unit](outputBunch.subreceive)
 }
 
 /**
@@ -324,7 +335,7 @@ private[akka] object Unzip {
 /**
  * INTERNAL API
  */
-private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_settings, outputPorts = 2) {
+private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_settings, outputCount = 2) {
   outputBunch.markAllOutputs()
 
   nextPhase(TransferPhase(primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs) { () ⇒
@@ -343,4 +354,12 @@ private[akka] class Unzip(_settings: MaterializerSettings) extends FanOut(_setti
             s"can only handle Tuple2 and akka.japi.Pair!")
     }
   })
+}
+
+/**
+ * INTERNAL API
+ */
+private[akka] object FlexiRoute {
+  def props[T, S <: Shape](settings: MaterializerSettings, ports: S, routeLogic: RouteLogic[T]): Props =
+    Props(new FlexiRouteImpl(settings, ports, routeLogic))
 }

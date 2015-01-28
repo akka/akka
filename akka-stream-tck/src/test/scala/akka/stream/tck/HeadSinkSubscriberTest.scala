@@ -3,6 +3,7 @@
  */
 package akka.stream.tck
 
+import akka.stream.impl.HeadSink
 import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
 

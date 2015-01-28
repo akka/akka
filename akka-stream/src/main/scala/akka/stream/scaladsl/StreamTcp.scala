@@ -4,6 +4,7 @@
 package akka.stream.scaladsl
 
 import java.net.{ InetSocketAddress, URLEncoder }
+import akka.stream.impl.StreamLayout.Module
 import scala.collection.immutable
 import scala.concurrent.{ Promise, ExecutionContext, Future }
 import scala.concurrent.duration.Duration
@@ -22,56 +23,31 @@ import akka.stream.{ FlowMaterializer, MaterializerSettings }
 import akka.stream.impl._
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import org.reactivestreams.{ Processor, Subscriber, Subscription }
+import org.reactivestreams.{ Publisher, Processor, Subscriber, Subscription }
 import akka.actor.actorRef2Scala
 import akka.stream.impl.io.TcpStreamActor
 import akka.stream.impl.io.TcpListenStreamActor
 import akka.stream.impl.io.DelayedInitProcessor
 import akka.stream.impl.io.StreamTcpManager
+import akka.stream.SourceShape
+import akka.stream.Outlet
 
 object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
 
   /**
-   * Represents a prospective TCP server binding.
+   * * Represents a succdessful TCP server binding.
    */
-  trait ServerBinding {
-    /**
-     * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
-     * whose [[MaterializedMap]] is passed as parameter.
-     */
-    def localAddress(materializedMap: MaterializedMap): Future[InetSocketAddress]
-
-    /**
-     * The stream of accepted incoming connections.
-     * Can be materialized several times but only one subscription can be "live" at one time, i.e.
-     * subsequent materializations will reject subscriptions with an [[BindFailedException]] if the previous
-     * materialization still has an uncancelled subscription.
-     * Cancelling the subscription to a materialization of this source will cause the listening port to be unbound.
-     */
-    def connections: Source[IncomingConnection]
-
-    /**
-     * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
-     * [[Source]] whose [[MaterializedMap]] is passed as parameter.
-     *
-     * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
-     */
-    def unbind(materializedMap: MaterializedMap): Future[Unit]
+  case class ServerBinding(localAddress: InetSocketAddress)(private val unbindAction: () ⇒ Future[Unit]) {
+    def unbind(): Future[Unit] = unbindAction()
   }
 
   /**
    * Represents an accepted incoming TCP connection.
    */
-  trait IncomingConnection {
-    /**
-     * The local address this connection is bound to.
-     */
-    def localAddress: InetSocketAddress
-
-    /**
-     * The remote address this connection is bound to.
-     */
-    def remoteAddress: InetSocketAddress
+  case class IncomingConnection(
+    localAddress: InetSocketAddress,
+    remoteAddress: InetSocketAddress,
+    flow: Flow[ByteString, ByteString, Unit]) {
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective
@@ -79,57 +55,15 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      */
-    def handleWith(handler: Flow[ByteString, ByteString])(implicit materializer: FlowMaterializer): MaterializedMap
+    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat])(implicit materializer: FlowMaterializer): Mat =
+      flow.joinMat(handler)(Keep.right).run()
 
-    /**
-     * A flow representing the client on the other side of the connection.
-     * This flow can be materialized only once.
-     */
-    def flow: Flow[ByteString, ByteString]
   }
 
   /**
    * Represents a prospective outgoing TCP connection.
    */
-  trait OutgoingConnection {
-    /**
-     * The remote address this connection is or will be bound to.
-     */
-    def remoteAddress: InetSocketAddress
-
-    /**
-     * The local address of the endpoint bound by the materialization of the connection materialization
-     * whose [[MaterializedMap]] is passed as parameter.
-     */
-    def localAddress(mMap: MaterializedMap): Future[InetSocketAddress]
-
-    /**
-     * Handles the connection using the given flow.
-     * This method can be called several times, every call will materialize the given flow exactly once thereby
-     * triggering a new connection attempt to the `remoteAddress`.
-     * If the connection cannot be established the materialized stream will immediately be terminated
-     * with a [[akka.stream.StreamTcpException]].
-     *
-     * Convenience shortcut for: `flow.join(handler).run()`.
-     */
-    def handleWith(handler: Flow[ByteString, ByteString])(implicit materializer: FlowMaterializer): MaterializedMap
-
-    /**
-     * A flow representing the server on the other side of the connection.
-     * This flow can be materialized several times, every materialization will open a new connection to the
-     * `remoteAddress`. If the connection cannot be established the materialized stream will immediately be terminated
-     * with a [[akka.stream.StreamTcpException]].
-     */
-    def flow: Flow[ByteString, ByteString]
-  }
-
-  /**
-   * INTERNAL API
-   */
-  private[akka] class PreMaterializedOutgoingKey extends Key[Future[InetSocketAddress]] {
-    override def materialize(map: MaterializedMap) =
-      throw new IllegalStateException("This key has already been materialized by the TCP Processor")
-  }
+  case class OutgoingConnection(remoteAddress: InetSocketAddress, localAddress: InetSocketAddress)
 
   def apply()(implicit system: ActorSystem): StreamTcp = super.apply(system)
 
@@ -146,29 +80,65 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
   private val manager: ActorRef = system.systemActorOf(Props[StreamTcpManager], name = "IO-TCP-STREAM")
 
+  private class BindSource(
+    val endpoint: InetSocketAddress,
+    val backlog: Int,
+    val options: immutable.Traversable[SocketOption],
+    val idleTimeout: Duration = Duration.Inf,
+    val attributes: OperationAttributes,
+    _shape: SourceShape[IncomingConnection]) extends SourceModule[IncomingConnection, Future[ServerBinding]](_shape) {
+
+    override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[IncomingConnection], Future[ServerBinding]) = {
+      val localAddressPromise = Promise[InetSocketAddress]()
+      val unbindPromise = Promise[() ⇒ Future[Unit]]()
+      val publisher = new Publisher[IncomingConnection] {
+
+        override def subscribe(s: Subscriber[_ >: IncomingConnection]): Unit = {
+          manager ! StreamTcpManager.Bind(
+            localAddressPromise,
+            unbindPromise,
+            s.asInstanceOf[Subscriber[IncomingConnection]],
+            endpoint,
+            backlog,
+            options,
+            idleTimeout)
+        }
+
+      }
+
+      val bindingFuture = unbindPromise.future.zip(localAddressPromise.future).map {
+        case (unbindAction, localAddress) ⇒
+          ServerBinding(localAddress)(unbindAction)
+      }
+
+      (publisher, bindingFuture)
+    }
+
+    override protected def newInstance(s: SourceShape[IncomingConnection]): SourceModule[IncomingConnection, Future[ServerBinding]] =
+      new BindSource(endpoint, backlog, options, idleTimeout, attributes, shape)
+    override def withAttributes(attr: OperationAttributes): Module =
+      new BindSource(endpoint, backlog, options, idleTimeout, attr, shape)
+  }
+
   /**
    * Creates a [[StreamTcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`.
    */
   def bind(endpoint: InetSocketAddress,
            backlog: Int = 100,
            options: immutable.Traversable[SocketOption] = Nil,
-           idleTimeout: Duration = Duration.Inf): ServerBinding = {
-    val connectionSource = new KeyedActorFlowSource[IncomingConnection, (Future[InetSocketAddress], Future[() ⇒ Future[Unit]])] {
-      override def attach(flowSubscriber: Subscriber[IncomingConnection],
-                          materializer: ActorBasedFlowMaterializer,
-                          flowName: String): MaterializedType = {
-        val localAddressPromise = Promise[InetSocketAddress]()
-        val unbindPromise = Promise[() ⇒ Future[Unit]]()
-        manager ! StreamTcpManager.Bind(localAddressPromise, unbindPromise, flowSubscriber, endpoint, backlog, options,
-          idleTimeout)
-        localAddressPromise.future -> unbindPromise.future
-      }
-    }
-    new ServerBinding {
-      def localAddress(mm: MaterializedMap) = mm.get(connectionSource)._1
-      def connections = connectionSource
-      def unbind(mm: MaterializedMap): Future[Unit] = mm.get(connectionSource)._2.flatMap(_())
-    }
+           idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
+    new Source(new BindSource(endpoint, backlog, options, idleTimeout, OperationAttributes.none, SourceShape(new Outlet("BindSource.out"))))
+  }
+
+  def bindAndHandle(
+    handler: Flow[ByteString, ByteString, _],
+    endpoint: InetSocketAddress,
+    backlog: Int = 100,
+    options: immutable.Traversable[SocketOption] = Nil,
+    idleTimeout: Duration = Duration.Inf)(implicit m: FlowMaterializer): Future[ServerBinding] = {
+    bind(endpoint, backlog, options, idleTimeout).to(Sink.foreach { conn: IncomingConnection ⇒
+      conn.flow.join(handler).run()
+    }).run()
   }
 
   /**
@@ -178,23 +148,19 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
                          localAddress: Option[InetSocketAddress] = None,
                          options: immutable.Traversable[SocketOption] = Nil,
                          connectTimeout: Duration = Duration.Inf,
-                         idleTimeout: Duration = Duration.Inf): OutgoingConnection = {
+                         idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+
     val remoteAddr = remoteAddress
-    val key = new PreMaterializedOutgoingKey()
-    val stream = Pipe(key) { () ⇒
+
+    Flow[ByteString].andThenMat(() ⇒ {
       val processorPromise = Promise[Processor[ByteString, ByteString]]()
       val localAddressPromise = Promise[InetSocketAddress]()
       manager ! StreamTcpManager.Connect(processorPromise, localAddressPromise, remoteAddress, localAddress, options,
         connectTimeout, idleTimeout)
-      (new DelayedInitProcessor[ByteString, ByteString](processorPromise.future), localAddressPromise.future)
-    }
-    new OutgoingConnection {
-      def remoteAddress = remoteAddr
-      def localAddress(mm: MaterializedMap) = mm.get(key)
-      def flow = stream
-      def handleWith(handler: Flow[ByteString, ByteString])(implicit fm: FlowMaterializer) =
-        flow.join(handler).run()
-    }
+      val outgoingConnection = localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))
+      (new DelayedInitProcessor[ByteString, ByteString](processorPromise.future), outgoingConnection)
+    })
+
   }
 }
 

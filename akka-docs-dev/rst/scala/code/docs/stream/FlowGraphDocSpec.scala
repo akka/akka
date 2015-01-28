@@ -28,7 +28,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     //format: OFF
     //#simple-flow-graph
     val g = FlowGraph { implicit b =>
-      import FlowGraphImplicits._
+      import FlowGraph.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
 
@@ -75,7 +75,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     intercept[IllegalArgumentException] {
       //#simple-graph
       FlowGraph { implicit b =>
-        import FlowGraphImplicits._
+        import FlowGraph.Implicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
 
@@ -102,7 +102,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     val g =
     //#flow-graph-reusing-a-flow
     FlowGraph { implicit b =>
-      import FlowGraphImplicits._
+      import FlowGraph.Implicits._
       val broadcast = Broadcast[Int]
       Source.single(1) ~> broadcast
 
