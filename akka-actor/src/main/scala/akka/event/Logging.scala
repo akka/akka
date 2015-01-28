@@ -632,6 +632,14 @@ object Logging {
      * Extra values for adding to MDC
      */
     def mdc: MDC = emptyMDC
+
+    /**
+     * Java API: Retrieve the contents of the MDC.
+     */
+    def getMDC: java.util.Map[String, Any] = {
+      import scala.collection.JavaConverters._
+      mdc.asJava
+    }
   }
 
   /**
