@@ -356,7 +356,7 @@ succeeds, the persistent actor receives a ``SaveSnapshotSuccess`` message, other
 
 where ``metadata`` is of type ``SnapshotMetadata``:
 
-.. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/Snapshot.scala#snapshot-metadata
+.. includecode:: ../../../akka-persistence/src/main/scala/akka/persistence/SnapshotProtocol.scala#snapshot-metadata
 
 During recovery, the persistent actor is offered a previously saved snapshot via a ``SnapshotOffer`` message from
 which it can initialize internal state.

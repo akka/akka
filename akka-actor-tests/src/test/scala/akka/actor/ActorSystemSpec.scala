@@ -373,6 +373,20 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         shutdown(system2)
       }
     }
+
+    "not allow top-level actor creation with custom guardian" in {
+      val sys = new ActorSystemImpl("custom", ConfigFactory.defaultReference(),
+        getClass.getClassLoader, None, Some(Props.empty))
+      sys.start()
+      try {
+        intercept[UnsupportedOperationException] {
+          sys.actorOf(Props.empty)
+        }
+        intercept[UnsupportedOperationException] {
+          sys.actorOf(Props.empty, "empty")
+        }
+      } finally shutdown(sys)
+    }
   }
 
 }
