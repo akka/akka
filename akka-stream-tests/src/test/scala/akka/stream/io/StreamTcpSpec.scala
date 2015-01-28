@@ -56,7 +56,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val resultFuture =
         Source(idle.publisherProbe)
           .via(StreamTcp().outgoingConnection(server.address).flow)
-          .fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+          .runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
       val serverConnection = server.waitAccept()
 
       for (in ← testInput) {
@@ -198,7 +198,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val testInput = (0 to 255).map(ByteString(_))
       val expectedOutput = ByteString(Array.tabulate(256)(_.asInstanceOf[Byte]))
       val resultFuture =
-        Source(testInput).via(StreamTcp().outgoingConnection(serverAddress).flow).fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+        Source(testInput).via(StreamTcp().outgoingConnection(serverAddress).flow).runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 3.seconds) should be(expectedOutput)
       Await.result(binding.unbind(echoServerMM), 3.seconds)
@@ -226,7 +226,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
           .via(echoConnection)
           .via(echoConnection)
           .via(echoConnection)
-          .fold(ByteString.empty)((acc, in) ⇒ acc ++ in)
+          .runFold(ByteString.empty)((acc, in) ⇒ acc ++ in)
 
       Await.result(resultFuture, 5.seconds) should be(expectedOutput)
       Await.result(binding.unbind(echoServerMM), 3.seconds)

@@ -17,14 +17,14 @@ class FlowFoldSpec extends AkkaSpec with DefaultTimeout {
 
     "fold" in {
       val input = 1 to 100
-      val future = Source(input).fold(0)(_ + _)
+      val future = Source(input).runFold(0)(_ + _)
       val expected = input.fold(0)(_ + _)
       Await.result(future, timeout.duration) should be(expected)
     }
 
     "propagate an error" in {
       val error = new Exception with NoStackTrace
-      val future = Source[Unit](() ⇒ throw error).fold(())((_, _) ⇒ ())
+      val future = Source[Unit](() ⇒ throw error).runFold(())((_, _) ⇒ ())
       the[Exception] thrownBy Await.result(future, timeout.duration) should be(error)
     }
 

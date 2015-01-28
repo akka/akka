@@ -162,7 +162,7 @@ public class TwitterStreamQuickstartDocTest {
       final Future<?> completion =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
           .map(i -> { System.out.println("map => " + i); return i; })
-          .foreach(i -> System.console().readLine("Element = %s continue reading? [press enter]\n", i), mat);
+          .runForeach(i -> System.console().readLine("Element = %s continue reading? [press enter]\n", i), mat);
   
       Await.ready(completion, FiniteDuration.create(1, TimeUnit.MINUTES));
       //#backpressure-by-readline
@@ -205,7 +205,7 @@ public class TwitterStreamQuickstartDocTest {
     //#authors-foreachsink-println
 
     //#authors-foreach-println
-    authors.foreach(a -> System.out.println(a), mat);
+    authors.runForeach(a -> System.out.println(a), mat);
     //#authors-foreach-println
   }
   

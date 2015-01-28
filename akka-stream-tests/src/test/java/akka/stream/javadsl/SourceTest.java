@@ -63,7 +63,7 @@ public class SourceTest extends StreamTest {
         public java.util.List<String> apply(java.util.List<String> elem) {
           return elem;
         }
-      }).fold("", new Function2<String, String, String>() {
+      }).runFold("", new Function2<String, String, String>() {
       public String apply(String acc, String elem) {
         return acc + elem;
       }
@@ -82,7 +82,7 @@ public class SourceTest extends StreamTest {
     final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
     Source<String> ints = Source.from(input);
 
-    Future<BoxedUnit> completion = ints.foreach(new Procedure<String>() {
+    Future<BoxedUnit> completion = ints.runForeach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -137,7 +137,7 @@ public class SourceTest extends StreamTest {
 
         };
       }
-    }).foreach(new Procedure<Integer>() {
+    }).runForeach(new Procedure<Integer>() {
       public void apply(Integer elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -162,10 +162,10 @@ public class SourceTest extends StreamTest {
       public String apply(String elem) {
         return elem.substring(0, 1);
       }
-    }).foreach(new Procedure<Pair<String, Source<String>>>() {
+    }).runForeach(new Procedure<Pair<String, Source<String>>>() {
       @Override
       public void apply(final Pair<String, Source<String>> pair) throws Exception {
-        pair.second().foreach(new Procedure<String>() {
+        pair.second().runForeach(new Procedure<String>() {
           @Override
           public void apply(String elem) throws Exception {
             probe.getRef().tell(new Pair<String, String>(pair.first(), elem), ActorRef.noSender());
@@ -198,7 +198,7 @@ public class SourceTest extends StreamTest {
       public boolean test(String elem) {
         return elem.equals(".");
       }
-    }).foreach(new Procedure<Source<String>>() {
+    }).runForeach(new Procedure<Source<String>>() {
       @Override
       public void apply(Source<String> subStream) throws Exception {
         subStream.filter(new Predicate<String>() {
@@ -206,7 +206,7 @@ public class SourceTest extends StreamTest {
           public boolean test(String elem) {
             return !elem.equals(".");
           }
-        }).grouped(10).foreach(new Procedure<List<String>>() {
+        }).grouped(10).runForeach(new Procedure<List<String>>() {
           @Override
           public void apply(List<String> chunk) throws Exception {
             probe.getRef().tell(chunk, ActorRef.noSender());
@@ -240,7 +240,7 @@ public class SourceTest extends StreamTest {
     final Source<String> in1 = Source.from(input1);
     final Source<String> in2 = Source.from(input2);
 
-    in1.concat(in2).foreach(new Procedure<String>() {
+    in1.concat(in2).runForeach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -260,7 +260,7 @@ public class SourceTest extends StreamTest {
         return input1.iterator();
       }
     };
-    Source.from(input).foreach(new Procedure<Integer>() {
+    Source.from(input).runForeach(new Procedure<Integer>() {
       public void apply(Integer elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
@@ -375,7 +375,7 @@ public class SourceTest extends StreamTest {
       public String apply(String aggr, String in) throws Exception {
         return aggr + in;
       }
-    }).fold("", new Function2<String, String, String>() {
+    }).runFold("", new Function2<String, String, String>() {
       @Override
       public String apply(String aggr, String in) throws Exception {
         return aggr + in;
@@ -431,7 +431,7 @@ public class SourceTest extends StreamTest {
       public Future<String> apply(String elem) {
         return Futures.successful(elem.toUpperCase());
       }
-    }).foreach(new Procedure<String>() {
+    }).runForeach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }

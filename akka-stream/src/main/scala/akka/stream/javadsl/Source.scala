@@ -205,7 +205,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is an error is signaled in the stream.
    */
-  def fold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
+  def runFold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
     runWith(Sink.fold(zero, f), materializer)
 
   /**
@@ -223,7 +223,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * normal end of the stream, or completed with `Failure` if there is an error is signaled in
    * the stream.
    */
-  def foreach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
+  def runForeach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //

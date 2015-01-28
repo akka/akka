@@ -40,7 +40,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     //#echo-server-simple-handle
     val connections: Source[IncomingConnection] = binding.connections
 
-    connections foreach { connection =>
+    connections runForeach { connection =>
       println(s"New connection from: ${connection.remoteAddress}")
 
       val echo = Flow[ByteString]
@@ -77,7 +77,7 @@ class StreamTcpDocSpec extends AkkaSpec {
     val binding = StreamTcp().bind(localhost)
 
     //#welcome-banner-chat-server
-    binding.connections foreach { connection =>
+    binding.connections runForeach { connection =>
 
       val serverLogic = Flow() { implicit b =>
         import FlowGraphImplicits._

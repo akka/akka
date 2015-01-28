@@ -22,7 +22,7 @@ class HttpServerExampleSpec
     implicit val materializer = FlowMaterializer()
 
     val serverBinding = Http(system).bind(interface = "localhost", port = 8080)
-    serverBinding.connections.foreach { connection => // foreach materializes the source
+    serverBinding.connections.runForeach { connection => // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
     }
     //#bind-example
@@ -52,7 +52,7 @@ class HttpServerExampleSpec
       case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
     }
 
-    serverBinding.connections foreach { connection =>
+    serverBinding.connections runForeach { connection =>
       println("Accepted new connection from " + connection.remoteAddress)
 
       connection handleWithSyncHandler requestHandler

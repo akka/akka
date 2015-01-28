@@ -185,7 +185,7 @@ but is not restricted to that - it could also mean opening files or socket conne
 
 Materialization is triggered at so called "terminal operations". Most notably this includes the various forms of the ``run()``
 and ``runWith()`` methods defined on flow elements as well as a small number of special syntactic sugars for running with
-well-known sinks, such as ``foreach(el => )`` (being an alias to ``runWith(Sink.foreach(el => ))``.
+well-known sinks, such as ``runForeach(el => )`` (being an alias to ``runWith(Sink.foreach(el => ))``.
 
 Materialization is currently performed synchronously on the materializing thread.
 Tha actual stream processing is handled by :ref:`Actors actor-scala` started up during the streams materialization,
