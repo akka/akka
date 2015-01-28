@@ -25,7 +25,7 @@ import akka.event.LoggingAdapter;
 
 //#imports-prio-mailbox
 import akka.dispatch.PriorityGenerator;
-import akka.dispatch.UnboundedPriorityMailbox;
+import akka.dispatch.UnboundedStablePriorityMailbox;
 import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.JavaTestKit;
 import com.typesafe.config.Config;
@@ -74,7 +74,7 @@ public class DispatcherDocTest {
         .withDispatcher("my-pinned-dispatcher"));
     //#defining-pinned-dispatcher
   }
-  
+
   @SuppressWarnings("unused")
   public void compileLookup() {
     //#lookup
@@ -188,7 +188,7 @@ public class DispatcherDocTest {
 
   static
   //#prio-mailbox
-  public class MyPrioMailbox extends UnboundedPriorityMailbox {
+  public class MyPrioMailbox extends UnboundedStablePriorityMailbox {
     // needed for reflective instantiation
     public MyPrioMailbox(ActorSystem.Settings settings, Config config) {
       // Create a new PriorityGenerator, lower prio means more important

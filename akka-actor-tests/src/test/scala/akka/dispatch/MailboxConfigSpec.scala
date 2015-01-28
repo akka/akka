@@ -195,6 +195,15 @@ class PriorityMailboxSpec extends MailboxSpec {
   }
 }
 
+class StablePriorityMailboxSpec extends MailboxSpec {
+  val comparator = PriorityGenerator(_.##)
+  lazy val name = "The stable priority mailbox implementation"
+  def factory = {
+    case UnboundedMailbox()                    ⇒ new UnboundedStablePriorityMailbox(comparator).create(None, None)
+    case BoundedMailbox(capacity, pushTimeOut) ⇒ new BoundedStablePriorityMailbox(comparator, capacity, pushTimeOut).create(None, None)
+  }
+}
+
 class ControlAwareMailboxSpec extends MailboxSpec {
   lazy val name = "The control aware mailbox implementation"
   def factory = {
