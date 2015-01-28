@@ -18,19 +18,19 @@ object Implicits {
    *
    * See [[Timed]]
    */
-  implicit class TimedSourceDsl[I](val flow: Source[I]) extends AnyVal {
+  implicit class TimedSourceDsl[I, Mat](val source: Source[I, Mat]) extends AnyVal {
 
     /**
      * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
      */
-    def timed[O](measuredOps: Source[I] ⇒ Source[O], onComplete: FiniteDuration ⇒ Unit): Source[O] =
-      Timed.timed[I, O](flow, measuredOps, onComplete)
+    def timed[O, Mat2](measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] =
+      Timed.timed[I, O, Mat, Mat2](source, measuredOps, onComplete)
 
     /**
      * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
      */
-    def timedIntervalBetween(matching: I ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[I] =
-      Timed.timedIntervalBetween[I](flow, matching, onInterval)
+    def timedIntervalBetween(matching: I ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[I, Mat] =
+      Timed.timedIntervalBetween[I, Mat](source, matching, onInterval)
   }
 
   /**
@@ -38,19 +38,19 @@ object Implicits {
    *
    * See [[Timed]]
    */
-  implicit class TimedFlowDsl[I, O](val flow: Flow[I, O]) extends AnyVal {
+  implicit class TimedFlowDsl[I, O, Mat](val flow: Flow[I, O, Mat]) extends AnyVal {
 
     /**
      * Measures time from receieving the first element and completion events - one for each subscriber of this `Flow`.
      */
-    def timed[Out](measuredOps: Flow[I, O] ⇒ Flow[O, Out], onComplete: FiniteDuration ⇒ Unit): Flow[O, Out] =
-      Timed.timed[I, O, Out](flow, measuredOps, onComplete)
+    def timed[Out, Mat2](measuredOps: Flow[I, O, Mat] ⇒ Flow[I, Out, Mat2], onComplete: FiniteDuration ⇒ Unit): Flow[I, Out, Mat2] =
+      Timed.timed[I, O, Out, Mat, Mat2](flow, measuredOps, onComplete)
 
     /**
      * Measures rolling interval between immediatly subsequent `matching(o: O)` elements.
      */
-    def timedIntervalBetween(matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O] =
-      Timed.timedIntervalBetween[I, O](flow, matching, onInterval)
+    def timedIntervalBetween(matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] =
+      Timed.timedIntervalBetween[I, O, Mat](flow, matching, onInterval)
   }
 
 }

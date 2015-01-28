@@ -3,54 +3,41 @@
  */
 package akka.stream.impl
 
-import akka.stream.scaladsl.OperationAttributes
-import scala.collection.breakOut
-import akka.actor.Props
-import akka.stream.scaladsl.FlexiRoute
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ scaladsl, ActorFlowMaterializerSettings }
 import akka.stream.impl.FanOut.OutputBunch
+import akka.stream.{ Shape, OutPort, Outlet }
+
 import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
  */
-private[akka] object FlexiRouteImpl {
-  def props(settings: ActorFlowMaterializerSettings, outputCount: Int, routeLogic: FlexiRoute.RouteLogic[Any]): Props =
-    Props(new FlexiRouteImpl(settings, outputCount, routeLogic))
+private[akka] class FlexiRouteImpl[T, S <: Shape](_settings: ActorFlowMaterializerSettings,
+                                                  shape: S,
+                                                  routeLogic: scaladsl.FlexiRoute.RouteLogic[T])
+  extends FanOut(_settings, shape.outlets.size) {
 
-  trait RouteLogicFactory[In] {
-    def attributes: OperationAttributes
-    def createRouteLogic(): FlexiRoute.RouteLogic[In]
-  }
-}
+  import akka.stream.scaladsl.FlexiRoute._
 
-/**
- * INTERNAL API
- */
-private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
-                                   outputCount: Int,
-                                   routeLogic: FlexiRoute.RouteLogic[Any])
-  extends FanOut(_settings, outputCount) {
-
-  import FlexiRoute._
-
-  val outputMapping: Map[Int, OutputHandle] =
-    routeLogic.outputHandles(outputCount).take(outputCount).zipWithIndex.map(_.swap)(breakOut)
-
-  private type StateT = routeLogic.State[Any]
+  private type StateT = routeLogic.State[_]
   private type CompletionT = routeLogic.CompletionHandling
 
+  val outputMapping: Array[Outlet[_]] = shape.outlets.toArray
+  val indexOf: Map[OutPort, Int] = shape.outlets.zipWithIndex.toMap
+
+  private def anyBehavior = behavior.asInstanceOf[routeLogic.State[Outlet[Any]]]
   private var behavior: StateT = _
   private var completion: CompletionT = _
   // needed to ensure that at most one element is emitted from onInput
   private val emitted = Array.ofDim[Boolean](outputCount)
 
-  override protected val outputBunch = new OutputBunch(outputPorts, self, this) {
+  override protected val outputBunch = new OutputBunch(outputCount, self, this) {
     override def onCancel(output: Int): Unit =
-      changeBehavior(try completion.onDownstreamFinish(ctx, outputMapping(output))
-      catch {
-        case NonFatal(e) ⇒ fail(e); routeLogic.SameState
-      })
+      changeBehavior(
+        try completion.onDownstreamFinish(ctx, outputMapping(output))
+        catch {
+          case NonFatal(e) ⇒ fail(e); routeLogic.SameState
+        })
   }
 
   override protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
@@ -65,16 +52,15 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
     }
   }
 
-  private val ctx: routeLogic.RouteLogicContext[Any] = new routeLogic.RouteLogicContext[Any] {
+  private val ctx: routeLogic.RouteLogicContext = new routeLogic.RouteLogicContext {
 
-    override def emit(output: OutputHandle, elem: Any): Unit = {
-      require(output.portIndex < outputCount, s"invalid output port index [${output.portIndex}, max index [${outputCount - 1}]")
-      if (emitted(output.portIndex))
+    override def emit[Out](output: Outlet[Out])(elem: Out): Unit = {
+      val idx = indexOf(output)
+      require(outputBunch.isPending(idx), s"emit to [$output] not allowed when no demand available")
+      if (emitted(idx))
         throw new IllegalStateException("It is only allowed to `emit` at most one element to each output in response to `onInput`")
-      require(outputBunch.isPending(output.portIndex),
-        s"emit to [$output] not allowed when no demand available")
-      emitted(output.portIndex) = true
-      outputBunch.enqueue(output.portIndex, elem)
+      emitted(idx) = true
+      outputBunch.enqueue(idx, elem)
     }
 
     override def finish(): Unit = {
@@ -83,25 +69,25 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
       context.stop(self)
     }
 
-    override def finish(output: OutputHandle): Unit =
-      outputBunch.complete(output.portIndex)
+    override def finish(output: OutPort): Unit =
+      outputBunch.complete(indexOf(output))
 
     override def fail(cause: Throwable): Unit = FlexiRouteImpl.this.fail(cause)
 
-    override def fail(output: OutputHandle, cause: Throwable): Unit =
-      outputBunch.error(output.portIndex, cause)
+    override def fail(output: OutPort, cause: Throwable): Unit =
+      outputBunch.error(indexOf(output), cause)
 
     override def changeCompletionHandling(newCompletion: CompletionT): Unit =
       FlexiRouteImpl.this.changeCompletionHandling(newCompletion)
 
   }
 
-  private def markOutputs(outputs: Array[OutputHandle]): Unit = {
+  private def markOutputs(outputs: Array[OutPort]): Unit = {
     outputBunch.unmarkAllOutputs()
     var i = 0
     while (i < outputs.length) {
-      val id = outputs(i).portIndex
-      if (outputMapping.contains(id) && !outputBunch.isCancelled(id) && !outputBunch.isCompleted(id))
+      val id = indexOf(outputs(i))
+      if (!outputBunch.isCancelled(id) && !outputBunch.isCompleted(id))
         outputBunch.markOutput(id)
       i += 1
     }
@@ -109,8 +95,8 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
 
   private def precondition: TransferState = {
     behavior.condition match {
-      case _: DemandFrom | _: DemandFromAny ⇒ primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs
-      case _: DemandFromAll                 ⇒ primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs
+      case _: DemandFrom[_] | _: DemandFromAny ⇒ primaryInputs.NeedsInput && outputBunch.AnyOfMarkedOutputs
+      case _: DemandFromAll                    ⇒ primaryInputs.NeedsInput && outputBunch.AllOfMarkedOutputs
     }
   }
 
@@ -126,11 +112,10 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
         case all: DemandFromAll ⇒
           markOutputs(all.outputs.toArray)
         case DemandFrom(output) ⇒
-          require(outputMapping.contains(output.portIndex), s"Unknown output handle $output")
-          require(!outputBunch.isCancelled(output.portIndex), s"Demand not allowed from cancelled $output")
-          require(!outputBunch.isCompleted(output.portIndex), s"Demand not allowed from completed $output")
+          require(indexOf.contains(output), s"Unknown output handle $output")
+          val idx = indexOf(output)
           outputBunch.unmarkAllOutputs()
-          outputBunch.markOutput(output.portIndex)
+          outputBunch.markOutput(idx)
       }
     }
 
@@ -138,32 +123,25 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
   changeCompletionHandling(routeLogic.initialCompletionHandling)
 
   nextPhase(TransferPhase(precondition) { () ⇒
-    val elem = primaryInputs.dequeueInputElement()
+    val elem = primaryInputs.dequeueInputElement().asInstanceOf[T]
     behavior.condition match {
       case any: DemandFromAny ⇒
         val id = outputBunch.idToEnqueueAndYield()
         val outputHandle = outputMapping(id)
-        callOnInput(outputHandle, elem)
+        callOnInput(behavior.asInstanceOf[routeLogic.State[OutPort]], outputHandle, elem)
 
       case DemandFrom(outputHandle) ⇒
-        callOnInput(outputHandle, elem)
+        callOnInput(anyBehavior, outputHandle, elem)
 
       case all: DemandFromAll ⇒
-        val id = outputBunch.idToEnqueueAndYield()
-        val outputHandle = outputMapping(id)
-        callOnInput(outputHandle, elem)
-
+        callOnInput(behavior.asInstanceOf[routeLogic.State[Unit]], (), elem)
     }
 
   })
 
-  private def callOnInput(output: OutputHandle, element: Any): Unit = {
-    var i = 0
-    while (i < emitted.length) {
-      emitted(i) = false
-      i += 1
-    }
-    changeBehavior(behavior.onInput(ctx, output, element))
+  private def callOnInput[U](b: routeLogic.State[U], output: U, element: T): Unit = {
+    java.util.Arrays.fill(emitted, false)
+    changeBehavior(b.onInput(ctx, output, element))
   }
 
 }

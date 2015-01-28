@@ -107,7 +107,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
 
   def collectBytesTo(bytes: ByteString*): Matcher[HttpEntity] =
     equal(bytes.toVector).matcher[Seq[ByteString]].compose { entity ⇒
-      val future = entity.dataBytes.grouped(1000).runWith(Sink.head)
+      val future = entity.dataBytes.grouped(1000).runWith(Sink.head())
       Await.result(future, 250.millis)
     }
 
@@ -120,7 +120,7 @@ class HttpEntitySpec extends FreeSpec with MustMatchers with BeforeAndAfterAll {
       Await.result(transformed.toStrict(250.millis), 250.millis)
     }
 
-  def duplicateBytesTransformer(): Flow[ByteString, ByteString] =
+  def duplicateBytesTransformer(): Flow[ByteString, ByteString, Unit] =
     Flow[ByteString].transform(() ⇒ StreamUtils.byteStringTransformer(doubleChars, () ⇒ trailer))
 
   def trailer: ByteString = ByteString("--dup")

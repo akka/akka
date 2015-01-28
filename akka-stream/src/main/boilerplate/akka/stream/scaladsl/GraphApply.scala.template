@@ -1,0 +1,79 @@
+/**
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.scaladsl
+
+import akka.stream.impl.StreamLayout.Module
+import akka.stream.{ Graph, Shape }
+
+trait GraphApply {
+
+  def closed()(buildBlock: (FlowGraph.Builder) ⇒ Unit): RunnableFlow[Unit] = {
+    val builder = new FlowGraph.Builder
+    buildBlock(builder)
+    builder.buildRunnable()
+  }
+
+  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder ⇒ (g1.Shape) ⇒ Unit): RunnableFlow[Mat] = {
+    val builder = new FlowGraph.Builder
+    val p1 = builder.add(g1)
+    buildBlock(builder)(p1)
+    builder.buildRunnable()
+  }
+
+  def partial[S <: Shape]()(buildBlock: FlowGraph.Builder ⇒ S): Graph[S, Unit] = {
+    val builder = new FlowGraph.Builder
+    val s = buildBlock(builder)
+    val mod = builder.module.wrap().replaceShape(s)
+
+    new Graph[S, Unit] {
+      override def shape: S = s
+      override private[stream] def module: Module = mod
+    }
+  }
+
+  def partial[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
+    val builder = new FlowGraph.Builder
+    val s1 = builder.add(g1)
+    val s = buildBlock(builder)(s1)
+    val mod = builder.module.wrap().replaceShape(s)
+
+    new Graph[S, Mat] {
+      override def shape: S = s
+      override private[stream] def module: Module = mod
+    }
+  }
+
+
+
+  [2..#def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableFlow[Mat] = {
+    val builder = new FlowGraph.Builder
+    val curried = combineMat.curried
+    val s##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))
+    [2..#val s1 = builder.add(g1, (f: M1 ⇒ Any, m1: M1) ⇒ f(m1))#
+    ]
+    buildBlock(builder)([#s1#])
+    builder.buildRunnable()
+  }#
+
+  ]
+
+  [2..#def partial[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
+    val builder = new FlowGraph.Builder
+    val curried = combineMat.curried
+    val s##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))
+    [2..#val s1 = builder.add(g1, (f: M1 ⇒ Any, m1: M1) ⇒ f(m1))#
+    ]
+    val s = buildBlock(builder)([#s1#])
+    val mod = builder.module.wrap().replaceShape(s)
+
+    new Graph[S, Mat] {
+      override def shape: S = s
+      override private[stream] def module: Module = mod
+    }
+  }#
+
+  ]
+
+
+}

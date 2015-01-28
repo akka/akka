@@ -11,7 +11,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.reflect.{ classTag, ClassTag }
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.http.util._
 import headers._
@@ -51,7 +51,7 @@ sealed trait HttpMessage extends japi.HttpMessage {
   def withEntity(entity: MessageEntity): Self
 
   /** Returns a sharable and serializable copy of this message with a strict entity. */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Self] =
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Self] =
     entity.toStrict(timeout).fast.map(this.withEntity)
 
   /** Returns a copy of this message with the entity and headers set to the given ones. */

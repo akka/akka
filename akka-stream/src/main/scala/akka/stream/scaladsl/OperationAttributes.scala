@@ -4,7 +4,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.impl.Ast.AstNode
+import akka.stream.impl.Stages.StageModule
 import akka.stream.Supervision
 
 /**
@@ -41,7 +41,7 @@ final case class OperationAttributes private (private val attributes: List[Opera
         s.withSupervisionStrategy(decider)
     }.reduceOption(_ andThen _).getOrElse(identity) // FIXME is this the optimal way of encoding this?
 
-  private[akka] def transform(node: AstNode): AstNode =
+  private[akka] def transform(node: StageModule): StageModule =
     if ((this eq OperationAttributes.none) || (this eq node.attributes)) node
     else node.withAttributes(attributes = this and node.attributes)
 
@@ -69,7 +69,7 @@ object OperationAttributes {
   private[OperationAttributes] def apply(attribute: Attribute): OperationAttributes =
     apply(List(attribute))
 
-  private[akka] val none: OperationAttributes = OperationAttributes()
+  val none: OperationAttributes = OperationAttributes()
 
   /**
    * Specifies the name of the operation.

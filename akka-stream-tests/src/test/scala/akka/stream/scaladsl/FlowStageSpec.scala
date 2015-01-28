@@ -22,7 +22,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
 
   "A Flow with transform operations" must {
     "produce one-to-one transformation as expected" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new PushStage[Int, Int] {
           var tot = 0
@@ -31,7 +31,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             ctx.push(tot)
           }
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -45,7 +45,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "produce one-to-several transformation as expected" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
           var tot = 0
@@ -65,7 +65,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
 
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -102,7 +102,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
                   ctx.pull()
                 } else ctx.push(elem)
             }
-          }).runWith(Sink.publisher)
+          }).runWith(Sink.publisher())
 
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(subscriber)
@@ -128,7 +128,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "produce dropping transformation as expected" in {
-      val p = Source(List(1, 2, 3, 4)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3, 4)).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new PushStage[Int, Int] {
           var tot = 0
@@ -140,7 +140,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
               ctx.push(tot)
           }
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -154,7 +154,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "produce multi-step transformation as expected" in {
-      val p = Source(List("a", "bc", "def")).runWith(Sink.publisher)
+      val p = Source(List("a", "bc", "def")).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new PushStage[String, Int] {
           var concat = ""
@@ -193,7 +193,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "support emit onUpstreamFinish" in {
-      val p = Source(List("a")).runWith(Sink.publisher)
+      val p = Source(List("a")).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[String, String] {
           var s = ""
@@ -206,7 +206,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           override def onUpstreamFinish(ctx: Context[String]) =
             terminationEmit(Iterator.single(s + "B"), ctx)
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[String]()
       p2.subscribe(c)
       val s = c.expectSubscription()
@@ -228,7 +228,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
               ctx.push(element)
           }
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val proc = p.expectSubscription
       val c = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(c)
@@ -242,7 +242,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "report error when exception is thrown" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
@@ -255,7 +255,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
             }
           }
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -269,7 +269,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "support emit of final elements when onUpstreamFailure" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher())
       val p2 = Source(p).
         map(elem ⇒ if (elem == 2) throw new IllegalArgumentException("two not allowed") else elem).
         transform(() ⇒ new StatefulStage[Int, Int] {
@@ -282,7 +282,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           }
         }).
         filter(elem ⇒ elem != 1). // it's undefined if element 1 got through before the error or not
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -296,7 +296,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "support cancel as expected" in {
-      val p = Source(List(1, 2, 3)).runWith(Sink.publisher)
+      val p = Source(List(1, 2, 3)).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
@@ -304,7 +304,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
               emit(Iterator(elem, elem), ctx)
           }
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()
@@ -318,7 +318,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
     }
 
     "support producing elements from empty inputs" in {
-      val p = Source(List.empty[Int]).runWith(Sink.publisher)
+      val p = Source(List.empty[Int]).runWith(Sink.publisher())
       val p2 = Source(p).
         transform(() ⇒ new StatefulStage[Int, Int] {
           override def initial = new State {
@@ -327,7 +327,7 @@ class FlowStageSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug
           override def onUpstreamFinish(ctx: Context[Int]) =
             terminationEmit(Iterator(1, 2, 3), ctx)
         }).
-        runWith(Sink.publisher)
+        runWith(Sink.publisher())
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       p2.subscribe(subscriber)
       val subscription = subscriber.expectSubscription()

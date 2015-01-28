@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import org.reactivestreams.Subscriber
+
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -24,7 +26,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
 
     "yield the first value" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f: Future[Int] = Source(p).map(identity).runWith(Sink.head)
+      val f: Future[Int] = Source(p).map(identity).runWith(Sink.head())
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
@@ -36,18 +38,19 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
       val p = StreamTestKit.PublisherProbe[Int]()
       val f = Sink.head[Int]
       val s = Source.subscriber[Int]
-      val m = s.to(f).run()
-      p.subscribe(m.get(s))
+      val (subscriber, future) = s.toMat(f)(Keep.both).run()
+
+      p.subscribe(subscriber)
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendNext(42)
-      Await.result(m.get(f), 100.millis) should be(42)
+      Await.result(future, 100.millis) should be(42)
       proc.expectCancellation()
     }
 
     "yield the first error" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Source(p).runWith(Sink.head)
+      val f = Source(p).runWith(Sink.head())
       val proc = p.expectSubscription
       proc.expectRequest()
       val ex = new RuntimeException("ex")
@@ -58,7 +61,7 @@ class HeadSinkSpec extends AkkaSpec with ScriptedTest {
 
     "yield NoSuchElementExcption for empty stream" in {
       val p = StreamTestKit.PublisherProbe[Int]()
-      val f = Source(p).runWith(Sink.head)
+      val f = Source(p).runWith(Sink.head())
       val proc = p.expectSubscription
       proc.expectRequest()
       proc.sendComplete()

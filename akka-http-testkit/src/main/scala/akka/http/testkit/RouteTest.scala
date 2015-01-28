@@ -12,7 +12,6 @@ import scala.util.DynamicVariable
 import scala.reflect.ClassTag
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializer
-import akka.stream.FlowMaterializer
 import akka.http.client.RequestBuilding
 import akka.http.util.FastFuture
 import akka.http.server._

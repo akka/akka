@@ -659,8 +659,16 @@ class HttpServerSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     val (netIn, netOut) = {
       val netIn = StreamTestKit.PublisherProbe[ByteString]
       val netOut = StreamTestKit.SubscriberProbe[ByteString]
-      val transportFlow = HttpServer.serverFlowToTransport(Flow(Sink(requests), Source(responses)), settings, NoLogging)
-      Source(netIn).via(transportFlow).runWith(Sink(netOut))
+
+      FlowGraph.closed(HttpServer.serverBlueprint(settings, NoLogging)) { implicit b ⇒
+        server ⇒
+          import FlowGraph.Implicits._
+          Source(netIn) ~> server.bytesIn
+          server.bytesOut ~> Sink(netOut)
+          server.httpRequests ~> Sink(requests)
+          Source(responses) ~> server.httpResponses
+      }.run()
+
       netIn -> netOut
     }
 

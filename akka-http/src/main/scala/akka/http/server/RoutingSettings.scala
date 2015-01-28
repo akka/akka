@@ -14,7 +14,8 @@ case class RoutingSettings(
   renderVanityFooter: Boolean,
   rangeCountLimit: Int,
   rangeCoalescingThreshold: Long,
-  decodeMaxBytesPerChunk: Int)
+  decodeMaxBytesPerChunk: Int,
+  fileIODispatcher: String)
 
 object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.routing") {
   def fromSubConfig(c: Config) = apply(
@@ -23,7 +24,8 @@ object RoutingSettings extends SettingsCompanion[RoutingSettings]("akka.http.rou
     c getBoolean "render-vanity-footer",
     c getInt "range-count-limit",
     c getBytes "range-coalescing-threshold",
-    c getIntBytes "decode-max-bytes-per-chunk")
+    c getIntBytes "decode-max-bytes-per-chunk",
+    c getString "file-io-dispatcher")
 
   implicit def default(implicit refFactory: ActorRefFactory) =
     apply(actorSystem)

@@ -82,7 +82,7 @@ class FileAndResourceDirectivesSpec extends RoutingSpec with Inspectors with Ins
           header[`Content-Range`] shouldEqual None
           mediaType.withParams(Map.empty) shouldEqual `multipart/byteranges`
 
-          val parts = responseAs[Multipart.ByteRanges].toStrict(100.millis).awaitResult(100.millis).strictParts
+          val parts = responseAs[Multipart.ByteRanges].toStrict(1.second).awaitResult(3.seconds).strictParts
           parts.size shouldEqual 2
           parts(0).entity.data.utf8String shouldEqual "BCDEFGHIJK"
           parts(1).entity.data.utf8String shouldEqual "QRSTUVWXYZ"

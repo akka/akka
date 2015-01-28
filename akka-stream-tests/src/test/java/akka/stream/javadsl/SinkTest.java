@@ -30,13 +30,13 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFanoutPublisher() throws Exception {
-    final KeyedSink<Object, Publisher<Object>> pubSink = Sink.fanoutPublisher(2, 2);
+    final Sink<Object, Publisher<Object>> pubSink = Sink.fanoutPublisher(2, 2);
     final Publisher<Object> publisher = Source.from(new ArrayList<Object>()).runWith(pubSink, materializer);
   }
   
   @Test
   public void mustBeAbleToUseFuture() throws Exception {
-    final KeyedSink<Integer, Future<Integer>> futSink = Sink.head();
+    final Sink<Integer, Future<Integer>> futSink = Sink.head();
     final List<Integer> list = new ArrayList<Integer>();
     list.add(1);
     final Future<Integer> future = Source.from(list).runWith(futSink, materializer);
@@ -45,7 +45,7 @@ public class SinkTest extends StreamTest {
 
   @Test
   public void mustBeAbleToUseFold() throws Exception {
-    KeyedSink<Integer, Future<Integer>> foldSink = Sink.fold(0, new Function2<Integer, Integer, Integer>() {
+    Sink<Integer, Future<Integer>> foldSink = Sink.fold(0, new Function2<Integer, Integer, Integer>() {
       @Override public Integer apply(Integer arg1, Integer arg2) throws Exception {
         return arg1 + arg2;
       }

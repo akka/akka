@@ -25,9 +25,9 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
 
   def newRenderer: HttpRequestRenderer = new HttpRequestRenderer
 
-  final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString]] {
+  final class HttpRequestRenderer extends PushStage[RequestRenderingContext, Source[ByteString, Unit]] {
 
-    override def onPush(ctx: RequestRenderingContext, opCtx: Context[Source[ByteString]]): Directive = {
+    override def onPush(ctx: RequestRenderingContext, opCtx: Context[Source[ByteString, Unit]]): Directive = {
       val r = new ByteStringRendering(requestHeaderSizeHint)
       import ctx.request._
 
@@ -102,7 +102,7 @@ private[http] class HttpRequestRendererFactory(userAgentHeader: Option[headers.`
       def renderContentLength(contentLength: Long) =
         if (method.isEntityAccepted) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
-      def completeRequestRendering(): Source[ByteString] =
+      def completeRequestRendering(): Source[ByteString, Unit] =
         entity match {
           case x if x.isKnownEmpty ⇒
             renderContentLength(0) ~~ CrLf

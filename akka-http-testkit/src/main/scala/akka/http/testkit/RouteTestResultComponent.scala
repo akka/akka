@@ -9,7 +9,7 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext
 import akka.http.util._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.model.HttpEntity.ChunkStreamPart
 import akka.http.server._
@@ -22,7 +22,7 @@ trait RouteTestResultComponent {
   /**
    * A receptacle for the response or rejections created by a route.
    */
-  class RouteTestResult(timeout: FiniteDuration)(implicit fm: FlowMaterializer) {
+  class RouteTestResult(timeout: FiniteDuration)(implicit fm: ActorFlowMaterializer) {
     private[this] var result: Option[Either[immutable.Seq[Rejection], HttpResponse]] = None
     private[this] val latch = new CountDownLatch(1)
 
@@ -95,7 +95,7 @@ trait RouteTestResultComponent {
     private def failNeitherCompletedNorRejected(): Nothing =
       failTest("Request was neither completed nor rejected within " + timeout)
 
-    private def awaitAllElements[T](data: Source[T]): immutable.Seq[T] =
-      data.grouped(100000).runWith(Sink.head).awaitResult(timeout)
+    private def awaitAllElements[T](data: Source[T, _]): immutable.Seq[T] =
+      data.grouped(100000).runWith(Sink.head()).awaitResult(timeout)
   }
 }

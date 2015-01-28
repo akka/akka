@@ -51,6 +51,9 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   private def requestBatchSize = math.max(1, inputBuffer.length / 2)
   private var batchRemaining = requestBatchSize
 
+  override def toString: String =
+    s"BatchingInputBuffer(size=$size, elems=$inputBufferElements, completed=$upstreamCompleted, remaining=$batchRemaining)"
+
   override val subreceive: SubReceive = new SubReceive(waitingForUpstream)
 
   override def dequeueInputElement(): Any = {

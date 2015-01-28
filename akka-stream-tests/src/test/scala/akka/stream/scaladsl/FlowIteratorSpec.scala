@@ -16,13 +16,13 @@ import akka.stream.testkit.StreamTestKit.OnNext
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"
-  override def createSource[T](iterable: immutable.Iterable[T]): Source[T] =
+  override def createSource[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
     Source(() ⇒ iterable.iterator)
 }
 
 class FlowIterableSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterable"
-  override def createSource[T](iterable: immutable.Iterable[T]): Source[T] =
+  override def createSource[T](iterable: immutable.Iterable[T]): Source[T, Unit] =
     Source(iterable)
 }
 
@@ -35,11 +35,11 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
 
   def testName: String
 
-  def createSource[T](iterable: immutable.Iterable[T]): Source[T]
+  def createSource[T](iterable: immutable.Iterable[T]): Source[T, Unit]
 
   testName must {
     "produce elements" in {
-      val p = createSource(1 to 3).runWith(Sink.publisher)
+      val p = createSource(1 to 3).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -53,7 +53,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "complete empty" in {
-      val p = createSource(immutable.Iterable.empty[Int]).runWith(Sink.publisher)
+      val p = createSource(immutable.Iterable.empty[Int]).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectCompletedOrSubscriptionFollowedByComplete()
@@ -108,7 +108,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with one transformation step" in {
-      val p = createSource(1 to 3).map(_ * 2).runWith(Sink.publisher)
+      val p = createSource(1 to 3).map(_ * 2).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -120,7 +120,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "produce elements with two transformation steps" in {
-      val p = createSource(1 to 4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher)
+      val p = createSource(1 to 4).filter(_ % 2 == 0).map(_ * 2).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -131,7 +131,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
     }
 
     "not produce after cancel" in {
-      val p = createSource(1 to 3).runWith(Sink.publisher)
+      val p = createSource(1 to 3).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -147,7 +147,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
         override def iterator: Iterator[Int] =
           (1 to 3).iterator.map(x ⇒ if (x == 2) throw new IllegalStateException("not two") else x)
       }
-      val p = createSource(iterable).runWith(Sink.publisher)
+      val p = createSource(iterable).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       val sub = c.expectSubscription()
@@ -164,7 +164,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       val iterable = new immutable.Iterable[Int] {
         override def iterator: Iterator[Int] = throw new IllegalStateException("no good iterator")
       }
-      val p = createSource(iterable).runWith(Sink.publisher)
+      val p = createSource(iterable).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectErrorOrSubscriptionFollowedByError().getMessage should be("no good iterator")
@@ -178,7 +178,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
           override def next(): Int = -1
         }
       }
-      val p = createSource(iterable).runWith(Sink.publisher)
+      val p = createSource(iterable).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
       c.expectErrorOrSubscriptionFollowedByError().getMessage should be("no next")

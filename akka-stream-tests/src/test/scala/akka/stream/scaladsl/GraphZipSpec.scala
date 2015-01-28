@@ -1,26 +1,35 @@
+/**
+ * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.scaladsl
 
-import akka.stream.scaladsl.FlowGraphImplicits._
 import akka.stream.testkit.StreamTestKit
 import akka.stream.testkit.TwoStreamsSetup
+import akka.stream._
 
 class GraphZipSpec extends TwoStreamsSetup {
+  import FlowGraph.Implicits._
 
   override type Outputs = (Int, Int)
-  val op = Zip[Int, Int]
-  override def operationUnderTestLeft() = op.left
-  override def operationUnderTestRight() = op.right
+
+  override def fixture(b: FlowGraph.Builder): Fixture = new Fixture(b: FlowGraph.Builder) {
+    val zip = b.add(Zip[Int, Int]())
+
+    override def left: Inlet[Int] = zip.in0
+    override def right: Inlet[Int] = zip.in1
+    override def out: Outlet[(Int, Int)] = zip.out
+  }
 
   "Zip" must {
 
     "work in the happy case" in {
       val probe = StreamTestKit.SubscriberProbe[(Int, String)]()
 
-      FlowGraph { implicit b ⇒
-        val zip = Zip[Int, String]
+      FlowGraph.closed() { implicit b ⇒
+        val zip = b.add(Zip[Int, String]())
 
-        Source(1 to 4) ~> zip.left
-        Source(List("A", "B", "C", "D", "E", "F")) ~> zip.right
+        Source(1 to 4) ~> zip.in0
+        Source(List("A", "B", "C", "D", "E", "F")) ~> zip.in1
 
         zip.out ~> Sink(probe)
       }.run()

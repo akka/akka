@@ -64,7 +64,7 @@ trait AkkaSubscriberVerificationLike {
       if (elements == Long.MaxValue) 1 to Int.MaxValue
       else 0 until elements.toInt
 
-    Source(iterable).runWith(Sink.publisher)
+    Source(iterable).runWith(Sink.publisher())
   }
 
   @AfterClass

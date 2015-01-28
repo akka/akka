@@ -3,8 +3,7 @@
  */
 package akka.stream.impl
 
-import akka.stream.scaladsl
-import akka.stream.javadsl
+import akka.stream.{ scaladsl, javadsl }
 
 /**
  * INTERNAL API
@@ -15,18 +14,18 @@ import akka.stream.javadsl
 private[akka] object Extract {
 
   object Source {
-    def unapply(a: Any): Option[scaladsl.Source[Any]] = a match {
-      case s: scaladsl.Source[Any] ⇒ Some(s)
-      case s: javadsl.Source[Any]  ⇒ Some(s.asScala)
-      case _                       ⇒ None
+    def unapply(a: Any): Option[scaladsl.Source[Any, _]] = a match {
+      case s: scaladsl.Source[_, _] ⇒ Some(s)
+      case s: javadsl.Source[_, _]  ⇒ Some(s.asScala)
+      case _                        ⇒ None
     }
   }
 
   object Sink {
-    def unapply(a: Any): Option[scaladsl.Sink[Any]] = a match {
-      case s: scaladsl.Sink[Any] ⇒ Some(s)
-      case s: javadsl.Sink[Any]  ⇒ Some(s.asScala)
-      case _                     ⇒ None
+    def unapply(a: Any): Option[scaladsl.Sink[Nothing, _]] = a match {
+      case s: scaladsl.Sink[_, _] ⇒ Some(s)
+      case s: javadsl.Sink[_, _]  ⇒ Some(s.asScala)
+      case _                      ⇒ None
     }
   }
 

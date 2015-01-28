@@ -9,6 +9,8 @@ import org.scalatest.WordSpec
 import akka.http.model._
 import headers._
 import HttpMethods.POST
+import scala.concurrent.duration._
+import akka.http.util._
 
 class EncoderSpec extends WordSpec with CodecSpecSupport {
 
@@ -21,7 +23,7 @@ class EncoderSpec extends WordSpec with CodecSpecSupport {
       val request = HttpRequest(POST, entity = HttpEntity(smallText))
       val encoded = DummyEncoder.encode(request)
       encoded.headers shouldEqual List(`Content-Encoding`(DummyEncoder.encoding))
-      encoded.entity shouldEqual HttpEntity(dummyCompress(smallText))
+      encoded.entity.toStrict(1.second).awaitResult(1.second) shouldEqual HttpEntity(dummyCompress(smallText))
     }
   }
 

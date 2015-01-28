@@ -44,7 +44,7 @@ public class SourceTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final String[] lookup = {"a", "b", "c", "d", "e", "f"};
     final java.lang.Iterable<Integer> input = Arrays.asList(0, 1, 2, 3, 4, 5);
-    final Source<Integer> ints = Source.from(input);
+    final Source<Integer, ?> ints = Source.from(input);
 
     ints.drop(2).take(3).takeWithin(FiniteDuration.create(10, TimeUnit.SECONDS)).map(new Function<Integer, String>() {
       public String apply(Integer elem) {
@@ -80,7 +80,7 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUseVoidTypeInForeach() {
     final JavaTestKit probe = new JavaTestKit(system);
     final java.lang.Iterable<String> input = Arrays.asList("a", "b", "c");
-    Source<String> ints = Source.from(input);
+    Source<String, ?> ints = Source.from(input);
 
     Future<BoxedUnit> completion = ints.runForeach(new Procedure<String>() {
       public void apply(String elem) {
@@ -162,9 +162,9 @@ public class SourceTest extends StreamTest {
       public String apply(String elem) {
         return elem.substring(0, 1);
       }
-    }).runForeach(new Procedure<Pair<String, Source<String>>>() {
+    }).runForeach(new Procedure<Pair<String, Source<String, BoxedUnit>>>() {
       @Override
-      public void apply(final Pair<String, Source<String>> pair) throws Exception {
+      public void apply(final Pair<String, Source<String, BoxedUnit>> pair) throws Exception {
         pair.second().runForeach(new Procedure<String>() {
           @Override
           public void apply(String elem) throws Exception {
@@ -198,9 +198,9 @@ public class SourceTest extends StreamTest {
       public boolean test(String elem) {
         return elem.equals(".");
       }
-    }).runForeach(new Procedure<Source<String>>() {
+    }).runForeach(new Procedure<Source<String, BoxedUnit>>() {
       @Override
-      public void apply(Source<String> subStream) throws Exception {
+      public void apply(Source<String, BoxedUnit> subStream) throws Exception {
         subStream.filter(new Predicate<String>() {
           @Override
           public boolean test(String elem) {
@@ -237,8 +237,8 @@ public class SourceTest extends StreamTest {
     final Iterable<String> input1 = Arrays.asList("A", "B", "C");
     final Iterable<String> input2 = Arrays.asList("D", "E", "F");
 
-    final Source<String> in1 = Source.from(input1);
-    final Source<String> in2 = Source.from(input2);
+    final Source<String, ?> in1 = Source.from(input1);
+    final Source<String, ?> in2 = Source.from(input2);
 
     in1.concat(in2).runForeach(new Procedure<String>() {
       public void apply(String elem) {
@@ -322,9 +322,9 @@ public class SourceTest extends StreamTest {
   public void mustBeAbleToUsePrefixAndTail() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<Integer> input = Arrays.asList(1, 2, 3, 4, 5, 6);
-    Future<Pair<List<Integer>, Source<Integer>>> future = Source.from(input).prefixAndTail(3)
-      .runWith(Sink.<Pair<List<Integer>, Source<Integer>>>head(), materializer);
-    Pair<List<Integer>, Source<Integer>> result = Await.result(future,
+    Future<Pair<List<Integer>, Source<Integer, BoxedUnit>>> future = Source.from(input).prefixAndTail(3)
+      .runWith(Sink.<Pair<List<Integer>, Source<Integer, BoxedUnit>>>head(), materializer);
+    Pair<List<Integer>, Source<Integer, BoxedUnit>> result = Await.result(future,
       probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals(Arrays.asList(1, 2, 3), result.first());
 
@@ -339,7 +339,9 @@ public class SourceTest extends StreamTest {
     final Iterable<Integer> input1 = Arrays.asList(1, 2, 3);
     final Iterable<Integer> input2 = Arrays.asList(4, 5);
 
-    final List<Source<Integer>> mainInputs = Arrays.asList(Source.from(input1), Source.from(input2));
+    final List<Source<Integer, BoxedUnit>> mainInputs = new ArrayList<Source<Integer,BoxedUnit>>();
+    mainInputs.add(Source.from(input1));
+    mainInputs.add(Source.from(input2));
 
     Future<List<Integer>> future = Source.from(mainInputs)
       .flatten(akka.stream.javadsl.FlattenStrategy.<Integer>concat()).grouped(6)
@@ -407,14 +409,13 @@ public class SourceTest extends StreamTest {
   @Test
   public void mustProduceTicks() throws Exception {
     final JavaTestKit probe = new JavaTestKit(system);
-    KeyedSource<String, Cancellable> tickSource = Source.from(FiniteDuration.create(1, TimeUnit.SECONDS), 
+    Source<String, Cancellable> tickSource = Source.from(FiniteDuration.create(1, TimeUnit.SECONDS), 
         FiniteDuration.create(500, TimeUnit.MILLISECONDS), "tick");
-    MaterializedMap map = tickSource.to(Sink.foreach(new Procedure<String>() {
+    Cancellable cancellable = tickSource.to(Sink.foreach(new Procedure<String>() {
       public void apply(String elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
     })).run(materializer);
-    Cancellable cancellable = map.get(tickSource); // validates we can obtain the cancellable
     probe.expectNoMsg(FiniteDuration.create(600, TimeUnit.MILLISECONDS));
     probe.expectMsgEquals("tick");
     probe.expectNoMsg(FiniteDuration.create(200, TimeUnit.MILLISECONDS));

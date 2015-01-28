@@ -24,7 +24,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     val testException = new Exception("test") with NoStackTrace
 
-    def newHeadSink = Sink.head[(immutable.Seq[Int], Source[Int])]
+    def newHeadSink = Sink.head[(immutable.Seq[Int], Source[Int, _])]
 
     "work on empty input" in {
       val futureSink = newHeadSink
@@ -92,7 +92,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when no substream open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
       Source(publisher).prefixAndTail(3).to(Sink(subscriber)).run()
 
@@ -110,7 +110,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle onError when substream is open" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
       Source(publisher).prefixAndTail(1).to(Sink(subscriber)).run()
 
@@ -137,7 +137,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle master stream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
       Source(publisher).prefixAndTail(3).to(Sink(subscriber)).run()
 
@@ -155,7 +155,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
     "handle substream cancellation" in {
       val publisher = StreamTestKit.PublisherProbe[Int]()
-      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int])]()
+      val subscriber = StreamTestKit.SubscriberProbe[(immutable.Seq[Int], Source[Int, _])]()
 
       Source(publisher).prefixAndTail(1).to(Sink(subscriber)).run()
 

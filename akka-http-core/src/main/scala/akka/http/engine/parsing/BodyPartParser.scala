@@ -254,7 +254,7 @@ private[http] object BodyPartParser {
   val boundaryCharNoSpace = CharPredicate.Digit ++ CharPredicate.Alpha ++ "'()+_,-./:=?"
 
   sealed trait Output
-  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output] ⇒ BodyPartEntity) extends Output
+  final case class BodyPartStart(headers: List[HttpHeader], createEntity: Source[Output, Unit] ⇒ BodyPartEntity) extends Output
   final case class EntityPart(data: ByteString) extends Output
   final case class ParseError(info: ErrorInfo) extends Output
 

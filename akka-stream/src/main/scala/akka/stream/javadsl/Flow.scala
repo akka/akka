@@ -4,90 +4,89 @@
 package akka.stream.javadsl
 
 import akka.stream._
-import akka.japi.Util
+import akka.japi.{ Util, Pair }
 import akka.stream.scaladsl
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import akka.stream.stage.Stage
+import akka.stream.impl.StreamLayout
 
 object Flow {
 
   import akka.stream.scaladsl.JavaConverters._
 
+  val factory: FlowCreate = new FlowCreate {}
+
   /** Adapt [[scaladsl.Flow]] for use within Java DSL */
-  def adapt[I, O](flow: scaladsl.Flow[I, O]): javadsl.Flow[I, O] =
+  def adapt[I, O, M](flow: scaladsl.Flow[I, O, M]): javadsl.Flow[I, O, M] =
     new Flow(flow)
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def empty[T](): javadsl.Flow[T, T] =
+  def empty[T](): javadsl.Flow[T, T, Unit] =
     Flow.create()
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def create[T](): javadsl.Flow[T, T] =
-    Flow.adapt[T, T](scaladsl.Pipe.empty[T])
+  def create[T](): javadsl.Flow[T, T, Unit] =
+    adapt(scaladsl.Flow[T])
 
   /** Create a `Flow` which can process elements of type `T`. */
-  def of[T](clazz: Class[T]): javadsl.Flow[T, T] =
+  def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
     create[T]()
-
-  /**
-   * Creates a `Flow` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
-   * returns the `UndefinedSource` and `UndefinedSink`.
-   */
-  def create[I, O](block: japi.Function[FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl.Flow() { b ⇒
-      val pair = block.apply(b.asJava)
-      pair.first.asScala → pair.second.asScala
-    }
-    new javadsl.Flow[I, O](sFlow)
-  }
-
-  /**
-   * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
-   * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
-   */
-  def create[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl.Flow(graph.asScala) { b ⇒
-      val pair = block.apply(b.asJava)
-      pair.first.asScala → pair.second.asScala
-    }
-    new Flow[I, O](sFlow)
-  }
-
-  /**
-   * Create a flow from a seemingly disconnected Source and Sink pair.
-   */
-  def create[I, O](sink: javadsl.Sink[I], source: javadsl.Source[O]): Flow[I, O] =
-    new Flow(scaladsl.Flow(sink.asScala, source.asScala))
-
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
-class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
+class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
   import akka.stream.scaladsl.JavaConverters._
 
+  override def shape: FlowShape[In, Out] = delegate.shape
+  private[stream] def module: StreamLayout.Module = delegate.module
+
   /** Converts this Flow to it's Scala DSL counterpart */
-  def asScala: scaladsl.Flow[In, Out] = delegate
+  def asScala: scaladsl.Flow[In, Out, Mat] = delegate
+
+  /**
+   * Transform only the materialized value of this Flow, leaving all other properties as they were.
+   */
+  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): Flow[In, Out, Mat2] =
+    new Flow(delegate.mapMaterialized(f.apply _))
 
   /**
    * Transform this [[Flow]] by appending the given processing steps.
    */
-  def via[T](flow: javadsl.Flow[Out, T]): javadsl.Flow[In, T] =
+  def via[T, M](flow: javadsl.Flow[Out, T, M]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.via(flow.asScala))
+
+  /**
+   * Transform this [[Flow]] by appending the given processing steps.
+   */
+  def via[T, M, M2](flow: javadsl.Flow[Out, T, M], combine: japi.Function2[Mat, M, M2]): javadsl.Flow[In, T, M2] =
+    new Flow(delegate.viaMat(flow.asScala)(combinerToScala(combine)))
 
   /**
    * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
    */
-  def to(sink: javadsl.Sink[Out]): javadsl.Sink[In] =
+  def to(sink: javadsl.Sink[Out, _]): javadsl.Sink[In, Mat] =
     new Sink(delegate.to(sink.asScala))
+
+  /**
+   * Connect this [[Flow]] to a [[Sink]], concatenating the processing steps of both.
+   */
+  def to[M, M2](sink: javadsl.Sink[Out, M], combine: japi.Function2[Mat, M, M2]): javadsl.Sink[In, M2] =
+    new Sink(delegate.toMat(sink.asScala)(combinerToScala(combine)))
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join(flow: javadsl.Flow[Out, In]): javadsl.RunnableFlow =
-    new RunnableFlowAdapter(delegate.join(flow.asScala))
+  def join[M](flow: javadsl.Flow[Out, In, M]): javadsl.RunnableFlow[Mat @uncheckedVariance Pair M] =
+    new RunnableFlowAdapter(delegate.join(flow.asScala).mapMaterialized(p ⇒ new Pair(p._1, p._2)))
+
+  /**
+   * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
+   */
+  def join[M, M2](flow: javadsl.Flow[Out, In, M], combine: japi.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+    new RunnableFlowAdapter(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
@@ -98,51 +97,23 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @tparam T materialized type of given KeyedSource
    * @tparam U materialized type of given KeyedSink
    */
-  def runWith[T, U](source: javadsl.KeyedSource[In, T], sink: javadsl.KeyedSink[Out, U], materializer: FlowMaterializer): akka.japi.Pair[T, U] = {
+  def runWith[T, U](source: javadsl.Source[In, T], sink: javadsl.Sink[Out, U], materializer: ActorFlowMaterializer): akka.japi.Pair[T, U] = {
     val p = delegate.runWith(source.asScala, sink.asScala)(materializer)
     akka.japi.Pair(p._1.asInstanceOf[T], p._2.asInstanceOf[U])
   }
 
   /**
-   * Connect the `Source` to this `Flow` and then connect it to the `KeyedSink` and run it.
-   *
-   * The returned value will contain the materialized value of the `KeyedSink`, e.g. `Publisher` of a `Sink.publisher()`.
-   *
-   * @tparam T materialized type of given KeyedSink
-   */
-  def runWith[T](source: javadsl.Source[In], sink: javadsl.KeyedSink[Out, T], materializer: FlowMaterializer): T =
-    delegate.runWith(source.asScala, sink.asScala)(materializer)._2.asInstanceOf[T]
-
-  /**
-   * Connect the `KeyedSource` to this `Flow` and then connect it to the `Sink` and run it.
-   *
-   * The returned value will contain the materialized value of the `KeyedSource`, e.g. `Subscriber` of a `Source.from(publisher)`.
-   *
-   * @tparam T materialized type of given KeyedSource
-   */
-  def runWith[T](source: javadsl.KeyedSource[In, T], sink: javadsl.Sink[Out], materializer: FlowMaterializer): T =
-    delegate.runWith(source.asScala, sink.asScala)(materializer)._1.asInstanceOf[T]
-
-  /**
-   * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it.
-   *
-   * As both `Source` and `Sink` are "simple", no value is returned from this `runWith` overload.
-   */
-  def runWith(source: javadsl.Source[In], sink: javadsl.Sink[Out], materializer: FlowMaterializer): Unit =
-    delegate.runWith(source.asScala, sink.asScala)(materializer)
-
-  /**
    * Transform this stream by applying the given function to each of the elements
    * as they pass through this processing step.
    */
-  def map[T](f: japi.Function[Out, T]): javadsl.Flow[In, T] =
+  def map[T](f: japi.Function[Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.map(f.apply))
 
   /**
    * Transform each input element into a sequence of output elements that is
    * then flattened into the output stream.
    */
-  def mapConcat[T](f: japi.Function[Out, java.util.List[T]]): javadsl.Flow[In, T] =
+  def mapConcat[T](f: japi.Function[Out, java.util.List[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapConcat(elem ⇒ Util.immutableSeq(f.apply(elem))))
 
   /**
@@ -162,7 +133,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    *
    * @see [[#mapAsyncUnordered]]
    */
-  def mapAsync[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T] =
+  def mapAsync[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsync(f.apply))
 
   /**
@@ -183,13 +154,13 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    *
    * @see [[#mapAsync]]
    */
-  def mapAsyncUnordered[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T] =
+  def mapAsyncUnordered[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.mapAsyncUnordered(f.apply))
 
   /**
    * Only pass on those elements that satisfy the given predicate.
    */
-  def filter(p: japi.Predicate[Out]): javadsl.Flow[In, Out] =
+  def filter(p: japi.Predicate[Out]): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.filter(p.test))
 
   /**
@@ -197,7 +168,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * on which the function is defined as they pass through this processing step.
    * Non-matching elements are filtered out.
    */
-  def collect[T](pf: PartialFunction[Out, T]): javadsl.Flow[In, T] =
+  def collect[T](pf: PartialFunction[Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.collect(pf))
 
   /**
@@ -206,7 +177,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    *
    * `n` must be positive, otherwise IllegalArgumentException is thrown.
    */
-  def grouped(n: Int): javadsl.Flow[In, java.util.List[Out @uncheckedVariance]] =
+  def grouped(n: Int): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new Flow(delegate.grouped(n).map(_.asJava)) // FIXME optimize to one step
 
   /**
@@ -219,7 +190,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * [[akka.stream.Supervision#restart]] current value starts at `zero` again
    * the stream will continue.
    */
-  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Flow[In, T] =
+  def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Flow[In, T, Mat] =
     new Flow(delegate.scan(zero)(f.apply))
 
   /**
@@ -232,20 +203,20 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  def groupedWithin(n: Int, d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance]] =
+  def groupedWithin(n: Int, d: FiniteDuration): javadsl.Flow[In, java.util.List[Out @uncheckedVariance], Mat] =
     new Flow(delegate.groupedWithin(n, d).map(_.asJava)) // FIXME optimize to one step
 
   /**
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): javadsl.Flow[In, Out] =
+  def drop(n: Int): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
    */
-  def dropWithin(d: FiniteDuration): javadsl.Flow[In, Out] =
+  def dropWithin(d: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.dropWithin(d))
 
   /**
@@ -257,7 +228,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    */
-  def take(n: Int): javadsl.Flow[In, Out] =
+  def take(n: Int): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.take(n))
 
   /**
@@ -269,7 +240,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * Note that this can be combined with [[#take]] to limit the number of elements
    * within the duration.
    */
-  def takeWithin(d: FiniteDuration): javadsl.Flow[In, Out] =
+  def takeWithin(d: FiniteDuration): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.takeWithin(d))
 
   /**
@@ -283,7 +254,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @param seed Provides the first state for a conflated value using the first unconsumed element as a start
    * @param aggregate Takes the currently aggregated value and the current pending element to produce a new aggregate
    */
-  def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Flow[In, S] =
+  def conflate[S](seed: japi.Function[Out, S], aggregate: japi.Function2[S, Out, S]): javadsl.Flow[In, S, Mat] =
     new Flow(delegate.conflate(seed.apply)(aggregate.apply))
 
   /**
@@ -302,7 +273,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
    */
-  def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Flow[In, U] =
+  def expand[S, U](seed: japi.Function[Out, S], extrapolate: japi.Function[S, akka.japi.Pair[U, S]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.expand(seed(_))(s ⇒ {
       val p = extrapolate(s)
       (p.first, p.second)
@@ -316,7 +287,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * @param size The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def buffer(size: Int, overflowStrategy: OverflowStrategy): javadsl.Flow[In, Out] =
+  def buffer(size: Int, overflowStrategy: OverflowStrategy): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.buffer(size, overflowStrategy))
 
   /**
@@ -324,7 +295,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * This operator makes it possible to extend the `Flow` API when there is no specialized
    * operator that performs the transformation.
    */
-  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U] =
+  def transform[U](mkStage: japi.Creator[Stage[Out, U]]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.transform(() ⇒ mkStage.create()))
 
   /**
@@ -332,7 +303,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * and a stream representing the remaining elements. If ''n'' is zero or negative, then this will return a pair
    * of an empty collection and a stream containing the whole upstream unchanged.
    */
-  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance]]] =
+  def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out @uncheckedVariance], javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Flow(delegate.prefixAndTail(n).map { case (taken, tail) ⇒ akka.japi.Pair(taken.asJava, tail.asJava) })
 
   /**
@@ -354,7 +325,7 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
    * the element is dropped and the stream and substreams continue.
    */
-  def groupBy[K](f: japi.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance]]] =
+  def groupBy[K](f: japi.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance, Unit]], Mat] =
     new Flow(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // FIXME optimize to one step
 
   /**
@@ -378,38 +349,30 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
    * the element is dropped and the stream and substreams continue.
    */
-  def splitWhen(p: japi.Predicate[Out]): javadsl.Flow[In, Source[Out]] =
+  def splitWhen(p: japi.Predicate[Out]): javadsl.Flow[In, Source[Out, Unit], Mat] =
     new Flow(delegate.splitWhen(p.test).map(_.asJava))
 
   /**
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[Source]].
    */
-  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Flow[In, U] =
+  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.flatten(strategy))
 
   /**
    * Returns a new `Flow` that concatenates a secondary `Source` to this flow so that,
    * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
    */
-  def concat(second: javadsl.Source[In]): javadsl.Flow[In, Out] =
-    new Flow(delegate.concat(second.asScala))
-
-  /**
-   * Add a key that will have a value available after materialization.
-   * The key can only use other keys if they have been added to the flow
-   * before this key.
-   */
-  def withKey[T](key: javadsl.Key[T]): Flow[In, Out] =
-    new Flow(delegate.withKey(key.asScala))
+  def concat[M](second: javadsl.Source[Out @uncheckedVariance, M]): javadsl.Flow[In, Out, Mat @uncheckedVariance Pair M] =
+    new Flow(delegate.concat(second.asScala).mapMaterialized(p ⇒ Pair(p._1, p._2)))
 
   /**
    * Applies given [[OperationAttributes]] to a given section.
    */
-  def section[I <: In, O](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[In, Out], javadsl.Flow[I, O]]): javadsl.Flow[I, O] =
+  def section[O, M](attributes: OperationAttributes, section: japi.Function[javadsl.Flow[Out, Out, Unit], javadsl.Flow[Out, O, M]] @uncheckedVariance): javadsl.Flow[In, O, M] =
     new Flow(delegate.section(attributes.asScala) {
-      val scalaToJava = (flow: scaladsl.Flow[In, Out]) ⇒ new javadsl.Flow[In, Out](flow)
-      val javaToScala = (flow: javadsl.Flow[I, O]) ⇒ flow.asScala
+      val scalaToJava = (flow: scaladsl.Flow[Out, Out, Unit]) ⇒ new javadsl.Flow(flow)
+      val javaToScala = (flow: javadsl.Flow[Out, O, M]) ⇒ flow.asScala
       scalaToJava andThen section.apply andThen javaToScala
     })
 }
@@ -419,23 +382,20 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
  *
  * Flow with attached input and output, can be executed.
  */
-trait RunnableFlow {
+trait RunnableFlow[+Mat] {
   /**
    * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
    */
-  def run(materializer: FlowMaterializer): javadsl.MaterializedMap
-
+  def run(materializer: ActorFlowMaterializer): Mat
   /**
-   * Run this flow and return the value of the [[KeyedMaterializable]].
+   * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
    */
-  def runWith[M](key: KeyedMaterializable[M], materializer: FlowMaterializer): M
+  def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2]
 }
 
 /** INTERNAL API */
-private[akka] class RunnableFlowAdapter(runnable: scaladsl.RunnableFlow) extends RunnableFlow {
-  override def run(materializer: FlowMaterializer): MaterializedMap =
-    new MaterializedMap(runnable.run()(materializer))
-
-  def runWith[M](key: KeyedMaterializable[M], materializer: FlowMaterializer): M =
-    runnable.runWith(key.asScala)(materializer)
+private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat]) extends RunnableFlow[Mat] {
+  override def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2] =
+    new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
+  override def run(materializer: ActorFlowMaterializer): Mat = runnable.run()(materializer)
 }

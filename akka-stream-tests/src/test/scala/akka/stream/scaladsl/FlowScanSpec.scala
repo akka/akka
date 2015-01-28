@@ -22,7 +22,7 @@ class FlowScanSpec extends AkkaSpec {
 
   "A Scan" must {
 
-    def scan(s: Source[Int], duration: Duration = 5.seconds): immutable.Seq[Int] =
+    def scan(s: Source[Int, Unit], duration: Duration = 5.seconds): immutable.Seq[Int] =
       Await.result(s.scan(0)(_ + _).runFold(immutable.Seq.empty[Int])(_ :+ _), duration)
 
     "Scan" in {

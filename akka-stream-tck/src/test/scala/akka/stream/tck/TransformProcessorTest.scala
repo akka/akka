@@ -3,19 +3,15 @@
  */
 package akka.stream.tck
 
-import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.impl.ActorFlowMaterializerImpl
-import akka.stream.impl.Ast
-import akka.stream.ActorFlowMaterializer
 import java.util.concurrent.atomic.AtomicInteger
-import akka.stream.scaladsl.MaterializedMap
-import org.reactivestreams.Processor
-import org.reactivestreams.Publisher
-import akka.stream.stage.PushStage
-import akka.stream.stage.Context
 
-import scala.concurrent.Promise
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
+import akka.stream.impl.ActorFlowMaterializerImpl
+import akka.stream.impl.Stages.Identity
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.OperationAttributes._
+import akka.stream.stage.{ Context, PushStage }
+import org.reactivestreams.{ Processor, Publisher }
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
@@ -27,17 +23,12 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
     implicit val materializer = ActorFlowMaterializer(settings)(system)
 
-    val flowName = getClass.getSimpleName + "-" + processorCounter.incrementAndGet()
-
     val mkStage = () ⇒
-      new PushStage[Any, Any] {
-        override def onPush(in: Any, ctx: Context[Any]) = ctx.push(in)
+      new PushStage[Int, Int] {
+        override def onPush(in: Int, ctx: Context[Int]) = ctx.push(in)
       }
 
-    val (processor, _) = materializer.asInstanceOf[ActorFlowMaterializerImpl].processorForNode(
-      Ast.StageFactory(mkStage, name("transform")), flowName, 1)
-
-    processor.asInstanceOf[Processor[Int, Int]]
+    processorFromFlow(Flow[Int].transform(mkStage))
   }
 
   override def createHelperPublisher(elements: Long): Publisher[Int] = {

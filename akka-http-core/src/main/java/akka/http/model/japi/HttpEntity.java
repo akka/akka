@@ -73,5 +73,5 @@ public interface HttpEntity {
     /**
      * Returns a stream of data bytes this entity consists of.
      */
-    public abstract Source<ByteString> getDataBytes();
+    public abstract Source<ByteString, scala.Unit> getDataBytes();
 }

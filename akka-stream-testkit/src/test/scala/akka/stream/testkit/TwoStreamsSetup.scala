@@ -1,11 +1,10 @@
 package akka.stream.testkit
 
-import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, Inlet, Outlet }
 import akka.stream.scaladsl._
 import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.util.control.NoStackTrace
-import akka.stream.ActorFlowMaterializer
 
 abstract class TwoStreamsSetup extends AkkaSpec {
 
@@ -18,17 +17,24 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   type Outputs
 
-  def operationUnderTestLeft(): JunctionInPort[Int] { type NextT = Outputs }
-  def operationUnderTestRight(): JunctionInPort[Int] { type NextT = Outputs }
+  abstract class Fixture(b: FlowGraph.Builder) {
+    def left: Inlet[Int]
+    def right: Inlet[Int]
+    def out: Outlet[Outputs]
+  }
+
+  def fixture(b: FlowGraph.Builder): Fixture
 
   def setup(p1: Publisher[Int], p2: Publisher[Int]) = {
     val subscriber = StreamTestKit.SubscriberProbe[Outputs]()
-    FlowGraph { implicit b ⇒
-      import FlowGraphImplicits._
-      val left = operationUnderTestLeft()
-      val right = operationUnderTestRight()
-      val x = Source(p1) ~> left ~> Flow[Outputs] ~> Sink(subscriber)
-      Source(p2) ~> right
+    FlowGraph.closed() { implicit b ⇒
+      import FlowGraph.Implicits._
+      val f = fixture(b)
+
+      Source(p1) ~> f.left
+      Source(p2) ~> f.right
+      f.out ~> Sink(subscriber)
+
     }.run()
 
     subscriber
@@ -38,7 +44,7 @@ abstract class TwoStreamsSetup extends AkkaSpec {
 
   def completedPublisher[T]: Publisher[T] = StreamTestKit.emptyPublisher[T]
 
-  def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.publisher)
+  def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.publisher())
 
   def soonToFailPublisher[T]: Publisher[T] = StreamTestKit.lazyErrorPublisher[T](TestException)
 

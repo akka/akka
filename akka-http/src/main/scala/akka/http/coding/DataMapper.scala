@@ -10,17 +10,17 @@ import akka.stream.scaladsl.Flow
 
 /** An abstraction to transform data bytes of HttpMessages or HttpEntities */
 sealed trait DataMapper[T] {
-  def transformDataBytes(t: T, transformer: Flow[ByteString, ByteString]): T
+  def transformDataBytes(t: T, transformer: Flow[ByteString, ByteString, _]): T
 }
 object DataMapper {
   implicit val mapRequestEntity: DataMapper[RequestEntity] =
     new DataMapper[RequestEntity] {
-      def transformDataBytes(t: RequestEntity, transformer: Flow[ByteString, ByteString]): RequestEntity =
+      def transformDataBytes(t: RequestEntity, transformer: Flow[ByteString, ByteString, _]): RequestEntity =
         t.transformDataBytes(transformer)
     }
   implicit val mapResponseEntity: DataMapper[ResponseEntity] =
     new DataMapper[ResponseEntity] {
-      def transformDataBytes(t: ResponseEntity, transformer: Flow[ByteString, ByteString]): ResponseEntity =
+      def transformDataBytes(t: ResponseEntity, transformer: Flow[ByteString, ByteString, _]): ResponseEntity =
         t.transformDataBytes(transformer)
     }
 
@@ -29,7 +29,7 @@ object DataMapper {
 
   def mapMessage[T, E](entityMapper: DataMapper[E])(mapEntity: (T, E ⇒ E) ⇒ T): DataMapper[T] =
     new DataMapper[T] {
-      def transformDataBytes(t: T, transformer: Flow[ByteString, ByteString]): T =
+      def transformDataBytes(t: T, transformer: Flow[ByteString, ByteString, _]): T =
         mapEntity(t, entityMapper.transformDataBytes(_, transformer))
     }
 }

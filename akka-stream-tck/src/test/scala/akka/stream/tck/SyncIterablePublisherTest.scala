@@ -19,7 +19,7 @@ class SyncIterablePublisherTest extends AkkaPublisherVerification[Int] {
       else
         0 until elements.toInt
 
-    Source(SynchronousIterablePublisher(iterable, "synchronous-iterable-publisher")).runWith(Sink.publisher)
+    Source(SynchronousIterablePublisher(iterable, "synchronous-iterable-publisher")).runWith(Sink.publisher())
   }
 
   override def spec317_mustSignalOnErrorWhenPendingAboveLongMaxValue() = notVerified("RS TCK 1.0.0.M3 does not handle sync publishers well")

@@ -14,6 +14,8 @@ import java.net.InetSocketAddress
 import scala.collection.immutable.Queue
 import akka.stream.testkit.TestUtils.temporaryServerAddress
 
+import scala.concurrent.duration._
+
 object TcpHelper {
   case class ClientWrite(bytes: ByteString)
   case class ClientRead(count: Int, readTo: ActorRef)
@@ -141,9 +143,9 @@ trait TcpHelper { this: TestKitBase ⇒
 
     def expectClosed(expected: ConnectionClosed): Unit = expectClosed(_ == expected)
 
-    def expectClosed(p: (ConnectionClosed) ⇒ Boolean): Unit = {
+    def expectClosed(p: (ConnectionClosed) ⇒ Boolean, max: Duration = 3.seconds): Unit = {
       connectionActor ! PingClose(connectionProbe.ref)
-      connectionProbe.fishForMessage() {
+      connectionProbe.fishForMessage(max) {
         case c: ConnectionClosed if p(c) ⇒ true
         case other                       ⇒ false
       }

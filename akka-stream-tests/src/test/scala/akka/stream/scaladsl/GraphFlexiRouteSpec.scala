@@ -2,7 +2,7 @@ package akka.stream.scaladsl
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-import FlowGraphImplicits._
+import FlowGraph.Implicits._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.AutoPublisher
@@ -10,6 +10,7 @@ import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.actor.ActorSystem
+import akka.stream._
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
@@ -20,22 +21,20 @@ object GraphFlexiRouteSpec {
    * they are have requested elements. Or in other words, if all outputs have demand available at the same
    * time then in finite steps all elements are enqueued to them.
    */
-  class Fair[T] extends FlexiRoute[T] {
+  class Fair[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), OperationAttributes.name("FairBalance")) {
     import FlexiRoute._
-    val out1 = createOutputPort[T]()
-    val out2 = createOutputPort[T]()
 
-    override def createRouteLogic: RouteLogic[T] = new RouteLogic[T] {
-      override def outputHandles(outputCount: Int) = Vector(out1, out2)
+    override def createRouteLogic(p: PortT): RouteLogic[T] = new RouteLogic[T] {
+      val select = p.out(0) | p.out(1)
 
-      val emitToAnyWithDemand = State[T](DemandFromAny(out1, out2)) { (ctx, preferredOutput, element) ⇒
-        ctx.emit(preferredOutput, element)
+      val emitToAnyWithDemand = State(DemandFromAny(p)) { (ctx, out, element) ⇒
+        ctx.emit(select(out))(element)
         SameState
       }
 
       // initally, wait for demand from all
-      override def initialState = State[T](DemandFromAll(out1, out2)) { (ctx, preferredOutput, element) ⇒
-        ctx.emit(preferredOutput, element)
+      override def initialState = State(DemandFromAll(p)) { (ctx, _, element) ⇒
+        ctx.emit(p.out(0))(element)
         emitToAnyWithDemand
       }
     }
@@ -45,22 +44,18 @@ object GraphFlexiRouteSpec {
    * It never skips an output while cycling but waits on it instead (closed outputs are skipped though).
    * The fair route above is a non-strict round-robin (skips currently unavailable outputs).
    */
-  class StrictRoundRobin[T] extends FlexiRoute[T] {
+  class StrictRoundRobin[T] extends FlexiRoute[T, UniformFanOutShape[T, T]](new UniformFanOutShape(2), OperationAttributes.name("RoundRobinBalance")) {
     import FlexiRoute._
-    val out1 = createOutputPort[T]()
-    val out2 = createOutputPort[T]()
 
-    override def createRouteLogic = new RouteLogic[T] {
+    override def createRouteLogic(p: PortT) = new RouteLogic[T] {
 
-      override def outputHandles(outputCount: Int) = Vector(out1, out2)
-
-      val toOutput1: State[T] = State[T](DemandFrom(out1)) { (ctx, _, element) ⇒
-        ctx.emit(out1, element)
+      val toOutput1: State[Outlet[T]] = State(DemandFrom(p.out(0))) { (ctx, out, element) ⇒
+        ctx.emit(out)(element)
         toOutput2
       }
 
-      val toOutput2 = State[T](DemandFrom(out2)) { (ctx, _, element) ⇒
-        ctx.emit(out2, element)
+      val toOutput2 = State(DemandFrom(p.out(1))) { (ctx, out, element) ⇒
+        ctx.emit(out)(element)
         toOutput1
       }
 
@@ -68,22 +63,15 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class Unzip[A, B] extends FlexiRoute[(A, B)] {
+  class Unzip[A, B] extends FlexiRoute[(A, B), FanOutShape2[(A, B), A, B]](new FanOutShape2("Unzip"), OperationAttributes.name("Unzip")) {
     import FlexiRoute._
-    val outA = createOutputPort[A]()
-    val outB = createOutputPort[B]()
 
-    override def createRouteLogic() = new RouteLogic[(A, B)] {
+    override def createRouteLogic(p: PortT) = new RouteLogic[(A, B)] {
 
-      override def outputHandles(outputCount: Int) = {
-        require(outputCount == 2, s"Unzip must have two connected outputs, was $outputCount")
-        Vector(outA, outB)
-      }
-
-      override def initialState = State[Any](DemandFromAll(outA, outB)) { (ctx, _, element) ⇒
+      override def initialState = State(DemandFromAll(p)) { (ctx, _, element) ⇒
         val (a, b) = element
-        ctx.emit(outA, a)
-        ctx.emit(outB, b)
+        ctx.emit(p.out0)(a)
+        ctx.emit(p.out1)(b)
         SameState
       }
 
@@ -91,23 +79,21 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class TestRoute(completionProbe: ActorRef) extends FlexiRoute[String] {
+  class TestRoute(completionProbe: ActorRef)
+    extends FlexiRoute[String, FanOutShape2[String, String, String]](new FanOutShape2("TestRoute"), OperationAttributes.name("TestRoute")) {
     import FlexiRoute._
-    val output1 = createOutputPort[String]()
-    val output2 = createOutputPort[String]()
-    val output3 = createOutputPort[String]()
+
     var throwFromOnComplete = false
 
-    def createRouteLogic: RouteLogic[String] = new RouteLogic[String] {
-      val handles = Vector(output1, output2, output3)
-      override def outputHandles(outputCount: Int) = handles
+    def createRouteLogic(p: PortT): RouteLogic[String] = new RouteLogic[String] {
+      val select = p.out0 | p.out1
 
-      override def initialState = State[String](DemandFromAny(handles)) {
+      override def initialState = State(DemandFromAny(p)) {
         (ctx, preferred, element) ⇒
           if (element == "err")
             ctx.fail(new RuntimeException("err") with NoStackTrace)
           else if (element == "err-output1")
-            ctx.fail(output1, new RuntimeException("err-1") with NoStackTrace)
+            ctx.fail(p.out0, new RuntimeException("err-1") with NoStackTrace)
           else if (element == "exc")
             throw new RuntimeException("exc") with NoStackTrace
           else if (element == "onUpstreamFinish-exc")
@@ -115,7 +101,7 @@ object GraphFlexiRouteSpec {
           else if (element == "finish")
             ctx.finish()
           else
-            ctx.emit(preferred, "onInput: " + element)
+            ctx.emit(select(preferred))("onInput: " + element)
 
           SameState
       }
@@ -134,7 +120,7 @@ object GraphFlexiRouteSpec {
           }
         },
         onDownstreamFinish = { (ctx, cancelledOutput) ⇒
-          completionProbe ! "onDownstreamFinish: " + cancelledOutput.portIndex
+          completionProbe ! "onDownstreamFinish: " + cancelledOutput
           SameState
         })
     }
@@ -145,11 +131,11 @@ object GraphFlexiRouteSpec {
     val s1 = SubscriberProbe[String]
     val s2 = SubscriberProbe[String]
     val completionProbe = TestProbe()
-    FlowGraph { implicit b ⇒
-      val route = new TestRoute(completionProbe.ref)
+    FlowGraph.closed() { implicit b ⇒
+      val route = b.add(new TestRoute(completionProbe.ref))
       Source(publisher) ~> route.in
-      route.output1 ~> Sink(s1)
-      route.output2 ~> Sink(s2)
+      route.out0 ~> Sink(s1)
+      route.out1 ~> Sink(s2)
     }.run()
 
     val autoPublisher = new AutoPublisher(publisher)
@@ -178,13 +164,13 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       // we can't know exactly which elements that go to each output, because if subscription/request
       // from one of the downstream is delayed the elements will be pushed to the other output
       val s = SubscriberProbe[String]
-      val merge = Merge[String]
-      val m = FlowGraph { implicit b ⇒
-        val route = new Fair[String]
+      val m = FlowGraph.closed() { implicit b ⇒
+        val merge = b.add(Merge[String](2))
+        val route = b.add(new Fair[String])
         in ~> route.in
-        route.out1 ~> merge
-        route.out2 ~> merge
-        merge ~> Sink(s)
+        route.out(0) ~> merge.in(0)
+        route.out(1) ~> merge.in(1)
+        merge.out ~> Sink(s)
       }.run()
 
       val sub = s.expectSubscription()
@@ -197,19 +183,18 @@ class GraphFlexiRouteSpec extends AkkaSpec {
     }
 
     "build simple round-robin route" in {
-      val m = FlowGraph { implicit b ⇒
-        val route = new StrictRoundRobin[String]
-        in ~> route.in
-        route.out1 ~> out1
-        route.out2 ~> out2
+      val (p1, p2) = FlowGraph.closed(out1, out2)(Keep.both) { implicit b ⇒
+        (o1, o2) ⇒
+          val route = b.add(new StrictRoundRobin[String])
+          in ~> route.in
+          route.out(0) ~> o1.inlet
+          route.out(1) ~> o2.inlet
       }.run()
 
       val s1 = SubscriberProbe[String]
-      val p1 = m.get(out1)
       p1.subscribe(s1)
       val sub1 = s1.expectSubscription()
       val s2 = SubscriberProbe[String]
-      val p2 = m.get(out2)
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
@@ -230,19 +215,18 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       val outA = Sink.publisher[Int]
       val outB = Sink.publisher[String]
 
-      val m = FlowGraph { implicit b ⇒
-        val route = new Unzip[Int, String]
-        Source(List(1 -> "A", 2 -> "B", 3 -> "C", 4 -> "D")) ~> route.in
-        route.outA ~> outA
-        route.outB ~> outB
+      val (p1, p2) = FlowGraph.closed(outA, outB)(Keep.both) { implicit b ⇒
+        (oa, ob) ⇒
+          val route = b.add(new Unzip[Int, String])
+          Source(List(1 -> "A", 2 -> "B", 3 -> "C", 4 -> "D")) ~> route.in
+          route.out0 ~> oa.inlet
+          route.out1 ~> ob.inlet
       }.run()
 
       val s1 = SubscriberProbe[Int]
-      val p1 = m.get(outA)
       p1.subscribe(s1)
       val sub1 = s1.expectSubscription()
       val s2 = SubscriberProbe[String]
-      val p2 = m.get(outB)
       p2.subscribe(s2)
       val sub2 = s2.expectSubscription()
 
@@ -363,7 +347,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      completionProbe.expectMsg("onDownstreamFinish: 0")
+      completionProbe.expectMsg("onDownstreamFinish: TestRoute.out0")
       s1.expectNoMsg(200.millis)
 
       autoPublisher.sendNext("c")
@@ -424,7 +408,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      completionProbe.expectMsg("onDownstreamFinish: 0")
+      completionProbe.expectMsg("onDownstreamFinish: TestRoute.out0")
       sub2.cancel()
 
       autoPublisher.subscription.expectCancellation()

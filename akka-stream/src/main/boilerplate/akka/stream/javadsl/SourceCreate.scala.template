@@ -1,0 +1,24 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.javadsl
+
+import akka.stream.scaladsl
+import akka.stream.{ Outlet, Shape, Graph }
+import akka.stream.scaladsl.JavaConverters._
+
+trait SourceCreate {
+
+  def create[T](block: japi.Function[FlowGraph.Builder, Outlet[T]]): Source[T, Unit] =
+    new Source(scaladsl.Source() { b ⇒ block.apply(b.asJava) })
+
+  def create[T, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder, S, Outlet[T]]): Source[T, M] =
+    new Source(scaladsl.Source(g1) { b ⇒ s => block.apply(b.asJava, s) })
+
+  [3..21#def create[T, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
+      block: japi.Function2[FlowGraph.Builder, [#S1#], Outlet[T]]): Source[T, M] =
+    new Source(scaladsl.Source([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) })#
+  
+  ]
+
+}

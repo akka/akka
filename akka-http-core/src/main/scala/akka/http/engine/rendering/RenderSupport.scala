@@ -5,7 +5,6 @@
 package akka.http.engine.rendering
 
 import akka.parboiled2.CharUtils
-import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.event.LoggingAdapter
 import akka.stream.scaladsl._
@@ -30,25 +29,24 @@ private object RenderSupport {
 
   val defaultLastChunkBytes: ByteString = renderChunk(HttpEntity.LastChunk)
 
-  // This hooks into the materialization to cancel the not needed second source. This helper class
-  // allows us to not take a FlowMaterializer but delegate the cancellation to the point when the whole stream
-  // materializes
-  private case class CancelSecond[T](first: Source[T], second: Source[T]) extends SimpleActorFlowSource[T] {
-    override def attach(flowSubscriber: Subscriber[T], materializer: ActorFlowMaterializer, flowName: String): Unit = {
-      first.to(Sink(flowSubscriber)).run()(materializer)
-      second.to(Sink.cancelled).run()(materializer)
-    }
+  def CancelSecond[T](first: Source[T, _], second: Source[T, _]): Source[T, Unit] = {
+    Source(first) { implicit b ⇒
+      frst ⇒
+        import FlowGraph.Implicits._
+        second ~> Sink.cancelled
+        frst.outlet
+    }.mapMaterialized((_) ⇒ ())
   }
 
   def renderEntityContentType(r: Rendering, entity: HttpEntity) =
     if (entity.contentType != ContentTypes.NoContentType) r ~~ headers.`Content-Type` ~~ entity.contentType ~~ CrLf
     else r
 
-  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString],
-                        skipEntity: Boolean = false): Source[ByteString] = {
+  def renderByteStrings(r: ByteStringRendering, entityBytes: ⇒ Source[ByteString, Unit],
+                        skipEntity: Boolean = false): Source[ByteString, Unit] = {
     val messageStart = Source.single(r.get)
     val messageBytes =
-      if (!skipEntity) messageStart ++ entityBytes
+      if (!skipEntity) (messageStart ++ entityBytes).mapMaterialized((_) ⇒ ())
       else CancelSecond(messageStart, entityBytes)
     messageBytes
   }

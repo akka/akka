@@ -358,9 +358,16 @@ class HttpClientSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
     val (netOut, netIn) = {
       val netOut = StreamTestKit.SubscriberProbe[ByteString]
       val netIn = StreamTestKit.PublisherProbe[ByteString]
-      val clientFlow = HttpClient.transportToConnectionClientFlow(
-        Flow(Sink(netOut), Source(netIn)), remoteAddress, settings, NoLogging)
-      Source(requests).via(clientFlow).runWith(Sink(responses))
+
+      FlowGraph.closed(HttpClient.clientBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
+        client ⇒
+          import FlowGraph.Implicits._
+          Source(netIn) ~> client.bytesIn
+          client.bytesOut ~> Sink(netOut)
+          Source(requests) ~> client.httpRequests
+          client.httpResponses ~> Sink(responses)
+      }.run()
+
       netOut -> netIn
     }
 

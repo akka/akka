@@ -5,12 +5,14 @@
 package akka.http.engine.client
 
 import java.net.InetSocketAddress
+
 import scala.annotation.tailrec
+import scala.collection.immutable.Seq
 import scala.collection.mutable.ListBuffer
 import akka.stream.stage._
 import akka.util.ByteString
 import akka.event.LoggingAdapter
-import akka.stream.FlattenStrategy
+import akka.stream._
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
 import akka.http.model.{ IllegalResponseException, HttpMethod, HttpRequest, HttpResponse }
@@ -23,10 +25,35 @@ import akka.http.util._
  */
 private[http] object HttpClient {
 
-  def transportToConnectionClientFlow(transport: Flow[ByteString, ByteString],
-                                      remoteAddress: InetSocketAddress,
-                                      settings: ClientConnectionSettings,
-                                      log: LoggingAdapter): Flow[HttpRequest, HttpResponse] = {
+  case class HttpClientPorts(
+    bytesIn: Inlet[ByteString],
+    bytesOut: Outlet[ByteString],
+    httpRequests: Inlet[HttpRequest],
+    httpResponses: Outlet[HttpResponse]) extends Shape {
+
+    override val inlets: Seq[Inlet[_]] = bytesIn :: httpRequests :: Nil
+    override val outlets: Seq[Outlet[_]] = bytesOut :: httpResponses :: Nil
+
+    override def deepCopy(): Shape = HttpClientPorts(
+      new Inlet(bytesIn.toString),
+      new Outlet(bytesOut.toString),
+      new Inlet(httpResponses.toString),
+      new Outlet(httpRequests.toString))
+
+    override def copyFromPorts(inlets: Seq[Inlet[_]], outlets: Seq[Outlet[_]]): Shape = {
+      val bIn :: htpIn :: Nil = inlets
+      val bOut :: htpOut :: Nil = outlets
+      HttpClientPorts(
+        bIn.asInstanceOf[Inlet[ByteString]],
+        bOut.asInstanceOf[Outlet[ByteString]],
+        htpIn.asInstanceOf[Inlet[HttpRequest]],
+        htpOut.asInstanceOf[Outlet[HttpResponse]])
+    }
+  }
+
+  def clientBlueprint(remoteAddress: InetSocketAddress,
+                      settings: ClientConnectionSettings,
+                      log: LoggingAdapter): Graph[HttpClientPorts, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -57,23 +84,10 @@ private[http] object HttpClient {
                                     +------------+
     */
 
-    val requestIn = UndefinedSource[HttpRequest]
-    val responseOut = UndefinedSink[HttpResponse]
-
-    val methodBypassFanout = Broadcast[HttpRequest]
-    val responseParsingMerge = new ResponseParsingMerge(rootParser)
-
-    val terminationFanout = Broadcast[HttpResponse]
-    val terminationMerge = new TerminationMerge
-
-    val requestRendering = Flow[HttpRequest]
+    val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, remoteAddress))
       .section(name("renderer"))(_.transform(() ⇒ requestRendererFactory.newRenderer))
       .flatten(FlattenStrategy.concat)
-
-    val transportFlow = Flow[ByteString]
-      .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing request stream error")))
-      .via(transport)
 
     val methodBypass = Flow[HttpRequest].map(_.method)
 
@@ -89,34 +103,42 @@ private[http] object HttpClient {
         case (MessageStartError(_, info), _) ⇒ throw IllegalResponseException(info)
       }
 
-    import FlowGraphImplicits._
+    FlowGraph.partial() { implicit b ⇒
+      import FlowGraph.Implicits._
+      val methodBypassFanout = b.add(Broadcast[HttpRequest](2))
+      val responseParsingMerge = b.add(new ResponseParsingMerge(rootParser))
 
-    Flow() { implicit b ⇒
-      requestIn ~> methodBypassFanout ~> terminationMerge.requestInput ~> requestRendering ~> transportFlow ~>
-        responseParsingMerge.dataInput ~> responsePrep ~> terminationFanout ~> responseOut
-      methodBypassFanout ~> methodBypass ~> responseParsingMerge.methodBypassInput
-      terminationFanout ~> terminationMerge.terminationBackchannelInput
+      val terminationFanout = b.add(Broadcast[HttpResponse](2))
+      val terminationMerge = b.add(new TerminationMerge)
 
-      b.allowCycles()
+      val bytesOut = (terminationMerge.out ~>
+        requestRendering.section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing request stream error")))).outlet
 
-      requestIn -> responseOut
+      val bytesIn = responseParsingMerge.in0
+
+      methodBypassFanout.out(0) ~> terminationMerge.in0
+
+      methodBypassFanout.out(1) ~> methodBypass ~> responseParsingMerge.in1
+
+      responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
+      terminationFanout.out(0) ~> terminationMerge.in1
+
+      HttpClientPorts(bytesIn, bytesOut, methodBypassFanout.in, terminationFanout.out(1))
     }
   }
 
   // a simple merge stage that simply forwards its first input and ignores its second input
   // (the terminationBackchannelInput), but applies a special completion handling
-  class TerminationMerge extends FlexiMerge[HttpRequest] {
+  class TerminationMerge
+    extends FlexiMerge[HttpRequest, FanInShape2[HttpRequest, HttpResponse, HttpRequest]](new FanInShape2("TerminationMerge"), OperationAttributes.name("TerminationMerge")) {
     import FlexiMerge._
-    val requestInput = createInputPort[HttpRequest]()
-    val terminationBackchannelInput = createInputPort[HttpResponse]()
 
-    def createMergeLogic() = new MergeLogic[HttpRequest] {
-      override def inputHandles(inputCount: Int) = {
-        require(inputCount == 2, s"TerminationMerge must have 2 connected inputs, was $inputCount")
-        Vector(requestInput, terminationBackchannelInput)
-      }
+    def createMergeLogic(p: PortT) = new MergeLogic[HttpRequest] {
 
-      override def initialState = State[Any](ReadAny(requestInput, terminationBackchannelInput)) {
+      val requestInput = p.in0
+      val terminationBackchannelInput = p.in1
+
+      override def initialState = State[Any](ReadAny(p)) {
         case (ctx, _, request: HttpRequest) ⇒ { ctx.emit(request); SameState }
         case _                              ⇒ SameState // simply drop all responses, we are only interested in the completion of the response input
       }
@@ -140,22 +162,17 @@ private[http] object HttpClient {
    * 2. Read from the dataInput until exactly one response has been fully received
    * 3. Go back to 1.
    */
-  class ResponseParsingMerge(rootParser: HttpResponseParser) extends FlexiMerge[List[ResponseOutput]] {
+  class ResponseParsingMerge(rootParser: HttpResponseParser)
+    extends FlexiMerge[List[ResponseOutput], FanInShape2[ByteString, HttpMethod, List[ResponseOutput]]](new FanInShape2("ResponseParsingMerge"), OperationAttributes.name("ResponsePersingMerge")) {
     import FlexiMerge._
-    val dataInput = createInputPort[ByteString]()
-    val methodBypassInput = createInputPort[HttpMethod]()
 
-    def createMergeLogic() = new MergeLogic[List[ResponseOutput]] {
+    def createMergeLogic(p: PortT) = new MergeLogic[List[ResponseOutput]] {
+      val dataInput = p.in0
+      val methodBypassInput = p.in1
       // each connection uses a single (private) response parser instance for all its responses
       // which builds a cache of all header instances seen on that connection
       val parser = rootParser.createShallowCopy()
       var methodBypassCompleted = false
-
-      override def inputHandles(inputCount: Int) = {
-        require(inputCount == 2, s"ResponseParsingMerge must have 2 connected inputs, was $inputCount")
-        Vector(dataInput, methodBypassInput)
-      }
-
       private val stay = (ctx: MergeLogicContext) ⇒ SameState
       private val gotoResponseReading = (ctx: MergeLogicContext) ⇒ {
         ctx.changeCompletionHandling(responseReadingCompletionHandling)
