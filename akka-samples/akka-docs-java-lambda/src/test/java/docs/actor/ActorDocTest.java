@@ -154,7 +154,7 @@ public class ActorDocTest {
 
   static
   //#messages-in-companion
-  public class DemoMessagesActor extends AbstractActor {
+  public class DemoMessagesActor extends AbstractLoggingActor {
 
     static public class Greeting {
       private final String from;
@@ -171,7 +171,7 @@ public class ActorDocTest {
     DemoMessagesActor() {
       receive(ReceiveBuilder.
         match(Greeting.class, g -> {
-          log.info("I was greeted by {}", g.getGreeter());
+          log().info("I was greeted by {}", g.getGreeter());
         }).build()
       );
     };
