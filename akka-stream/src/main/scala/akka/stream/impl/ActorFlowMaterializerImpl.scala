@@ -4,7 +4,6 @@
 package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicLong
-
 import akka.dispatch.Dispatchers
 import akka.event.Logging
 import akka.stream.impl.fusing.ActorInterpreter
@@ -13,13 +12,16 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Promise, ExecutionContext, Await, Future }
 import akka.actor._
-import akka.stream.{ FlowMaterializer, MaterializerSettings, OverflowStrategy, TimerTransformer }
+import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings, OverflowStrategy, TimerTransformer }
 import akka.stream.MaterializationException
 import akka.stream.actor.ActorSubscriber
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.pattern.ask
 import org.reactivestreams.{ Processor, Publisher, Subscriber }
+import akka.stream.Optimizations
+
+// FIXME move Ast things to separate file
 
 /**
  * INTERNAL API
@@ -222,34 +224,17 @@ private[akka] object Ast {
   final case class FlexiRouteNode(factory: FlexiRouteImpl.RouteLogicFactory[Any], attributes: OperationAttributes) extends FanOutAstNode
 }
 
-/**
- * INTERNAL API
- */
-final object Optimizations {
-  val none: Optimizations = Optimizations(collapsing = false, elision = false, simplification = false, fusion = false)
-  val all: Optimizations = Optimizations(collapsing = true, elision = true, simplification = true, fusion = true)
-}
-/**
- * INTERNAL API
- */
-final case class Optimizations(collapsing: Boolean, elision: Boolean, simplification: Boolean, fusion: Boolean) {
-  def isEnabled: Boolean = collapsing || elision || simplification || fusion
-}
-
-/**
- * INTERNAL API
- */
-case class ActorBasedFlowMaterializer(override val settings: MaterializerSettings,
-                                      dispatchers: Dispatchers, // FIXME is this the right choice for loading an EC?
-                                      supervisor: ActorRef,
-                                      flowNameCounter: AtomicLong,
-                                      namePrefix: String,
-                                      optimizations: Optimizations)
-  extends FlowMaterializer(settings) {
+case class ActorFlowMaterializerImpl(
+  override val settings: ActorFlowMaterializerSettings,
+  dispatchers: Dispatchers, // FIXME is this the right choice for loading an EC?
+  supervisor: ActorRef,
+  flowNameCounter: AtomicLong,
+  namePrefix: String)
+  extends ActorFlowMaterializer {
 
   import Ast.AstNode
 
-  def withNamePrefix(name: String): FlowMaterializer = this.copy(namePrefix = name)
+  override def withNamePrefix(name: String): ActorFlowMaterializerImpl = this.copy(namePrefix = name)
 
   private[this] def nextFlowNameCount(): Long = flowNameCounter.incrementAndGet()
 
@@ -272,6 +257,8 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
   //FIXME Optimize the implementation of the optimizer (no joke)
   // AstNodes are in reverse order, Fusable Ops are in order
   private[this] final def optimize(ops: List[Ast.AstNode], mmFuture: Future[MaterializedMap]): (List[Ast.AstNode], Int) = {
+    import settings.optimizations
+
     @tailrec def analyze(rest: List[Ast.AstNode], optimized: List[Ast.AstNode], fuseCandidates: List[Stage[_, _]]): (List[Ast.AstNode], Int) = {
 
       //The `verify` phase
@@ -418,7 +405,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
           (attachSource(id, flowName), attachSink(id, flowName), empty)
         }
       } else {
-        val (ops, opsSize) = if (optimizations.isEnabled) optimize(rawOps, mmFuture) else (rawOps, rawOps.length)
+        val (ops, opsSize) = if (settings.optimizations.isEnabled) optimize(rawOps, mmFuture) else (rawOps, rawOps.length)
         val (last, lastMap) = processorForNode[Any, Out](ops.head, flowName, opsSize)
         val (first, map) = processorChain(last, ops.tail, flowName, opsSize - 1, lastMap)
         (attachSource(first.asInstanceOf[Processor[In, Any]], flowName), attachSink(last, flowName), map)
@@ -451,7 +438,7 @@ case class ActorBasedFlowMaterializer(override val settings: MaterializerSetting
       (ActorProcessorFactory[In, Out](actorOf(ActorProcessorFactory.props(this, op), s"$flowName-$n-${op.attributes.name}", op)), MaterializedMap.empty)
   }
 
-  private[akka] def actorOf(props: Props, name: String): ActorRef =
+  override private[akka] def actorOf(props: Props, name: String): ActorRef =
     actorOf(props, name, settings.dispatcher)
 
   private[akka] def actorOf(props: Props, name: String, ast: Ast.JunctionAstNode): ActorRef =
@@ -542,12 +529,12 @@ private[akka] class FlowNameCounter extends Extension {
  * INTERNAL API
  */
 private[akka] object StreamSupervisor {
-  def props(settings: MaterializerSettings): Props = Props(new StreamSupervisor(settings))
+  def props(settings: ActorFlowMaterializerSettings): Props = Props(new StreamSupervisor(settings))
 
   final case class Materialize(props: Props, name: String) extends DeadLetterSuppression
 }
 
-private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Actor {
+private[akka] class StreamSupervisor(settings: ActorFlowMaterializerSettings) extends Actor {
   import StreamSupervisor._
 
   override def supervisorStrategy = SupervisorStrategy.stoppingStrategy
@@ -565,7 +552,7 @@ private[akka] class StreamSupervisor(settings: MaterializerSettings) extends Act
 private[akka] object ActorProcessorFactory {
 
   import Ast._
-  def props(materializer: FlowMaterializer, op: AstNode): Props = {
+  def props(materializer: ActorFlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings // USE THIS TO AVOID CLOSING OVER THE MATERIALIZER BELOW
     op match {
       case Fused(ops, _)              ⇒ ActorInterpreter.props(settings, ops)

@@ -6,7 +6,7 @@ package docs.stream
 //#imports
 
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
 import akka.stream.scaladsl.Broadcast
 import akka.stream.scaladsl.Flow
@@ -66,11 +66,11 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   trait Example1 {
     //#materializer-setup
     implicit val system = ActorSystem("reactive-tweets")
-    implicit val mat = FlowMaterializer()
+    implicit val mat = ActorFlowMaterializer()
     //#materializer-setup
   }
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "filter and map" in {
     //#authors-filter-map

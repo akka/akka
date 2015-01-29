@@ -5,12 +5,12 @@ package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
 class FlowForeachSpec extends AkkaSpec {
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
   import system.dispatcher
 
   "A Foreach" must {

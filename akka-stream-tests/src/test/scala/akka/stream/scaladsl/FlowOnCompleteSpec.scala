@@ -7,8 +7,8 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success }
 import scala.util.control.NoStackTrace
 
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.ScriptedTest
@@ -16,10 +16,10 @@ import akka.testkit.TestProbe
 
 class FlowOnCompleteSpec extends AkkaSpec with ScriptedTest {
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "A Flow with onComplete" must {
 

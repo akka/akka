@@ -5,7 +5,7 @@ package docs.stream
 
 import scala.annotation.tailrec
 import akka.actor.Props
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.actor.ActorPublisher
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
@@ -70,7 +70,7 @@ object ActorPublisherDocSpec {
 class ActorPublisherDocSpec extends AkkaSpec {
   import ActorPublisherDocSpec._
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "illustrate usage of ActorPublisher" in {
     def println(s: String): Unit =

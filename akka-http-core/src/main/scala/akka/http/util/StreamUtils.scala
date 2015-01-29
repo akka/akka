@@ -14,6 +14,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.Try
 import akka.actor.Props
 import akka.http.model.RequestEntity
+import akka.stream.ActorFlowMaterializer
 import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast.AstNode
 import akka.stream.impl.Ast.StageFactory
@@ -162,7 +163,7 @@ private[http] object StreamUtils {
   def fromInputStreamSource(inputStream: InputStream, defaultChunkSize: Int = 65536): Source[ByteString] = {
     import akka.stream.impl._
 
-    def props(materializer: ActorBasedFlowMaterializer): Props = {
+    def props(materializer: ActorFlowMaterializer): Props = {
       val iterator = new Iterator[ByteString] {
         var finished = false
         def hasNext: Boolean = !finished
@@ -182,11 +183,11 @@ private[http] object StreamUtils {
     }
 
     new AtomicBoolean(false) with SimpleActorFlowSource[ByteString] {
-      override def attach(flowSubscriber: Subscriber[ByteString], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+      override def attach(flowSubscriber: Subscriber[ByteString], materializer: ActorFlowMaterializer, flowName: String): Unit =
         create(materializer, flowName)._1.subscribe(flowSubscriber)
 
       override def isActive: Boolean = true
-      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[ByteString], Unit) =
+      override def create(materializer: ActorFlowMaterializer, flowName: String): (Publisher[ByteString], Unit) =
         if (!getAndSet(true)) {
           val ref = materializer.actorOf(props(materializer), name = s"$flowName-0-InputStream-source")
           val publisher = ActorPublisher[ByteString](ref)
@@ -204,10 +205,10 @@ private[http] object StreamUtils {
     import akka.stream.impl._
     val original = other.asInstanceOf[ActorFlowSource[T]]
     new AtomicBoolean(false) with SimpleActorFlowSource[T] {
-      override def attach(flowSubscriber: Subscriber[T], materializer: ActorBasedFlowMaterializer, flowName: String): Unit =
+      override def attach(flowSubscriber: Subscriber[T], materializer: ActorFlowMaterializer, flowName: String): Unit =
         create(materializer, flowName)._1.subscribe(flowSubscriber)
       override def isActive: Boolean = true
-      override def create(materializer: ActorBasedFlowMaterializer, flowName: String): (Publisher[T], Unit) =
+      override def create(materializer: ActorFlowMaterializer, flowName: String): (Publisher[T], Unit) =
         if (!getAndSet(true)) (original.create(materializer, flowName)._1, ())
         else (ErrorPublisher(new IllegalStateException("One time source can only be instantiated once"), "failed").asInstanceOf[Publisher[T]], ())
     }

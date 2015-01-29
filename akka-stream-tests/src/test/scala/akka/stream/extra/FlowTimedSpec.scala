@@ -3,7 +3,7 @@
  */
 package akka.stream.extra
 
-import akka.stream.{ MaterializerSettings, FlowMaterializer }
+import akka.stream.{ ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl.{ Source, Flow }
 import akka.stream.scaladsl.Sink
 import akka.stream.testkit.{ AkkaSpec, ScriptedTest, StreamTestKit }
@@ -14,10 +14,10 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
 
   import scala.concurrent.duration._
 
-  val settings = MaterializerSettings(system)
+  val settings = ActorFlowMaterializerSettings(system)
     .withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = FlowMaterializer(settings)
+  implicit val materializer = ActorFlowMaterializer(settings)
 
   "Timed Source" must {
 

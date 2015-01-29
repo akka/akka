@@ -8,7 +8,7 @@ import java.net.InetSocketAddress
 import org.scalatest.Inside
 import akka.util.ByteString
 import akka.event.NoLogging
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 import akka.stream.scaladsl._
 import akka.http.model.HttpEntity._
@@ -18,7 +18,7 @@ import akka.http.model.headers._
 import akka.http.util._
 
 class HttpClientSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "The client implementation" should {
 

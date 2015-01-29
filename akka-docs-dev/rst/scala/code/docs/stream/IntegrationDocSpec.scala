@@ -7,7 +7,7 @@ import scala.concurrent.duration._
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Source
 import java.util.Date
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import scala.concurrent.Future
 import akka.stream.scaladsl.RunnableFlow
 import akka.stream.scaladsl.Sink
@@ -20,7 +20,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import akka.stream.scaladsl.OperationAttributes
 import scala.concurrent.ExecutionContext
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
 
 object IntegrationDocSpec {
@@ -117,7 +117,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
   import TwitterStreamQuickstartDocSpec._
   import IntegrationDocSpec._
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "calling external service with mapAsync" in {
     val probe = TestProbe()
@@ -301,8 +301,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = FlowMaterializer(
-      MaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorFlowMaterializer(
+      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })
@@ -333,8 +333,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     implicit val blockingExecutionContext = system.dispatchers.lookup("blocking-dispatcher")
     val service = new SometimesSlowService
 
-    implicit val mat = FlowMaterializer(
-      MaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
+    implicit val mat = ActorFlowMaterializer(
+      ActorFlowMaterializerSettings(system).withInputBuffer(initialSize = 4, maxSize = 4))
 
     Source(List("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
       .map(elem => { println(s"before: $elem"); elem })

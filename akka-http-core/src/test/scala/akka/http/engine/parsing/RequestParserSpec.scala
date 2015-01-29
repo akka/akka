@@ -12,7 +12,7 @@ import org.scalatest.matchers.Matcher
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.FlattenStrategy
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.actor.ActorSystem
 import akka.http.util._
@@ -37,7 +37,7 @@ class RequestParserSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   import system.dispatcher
 
   val BOLT = HttpMethod.custom("BOLT", safe = false, idempotent = true, entityAccepted = true)
-  implicit val materializer = FlowMaterializer()
+  implicit val materializer = ActorFlowMaterializer()
 
   "The request parsing logic should" - {
     "properly parse a request" - {

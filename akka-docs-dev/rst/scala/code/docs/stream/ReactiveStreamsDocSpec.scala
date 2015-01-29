@@ -3,7 +3,7 @@
  */
 package docs.stream
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.testkit.AkkaSpec
 import akka.stream.scaladsl.Sink
@@ -13,7 +13,7 @@ import akka.stream.scaladsl.Source
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   //#imports
   import org.reactivestreams.Publisher

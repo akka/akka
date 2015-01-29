@@ -1,12 +1,12 @@
 package docs.stream
 
-import akka.stream.{ OverflowStrategy, FlowMaterializer }
+import akka.stream.{ OverflowStrategy, ActorFlowMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 class GraphCyclesSpec extends AkkaSpec {
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "Cycle demonstration" must {
     val source = Source(() => Iterator.from(0))

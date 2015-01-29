@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorSystem
 import akka.http.model.HttpResponse
+import akka.stream.ActorFlowMaterializer
 import akka.stream.FlowMaterializer
 
 /**
@@ -46,7 +47,7 @@ abstract class JUnitRouteTest extends JUnitRouteTestBase {
 
 class ActorSystemResource extends ExternalResource {
   protected def createSystem(): ActorSystem = ActorSystem()
-  protected def createFlowMaterializer(system: ActorSystem): FlowMaterializer = FlowMaterializer()(system)
+  protected def createFlowMaterializer(system: ActorSystem): FlowMaterializer = ActorFlowMaterializer()(system)
 
   implicit def system: ActorSystem = _system
   implicit def materializer: FlowMaterializer = _materializer

@@ -5,16 +5,16 @@ package akka.stream.scaladsl
 
 import akka.testkit.TestProbe
 import akka.stream.testkit.AkkaSpec
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 
 class FlowDispatcherSpec extends AkkaSpec("my-dispatcher = ${akka.test.stream-dispatcher}") {
 
-  val defaultSettings = MaterializerSettings(system)
+  val defaultSettings = ActorFlowMaterializerSettings(system)
 
-  def testDispatcher(settings: MaterializerSettings = defaultSettings, dispatcher: String = "akka.test.stream-dispatcher") = {
+  def testDispatcher(settings: ActorFlowMaterializerSettings = defaultSettings, dispatcher: String = "akka.test.stream-dispatcher") = {
 
-    implicit val materializer = FlowMaterializer(settings)
+    implicit val materializer = ActorFlowMaterializer(settings)
 
     val probe = TestProbe()
     val p = Source(List(1, 2, 3)).map(i ⇒
