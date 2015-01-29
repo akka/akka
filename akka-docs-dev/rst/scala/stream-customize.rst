@@ -16,6 +16,8 @@ To extend the available transformations on a :class:`Flow` or :class:`Source` on
 which takes a factory function returning a :class:`Stage`. Stages come in different flavors swhich we will introduce in this
 page.
 
+.. _stream-using-push-pull-stage-scala:
+
 Using PushPullStage
 -------------------
 
