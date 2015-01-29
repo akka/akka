@@ -45,7 +45,7 @@ private[akka] class FlexiRouteImpl(_settings: MaterializerSettings,
 
   override protected val outputBunch = new OutputBunch(outputPorts, self, this) {
     override def onCancel(output: Int): Unit =
-      changeBehavior(try completion.onCancel(ctx, outputMapping(output))
+      changeBehavior(try completion.onDownstreamFinish(ctx, outputMapping(output))
       catch {
         case NonFatal(e) ⇒ fail(e); routeLogic.SameState
       })
@@ -53,12 +53,12 @@ private[akka] class FlexiRouteImpl(_settings: MaterializerSettings,
 
   override protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
     override def onError(e: Throwable): Unit = {
-      try completion.onError(ctx, e) catch { case NonFatal(e) ⇒ fail(e) }
+      try completion.onUpstreamFailure(ctx, e) catch { case NonFatal(e) ⇒ fail(e) }
       fail(e)
     }
 
     override def onComplete(): Unit = {
-      try completion.onComplete(ctx) catch { case NonFatal(e) ⇒ fail(e) }
+      try completion.onUpstreamFinish(ctx) catch { case NonFatal(e) ⇒ fail(e) }
       super.onComplete()
     }
   }
@@ -72,18 +72,18 @@ private[akka] class FlexiRouteImpl(_settings: MaterializerSettings,
       outputBunch.enqueue(output.portIndex, elem)
     }
 
-    override def complete(): Unit = {
+    override def finish(): Unit = {
       primaryInputs.cancel()
       outputBunch.complete()
       context.stop(self)
     }
 
-    override def complete(output: OutputHandle): Unit =
+    override def finish(output: OutputHandle): Unit =
       outputBunch.complete(output.portIndex)
 
-    override def error(cause: Throwable): Unit = fail(cause)
+    override def fail(cause: Throwable): Unit = FlexiRouteImpl.this.fail(cause)
 
-    override def error(output: OutputHandle, cause: Throwable): Unit =
+    override def fail(output: OutputHandle, cause: Throwable): Unit =
       outputBunch.error(output.portIndex, cause)
 
     override def changeCompletionHandling(newCompletion: CompletionT): Unit =
