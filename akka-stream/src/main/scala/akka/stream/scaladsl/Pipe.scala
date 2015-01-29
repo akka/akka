@@ -45,21 +45,21 @@ private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Ke
   private[stream] def withSource(in: Source[In]): SourcePipe[Out] = SourcePipe(in, ops, keys)
 
   override def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
-    case p: Pipe[Out, T]             ⇒ this.appendPipe(p)
-    case gf: GraphFlow[Out, _, _, T] ⇒ gf.prepend(this)
-    case x                           ⇒ FlowGraphInternal.throwUnsupportedValue(x)
+    case p: Pipe[Out, T]                   ⇒ this.appendPipe(p)
+    case gf: GraphBackedFlow[Out, _, _, T] ⇒ gf.prepend(this)
+    case x                                 ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   override def to(sink: Sink[Out]): Sink[In] = sink match {
     case sp: SinkPipe[Out]     ⇒ sp.prependPipe(this)
-    case gs: GraphSink[Out, _] ⇒ gs.prepend(this)
+    case gs: GraphBackedSink[Out, _] ⇒ gs.prepend(this)
     case d: Sink[Out]          ⇒ this.withSink(d)
   }
 
   override def join(flow: Flow[Out, In]): RunnableFlow = flow match {
-    case p: Pipe[Out, In]             ⇒ GraphFlow(this).join(p)
-    case gf: GraphFlow[Out, _, _, In] ⇒ gf.join(this)
-    case x                            ⇒ FlowGraphInternal.throwUnsupportedValue(x)
+    case p: Pipe[Out, In]                   ⇒ GraphBackedFlow(this).join(p)
+    case gf: GraphBackedFlow[Out, _, _, In] ⇒ gf.join(this)
+    case x                                  ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   override def withKey(key: Key[_]): Pipe[In, Out] = Pipe(ops, keys :+ key)
@@ -93,14 +93,14 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
   private[stream] def appendPipe[T](pipe: Pipe[Out, T]): SourcePipe[T] = SourcePipe(input, pipe.ops ::: ops, keys ::: pipe.keys) // FIXME raw addition of AstNodes
 
   override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
-    case p: Pipe[Out, T]            ⇒ this.appendPipe(p)
-    case g: GraphFlow[Out, _, _, T] ⇒ g.prepend(this)
-    case x                          ⇒ FlowGraphInternal.throwUnsupportedValue(x)
+    case p: Pipe[Out, T]                  ⇒ this.appendPipe(p)
+    case g: GraphBackedFlow[Out, _, _, T] ⇒ g.prepend(this)
+    case x                                ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   override def to(sink: Sink[Out]): RunnableFlow = sink match {
     case sp: SinkPipe[Out]    ⇒ RunnablePipe(input, sp.output, sp.ops ::: ops, keys ::: sp.keys) // FIXME raw addition of AstNodes
-    case g: GraphSink[Out, _] ⇒ g.prepend(this)
+    case g: GraphBackedSink[Out, _] ⇒ g.prepend(this)
     case d: Sink[Out]         ⇒ this.withSink(d)
   }
 
