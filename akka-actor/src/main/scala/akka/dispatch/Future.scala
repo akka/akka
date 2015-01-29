@@ -70,9 +70,8 @@ object ExecutionContexts {
    * It is very useful for actions which are known to be non-blocking and
    * non-throwing in order to save a round-trip to the thread pool.
    */
-  private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
-    override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
-    override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
+  private[akka] object sameThreadExecutionContext extends ExecutionContext {
+    override def execute(runnable: Runnable): Unit = runnable.run()
     override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("exception in sameThreadExecutionContext", t)
   }
