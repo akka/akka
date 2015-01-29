@@ -75,23 +75,24 @@ object FlexiRoute {
   class DemandFromAll(val outputs: JList[OutputHandle]) extends DemandCondition
 
   /**
-   * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+   * Context that is passed to the `onInput` function of [[State]].
    * The context provides means for performing side effects, such as emitting elements
    * downstream.
    */
-  trait RouteLogicContext[In, Out] {
+  trait RouteLogicContext[In, Out] extends RouteLogicContextBase[In] {
     /**
-     * @return `true` if at least one element has been requested by the given downstream (output).
-     */
-    def isDemandAvailable(output: OutputHandle): Boolean
-
-    /**
-     * Emit one element downstream. It is only allowed to `emit` when
-     * [[#isDemandAvailable]] is `true` for the given `output`, otherwise
-     * `IllegalArgumentException` is thrown.
+     * Emit one element downstream. It is only allowed to `emit` at most one element to
+     * each output in response to `onInput`, `IllegalStateException` is thrown.
      */
     def emit(output: OutputHandle, elem: Out): Unit
+  }
 
+  /**
+   * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+   * The context provides means for performing side effects, such as completing
+   * the stream successfully or with failure.
+   */
+  trait RouteLogicContextBase[In] {
     /**
      * Complete the given downstream successfully.
      */
@@ -130,19 +131,22 @@ object FlexiRoute {
    *
    * The `onDownstreamFinish` method is called when a downstream output cancels.
    * It returns next behavior or [[#sameState]] to keep current behavior.
+   *
+   * It is not possible to emit elements from the completion handling, since completion
+   * handlers may be invoked at any time (without regard to downstream demand being available).
    */
   abstract class CompletionHandling[In] {
-    def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit
-    def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit
-    def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _]
+    def onUpstreamFinish(ctx: RouteLogicContextBase[In]): Unit
+    def onUpstreamFailure(ctx: RouteLogicContextBase[In], cause: Throwable): Unit
+    def onDownstreamFinish(ctx: RouteLogicContextBase[In], output: OutputHandle): State[In, _]
   }
 
   /**
    * Definition of which outputs that must have requested elements and how to act
    * on the read elements. When an element has been read [[#onInput]] is called and
    * then it is ensured that the specified downstream outputs have requested at least
-   * one element, i.e. it is allowed to emit at least one element downstream with
-   * [[RouteLogicContext#emit]].
+   * one element, i.e. it is allowed to emit at most one element to each downstream
+   * output with [[RouteLogicContext#emit]].
    *
    * The `onInput` method is called when an `element` was read from upstream.
    * The function returns next behavior or [[#sameState]] to keep current behavior.
@@ -195,9 +199,9 @@ object FlexiRoute {
      */
     def defaultCompletionHandling: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] =
+        override def onUpstreamFinish(ctx: RouteLogicContextBase[In]): Unit = ()
+        override def onUpstreamFailure(ctx: RouteLogicContextBase[In], cause: Throwable): Unit = ()
+        override def onDownstreamFinish(ctx: RouteLogicContextBase[In], output: OutputHandle): State[In, _] =
           sameState
       }
 
@@ -207,9 +211,9 @@ object FlexiRoute {
      */
     def eagerClose[A]: CompletionHandling[In] =
       new CompletionHandling[In] {
-        override def onUpstreamFinish(ctx: RouteLogicContext[In, Any]): Unit = ()
-        override def onUpstreamFailure(ctx: RouteLogicContext[In, Any], cause: Throwable): Unit = ()
-        override def onDownstreamFinish(ctx: RouteLogicContext[In, Any], output: OutputHandle): State[In, _] = {
+        override def onUpstreamFinish(ctx: RouteLogicContextBase[In]): Unit = ()
+        override def onUpstreamFailure(ctx: RouteLogicContextBase[In], cause: Throwable): Unit = ()
+        override def onDownstreamFinish(ctx: RouteLogicContextBase[In], output: OutputHandle): State[In, _] = {
           ctx.finish()
           sameState
         }
@@ -250,14 +254,17 @@ object FlexiRoute {
         delegateCompletionHandling: FlexiRoute.CompletionHandling[In]): CompletionHandling =
         CompletionHandling(
           onUpstreamFinish = ctx ⇒ {
-            delegateCompletionHandling.onUpstreamFinish(new RouteLogicContextWrapper(ctx))
+            val widenedCtxt = ctx.asInstanceOf[RouteLogicContext[Any]] // we know that it is always a RouteLogicContext
+            delegateCompletionHandling.onUpstreamFinish(new RouteLogicContextWrapper(widenedCtxt))
           },
           onUpstreamFailure = (ctx, cause) ⇒ {
-            delegateCompletionHandling.onUpstreamFailure(new RouteLogicContextWrapper(ctx), cause)
+            val widenedCtxt = ctx.asInstanceOf[RouteLogicContext[Any]] // we know that it is always a RouteLogicContext
+            delegateCompletionHandling.onUpstreamFailure(new RouteLogicContextWrapper(widenedCtxt), cause)
           },
           onDownstreamFinish = (ctx, outputHandle) ⇒ {
+            val widenedCtxt = ctx.asInstanceOf[RouteLogicContext[Any]] // we know that it is always a RouteLogicContext
             val newDelegateState = delegateCompletionHandling.onDownstreamFinish(
-              new RouteLogicContextWrapper(ctx), asJava(outputHandle))
+              new RouteLogicContextWrapper(widenedCtxt), asJava(outputHandle))
             wrapState(newDelegateState)
           })
 
@@ -265,7 +272,6 @@ object FlexiRoute {
         outputHandle.asInstanceOf[OutputHandle]
 
       class RouteLogicContextWrapper[Out](delegate: RouteLogicContext[Out]) extends FlexiRoute.RouteLogicContext[In, Out] {
-        override def isDemandAvailable(output: OutputHandle): Boolean = delegate.isDemandAvailable(output)
         override def emit(output: OutputHandle, elem: Out): Unit = delegate.emit(output, elem)
         override def finish(): Unit = delegate.finish()
         override def finish(output: OutputHandle): Unit = delegate.finish(output)

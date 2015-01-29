@@ -85,7 +85,7 @@ object FlexiMerge {
    * fulfilled when there are elements for *all* of the given upstream
    * inputs.
    *
-   * The emited element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
+   * The emitted element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
    *
    * Cancelled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
    * the resulting [[ReadAllInputs]] will then not contain values for this element, which can be
@@ -105,25 +105,27 @@ object FlexiMerge {
   }
 
   /**
-   * Context that is passed to the methods of [[State]] and [[CompletionHandling]].
+   * Context that is passed to the `onInput` function of [[State]].
    * The context provides means for performing side effects, such as emitting elements
    * downstream.
    */
-  trait MergeLogicContext[Out] {
+  trait MergeLogicContext[Out] extends MergeLogicContextBase[Out] {
     /**
-     * @return `true` if at least one element has been requested by downstream (output).
-     */
-    def isDemandAvailable: Boolean
-
-    /**
-     * Emit one element downstream. It is only allowed to `emit` when
-     * [[#isDemandAvailable]] is `true`, otherwise `IllegalArgumentException`
+     * Emit one element downstream. It is only allowed to `emit` zero or one
+     * element in response to `onInput`, otherwise `IllegalStateException`
      * is thrown.
      */
     def emit(elem: Out): Unit
+  }
 
+  /**
+   * Context that is passed to the functions of [[CompletionHandling]].
+   * The context provides means for performing side effects, such as completing
+   * the stream successfully or with failure.
+   */
+  trait MergeLogicContextBase[Out] {
     /**
-     * Complete this stream succesfully. Upstream subscriptions will be cancelled.
+     * Complete this stream successfully. Upstream subscriptions will be cancelled.
      */
     def finish(): Unit
 
@@ -148,17 +150,20 @@ object FlexiMerge {
    *
    * The `onUpstreamFinish` method is called when an upstream input was completed sucessfully.
    * It returns next behavior or [[MergeLogic#sameState]] to keep current behavior.
-   * A completion can be propagated downstream with [[MergeLogicContext#finish]],
+   * A completion can be propagated downstream with [[MergeLogicContextBase#finish]],
    * or it can be swallowed to continue with remaining inputs.
    *
    * The `onUpstreamFailure` method is called when an upstream input was completed with failure.
    * It returns next behavior or [[MergeLogic#sameState]] to keep current behavior.
-   * A failure can be propagated downstream with [[MergeLogicContext#fail]],
+   * A failure can be propagated downstream with [[MergeLogicContextBase#fail]],
    * or it can be swallowed to continue with remaining inputs.
+   *
+   * It is not possible to emit elements from the completion handling, since completion
+   * handlers may be invoked at any time (without regard to downstream demand being available).
    */
   abstract class CompletionHandling[Out] {
-    def onUpstreamFinish(ctx: MergeLogicContext[Out], input: InputHandle): State[_, Out]
-    def onUpstreamFailure(ctx: MergeLogicContext[Out], input: InputHandle, cause: Throwable): State[_, Out]
+    def onUpstreamFinish(ctx: MergeLogicContextBase[Out], input: InputHandle): State[_, Out]
+    def onUpstreamFailure(ctx: MergeLogicContextBase[Out], input: InputHandle, cause: Throwable): State[_, Out]
   }
 
   /**
@@ -224,9 +229,9 @@ object FlexiMerge {
      */
     def defaultCompletionHandling[A]: CompletionHandling[Out] =
       new CompletionHandling[Out] {
-        override def onUpstreamFinish(ctx: MergeLogicContext[Out], input: InputHandle): State[A, Out] =
+        override def onUpstreamFinish(ctx: MergeLogicContextBase[Out], input: InputHandle): State[A, Out] =
           sameState
-        override def onUpstreamFailure(ctx: MergeLogicContext[Out], input: InputHandle, cause: Throwable): State[A, Out] = {
+        override def onUpstreamFailure(ctx: MergeLogicContextBase[Out], input: InputHandle, cause: Throwable): State[A, Out] = {
           ctx.fail(cause)
           sameState
         }
@@ -238,11 +243,11 @@ object FlexiMerge {
      */
     def eagerClose[A]: CompletionHandling[Out] =
       new CompletionHandling[Out] {
-        override def onUpstreamFinish(ctx: MergeLogicContext[Out], input: InputHandle): State[A, Out] = {
+        override def onUpstreamFinish(ctx: MergeLogicContextBase[Out], input: InputHandle): State[A, Out] = {
           ctx.finish()
           sameState
         }
-        override def onUpstreamFailure(ctx: MergeLogicContext[Out], input: InputHandle, cause: Throwable): State[A, Out] = {
+        override def onUpstreamFailure(ctx: MergeLogicContextBase[Out], input: InputHandle, cause: Throwable): State[A, Out] = {
           ctx.fail(cause)
           sameState
         }
@@ -283,13 +288,15 @@ object FlexiMerge {
         delegateCompletionHandling: FlexiMerge.CompletionHandling[Out]): CompletionHandling =
         CompletionHandling(
           onUpstreamFinish = (ctx, inputHandle) ⇒ {
+            val widenedCtxt = ctx.asInstanceOf[MergeLogicContext] // we know that it is always a MergeLogicContext
             val newDelegateState = delegateCompletionHandling.onUpstreamFinish(
-              new MergeLogicContextWrapper(ctx), asJava(inputHandle))
+              new MergeLogicContextWrapper(widenedCtxt), asJava(inputHandle))
             wrapState(newDelegateState)
           },
           onUpstreamFailure = (ctx, inputHandle, cause) ⇒ {
+            val widenedCtxt = ctx.asInstanceOf[MergeLogicContext] // we know that it is always a MergeLogicContext
             val newDelegateState = delegateCompletionHandling.onUpstreamFailure(
-              new MergeLogicContextWrapper(ctx), asJava(inputHandle), cause)
+              new MergeLogicContextWrapper(widenedCtxt), asJava(inputHandle), cause)
             wrapState(newDelegateState)
           })
 
@@ -297,7 +304,6 @@ object FlexiMerge {
         inputHandle.asInstanceOf[InputHandle]
 
       class MergeLogicContextWrapper[In](delegate: MergeLogicContext) extends FlexiMerge.MergeLogicContext[Out] {
-        override def isDemandAvailable: Boolean = delegate.isDemandAvailable
         override def emit(elem: Out): Unit = delegate.emit(elem)
         override def finish(): Unit = delegate.finish()
         override def fail(cause: Throwable): Unit = delegate.fail(cause)
@@ -328,6 +334,8 @@ object FlexiMerge {
  *
  * The concrete subclass must implement [[#createMergeLogic]] to define the [[FlexiMerge#MergeLogic]]
  * that will be used when reading input elements and emitting output elements.
+ * As response to an input element it is allowed to emit at most one output element.
+ *
  * The [[FlexiMerge#MergeLogic]] instance may be stateful, but the ``FlexiMerge`` instance
  * must not hold mutable state, since it may be shared across several materialized ``FlowGraph``
  * instances.

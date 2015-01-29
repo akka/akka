@@ -162,14 +162,21 @@ private[http] object HttpServer {
           case (ctx, _, error) ⇒ { ctx.fail(error); SameState }
         })
 
-      def finishWithError(ctx: MergeLogicContext, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
+      def finishWithError(ctx: MergeLogicContextBase, target: String, status: StatusCode, info: ErrorInfo): State[Any] = {
         log.warning("Illegal {}, responding with status '{}': {}", target, status, info.formatPretty)
         val msg = if (settings.verboseErrorMessages) info.formatPretty else info.summary
-        ctx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true))
+        // FIXME this is a workaround that is supposed to be solved by issue #16753
+        ctx match {
+          case fullCtx: MergeLogicContext ⇒
+            // note that this will throw IllegalArgumentException if no demand available
+            fullCtx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true))
+          case other ⇒ throw new IllegalStateException(s"Unexpected MergeLogicContext [${other.getClass.getName}]")
+        }
+        //
         finish(ctx)
       }
 
-      def finish(ctx: MergeLogicContext): State[Any] = {
+      def finish(ctx: MergeLogicContextBase): State[Any] = {
         ctx.finish() // shouldn't this return a `State` rather than `Unit`?
         SameState // it seems weird to stay in the same state after completion
       }

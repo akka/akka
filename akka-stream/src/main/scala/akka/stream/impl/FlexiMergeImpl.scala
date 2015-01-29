@@ -41,6 +41,8 @@ private[akka] class FlexiMergeImpl(_settings: ActorFlowMaterializerSettings,
 
   private var behavior: StateT = _
   private var completion: CompletionT = _
+  // needed to ensure that at most one element is emitted from onInput
+  private var emitted = false
 
   override protected val inputBunch = new FanIn.InputBunch(inputPorts, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = {
@@ -56,10 +58,12 @@ private[akka] class FlexiMergeImpl(_settings: ActorFlowMaterializerSettings,
   }
 
   private val ctx: mergeLogic.MergeLogicContext = new mergeLogic.MergeLogicContext {
-    override def isDemandAvailable: Boolean = primaryOutputs.demandAvailable
 
     override def emit(elem: Any): Unit = {
+      if (emitted)
+        throw new IllegalStateException("It is only allowed to `emit` zero or one element in response to `onInput`")
       require(primaryOutputs.demandAvailable, "emit not allowed when no demand available")
+      emitted = true
       primaryOutputs.enqueueOutputElement(elem)
     }
 
@@ -131,17 +135,17 @@ private[akka] class FlexiMergeImpl(_settings: ActorFlowMaterializerSettings,
         val id = inputBunch.idToDequeue()
         val elem = inputBunch.dequeueAndYield(id)
         val inputHandle = inputMapping(id)
-        changeBehavior(behavior.onInput(ctx, inputHandle, elem))
+        callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case read: ReadPreferred ⇒
         val id = inputBunch.idToDequeue()
         val elem = inputBunch.dequeueAndPrefer(id)
         val inputHandle = inputMapping(id)
-        changeBehavior(behavior.onInput(ctx, inputHandle, elem))
+        callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case Read(inputHandle) ⇒
         val elem = inputBunch.dequeue(inputHandle.portIndex)
-        changeBehavior(behavior.onInput(ctx, inputHandle, elem))
+        callOnInput(inputHandle, elem)
         triggerCompletionAfterRead(inputHandle)
       case read: ReadAll ⇒
         val inputHandles = read.inputs
@@ -150,13 +154,18 @@ private[akka] class FlexiMergeImpl(_settings: ActorFlowMaterializerSettings,
           case input if include(input.portIndex) ⇒ input → inputBunch.dequeue(input.portIndex)
         }
 
-        changeBehavior(behavior.onInput(ctx, inputHandles.head, read.mkResult(Map(values: _*))))
+        callOnInput(inputHandles.head, read.mkResult(Map(values: _*)))
 
         // must be triggered after emitting the accumulated out value
         triggerCompletionAfterRead(inputHandles)
     }
 
   })
+
+  private def callOnInput(input: InputHandle, element: Any): Unit = {
+    emitted = false
+    changeBehavior(behavior.onInput(ctx, input, element))
+  }
 
   private def triggerCompletionAfterRead(inputs: Seq[InputHandle]): Unit = {
     var j = 0

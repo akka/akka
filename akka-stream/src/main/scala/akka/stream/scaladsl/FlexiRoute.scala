@@ -85,23 +85,24 @@ object FlexiRoute {
     def initialCompletionHandling: CompletionHandling = defaultCompletionHandling
 
     /**
-     * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+     * Context that is passed to the `onInput` function of [[State]].
      * The context provides means for performing side effects, such as emitting elements
      * downstream.
      */
-    trait RouteLogicContext[Out] {
+    trait RouteLogicContext[Out] extends RouteLogicContextBase {
       /**
-       * @return `true` if at least one element has been requested by the given downstream (output).
-       */
-      def isDemandAvailable(output: OutputHandle): Boolean
-
-      /**
-       * Emit one element downstream. It is only allowed to `emit` when
-       * [[#isDemandAvailable]] is `true` for the given `output`, otherwise
-       * `IllegalArgumentException` is thrown.
+       * Emit one element downstream. It is only allowed to `emit` at most one element to
+       * each output in response to `onInput`, `IllegalStateException` is thrown.
        */
       def emit(output: OutputHandle, elem: Out): Unit
+    }
 
+    /**
+     * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+     * The context provides means for performing side effects, such as completing
+     * the stream successfully or with failure.
+     */
+    trait RouteLogicContextBase {
       /**
        * Complete the given downstream successfully.
        */
@@ -132,8 +133,8 @@ object FlexiRoute {
      * Definition of which outputs that must have requested elements and how to act
      * on the read elements. When an element has been read [[#onInput]] is called and
      * then it is ensured that the specified downstream outputs have requested at least
-     * one element, i.e. it is allowed to emit at least one element downstream with
-     * [[RouteLogicContext#emit]].
+     * one element, i.e. it is allowed to emit at most one element to each downstream
+     * output with [[RouteLogicContext#emit]].
      *
      * The `onInput` function is called when an `element` was read from upstream.
      * The function returns next behavior or [[#SameState]] to keep current behavior.
@@ -144,7 +145,7 @@ object FlexiRoute {
     /**
      * Return this from [[State]] `onInput` to use same state for next element.
      */
-    def SameState[In]: State[In] = sameStateInstance.asInstanceOf[State[In]]
+    def SameState[T]: State[T] = sameStateInstance.asInstanceOf[State[T]]
 
     private val sameStateInstance = new State[Any](DemandFromAny(Nil))((_, _, _) ⇒
       throw new UnsupportedOperationException("SameState.onInput should not be called")) {
@@ -165,11 +166,14 @@ object FlexiRoute {
      *
      * The `onDownstreamFinish` function is called when a downstream output cancels.
      * It returns next behavior or [[#SameState]] to keep current behavior.
+     *
+     * It is not possible to emit elements from the completion handling, since completion
+     * handlers may be invoked at any time (without regard to downstream demand being available).
      */
     sealed case class CompletionHandling(
-      onUpstreamFinish: RouteLogicContext[Any] ⇒ Unit,
-      onUpstreamFailure: (RouteLogicContext[Any], Throwable) ⇒ Unit,
-      onDownstreamFinish: (RouteLogicContext[Any], OutputHandle) ⇒ State[_])
+      onUpstreamFinish: RouteLogicContextBase ⇒ Unit,
+      onUpstreamFailure: (RouteLogicContextBase, Throwable) ⇒ Unit,
+      onDownstreamFinish: (RouteLogicContextBase, OutputHandle) ⇒ State[_])
 
     /**
      * When an output cancels it continues with remaining outputs.

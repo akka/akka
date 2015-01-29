@@ -10,6 +10,8 @@ import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.PublisherProbe
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.actor.ActorSystem
+import akka.actor.ActorRef
+import akka.testkit.TestProbe
 
 object GraphFlexiRouteSpec {
 
@@ -89,7 +91,7 @@ object GraphFlexiRouteSpec {
     }
   }
 
-  class TestRoute extends FlexiRoute[String] {
+  class TestRoute(completionProbe: ActorRef) extends FlexiRoute[String] {
     import FlexiRoute._
     val output1 = createOutputPort[String]()
     val output2 = createOutputPort[String]()
@@ -122,26 +124,17 @@ object GraphFlexiRouteSpec {
         onUpstreamFinish = { ctx ⇒
           if (throwFromOnComplete)
             throw new RuntimeException("onUpstreamFinish-exc") with NoStackTrace
-          handles.foreach { output ⇒
-            if (ctx.isDemandAvailable(output))
-              ctx.emit(output, "onUpstreamFinish")
-          }
+          completionProbe ! "onUpstreamFinish"
         },
         onUpstreamFailure = { (ctx, cause) ⇒
           cause match {
             case _: IllegalArgumentException ⇒ // swallow
             case _ ⇒
-              handles.foreach { output ⇒
-                if (ctx.isDemandAvailable(output))
-                  ctx.emit(output, "onError")
-              }
+              completionProbe ! "onError"
           }
         },
         onDownstreamFinish = { (ctx, cancelledOutput) ⇒
-          handles.foreach { output ⇒
-            if (output != cancelledOutput && ctx.isDemandAvailable(output))
-              ctx.emit(output, "onDownstreamFinish: " + cancelledOutput.portIndex)
-          }
+          completionProbe ! "onDownstreamFinish: " + cancelledOutput.portIndex
           SameState
         })
     }
@@ -151,8 +144,9 @@ object GraphFlexiRouteSpec {
     val publisher = PublisherProbe[String]
     val s1 = SubscriberProbe[String]
     val s2 = SubscriberProbe[String]
+    val completionProbe = TestProbe()
     FlowGraph { implicit b ⇒
-      val route = new TestRoute
+      val route = new TestRoute(completionProbe.ref)
       Source(publisher) ~> route.in
       route.output1 ~> Sink(s1)
       route.output2 ~> Sink(s2)
@@ -168,7 +162,6 @@ object GraphFlexiRouteSpec {
 
 }
 
-@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class GraphFlexiRouteSpec extends AkkaSpec {
   import GraphFlexiRouteSpec._
 
@@ -316,7 +309,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       s1.expectError().getMessage should be("err-1")
 
       autoPublisher.sendComplete()
-      s2.expectNext("onUpstreamFinish")
+      completionProbe.expectMsg("onUpstreamFinish")
       s2.expectComplete()
     }
 
@@ -370,7 +363,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      s2.expectNext("onDownstreamFinish: 0")
+      completionProbe.expectMsg("onDownstreamFinish: 0")
       s1.expectNoMsg(200.millis)
 
       autoPublisher.sendNext("c")
@@ -393,8 +386,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       autoPublisher.sendComplete()
 
-      s1.expectNext("onUpstreamFinish")
-      s2.expectNext("onUpstreamFinish")
+      completionProbe.expectMsg("onUpstreamFinish")
 
       s1.expectComplete()
       s2.expectComplete()
@@ -413,8 +405,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       autoPublisher.sendError(new RuntimeException("test err") with NoStackTrace)
 
-      s1.expectNext("onError")
-      s2.expectNext("onError")
+      completionProbe.expectMsg("onError")
 
       s1.expectError().getMessage should be("test err")
       s2.expectError().getMessage should be("test err")
@@ -433,7 +424,7 @@ class GraphFlexiRouteSpec extends AkkaSpec {
       sub2.request(2)
       sub1.cancel()
 
-      s2.expectNext("onDownstreamFinish: 0")
+      completionProbe.expectMsg("onDownstreamFinish: 0")
       sub2.cancel()
 
       autoPublisher.subscription.expectCancellation()

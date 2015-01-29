@@ -42,6 +42,8 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
 
   private var behavior: StateT = _
   private var completion: CompletionT = _
+  // needed to ensure that at most one element is emitted from onInput
+  private val emitted = Array.ofDim[Boolean](outputCount)
 
   override protected val outputBunch = new OutputBunch(outputPorts, self, this) {
     override def onCancel(output: Int): Unit =
@@ -64,11 +66,14 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
   }
 
   private val ctx: routeLogic.RouteLogicContext[Any] = new routeLogic.RouteLogicContext[Any] {
-    override def isDemandAvailable(output: OutputHandle): Boolean =
-      (output.portIndex < outputCount) && outputBunch.isPending(output.portIndex)
 
     override def emit(output: OutputHandle, elem: Any): Unit = {
-      require(outputBunch.isPending(output.portIndex), s"emit to [$output] not allowed when no demand available")
+      require(output.portIndex < outputCount, s"invalid output port index [${output.portIndex}, max index [${outputCount - 1}]")
+      if (emitted(output.portIndex))
+        throw new IllegalStateException("It is only allowed to `emit` at most one element to each output in response to `onInput`")
+      require(outputBunch.isPending(output.portIndex),
+        s"emit to [$output] not allowed when no demand available")
+      emitted(output.portIndex) = true
       outputBunch.enqueue(output.portIndex, elem)
     }
 
@@ -138,18 +143,27 @@ private[akka] class FlexiRouteImpl(_settings: ActorFlowMaterializerSettings,
       case any: DemandFromAny ⇒
         val id = outputBunch.idToEnqueueAndYield()
         val outputHandle = outputMapping(id)
-        changeBehavior(behavior.onInput(ctx, outputHandle, elem))
+        callOnInput(outputHandle, elem)
 
       case DemandFrom(outputHandle) ⇒
-        changeBehavior(behavior.onInput(ctx, outputHandle, elem))
+        callOnInput(outputHandle, elem)
 
       case all: DemandFromAll ⇒
         val id = outputBunch.idToEnqueueAndYield()
         val outputHandle = outputMapping(id)
-        changeBehavior(behavior.onInput(ctx, outputHandle, elem))
+        callOnInput(outputHandle, elem)
 
     }
 
   })
+
+  private def callOnInput(output: OutputHandle, element: Any): Unit = {
+    var i = 0
+    while (i < emitted.length) {
+      emitted(i) = false
+      i += 1
+    }
+    changeBehavior(behavior.onInput(ctx, output, element))
+  }
 
 }
