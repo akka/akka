@@ -3,7 +3,9 @@
  */
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.{ Success, Failure }
 import scala.util.control.NoStackTrace
 
 import akka.stream.ActorFlowMaterializer
@@ -69,6 +71,62 @@ class SourceSpec extends AkkaSpec {
       p.subscribe(c2)
       c2.expectError(ex)
     }
+  }
+
+  "Lazy Empty Source" must {
+    "complete materialized future when stream cancels" in {
+      val neverSource = Source.lazyEmpty()
+      val pubSink = Sink.publisher
+
+      val mat = neverSource.to(pubSink).run()
+
+      val f = mat.get(neverSource)
+      val neverPub = mat.get(pubSink)
+
+      val c = StreamTestKit.SubscriberProbe()
+      neverPub.subscribe(c)
+      val subs = c.expectSubscription()
+
+      subs.request(1000)
+      c.expectNoMsg(300.millis)
+
+      subs.cancel()
+      Await.result(f.future, 300.millis)
+    }
+
+    "allow external triggering of completion" in {
+      val neverSource = Source.lazyEmpty[Int]()
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+
+      val mat = neverSource.to(counterSink).run()
+
+      val neverPromise = mat.get(neverSource)
+      val counterFuture = mat.get(counterSink)
+
+      // external cancellation
+      neverPromise.success(())
+
+      val ready = Await.ready(counterFuture, 200.millis)
+      val Success(0) = ready.value.get
+    }
+
+    "allow external triggering of onError" in {
+      val neverSource = Source.lazyEmpty()
+      val counterSink = Sink.fold[Int, Int](0) { (acc, _) ⇒ acc + 1 }
+
+      val mat = neverSource.to(counterSink).run()
+
+      val neverPromise = mat.get(neverSource)
+      val counterFuture = mat.get(counterSink)
+
+      // external cancellation
+      neverPromise.failure(new Exception("Boom") with NoStackTrace)
+
+      val ready = Await.ready(counterFuture, 200.millis)
+      val Failure(ex) = ready.value.get
+      ex.getMessage should include("Boom")
+    }
+
   }
 
   "Source with additional keys" must {

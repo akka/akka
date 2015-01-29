@@ -7,7 +7,6 @@ import java.util.concurrent.Callable
 import akka.actor.{ Cancellable, ActorRef, Props }
 import akka.japi.Util
 import akka.stream._
-import akka.stream.scaladsl.PropsSource
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
@@ -33,6 +32,18 @@ object Source {
    */
   def empty[O](): Source[O] =
     new Source(scaladsl.Source.empty())
+
+  /**
+   * Create a `Source` with no elements, which does not complete its downstream,
+   * until externally triggered to do so.
+   *
+   * It materializes a [[scala.concurrent.Promise]] which will be completed
+   * when the downstream stage of this source cancels. This promise can also
+   * be used to externally trigger completion, which the source then signalls
+   * to its downstream.
+   */
+  def lazyEmpty[T]() =
+    new Source(scaladsl.Source.lazyEmpty())
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -188,7 +199,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * @tparam S materialized type of the given Sink
    */
   def runWith[S](sink: KeyedSink[Out, S], materializer: FlowMaterializer): S =
-    asScala.runWith(sink.asScala)(materializer).asInstanceOf[S]
+    asScala.runWith(sink.asScala)(materializer)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
