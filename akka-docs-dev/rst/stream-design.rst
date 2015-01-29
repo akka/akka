@@ -5,6 +5,10 @@ Design Principles behind Akka Streams
 
 It took quite a while until we were reasonably happy with the look and feel of the API and the architecture of the implementation, and while being guided by intuition the design phase was very much exploratory research. This section details the findings and codifies them into a set of principles that have emerged during the process.
 
+.. note::
+
+  As detailed in the introduction keep in mind that the Akka Streams API is completely decoupled from the Reactive Streams interfaces which are just an implementation detail for how to pass stream data between individual processing stages.
+
 What shall users of Akka Streams expect?
 ----------------------------------------
 

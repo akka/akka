@@ -25,7 +25,7 @@ which will be responsible for materializing and running the streams we are about
 .. includecode:: code/docs/stream/TwitterStreamQuickstartDocSpec.scala#materializer-setup
 
 The :class:`ActorFlowMaterializer` can optionally take :class:`ActorFlowMaterializerSettings` which can be used to define
-materialization properties, such as default buffer sizes (see also :ref:`stream-buffering-explained-scala`), the dispatcher to
+materialization properties, such as default buffer sizes (see also :ref:`stream-buffers-scala`), the dispatcher to
 be used by the pipeline etc. These can be overridden on an element-by-element basis or for an entire section, but this
 will be discussed in depth in :ref:`stream-section-configuration`.
 
