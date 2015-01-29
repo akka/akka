@@ -44,7 +44,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
 
   override protected val inputBunch = new FanIn.InputBunch(inputPorts, settings.maxInputBufferSize, this) {
     override def onError(input: Int, e: Throwable): Unit = {
-      changeBehavior(try completion.onError(ctx, inputMapping(input), e)
+      changeBehavior(try completion.onUpstreamFailure(ctx, inputMapping(input), e)
       catch {
         case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
       })
@@ -63,13 +63,13 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
       primaryOutputs.enqueueOutputElement(elem)
     }
 
-    override def complete(): Unit = {
+    override def finish(): Unit = {
       inputBunch.cancel()
       primaryOutputs.complete()
       context.stop(self)
     }
 
-    override def error(cause: Throwable): Unit = fail(cause)
+    override def fail(cause: Throwable): Unit = FlexiMergeImpl.this.fail(cause)
 
     override def cancel(input: InputHandle): Unit = inputBunch.cancel(input.portIndex)
 
@@ -171,7 +171,7 @@ private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
       triggerCompletion(inputHandle)
 
   private def triggerCompletion(inputHandle: InputHandle): Unit =
-    changeBehavior(try completion.onComplete(ctx, inputHandle)
+    changeBehavior(try completion.onUpstreamFinish(ctx, inputHandle)
     catch {
       case NonFatal(e) ⇒ fail(e); mergeLogic.SameState
     })
