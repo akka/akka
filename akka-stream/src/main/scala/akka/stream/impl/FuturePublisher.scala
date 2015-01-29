@@ -12,7 +12,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Status
 import akka.actor.SupervisorStrategy
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
@@ -22,7 +22,7 @@ import akka.actor.DeadLetterSuppression
  * INTERNAL API
  */
 private[akka] object FuturePublisher {
-  def props(future: Future[Any], settings: MaterializerSettings): Props =
+  def props(future: Future[Any], settings: ActorFlowMaterializerSettings): Props =
     Props(new FuturePublisher(future, settings)).withDispatcher(settings.dispatcher)
 
   object FutureSubscription {
@@ -42,7 +42,7 @@ private[akka] object FuturePublisher {
  * INTERNAL API
  */
 // FIXME why do we need to have an actor to drive a Future?
-private[akka] class FuturePublisher(future: Future[Any], settings: MaterializerSettings) extends Actor with SoftShutdown {
+private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMaterializerSettings) extends Actor with SoftShutdown {
   import akka.stream.impl.FuturePublisher.FutureSubscription
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
   import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore

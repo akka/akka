@@ -5,7 +5,7 @@
 package docs.http.server
 
 import akka.actor.ActorSystem
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 import akka.http.server.{ Route, MissingCookieRejection }
 
@@ -26,7 +26,7 @@ object MyRejectionHandler {
   object MyApp {
     implicit val system = ActorSystem()
     import system.dispatcher
-    implicit val materializer = FlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
 
     def handler = Route.handlerFlow(`<my-route-definition>`)
   }

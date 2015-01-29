@@ -6,7 +6,6 @@ package akka.http.model.japi;
 
 import akka.actor.ActorSystem;
 import akka.http.HttpExt;
-import akka.stream.MaterializerSettings;
 
 public final class Http {
     private Http(){}

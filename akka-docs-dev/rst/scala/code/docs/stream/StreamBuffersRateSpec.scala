@@ -1,11 +1,11 @@
 package docs.stream
 
-import akka.stream.{ OverflowStrategy, MaterializerSettings, FlowMaterializer }
+import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings, ActorFlowMaterializer }
 import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
 
 class StreamBuffersRateSpec extends AkkaSpec {
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "Demonstrate pipelining" in {
     def println(s: Any) = ()
@@ -20,8 +20,8 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
   "Demonstrate buffer sizes" in {
     //#materializer-buffer
-    val materializer = FlowMaterializer(
-      MaterializerSettings(system)
+    val materializer = ActorFlowMaterializer(
+      ActorFlowMaterializerSettings(system)
         .withInputBuffer(
           initialSize = 64,
           maxSize = 64))

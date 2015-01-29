@@ -4,8 +4,8 @@
 package akka.stream.scaladsl
 
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.FlowMaterializer
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializer
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import scala.concurrent.duration._
@@ -13,8 +13,8 @@ import scala.concurrent.Await
 
 class GraphJunctionAttributesSpec extends AkkaSpec {
 
-  implicit val set = MaterializerSettings(system).withInputBuffer(4, 4)
-  implicit val mat = FlowMaterializer(set)
+  implicit val set = ActorFlowMaterializerSettings(system).withInputBuffer(4, 4)
+  implicit val mat = ActorFlowMaterializer(set)
 
   "A zip" should {
 

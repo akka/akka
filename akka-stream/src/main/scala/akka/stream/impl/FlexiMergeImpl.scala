@@ -4,7 +4,7 @@
 package akka.stream.impl
 
 import akka.actor.Props
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.scaladsl.OperationAttributes
 import akka.stream.scaladsl.FlexiMerge
 import scala.collection.breakOut
@@ -14,7 +14,7 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 private[akka] object FlexiMergeImpl {
-  def props(settings: MaterializerSettings, inputCount: Int, mergeLogic: FlexiMerge.MergeLogic[Any]): Props =
+  def props(settings: ActorFlowMaterializerSettings, inputCount: Int, mergeLogic: FlexiMerge.MergeLogic[Any]): Props =
     Props(new FlexiMergeImpl(settings, inputCount, mergeLogic))
 
   trait MergeLogicFactory[Out] {
@@ -26,7 +26,7 @@ private[akka] object FlexiMergeImpl {
 /**
  * INTERNAL API
  */
-private[akka] class FlexiMergeImpl(_settings: MaterializerSettings,
+private[akka] class FlexiMergeImpl(_settings: ActorFlowMaterializerSettings,
                                    inputCount: Int,
                                    mergeLogic: FlexiMerge.MergeLogic[Any])
   extends FanIn(_settings, inputCount) {

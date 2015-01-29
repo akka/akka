@@ -6,7 +6,7 @@ package docs.http.server
 
 import akka.actor.ActorSystem
 import akka.http.server.Route
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 object MyHandler {
   //# example-1
@@ -27,7 +27,7 @@ object MyHandler {
   object MyApp {
     implicit val system = ActorSystem()
     import system.dispatcher
-    implicit val materializer = FlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
 
     def handler = Route.handlerFlow(`<my-route-definition>`)
   }

@@ -10,7 +10,7 @@ import scala.util.control.NoStackTrace
 import akka.actor.{ ActorRefFactory, Actor, Props, ActorRef, Status }
 import akka.util.ByteString
 import akka.io.Tcp._
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.StreamTcpException
 import org.reactivestreams.Processor
 import akka.actor.Stash
@@ -26,18 +26,18 @@ private[akka] object TcpStreamActor {
   def outboundProps(processorPromise: Promise[Processor[ByteString, ByteString]],
                     localAddressPromise: Promise[InetSocketAddress],
                     connectCmd: Connect,
-                    materializerSettings: MaterializerSettings): Props =
+                    materializerSettings: ActorFlowMaterializerSettings): Props =
     Props(new OutboundTcpStreamActor(processorPromise, localAddressPromise, connectCmd,
       materializerSettings)).withDispatcher(materializerSettings.dispatcher)
 
-  def inboundProps(connection: ActorRef, settings: MaterializerSettings): Props =
+  def inboundProps(connection: ActorRef, settings: ActorFlowMaterializerSettings): Props =
     Props(new InboundTcpStreamActor(connection, settings)).withDispatcher(settings.dispatcher)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) extends Actor with Stash
+private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings) extends Actor with Stash
   with ActorLogging {
 
   import TcpStreamActor._
@@ -201,7 +201,7 @@ private[akka] abstract class TcpStreamActor(val settings: MaterializerSettings) 
  * INTERNAL API
  */
 private[akka] class InboundTcpStreamActor(
-  val connection: ActorRef, _settings: MaterializerSettings)
+  val connection: ActorRef, _settings: ActorFlowMaterializerSettings)
   extends TcpStreamActor(_settings) {
 
   connection ! Register(self, keepOpenOnPeerClosed = true, useResumeWriting = false)
@@ -214,7 +214,7 @@ private[akka] class InboundTcpStreamActor(
  */
 private[akka] class OutboundTcpStreamActor(processorPromise: Promise[Processor[ByteString, ByteString]],
                                            localAddressPromise: Promise[InetSocketAddress],
-                                           val connectCmd: Connect, _settings: MaterializerSettings)
+                                           val connectCmd: Connect, _settings: ActorFlowMaterializerSettings)
   extends TcpStreamActor(_settings) {
   import TcpStreamActor._
   import context.system

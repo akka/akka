@@ -12,7 +12,7 @@ import static org.junit.Assert.assertEquals;
 import java.util.concurrent.TimeUnit;
 
 import akka.actor.ActorSystem;
-import akka.stream.FlowMaterializer;
+import akka.stream.ActorFlowMaterializer;
 import akka.stream.testkit.AkkaSpec;
 import akka.stream.javadsl.FlexiRoute;
 import akka.japi.Pair;
@@ -29,7 +29,7 @@ public class FlexiRouteTest {
 
   final ActorSystem system = actorSystemResource.getSystem();
 
-  final FlowMaterializer materializer = FlowMaterializer.create(system);
+  final ActorFlowMaterializer materializer = ActorFlowMaterializer.create(system);
 
   final Source<String> in = Source.from(Arrays.asList("a", "b", "c", "d", "e"));
 

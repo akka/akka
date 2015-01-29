@@ -1,6 +1,6 @@
 package docs.stream
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{ RunnableFlow, Sink, Source, Flow }
 import akka.stream.stage.PushPullStage
 import akka.stream.testkit.AkkaSpec
@@ -14,7 +14,7 @@ class FlowStagesSpec extends AkkaSpec {
   import akka.stream.stage._
   //#import-stage
 
-  implicit val mat = FlowMaterializer()
+  implicit val mat = ActorFlowMaterializer()
 
   "stages demo" must {
 

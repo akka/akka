@@ -5,7 +5,7 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.actor.{ Actor, ActorRef, Cancellable, Props, SupervisorStrategy }
-import akka.stream.MaterializerSettings
+import akka.stream.ActorFlowMaterializerSettings
 import org.reactivestreams.{ Subscriber, Subscription }
 import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
@@ -17,7 +17,7 @@ import akka.actor.DeadLetterSuppression
  */
 private[akka] object TickPublisher {
   def props(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
-            settings: MaterializerSettings, cancelled: AtomicBoolean): Props =
+            settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean): Props =
     Props(new TickPublisher(initialDelay, interval, tick, settings, cancelled)).withDispatcher(settings.dispatcher)
 
   object TickPublisherSubscription {
@@ -43,7 +43,7 @@ private[akka] object TickPublisher {
  * otherwise the tick element is dropped.
  */
 private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
-                                  settings: MaterializerSettings, cancelled: AtomicBoolean) extends Actor with SoftShutdown {
+                                  settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean) extends Actor with SoftShutdown {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
   import ReactiveStreamsCompliance._
