@@ -5,7 +5,7 @@ Actors
    :maxdepth: 2
 
    actors
-   typed-actors
+   typed
    fault-tolerance
    dispatchers
    mailboxes
@@ -14,3 +14,4 @@ Actors
    persistence
    testing
    actordsl
+   typed-actors
