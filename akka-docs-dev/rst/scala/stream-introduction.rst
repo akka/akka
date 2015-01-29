@@ -45,6 +45,25 @@ implementations like Akka Streams offer a nice user API).
 
 .. _Reactive Streams: http://reactive-streams.org/
 
+Relationship with Reactive Streams
+----------------------------------
+
+The Akka Streams API is completely decoupled from the Reactive Streams
+interfaces. While Akka Streams focus on the formulation of transformations on
+data streams the scope of Reactive Streams is just to define a common mechanism
+of how to move data across an asynchronous boundary without losses, buffering
+or resource exhaustion.
+
+The relationship between these two is that the Akka Streams API is geared
+towards end-users while the Akka Streams implementation uses the Reactive
+Streams interfaces internally to pass data between the different processing
+stages. For this reason you will not find any resemblance between the Reactive
+Streams interfaces and the Akka Streams API. This is in line with the
+expectations of the Reactive Streams project, whose primary purpose is to
+define interfaces such that different streaming implementation can
+interoperate; it is not the purpose of Reactive Streams to describe an end-user
+API.
+
 How to read these docs
 ======================
 
