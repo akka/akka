@@ -10,10 +10,12 @@ import akka.stream.impl._
 import akka.stream.impl.Ast.AstNode
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+import org.reactivestreams.{ Subscription, Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ Promise, ExecutionContext, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import scala.util.{ Success, Failure }
@@ -147,6 +149,37 @@ final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowS
         (ActorPublisher[Out](materializer.actorOf(FuturePublisher.props(future, materializer.settings),
           name = s"$flowName-0-future")), ()) // FIXME this does not need to be an actor
     }
+}
+
+final case class LazyEmptySource[Out]() extends KeyedActorFlowSource[Out, Promise[Unit]] {
+  override def attach(flowSubscriber: Subscriber[Out], materializer: ActorFlowMaterializer, flowName: String) = {
+    val created = create(materializer, flowName)
+    created._1.subscribe(flowSubscriber)
+    created._2
+  }
+  override def isActive: Boolean = true
+  override def create(materializer: ActorFlowMaterializer, flowName: String) = {
+    val p = Promise[Unit]()
+
+    // Not TCK verified as RC1 does not allow "empty publishers", 
+    // reactive-streams on master now contains support for empty publishers.
+    // so we can enable it then, though it will require external completing of the promise
+    val pub = new Publisher[Unit] {
+      override def subscribe(s: Subscriber[_ >: Unit]) = {
+        s.onSubscribe(new Subscription {
+          override def request(n: Long): Unit = ()
+
+          override def cancel(): Unit = p.success(())
+        })
+        p.future.onComplete {
+          case Success(_)  ⇒ s.onComplete()
+          case Failure(ex) ⇒ s.onError(ex) // due to external signal
+        }(materializer.asInstanceOf[ActorFlowMaterializerImpl].executionContext) // TODO: Should it use this EC or something else?
+      }
+    }
+
+    pub.asInstanceOf[Publisher[Out]] → p
+  }
 }
 
 /**
