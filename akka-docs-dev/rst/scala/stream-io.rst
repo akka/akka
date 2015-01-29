@@ -89,3 +89,7 @@ exposing exactly one :class:`UndefinedSink` and exactly one :class:`UndefinedSou
 pipeline. In this example we use a :class:`Concat` graph processing stage to inject the initial message, and then
 continue with handling all incoming data using the echo handler. You should use this pattern of encapsulating complex
 logic in Flows and attaching those to :class:`StreamIO` in order to implement your custom and possibly sophisticated TCP servers.
+
+In this example both client and server may need to close the stream based on a parsed command command - ``BYE`` in the case
+of the server, and ``q`` in the case of the client. This is implemented by using a custom :class:`PushStage` 
+(see :ref:`stream-using-push-pull-stage-scala`) which completes the stream once it encounters such command.

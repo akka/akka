@@ -4,6 +4,7 @@
 package docs.stream
 
 import java.net.InetSocketAddress
+import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Concat
@@ -12,7 +13,9 @@ import akka.stream.scaladsl.FlowGraphImplicits
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.UndefinedSink
 import akka.stream.scaladsl.UndefinedSource
+import akka.stream.stage.{ PushStage, Directive, Context, PushPullStage }
 import akka.stream.testkit.AkkaSpec
+import akka.testkit.TestProbe
 import akka.util.ByteString
 import cookbook.RecipeParseLines
 
@@ -28,6 +31,9 @@ class StreamTcpDocSpec extends AkkaSpec {
   implicit val sys = ActorSystem("stream-tcp-system")
   implicit val mat = ActorFlowMaterializer()
   //#setup
+
+  // silence sysout
+  def println(s: String) = ()
 
   val localhost = new InetSocketAddress("127.0.0.1", 8888)
 
@@ -53,29 +59,10 @@ class StreamTcpDocSpec extends AkkaSpec {
     //#echo-server-simple-handle
   }
 
-  "simple repl client" ignore {
-    val sys: ActorSystem = ???
+  "actually working client-server CLI app" in {
+    val serverProbe = TestProbe()
 
-    //#repl-client
-    val connection: OutgoingConnection = StreamTcp().outgoingConnection(localhost)
-
-    val repl = Flow[ByteString]
-      .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-      .map(text => println("Server: " + text))
-      .map(_ => readLine("> "))
-      .map {
-        case "q" =>
-          sys.shutdown(); ByteString("BYE")
-        case text => ByteString(s"$text")
-      }
-
-    connection.handleWith(repl)
-    //#repl-client
-  }
-
-  "initial server banner echo server" ignore {
     val binding = StreamTcp().bind(localhost)
-
     //#welcome-banner-chat-server
     binding.connections runForeach { connection =>
 
@@ -86,14 +73,27 @@ class StreamTcpDocSpec extends AkkaSpec {
         val in = UndefinedSource[ByteString]
         val out = UndefinedSink[ByteString]
 
-        val welcomeMsg =
-          s"""|Welcome to: ${connection.localAddress}!
-              |You are: ${connection.remoteAddress}!""".stripMargin
+        // server logic, parses incoming commands
+        val commandParser = new PushStage[String, String] {
+          override def onPush(elem: String, ctx: Context[String]): Directive = {
+            elem match {
+              case "BYE" ⇒ ctx.finish()
+              case _     ⇒ ctx.push(elem + "!")
+            }
+          }
+        }
+
+        import connection._
+        val welcomeMsg = s"Welcome to: $localAddress, you are: $remoteAddress!\n"
 
         val welcome = Source.single(ByteString(welcomeMsg))
         val echo = Flow[ByteString]
           .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-          .map(_ ++ "!!!")
+          //#welcome-banner-chat-server
+          .map { command ⇒ serverProbe.ref ! command; command }
+          //#welcome-banner-chat-server
+          .transform(() ⇒ commandParser)
+          .map(_ ++ "\n")
           .map(ByteString(_))
 
         val concat = Concat[ByteString]
@@ -108,7 +108,41 @@ class StreamTcpDocSpec extends AkkaSpec {
 
       connection.handleWith(serverLogic)
     }
+
     //#welcome-banner-chat-server
 
+    val input = new AtomicReference("Hello world" :: "What a lovely day" :: Nil)
+    def readLine(prompt: String): String = {
+      input.get() match {
+        case all @ cmd :: tail if input.compareAndSet(all, tail) ⇒ cmd
+        case _ ⇒ "q"
+      }
+    }
+
+    //#repl-client
+    val connection: OutgoingConnection = StreamTcp().outgoingConnection(localhost)
+
+    val replParser = new PushStage[String, ByteString] {
+      override def onPush(elem: String, ctx: Context[ByteString]): Directive = {
+        elem match {
+          case "q" ⇒ ctx.pushAndFinish(ByteString("BYE\n"))
+          case _   ⇒ ctx.push(ByteString(s"$elem\n"))
+        }
+      }
+    }
+
+    val repl = Flow[ByteString]
+      .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
+      .map(text => println("Server: " + text))
+      .map(_ => readLine("> "))
+      //#repl-client
+      .transform(() ⇒ replParser)
+
+    connection.handleWith(repl)
+    //#repl-client
+
+    serverProbe.expectMsg("Hello world")
+    serverProbe.expectMsg("What a lovely day")
+    serverProbe.expectMsg("BYE")
   }
 }
