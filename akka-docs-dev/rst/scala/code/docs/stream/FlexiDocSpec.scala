@@ -312,44 +312,4 @@ class FlexiDocSpec extends AkkaSpec {
     }.run()
   }
 
-  "flexi route completion handling emitting element upstream completion" in {
-    class ElementsAndStatus[A] extends FlexiRoute[A] {
-      import FlexiRoute._
-      val out = createOutputPort[A]()
-
-      override def createRouteLogic() = new RouteLogic[A] {
-        override def outputHandles(outputCount: Int) = Vector(out)
-
-        // format: OFF
-        //#flexiroute-completion-upstream-completed-signalling
-        var buffer: List[A]
-        //#flexiroute-completion-upstream-completed-signalling
-          = List[A]()
-        // format: ON
-
-        //#flexiroute-completion-upstream-completed-signalling
-
-        def drainBuffer(ctx: RouteLogicContext[Any]): Unit =
-          while (ctx.isDemandAvailable(out) && buffer.nonEmpty) {
-            ctx.emit(out, buffer.head)
-            buffer = buffer.tail
-          }
-
-        val signalStatusOnTermination = CompletionHandling(
-          onUpstreamFinish = ctx => drainBuffer(ctx),
-          onUpstreamFailure = (ctx, cause) => drainBuffer(ctx),
-          onDownstreamFinish = (_, _) => SameState)
-        //#flexiroute-completion-upstream-completed-signalling
-
-        override def initialCompletionHandling = signalStatusOnTermination
-
-        override def initialState = State[A](DemandFromAny(out)) {
-          (ctx, output, element) =>
-            ctx.emit(output, element)
-            SameState
-        }
-      }
-    }
-  }
-
 }
