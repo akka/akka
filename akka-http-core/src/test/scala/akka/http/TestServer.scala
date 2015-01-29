@@ -6,7 +6,7 @@ package akka.http
 
 import akka.actor.ActorSystem
 import akka.http.model._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Flow
 import com.typesafe.config.{ ConfigFactory, Config }
 import HttpMethods._
@@ -17,7 +17,7 @@ object TestServer extends App {
     akka.log-dead-letters = off
     """)
   implicit val system = ActorSystem("ServerTest", testConf)
-  implicit val fm = FlowMaterializer()
+  implicit val fm = ActorFlowMaterializer()
 
   val binding = Http().bind(interface = "localhost", port = 8080)
 
