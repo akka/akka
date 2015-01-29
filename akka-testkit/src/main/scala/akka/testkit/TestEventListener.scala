@@ -86,9 +86,18 @@ abstract class EventFilter(occurrences: Int) {
   }
 
   def awaitDone(max: Duration): Boolean = {
-    if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo == 0, max, noThrow = true)
+    if (todo != Int.MaxValue && todo > 0) TestKit.awaitCond(todo <= 0, max, noThrow = true)
     todo == Int.MaxValue || todo == 0
   }
+
+  /**
+   * Assert that this filter has matched as often as requested by its
+   * `occurrences` parameter specifies.
+   */
+  def assertDone(max: Duration): Unit =
+    assert(awaitDone(max),
+      if (todo > 0) s"$todo messages outstanding on $this"
+      else s"received ${-todo} excess messages on $this")
 
   /**
    * Apply this filter while executing the given code block. Care is taken to
@@ -101,9 +110,9 @@ abstract class EventFilter(occurrences: Int) {
       val result = code
       if (!awaitDone(leeway))
         if (todo > 0)
-          throw new AssertionError("Timeout (" + leeway + ") waiting for " + todo + " messages on " + this)
+          throw new AssertionError(s"timeout ($leeway) waiting for $todo messages on $this")
         else
-          throw new AssertionError("Received " + (-todo) + " messages too many on " + this)
+          throw new AssertionError(s"received ${-todo} excess messages on $this")
       result
     } finally system.eventStream publish TestEvent.UnMute(this)
   }
