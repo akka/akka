@@ -294,20 +294,20 @@ abstract class SupervisorStrategy {
   def handleFailure(context: ActorContext, child: ActorRef, cause: Throwable, stats: ChildRestartStats, children: Iterable[ChildRestartStats]): Boolean = {
     val directive = decider.applyOrElse(cause, escalateDefault)
     directive match {
-      case d @ Resume ⇒
-        logFailure(context, child, cause, d)
+      case Resume ⇒
+        logFailure(context, child, cause, directive)
         resumeChild(child, cause)
         true
-      case d @ Restart ⇒
-        logFailure(context, child, cause, d)
+      case Restart ⇒
+        logFailure(context, child, cause, directive)
         processFailure(context, true, child, cause, stats, children)
         true
-      case d @ Stop ⇒
-        logFailure(context, child, cause, d)
+      case Stop ⇒
+        logFailure(context, child, cause, directive)
         processFailure(context, false, child, cause, stats, children)
         true
-      case d @ Escalate ⇒
-        logFailure(context, child, cause, d)
+      case Escalate ⇒
+        logFailure(context, child, cause, directive)
         false
     }
   }

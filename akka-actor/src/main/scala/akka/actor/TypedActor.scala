@@ -293,7 +293,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
       }
     }
 
-    protected def withContext[T](unitOfWork: ⇒ T): T = {
+    protected def withContext[U](unitOfWork: ⇒ U): U = {
       TypedActor.selfReference set proxyVar.get
       TypedActor.currentContext set context
       try unitOfWork finally {
