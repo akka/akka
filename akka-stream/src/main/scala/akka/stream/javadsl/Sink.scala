@@ -27,7 +27,7 @@ object Sink {
    * output (or the given `zero` value) and the element as input.
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
-   * if there is an error is signaled in the stream.
+   * if there is a failure is signaled in the stream.
    */
   def fold[U, In](zero: U, f: japi.Function2[U, In, U]): javadsl.KeyedSink[In, Future[U]] =
     new KeyedSink(scaladsl.Sink.fold[U, In](zero)(f.apply))
@@ -82,7 +82,7 @@ object Sink {
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
    * into a [[scala.concurrent.Future]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is an error is signaled in
+   * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream..
    */
   def foreach[T](f: japi.Procedure[T]): KeyedSink[T, Future[Unit]] =
@@ -96,7 +96,7 @@ object Sink {
     new KeyedSink(scaladsl.Sink.fanoutPublisher(initialBufferSize, maximumBufferSize))
 
   /**
-   * A `Sink` that when the flow is completed, either through an error or normal
+   * A `Sink` that when the flow is completed, either through a failure or normal
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
