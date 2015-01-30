@@ -258,10 +258,10 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
         try {
           val logMessage = cause match {
             case e: ActorInitializationException if (e.getCause ne null) && (e.getCause.getMessage ne null) ⇒ e.getCause.getMessage
-            case e: ActorInitializationException if (e.getCause ne null) ⇒
+            case e: ActorInitializationException if e.getCause ne null ⇒
               e.getCause match {
                 case ie: java.lang.reflect.InvocationTargetException ⇒ ie.getTargetException.toString
-                case t: Throwable                                    ⇒ t.getClass.getSimpleName
+                case t: Throwable                                    ⇒ Logging.simpleName(t)
               }
             case e ⇒ e.getMessage
           }
