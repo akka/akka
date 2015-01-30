@@ -326,7 +326,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = actorCell.isTerminated
+  override def isTerminated: Boolean = actorCell.isTerminated
 
   /**
    * Starts the actor after initialization.
