@@ -2,49 +2,60 @@ package akka.contrib.pattern
 
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.actor.{ Actor, Props }
+import scala.concurrent.duration._
 
-class ReplierActor extends Actor with ReceivePipeline {
-  def receive: Actor.Receive = becomeAndReply
-  def becomeAndReply: Actor.Receive = {
-    case "become" ⇒ context.become(justReply)
-    case m        ⇒ sender ! m
+object ReceivePipelineSpec {
+
+  class ReplierActor extends Actor with ReceivePipeline {
+    def receive: Actor.Receive = becomeAndReply
+    def becomeAndReply: Actor.Receive = {
+      case "become" ⇒ context.become(justReply)
+      case m        ⇒ sender ! m
+    }
+    def justReply: Actor.Receive = {
+      case m ⇒ sender ! m
+    }
   }
-  def justReply: Actor.Receive = {
-    case m ⇒ sender ! m
+
+  case class IntList(l: List[Int]) {
+    override def toString: String = s"IntList(${l.mkString(", ")})"
   }
-}
 
-trait ListBuilderInterceptor {
-  this: ReceivePipeline ⇒
+  trait ListBuilderInterceptor {
+    this: ReceivePipeline ⇒
 
-  pipelineOuter(inner ⇒
-    {
-      case n: Int ⇒ inner((n until n + 3).toList)
-    })
-}
+    pipelineOuter(inner ⇒
+      {
+        case n: Int ⇒ inner(IntList((n until n + 3).toList))
+      })
+  }
 
-trait AdderInterceptor {
-  this: ReceivePipeline ⇒
+  trait AdderInterceptor {
+    this: ReceivePipeline ⇒
 
-  pipelineInner(inner ⇒
-    {
-      case n: Int               ⇒ inner(n + 10)
-      case l: List[Int]         ⇒ inner(l.map(_ + 10))
-      case "explicitly ignored" ⇒
-    })
-}
+    pipelineInner(inner ⇒
+      {
+        case n: Int               ⇒ inner(n + 10)
+        case IntList(l)           ⇒ inner(IntList(l.map(_ + 10)))
+        case "explicitly ignored" ⇒
+      })
+  }
 
-trait ToStringInterceptor {
-  this: ReceivePipeline ⇒
+  trait ToStringInterceptor {
+    this: ReceivePipeline ⇒
 
-  pipelineInner(inner ⇒
-    {
-      case i: Int         ⇒ inner(i.toString)
-      case l: Iterable[_] ⇒ inner(l.toString())
-    })
+    pipelineInner(inner ⇒
+      {
+        case i: Int             ⇒ inner(i.toString)
+        case IntList(l)         ⇒ inner(l.toString)
+        case other: Iterable[_] ⇒ inner(other.toString)
+      })
+  }
+
 }
 
 class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
+  import ReceivePipelineSpec._
 
   "A ReceivePipeline" must {
 
@@ -82,7 +93,8 @@ class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
       val replier = system.actorOf(Props(
         new ReplierActor with ListBuilderInterceptor with AdderInterceptor with ToStringInterceptor))
       replier ! "explicitly ignored"
-      expectNoMsg()
+      replier ! 8L // unhandled by all interceptors but still replied
+      expectMsg(8L)
     }
 
     "support changing behavior without losing the interceptions" in {
@@ -101,9 +113,9 @@ class ReceivePipelineSpec extends AkkaSpec with ImplicitSender {
       val innerOuterReplier = system.actorOf(Props(
         new ReplierActor with AdderInterceptor with ListBuilderInterceptor))
       outerInnerReplier ! 4
-      expectMsg(List(14, 15, 16))
+      expectMsg(IntList(List(14, 15, 16)))
       innerOuterReplier ! 6
-      expectMsg(List(16, 17, 18))
+      expectMsg(IntList(List(16, 17, 18)))
     }
 
   }
@@ -231,7 +243,7 @@ object MixinSample extends App {
   // The Dude says 'Yeah, well, you know, that's just, like, your opinion, man.'
   //#mixin-actor
 
-  system.shutdown()
+  system.terminate()
 }
 
 object UnhandledSample extends App {

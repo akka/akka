@@ -26,6 +26,8 @@ object Slf4jLoggerSpec {
     }
     """
 
+  case class StringWithMDC(s: String, mdc: Map[String, Any])
+
   class LogProducer extends Actor with DiagnosticActorLogging {
 
     def receive = {
@@ -33,7 +35,7 @@ object Slf4jLoggerSpec {
         log.error(e, e.getMessage)
       case (s: String, x: Int, y: Int) ⇒
         log.info(s, x, y)
-      case (s: String, mdc: Map[String, Any]) ⇒
+      case StringWithMDC(s, mdc) ⇒
         log.mdc(mdc)
         log.info(s)
         log.clearMDC()
@@ -96,7 +98,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
     }
 
     "put custom MDC values when specified" in {
-      producer ! ("Message with custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> "Custom MDC Values"))
+      producer ! StringWithMDC("Message with custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> "Custom MDC Values"))
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
@@ -109,7 +111,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
     }
 
     "Support null values in custom MDC" in {
-      producer ! ("Message with null custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> null))
+      producer ! StringWithMDC("Message with null custom MDC values", Map("ticketNumber" -> 3671, "ticketDesc" -> null))
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString

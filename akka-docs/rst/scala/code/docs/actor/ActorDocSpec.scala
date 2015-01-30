@@ -92,7 +92,7 @@ class ActorWithMessagesWrapper {
     import MyActor._
     def receive = {
       case Greeting(greeter) => log.info(s"I was greeted by $greeter.")
-      case Goodbye => log.info("Someone said goodbye to me.")
+      case Goodbye           => log.info("Someone said goodbye to me.")
     }
   }
   //#messages-in-companion
@@ -229,7 +229,7 @@ class Consumer extends Actor with ActorLogging with ConsumerBehavior {
 class ProducerConsumer extends Actor with ActorLogging
   with ProducerBehavior with ConsumerBehavior {
 
-  def receive = producerBehavior orElse consumerBehavior
+  def receive = producerBehavior.orElse[Any, Unit](consumerBehavior)
 }
 
 // protocol
