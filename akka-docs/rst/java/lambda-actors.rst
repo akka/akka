@@ -130,6 +130,13 @@ a reference to its enclosing scope:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java#props-factory
 
+Another good practice is to declare what messages an Actor can receive
+as close to the actor definition as possible (e.g. as static classes
+inside the Actor or using other suitable class), which makes it easier to know
+what it can receive.
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java#messages-in-companion
+
 Creating Actors with Props
 --------------------------
 

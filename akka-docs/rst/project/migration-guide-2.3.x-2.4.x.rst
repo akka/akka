@@ -11,6 +11,18 @@ When migrating from earlier versions you should first follow the instructions fo
 migrating :ref:`1.3.x to 2.0.x <migration-2.0>` and then :ref:`2.0.x to 2.1.x <migration-2.1>`
 and then :ref:`2.1.x to 2.2.x <migration-2.2>` and then :ref:`2.2.x to 2.3.x <migration-2.3>`.
 
+Advanced Notice: TypedActors will go away
+========================================
+
+While technically not yet deprecated, the current ``akka.actor.TypedActor`` support will be superseded by
+the Akka Typed project that is currently being developed in open preview mode. If you are using TypedActors
+in your projects you are advised to look into this, as it is superior to the Active Object pattern expressed
+in TypedActors. The generic ActorRefs in Akka Typed allow the same type-safety that is afforded by
+TypedActors while retaining all the other benefits of an explicit actor model (including the ability to
+change behaviors etc.).
+
+It is likely that TypedActors will be officially deprecated in the next major update of Akka and subsequently removed.
+
 TestKit.remaining throws AssertionError
 =======================================
 
@@ -160,6 +172,7 @@ In case you want to perserve the old behavior of providing the actor's path as t
 implement it yourself either as a helper trait or simply by overriding ``persistenceId`` as follows::
 
     override def persistenceId = self.path.toStringWithoutAddress
+
 Secure Cookies
 ==============
 

@@ -152,6 +152,32 @@ public class ActorDocTest {
   }
   //#props-factory
 
+  static
+  //#messages-in-companion
+  public class DemoMessagesActor extends AbstractLoggingActor {
+
+    static public class Greeting {
+      private final String from;
+
+      public Greeting(String from) {
+        this.from = from;
+      }
+
+      public String getGreeter() {
+        return from;
+      }
+    }
+
+    DemoMessagesActor() {
+      receive(ReceiveBuilder.
+        match(Greeting.class, g -> {
+          log().info("I was greeted by {}", g.getGreeter());
+        }).build()
+      );
+    };
+  }
+  //#messages-in-companion
+
   public static class Hook extends AbstractActor {
     ActorRef target = null;
     public Hook() {
