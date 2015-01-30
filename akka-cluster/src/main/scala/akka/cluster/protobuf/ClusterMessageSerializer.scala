@@ -327,7 +327,7 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
         case n: jl.Double  ⇒ Number.newBuilder().setType(NumberType.Double).setValue64(jl.Double.doubleToLongBits(n))
         case n: jl.Long    ⇒ Number.newBuilder().setType(NumberType.Long).setValue64(n)
         case n: jl.Float   ⇒ Number.newBuilder().setType(NumberType.Float).setValue32(jl.Float.floatToIntBits(n))
-        case n: jl.Integer ⇒ Number.newBuilder().setType(NumberType.Integer) setValue32 n
+        case n: jl.Integer ⇒ Number.newBuilder().setType(NumberType.Integer).setValue32(n)
         case _ ⇒
           val bos = new ByteArrayOutputStream
           val out = new ObjectOutputStream(bos)
