@@ -190,7 +190,7 @@ If we run this example we see that
 
 This example highlights that one solution to avoid deadlocks in the presence of potentially unbalanced cycles
 (cycles where the number of circulating elements are unbounded) is to drop elements. An alternative would be to
-define a larger buffer with ``OverflowStrategy.error`` which would fail the stream instead of deadlocking it after
+define a larger buffer with ``OverflowStrategy.fail`` which would fail the stream instead of deadlocking it after
 all buffer space has been consumed.
 
 As we discovered in the previous examples, the core problem was the unbalanced nature of the feedback loop. We

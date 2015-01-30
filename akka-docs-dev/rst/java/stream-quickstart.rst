@@ -120,7 +120,7 @@ elements*" this can be expressed using the ``buffer`` element:
 
 The ``buffer`` element takes an explicit and required ``OverflowStrategy``, which defines how the buffer should react
 when it receives another element element while it is full. Strategies provided include dropping the oldest element (``dropHead``),
-dropping the entire buffer, signalling errors etc. Be sure to pick and choose the strategy that fits your use case best.
+dropping the entire buffer, signalling failures etc. Be sure to pick and choose the strategy that fits your use case best.
 
 Materialized values
 -------------------

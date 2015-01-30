@@ -198,7 +198,7 @@ In our case we use the :class:`ReadPreferred` read condition which has the exact
 our preferring merge – it pulls elements from the preferred input port if there are any available, otherwise reverting
 to pulling from the secondary inputs. The context object passed into the state function allows us to interact with the
 connected streams, for example by emitting an ``element``, which was just pulled from the given ``input``, or signalling
-completion or errors to the merges downstream stage.
+completion or failure to the merges downstream stage.
 
 The state function must always return the next behaviour to be used when an element should be pulled from its upstreams,
 we use the special :class:`SameState` object which signals :class:`FlexiMerge` that no state transition is needed.
@@ -233,21 +233,21 @@ Connecting your custom junction is as simple as creating an instance and connect
 Completion handling
 ^^^^^^^^^^^^^^^^^^^
 Completion handling in :class:`FlexiMerge` is defined by an :class:`CompletionHandling` object which can react on
-completion and error signals from its upstream input ports. The default strategy is to remain running while at-least-one
+completion and failure signals from its upstream input ports. The default strategy is to remain running while at-least-one
 upstream input port which are declared to be consumed in the current state is still running (i.e. has not signalled
-completion or error).
+completion or failure).
 
 Customising completion can be done via overriding the ``MergeLogic#initialCompletionHandling`` method, or from within
 a :class:`State` by calling ``ctx.changeCompletionHandling(handling)``. Other than the default completion handling (as
-late as possible) :class:`FlexiMerge` also provides an ``eagerClose`` completion handling which completes (or errors) its
-downstream as soon as at least one of its upstream inputs completes (or errors).
+late as possible) :class:`FlexiMerge` also provides an ``eagerClose`` completion handling which completes (or fails) its
+downstream as soon as at least one of its upstream inputs completes (or fails).
 
 In the example below the we implement an ``ImportantWithBackups`` fan-in stage which can only keep operating while
 the ``important`` and at-least-one of the ``replica`` inputs are active. Therefore in our custom completion strategy we
-have to investigate which input has completed or errored and act accordingly. If the important input completed or errored
+have to investigate which input has completed or failed and act accordingly. If the important input completed or failed
 we propagate this downstream completing the stream, on the other hand if the first replicated input fails, we log the
-exception and instead of erroring the downstream swallow this exception (as one failed replica is still acceptable).
-Then we change the completion strategy to ``eagerClose`` which will propagate any future completion or error event right
+exception and instead of failing the downstream swallow this exception (as one failed replica is still acceptable).
+Then we change the completion strategy to ``eagerClose`` which will propagate any future completion or failure event right
 to this stages downstream effectively shutting down the stream.
 
 .. includecode:: code/docs/stream/FlexiDocSpec.scala#fleximerge-completion
@@ -294,10 +294,10 @@ we use the special :class:`SameState` object which signals :class:`FlexiRoute` t
 Completion handling
 ^^^^^^^^^^^^^^^^^^^
 Completion handling in :class:`FlexiRoute` is handled similarily to :class:`FlexiMerge` (which is explained in depth in
-:ref:`flexi-merge-completion-handling-scala`), however in addition to reacting to its upstreams *completion* or *error*
+:ref:`flexi-merge-completion-handling-scala`), however in addition to reacting to its upstreams *completion* or *failure*
 it can also react to its downstream stages *cancelling* their subscriptions. The default completion handling for
 :class:`FlexiRoute` (defined in ``RouteLogic#defaultCompletionHandling``) is to continue running until all of its
-downstreams have cancelled their subscriptions, or the upstream has completed / errored.
+downstreams have cancelled their subscriptions, or the upstream has completed / failed.
 
 In order to customise completion handling we can override overriding the ``RouteLogic#initialCompletionHandling`` method,
 or call ``ctx.changeCompletionHandling(handling)`` from within a :class:`State`. Other than the default completion handling
@@ -309,7 +309,7 @@ downstream cancels, otherwise (if any other downstream cancels their subscriptio
 
 .. includecode:: code/docs/stream/FlexiDocSpec.scala#flexiroute-completion
 
-Notice that State changes are only allowed in reaction to downstream cancellations, and not in the upstream completion/error
+Notice that State changes are only allowed in reaction to downstream cancellations, and not in the upstream completion/failure
 cases. This is because since there is only one upstream, there is nothing else to do than possibly flush buffered elements
 and continue with shutting down the entire stream.
 

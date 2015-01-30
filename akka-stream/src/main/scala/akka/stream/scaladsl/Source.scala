@@ -43,7 +43,7 @@ trait Source[+Out] extends FlowOps[Out] with Materializable {
    * output (or the given `zero` value) and the element as input.
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
-   * if there is an error is signaled in the stream.
+   * if there is a failure signaled in the stream.
    */
   def runFold[U](zero: U)(f: (U, Out) ⇒ U)(implicit materializer: FlowMaterializer): Future[U] = runWith(FoldSink(zero)(f)) // FIXME why is fold always an end step?
 
@@ -51,7 +51,7 @@ trait Source[+Out] extends FlowOps[Out] with Materializable {
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is an error is signaled in
+   * normal end of the stream, or completed with `Failure` if there is a failure signaled in
    * the stream.
    */
   def runForeach(f: Out ⇒ Unit)(implicit materializer: FlowMaterializer): Future[Unit] = runWith(ForeachSink(f))
@@ -125,7 +125,7 @@ object Source {
    * Start a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with an error if the `Future` is completed with a failure.
+   * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def apply[T](future: Future[T]): Source[T] = FutureSource(future)
 
@@ -189,7 +189,7 @@ object Source {
   def lazyEmpty[T]() = LazyEmptySource[T]()
 
   /**
-   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
+   * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T] = apply(ErrorPublisher(cause, "failed"))
 

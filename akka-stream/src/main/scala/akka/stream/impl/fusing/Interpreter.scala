@@ -133,7 +133,7 @@ private[akka] object OneBoundedInterpreter {
  *  - ctx.pushAndFinish() which is different from the forking ops above because the execution of push and finish happens on
  *  the same execution region and they are order dependent, too.
  * The interpreter tracks the depth of recursive forking and allows various strategies of dealing with the situation
- * when this depth reaches a certain limit. In the simplest case an error is reported (this is very useful for stress
+ * when this depth reaches a certain limit. In the simplest case a failure is reported (this is very useful for stress
  * testing and finding callstack wasting bugs), in the other case the forked call is scheduled via a list -- i.e. instead
  * of the stack the heap is used.
  */

@@ -79,9 +79,9 @@ class StreamBuffersRateSpec extends AkkaSpec {
     jobs.buffer(1000, OverflowStrategy.dropBuffer)
     //#explicit-buffers-dropbuffer
 
-    //#explicit-buffers-error
-    jobs.buffer(1000, OverflowStrategy.error)
-    //#explicit-buffers-error
+    //#explicit-buffers-fail
+    jobs.buffer(1000, OverflowStrategy.fail)
+    //#explicit-buffers-fail
 
   }
 

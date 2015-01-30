@@ -127,7 +127,7 @@ otherwise we consider it flooding and terminate the connection. This is
 easily achievable by the error strategy which simply fails the stream
 once the buffer gets full.
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-error
+.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-fail
 
 Rate transformation
 ===================
