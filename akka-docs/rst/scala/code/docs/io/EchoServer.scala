@@ -70,18 +70,19 @@ class EchoManager(handlerClass: Class[_]) extends Actor with ActorLogging {
 
 }
 
+//#echo-handler
 object EchoHandler {
+  final case class Ack(offset: Int) extends Tcp.Event
+
   def props(connection: ActorRef, remote: InetSocketAddress): Props =
     Props(classOf[EchoHandler], connection, remote)
 }
 
-//#echo-handler
 class EchoHandler(connection: ActorRef, remote: InetSocketAddress)
   extends Actor with ActorLogging {
 
   import Tcp._
-
-  final case class Ack(offset: Int) extends Event
+  import EchoHandler._
 
   // sign death pact: this actor terminates when connection breaks
   context watch connection

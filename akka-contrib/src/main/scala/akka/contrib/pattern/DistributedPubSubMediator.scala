@@ -191,7 +191,7 @@ object DistributedPubSubMediator {
 
       def business: Receive
 
-      def receive = business orElse defaultReceive
+      def receive = business.orElse[Any, Unit](defaultReceive)
 
       def remove(ref: ActorRef): Unit = {
         if (subscribers.contains(ref))
