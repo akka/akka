@@ -586,16 +586,16 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           """).withFallback(config)
         val otherSelection = thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", probeSender)
-        probe.expectNoMsg(1 seconds)
+        probe.expectNoMsg(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          probe.expectNoMsg(2 seconds)
+          probe.expectNoMsg(2.seconds)
           otherSystem.actorOf(Props[Echo2], "echo")
-          within(5 seconds) {
+          within(5.seconds) {
             awaitAssert {
               otherSelection.tell("ping", probeSender)
-              assert(probe.expectMsgType[(String, ActorRef)](500 millis)._1 == "pong")
+              assert(probe.expectMsgType[(String, ActorRef)](500.millis)._1 == "pong")
             }
           }
         } finally {
@@ -624,18 +624,18 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           """).withFallback(config)
         val otherSelection = thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", thisSender)
-        thisProbe.expectNoMsg(1 seconds)
+        thisProbe.expectNoMsg(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          thisProbe.expectNoMsg(2 seconds)
+          thisProbe.expectNoMsg(2.seconds)
           val otherProbe = new TestProbe(otherSystem)
           val otherSender = otherProbe.ref
           val thisSelection = otherSystem.actorSelection(s"akka.tcp://this-system@localhost:${port(thisSystem, "tcp")}/user/echo")
-          within(5 seconds) {
+          within(5.seconds) {
             awaitAssert {
               thisSelection.tell("ping", otherSender)
-              assert(otherProbe.expectMsgType[(String, ActorRef)](500 millis)._1 == "pong")
+              assert(otherProbe.expectMsgType[(String, ActorRef)](500.millis)._1 == "pong")
             }
           }
         } finally {

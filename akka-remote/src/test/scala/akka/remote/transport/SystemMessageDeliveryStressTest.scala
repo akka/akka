@@ -63,7 +63,7 @@ object SystemMessageDeliveryStressTest {
     }
                                                    """)
 
-  class SystemMessageSequenceVerifier(system: ActorSystem, testActor: ActorRef) extends MinimalActorRef {
+  private[akka] class SystemMessageSequenceVerifier(system: ActorSystem, testActor: ActorRef) extends MinimalActorRef {
     val provider = RARP(system).provider
     val path = provider.tempPath()
 
