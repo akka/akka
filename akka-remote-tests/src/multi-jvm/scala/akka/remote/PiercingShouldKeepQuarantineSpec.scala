@@ -1,11 +1,9 @@
 package akka.remote
 
-import language.postfixOps
 import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import akka.actor._
 import akka.testkit._
-import akka.remote.AddressUidExtension
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.remote.testconductor.RoleName
 

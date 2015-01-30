@@ -163,7 +163,7 @@ private[cluster] final class ClusterDaemon(settings: ClusterSettings) extends Ac
     withDispatcher(context.props.dispatcher), name = "heartbeatReceiver")
 
   def receive = {
-    case msg @ GetClusterCoreRef ⇒ coreSupervisor forward msg
+    case msg: GetClusterCoreRef.type ⇒ coreSupervisor forward msg
     case AddOnMemberUpListener(code) ⇒
       context.actorOf(Props(classOf[OnMemberUpListener], code).withDeploy(Deploy.local))
     case PublisherCreated(publisher) ⇒
@@ -655,10 +655,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
       if (statsEnabled) {
         gossipStats = gossipType match {
-          case Merge ⇒ gossipStats.incrementMergeCount
-          case Same  ⇒ gossipStats.incrementSameCount
-          case Newer ⇒ gossipStats.incrementNewerCount
-          case Older ⇒ gossipStats.incrementOlderCount
+          case Merge   ⇒ gossipStats.incrementMergeCount
+          case Same    ⇒ gossipStats.incrementSameCount
+          case Newer   ⇒ gossipStats.incrementNewerCount
+          case Older   ⇒ gossipStats.incrementOlderCount
+          case Ignored ⇒ gossipStats // included in receivedGossipCount
         }
       }
 
