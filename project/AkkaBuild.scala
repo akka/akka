@@ -294,6 +294,8 @@ object AkkaBuild extends Build {
     // compile options
     scalacOptions in Compile ++= Seq("-encoding", "UTF-8", "-target:jvm-1.6", "-feature", "-unchecked", "-Xlog-reflective-calls", "-Xlint"),
     scalacOptions in Compile ++= (if (deprecation) Seq("-deprecation") else Nil),
+    scalacOptions in Test := (scalacOptions in Test).value.filterNot(_ == "-Xlog-reflective-calls"),
+    // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
     javacOptions in compile ++= Seq("-encoding", "UTF-8", "-source", "1.6", "-target", "1.6", "-Xlint:unchecked", "-XDignore.symbol.file"),
     javacOptions in compile ++= (if (deprecation) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq("-encoding", "UTF-8", "-source", "1.6"),

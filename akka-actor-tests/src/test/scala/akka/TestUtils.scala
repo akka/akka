@@ -11,6 +11,8 @@ import java.nio.channels.{ DatagramChannel, ServerSocketChannel }
 import akka.actor.{ ActorSystem, ActorRef }
 import akka.testkit.TestProbe
 
+import language.reflectiveCalls
+
 object TestUtils {
 
   // Structural type needed since DatagramSocket and ServerSocket has no common ancestor apart from Object
