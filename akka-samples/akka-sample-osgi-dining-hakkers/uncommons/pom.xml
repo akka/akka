@@ -26,6 +26,19 @@
             <groupId>org.uncommons.maths</groupId>
             <artifactId>uncommons-maths</artifactId>
             <version>1.2.2</version>
+            <!-- uncommons 1.2.2 depends on jfreechart 1.0.8 not present on maven central; see: -->
+            <!-- https://github.com/dwdyer/uncommons-maths/issues/14 -->
+            <!-- need specific exclusion to allow clean room build -->
+            <exclusions>
+               <exclusion>
+                  <groupId>jfree</groupId>
+                  <artifactId>jcommon</artifactId>
+               </exclusion>
+               <exclusion>
+                  <groupId>jfree</groupId>
+                  <artifactId>jfreechart</artifactId>
+               </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>jfree</groupId>
