@@ -71,7 +71,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
       context.become(active)
   }
 
-  def handleError(error: Throwable): Unit = {
+  def handleFailure(error: Throwable): Unit = {
     try {
       if (!error.isInstanceOf[SpecViolation])
         tryOnError(subscriber, error)
@@ -90,16 +90,16 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
           tryOnNext(subscriber, tick)
         }
       } catch {
-        case NonFatal(e) ⇒ handleError(e)
+        case NonFatal(e) ⇒ handleFailure(e)
       }
 
     case RequestMore(elements) ⇒
       if (elements < 1) {
-        handleError(numberOfElementsInRequestMustBePositiveException)
+        handleFailure(numberOfElementsInRequestMustBePositiveException)
       } else {
         demand += elements
         if (demand < 0) // Long has overflown, reactive-streams specification rule 3.17
-          handleError(totalPendingDemandMustNotExceedLongMaxValueException)
+          handleFailure(totalPendingDemandMustNotExceedLongMaxValueException)
       }
 
     case Cancel ⇒

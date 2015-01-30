@@ -100,7 +100,7 @@ object Source {
    * Start a new `Source` from the given `Future`. The stream will consist of
    * one element when the `Future` is completed with a successful value, which
    * may happen before or after materializing the `Flow`.
-   * The stream terminates with an error if the `Future` is completed with a failure.
+   * The stream terminates with a failure if the `Future` is completed with a failure.
    */
   def from[O](future: Future[O]): javadsl.Source[O] =
     new Source(scaladsl.Source(future))
@@ -145,7 +145,7 @@ object Source {
     new Source(scaladsl.Source.single(element))
 
   /**
-   * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
+   * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T] =
     new Source(scaladsl.Source.failed(cause))
@@ -214,7 +214,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * output (or the given `zero` value) and the element as input.
    * The returned [[scala.concurrent.Future]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
-   * if there is an error is signaled in the stream.
+   * if there is a failure is signaled in the stream.
    */
   def runFold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
     runWith(Sink.fold(zero, f), materializer)
@@ -231,7 +231,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
    * for each received element.
    * The returned [[scala.concurrent.Future]] will be completed with `Success` when reaching the
-   * normal end of the stream, or completed with `Failure` if there is an error is signaled in
+   * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream.
    */
   def runForeach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =

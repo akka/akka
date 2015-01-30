@@ -61,7 +61,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
     // this is mutable for speed
     var n = 0
     var elements = mutable.ListBuffer.empty[Any]
-    var error: Option[Throwable] = None
+    var failure: Option[Throwable] = None
     val iter = orderedBuffer.iterator
     @tailrec def split(): Unit =
       if (iter.hasNext) {
@@ -111,7 +111,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
   }
 
   override def onError(e: Throwable): Unit = {
-    // propagate upstream error immediately
+    // propagate upstream failure immediately
     fail(e)
   }
 
@@ -134,7 +134,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
         }.pipeTo(self)
       } catch {
         case NonFatal(err) ⇒
-          // f threw, propagate error immediately
+          // f threw, propagate failure immediately
           fail(err)
       }
     }

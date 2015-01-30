@@ -51,7 +51,7 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
   }
 
   override def onError(e: Throwable): Unit = {
-    // propagate upstream error immediately
+    // propagate upstream failure immediately
     fail(e)
   }
 
@@ -73,7 +73,7 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
         }.pipeTo(self)
       } catch {
         case NonFatal(err) ⇒
-          // f threw, propagate error immediately
+          // f threw, propagate failure immediately
           fail(err)
       }
     }

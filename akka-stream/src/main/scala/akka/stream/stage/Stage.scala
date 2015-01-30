@@ -70,12 +70,12 @@ private[stream] abstract class AbstractStage[-In, Out, PushD <: Directive, PullD
 
   /**
    * `onUpstreamFailure` is called when upstream has signaled that the stream is completed
-   * with error. It is not called if [[#onPull]] or [[#onPush]] of the stage itself
+   * with failure. It is not called if [[#onPull]] or [[#onPush]] of the stage itself
    * throws an exception.
    *
-   * Note that elements that were emitted by upstream before the error happened might
+   * Note that elements that were emitted by upstream before the failure happened might
    * not have been received by this stage when `onUpstreamFailure` is called, i.e.
-   * errors are not backpressured and might be propagated as soon as possible.
+   * failures are not backpressured and might be propagated as soon as possible.
    *
    * Here you cannot call [[akka.stream.stage.Context#push]], because there might not
    * be any demand from  downstream. To emit additional elements before terminating you
@@ -314,7 +314,7 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
   /**
    * Scala API: Can be used from [[#onUpstreamFinish]] to push final elements downstreams
    * before completing the stream successfully. Note that if this is used from
-   * [[#onUpstreamFailure]] the error will be absorbed and the stream will be completed
+   * [[#onUpstreamFailure]] the failure will be absorbed and the stream will be completed
    * successfully.
    */
   final def terminationEmit(iter: Iterator[Out], ctx: Context[Out]): TerminationDirective = {

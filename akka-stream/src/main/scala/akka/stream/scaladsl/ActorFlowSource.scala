@@ -133,7 +133,7 @@ final class FuncIterable[Out](f: () ⇒ Iterator[Out]) extends immutable.Iterabl
  * Start a new `Source` from the given `Future`. The stream will consist of
  * one element when the `Future` is completed with a successful value, which
  * may happen before or after materializing the `Flow`.
- * The stream terminates with an error if the `Future` is completed with a failure.
+ * The stream terminates with a failure if the `Future` is completed with a failure.
  */
 final case class FutureSource[Out](future: Future[Out]) extends SimpleActorFlowSource[Out] { // FIXME Why does this have anything to do with Actors?
   override def attach(flowSubscriber: Subscriber[Out], materializer: ActorFlowMaterializer, flowName: String) =
@@ -161,7 +161,7 @@ final case class LazyEmptySource[Out]() extends KeyedActorFlowSource[Out, Promis
   override def create(materializer: ActorFlowMaterializer, flowName: String) = {
     val p = Promise[Unit]()
 
-    // Not TCK verified as RC1 does not allow "empty publishers", 
+    // Not TCK verified as RC1 does not allow "empty publishers",
     // reactive-streams on master now contains support for empty publishers.
     // so we can enable it then, though it will require external completing of the promise
     val pub = new Publisher[Unit] {

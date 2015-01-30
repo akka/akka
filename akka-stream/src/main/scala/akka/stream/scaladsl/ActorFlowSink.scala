@@ -162,7 +162,7 @@ object OnCompleteSink {
 }
 
 /**
- * When the flow is completed, either through an error or normal
+ * When the flow is completed, either through failure or normal
  * completion, apply the provided function with [[scala.util.Success]]
  * or [[scala.util.Failure]].
  */
@@ -191,7 +191,7 @@ final case class OnCompleteSink[In](callback: Try[Unit] ⇒ Unit) extends Simple
 /**
  * Invoke the given procedure for each received element. The sink holds a [[scala.concurrent.Future]]
  * that will be completed with `Success` when reaching the normal end of the stream, or completed
- * with `Failure` if there is an error is signaled in the stream.
+ * with `Failure` if there is a failure signaled in the stream.
  */
 final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In, Future[Unit]] {
 
@@ -225,7 +225,7 @@ final case class ForeachSink[In](f: In ⇒ Unit) extends KeyedActorFlowSink[In, 
  * output (or the given `zero` value) and the element as input. The sink holds a
  * [[scala.concurrent.Future]] that will be completed with value of the final
  * function evaluation when the input stream ends, or completed with `Failure`
- * if there is an error is signaled in the stream.
+ * if there is a failure signaled in the stream.
  */
 final case class FoldSink[U, In](zero: U)(f: (U, In) ⇒ U) extends KeyedActorFlowSink[In, Future[U]] {
 
