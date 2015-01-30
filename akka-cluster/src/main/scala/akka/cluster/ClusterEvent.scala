@@ -222,12 +222,12 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffUnreachable(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[UnreachableMember] =
+  private[cluster] def diffUnreachable(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[UnreachableMember] =
     if (newGossip eq oldGossip) Nil
     else {
       val oldUnreachableNodes = oldGossip.overview.reachability.allUnreachableOrTerminated
       (newGossip.overview.reachability.allUnreachableOrTerminated.collect {
-        case node if !oldUnreachableNodes.contains(node) ⇒
+        case node if !oldUnreachableNodes.contains(node) && node != selfUniqueAddress ⇒
           UnreachableMember(newGossip.member(node))
       })(collection.breakOut)
     }
@@ -235,11 +235,11 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffReachable(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[ReachableMember] =
+  private[cluster] def diffReachable(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[ReachableMember] =
     if (newGossip eq oldGossip) Nil
     else {
       (oldGossip.overview.reachability.allUnreachable.collect {
-        case node if newGossip.hasMember(node) && newGossip.overview.reachability.isReachable(node) ⇒
+        case node if newGossip.hasMember(node) && newGossip.overview.reachability.isReachable(node) && node != selfUniqueAddress ⇒
           ReachableMember(newGossip.member(node))
       })(collection.breakOut)
 
@@ -291,12 +291,12 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffSeen(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[SeenChanged] =
+  private[cluster] def diffSeen(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[SeenChanged] =
     if (newGossip eq oldGossip) Nil
     else {
-      val newConvergence = newGossip.convergence
+      val newConvergence = newGossip.convergence(selfUniqueAddress)
       val newSeenBy = newGossip.seenBy
-      if (newConvergence != oldGossip.convergence || newSeenBy != oldGossip.seenBy)
+      if (newConvergence != oldGossip.convergence(selfUniqueAddress) || newSeenBy != oldGossip.seenBy)
         List(SeenChanged(newConvergence, newSeenBy.map(_.address)))
       else Nil
     }
@@ -319,6 +319,7 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
   with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
+  val selfUniqueAddress = Cluster(context.system).selfUniqueAddress
   var latestGossip: Gossip = Gossip.empty
 
   override def preRestart(reason: Throwable, message: Option[Any]) {
@@ -346,9 +347,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
    * to mimic what you would have seen if you were listening to the events.
    */
   def sendCurrentClusterState(receiver: ActorRef): Unit = {
+    val unreachable: Set[Member] = latestGossip.overview.reachability.allUnreachableOrTerminated.collect {
+      case node if node != selfUniqueAddress ⇒ latestGossip.member(node)
+    }
     val state = CurrentClusterState(
       members = latestGossip.members,
-      unreachable = latestGossip.overview.reachability.allUnreachableOrTerminated map latestGossip.member,
+      unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
       leader = latestGossip.leader.map(_.address),
       roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r).map(_.address))(collection.breakOut))
@@ -384,12 +388,12 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
 
   def publishDiff(oldGossip: Gossip, newGossip: Gossip, pub: AnyRef ⇒ Unit): Unit = {
     diffMemberEvents(oldGossip, newGossip) foreach pub
-    diffUnreachable(oldGossip, newGossip) foreach pub
-    diffReachable(oldGossip, newGossip) foreach pub
+    diffUnreachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffReachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffLeader(oldGossip, newGossip) foreach pub
     diffRolesLeader(oldGossip, newGossip) foreach pub
     // publish internal SeenState for testing purposes
-    diffSeen(oldGossip, newGossip) foreach pub
+    diffSeen(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachability(oldGossip, newGossip) foreach pub
   }
 
