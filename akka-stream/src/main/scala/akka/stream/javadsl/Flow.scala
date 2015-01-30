@@ -6,6 +6,7 @@ package akka.stream.javadsl
 import akka.stream._
 import akka.japi.Util
 import akka.stream.scaladsl
+import akka.stream.scaladsl.FlowPorts
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
@@ -47,7 +48,7 @@ object Flow {
    * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def create[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
+  def create[P <: Ports, I, O](graph: PartialFlowGraph[P], block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
     val sFlow = scaladsl.Flow(graph.asScala) { b ⇒
       val pair = block.apply(b.asJava)
       pair.first.asScala → pair.second.asScala

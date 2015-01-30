@@ -6,11 +6,12 @@ package akka.stream.scaladsl
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.OverflowStrategy
-import akka.stream.scaladsl.{Source, FlowGraph, PartialFlowGraph}
+import akka.stream.scaladsl.{ Source, FlowGraph, PartialFlowGraph }
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import akka.stream.stage._
-
+import akka.testkit.TestProbe
+import concurrent.duration._
 import scala.concurrent.Await
 
 object FlowGraphCompileSpec {
@@ -181,6 +182,40 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }.run()
     }
 
+    "simple Flow of graph" in {
+      val f = Flow[Int, String]() { implicit b ⇒
+        ports ⇒
+          import ports._
+          import FlowGraphImplicits._
+          in ~> Flow[Int].map(_.toString) ~> out
+      }
+
+      val (_, head) = f.runWith(Source.single(1), Sink.head)
+      Await.result(head, 300.millis) should ===("1")
+    }
+    "simple Source of graph" in {
+      val p = TestProbe()
+      val gs = Source[Int]() { implicit b ⇒
+        ports ⇒
+          import FlowGraphImplicits._
+          Source.single(1) ~> Flow[Int].map { x ⇒ p.ref ! x; x } ~> ports.out
+      }
+
+      gs.runWith(Sink.ignore)
+      p.expectMsg(1)
+    }
+    "simple Sink of graph" in {
+      val p = TestProbe()
+      val gs = Sink[Int]() { implicit b ⇒
+        ports ⇒
+          import FlowGraphImplicits._
+          ports.in ~> Flow[Int].map { i ⇒ p.ref ! i; i } ~> Sink.ignore
+      }
+
+      gs.runWith(Source.single(1))
+      p.expectMsg(1)
+    }
+
     "attachSource and attachSink" in {
       val mg = FlowGraph { b ⇒
         val merge = Merge[String]
@@ -201,30 +236,37 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build partial flow graphs" in {
-      val undefinedSource1 = UndefinedSource[String]
-      val undefinedSource2 = UndefinedSource[String]
-      val undefinedSink1 = UndefinedSink[String]
+      val ports = new Ports {
+        val undefinedSource1 = InputPort[String]
+        val undefinedSource2 = InputPort[String]
+        val undefinedSink1 = OutputPort[String]
+      }
       val bcast = Broadcast[String]
 
-      val partial1 = PartialFlowGraph { implicit b ⇒
-        import FlowGraphImplicits._
-        val merge = Merge[String]
-        undefinedSource1 ~> f1 ~> merge ~> f2 ~> bcast ~> f3 ~> undefinedSink1
-        undefinedSource2 ~> f4 ~> merge
+      val partial1 = PartialFlowGraph(ports) { implicit b ⇒
+        ports ⇒
+          import FlowGraphImplicits._
+          import ports._
+          val merge = Merge[String]
+          undefinedSource1 ~> f1 ~> merge ~> f2 ~> bcast ~> f3 ~> undefinedSink1
+          undefinedSource2 ~> f4 ~> merge
       }
-      partial1.undefinedSources should be(Set(undefinedSource1, undefinedSource2))
-      partial1.undefinedSinks should be(Set(undefinedSink1))
+      partial1.undefinedSources should be(Set(ports.undefinedSource1, ports.undefinedSource2))
+      partial1.undefinedSinks should be(Set(ports.undefinedSink1))
 
-      val undefinedSink2 = UndefinedSink[String]
+      val ports2 = new Ports {
+        val undefinedSink2 = OutputPort[String]
+      }
 
-      val partial2 = PartialFlowGraph(partial1) { implicit b ⇒
-        import FlowGraphImplicits._
-        b.attachSource(undefinedSource1, in1)
-        b.attachSource(undefinedSource2, in2)
-        bcast ~> f5 ~> undefinedSink2
+      val partial2 = PartialFlowGraph(partial1, ports2) { implicit b ⇒
+        ports ⇒ ports2 ⇒
+          import FlowGraphImplicits._
+          in1 ~> ports.undefinedSource1
+          in2 ~> ports.undefinedSource2
+          bcast ~> f5 ~> ports2.undefinedSink2
       }
       partial2.undefinedSources should be(Set.empty)
-      partial2.undefinedSinks should be(Set(undefinedSink1, undefinedSink2))
+      partial2.undefinedSinks should be(Set(partial2.ports.undefinedSink1, partial2.ports.undefinedSink2))
 
       FlowGraph(partial2) { b ⇒
         b.attachSink(undefinedSink1, out1)
@@ -529,50 +571,54 @@ class FlowGraphCompileSpec extends AkkaSpec {
         b.connect(output2, f2, input2)
       }.run()
     }
-    
-    case object AudioPorts extends Ports {
+
+    class AudioPorts extends Ports {
       val nums = InputPort[Int] // TODO: I think I'd even propose this style over createInputport...
       val words = InputPort[String] // TODO: this is a bit more than just UndefinedSink, the type is the same
-                                    //       should we introduce a new type only to make sure someone doesnt use UndefinedSink[] here?
-                                    //       it would be then excluded from the "are all sinks defined" check (could be good, 
-                                    //       but maybe should be explicit - maybe OptionalInputPort[] ?
-  
+      //       should we introduce a new type only to make sure someone doesnt use UndefinedSink[] here?
+      //       it would be then excluded from the "are all sinks defined" check (could be good, 
+      //       but maybe should be explicit - maybe OptionalInputPort[] ?
+
       val out = OutputPort[String]
     }
-  
+    case object AudioPorts { def apply() = new AudioPorts }
+
     "help users in providing complex ports" in {
       // building
-      val g = PartialFlowGraph(AudioPorts) { implicit b ⇒ ports ⇒
+      val audioPorts = AudioPorts()
+      val g = PartialFlowGraph(audioPorts) { implicit b ⇒
+        ports ⇒
           import FlowGraphImplicits._
-  
+
           val merge = Merge[String]
         
           // format: OFF
           ports.nums ~> Flow[Int].map(_.toString) ~> merge
                                       ports.words ~> merge ~> ports.out
-          // format: ON
+        // format: ON
       }
-  
+
       // connecting:
       FlowGraph(g) { implicit b ⇒
-        import FlowGraphImplicits._
+        ports ⇒
+          import FlowGraphImplicits._
   
         // format: OFF
-        Source(1 to 10)                   ~> AudioPorts.nums
-        Source((1 to 10).map(_.toString)) ~> AudioPorts.words
-                                             AudioPorts.out ~> Sink.head
+        Source(1 to 10)                   ~> ports.nums
+        Source((1 to 10).map(_.toString)) ~> ports.words
+                                             ports.out ~> Sink.head
         // format: ON
       }.run()
     }
-  
+
     "throw when not all Ports ports are connected" in {
       case object AudioPorts extends Ports {
         val nums = InputPort[Int]
         val words = InputPort[String]
-  
+
         val out = OutputPort[String]
       }
-  
+
       val ex = intercept[IllegalArgumentException] {
         PartialFlowGraph(AudioPorts) { implicit b ⇒
           ports ⇒
@@ -582,13 +628,13 @@ class FlowGraphCompileSpec extends AkkaSpec {
             // format: OFF
             ports.nums ~> Flow[Int].map(_.toString) ~> merge
                                         ports.words ~> merge
-            // format: ON
+          // format: ON
         }
       }
-  
+
       ex.getMessage should include("must contain all ports")
     }
-    
-    
+
+    "allow importing partial flow graphs into each other" in pending
   }
 }

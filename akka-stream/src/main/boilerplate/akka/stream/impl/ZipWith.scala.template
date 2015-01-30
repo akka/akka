@@ -13,7 +13,7 @@ private[akka] object ZipWith {
 
   /** @param f MUST be a FunctionN type. */
   def props(settings: ActorFlowMaterializerSettings, f: Any): Props = f match {
-    [2..#case f1: Function1[[#Any#], Any] => Props(new Zip1With(settings, f1))#
+    [2..#case f1: Function1[[#_#], _] => Props(new Zip1With(settings, f1.asInstanceOf[Function1[[#Any#], Any]]))#
     ]
   }
 

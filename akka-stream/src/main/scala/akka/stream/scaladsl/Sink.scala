@@ -40,11 +40,11 @@ object Sink {
    * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSink`.
    */
-  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSource[T] ⇒ Unit): Sink[T] = {
-    val in = UndefinedSource[T]
+  def apply[T]()(block: FlowGraphBuilder ⇒ SinkPort[T] ⇒ Unit): Sink[T] = {
+    val port = SinkPort[T]()
     val builder = new FlowGraphBuilder()
-    block(builder)(in)
-    builder.partialBuild().toSink(in)
+    block(builder)(port)
+    builder.partialBuild(port).toSink()
   }
 
   /**

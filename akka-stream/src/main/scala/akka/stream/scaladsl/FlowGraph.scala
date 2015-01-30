@@ -573,7 +573,7 @@ private[akka] object FlowGraphInternal {
 }
 
 object FlowGraphBuilder {
-  private[scaladsl] def apply[T](partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ T): T = {
+  private[scaladsl] def apply[T](partialFlowGraph: PartialFlowGraph[_])(block: FlowGraphBuilder ⇒ T): T = {
     val builder = new FlowGraphBuilder(partialFlowGraph)
     block(builder)
   }
@@ -947,7 +947,7 @@ class FlowGraphBuilder private[akka] (
    * After importing you can [[#connect]] undefined sources and sinks in
    * two different `PartialFlowGraph` instances.
    */
-  def importPartialFlowGraph(partialFlowGraph: PartialFlowGraph): this.type = {
+  def importPartialFlowGraph(partialFlowGraph: PartialFlowGraph[_]): this.type = {
     importGraph(partialFlowGraph.graph)
     this
   }
@@ -957,7 +957,7 @@ class FlowGraphBuilder private[akka] (
       addGraphEdge(edge.from.label, edge.to.label, edge.label.pipe, edge.label.inputPort, edge.label.outputPort)
     }
 
-  private[scaladsl] def remapPartialFlowGraph(partialFlowGraph: PartialFlowGraph, vertexMapping: Map[Vertex, Vertex]): this.type = {
+  private[scaladsl] def remapPartialFlowGraph(partialFlowGraph: PartialFlowGraph[_], vertexMapping: Map[Vertex, Vertex]): this.type = {
     val mapping = collection.mutable.Map.empty[Vertex, Vertex] ++ vertexMapping
     def get(vertex: Vertex): Vertex = mapping.getOrElseUpdate(vertex, vertex.newInstance())
 
@@ -1057,9 +1057,17 @@ class FlowGraphBuilder private[akka] (
   /**
    * INTERNAL API
    */
-  private[akka] def partialBuild(): PartialFlowGraph = {
+  private[akka] def partialBuild[P <: Ports](ports: P): PartialFlowGraph[P] = {
     checkPartialBuildPreconditions()
-    new PartialFlowGraph(graph.copy(), cyclesAllowed, disconnectedAllowed)
+    new PartialFlowGraph(ports, graph.copy(), cyclesAllowed, disconnectedAllowed) // TODO think copy?
+  }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def partialBuildFlow[I, O](ports: FlowPorts[I, O]): PartialFlowGraph[FlowPorts[I, O]] = {
+    checkPartialBuildPreconditions()
+    new PartialFlowGraph(ports, graph.copy(), cyclesAllowed, disconnectedAllowed) // TODO think copy?
   }
 
   private def checkPartialBuildPreconditions(): Unit = {
@@ -1141,8 +1149,12 @@ object FlowGraph {
    * For example you can attach undefined sources and sinks with
    * [[FlowGraphBuilder#attachSource]] and [[FlowGraphBuilder#attachSink]]
    */
-  def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): FlowGraph =
-    apply(new FlowGraphBuilder(partialFlowGraph))(block)
+  def apply[P <: Ports](partialFlowGraph: PartialFlowGraph[P])(block: FlowGraphBuilder ⇒ P ⇒ Unit): FlowGraph = {
+    val builder = new FlowGraphBuilder(partialFlowGraph)
+    block(builder)(partialFlowGraph.ports)
+    builder.build()
+    // todo validate all ports
+  }
 
   private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): FlowGraph = {
     block(builder)
@@ -1289,33 +1301,47 @@ class FlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[Flo
  * `IllegalArgumentException` is throw if the built graph is invalid.
  */
 object PartialFlowGraph {
+
   /**
    * Build a [[PartialFlowGraph]] from scratch.
    */
-  def apply(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(new FlowGraphBuilder())(block)
+  def apply[P <: Ports](ports: P)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph[P] =
+    apply(ports, new FlowGraphBuilder())(block)
 
   /**
    * Continue building a [[PartialFlowGraph]] from an existing `PartialFlowGraph`.
    */
-  def apply(partialFlowGraph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph =
-    apply(new FlowGraphBuilder(partialFlowGraph))(block)
+  def apply[P <: Ports](partialFlowGraph: PartialFlowGraph[P])(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph[P] = {
+    val b = new FlowGraphBuilder()
+    val ports = partialFlowGraph.ports // TODO copy?
+    b.importPartialFlowGraph(partialFlowGraph)
+    block(b)(ports)
+    b.partialBuild(ports)
+  }
 
-  def apply[P <: Ports](p: P, requireAllPorts: Boolean = true)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph = {
-    val partial = apply(block(_)(p))
+  /**
+   * Continue building a [[PartialFlowGraph]] from an existing `PartialFlowGraph`, yet expose a different set of ports.
+   * All ports of the initial partial flow graph have to be attached.
+   */
+  def apply[P <: Ports, P2 <: Ports](partialFlowGraph: PartialFlowGraph[P], ports: P2)(block: FlowGraphBuilder ⇒ P ⇒ P2 ⇒ Unit): PartialFlowGraph[P2] = {
+    val b = new FlowGraphBuilder()
+    val oldPorts = partialFlowGraph.ports // TODO copy?
+    b.importPartialFlowGraph(partialFlowGraph)
+    block(b)(oldPorts)(ports)
+    val partial = b.partialBuild(ports)
 
-    // TODO: validation could point out which ones are not connected here
-    // TODO: We could also have "OptionalInput", have not thought that one through yet though
-    if (requireAllPorts)
-      p.validateAllIncluded(partial)
+    oldPorts.validateAllIncluded(partial) // TODO validate all old have been bound
+    ports.validateAllIncluded(partial)
 
     partial
   }
 
-  private def apply(builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ Unit): PartialFlowGraph = {
+  private def apply[P <: Ports](ports: Ports, builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph[P] = {
     // FlowGraphBuilder does a full import on the passed graph, so no defensive copy needed
     block(builder)
-    builder.partialBuild()
+    val partial = builder.partialBuild(ports)
+    ports.validateAllIncluded(partial) // todo rethink
+    partial
   }
 }
 
@@ -1326,17 +1352,21 @@ object PartialFlowGraph {
  * Build a `PartialFlowGraph` by starting with one of the `apply` methods in
  * in [[PartialFlowGraph$ companion object]]. Syntactic sugar is provided by [[FlowGraphImplicits]].
  */
-class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex],
-                                      private[scaladsl] override val cyclesAllowed: Boolean,
-                                      private[scaladsl] override val disconnectedAllowed: Boolean) extends FlowGraphLike {
+class PartialFlowGraph[P <: Ports] private[akka] (
+  val ports: P,
+  private[akka] val graph: DirectedGraphBuilder[FlowGraphInternal.EdgeLabel, FlowGraphInternal.Vertex],
+  private[scaladsl] override val cyclesAllowed: Boolean,
+  private[scaladsl] override val disconnectedAllowed: Boolean) extends FlowGraphLike {
 
   import FlowGraphInternal._
 
+  @deprecated("Use ports instead", since = "1.0-M3")
   def undefinedSources: Set[UndefinedSource[_]] =
     graph.nodes.map(_.label).collect {
       case n: UndefinedSource[_] ⇒ n
     }.toSet
 
+  @deprecated("Use ports instead", since = "1.0-M3")
   def undefinedSinks: Set[UndefinedSink[_]] =
     graph.nodes.map(_.label).collect {
       case n: UndefinedSink[_] ⇒ n
@@ -1346,16 +1376,20 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    * Creates a [[Source]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSink]] and
    * no [[UndefinedSource]] in the graph, and you need to provide it as a parameter.
    */
-  def toSource[O](out: UndefinedSink[O]): Source[O] = {
-    checkUndefinedSinksAndSources(sources = Nil, sinks = List(out), description = "Source")
-    GraphSource(this, out, Pipe.empty[O])
+  def toSource[O](): Source[O] = {
+    require(ports.allOutputs.size == 1, "Must have exaclty one sink") // TODO exactly one still undefined
+    checkUndefinedSinksAndSources(sources = Nil, sinks = ports.allOutputs, description = "Source")
+    GraphSource(this, ports.allOutputs.head, Pipe.empty[O])
   }
 
   /**
    * Creates a [[Flow]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
    * one [[UndefinedSink]] in the graph, and you need to provide them as parameters.
    */
-  def toFlow[I, O](in: UndefinedSource[I], out: UndefinedSink[O]): Flow[I, O] = {
+  def toFlow[I, O](): Flow[I, O] = {
+    // TODO in and out must be the "yet undefined ports"
+    val out = this.ports.allOutputs.head
+    val in = this.ports.allInputs.head
     checkUndefinedSinksAndSources(sources = List(in), sinks = List(out), description = "Flow")
     GraphFlow(Pipe.empty[I], in, this, out, Pipe.empty[O])
   }
@@ -1364,7 +1398,12 @@ class PartialFlowGraph private[akka] (private[akka] val graph: DirectedGraphBuil
    * Creates a [[Sink]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
    * no [[UndefinedSink]] in the graph, and you need to provide it as a parameter.
    */
-  def toSink[I](in: UndefinedSource[I]): Sink[I] = {
+  def toSink[I](): Sink[I] = {
+    val in = ports match {
+      case port: SinkPort[I] ⇒ port.in
+      case ports: Ports ⇒ // TODO require only one is not bound yet
+        ports.allInputs.head
+    }
     checkUndefinedSinksAndSources(sources = List(in), sinks = Nil, description = "Sink")
     GraphSink(Pipe.empty[I], in, this)
   }
@@ -1541,9 +1580,27 @@ trait Ports {
   // for validating all were connected, in case we want to make sure (I'd say most common case?)
   /** INTERNAL API */
   private[stream] def allPorts: List[InternalVertex] = inputs ::: outputs
+  /** INTERNAL API */
+  private[stream] def allInputs: List[UndefinedSource[_]] = inputs
+  /** INTERNAL API */
+  private[stream] def allOutputs: List[UndefinedSink[_]] = outputs
 }
 
-object OutputPort {
-  def apply[T] = UndefinedSink[T]
+trait SourcePort[T] extends Ports {
+  val out = OutputPort[T]
+}
+object SourcePort {
+  def apply[T]() = new SourcePort[T] {}
+}
 
+trait SinkPort[T] extends Ports {
+  val in = InputPort[T]
+}
+object SinkPort {
+  def apply[T]() = new SinkPort[T] {}
+}
+
+trait FlowPorts[I, O] extends Ports with SourcePort[O] with SinkPort[I]
+object FlowPorts {
+  def apply[I, O]() = new FlowPorts[I, O] {}
 }

@@ -3,25 +3,22 @@
  */
 package akka.stream.javadsl
 
-import java.util.concurrent.Callable
-import akka.actor.{ Cancellable, ActorRef, Props }
+import akka.actor.{ ActorRef, Cancellable, Props }
 import akka.japi.Util
 import akka.stream._
-import akka.stream.scaladsl.PropsSource
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
+import akka.stream.stage.Stage
+import org.reactivestreams.{ Publisher, Subscriber }
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
-import scala.language.implicitConversions
-import akka.stream.stage.Stage
+import scala.language.{ higherKinds, implicitConversions }
 
 /** Java API */
 object Source {
 
-  import scaladsl.JavaConverters._
+  import akka.stream.scaladsl.JavaConverters._
 
   /** Adapt [[scaladsl.Source]] for use within JavaDSL */
   def adapt[O](source: scaladsl.Source[O]): Source[O] =
@@ -188,7 +185,7 @@ class Source[+Out](delegate: scaladsl.Source[Out]) {
    * @tparam S materialized type of the given Sink
    */
   def runWith[S](sink: KeyedSink[Out, S], materializer: FlowMaterializer): S =
-    asScala.runWith(sink.asScala)(materializer).asInstanceOf[S]
+    asScala.runWith(sink.asScala)(materializer)
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value

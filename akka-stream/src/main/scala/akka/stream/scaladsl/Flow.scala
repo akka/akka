@@ -53,15 +53,15 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    */
   def concat(second: Source[In]): Flow[In, Out] = {
     Flow() { b ⇒
-      val concatter = Concat[Out]
-      val source = UndefinedSource[In]
-      val sink = UndefinedSink[Out]
+      ports ⇒
+        import ports._
+        import FlowGraphImplicits._
 
-      b.addEdge(source, this, concatter.first)
-        .addEdge(second, this, concatter.second)
-        .addEdge(concatter.out, sink)
+        val concatter = Concat[Out]
 
-      source → sink
+        b.addEdge(in, this, concatter.first)
+          .addEdge(second, this, concatter.second)
+          .addEdge(concatter.out, out)
     }
   }
 
@@ -96,20 +96,24 @@ object Flow {
    * Creates a `Flow` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def apply[I, O]()(block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] =
-    createFlowFromBuilder(new FlowGraphBuilder(), block)
+  def apply[I, O]()(block: FlowGraphBuilder ⇒ FlowPorts[I, O] ⇒ Unit): Flow[I, O] = {
+    val builder = new FlowGraphBuilder()
+    val ports = FlowPorts[I, O]()
+    block(builder)(ports)
+    //    builder.partialBuild(ports).toFlow()
+    builder.partialBuildFlow(ports).toFlow()
+  }
 
   /**
    * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def apply[I, O](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] =
-    createFlowFromBuilder(new FlowGraphBuilder(graph), block)
-
-  private def createFlowFromBuilder[I, O](builder: FlowGraphBuilder,
-                                          block: FlowGraphBuilder ⇒ (UndefinedSource[I], UndefinedSink[O])): Flow[I, O] = {
-    val (in, out) = block(builder)
-    builder.partialBuild().toFlow(in, out)
+  def apply[P <: Ports, I, O](graph: PartialFlowGraph[P])(block: FlowGraphBuilder ⇒ FlowPorts[I, O] ⇒ Unit): Flow[I, O] = {
+    val builder = new FlowGraphBuilder(graph)
+    val ports = FlowPorts[I, O]()
+    block(builder)(ports)
+    // TODO validate all P ports are connected
+    builder.partialBuildFlow(ports).toFlow()
   }
 
   /**

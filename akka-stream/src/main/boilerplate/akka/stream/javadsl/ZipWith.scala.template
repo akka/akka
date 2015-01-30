@@ -4,7 +4,6 @@
 package akka.stream.javadsl
 
 import akka.stream.scaladsl
-import akka.stream.javadsl.japi
 
 object ZipWith {
 

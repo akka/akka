@@ -139,34 +139,27 @@ object Source {
   def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T): TickSource[T] =
     TickSource(initialDelay, interval, tick)
 
-  //  /**
-  //   * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
-  //   * returns the `UndefinedSink`.
-  //   */
-  //  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
-  //    createSourceFromBuilder(new FlowGraphBuilder(), block)
-
   /**
    * Creates a `Source` by using an empty [[FlowGraphBuilder]] on a block that expects a [[FlowGraphBuilder]] and
    * returns the `UndefinedSink`.
    */
-  def apply[T]()(block: FlowGraphBuilder ⇒ UndefinedSink[T] ⇒ Unit): Source[T] = {
-    val out = UndefinedSink[T]
+  def apply[T]()(block: FlowGraphBuilder ⇒ SourcePort[T] ⇒ Unit): Source[T] = {
+    val out = SourcePort[T]()
     val builder = new FlowGraphBuilder()
-    block(builder)(out)
-    builder.partialBuild().toSource(out)
+    block(builder)(out) // TODO pass in maybe the undefined right away, not the ports object
+    builder.partialBuild(out).toSource()
   }
 
   /**
    * Creates a `Source` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSink`.
    */
-  def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] =
-    createSourceFromBuilder(new FlowGraphBuilder(graph), block)
-
-  private def createSourceFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSink[T]): Source[T] = {
-    val out = block(builder)
-    builder.partialBuild().toSource(out)
+  def apply[P <: Ports, T](graph: PartialFlowGraph[P])(block: FlowGraphBuilder ⇒ SourcePort[T] ⇒ Unit): Source[T] = {
+    val out = SourcePort[T]()
+    val builder = new FlowGraphBuilder(graph)
+    block(builder)(out)
+    // TODO require all ports except the source port are bound
+    builder.partialBuild(out).toSource()
   }
 
   /**

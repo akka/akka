@@ -59,10 +59,10 @@ class FlowMapBenchmark {
 
   @Setup
   def setup() {
-    val settings = MaterializerSettings(system)
+    val settings = ActorFlowMaterializerSettings(system)
       .withInputBuffer(initialInputBufferSize, 16)
 
-    materializer = FlowMaterializer(settings)
+    materializer = ActorFlowMaterializer(settings)
 
     flow = mkMaps(Source(data100k), numberOfMapOps)(identity)
   }
