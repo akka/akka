@@ -72,6 +72,7 @@ object ExecutionContexts {
    */
   private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
     override protected def unbatchedExecute(runnable: Runnable): Unit = runnable.run()
+    override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
     override def reportFailure(t: Throwable): Unit =
       throw new IllegalStateException("exception in sameThreadExecutionContext", t)
   }

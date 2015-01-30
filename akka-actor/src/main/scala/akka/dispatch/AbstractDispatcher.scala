@@ -5,21 +5,20 @@
 package akka.dispatch
 
 import java.util.concurrent._
-import akka.event.Logging.{ Debug, Error, LogEventException }
+import java.{ util ⇒ ju }
+
 import akka.actor._
 import akka.dispatch.sysmsg._
-import akka.event.{ BusLogging, EventStream }
-import com.typesafe.config.{ ConfigFactory, Config }
-import akka.util.{ Unsafe, Index }
+import akka.event.EventStream
+import akka.event.Logging.{ Debug, Error, LogEventException }
+import akka.util.{ Index, Unsafe }
+import com.typesafe.config.Config
+
 import scala.annotation.tailrec
-import scala.concurrent.forkjoin.{ ForkJoinTask, ForkJoinPool }
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContext
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.forkjoin.{ ForkJoinPool, ForkJoinTask }
 import scala.util.control.NonFatal
-import scala.util.Try
-import java.{ util ⇒ ju }
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 
@@ -84,8 +83,8 @@ private[akka] object MessageDispatcher {
 
 abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator) extends AbstractMessageDispatcher with BatchingExecutor with ExecutionContextExecutor {
 
-  import MessageDispatcher._
-  import AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
+  import akka.dispatch.AbstractMessageDispatcher.{ inhabitantsOffset, shutdownScheduleOffset }
+  import akka.dispatch.MessageDispatcher._
   import configurator.prerequisites
 
   val mailboxes = prerequisites.mailboxes
@@ -137,7 +136,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
    * Detaches the specified actor instance from this dispatcher
    */
   final def detach(actor: ActorCell): Unit = try unregister(actor) finally ifSensibleToDoSoThenScheduleShutdown()
-
+  final protected def resubmitOnBlock: Boolean = true // We want to avoid starvation
   final override protected def unbatchedExecute(r: Runnable): Unit = {
     val invocation = TaskInvocation(eventStream, r, taskCleanup)
     addInhabitants(+1)
@@ -403,7 +402,7 @@ object ForkJoinExecutorConfigurator {
 }
 
 class ForkJoinExecutorConfigurator(config: Config, prerequisites: DispatcherPrerequisites) extends ExecutorServiceConfigurator(config, prerequisites) {
-  import ForkJoinExecutorConfigurator._
+  import akka.dispatch.ForkJoinExecutorConfigurator._
 
   def validate(t: ThreadFactory): ForkJoinPool.ForkJoinWorkerThreadFactory = t match {
     case correct: ForkJoinPool.ForkJoinWorkerThreadFactory ⇒ correct
