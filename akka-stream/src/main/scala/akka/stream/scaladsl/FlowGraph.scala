@@ -1336,7 +1336,7 @@ object PartialFlowGraph {
     partial
   }
 
-  private def apply[P <: Ports](ports: Ports, builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph[P] = {
+  private def apply[P <: Ports, P2 <: Ports](ports: P2, builder: FlowGraphBuilder)(block: FlowGraphBuilder ⇒ P ⇒ Unit): PartialFlowGraph[P2] = {
     // FlowGraphBuilder does a full import on the passed graph, so no defensive copy needed
     block(builder)
     val partial = builder.partialBuild(ports)
@@ -1379,7 +1379,7 @@ class PartialFlowGraph[P <: Ports] private[akka] (
   def toSource[O](): Source[O] = {
     require(ports.allOutputs.size == 1, "Must have exaclty one sink") // TODO exactly one still undefined
     checkUndefinedSinksAndSources(sources = Nil, sinks = ports.allOutputs, description = "Source")
-    GraphSource(this, ports.allOutputs.head, Pipe.empty[O])
+    GraphSource(this.asInstanceOf[PartialFlowGraph[SourcePort[O]]], Pipe.empty[O]) // TODO MAKE IT SAFE
   }
 
   /**
@@ -1388,10 +1388,12 @@ class PartialFlowGraph[P <: Ports] private[akka] (
    */
   def toFlow[I, O](): Flow[I, O] = {
     // TODO in and out must be the "yet undefined ports"
-    val out = this.ports.allOutputs.head
-    val in = this.ports.allInputs.head
+    // TODO no other ports can be not attached 
+    val in = this.ports.allInputs.head.asInstanceOf[UndefinedSource[I]]
+    val out = this.ports.allOutputs.head.asInstanceOf[UndefinedSink[O]]
+
     checkUndefinedSinksAndSources(sources = List(in), sinks = List(out), description = "Flow")
-    GraphFlow(Pipe.empty[I], in, this, out, Pipe.empty[O])
+    GraphFlow(Pipe.empty[I], in, this.asInstanceOf[PartialFlowGraph[FlowPorts[Any, O]]], out, Pipe.empty[O]) // TODO UNSAFE?
   }
 
   /**
@@ -1399,13 +1401,14 @@ class PartialFlowGraph[P <: Ports] private[akka] (
    * no [[UndefinedSink]] in the graph, and you need to provide it as a parameter.
    */
   def toSink[I](): Sink[I] = {
+    // TODO not safe again, its a P, but we must expose SinkPort[I]
     val in = ports match {
       case port: SinkPort[I] ⇒ port.in
       case ports: Ports ⇒ // TODO require only one is not bound yet
         ports.allInputs.head
     }
     checkUndefinedSinksAndSources(sources = List(in), sinks = Nil, description = "Sink")
-    GraphSink(Pipe.empty[I], in, this)
+    GraphSink(Pipe.empty[I], this.asInstanceOf[PartialFlowGraph[SinkPort[I]]]) // TODO UNSAFE
   }
 
   private def checkUndefinedSinksAndSources(sources: List[UndefinedSource[_]], sinks: List[UndefinedSink[_]], description: String): Unit = {
@@ -1462,6 +1465,16 @@ object FlowGraphImplicits {
     def ~>(sink: Sink[Out])(implicit builder: FlowGraphBuilder): Unit =
       builder.addEdge(source, sink)
   }
+  
+  implicit class SinkOps[In](val sink: Sink[In]) extends AnyVal {
+    def ~>(undefined: UndefinedSink[In])(implicit builder: FlowGraphBuilder): Unit =
+      builder.attachSink(undefined, sink)
+  }
+  
+  implicit class FlowOps[In, Out](val flow: Flow[In, Out]) extends AnyVal {
+    def ~>(sink: Sink[Out])(implicit builder: FlowGraphBuilder): Sink[In] =
+      flow.to(sink)
+  }
 
   class SourceNextStep[In, Out](source: Source[In], flow: Flow[In, Out], builder: FlowGraphBuilder) {
     def ~>[O](otherflow: Flow[Out, O]): SourceNextStep[In, O] =
@@ -1478,7 +1491,7 @@ object FlowGraphImplicits {
     def ~>(sink: Sink[Out]): Unit =
       builder.addEdge(source, flow, sink)
   }
-
+  
   implicit class JunctionOps[In](val junction: JunctionOutPort[In]) extends AnyVal {
     def ~>[Out](flow: Flow[In, Out])(implicit builder: FlowGraphBuilder): JunctionNextStep[In, Out] =
       new JunctionNextStep(junction, flow, builder)
@@ -1557,6 +1570,7 @@ trait Ports {
   private var outputs: List[UndefinedSink[_]] = Nil
 
   // TODO: input / output words match "Ports" nicely, but maybe keeping undefinedSource adds "less words"?
+  // TODO could be inner class, so we can use path dependents on those...
   protected def InputPort[T]: UndefinedSource[T] = {
     val port = UndefinedSource[T]
     inputs = port :: inputs

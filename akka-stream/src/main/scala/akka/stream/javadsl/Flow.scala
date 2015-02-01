@@ -37,9 +37,10 @@ object Flow {
    * returns the `UndefinedSource` and `UndefinedSink`.
    */
   def create[I, O](block: japi.Function[FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl.Flow() { b ⇒
-      val pair = block.apply(b.asJava)
-      pair.first.asScala → pair.second.asScala
+    val sFlow = scaladsl.Flow[I, O]() { b ⇒
+      p ⇒
+        val pair = block.apply(b.asJava)
+        pair.first.asScala → pair.second.asScala // TODO still old api
     }
     new javadsl.Flow[I, O](sFlow)
   }
@@ -48,12 +49,8 @@ object Flow {
    * Creates a `Flow` by using a [[FlowGraphBuilder]] from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource` and `UndefinedSink`.
    */
-  def create[P <: Ports, I, O](graph: PartialFlowGraph[P], block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
-    val sFlow = scaladsl.Flow(graph.asScala) { b ⇒
-      val pair = block.apply(b.asJava)
-      pair.first.asScala → pair.second.asScala
-    }
-    new Flow[I, O](sFlow)
+  def create[I, O](graph: PartialFlowGraph, block: japi.Function[javadsl.FlowGraphBuilder, akka.japi.Pair[UndefinedSource[I], UndefinedSink[O]]]): Flow[I, O] = {
+    ??? // TODO implement this
   }
 
   /**

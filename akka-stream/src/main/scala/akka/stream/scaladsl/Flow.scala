@@ -52,7 +52,7 @@ trait Flow[-In, +Out] extends FlowOps[Out] {
    * the first element emitted by the given ("second") source is emitted after the last element of this Flow.
    */
   def concat(second: Source[In]): Flow[In, Out] = {
-    Flow() { b ⇒
+    Flow[In, Out]() { b ⇒
       ports ⇒
         import ports._
         import FlowGraphImplicits._

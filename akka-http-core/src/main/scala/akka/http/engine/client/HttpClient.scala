@@ -57,9 +57,6 @@ private[http] object HttpClient {
                                     +------------+
     */
 
-    val requestIn = UndefinedSource[HttpRequest]
-    val responseOut = UndefinedSink[HttpResponse]
-
     val methodBypassFanout = Broadcast[HttpRequest]
     val responseParsingMerge = new ResponseParsingMerge(rootParser)
 
@@ -91,7 +88,10 @@ private[http] object HttpClient {
 
     import FlowGraphImplicits._
 
-    Flow() { implicit b ⇒
+    Flow[HttpRequest, HttpResponse]() { implicit b ⇒ p ⇒
+      val requestIn = p.in
+      val responseOut = p.out
+      
       requestIn ~> methodBypassFanout ~> terminationMerge.requestInput ~> requestRendering ~> transportFlow ~>
         responseParsingMerge.dataInput ~> responsePrep ~> terminationFanout ~> responseOut
       methodBypassFanout ~> methodBypass ~> responseParsingMerge.methodBypassInput

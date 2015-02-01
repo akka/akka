@@ -192,13 +192,12 @@ object Source {
    * source.
    */
   def concat[T](source1: Source[T], source2: Source[T]): Source[T] = {
-    val concat = Concat[T]
-    Source() { b ⇒
-      output ⇒
+    Source[T]() { b ⇒
+      port ⇒
+        val concat = Concat[T]
         b.addEdge(source1, Pipe.empty[T], concat.first)
           .addEdge(source2, Pipe.empty[T], concat.second)
-          .addEdge(concat.out, Pipe.empty[T], output)
-        output
+          .addEdge(concat.out, Pipe.empty[T], port.out) // TODO pass in `out` instead of ports perhaps?
     }
   }
 

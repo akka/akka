@@ -51,12 +51,13 @@ object Sink {
    * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource`.
    */
-  def apply[T](graph: PartialFlowGraph)(block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] =
-    createSinkFromBuilder(new FlowGraphBuilder(graph), block)
-
-  private def createSinkFromBuilder[T](builder: FlowGraphBuilder, block: FlowGraphBuilder ⇒ UndefinedSource[T]): Sink[T] = {
-    val in = block(builder)
-    builder.partialBuild().toSink(in)
+  def apply[P <: Ports, T](graph: PartialFlowGraph[P])(block: FlowGraphBuilder ⇒ P ⇒ UndefinedSource[T]): Sink[T] = {
+    val builder = new FlowGraphBuilder(graph)
+    val ports = graph.ports
+    val out = block(builder)(ports)
+    val sink = builder.partialBuild(ports).toSink()
+    // should be able to validate the out == sink.in
+    sink
   }
 
   /**

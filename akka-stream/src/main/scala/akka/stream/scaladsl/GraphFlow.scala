@@ -41,7 +41,7 @@ private[scaladsl] object GraphFlow {
 private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
   inPipe: Pipe[In, CIn],
   in: UndefinedSource[CIn],
-  graph: PartialFlowGraph[_], // Todo right types?
+  graph: PartialFlowGraph[FlowPorts[CIn, COut]], // Todo right types?
   out: UndefinedSink[COut],
   outPipe: Pipe[COut, Out])
   extends Flow[In, Out] {
@@ -54,7 +54,7 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
     b.allowCycles() // FIXME: remove after #16571 is cleared
     val (nIn, nOut) = remap(b)
     b.attachSource(nIn, pipe.appendPipe(inPipe))
-    GraphSource(b.partialBuild(graph.ports), nOut, outPipe) // todo wrong
+    GraphSource(b.partialBuild(graph.ports), outPipe) // todo wrong
   }
 
   private[scaladsl] def remap(builder: FlowGraphBuilder): (UndefinedSource[CIn], UndefinedSink[COut]) = {
@@ -73,19 +73,21 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
   def via[T](flow: Flow[Out, T]): Flow[In, T] = flow match {
     case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
     case gFlow: GraphFlow[Out, _, _, T] ⇒
-      val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
-        b.allowCycles() // FIXME: remove after #16571 is cleared
-        val (oIn, oOut) = gFlow.remap(b)
-        b.connect(out, outPipe.via(gFlow.inPipe), oIn)
-        ???
-        //        (b.partialBuild(), oOut)
-      }
-      GraphFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
+      ??? // TODO IMPLEMENT ME
+    //      val newGraph = PartialFlowGraph(graph) { b ⇒ 
+    //        b.allowCycles() // FIXME: remove after #16571 is cleared
+    //        val (oIn, oOut) = gFlow.remap(b)
+    //        b.connect(out, outPipe.via(gFlow.inPipe), oIn)
+    //        ???
+    //        //        (b.partialBuild(), oOut)
+    //      }
+    //      newGraph
+    //      GraphFlow(inPipe, in, newGraph, nOut, gFlow.outPipe)
     case x ⇒ FlowGraphInternal.throwUnsupportedValue(x)
   }
 
   override def to(sink: Sink[Out]) =
-    ???
+    ??? // TODO IMPLEMENT ME
   //    sink match {
   //    case sinkPipe: SinkPipe[Out] ⇒
   //      val newGraph = PartialFlowGraph(this.graph) { builder ⇒
@@ -103,7 +105,7 @@ private[scaladsl] final case class GraphFlow[-In, CIn, COut, +Out](
   //  }
 
   override def join(flow: Flow[Out, In]): RunnableFlow =
-    ???
+    ??? // TODO IMPLEMENT ME
   //    flow match {
   //    case pipe: Pipe[Out, In] ⇒ FlowGraph(graph) { b ⇒
   //      b.connect(out, outPipe.via(pipe).via(inPipe), in, joining = true)
@@ -146,31 +148,35 @@ private[scaladsl] final case class GraphSource[COut, +Out](
     builder.connect(nOut, outPipe, oIn)
   }
 
-  override def via[T](flow: Flow[Out, T]): Source[T] = flow match {
-    case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
-    case gFlow: GraphFlow[Out, _, _, T] ⇒
-      val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
-          b.allowCycles() // FIXME: remove after #16571 is cleared
-          val (oIn, oOut) = gFlow.remap(b)
-          b.connect(out, outPipe.via(gFlow.inPipe), oIn)
-          (b.partialBuild(), oOut)
-      }
-      GraphSource(newGraph, nOut, gFlow.outPipe)
-  }
+  override def via[T](flow: Flow[Out, T]): Source[T] =
+    ???
+  //    flow match {
+  //    case pipe: Pipe[Out, T] ⇒ copy(outPipe = outPipe.appendPipe(pipe))
+  //    case gFlow: GraphFlow[Out, _, _, T] ⇒
+  //      val (newGraph, nOut) = FlowGraphBuilder(graph) { b ⇒
+  //          b.allowCycles() // FIXME: remove after #16571 is cleared
+  //          val (oIn, oOut) = gFlow.remap(b)
+  //          b.connect(out, outPipe.via(gFlow.inPipe), oIn)
+  //          (b.partialBuild(), oOut)
+  //      }
+  //      GraphSource(newGraph, nOut, gFlow.outPipe)
+  //  }
 
-  override def to(sink: Sink[Out]): RunnableFlow = sink match {
-    case sinkPipe: SinkPipe[Out] ⇒
-      FlowGraph(this.graph) { implicit builder ⇒
-        builder.attachSink(out, outPipe.to(sinkPipe))
-      }
-    case gSink: GraphSink[Out, _] ⇒
-      FlowGraph(graph) { b ⇒
-        val oIn = gSink.remap(b)
-        b.connect(out, outPipe.via(gSink.inPipe), oIn)
-      }
-    case sink: Sink[Out] ⇒
-      to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
-  }
+  override def to(sink: Sink[Out]): RunnableFlow =
+    ???
+  //    sink match {
+  //    case sinkPipe: SinkPipe[Out] ⇒
+  //      FlowGraph(this.graph) { implicit builder ⇒
+  //        builder.attachSink(out, outPipe.to(sinkPipe))
+  //      }
+  //    case gSink: GraphSink[Out, _] ⇒
+  //      FlowGraph(graph) { b ⇒
+  //        val oIn = gSink.remap(b)
+  //        b.connect(out, outPipe.via(gSink.inPipe), oIn)
+  //      }
+  //    case sink: Sink[Out] ⇒
+  //      to(Pipe.empty.withSink(sink)) // recursive, but now it is a SinkPipe
+  //  }
 
   // FIXME #16379 This key will be materalized to early
   override def withKey(key: Key[_]): Source[Out] = this.copy(outPipe = outPipe.withKey(key))
@@ -192,9 +198,10 @@ private[scaladsl] final case class GraphSink[-In, CIn](
   }
 
   private[scaladsl] def prepend(pipe: SourcePipe[In]): FlowGraph = {
-    FlowGraph(this.graph) { b ⇒
-      b.attachSource(graph.ports.in, pipe.via(inPipe))
-    }
+    ??? // TODO IMPLEMENT ME
+    //    FlowGraph(this.graph) { b ⇒
+    //      b.attachSource(graph.ports.in, pipe.via(inPipe))
+    //    }
   }
 
   private[scaladsl] def prepend[T](pipe: Pipe[T, In]): GraphSink[T, CIn] = {

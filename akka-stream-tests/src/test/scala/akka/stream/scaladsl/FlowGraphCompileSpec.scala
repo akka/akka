@@ -21,8 +21,14 @@ object FlowGraphCompileSpec {
 
 class FlowGraphCompileSpec extends AkkaSpec {
   import FlowGraphCompileSpec._
+  import FlowGraphImplicits._
 
   implicit val mat = ActorFlowMaterializer()
+
+  val noPorts = new Ports {
+    private[akka] override def validateAllIncluded(graph: FlowGraphLike): Unit = ()
+    override def toString = "NoPorts"
+  }
 
   def op[In, Out]: () ⇒ PushStage[In, Out] = { () ⇒
     new PushStage[In, Out] {
@@ -236,10 +242,12 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build partial flow graphs" in {
+      import FlowGraphImplicits._
+
       val ports = new Ports {
-        val undefinedSource1 = InputPort[String]
-        val undefinedSource2 = InputPort[String]
-        val undefinedSink1 = OutputPort[String]
+        val undefinedSource1: UndefinedSource[String] = InputPort[String]
+        val undefinedSource2: UndefinedSource[String] = InputPort[String]
+        val undefinedSink1: UndefinedSink[String] = OutputPort[String]
       }
       val bcast = Broadcast[String]
 
@@ -260,29 +268,29 @@ class FlowGraphCompileSpec extends AkkaSpec {
 
       val partial2 = PartialFlowGraph(partial1, ports2) { implicit b ⇒
         ports ⇒ ports2 ⇒
-          import FlowGraphImplicits._
           in1 ~> ports.undefinedSource1
           in2 ~> ports.undefinedSource2
+          f1 ~> out1 ~> ports.undefinedSink1
           bcast ~> f5 ~> ports2.undefinedSink2
       }
       partial2.undefinedSources should be(Set.empty)
-      partial2.undefinedSinks should be(Set(partial2.ports.undefinedSink1, partial2.ports.undefinedSink2))
+      partial2.undefinedSinks should be(Set(partial2.ports.undefinedSink2))
 
       FlowGraph(partial2) { b ⇒
-        b.attachSink(undefinedSink1, out1)
-        b.attachSink(undefinedSink2, out2)
+        p ⇒
+          out2 ~> p.undefinedSink2
       }.run()
 
       FlowGraph(partial2) { b ⇒
-        b.attachSink(undefinedSink1, f1.to(out1))
-        b.attachSink(undefinedSink2, f2.to(out2))
+        p ⇒
+          f2 ~> out2 ~> p.undefinedSink2 // b.attachSink(undefinedSink2, f2.to(out2))
       }.run()
 
-      FlowGraph(partial1) { implicit b ⇒
+      FlowGraph(partial1) { implicit b ⇒ p ⇒
         import FlowGraphImplicits._
-        b.attachSink(undefinedSink1, f1.to(out1))
-        b.attachSource(undefinedSource1, Source(List("a", "b", "c")).via(f1))
-        b.attachSource(undefinedSource2, Source(List("d", "e", "f")).via(f2))
+        b.attachSink(p.undefinedSink1, f1.to(out1))
+        b.attachSource(p.undefinedSource1, Source(List("a", "b", "c")).via(f1))
+        b.attachSource(p.undefinedSource2, Source(List("d", "e", "f")).via(f2))
         bcast ~> f5 ~> out2
       }.run()
     }
@@ -373,41 +381,42 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build with implicits and variance" in {
-      PartialFlowGraph { implicit b ⇒
-        val inA = Source(PublisherProbe[Fruit]())
-        val inB = Source(PublisherProbe[Apple]())
-        val outA = Sink(SubscriberProbe[Fruit]())
-        val outB = Sink(SubscriberProbe[Fruit]())
-        val merge = Merge[Fruit]
-        val unzip = Unzip[Int, String]
-        val whatever = Sink.publisher[Any]
-        import FlowGraphImplicits._
-        Source[Fruit](apples) ~> merge
-        Source[Apple](apples) ~> merge
-        inA ~> merge
-        inB ~> merge
-        inA ~> Flow[Fruit].map(identity) ~> merge
-        inB ~> Flow[Apple].map(identity) ~> merge
-        UndefinedSource[Apple] ~> merge
-        UndefinedSource[Apple] ~> Flow[Fruit].map(identity) ~> merge
-        UndefinedSource[Apple] ~> Flow[Apple].map(identity) ~> merge
-        merge ~> Flow[Fruit].map(identity) ~> outA
+      PartialFlowGraph(noPorts) { implicit b ⇒
+        p ⇒
+          val inA = Source(PublisherProbe[Fruit]())
+          val inB = Source(PublisherProbe[Apple]())
+          val outA = Sink(SubscriberProbe[Fruit]())
+          val outB = Sink(SubscriberProbe[Fruit]())
+          val merge = Merge[Fruit]
+          val unzip = Unzip[Int, String]
+          val whatever = Sink.publisher[Any]
+          import FlowGraphImplicits._
+          Source[Fruit](apples) ~> merge
+          Source[Apple](apples) ~> merge
+          inA ~> merge
+          inB ~> merge
+          inA ~> Flow[Fruit].map(identity) ~> merge
+          inB ~> Flow[Apple].map(identity) ~> merge
+          UndefinedSource[Apple] ~> merge
+          UndefinedSource[Apple] ~> Flow[Fruit].map(identity) ~> merge
+          UndefinedSource[Apple] ~> Flow[Apple].map(identity) ~> merge
+          merge ~> Flow[Fruit].map(identity) ~> outA
 
-        Source[Apple](apples) ~> Broadcast[Apple] ~> merge
-        Source[Apple](apples) ~> Broadcast[Apple] ~> outB
-        Source[Apple](apples) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
-        inB ~> Broadcast[Apple] ~> merge
+          Source[Apple](apples) ~> Broadcast[Apple] ~> merge
+          Source[Apple](apples) ~> Broadcast[Apple] ~> outB
+          Source[Apple](apples) ~> Broadcast[Apple] ~> UndefinedSink[Fruit]
+          inB ~> Broadcast[Apple] ~> merge
 
-        Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.right ~> whatever
-        unzip.left ~> UndefinedSink[Any]
+          Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
+          unzip.right ~> whatever
+          unzip.left ~> UndefinedSink[Any]
 
-        "UndefinedSource[Fruit] ~> Flow[Apple].map(identity) ~> merge" shouldNot compile
-        "UndefinedSource[Fruit] ~> Broadcast[Apple]" shouldNot compile
-        "merge ~> Broadcast[Apple]" shouldNot compile
-        "merge ~> Flow[Fruit].map(identity) ~> Broadcast[Apple]" shouldNot compile
-        "inB ~> merge ~> Broadcast[Apple]" shouldNot compile
-        "inA ~> Broadcast[Apple]" shouldNot compile
+          "UndefinedSource[Fruit] ~> Flow[Apple].map(identity) ~> merge" shouldNot compile
+          "UndefinedSource[Fruit] ~> Broadcast[Apple]" shouldNot compile
+          "merge ~> Broadcast[Apple]" shouldNot compile
+          "merge ~> Flow[Fruit].map(identity) ~> Broadcast[Apple]" shouldNot compile
+          "inB ~> merge ~> Broadcast[Apple]" shouldNot compile
+          "inA ~> Broadcast[Apple]" shouldNot compile
       }
     }
 
@@ -444,57 +453,52 @@ class FlowGraphCompileSpec extends AkkaSpec {
     }
 
     "build all combinations with implicits" when {
+      import FlowGraphImplicits._
 
       "Source is connected directly" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          Source.empty[Int] ~> Flow[Int]
-          Source.empty[Int] ~> Broadcast[Int]
-          Source.empty[Int] ~> Sink.ignore
-          Source.empty[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            Source.empty[Int] ~> Flow[Int]
+            Source.empty[Int] ~> Broadcast[Int]
+            Source.empty[Int] ~> Sink.ignore
+            Source.empty[Int] ~> UndefinedSink[Int]
         }
       }
 
       "Source is connected through flow" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          Source.empty[Int] ~> Flow[Int] ~> Flow[Int]
-          Source.empty[Int] ~> Flow[Int] ~> Broadcast[Int]
-          Source.empty[Int] ~> Flow[Int] ~> Sink.ignore
-          Source.empty[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            Source.empty[Int] ~> Flow[Int] ~> Flow[Int]
+            Source.empty[Int] ~> Flow[Int] ~> Broadcast[Int]
+            Source.empty[Int] ~> Flow[Int] ~> Sink.ignore
+            Source.empty[Int] ~> Flow[Int] ~> UndefinedSink[Int]
         }
       }
 
       "Junction is connected directly" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          Broadcast[Int] ~> Flow[Int]
-          Broadcast[Int] ~> Broadcast[Int]
-          Broadcast[Int] ~> Sink.ignore
-          Broadcast[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            Broadcast[Int] ~> Flow[Int]
+            Broadcast[Int] ~> Broadcast[Int]
+            Broadcast[Int] ~> Sink.ignore
+            Broadcast[Int] ~> UndefinedSink[Int]
         }
       }
 
       "Junction is connected through flow" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          Broadcast[Int] ~> Flow[Int] ~> Flow[Int]
-          Broadcast[Int] ~> Flow[Int] ~> Broadcast[Int]
-          Broadcast[Int] ~> Flow[Int] ~> Sink.ignore
-          Broadcast[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            Broadcast[Int] ~> Flow[Int] ~> Flow[Int]
+            Broadcast[Int] ~> Flow[Int] ~> Broadcast[Int]
+            Broadcast[Int] ~> Flow[Int] ~> Sink.ignore
+            Broadcast[Int] ~> Flow[Int] ~> UndefinedSink[Int]
         }
       }
 
       "Junction is connected through GraphFlow" in {
         val gflow = Flow[Int, String]() { implicit builder ⇒
-          import FlowGraphImplicits._
-
-          val in = UndefinedSource[Int]
-          val out = UndefinedSink[String]
-
-          in ~> Flow[Int].map(_.toString) ~> out
-
-          (in, out)
+          p ⇒
+            p.in ~> Flow[Int].map(_.toString) ~> p.out
         }
 
         val sink = Sink.fold[Int, Int](0)(_ + _)
@@ -512,63 +516,60 @@ class FlowGraphCompileSpec extends AkkaSpec {
       }
 
       "UndefinedSource is connected directly" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          UndefinedSource[Int] ~> Flow[Int]
-          UndefinedSource[Int] ~> Broadcast[Int]
-          UndefinedSource[Int] ~> Sink.ignore
-          UndefinedSource[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            UndefinedSource[Int] ~> Flow[Int]
+            UndefinedSource[Int] ~> Broadcast[Int]
+            UndefinedSource[Int] ~> Sink.ignore
+            UndefinedSource[Int] ~> UndefinedSink[Int]
         }
       }
 
       "UndefinedSource is connected through flow" in {
-        PartialFlowGraph { implicit b ⇒
-          import FlowGraphImplicits._
-          UndefinedSource[Int] ~> Flow[Int] ~> Flow[Int]
-          UndefinedSource[Int] ~> Flow[Int] ~> Broadcast[Int]
-          UndefinedSource[Int] ~> Flow[Int] ~> Sink.ignore
-          UndefinedSource[Int] ~> Flow[Int] ~> UndefinedSink[Int]
+        PartialFlowGraph(noPorts) { implicit b ⇒
+          p ⇒
+            UndefinedSource[Int] ~> Flow[Int] ~> Flow[Int]
+            UndefinedSource[Int] ~> Flow[Int] ~> Broadcast[Int]
+            UndefinedSource[Int] ~> Flow[Int] ~> Sink.ignore
+            UndefinedSource[Int] ~> Flow[Int] ~> UndefinedSink[Int]
         }
       }
 
     }
 
-    "build partial with only undefined sources and sinks" in {
-      PartialFlowGraph { b ⇒
-        b.addEdge(UndefinedSource[String], f1, UndefinedSink[String])
-      }
-      PartialFlowGraph { b ⇒
-        b.addEdge(UndefinedSource[String], f1, out1)
-      }
-      PartialFlowGraph { b ⇒
-        b.addEdge(in1, f1, UndefinedSink[String])
-      }
-    }
-
     "support interconnect between two partial flow graphs" in {
-      val output1 = UndefinedSink[String]
-      val output2 = UndefinedSink[String]
-      val partial1 = PartialFlowGraph { implicit b ⇒
-        import FlowGraphImplicits._
-        val bcast = Broadcast[String]
-        in1 ~> bcast ~> output1
-        bcast ~> output2
+      val ports1 = new Ports {
+        val output1 = OutputPort[String]
+        val output2 = OutputPort[String]
       }
 
-      val input1 = UndefinedSource[String]
-      val input2 = UndefinedSource[String]
-      val partial2 = PartialFlowGraph { implicit b ⇒
-        import FlowGraphImplicits._
-        val merge = Merge[String]
-        input1 ~> merge ~> out1
-        input2 ~> merge
+      val partial1 = PartialFlowGraph(ports1) { implicit b ⇒
+        p ⇒
+          val bcast = Broadcast[String]
+          in1 ~> bcast ~> p.output1
+          bcast ~> p.output2
       }
 
-      FlowGraph { b ⇒
+      val ports2 = new Ports {
+        val input1 = InputPort[String]
+        val input2 = InputPort[String]
+      }
+      val partial2 = PartialFlowGraph(ports2) { implicit b ⇒
+        p ⇒
+          val merge = Merge[String]
+          p.input1 ~> merge ~> out1
+          p.input2 ~> merge
+      }
+
+      FlowGraph { implicit b ⇒
         b.importPartialFlowGraph(partial1)
         b.importPartialFlowGraph(partial2)
-        b.connect(output1, f1, input1)
-        b.connect(output2, f2, input2)
+
+        //        partial1.ports.output1 ~> f1 ~> partial2.ports.input1
+        //        partial1.ports.output2 ~> f2 ~> partial2.ports.input2
+
+        b.connect(partial1.ports.output1, f1, partial2.ports.input1)
+        b.connect(partial1.ports.output2, f2, partial2.ports.input2)
       }.run()
     }
 

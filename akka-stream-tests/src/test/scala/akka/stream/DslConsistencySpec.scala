@@ -28,8 +28,8 @@ class DslConsistencySpec extends WordSpec with Matchers {
   val jFlowGraphClass = classOf[akka.stream.javadsl.FlowGraph]
   val sFlowGraphClass = classOf[akka.stream.scaladsl.FlowGraph]
 
-  val jPartialFlowGraphClass = classOf[akka.stream.javadsl.PartialFlowGraph]
-  val sPartialFlowGraphClass = classOf[akka.stream.scaladsl.PartialFlowGraph]
+  val jPartialFlowGraphClass = classOf[akka.stream.javadsl.PartialFlowGraph] // TODO [_] soon...
+  val sPartialFlowGraphClass = classOf[akka.stream.scaladsl.PartialFlowGraph[_]]
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++

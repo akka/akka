@@ -571,7 +571,7 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
     new javadsl.FlowGraph(b.build())
 
   /** Build the [[PartialFlowGraph]] but do not materialize it. */
-  def buildPartial[P <: JPorts](ports: P): javadsl.PartialFlowGraph[P] =
+  def buildPartial[P <: Ports](ports: P): javadsl.PartialFlowGraph =
     new PartialFlowGraph(b.partialBuild(ports))
 
   /** Build the [[FlowGraph]] and materialize it. */
@@ -580,12 +580,12 @@ class FlowGraphBuilder(b: scaladsl.FlowGraphBuilder) {
 
 }
 
-class PartialFlowGraph[P <: JPorts](delegate: scaladsl.PartialFlowGraph[P]) {
+class PartialFlowGraph(delegate: scaladsl.PartialFlowGraph[_]) {
   import akka.stream.scaladsl.JavaConverters._
 
   import collection.JavaConverters._
 
-  def asScala: scaladsl.PartialFlowGraph[P] = delegate
+  def asScala: scaladsl.PartialFlowGraph[_] = delegate
 
   def undefinedSources(): java.util.Set[UndefinedSource[Any]] =
     delegate.undefinedSources.map(s ⇒ s.asJava).asJava
@@ -598,21 +598,23 @@ class PartialFlowGraph[P <: JPorts](delegate: scaladsl.PartialFlowGraph[P]) {
    * no [[UndefinedSource]] in the graph, and you need to provide it as a parameter.
    */
   def toSource[O](out: javadsl.UndefinedSink[O]): javadsl.Source[O] =
-    delegate.toSource().asJava
+    delegate.toSource[O]().asJava
 
   /**
    * Creates a [[Flow]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
    * one [[UndefinedSink]] in the graph, and you need to provide them as parameters.
    */
   def toFlow[I, O](in: javadsl.UndefinedSource[I], out: javadsl.UndefinedSink[O]): Flow[I, O] =
-    delegate.toFlow(in.asScala, out.asScala).asJava
+    ??? // TODO pending
+  //    delegate.toFlow(in.asScala, out.asScala).asJava
 
   /**
    * Creates a [[Sink]] from this `PartialFlowGraph`. There needs to be only one [[UndefinedSource]] and
    * no [[UndefinedSink]] in the graph, and you need to provide it as a parameter.
    */
   def toSink[I](in: UndefinedSource[I]): javadsl.Sink[I] =
-    delegate.toSink(in.asScala).asJava
+    ??? // TODO pending
+  //    delegate.toSink(in.asScala).asJava
 
 }
 
@@ -628,4 +630,4 @@ class FlowGraph(delegate: scaladsl.FlowGraph) extends RunnableFlow {
     delegate.runWith(key.asScala)(materializer)
 }
 
-abstract class JPorts extends scaladsl.Ports
+abstract class Ports extends scaladsl.Ports

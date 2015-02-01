@@ -43,14 +43,15 @@ object Sink {
    * returns the `UndefinedSource`.
    */
   def create[T]()(block: japi.Procedure2[FlowGraphBuilder, UndefinedSource[T]]): Sink[T] =
-    new Sink(scaladsl.Sink.apply() { b ⇒ in ⇒ block.apply(b.asJava, in.asJava) })
+    new Sink[T](scaladsl.Sink[T]() { b ⇒ p ⇒ block.apply(b.asJava, p.in.asJava) })
 
   /**
    * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects
    * a [[FlowGraphBuilder]] and returns the `UndefinedSource`.
    */
   def create[T](graph: PartialFlowGraph, block: japi.Function[FlowGraphBuilder, UndefinedSource[T]]): Sink[T] =
-    new Sink[T](scaladsl.Sink.apply(graph.asScala) { b ⇒ block.apply(b.asJava).asScala })
+    ??? // TODO NEEDS TYPED JAVA PARTIAL GRAPHS
+  //    new Sink[T](scaladsl.Sink(graph.asScala.) { b ⇒ block.apply(b.asJava).asScala })
 
   /**
    * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
@@ -132,7 +133,7 @@ class Sink[-In](delegate: scaladsl.Sink[In]) {
    * @tparam T materialized type of given Source
    */
   def runWith[T](source: javadsl.KeyedSource[In, T], materializer: FlowMaterializer): T =
-    asScala.runWith(source.asScala)(materializer).asInstanceOf[T]
+    asScala.runWith(source.asScala)(materializer)
 
   /**
    * Connect this `Sink` to a `Source` and run it.

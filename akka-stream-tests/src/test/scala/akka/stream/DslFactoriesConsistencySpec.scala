@@ -41,7 +41,7 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       (classOf[akka.stream.scaladsl.KeyedSink[_, _]],      classOf[akka.stream.javadsl.KeyedSink[_, _]]) ::
       (classOf[akka.stream.scaladsl.Flow[_, _]],        classOf[akka.stream.javadsl.Flow[_, _]]) ::
       (classOf[akka.stream.scaladsl.FlowGraph],         classOf[akka.stream.javadsl.FlowGraph]) ::
-      (classOf[akka.stream.scaladsl.PartialFlowGraph],  classOf[akka.stream.javadsl.PartialFlowGraph]) ::
+      (classOf[akka.stream.scaladsl.PartialFlowGraph[_]],  classOf[akka.stream.javadsl.PartialFlowGraph]) :: // TODO [_] javadsl soon
       Nil
   // format: ON
 

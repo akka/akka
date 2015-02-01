@@ -89,20 +89,18 @@ private[http] object HttpServer {
         .flatten(FlattenStrategy.concat)
         .section(name("errorLogger"))(_.transform(() ⇒ errorLogger(log, "Outgoing response stream error")))
 
-    val transportIn = UndefinedSource[ByteString]
-    val transportOut = UndefinedSink[ByteString]
-
     import FlowGraphImplicits._
 
-    Flow() { implicit b ⇒
+    Flow[ByteString, ByteString]() { implicit b ⇒ p ⇒
+      val transportIn = p.in
+      val transportOut = p.out
+      
       //FIXME: the graph is unnecessary after fixing #15957
       transportIn ~> requestParsing ~> bypassFanout ~> requestPreparation ~> serverFlow ~> bypassMerge.applicationInput ~> rendererPipeline ~> transportOut
       bypassFanout ~> bypass ~> bypassMerge.bypassInput
       oneHundredContinueSource ~> bypassMerge.oneHundredContinueInput
 
       b.allowCycles()
-
-      transportIn -> transportOut
     }
   }
 
