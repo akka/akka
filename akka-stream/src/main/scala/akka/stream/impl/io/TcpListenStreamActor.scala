@@ -8,7 +8,6 @@ import scala.concurrent.{ Future, Promise }
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.actor.Stash
 import akka.io.{ IO, Tcp }
 import akka.io.Tcp._
 import akka.stream.{ FlowMaterializer, ActorFlowMaterializerSettings }
@@ -40,7 +39,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
                                          unbindPromise: Promise[() ⇒ Future[Unit]],
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
                                          bindCmd: Tcp.Bind, settings: ActorFlowMaterializerSettings) extends Actor
-  with Pump with Stash with ActorLogging {
+  with Pump with ActorLogging {
   import context.system
 
   object primaryOutputs extends SimpleOutputs(self, pump = this) {
@@ -130,13 +129,11 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     }
   }
 
-  final override def receive = {
-    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
-    case ep: ExposedPublisher ⇒
+  final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
+    override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
       primaryOutputs.subreceive(ep)
       context become activeReceive
-      unstashAll()
-    case _ ⇒ stash()
+    }
   }
 
   def activeReceive: Actor.Receive = primaryOutputs.subreceive orElse incomingConnections.subreceive

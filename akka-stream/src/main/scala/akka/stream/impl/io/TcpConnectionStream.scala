@@ -13,7 +13,6 @@ import akka.io.Tcp._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.StreamTcpException
 import org.reactivestreams.Processor
-import akka.actor.Stash
 import akka.stream.impl._
 import akka.actor.ActorLogging
 
@@ -37,7 +36,7 @@ private[akka] object TcpStreamActor {
 /**
  * INTERNAL API
  */
-private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings) extends Actor with Stash
+private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerSettings) extends Actor
   with ActorLogging {
 
   import TcpStreamActor._
@@ -169,13 +168,11 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     override protected def pumpFailed(e: Throwable): Unit = fail(e)
   }
 
-  final override def receive = {
-    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
-    case ep: ExposedPublisher ⇒
+  final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
+    override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
       primaryOutputs.subreceive(ep)
       context become activeReceive
-      unstashAll()
-    case _ ⇒ stash()
+    }
   }
 
   def activeReceive =
