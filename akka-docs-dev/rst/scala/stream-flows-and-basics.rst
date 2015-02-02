@@ -126,12 +126,13 @@ The source of data, referred to as ``Publisher`` in Reactive Streams terminology
 Streams, guarantees that it will never emit more elements than the received total demand for any given ``Subscriber``.
 
 .. note::
-   The Reactive Streams specification defines its protocol in terms of ``Publishers`` and ``Subscriber``s.
+
+   The Reactive Streams specification defines its protocol in terms of ``Publisher`` and ``Subscriber``.
    These types are **not** meant to be user facing API, instead they serve as the low level building blocks for
    different Reactive Streams implementations.
 
-   Akka Streams implements these concepts as ``Source``s, ``Flow``s (referred to as ``Processor`` in Reactive Streams)
-   and ``Sink``s without exposing the Reactive Streams interfaces directly.
+   Akka Streams implements these concepts as ``Source``, ``Flow`` (referred to as ``Processor`` in Reactive Streams)
+   and ``Sink`` without exposing the Reactive Streams interfaces directly.
    If you need to integrate with other Reactive Stream libraries read :ref:`reactive-streams-integration-scala`.
 
 The mode in which Reactive Streams back-pressure works can be colloquially described as "dynamic push / pull mode",
