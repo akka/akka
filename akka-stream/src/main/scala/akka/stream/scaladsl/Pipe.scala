@@ -51,9 +51,9 @@ private[akka] final case class Pipe[-In, +Out](ops: List[AstNode], keys: List[Ke
   }
 
   override def to(sink: Sink[Out]): Sink[In] = sink match {
-    case sp: SinkPipe[Out]     ⇒ sp.prependPipe(this)
+    case sp: SinkPipe[Out]           ⇒ sp.prependPipe(this)
     case gs: GraphBackedSink[Out, _] ⇒ gs.prepend(this)
-    case d: Sink[Out]          ⇒ this.withSink(d)
+    case d: Sink[Out]                ⇒ this.withSink(d)
   }
 
   override def join(flow: Flow[Out, In]): RunnableFlow = flow match {
@@ -99,9 +99,9 @@ private[stream] final case class SourcePipe[+Out](input: Source[_], ops: List[As
   }
 
   override def to(sink: Sink[Out]): RunnableFlow = sink match {
-    case sp: SinkPipe[Out]    ⇒ RunnablePipe(input, sp.output, sp.ops ::: ops, keys ::: sp.keys) // FIXME raw addition of AstNodes
+    case sp: SinkPipe[Out]          ⇒ RunnablePipe(input, sp.output, sp.ops ::: ops, keys ::: sp.keys) // FIXME raw addition of AstNodes
     case g: GraphBackedSink[Out, _] ⇒ g.prepend(this)
-    case d: Sink[Out]         ⇒ this.withSink(d)
+    case d: Sink[Out]               ⇒ this.withSink(d)
   }
 
   override def withKey(key: Key[_]): SourcePipe[Out] = SourcePipe(input, ops, keys :+ key)
