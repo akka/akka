@@ -23,11 +23,13 @@ private[akka] object SubscriberManagement {
   }
 
   object Completed extends EndOfStream {
-    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onComplete()
+    import ReactiveStreamsCompliance._
+    def apply[T](subscriber: Subscriber[T]): Unit = tryOnComplete(subscriber)
   }
 
   final case class ErrorCompleted(cause: Throwable) extends EndOfStream {
-    def apply[T](subscriber: Subscriber[T]): Unit = subscriber.onError(cause)
+    import ReactiveStreamsCompliance._
+    def apply[T](subscriber: Subscriber[T]): Unit = tryOnError(subscriber, cause)
   }
 
   val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down Publisher"))
@@ -37,9 +39,11 @@ private[akka] object SubscriberManagement {
  * INTERNAL API
  */
 private[akka] trait SubscriptionWithCursor[T] extends Subscription with ResizableMultiReaderRingBuffer.Cursor {
+  import ReactiveStreamsCompliance._
+
   def subscriber: Subscriber[_ >: T]
 
-  def dispatch(element: T): Unit = subscriber.onNext(element)
+  def dispatch(element: T): Unit = tryOnNext(subscriber, element)
 
   var active = true
 

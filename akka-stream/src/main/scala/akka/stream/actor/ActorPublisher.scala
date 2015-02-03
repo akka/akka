@@ -199,8 +199,9 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber ⇒
       lifecycleState = Completed
       if (subscriber ne null) // otherwise onComplete will be called when the subscription arrives
-        tryOnComplete(subscriber)
-      subscriber = null // not used after onComplete
+        try tryOnComplete(subscriber) finally {
+          subscriber = null // not used after onComplete
+        }
     case Completed ⇒
       throw new IllegalStateException("onComplete must only be called once")
     case _: ErrorEmitted ⇒
@@ -216,8 +217,8 @@ trait ActorPublisher[T] extends Actor {
     case Active | PreSubscriber ⇒
       lifecycleState = ErrorEmitted(cause)
       if (subscriber ne null) // otherwise onError will be called when the subscription arrives
-        tryOnError(subscriber, cause)
-      subscriber = null // not used after onError
+        try tryOnError(subscriber, cause) finally
+          subscriber = null // not used after onError
     case _: ErrorEmitted ⇒
       throw new IllegalStateException("onError must only be called once")
     case Completed ⇒
@@ -249,7 +250,7 @@ trait ActorPublisher[T] extends Actor {
           scheduledSubscriptionTimeout.cancel()
           subscriber = sub
           lifecycleState = Active
-          sub.onSubscribe(new ActorPublisherSubscription(self))
+          tryOnSubscribe(sub, new ActorPublisherSubscription(self))
         case ErrorEmitted(cause) ⇒ tryOnError(sub, cause)
         case Completed           ⇒ tryOnComplete(sub)
         case Active | Canceled ⇒
@@ -321,8 +322,8 @@ trait ActorPublisher[T] extends Actor {
    */
   protected[akka] override def aroundPostStop(): Unit = {
     state.remove(self)
-    if (lifecycleState == Active) tryOnComplete(subscriber)
-    super.aroundPostStop()
+    try if (lifecycleState == Active) tryOnComplete(subscriber)
+    finally super.aroundPostStop()
   }
 
 }
