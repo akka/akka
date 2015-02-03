@@ -195,7 +195,7 @@ object FlexiRoute {
 
     /**
      * When an output cancels it continues with remaining outputs.
-     * Error or completion from upstream are immediately propagated.
+     * Failure or completion from upstream are immediately propagated.
      */
     def defaultCompletionHandling: CompletionHandling[In] =
       new CompletionHandling[In] {
@@ -207,7 +207,7 @@ object FlexiRoute {
 
     /**
      * Completes as soon as any output cancels.
-     * Error or completion from upstream are immediately propagated.
+     * Failure or completion from upstream are immediately propagated.
      */
     def eagerClose[A]: CompletionHandling[In] =
       new CompletionHandling[In] {

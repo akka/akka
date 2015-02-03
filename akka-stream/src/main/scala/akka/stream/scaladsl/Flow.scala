@@ -416,7 +416,7 @@ trait FlowOps[+Out] {
    *
    * [[akka.stream.TransformerLike#onError]] is called when failure is signaled from upstream.
    *
-   * After normal completion or error the [[akka.stream.TransformerLike#cleanup]] function is called.
+   * After normal completion or failure the [[akka.stream.TransformerLike#cleanup]] function is called.
    *
    * It is possible to keep state in the concrete [[akka.stream.Transformer]] instance with
    * ordinary instance variables. The [[akka.stream.Transformer]] is executed by an actor and

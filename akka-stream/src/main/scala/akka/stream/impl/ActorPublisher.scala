@@ -49,7 +49,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
     @tailrec def doSubscribe(subscriber: Subscriber[_ >: T]): Unit = {
       val current = pendingSubscribers.get
       if (current eq null)
-        reportSubscribeError(subscriber)
+        reportSubscribeFailure(subscriber)
       else {
         if (pendingSubscribers.compareAndSet(current, subscriber +: current))
           impl ! wakeUpMsg
@@ -71,13 +71,13 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
     shutdownReason = reason
     pendingSubscribers.getAndSet(null) match {
       case null    ⇒ // already called earlier
-      case pending ⇒ pending foreach reportSubscribeError
+      case pending ⇒ pending foreach reportSubscribeFailure
     }
   }
 
   @volatile private var shutdownReason: Option[Throwable] = None
 
-  private def reportSubscribeError(subscriber: Subscriber[_ >: T]): Unit =
+  private def reportSubscribeFailure(subscriber: Subscriber[_ >: T]): Unit =
     shutdownReason match {
       case Some(e) ⇒ subscriber.onError(e)
       case None    ⇒ subscriber.onComplete()

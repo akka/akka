@@ -25,7 +25,7 @@ private[akka] abstract class TransformerLike[-T, +U] {
    * end-of-stream event.
    *
    * This method is only called if [[#onError]] does not throw an exception. The default implementation
-   * of [[#onError]] throws the received cause forcing the error to propagate downstream immediately.
+   * of [[#onError]] throws the received cause forcing the failure to propagate downstream immediately.
    *
    * @param e Contains a non-empty option with the error causing the termination or an empty option
    *          if the Transformer was completed normally
@@ -40,7 +40,7 @@ private[akka] abstract class TransformerLike[-T, +U] {
   def onError(cause: Throwable): Unit = throw cause
 
   /**
-   * Invoked after normal completion or error.
+   * Invoked after normal completion or failure.
    */
   def cleanup(): Unit = ()
 
