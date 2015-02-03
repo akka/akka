@@ -17,6 +17,7 @@ import akka.pattern.pipe
 import org.reactivestreams.Subscriber
 import org.reactivestreams.Subscription
 import akka.actor.DeadLetterSuppression
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -42,7 +43,7 @@ private[akka] object FuturePublisher {
  * INTERNAL API
  */
 // FIXME why do we need to have an actor to drive a Future?
-private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMaterializerSettings) extends Actor with SoftShutdown {
+private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMaterializerSettings) extends Actor {
   import akka.stream.impl.FuturePublisher.FutureSubscription
   import akka.stream.impl.FuturePublisher.FutureSubscription.Cancel
   import akka.stream.impl.FuturePublisher.FutureSubscription.RequestMore
@@ -102,17 +103,22 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
 
   def pushToAll(): Unit = subscriptionsReadyForPush foreach { subscription ⇒ push(subscriptions(subscription)) }
 
-  def push(subscriber: Subscriber[Any]): Unit = futureValue match {
-    case Some(Success(value)) ⇒
-
-      tryOnNext(subscriber, value)
-      tryOnComplete(subscriber)
-      removeSubscriber(subscriber)
-    case Some(Failure(t)) ⇒
-      tryOnError(subscriber, t)
-      removeSubscriber(subscriber)
-    case None ⇒ // not completed yet
-  }
+  def push(subscriber: Subscriber[Any]): Unit =
+    futureValue match {
+      case Some(someValue) ⇒ try someValue match {
+        case Success(value) ⇒
+          tryOnNext(subscriber, value)
+          tryOnComplete(subscriber)
+        case Failure(t) ⇒
+          shutdownReason = Some(t)
+          tryOnError(subscriber, t)
+      } catch {
+        case _: SpecViolation ⇒ // continue
+      } finally {
+        removeSubscriber(subscriber)
+      }
+      case None ⇒ // not completed yet
+    }
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
     if (subscribers.contains(subscriber)) // FIXME this is not legal AFAICT, needs to check identity, not equality
@@ -132,7 +138,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
     subscribers -= subscriber
     if (subscribers.isEmpty) {
       exposedPublisher.shutdown(shutdownReason)
-      softShutdown()
+      context.stop(self)
     }
   }
 

@@ -129,11 +129,12 @@ private[akka] class IteratorPublisher(iterator: Iterator[Any], settings: ActorFl
       case Unitialized | Initialized | Cancelled ⇒
         if (exposedPublisher ne null) exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
       case Completed ⇒
-        tryOnComplete(subscriber)
         exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+        tryOnComplete(subscriber)
       case Errored(e) ⇒
-        tryOnError(subscriber, e)
         exposedPublisher.shutdown(Some(e))
+        if (!e.isInstanceOf[SpecViolation])
+          tryOnError(subscriber, e)
     }
     // if onComplete or onError throws we let normal supervision take care of it,
     // see reactive-streams specification rule 2:13
