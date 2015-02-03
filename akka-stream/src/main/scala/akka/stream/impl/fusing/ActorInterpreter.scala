@@ -149,6 +149,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
  */
 private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boolean, log: LoggingAdapter)
   extends BoundaryStage {
+  import ReactiveStreamsCompliance._
 
   private var exposedPublisher: ActorPublisher[Any] = _
 
@@ -163,14 +164,14 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
 
   private def onNext(elem: Any): Unit = {
     downstreamDemand -= 1
-    subscriber.onNext(elem)
+    tryOnNext(subscriber, elem)
   }
 
   private def complete(): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
-      if (subscriber ne null) subscriber.onComplete()
       if (exposedPublisher ne null) exposedPublisher.shutdown(None)
+      if (subscriber ne null) tryOnComplete(subscriber)
     }
   }
 
@@ -179,8 +180,8 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
       downstreamCompleted = true
       if (debugLogging)
         log.debug("fail due to: {}", e.getMessage)
-      if (subscriber ne null) subscriber.onError(e)
       if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
+      if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
     }
   }
 
@@ -211,8 +212,9 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
     subscribers foreach { sub ⇒
       if (subscriber eq null) {
         subscriber = sub
-        subscriber.onSubscribe(new ActorSubscription(actor, subscriber))
-      } else sub.onError(new IllegalStateException(s"${Logging.simpleName(this)} ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
+        tryOnSubscribe(subscriber, new ActorSubscription(actor, subscriber))
+      } else
+        tryOnError(sub, new IllegalStateException(s"${Logging.simpleName(this)} ${SupportsOnlyASingleSubscriber}"))
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {

@@ -40,6 +40,7 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
                                          flowSubscriber: Subscriber[StreamTcp.IncomingConnection],
                                          bindCmd: Tcp.Bind, settings: ActorFlowMaterializerSettings) extends Actor
   with Pump with ActorLogging {
+  import ReactiveStreamsCompliance._
   import context.system
 
   object primaryOutputs extends SimpleOutputs(self, pump = this) {
@@ -89,8 +90,8 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
         val ex = BindFailedException
         localAddressPromise.failure(ex)
         unbindPromise.failure(ex)
-        flowSubscriber.onError(ex)
-        fail(ex)
+        try tryOnError(flowSubscriber, ex)
+        finally fail(ex)
     }
 
     def running: Receive = {
