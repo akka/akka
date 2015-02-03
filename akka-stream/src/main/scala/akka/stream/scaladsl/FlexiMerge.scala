@@ -89,7 +89,7 @@ object FlexiMerge {
    * fulfilled when there are elements for *all* of the given upstream
    * inputs.
    *
-   * The emited element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
+   * The emitted element the will be a [[ReadAllInputs]] object, which contains values for all non-cancelled inputs of this FlexiMerge.
    *
    * Cancelled inputs are not used, i.e. it is allowed to specify them in the list of `inputs`,
    * the resulting [[ReadAllInputs]] will then not contain values for this element, which can be
@@ -119,23 +119,25 @@ object FlexiMerge {
     def initialCompletionHandling: CompletionHandling = defaultCompletionHandling
 
     /**
-     * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+     * Context that is passed to the `onInput` function of [[State]].
      * The context provides means for performing side effects, such as emitting elements
      * downstream.
      */
-    trait MergeLogicContext {
+    trait MergeLogicContext extends MergeLogicContextBase {
       /**
-       * @return `true` if at least one element has been requested by downstream (output).
-       */
-      def isDemandAvailable: Boolean
-
-      /**
-       * Emit one element downstream. It is only allowed to `emit` when
-       * [[#isDemandAvailable]] is `true`, otherwise `IllegalArgumentException`
+       * Emit one element downstream. It is only allowed to `emit` zero or one
+       * element in response to `onInput`, otherwise `IllegalStateException`
        * is thrown.
        */
       def emit(elem: Out): Unit
+    }
 
+    /**
+     * Context that is passed to the functions of [[State]] and [[CompletionHandling]].
+     * The context provides means for performing side effects, such as completing
+     * the stream successfully or with failure.
+     */
+    trait MergeLogicContextBase {
       /**
        * Complete this stream successfully. Upstream subscriptions will be cancelled.
        */
@@ -161,7 +163,7 @@ object FlexiMerge {
      * Definition of which inputs to read from and how to act on the read elements.
      * When an element has been read [[#onInput]] is called and then it is ensured
      * that downstream has requested at least one element, i.e. it is allowed to
-     * emit at least one element downstream with [[MergeLogicContext#emit]].
+     * emit at most one element downstream with [[MergeLogicContext#emit]].
      *
      * The `onInput` function is called when an `element` was read from the `input`.
      * The function returns next behavior or [[#SameState]] to keep current behavior.
@@ -188,17 +190,20 @@ object FlexiMerge {
      *
      * The `onUpstreamFinish` function is called when an upstream input was completed successfully.
      * It returns next behavior or [[#SameState]] to keep current behavior.
-     * A completion can be propagated downstream with [[MergeLogicContext#finish]],
+     * A completion can be propagated downstream with [[MergeLogicContextBase#finish]],
      * or it can be swallowed to continue with remaining inputs.
      *
      * The `onUpstreamFailure` function is called when an upstream input was completed with failure.
      * It returns next behavior or [[#SameState]] to keep current behavior.
-     * A failure can be propagated downstream with [[MergeLogicContext#fail]],
+     * A failure can be propagated downstream with [[MergeLogicContextBase#fail]],
      * or it can be swallowed to continue with remaining inputs.
+     *
+     * It is not possible to emit elements from the completion handling, since completion
+     * handlers may be invoked at any time (without regard to downstream demand being available).
      */
     sealed case class CompletionHandling(
-      onUpstreamFinish: (MergeLogicContext, InputHandle) ⇒ State[_],
-      onUpstreamFailure: (MergeLogicContext, InputHandle, Throwable) ⇒ State[_])
+      onUpstreamFinish: (MergeLogicContextBase, InputHandle) ⇒ State[_],
+      onUpstreamFailure: (MergeLogicContextBase, InputHandle, Throwable) ⇒ State[_])
 
     /**
      * Will continue to operate until a read becomes unsatisfiable, then it completes.
@@ -227,6 +232,8 @@ object FlexiMerge {
  *
  * The concrete subclass must implement [[#createMergeLogic]] to define the [[FlexiMerge#MergeLogic]]
  * that will be used when reading input elements and emitting output elements.
+ * As response to an input element it is allowed to emit at most one output element.
+ *
  * The [[FlexiMerge#MergeLogic]] instance may be stateful, but the ``FlexiMerge`` instance
  * must not hold mutable state, since it may be shared across several materialized ``FlowGraph``
  * instances.

@@ -203,6 +203,9 @@ completion or errors to the merges downstream stage.
 The state function must always return the next behaviour to be used when an element should be pulled from its upstreams,
 we use the special :class:`SameState` object which signals :class:`FlexiMerge` that no state transition is needed.
 
+.. note::
+  As response to an input element it is allowed to emit at most one output element.
+
 Implementing Zip-like merges
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 More complex fan-in junctions may require not only multiple States but also sharing state between those states.
@@ -254,6 +257,9 @@ to this stages downstream effectively shutting down the stream.
 
 In case you want to change back to the default completion handling, it is available as ``MergeLogic#defaultCompletionHandling``.
 
+It is not possible to emit elements from the completion handling, since completion
+handlers may be invoked at any time (without regard to downstream demand being available).
+
 Using FlexiRoute
 ----------------
 Similarily to using :class:`FlexiMerge`, implementing custom fan-out stages requires extending the :class:`FlexiRoute` class
@@ -284,12 +290,15 @@ of the tuple to the ``right`` stream. Notice that since we are emitting values o
 the type parameter of this ``State[_]`` must be set to ``Any``. This type can be utilised more efficiently when a junction
 is emitting the same type of element to its downstreams e.g. in all *strictly routing* stages.
 
-The state function must always return the next behaviour to be used when an element should be emited,
+The state function must always return the next behaviour to be used when an element should be emitted,
 we use the special :class:`SameState` object which signals :class:`FlexiRoute` that no state transition is needed.
 
 .. warning::
   While a :class:`RouteLogic` instance *may* be stateful, the :class:`FlexiRoute` instance
   *must not* hold any mutable state, since it may be shared across several materialized ``FlowGraph`` instances.
+  
+.. note::
+  It is only allowed to `emit` at most one element to each output in response to `onInput`, `IllegalStateException` is thrown.
 
 Completion handling
 ^^^^^^^^^^^^^^^^^^^
@@ -313,14 +322,6 @@ Notice that State changes are only allowed in reaction to downstream cancellatio
 cases. This is because since there is only one upstream, there is nothing else to do than possibly flush buffered elements
 and continue with shutting down the entire stream.
 
-Sometimes you may want to emit buffered or additional elements from the completion handler when the stream is shutting down.
-However calling ``ctx.emit`` is only legal when the stream we emit to *has demand available*. In normal operation,
-this is guaranteed by properly using demand conditions, however as completion handlers may be invokead at any time (without
-regard to downstream demand being available) we must explicitly check that the downstream has demand available before signalling it.
+It is not possible to emit elements from the completion handling, since completion
+handlers may be invoked at any time (without regard to downstream demand being available).
 
-The completion strategy below assumes that we have implemented some kind of :class:`FlexiRoute` which buffers elements,
-yet when its upstream completes it should drain as much as possible to its downstream ``out`` output port. We use the
-``ctx.isDemandAvailable(outputHandle)`` method to make sure calling emit with the buffered elements is valid and
-complete this flushing once all demand (or the buffer) is drained:
-
-.. includecode:: code/docs/stream/FlexiDocSpec.scala#flexiroute-completion-upstream-completed-signalling
