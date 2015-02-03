@@ -55,7 +55,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   override protected def shutdown(completed: Boolean): Unit = {
     if (exposedPublisher ne null) {
       if (completed) exposedPublisher.shutdown(None)
-      else exposedPublisher.shutdown(Some(new IllegalStateException("Cannot subscribe to shutdown publisher")))
+      else exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
     }
     afterShutdown()
   }

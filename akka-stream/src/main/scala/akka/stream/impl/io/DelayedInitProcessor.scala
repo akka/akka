@@ -10,16 +10,18 @@ import org.reactivestreams.Subscriber
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
+import akka.stream.impl.ReactiveStreamsCompliance
 
 /**
  * INTERNAL API
  */
 private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[I, O]])(implicit ec: ExecutionContext) extends Processor[I, O] {
+  import ReactiveStreamsCompliance._
   @volatile private var impl: Processor[I, O] = _
   private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
 
   override def onSubscribe(s: Subscription): Unit = setVarFuture.onComplete {
-    case Success(x) ⇒ x.onSubscribe(s)
+    case Success(x) ⇒ tryOnSubscribe(x, s)
     case Failure(_) ⇒ s.cancel()
   }
 

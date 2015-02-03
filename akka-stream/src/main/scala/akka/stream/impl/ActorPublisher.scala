@@ -16,7 +16,7 @@ import org.reactivestreams.Subscription
  * INTERNAL API
  */
 private[akka] object ActorPublisher {
-  class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down spi.Publisher") with NoStackTrace
+  class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down Publisher") with NoStackTrace
   val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
 
   def apply[T](impl: ActorRef): ActorPublisher[T] = {
@@ -35,6 +35,7 @@ private[akka] object ActorPublisher {
  * ActorRef! If you don't need to subclass, prefer the apply() method on the companion object which takes care of this.
  */
 private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
+  import ReactiveStreamsCompliance._
 
   // The subscriber of an subscription attempt is first placed in this list of pending subscribers.
   // The actor will call takePendingSubscribers to remove it from the list when it has received the
@@ -78,9 +79,16 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
   @volatile private var shutdownReason: Option[Throwable] = None
 
   private def reportSubscribeFailure(subscriber: Subscriber[_ >: T]): Unit =
-    shutdownReason match {
-      case Some(e) ⇒ subscriber.onError(e)
-      case None    ⇒ subscriber.onComplete()
+    try shutdownReason match {
+      case Some(e: SpecViolation) ⇒ // ok, not allowed to call onError
+      case Some(e) ⇒
+        if (shutdownReason eq ActorPublisher.NormalShutdownReason)
+          (new RuntimeException("BOOM")).printStackTrace()
+
+        tryOnError(subscriber, e)
+      case None ⇒ tryOnComplete(subscriber)
+    } catch {
+      case _: SpecViolation ⇒ // nothing to do
     }
 
 }

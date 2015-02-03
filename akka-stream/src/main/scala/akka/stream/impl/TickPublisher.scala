@@ -43,7 +43,7 @@ private[akka] object TickPublisher {
  * otherwise the tick element is dropped.
  */
 private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: FiniteDuration, tick: Any,
-                                  settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean) extends Actor with SoftShutdown {
+                                  settings: ActorFlowMaterializerSettings, cancelled: AtomicBoolean) extends Actor {
   import akka.stream.impl.TickPublisher.TickPublisherSubscription._
   import akka.stream.impl.TickPublisher._
   import ReactiveStreamsCompliance._
@@ -122,9 +122,10 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
   override def postStop(): Unit = {
     tickTask.foreach(_.cancel)
     cancelled.set(true)
-    if (subscriber ne null) tryOnComplete(subscriber)
     if (exposedPublisher ne null)
       exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+    if (subscriber ne null)
+      tryOnComplete(subscriber)
   }
 }
 
