@@ -4,7 +4,6 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicReference }
-
 import akka.stream.FlowMaterializer
 import akka.stream.impl.Ast
 import akka.stream.impl.Ast.FanInAstNode
@@ -12,8 +11,8 @@ import akka.stream.impl.{ DirectedGraphBuilder, Edge }
 import akka.stream.impl.Ast.Defaults._
 import akka.stream.scaladsl.OperationAttributes._
 import org.reactivestreams._
-
 import scala.language.existentials
+import akka.stream.impl.ReactiveStreamsCompliance
 
 /**
  * Fan-in and fan-out vertices in the [[FlowGraph]] implements
@@ -528,43 +527,45 @@ private[akka] object FlowGraphInternal {
   final class IdentityProcessor extends Processor[Any, Any] {
     import akka.stream.actor.ActorSubscriber.OnSubscribe
     import akka.stream.actor.ActorSubscriberMessage._
+    import ReactiveStreamsCompliance._
 
     @volatile private var subscriber: Subscriber[Any] = null
     private val state = new AtomicReference[AnyRef]()
 
     override def onSubscribe(s: Subscription) =
-      if (subscriber != null) subscriber.onSubscribe(s)
+      if (subscriber != null) tryOnSubscribe(subscriber, s)
       else state.getAndSet(OnSubscribe(s)) match {
-        case sub: Subscriber[Any] ⇒ sub.onSubscribe(s)
-        case _                    ⇒
+        case sub: Subscriber[Any] @unchecked ⇒ tryOnSubscribe(sub, s)
+        case _                               ⇒
       }
 
     override def onError(t: Throwable) =
-      if (subscriber != null) subscriber.onError(t)
+      if (subscriber != null) tryOnError(subscriber, t)
       else state.getAndSet(OnError(t)) match {
-        case sub: Subscriber[Any] ⇒ sub.onError(t)
-        case _                    ⇒
+        case sub: Subscriber[Any] @unchecked ⇒ tryOnError(sub, t)
+        case _                               ⇒
       }
 
     override def onComplete() =
-      if (subscriber != null) subscriber.onComplete()
+      if (subscriber != null) tryOnComplete(subscriber)
       else state.getAndSet(OnComplete) match {
-        case sub: Subscriber[Any] ⇒ sub.onComplete()
-        case _                    ⇒
+        case sub: Subscriber[Any] @unchecked ⇒ tryOnComplete(sub)
+        case _                               ⇒
       }
 
     override def onNext(t: Any) =
-      if (subscriber != null) subscriber.onNext(t)
+      if (subscriber != null) tryOnNext(subscriber, t)
       else throw new IllegalStateException("IdentityProcessor received onNext before signaling demand")
 
     override def subscribe(sub: Subscriber[_ >: Any]) =
-      if (subscriber != null) sub.onError(new IllegalStateException("IdentityProcessor can only be subscribed to once"))
+      if (subscriber != null)
+        tryOnError(subscriber, new IllegalStateException("IdentityProcessor " + SupportsOnlyASingleSubscriber))
       else {
         subscriber = sub.asInstanceOf[Subscriber[Any]]
         if (!state.compareAndSet(null, sub)) state.get match {
-          case OnSubscribe(s) ⇒ sub.onSubscribe(s)
-          case OnError(t)     ⇒ sub.onError(t)
-          case OnComplete     ⇒ sub.onComplete()
+          case OnSubscribe(s) ⇒ tryOnSubscribe(sub, s)
+          case OnError(t)     ⇒ tryOnError(sub, t)
+          case OnComplete     ⇒ tryOnComplete(sub)
           case s              ⇒ throw new IllegalStateException(s"IdentityProcessor found unknown state $s")
         }
       }

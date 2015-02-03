@@ -4,12 +4,12 @@
 package akka.stream.impl
 
 import java.util.Arrays
-
 import akka.actor._
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnNext, OnComplete, OnError }
 import org.reactivestreams.{ Subscriber, Subscription, Processor }
+import akka.event.Logging
 
 /**
  * INTERNAL API
@@ -142,6 +142,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
  * INTERNAL API
  */
 private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends DefaultOutputTransferStates {
+  import ReactiveStreamsCompliance._
 
   protected var exposedPublisher: ActorPublisher[Any] = _
 
@@ -156,22 +157,22 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
 
   def enqueueOutputElement(elem: Any): Unit = {
     downstreamDemand -= 1
-    subscriber.onNext(elem)
+    tryOnNext(subscriber, elem)
   }
 
   def complete(): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
-      if (subscriber ne null) subscriber.onComplete()
       if (exposedPublisher ne null) exposedPublisher.shutdown(None)
+      if (subscriber ne null) tryOnComplete(subscriber)
     }
   }
 
   def cancel(e: Throwable): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
-      if (subscriber ne null) subscriber.onError(e)
       if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
+      if ((subscriber ne null) && !e.isInstanceOf[SpecViolation]) tryOnError(subscriber, e)
     }
   }
 
@@ -183,8 +184,9 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
     subscribers foreach { sub ⇒
       if (subscriber eq null) {
         subscriber = sub
-        subscriber.onSubscribe(createSubscription())
-      } else sub.onError(new IllegalStateException(s"${getClass.getSimpleName} ${ReactiveStreamsCompliance.SupportsOnlyASingleSubscriber}"))
+        tryOnSubscribe(subscriber, createSubscription())
+      } else
+        tryOnError(sub, new IllegalStateException(s"${Logging.simpleName(this)} ${SupportsOnlyASingleSubscriber}"))
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
