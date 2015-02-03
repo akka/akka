@@ -39,7 +39,7 @@ Akka Streams currently provide these junctions:
  - ``ZipWith<A,B,...,Out>`` – (n inputs (defined upfront), 1 output), which takes a function of n inputs that, given all inputs are signalled, transforms and emits 1 output,
  - ``Zip<A,B>`` – (2 inputs, 1 output), which is a :class:`ZipWith` specialised to zipping input streams of ``A`` and ``B`` into a ``Pair<A,B>`` stream,
  - ``Concat<A>`` – (2 inputs, 1 output), which enables to concatenate streams (first consume one, then the second one), thus the order of which stream is ``first`` and which ``second`` matters,
- - ``FlexiMerge<Out>`` – (n inputs, 1 output), which enables writing custom fan out elements using a simple DSL.
+ - ``FlexiMerge<Out>`` – (n inputs, 1 output), which enables writing custom fan-in elements using a simple DSL.
 
 One of the goals of the FlowGraph DSL is to look similar to how one would draw a graph on a whiteboard, so that it is
 simple to translate a design from whiteboard to code and be able to relate those two. Let's illustrate this by translating
