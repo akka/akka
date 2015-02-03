@@ -149,7 +149,7 @@ abstract class FlowMaterializer {
   /**
    * The `namePrefix` shall be used for deriving the names of processing
    * entities that are created during materialization. This is meant to aid
-   * logging and error reporting both during materialization and while the
+   * logging and failure reporting both during materialization and while the
    * stream is running.
    */
   def withNamePrefix(name: String): FlowMaterializer

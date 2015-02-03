@@ -207,7 +207,7 @@ object FlexiMerge {
 
     /**
      * Will continue to operate until a read becomes unsatisfiable, then it completes.
-     * Errors are immediately propagated.
+     * Failures are immediately propagated.
      */
     val defaultCompletionHandling: CompletionHandling = CompletionHandling(
       onUpstreamFinish = (_, _) ⇒ SameState,
@@ -215,7 +215,7 @@ object FlexiMerge {
 
     /**
      * Completes as soon as any input completes.
-     * Errors are immediately propagated.
+     * Failures are immediately propagated.
      */
     def eagerClose: CompletionHandling = CompletionHandling(
       onUpstreamFinish = (ctx, _) ⇒ { ctx.finish(); SameState },

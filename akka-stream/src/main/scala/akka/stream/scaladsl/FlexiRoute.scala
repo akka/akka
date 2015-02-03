@@ -177,7 +177,7 @@ object FlexiRoute {
 
     /**
      * When an output cancels it continues with remaining outputs.
-     * Error or completion from upstream are immediately propagated.
+     * Failure or completion from upstream are immediately propagated.
      */
     val defaultCompletionHandling: CompletionHandling = CompletionHandling(
       onUpstreamFinish = _ ⇒ (),
@@ -186,7 +186,7 @@ object FlexiRoute {
 
     /**
      * Completes as soon as any output cancels.
-     * Error or completion from upstream are immediately propagated.
+     * Failure or completion from upstream are immediately propagated.
      */
     val eagerClose: CompletionHandling = CompletionHandling(
       onUpstreamFinish = _ ⇒ (),

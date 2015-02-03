@@ -134,7 +134,7 @@ that the substreams produced by ``groupBy()`` can only complete when the origina
 that ``mapAsync()`` cannot pull for more substreams because it still waits on folding futures to finish, but these
 futures never finish if the additional group streams are not consumed. This typical deadlock situation is resolved by
 this buffer which either able to contain all the group streams (which ensures that they are already running and folding)
-or fails with an explicit error instead of a silent deadlock.
+or fails with an explicit failure instead of a silent deadlock.
 
 .. includecode:: code/docs/stream/cookbook/RecipeReduceByKey.scala#word-count
 

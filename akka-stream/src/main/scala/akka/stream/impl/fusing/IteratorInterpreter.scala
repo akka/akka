@@ -34,7 +34,7 @@ private[akka] object IteratorInterpreter {
     private var done = false
     private var nextElem: T = _
     private var needsPull = true
-    private var lastError: Throwable = null
+    private var lastFailure: Throwable = null
 
     override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
       nextElem = elem.asInstanceOf[T]
@@ -52,7 +52,7 @@ private[akka] object IteratorInterpreter {
 
     override def onUpstreamFailure(cause: Throwable, ctx: BoundaryContext): TerminationDirective = {
       done = true
-      lastError = cause
+      lastFailure = cause
       ctx.finish()
     }
 
@@ -64,13 +64,13 @@ private[akka] object IteratorInterpreter {
 
     override def hasNext: Boolean = {
       if (!done) pullIfNeeded()
-      !(done && needsPull) || (lastError ne null)
+      !(done && needsPull) || (lastFailure ne null)
     }
 
     override def next(): T = {
-      if (lastError ne null) {
-        val e = lastError
-        lastError = null
+      if (lastFailure ne null) {
+        val e = lastFailure
+        lastFailure = null
         throw e
       } else if (!hasNext)
         Iterator.empty.next()

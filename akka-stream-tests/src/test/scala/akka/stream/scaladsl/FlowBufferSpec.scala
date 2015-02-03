@@ -10,7 +10,7 @@ import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.OverflowStrategy
-import akka.stream.OverflowStrategy.Error.BufferOverflowException
+import akka.stream.OverflowStrategy.Fail.BufferOverflowException
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
 
 class FlowBufferSpec extends AkkaSpec {
@@ -155,11 +155,11 @@ class FlowBufferSpec extends AkkaSpec {
       sub.cancel()
     }
 
-    "error upstream if buffer is full and configured so" in {
+    "fail upstream if buffer is full and configured so" in {
       val publisher = StreamTestKit.PublisherProbe[Int]
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
 
-      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.error).runWith(Sink(subscriber))
+      Source(publisher).buffer(100, overflowStrategy = OverflowStrategy.fail).runWith(Sink(subscriber))
 
       val autoPublisher = new StreamTestKit.AutoPublisher(publisher)
       val sub = subscriber.expectSubscription()

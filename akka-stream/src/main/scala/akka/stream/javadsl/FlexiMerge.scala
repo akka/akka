@@ -225,7 +225,7 @@ object FlexiMerge {
 
     /**
      * Will continue to operate until a read becomes unsatisfiable, then it completes.
-     * Errors are immediately propagated.
+     * Failures are immediately propagated.
      */
     def defaultCompletionHandling[A]: CompletionHandling[Out] =
       new CompletionHandling[Out] {
@@ -239,7 +239,7 @@ object FlexiMerge {
 
     /**
      * Completes as soon as any input completes.
-     * Errors are immediately propagated.
+     * Failures are immediately propagated.
      */
     def eagerClose[A]: CompletionHandling[Out] =
       new CompletionHandling[Out] {
