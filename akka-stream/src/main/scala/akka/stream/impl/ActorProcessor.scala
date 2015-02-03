@@ -223,8 +223,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
 private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMaterializerSettings)
   extends Actor
   with ActorLogging
-  with Pump
-  with Stash {
+  with Pump {
 
   // FIXME: make pump a member
   protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.initialInputBufferSize, this) {
@@ -236,13 +235,11 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
   /**
    * Subclass may override [[#activeReceive]]
    */
-  final override def receive = {
-    // FIXME using Stash mailbox is not the best for performance, we probably want a better solution to this
-    case ep: ExposedPublisher ⇒
+  final override def receive = new ExposedPublisherReceive(activeReceive, unhandled) {
+    override def receiveExposedPublisher(ep: ExposedPublisher): Unit = {
       primaryOutputs.subreceive(ep)
       context become activeReceive
-      unstashAll()
-    case _ ⇒ stash()
+    }
   }
 
   def activeReceive: Receive = primaryInputs.subreceive orElse primaryOutputs.subreceive
