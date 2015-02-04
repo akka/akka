@@ -10,6 +10,7 @@ import akka.stream.ActorFlowMaterializerSettings
 import akka.pattern.pipe
 import akka.actor.Props
 import akka.actor.DeadLetterSuppression
+import akka.stream.Supervision
 
 /**
  * INTERNAL API
@@ -19,7 +20,7 @@ private[akka] object MapAsyncUnorderedProcessorImpl {
     Props(new MapAsyncUnorderedProcessorImpl(settings, f))
 
   final case class FutureElement(element: Any) extends DeadLetterSuppression
-  final case class FutureFailure(cause: Throwable) extends DeadLetterSuppression
+  final case class FutureFailure(in: Any, cause: Throwable) extends DeadLetterSuppression
 }
 
 /**
@@ -32,9 +33,10 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
   // Execution context for pipeTo and friends
   import context.dispatcher
 
+  val decider = settings.supervisionDecider
   var inProgressCount = 0
 
-  override def activeReceive = futureReceive orElse super.activeReceive
+  override def activeReceive = futureReceive.orElse[Any, Unit](super.activeReceive)
 
   def futureReceive: Receive = {
     case FutureElement(element) ⇒
@@ -46,8 +48,17 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
       primaryOutputs.enqueueOutputElement(element)
       pump()
 
-    case FutureFailure(cause) ⇒
-      fail(cause)
+    case FutureFailure(in, err) ⇒
+      decider(err) match {
+        case Supervision.Stop ⇒
+          fail(err)
+        case Supervision.Resume | Supervision.Restart ⇒
+          inProgressCount -= 1
+          if (settings.debugLogging)
+            log.debug("Dropped element [{}] due to mapAsyncUnordered future was completed with exception: {}",
+              in, err.getMessage)
+          pump()
+      }
   }
 
   override def onError(e: Throwable): Unit = {
@@ -66,15 +77,23 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
       nextPhase(completedPhase)
     } else if (primaryInputs.inputsAvailable && primaryOutputs.demandCount - inProgressCount > 0) {
       val elem = primaryInputs.dequeueInputElement()
-      inProgressCount += 1
       try {
-        f(elem).map(FutureElement.apply).recover {
-          case err ⇒ FutureFailure(err)
+        val future = f(elem)
+        inProgressCount += 1
+        future.map(FutureElement.apply).recover {
+          case err ⇒ FutureFailure(elem, err)
         }.pipeTo(self)
       } catch {
         case NonFatal(err) ⇒
           // f threw, propagate failure immediately
-          fail(err)
+          decider(err) match {
+            case Supervision.Stop ⇒
+              fail(err)
+            case Supervision.Resume | Supervision.Restart ⇒
+              // inProgressCount was not increased, just continue
+              if (settings.debugLogging)
+                log.debug("Dropped element [{}] due to exception from mapAsyncUnordered factory function: {}", elem, err.getMessage)
+          }
       }
     }
   }

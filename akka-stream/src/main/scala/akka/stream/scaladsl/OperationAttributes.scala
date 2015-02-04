@@ -5,6 +5,7 @@ package akka.stream.scaladsl
 
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.Ast.AstNode
+import akka.stream.Supervision
 
 /**
  * Holds attributes which can be used to alter [[Flow]] or [[FlowGraph]]
@@ -17,11 +18,10 @@ final case class OperationAttributes private (private val attributes: List[Opera
   /**
    * Adds given attributes to the end of these attributes.
    */
-  def and(other: OperationAttributes): OperationAttributes = {
-    // FIXME should return `this` if other.attributes is empty
-    // FIXME should return `other` if this is `none`
-    OperationAttributes(attributes ::: other.attributes)
-  }
+  def and(other: OperationAttributes): OperationAttributes =
+    if (attributes.isEmpty) other
+    else if (other.attributes.isEmpty) this
+    else OperationAttributes(attributes ::: other.attributes)
 
   private[akka] def nameLifted: Option[String] =
     attributes.collect {
@@ -37,6 +37,8 @@ final case class OperationAttributes private (private val attributes: List[Opera
     attributes.collect {
       case InputBuffer(initial, max) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withInputBuffer(initial, max)
       case Dispatcher(dispatcher) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withDispatcher(dispatcher)
+      case SupervisionStrategy(decider) ⇒ (s: ActorFlowMaterializerSettings) ⇒
+        s.withSupervisionStrategy(decider)
     }.reduceOption(_ andThen _).getOrElse(identity) // FIXME is this the optimal way of encoding this?
 
   private[akka] def transform(node: AstNode): AstNode =
@@ -62,6 +64,7 @@ object OperationAttributes {
   private[OperationAttributes] final case class Name(n: String) extends Attribute
   private[OperationAttributes] final case class InputBuffer(initial: Int, max: Int) extends Attribute
   private[OperationAttributes] final case class Dispatcher(dispatcher: String) extends Attribute
+  private[OperationAttributes] final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
 
   private[OperationAttributes] def apply(attribute: Attribute): OperationAttributes =
     apply(List(attribute))
@@ -82,4 +85,10 @@ object OperationAttributes {
    * Specifies the name of the dispatcher.
    */
   def dispatcher(dispatcher: String): OperationAttributes = OperationAttributes(Dispatcher(dispatcher))
+
+  /**
+   * Decides how exceptions from user are to be handled.
+   */
+  def supervisionStrategy(decider: Supervision.Decider): OperationAttributes =
+    OperationAttributes(SupervisionStrategy(decider))
 }

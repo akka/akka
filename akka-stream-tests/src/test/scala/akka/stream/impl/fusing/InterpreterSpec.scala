@@ -3,15 +3,17 @@
  */
 package akka.stream.impl.fusing
 
-import akka.stream.impl.fusing.Map
-
 import scala.util.control.NoStackTrace
+import akka.stream.Supervision
 
 class InterpreterSpec extends InterpreterSpecKit {
+  import Supervision.stoppingDecider
+  import Supervision.resumingDecider
+  import Supervision.restartingDecider
 
   "Interpreter" must {
 
-    "implement map correctly" in new TestSetup(Seq(Map((x: Int) ⇒ x + 1))) {
+    "implement map correctly" in new TestSetup(Seq(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -31,9 +33,9 @@ class InterpreterSpec extends InterpreterSpecKit {
     }
 
     "implement chain of maps correctly" in new TestSetup(Seq(
-      Map((x: Int) ⇒ x + 1),
-      Map((x: Int) ⇒ x * 2),
-      Map((x: Int) ⇒ x + 1))) {
+      Map((x: Int) ⇒ x + 1, stoppingDecider),
+      Map((x: Int) ⇒ x * 2, stoppingDecider),
+      Map((x: Int) ⇒ x + 1, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -68,7 +70,7 @@ class InterpreterSpec extends InterpreterSpecKit {
 
     "implement one-to-many many-to-one chain correctly" in new TestSetup(Seq(
       Doubler(),
-      Filter((x: Int) ⇒ x != 0))) {
+      Filter((x: Int) ⇒ x != 0, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -92,7 +94,7 @@ class InterpreterSpec extends InterpreterSpecKit {
     }
 
     "implement many-to-one one-to-many chain correctly" in new TestSetup(Seq(
-      Filter((x: Int) ⇒ x != 0),
+      Filter((x: Int) ⇒ x != 0, stoppingDecider),
       Doubler())) {
 
       lastEvents() should be(Set.empty)
@@ -134,9 +136,9 @@ class InterpreterSpec extends InterpreterSpecKit {
     }
 
     "implement take inside a chain" in new TestSetup(Seq(
-      Filter((x: Int) ⇒ x != 0),
+      Filter((x: Int) ⇒ x != 0, stoppingDecider),
       Take(2),
-      Map((x: Int) ⇒ x + 1))) {
+      Map((x: Int) ⇒ x + 1, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -156,7 +158,7 @@ class InterpreterSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel, OnComplete, OnNext(3)))
     }
 
-    "implement fold" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x))) {
+    "implement fold" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
       lastEvents() should be(Set.empty)
 
       downstream.requestOne()
@@ -175,7 +177,7 @@ class InterpreterSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(OnNext(3), OnComplete))
     }
 
-    "implement fold with proper cancel" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x))) {
+    "implement fold with proper cancel" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -195,7 +197,7 @@ class InterpreterSpec extends InterpreterSpecKit {
       lastEvents() should be(Set(Cancel))
     }
 
-    "work if fold completes while not in a push position" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x))) {
+    "work if fold completes while not in a push position" in new TestSetup(Seq(Fold(0, (agg: Int, x: Int) ⇒ agg + x, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -233,7 +235,8 @@ class InterpreterSpec extends InterpreterSpecKit {
 
     "implement conflate" in new TestSetup(Seq(Conflate(
       (in: Int) ⇒ in,
-      (agg: Int, x: Int) ⇒ agg + x))) {
+      (agg: Int, x: Int) ⇒ agg + x,
+      stoppingDecider))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -293,10 +296,12 @@ class InterpreterSpec extends InterpreterSpecKit {
     "work with conflate-conflate" in new TestSetup(Seq(
       Conflate(
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x),
+        (agg: Int, x: Int) ⇒ agg + x,
+        stoppingDecider),
       Conflate(
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x))) {
+        (agg: Int, x: Int) ⇒ agg + x,
+        stoppingDecider))) {
 
       lastEvents() should be(Set(RequestOne))
 
@@ -366,7 +371,8 @@ class InterpreterSpec extends InterpreterSpecKit {
     "implement conflate-expand" in new TestSetup(Seq(
       Conflate(
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x),
+        (agg: Int, x: Int) ⇒ agg + x,
+        stoppingDecider),
       Expand(
         (in: Int) ⇒ in,
         (agg: Int) ⇒ (agg, agg)))) {
@@ -407,7 +413,8 @@ class InterpreterSpec extends InterpreterSpecKit {
       Doubler(),
       Conflate(
         (in: Int) ⇒ in,
-        (agg: Int, x: Int) ⇒ agg + x))) {
+        (agg: Int, x: Int) ⇒ agg + x,
+        stoppingDecider))) {
       lastEvents() should be(Set(RequestOne))
 
       upstream.onNext(1)
@@ -422,11 +429,11 @@ class InterpreterSpec extends InterpreterSpecKit {
     }
 
     "work with jumpback table and completed elements" in new TestSetup(Seq(
-      Map((x: Int) ⇒ x),
-      Map((x: Int) ⇒ x),
+      Map((x: Int) ⇒ x, stoppingDecider),
+      Map((x: Int) ⇒ x, stoppingDecider),
       KeepGoing(),
-      Map((x: Int) ⇒ x),
-      Map((x: Int) ⇒ x))) {
+      Map((x: Int) ⇒ x, stoppingDecider),
+      Map((x: Int) ⇒ x, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
 
@@ -468,56 +475,6 @@ class InterpreterSpec extends InterpreterSpecKit {
     "implement take-drop" in pending
 
     "implement drop-take" in pending
-
-    val TE = new Exception("TEST") with NoStackTrace {
-      override def toString = "TE"
-    }
-
-    "handle external failure" in new TestSetup(Seq(Map((x: Int) ⇒ x + 1))) {
-      lastEvents() should be(Set.empty)
-
-      upstream.onError(TE)
-      lastEvents() should be(Set(OnError(TE)))
-
-    }
-
-    "handle failure inside op" in new TestSetup(Seq(Map((x: Int) ⇒ if (x == 0) throw TE else x))) {
-      lastEvents() should be(Set.empty)
-
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-
-      upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(2)))
-
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-
-      upstream.onNext(0)
-      lastEvents() should be(Set(Cancel, OnError(TE)))
-
-    }
-
-    "handle failure inside op in middle of the chain" in new TestSetup(Seq(
-      Map((x: Int) ⇒ x + 1),
-      Map((x: Int) ⇒ if (x == 0) throw TE else x),
-      Map((x: Int) ⇒ x + 1))) {
-
-      lastEvents() should be(Set.empty)
-
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-
-      upstream.onNext(2)
-      lastEvents() should be(Set(OnNext(4)))
-
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
-
-      upstream.onNext(-1)
-      lastEvents() should be(Set(Cancel, OnError(TE)))
-
-    }
 
     "work with keep-going ops" in pending
 

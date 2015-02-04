@@ -13,6 +13,7 @@ import akka.pattern.pipe
 import scala.annotation.tailrec
 import akka.actor.Props
 import akka.actor.DeadLetterSuppression
+import akka.stream.Supervision
 
 /**
  * INTERNAL API
@@ -32,6 +33,7 @@ private[akka] object MapAsyncProcessorImpl {
 
   final case class FutureElement(seqNo: Long, element: Any) extends DeadLetterSuppression
   final case class FutureFailure(cause: Throwable) extends DeadLetterSuppression
+  final case class RecoveredError(in: Any, cause: Throwable)
 }
 
 /**
@@ -44,6 +46,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
   // Execution context for pipeTo and friends
   import context.dispatcher
 
+  val decider = settings.supervisionDecider
   var submittedSeqNo = 0L
   var doneSeqNo = 0L
   def gap: Long = submittedSeqNo - doneSeqNo
@@ -54,7 +57,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
   // keep future results arriving too early in a buffer sorted by seqNo
   var orderedBuffer = TreeSet.empty[FutureElement]
 
-  override def activeReceive = futureReceive orElse super.activeReceive
+  override def activeReceive = futureReceive.orElse[Any, Unit](super.activeReceive)
 
   def drainBuffer(): List[Any] = {
 
@@ -94,10 +97,10 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
         if (!primaryOutputs.demandAvailable) throw new IllegalStateException
 
         if (orderedBuffer.isEmpty) {
-          primaryOutputs.enqueueOutputElement(element)
+          emit(element)
         } else {
-          primaryOutputs.enqueueOutputElement(element)
-          drainBuffer() foreach primaryOutputs.enqueueOutputElement
+          emit(element)
+          drainBuffer() foreach emit
         }
         pump()
       } else {
@@ -108,6 +111,14 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
 
     case FutureFailure(cause) ⇒
       fail(cause)
+  }
+
+  def emit(element: Any): Unit = element match {
+    case RecoveredError(in, err) ⇒
+      if (settings.debugLogging)
+        log.debug("Dropped element [{}] due to mapAsync future was completed with exception: {}", in, err.getMessage)
+    case elem ⇒
+      primaryOutputs.enqueueOutputElement(element)
   }
 
   override def onError(e: Throwable): Unit = {
@@ -126,16 +137,27 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
       nextPhase(completedPhase)
     } else if (primaryInputs.inputsAvailable && primaryOutputs.demandCount - gap > 0) {
       val elem = primaryInputs.dequeueInputElement()
-      submittedSeqNo += 1
-      val seqNo = submittedSeqNo
       try {
-        f(elem).map(FutureElement(seqNo, _)).recover {
+        val future = f(elem)
+        submittedSeqNo += 1
+        val seqNo = submittedSeqNo
+        future.map(FutureElement(seqNo, _)).recover {
+          case err: Throwable if decider(err) != Supervision.Stop ⇒
+            FutureElement(seqNo, RecoveredError(elem, err))
           case err ⇒ FutureFailure(err)
         }.pipeTo(self)
       } catch {
         case NonFatal(err) ⇒
-          // f threw, propagate failure immediately
-          fail(err)
+          // f threw, handle failure immediately
+          decider(err) match {
+            case Supervision.Stop ⇒
+              fail(err)
+            case Supervision.Resume | Supervision.Restart ⇒
+              // submittedSeqNo was not increased, just continue
+              if (settings.debugLogging)
+                log.debug("Dropped element [{}] due to exception from mapAsync factory function: {}", elem, err.getMessage)
+          }
+
       }
     }
   }

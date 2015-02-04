@@ -4,6 +4,7 @@
 package akka.stream.javadsl
 
 import akka.stream.scaladsl
+import akka.stream.Supervision
 
 /**
  * Holds attributes which can be used to alter [[Flow]] or [[FlowGraph]]
@@ -49,6 +50,14 @@ object OperationAttributes {
   def dispatcher(dispatcher: String): OperationAttributes = new OperationAttributes {
     private[akka] def asScala = scaladsl.OperationAttributes.dispatcher(dispatcher)
   }
+
+  /**
+   * Decides how exceptions from application code are to be handled.
+   */
+  def supervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): OperationAttributes =
+    new OperationAttributes {
+      private[akka] def asScala = scaladsl.OperationAttributes.supervisionStrategy(e ⇒ decider.apply(e))
+    }
 
   private[akka] val none: OperationAttributes = new OperationAttributes {
     private[akka] def asScala = scaladsl.OperationAttributes.none
