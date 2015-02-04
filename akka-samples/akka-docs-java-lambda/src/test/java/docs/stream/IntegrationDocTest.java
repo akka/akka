@@ -14,12 +14,14 @@ import akka.japi.pf.ReceiveBuilder;
 import akka.stream.ActorFlowMaterializer;
 import akka.stream.ActorFlowMaterializerSettings;
 import akka.stream.FlowMaterializer;
+import akka.stream.Supervision;
 import akka.stream.javadsl.OperationAttributes;
 import akka.stream.javadsl.RunnableFlow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
+
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
@@ -30,13 +32,11 @@ import org.junit.Test;
 import scala.collection.immutable.Seq;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
-
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import static akka.pattern.Patterns.ask;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
@@ -92,6 +92,15 @@ public class IntegrationDocTest {
     //#phone-lookup
     {
       return Futures.successful(Optional.of("" + handle.hashCode()));
+    }
+  }
+  
+  class AddressSystem2 {
+    //#email-address-lookup2
+    public Future<String> lookupEmail(String handle)
+    //#email-address-lookup2
+    {
+      return Futures.successful(handle + "@somewhere.com");
     }
   }
   
@@ -328,6 +337,28 @@ public class IntegrationDocTest {
         probe.expectMsg("ktosopl@somewhere.com");
         probe.expectMsg("mmartynas@somewhere.com");
         probe.expectMsg("akkateam@somewhere.com");
+      }
+    };
+  }
+  
+  @Test
+  @SuppressWarnings("unused")
+  public void callingExternalServiceWithMapAsyncAndSupervision() throws Exception {
+    new JavaTestKit(system) {
+      final AddressSystem2 addressSystem = new AddressSystem2();
+
+      {
+        final Source<Author> authors = tweets
+          .filter(t -> t.hashtags().contains(AKKA))
+          .map(t -> t.author);
+        
+        //#email-addresses-mapAsync-supervision
+        final OperationAttributes resumeAttrib =
+          OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
+        final Source<String> emailAddresses = authors.section(resumeAttrib,
+          flow -> flow.mapAsync(author -> addressSystem.lookupEmail(author.handle)));
+        
+        //#email-addresses-mapAsync-supervision
       }
     };
   }

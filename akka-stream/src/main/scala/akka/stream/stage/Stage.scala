@@ -3,6 +3,8 @@
  */
 package akka.stream.stage
 
+import akka.stream.Supervision
+
 /**
  * General interface for stream transformation.
  *
@@ -85,6 +87,25 @@ private[stream] abstract class AbstractStage[-In, Out, PushD <: Directive, PullD
    */
   def onUpstreamFailure(cause: Throwable, ctx: Ctx): TerminationDirective = ctx.fail(cause)
 
+  /**
+   * If an exception is thrown from [[#onPush]] this method is invoked to decide how
+   * to handle the exception. By default this method returns [[Supervision.Stop]].
+   *
+   * If an exception is thrown from [[#onPull]] the stream will always be completed with
+   * failure, because it is not always possible to recover from that state.
+   * In concrete stages it is of course possible to use ordinary try-catch-recover inside
+   * `onPull` when it is know how to recover from such exceptions.
+   *
+   */
+  def decide(t: Throwable): Supervision.Directive = Supervision.Stop
+
+  /**
+   * Used to create a fresh instance of the stage after an error resulting in a [[Supervision.Restart]]
+   * directive. By default it will return the same instance untouched, so you must override it
+   * if there are any state that should be cleared before restarting, e.g. by returning a new instance.
+   */
+  def restart(): Stage[In, Out] = this
+
 }
 
 /**
@@ -164,7 +185,20 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  *
  * @see [[PushPullStage]]
  */
-abstract class DetachedStage[In, Out] extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out]]
+abstract class DetachedStage[In, Out] extends AbstractStage[In, Out, UpstreamDirective, DownstreamDirective, DetachedContext[Out]] {
+
+  /**
+   * If an exception is thrown from [[#onPush]] this method is invoked to decide how
+   * to handle the exception. By default this method returns [[Supervision.Stop]].
+   *
+   * If an exception is thrown from [[#onPull]] or if the stage is holding state the stream
+   * will always be completed with failure, because it is not always possible to recover from
+   * that state.
+   * In concrete stages it is of course possible to use ordinary try-catch-recover inside
+   * `onPull` when it is know how to recover from such exceptions.
+   */
+  override def decide(t: Throwable): Supervision.Directive = super.decide(t)
+}
 
 /**
  * The behavior of [[StatefulStage]] is defined by these two methods, which

@@ -22,6 +22,7 @@ import akka.stream.scaladsl.OperationAttributes
 import scala.concurrent.ExecutionContext
 import akka.stream.ActorFlowMaterializerSettings
 import java.util.concurrent.atomic.AtomicInteger
+import akka.stream.Supervision
 
 object IntegrationDocSpec {
   import TwitterStreamQuickstartDocSpec._
@@ -50,6 +51,13 @@ object IntegrationDocSpec {
     def lookupPhoneNumber(handle: String): Future[Option[String]] =
       //#phone-lookup
       Future.successful(Some(handle.hashCode.toString))
+  }
+
+  class AddressSystem2 {
+    //#email-address-lookup2
+    def lookupEmail(handle: String): Future[String] =
+      //#email-address-lookup2
+      Future.successful(handle + "@somewhere.com")
   }
 
   final case class Email(to: String, title: String, body: String)
@@ -157,6 +165,22 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("ktosopl@somewhere.com")
     probe.expectMsg("mmartynas@somewhere.com")
     probe.expectMsg("akkateam@somewhere.com")
+  }
+
+  "lookup email with mapAsync and supervision" in {
+    val addressSystem = new AddressSystem2
+    val authors: Source[Author] =
+      tweets.filter(_.hashtags.contains(akka)).map(_.author)
+
+    //#email-addresses-mapAsync-supervision
+    import OperationAttributes.supervisionStrategy
+    import Supervision.resumingDecider
+
+    val emailAddresses: Source[String] =
+      authors.section(supervisionStrategy(resumingDecider)) {
+        _.mapAsync(author => addressSystem.lookupEmail(author.handle))
+      }
+    //#email-addresses-mapAsync-supervision
   }
 
   "calling external service with mapAsyncUnordered" in {
