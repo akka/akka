@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
+import akka.stream.ActorFlowMaterializer;
 import akka.stream.FlowMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Broadcast;
@@ -37,7 +38,7 @@ public class GraphCyclesDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = FlowMaterializer.create(system);
+  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
   
   final Source<Integer> source = Source.from(Arrays.asList(1, 2, 3, 4, 5));
   

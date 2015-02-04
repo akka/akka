@@ -5,7 +5,6 @@ package docs.stream;
 
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
-
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
@@ -25,6 +24,7 @@ import scala.concurrent.duration.FiniteDuration;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.JavaPartialFunction;
+import akka.stream.ActorFlowMaterializer;
 import akka.stream.FlowMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Broadcast;
@@ -152,7 +152,7 @@ public class TwitterStreamQuickstartDocTest {
   static abstract class Example1 {
     //#materializer-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
-    final FlowMaterializer mat = FlowMaterializer.create(system);
+    final FlowMaterializer mat = ActorFlowMaterializer.create(system);
     //#materializer-setup
   }
   
@@ -170,7 +170,7 @@ public class TwitterStreamQuickstartDocTest {
   }
   
   
-  final FlowMaterializer mat = FlowMaterializer.create(system);
+  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
   
   @Test
   public void demonstrateFilterAndMap() {
