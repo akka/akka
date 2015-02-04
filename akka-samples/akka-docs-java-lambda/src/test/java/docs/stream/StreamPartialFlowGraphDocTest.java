@@ -15,6 +15,7 @@ import scala.concurrent.duration.Duration;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
+import akka.stream.ActorFlowMaterializer;
 import akka.stream.FlowMaterializer;
 import akka.stream.javadsl.Broadcast;
 import akka.stream.javadsl.Flow;
@@ -48,7 +49,7 @@ public class StreamPartialFlowGraphDocTest {
     system = null;
   }
   
-  final FlowMaterializer mat = FlowMaterializer.create(system);
+  final FlowMaterializer mat = ActorFlowMaterializer.create(system);
   
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {
