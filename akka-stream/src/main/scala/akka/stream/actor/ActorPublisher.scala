@@ -58,13 +58,15 @@ object ActorPublisherMessage {
    * This message is delivered to the [[ActorPublisher]] actor when the stream subscriber cancels the
    * subscription.
    */
-  @SerialVersionUID(1L) final case object Cancel extends ActorPublisherMessage
+  @SerialVersionUID(1L) final case object Cancel extends Cancel
+  sealed class Cancel extends ActorPublisherMessage
 
   /**
    * This message is delivered to the [[ActorPublisher]] actor in order to signal the exceeding of an subscription timeout.
    * Once the actor receives this message, this publisher will already be in cancelled state, thus the actor should clean-up and stop itself.
    */
-  @SerialVersionUID(1L) final case object SubscriptionTimeoutExceeded extends ActorPublisherMessage
+  @SerialVersionUID(1L) final case object SubscriptionTimeoutExceeded extends SubscriptionTimeoutExceeded
+  sealed abstract class SubscriptionTimeoutExceeded extends ActorPublisherMessage
 
   /**
    * Java API: get the singleton instance of the `Cancel` message

@@ -3,17 +3,17 @@
  */
 package docs.stream;
 
-import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
-import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
+import akka.actor.ActorSystem;
+import akka.dispatch.Foreach;
+import akka.japi.JavaPartialFunction;
+import akka.stream.ActorFlowMaterializer;
+import akka.stream.FlowMaterializer;
+import akka.stream.OverflowStrategy;
+import akka.stream.javadsl.*;
+import akka.testkit.JavaTestKit;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,21 +21,15 @@ import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
-import akka.actor.ActorSystem;
-import akka.dispatch.Foreach;
-import akka.japi.JavaPartialFunction;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.OverflowStrategy;
-import akka.stream.javadsl.Broadcast;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.FlowGraph;
-import akka.stream.javadsl.KeyedSink;
-import akka.stream.javadsl.MaterializedMap;
-import akka.stream.javadsl.RunnableFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.testkit.JavaTestKit;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+
+import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
+import static docs.stream.TwitterStreamQuickstartDocTest.Model.tweets;
 
 @SuppressWarnings("unused")
 public class TwitterStreamQuickstartDocTest {
@@ -62,12 +56,43 @@ public class TwitterStreamQuickstartDocTest {
       public Author(String handle) {
         this.handle = handle;
       }
+    
+      // ... 
+      
+      //#model
       
       @Override
       public String toString() {
         return "Author(" + handle + ")";
       }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) {
+          return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+          return false;
+        }
+
+        Author author = (Author) o;
+
+        if (handle != null ? !handle.equals(author.handle) : author.handle != null) {
+          return false;
+        }
+
+        return true;
+      }
+
+      @Override
+      public int hashCode() {
+        return handle != null ? handle.hashCode() : 0;
+      }
+      //#model
     }
+    //#model
+    
+    //#model
     
     public static class Hashtag {
       public final String name;
@@ -76,6 +101,9 @@ public class TwitterStreamQuickstartDocTest {
         this.name = name;
       }
 
+      // ...
+      //#model
+      
       @Override
       public int hashCode() {
         return name.hashCode();
@@ -97,7 +125,11 @@ public class TwitterStreamQuickstartDocTest {
       public String toString() {
         return "Hashtag(" + name + ")";
       }
+      //#model
     }
+    //#model
+    
+    //#model
     
     public static class Tweet {
       public final Author author;
@@ -117,15 +149,21 @@ public class TwitterStreamQuickstartDocTest {
           .collect(Collectors.toSet());
       }
       
+      // ...
+      //#model
+      
       @Override
       public String toString() {
         return "Tweet(" + author + "," + timestamp + "," + body + ")";
       }
           
+      //#model
     }
+    //#model
+    
+    //#model
     
     public static final Hashtag AKKA = new Hashtag("#akka"); 
-    
     //#model
     
     public static final Source<Tweet> tweets = Source.from(
