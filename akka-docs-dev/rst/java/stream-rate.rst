@@ -1,4 +1,4 @@
-.. _stream-rate-scala:
+.. _stream-rate-java:
 
 #############################
 Buffers and working with rate
@@ -8,7 +8,7 @@ Akka Streams processing stages are asynchronous and pipelined by default which m
 an element to its downstream consumer is able to immediately process the next message. To demonstrate what we mean
 by this, let's take a look at the following example:
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#pipelining
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#pipelining
 
 Running the above example, one of the possible outputs looks like this:
 
@@ -45,7 +45,7 @@ These situations are exactly those where the internal batching buffering strateg
 
 .. _Stop-And-Wait: https://en.wikipedia.org/wiki/Stop-and-wait_ARQ
 
-.. _stream-buffers-scala:
+.. _stream-buffers-java:
 
 Buffers in Akka Streams
 =======================
@@ -64,15 +64,15 @@ to a level that throughput requirements of the application require. Default buff
 
 Alternatively they can be set by passing a :class:`ActorFlowMaterializerSettings` to the materializer:
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#materializer-buffer
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#materializer-buffer
 
 If buffer size needs to be set for segments of a Flow only, it is possible by defining a ``section()``:
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#section-buffer
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#section-buffer
 
 Here is an example of a code that demonstrate some of the issues caused by internal buffers:
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#buffering-abstraction-leak
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#buffering-abstraction-leak
 
 Running the above example one would expect the number *3* to be printed in every 3 seconds (the ``conflate`` step here
 is configured so that it counts the number of elements received before the downstream ``ZipWith`` consumes them). What
@@ -96,7 +96,7 @@ pipeline of an application.
 The example below will ensure that 1000 jobs (but not more) are dequeued from an external (imaginary) system and
 stored locally in memory - relieving the external system:
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-backpressure
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-backpressure
 
 The next example will also queue up 1000 jobs locally, but if there are more jobs waiting
 in the imaginary external systems, it makes space for the new element by
@@ -104,7 +104,7 @@ dropping one element from the *tail* of the buffer. Dropping from the tail is a 
 it must be noted that this will drop the *youngest* waiting job. If some "fairness" is desired in the sense that
 we want to be nice to jobs that has been waiting for long, then this option can be useful.
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-droptail
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-droptail
 
 Here is another example with a queue of 1000 jobs, but it makes space for the new element by
 dropping one element from the *head* of the buffer. This is the *oldest*
@@ -113,13 +113,13 @@ resent if not processed in a certain period. The oldest element will be
 retransmitted soon, (in fact a retransmitted duplicate might be already in the queue!)
 so it makes sense to drop it first.
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-drophead
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-drophead
 
 Compared to the dropping strategies above, dropBuffer drops all the 1000
 jobs it has enqueued once the buffer gets full. This aggressive strategy
 is useful when dropping jobs is preferred to delaying jobs.
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-dropbuffer
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-dropbuffer
 
 If our imaginary external job provider is a client using our API, we might
 want to enforce that the client cannot have more than 1000 queued jobs
@@ -127,7 +127,7 @@ otherwise we consider it flooding and terminate the connection. This is
 easily achievable by the error strategy which simply fails the stream
 once the buffer gets full.
 
-.. includecode:: code/docs/stream/StreamBuffersRateSpec.scala#explicit-buffers-fail
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamBuffersRateDocTest.java#explicit-buffers-fail
 
 Rate transformation
 ===================
