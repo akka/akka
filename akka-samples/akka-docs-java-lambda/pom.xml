@@ -6,7 +6,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <publishedAkkaVersion>2.3.7</publishedAkkaVersion>
+    <publishedAkkaVersion>2.3.9</publishedAkkaVersion>
   </properties>
 
   <groupId>sample</groupId>
@@ -27,7 +27,7 @@
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-stream_2.10</artifactId>
+      <artifactId>akka-stream-experimental_2.10</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
     <dependency>

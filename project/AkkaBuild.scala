@@ -52,7 +52,7 @@ object AkkaBuild extends Build {
   lazy val akka = Project(
     id = "akka",
     base = file("."),
-    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++
+    settings = parentSettings ++ Release.settings ++ Unidoc.settings ++ Publish.versionSettings ++ Maven.settings ++
       SphinxSupport.settings ++ Dist.settings ++ s3Settings ++ mimaSettings ++ unidocScaladocSettings ++
       StatsDMetrics.settings ++
       Protobuf.settings ++ inConfig(JavaDoc)(Defaults.configSettings) ++ Seq(
@@ -78,11 +78,13 @@ object AkkaBuild extends Build {
         val archivesPathFinder = (downloads * ("*" + v + ".zip")) +++ (downloads * ("*" + v + ".tgz"))
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
-      validatePullRequest <<= Seq(SphinxSupport.generate in Sphinx in docsDev,
-        test in Test in stream, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
-        test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
-        test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
-        compile in Compile in benchJmh).dependOn,
+      Maven.projects in Maven.mvn := Seq(file("akka-samples") / "akka-docs-java-lambda"),
+      validatePullRequest <<= Seq(test in Test in stream, SphinxSupport.generate in Sphinx in docsDev,
+      Maven.mvnExec, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
+      test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
+      test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
+      compile in Compile in benchJmh
+      ).dependOn,
       aggregate in publishM2 := false // REMOVE DURING MERGE INTO release-2.3
     ),
     aggregate = Seq(streamAndHttp) // FIXME DURING MERGE INTO release-2.3
@@ -864,17 +866,13 @@ object AkkaBuild extends Build {
     )
   )
 
-  def executeMvnCommands(failureMessage: String, commands: String*) = {
-    if ({List("sh", "-c", commands.mkString("cd akka-samples/akka-sample-osgi-dining-hakkers; mvn ", " ", "")) !} != 0)
-      throw new Exception(failureMessage)
-  }
-
   lazy val osgiDiningHakkersSampleIntegrationTest = Project(id = "akka-sample-osgi-dining-hakkers-integration",
     base = file("akka-samples/akka-sample-osgi-dining-hakkers-integration"),
     settings = sampleSettings ++ osgiSampleSettings ++ (
       if (System.getProperty("akka.osgi.sample.test", "true").toBoolean) Seq(
         test in Test ~= { x => {
-          executeMvnCommands("Osgi sample Dining hakkers test failed", "clean", "install")
+          // TODO: remove duplication, can we get "thisProject.path"?
+          Maven.mvnRun("akka-samples/akka-sample-osgi-dining-hakkers-integration", "clean", "install")
         }},
         // force publication of artifacts to local maven repo
         compile in Compile <<=
