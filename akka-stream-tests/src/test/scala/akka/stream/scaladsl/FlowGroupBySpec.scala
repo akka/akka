@@ -4,11 +4,12 @@
 package akka.stream.scaladsl
 
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.Supervision.resumingDecider
+import akka.stream.scaladsl.OperationAttributes.supervisionStrategy
 import akka.stream.testkit._
+import akka.stream.testkit.StreamTestKit.TE
 import org.reactivestreams.Publisher
 
 class FlowGroupBySpec extends AkkaSpec {
@@ -52,8 +53,6 @@ class FlowGroupBySpec extends AkkaSpec {
 
   }
 
-  case class TE(message: String) extends RuntimeException(message) with NoStackTrace
-
   "groupBy" must {
     "work in the happy case" in new SubstreamsSupport(groupCount = 2) {
       val s1 = StreamPuppet(getSubFlow(1).runWith(Sink.publisher))
@@ -88,7 +87,6 @@ class FlowGroupBySpec extends AkkaSpec {
       s1.expectComplete()
 
       masterSubscriber.expectComplete()
-
     }
 
     "accept cancellation of substreams" in new SubstreamsSupport(groupCount = 2) {
@@ -189,6 +187,77 @@ class FlowGroupBySpec extends AkkaSpec {
       subscriber.expectError(e)
 
     }
+
+    "fail stream when groupBy function throws" in {
+      val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
+      val exc = TE("test")
+      val publisher = Source(publisherProbeProbe)
+        .groupBy(elem ⇒ if (elem == 2) throw exc else elem % 2)
+        .runWith(Sink.publisher)
+      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int])]()
+      publisher.subscribe(subscriber)
+
+      val upstreamSubscription = publisherProbeProbe.expectSubscription()
+
+      val downstreamSubscription = subscriber.expectSubscription()
+      downstreamSubscription.request(100)
+
+      upstreamSubscription.sendNext(1)
+
+      val (_, substream) = subscriber.expectNext()
+      val substreamPuppet = StreamPuppet(substream.runWith(Sink.publisher))
+
+      substreamPuppet.request(1)
+      substreamPuppet.expectNext(1)
+
+      upstreamSubscription.sendNext(2)
+
+      subscriber.expectError(exc)
+      substreamPuppet.expectError(exc)
+      upstreamSubscription.expectCancellation()
+    }
+
+    "resume stream when groupBy function throws" in {
+      val publisherProbeProbe = StreamTestKit.PublisherProbe[Int]()
+      val exc = TE("test")
+      val publisher = Source(publisherProbeProbe).section(supervisionStrategy(resumingDecider))(
+        _.groupBy(elem ⇒ if (elem == 2) throw exc else elem % 2))
+        .runWith(Sink.publisher)
+      val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int])]()
+      publisher.subscribe(subscriber)
+
+      val upstreamSubscription = publisherProbeProbe.expectSubscription()
+
+      val downstreamSubscription = subscriber.expectSubscription()
+      downstreamSubscription.request(100)
+
+      upstreamSubscription.sendNext(1)
+
+      val (_, substream1) = subscriber.expectNext()
+      val substreamPuppet1 = StreamPuppet(substream1.runWith(Sink.publisher))
+      substreamPuppet1.request(10)
+      substreamPuppet1.expectNext(1)
+
+      upstreamSubscription.sendNext(2)
+      upstreamSubscription.sendNext(4)
+
+      val (_, substream2) = subscriber.expectNext()
+      val substreamPuppet2 = StreamPuppet(substream2.runWith(Sink.publisher))
+      substreamPuppet2.request(10)
+      substreamPuppet2.expectNext(4) // note that 2 was dropped
+
+      upstreamSubscription.sendNext(3)
+      substreamPuppet1.expectNext(3)
+
+      upstreamSubscription.sendNext(6)
+      substreamPuppet2.expectNext(6)
+
+      upstreamSubscription.sendComplete()
+      subscriber.expectComplete()
+      substreamPuppet1.expectComplete()
+      substreamPuppet2.expectComplete()
+    }
+
   }
 
 }

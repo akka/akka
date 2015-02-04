@@ -152,6 +152,14 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
+   * the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
+   * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
+   *
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](f: japi.Function[Out, Future[T]]): javadsl.Flow[In, T] =
@@ -164,6 +172,14 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * downstream may run in parallel and each processed element will be emitted dowstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#stop]]
+   * the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision#resume]] or
+   * [[akka.stream.Supervision#restart]] the element is dropped and the stream continues.
    *
    * @see [[#mapAsync]]
    */
@@ -198,6 +214,10 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,
    * emitting the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision#restart]] current value starts at `zero` again
+   * the stream will continue.
    */
   def scan[T](zero: T)(f: japi.Function2[T, Out, T]): javadsl.Flow[In, T] =
     new Flow(delegate.scan(zero)(f.apply))
@@ -275,6 +295,9 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * This means that if the upstream is actually faster than the upstream it will be backpressured by the downstream
    * subscriber.
    *
+   * Expand does not support [[akka.stream.Supervision#restart]] and [[akka.stream.Supervision#resume]].
+   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   *
    * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
@@ -322,6 +345,14 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * stop this processor from processing more elements, therefore you must take
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
+   * the element is dropped and the stream and substreams continue.
    */
   def groupBy[K](f: japi.Function[Out, K]): javadsl.Flow[In, akka.japi.Pair[K, javadsl.Source[Out @uncheckedVariance]]] =
     new Flow(delegate.groupBy(f.apply).map { case (k, p) ⇒ akka.japi.Pair(k, p.asJava) }) // FIXME optimize to one step
@@ -338,6 +369,14 @@ class Flow[-In, +Out](delegate: scaladsl.Flow[In, Out]) {
    * true, false,       // elements go into second substream
    * true, false, false // elements go into third substream
    * }}}
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision#resume]] or [[akka.stream.Supervision#restart]]
+   * the element is dropped and the stream and substreams continue.
    */
   def splitWhen(p: japi.Predicate[Out]): javadsl.Flow[In, Source[Out]] =
     new Flow(delegate.splitWhen(p.test).map(_.asJava))

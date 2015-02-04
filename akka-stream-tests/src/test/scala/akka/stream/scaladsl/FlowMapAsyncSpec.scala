@@ -8,12 +8,13 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import scala.util.control.NoStackTrace
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
 import akka.testkit.TestLatch
 import akka.testkit.TestProbe
+import akka.stream.scaladsl.OperationAttributes.supervisionStrategy
+import akka.stream.Supervision.resumingDecider
 
 class FlowMapAsyncSpec extends AkkaSpec {
 
@@ -107,6 +108,32 @@ class FlowMapAsyncSpec extends AkkaSpec {
       sub.request(10)
       c.expectError.getMessage should be("err2")
       latch.countDown()
+    }
+
+    "resume after future failure" in {
+      val c = StreamTestKit.SubscriberProbe[Int]()
+      implicit val ec = system.dispatcher
+      val p = Source(1 to 5).section(supervisionStrategy(resumingDecider))(_.mapAsync(n ⇒ Future {
+        if (n == 3) throw new RuntimeException("err3") with NoStackTrace
+        else n
+      })).to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      for (n ← List(1, 2, 4, 5)) c.expectNext(n)
+      c.expectComplete()
+    }
+
+    "resume when mapAsync throws" in {
+      val c = StreamTestKit.SubscriberProbe[Int]()
+      implicit val ec = system.dispatcher
+      val p = Source(1 to 5).section(supervisionStrategy(resumingDecider))(_.mapAsync(n ⇒
+        if (n == 3) throw new RuntimeException("err4") with NoStackTrace
+        else Future(n))).
+        to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      for (n ← List(1, 2, 4, 5)) c.expectNext(n)
+      c.expectComplete()
     }
 
   }

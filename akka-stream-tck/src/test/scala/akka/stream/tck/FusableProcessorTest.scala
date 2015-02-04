@@ -10,8 +10,8 @@ import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import org.reactivestreams.{ Publisher, Processor }
 import akka.stream.impl.fusing.Map
-
 import scala.concurrent.Promise
+import akka.stream.Supervision
 
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 
@@ -26,7 +26,7 @@ class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
     val flowName = getClass.getSimpleName + "-" + processorCounter.incrementAndGet()
 
     val (processor, _ns) = materializer.asInstanceOf[ActorFlowMaterializerImpl].processorForNode(
-      Ast.Fused(List(Map[Int, Int](identity)), name("identity")), flowName, 1)
+      Ast.Fused(List(Map[Int, Int](identity, Supervision.stoppingDecider)), name("identity")), flowName, 1)
 
     processor.asInstanceOf[Processor[Int, Int]]
   }

@@ -18,6 +18,7 @@ import org.reactivestreams.Subscriber
 import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.ActorRef
+import akka.stream.javadsl.japi
 
 object ActorFlowMaterializer {
 
@@ -196,6 +197,7 @@ object ActorFlowMaterializerSettings {
       initialInputBufferSize = config.getInt("initial-input-buffer-size"),
       maxInputBufferSize = config.getInt("max-input-buffer-size"),
       dispatcher = config.getString("dispatcher"),
+      supervisionDecider = Supervision.stoppingDecider,
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
       fileIODispatcher = config.getString("file-io-dispatcher"),
       debugLogging = config.getBoolean("debug-logging"),
@@ -230,6 +232,7 @@ final case class ActorFlowMaterializerSettings(
   initialInputBufferSize: Int,
   maxInputBufferSize: Int,
   dispatcher: String,
+  supervisionDecider: Supervision.Decider,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   fileIODispatcher: String, // FIXME Why does this exist?!
   debugLogging: Boolean,
@@ -246,6 +249,22 @@ final case class ActorFlowMaterializerSettings(
 
   def withDispatcher(dispatcher: String): ActorFlowMaterializerSettings =
     copy(dispatcher = dispatcher)
+
+  /**
+   * Scala API: Decides how exceptions from application code are to be handled, unless
+   * overridden for specific sections of the stream operations with
+   * [[akka.stream.scaladsl.OperationAttributes#supervisionStrategy]].
+   */
+  def withSupervisionStrategy(decider: Supervision.Decider): ActorFlowMaterializerSettings =
+    copy(supervisionDecider = decider)
+
+  /**
+   * Java API: Decides how exceptions from application code are to be handled, unless
+   * overridden for specific sections of the stream operations with
+   * [[akka.stream.javadsl.OperationAttributes#supervisionStrategy]].
+   */
+  def withSupervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings =
+    copy(supervisionDecider = e ⇒ decider.apply(e))
 
   def withDebugLogging(enable: Boolean): ActorFlowMaterializerSettings =
     copy(debugLogging = enable)

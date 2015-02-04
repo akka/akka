@@ -7,6 +7,7 @@ import scala.annotation.tailrec
 import scala.collection.breakOut
 import scala.util.control.NonFatal
 import akka.stream.stage._
+import akka.stream.Supervision
 
 // TODO:
 // fix jumpback table with keep-going-on-complete ops (we might jump between otherwise isolated execution regions)
@@ -30,6 +31,11 @@ import akka.stream.stage._
 private[akka] abstract class BoundaryStage extends AbstractStage[Any, Any, Directive, Directive, BoundaryContext] {
   private[fusing] var bctx: BoundaryContext = _
   def enter(): BoundaryContext = bctx
+
+  final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
+
+  final override def restart(): BoundaryStage =
+    throw new UnsupportedOperationException("BoundaryStage doesn't support restart")
 }
 
 /**
@@ -318,6 +324,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       currentOp.allowedToPush = true
       super.hold()
     }
+
   }
 
   private final val Completing: State = new State {
@@ -396,7 +403,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
           ("----" * (activeOpIndex - jumpBacks(activeOpIndex) - 1))
       case Completing ⇒ padding + "---|"
       case Cancelling ⇒ padding + "|---"
-      case Failing(e) ⇒ padding + s"---X ${e.getMessage}"
+      case Failing(e) ⇒ padding + s"---X ${e.getMessage} => ${decide(e)}"
       case other      ⇒ padding + s"---? $state"
     }
     println(icon)
@@ -410,7 +417,13 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       } catch {
         case NonFatal(e) if lastOpFailing != activeOpIndex ⇒
           lastOpFailing = activeOpIndex
-          state.fail(e)
+          decide(e) match {
+            case Supervision.Stop   ⇒ state.fail(e)
+            case Supervision.Resume ⇒ state.pull()
+            case Supervision.Restart ⇒
+              pipeline(activeOpIndex) = pipeline(activeOpIndex).restart().asInstanceOf[UntypedOp]
+              state.pull()
+          }
       }
     }
 
@@ -424,6 +437,10 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       execute()
     }
   }
+
+  def decide(e: Throwable): Supervision.Directive =
+    if (state == Pulling || state.isHolding) Supervision.Stop
+    else currentOp.decide(e)
 
   /**
    * Forks off execution of the pipeline by saving current position, fully executing the effects of the given

@@ -317,16 +317,16 @@ case class ActorFlowMaterializerImpl(
           // Optimizations below
           case noMatch if !optimizations.fusion ⇒ prev
 
-          case Ast.Map(f, _)                    ⇒ fusing.Map(f) :: prev
-          case Ast.Filter(p, _)                 ⇒ fusing.Filter(p) :: prev
+          case Ast.Map(f, att)                  ⇒ fusing.Map(f, att.settings(settings).supervisionDecider) :: prev
+          case Ast.Filter(p, att)               ⇒ fusing.Filter(p, att.settings(settings).supervisionDecider) :: prev
           case Ast.Drop(n, _)                   ⇒ fusing.Drop(n) :: prev
           case Ast.Take(n, _)                   ⇒ fusing.Take(n) :: prev
-          case Ast.Collect(pf, _)               ⇒ fusing.Collect(pf) :: prev
-          case Ast.Scan(z, f, _)                ⇒ fusing.Scan(z, f) :: prev
+          case Ast.Collect(pf, att)             ⇒ fusing.Collect(att.settings(settings).supervisionDecider)(pf) :: prev
+          case Ast.Scan(z, f, att)              ⇒ fusing.Scan(z, f, att.settings(settings).supervisionDecider) :: prev
           case Ast.Expand(s, f, _)              ⇒ fusing.Expand(s, f) :: prev
-          case Ast.Conflate(s, f, _)            ⇒ fusing.Conflate(s, f) :: prev
+          case Ast.Conflate(s, f, att)          ⇒ fusing.Conflate(s, f, att.settings(settings).supervisionDecider) :: prev
           case Ast.Buffer(n, s, _)              ⇒ fusing.Buffer(n, s) :: prev
-          case Ast.MapConcat(f, _)              ⇒ fusing.MapConcat(f) :: prev
+          case Ast.MapConcat(f, att)            ⇒ fusing.MapConcat(f, att.settings(settings).supervisionDecider) :: prev
           case Ast.Grouped(n, _)                ⇒ fusing.Grouped(n) :: prev
           //FIXME Add more fusion goodies here
           case _                                ⇒ prev
@@ -555,23 +555,33 @@ private[akka] object ActorProcessorFactory {
   def props(materializer: ActorFlowMaterializer, op: AstNode): Props = {
     val settings = materializer.settings // USE THIS TO AVOID CLOSING OVER THE MATERIALIZER BELOW
     op match {
-      case Fused(ops, _)              ⇒ ActorInterpreter.props(settings, ops)
-      case Map(f, _)                  ⇒ ActorInterpreter.props(settings, List(fusing.Map(f)))
-      case Filter(p, _)               ⇒ ActorInterpreter.props(settings, List(fusing.Filter(p)))
-      case Drop(n, _)                 ⇒ ActorInterpreter.props(settings, List(fusing.Drop(n)))
-      case Take(n, _)                 ⇒ ActorInterpreter.props(settings, List(fusing.Take(n)))
-      case Collect(pf, _)             ⇒ ActorInterpreter.props(settings, List(fusing.Collect(pf)))
-      case Scan(z, f, _)              ⇒ ActorInterpreter.props(settings, List(fusing.Scan(z, f)))
-      case Expand(s, f, _)            ⇒ ActorInterpreter.props(settings, List(fusing.Expand(s, f)))
-      case Conflate(s, f, _)          ⇒ ActorInterpreter.props(settings, List(fusing.Conflate(s, f)))
-      case Buffer(n, s, _)            ⇒ ActorInterpreter.props(settings, List(fusing.Buffer(n, s)))
-      case MapConcat(f, _)            ⇒ ActorInterpreter.props(settings, List(fusing.MapConcat(f)))
-      case MapAsync(f, _)             ⇒ MapAsyncProcessorImpl.props(settings, f)
-      case MapAsyncUnordered(f, _)    ⇒ MapAsyncUnorderedProcessorImpl.props(settings, f)
-      case Grouped(n, _)              ⇒ ActorInterpreter.props(settings, List(fusing.Grouped(n)))
-      case GroupBy(f, _)              ⇒ GroupByProcessorImpl.props(settings, f)
-      case PrefixAndTail(n, _)        ⇒ PrefixAndTailImpl.props(settings, n)
-      case SplitWhen(p, _)            ⇒ SplitWhenProcessorImpl.props(settings, p)
+      case Fused(ops, _) ⇒ ActorInterpreter.props(settings, ops)
+      // FIXME this way of grabbing the supervisionDecider feels very inefficient
+      case Map(f, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.Map(f, att.settings(settings).supervisionDecider)))
+      case Filter(p, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.Filter(p, att.settings(settings).supervisionDecider)))
+      case Drop(n, _) ⇒ ActorInterpreter.props(settings, List(fusing.Drop(n)))
+      case Take(n, _) ⇒ ActorInterpreter.props(settings, List(fusing.Take(n)))
+      case Collect(pf, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.Collect(att.settings(settings).supervisionDecider)(pf)))
+      case Scan(z, f, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.Scan(z, f, att.settings(settings).supervisionDecider)))
+      case Expand(s, f, _) ⇒ ActorInterpreter.props(settings, List(fusing.Expand(s, f)))
+      case Conflate(s, f, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.Conflate(s, f, att.settings(settings).supervisionDecider)))
+      case Buffer(n, s, _) ⇒ ActorInterpreter.props(settings, List(fusing.Buffer(n, s)))
+      case MapConcat(f, att) ⇒
+        ActorInterpreter.props(settings, List(fusing.MapConcat(f, att.settings(settings).supervisionDecider)))
+      case MapAsync(f, att)          ⇒ MapAsyncProcessorImpl.props(att.settings(settings), f)
+      case MapAsyncUnordered(f, att) ⇒ MapAsyncUnorderedProcessorImpl.props(att.settings(settings), f)
+      // FIXME always amend settings with att.settings(settings)
+      case Grouped(n, _)             ⇒ ActorInterpreter.props(settings, List(fusing.Grouped(n)))
+      case GroupBy(f, att) ⇒
+        GroupByProcessorImpl.props(att.settings(settings), f)
+      case PrefixAndTail(n, _) ⇒ PrefixAndTailImpl.props(settings, n)
+      case SplitWhen(p, att) ⇒
+        SplitWhenProcessorImpl.props(att.settings(settings), p)
       case ConcatAll(_)               ⇒ ConcatAllImpl.props(materializer) //FIXME closes over the materializer, is this good?
       case StageFactory(mkStage, _)   ⇒ ActorInterpreter.props(settings, List(mkStage()))
       case TimerTransform(mkStage, _) ⇒ TimerTransformerProcessorsImpl.props(settings, mkStage())
