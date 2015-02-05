@@ -1084,8 +1084,16 @@ object AkkaBuild extends Build {
       
       // Change to improve cluster heartbeat sender, #16638
       FilterAnyProblem("akka.cluster.HeartbeatNodeRing"),
-      FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState")
-      
+      FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState"),
+
+      //Changes to improve BatchingExecutor, bugfix #16327
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.resubmitOnBlock"),
+      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.BatchingExecutor$Batch"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.initial"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.blockOn"),
+      ProblemFilters.exclude[FinalMethodProblem]("akka.dispatch.BatchingExecutor#Batch.run"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.akka$dispatch$BatchingExecutor$Batch$$parentBlockContext_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.this")
     )
   }
 
