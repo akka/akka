@@ -53,7 +53,7 @@ public class FlowStagesDocTest {
   
   static //#one-to-one
   public class Map<A, B> extends PushPullStage<A, B> {
-    final private Function<A, B> f;
+    private final Function<A, B> f;
     public Map(Function<A, B> f) {
       this.f = f;
     }
@@ -70,7 +70,7 @@ public class FlowStagesDocTest {
 
   static //#many-to-one
   public class Filter<A> extends PushPullStage<A, A> {
-    final private Predicate<A> p;
+    private final Predicate<A> p;
     public Filter(Predicate<A> p) {
       this.p = p;
     }
@@ -122,7 +122,7 @@ public class FlowStagesDocTest {
   
   static//#pushstage
   public class Map2<A, B> extends PushStage<A, B> {
-    final private Function<A, B> f;
+    private final Function<A, B> f;
     public Map2(Function<A, B> f) {
       this.f = f;
     }
@@ -133,7 +133,7 @@ public class FlowStagesDocTest {
   }
 
   public class Filter2<A> extends PushStage<A, A> {
-    final private Predicate<A> p;
+    private final Predicate<A> p;
     public Filter2(Predicate<A> p) {
       this.p = p;
     }
