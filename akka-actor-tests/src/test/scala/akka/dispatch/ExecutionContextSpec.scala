@@ -58,6 +58,29 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
       Await.result(p.future, timeout.duration) should be(())
     }
 
+    "be able to avoid starvation in sameThreadExecutionContext when Batching is used and Await/blocking is called" in {
+      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+
+      def batchable[T](f: ⇒ T)(implicit ec: ExecutionContext): Unit = ec.execute(new Batchable {
+        override def isBatchable = true
+        override def run: Unit = f
+      })
+
+      val latch = TestLatch(101)
+      batchable {
+        (1 to 100) foreach { i ⇒
+          batchable {
+            val deadlock = TestLatch(1)
+            batchable { deadlock.open() }
+            Await.ready(deadlock, timeout.duration)
+            latch.countDown()
+          }
+        }
+        latch.countDown()
+      }
+      Await.ready(latch, timeout.duration)
+    }
+
     "be able to avoid starvation when Batching is used and Await/blocking is called" in {
       system.dispatcher.isInstanceOf[BatchingExecutor] should be(true)
       import system.dispatcher
