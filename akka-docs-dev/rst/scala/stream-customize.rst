@@ -109,7 +109,7 @@ emit additional elementss and call ``ctx.finish()`` or ``ctx.pushAndFinish()`` e
    The reason for this slightly complex termination sequence is that the underlying ``onComplete`` signal of
    Reactive Streams may arrive without any pending demand, i.e. without respecting backpressure. This means that
    our push/pull structure that was illustrated in the figure of our custom processing chain does not
-   apply to termination. Unlike our neat model that is analogous to a ball that bounces back-and-forth in a
+   apply to termination. Our neat model that is analogous to a ball that bounces back-and-forth in a
    pipe (it bounces back on ``Filter``, ``Duplicator`` for example) cannot describe the termination signals. By calling
    ``absorbTermination()`` the execution environment checks if the conceptual token was *above* the current stage at
    that time (which means that it will never come back, so the environment immediately calls ``onPull``) or it was

@@ -1,4 +1,4 @@
-.. _stream-flow-scala:
+.. _stream-flow-java:
 
 #############################
 Basics and working with Flows
@@ -58,7 +58,7 @@ starting up Actors). Thanks to Flows being simply a description of the processin
 thread-safe, and freely shareable*, which means that it is for example safe to share and send them between actors, to have
 one actor prepare the work, and then have it be materialized at some completely different place in the code.
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-in-steps
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#materialization-in-steps
 
 After running (materializing) the ``RunnableFlow`` we get a special container object, the ``MaterializedMap``. Both
 sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
@@ -69,12 +69,12 @@ there is a convenience method called ``runWith()`` available for ``Sink``, ``Sou
 a supplied ``Source`` (in order to run a ``Sink``), a ``Sink`` (in order to run a ``Source``) or
 both a ``Source`` and a ``Sink`` (in order to run a ``Flow``, since it has neither attached yet).
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-runWith
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#materialization-runWith
 
 It is worth pointing out that since processing stages are *immutable*, connecting them returns a new processing stage,
 instead of modifying the existing instance, so while constructing long flows, remember to assign the new value to a variable or run it:
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#source-immutable
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#source-immutable
 
 .. note::
    By default Akka Streams elements support **exactly one** downstream processing stage.
@@ -90,7 +90,7 @@ In the example below we create two running materialized instance of the stream t
 variable, and both materializations give us a different ``Future`` from the map even though we used the same ``sink``
 to refer to the future:
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#stream-reuse
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#stream-reuse
 
 Defining sources, sinks and flows
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -98,14 +98,14 @@ Defining sources, sinks and flows
 The objects :class:`Source` and :class:`Sink` define various ways to create sources and sinks of elements. The following
 examples show some of the most useful constructs (refer to the API documentation for more details):
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#source-sink
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#source-sink
 
 There are various ways to wire up different parts of a stream, the following examples show some of the available options:
 
-.. includecode:: code/docs/stream/FlowDocSpec.scala#flow-connecting
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#flow-connecting
 
 
-.. _back-pressure-explained-scala:
+.. _back-pressure-explained-java:
 
 Back-pressure explained
 -----------------------
@@ -118,7 +118,7 @@ The user of the library does not have to write any explicit back-pressure handli
 and dealt with automatically by all of the provided Akka Streams processing stages. It is possible however to add
 explicit buffer stages with overflow strategies that can influence the behaviour of the stream. This is especially important
 in complex processing graphs which may even contain loops (which *must* be treated with very special
-care, as explained in :ref:`graph-cycles-scala`).
+care, as explained in :ref:`graph-cycles-java`).
 
 The back pressure protocol is defined in terms of the number of elements a downstream ``Subscriber`` is able to receive
 and buffer, referred to as ``demand``.
@@ -133,7 +133,7 @@ Streams, guarantees that it will never emit more elements than the received tota
 
    Akka Streams implements these concepts as ``Source``, ``Flow`` (referred to as ``Processor`` in Reactive Streams)
    and ``Sink`` without exposing the Reactive Streams interfaces directly.
-   If you need to integrate with other Reactive Stream libraries read :ref:`reactive-streams-integration-scala`.
+   If you need to integrate with other Reactive Stream libraries read :ref:`reactive-streams-integration-java`.
 
 The mode in which Reactive Streams back-pressure works can be colloquially described as "dynamic push / pull mode",
 since it will switch between push and pull based back-pressure models depending on the downstream being able to cope
@@ -149,7 +149,7 @@ slower than the Publisher. In order to safeguard from these situations, the back
 during such situations, however we do not want to pay a high penalty for this safety net being enabled.
 
 The Reactive Streams protocol solves this by asynchronously signalling from the Subscriber to the Publisher
-``Request(n:Int)`` signals. The protocol guarantees that the Publisher will never signal *more* elements than the
+``Request(int n)`` signals. The protocol guarantees that the Publisher will never signal *more* elements than the
 signalled demand. Since the Subscriber however is currently faster, it will be signalling these Request messages at a higher
 rate (and possibly also batching together the demand - requesting multiple elements in one Request signal). This means
 that the Publisher should not ever have to wait (be back-pressured) with publishing its incoming elements.
@@ -173,7 +173,7 @@ it will have to abide to this back-pressure by applying one of the below strateg
 As we can see, this scenario effectively means that the ``Subscriber`` will *pull* the elements from the Publisher –
 this mode of operation is referred to as pull-based back-pressure.
 
-.. _stream-materialization-scala:
+.. _stream-materialization-java:
 
 Stream Materialization
 ----------------------
@@ -185,10 +185,10 @@ but is not restricted to that - it could also mean opening files or socket conne
 
 Materialization is triggered at so called "terminal operations". Most notably this includes the various forms of the ``run()``
 and ``runWith()`` methods defined on flow elements as well as a small number of special syntactic sugars for running with
-well-known sinks, such as ``runForeach(el => )`` (being an alias to ``runWith(Sink.foreach(el => ))``.
+well-known sinks, such as ``runForeach(el -> )`` (being an alias to ``runWith(Sink.foreach(el -> ))``.
 
 Materialization is currently performed synchronously on the materializing thread.
-Tha actual stream processing is handled by :ref:`Actors actor-scala` started up during the streams materialization,
+Tha actual stream processing is handled by :ref:`Actors actor-java` started up during the streams materialization,
 which will be running on the thread pools they have been configured to run on - which defaults to the dispatcher set in
 :class:`MaterializationSettings` while constructing the :class:`ActorFlowMaterializer`.
 
