@@ -37,6 +37,8 @@ class FlexiDocSpec extends AkkaSpec {
             ctx.emit((a, b))
             SameState
           }
+
+        override def initialCompletionHandling = eagerClose
       }
     }
     //#fleximerge-zip-readall
@@ -54,14 +56,14 @@ class FlexiDocSpec extends AkkaSpec {
       val zip = Zip[Int, String]
 
       Source.single(1)   ~> zip.left
-      Source.single("1") ~> zip.right
+      Source.single("A") ~> zip.right
                             zip.out ~> head
     }
     //#fleximerge-zip-connecting
       .run()
     //format: ON
 
-    Await.result(map.get(head), 300.millis) should equal((1, "1"))
+    Await.result(map.get(head), remaining) should equal((1, "A"))
   }
 
   "implement zip using two states" in {
@@ -90,6 +92,8 @@ class FlexiDocSpec extends AkkaSpec {
         }
 
         override def initialState: State[_] = readA
+
+        override def initialCompletionHandling = eagerClose
       }
     }
     //#fleximerge-zip-states
@@ -101,11 +105,11 @@ class FlexiDocSpec extends AkkaSpec {
       val zip = new Zip[Int, String]
 
       Source(1 to 2) ~> zip.left
-      Source((1 to 2).map(_.toString)) ~> zip.right
+      Source(List("A", "B")) ~> zip.right
       zip.out ~> head
     }.run()
 
-    Await.result(map.get(head), 300.millis) should equal((1, "1"))
+    Await.result(map.get(head), remaining) should equal((1, "A"))
   }
 
   "fleximerge completion handling" in {
@@ -185,7 +189,7 @@ class FlexiDocSpec extends AkkaSpec {
 
       def createMergeLogic = new MergeLogic[Int] {
         override def inputHandles(inputCount: Int) = {
-          require(inputCount == 2, s"Zip must have two connected inputs, was $inputCount")
+          require(inputCount == 3, s"PreferringMerge must have 3 connected inputs, was $inputCount")
           Vector(preferred, secondary1, secondary2)
         }
 
