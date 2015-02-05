@@ -5,15 +5,17 @@ package docs.stream
 
 import java.net.InetSocketAddress
 import java.util.concurrent.atomic.AtomicReference
-
 import akka.actor.ActorSystem
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Concat
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.FlowGraphImplicits
 import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.StreamTcp
+import akka.stream.scaladsl.StreamTcp._
 import akka.stream.scaladsl.UndefinedSink
 import akka.stream.scaladsl.UndefinedSource
-import akka.stream.stage.{ PushStage, Directive, Context, PushPullStage }
+import akka.stream.stage.{ PushStage, Directive, Context }
 import akka.stream.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.ByteString
@@ -22,15 +24,7 @@ import cookbook.RecipeParseLines
 class StreamTcpDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
-
-  //#setup
-  import akka.stream.ActorFlowMaterializer
-  import akka.stream.scaladsl.StreamTcp
-  import akka.stream.scaladsl.StreamTcp._
-
-  implicit val sys = ActorSystem("stream-tcp-system")
   implicit val mat = ActorFlowMaterializer()
-  //#setup
 
   // silence sysout
   def println(s: String) = ()
@@ -51,7 +45,7 @@ class StreamTcpDocSpec extends AkkaSpec {
 
       val echo = Flow[ByteString]
         .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
-        .map(_ ++ "!!!\n")
+        .map(_ + "!!!\n")
         .map(ByteString(_))
 
       connection.handleWith(echo)
@@ -93,7 +87,7 @@ class StreamTcpDocSpec extends AkkaSpec {
           .map { command ⇒ serverProbe.ref ! command; command }
           //#welcome-banner-chat-server
           .transform(() ⇒ commandParser)
-          .map(_ ++ "\n")
+          .map(_ + "\n")
           .map(ByteString(_))
 
         val concat = Concat[ByteString]
@@ -135,7 +129,6 @@ class StreamTcpDocSpec extends AkkaSpec {
       .transform(() => RecipeParseLines.parseLines("\n", maximumLineBytes = 256))
       .map(text => println("Server: " + text))
       .map(_ => readLine("> "))
-      //#repl-client
       .transform(() ⇒ replParser)
 
     connection.handleWith(repl)
