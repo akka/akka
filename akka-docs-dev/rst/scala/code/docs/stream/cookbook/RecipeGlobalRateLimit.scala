@@ -85,7 +85,6 @@ class RecipeGlobalRateLimit extends RecipeSpec {
           val limiterTriggerFuture = limiter ? Limiter.WantToPass
           limiterTriggerFuture.map((_) => element)
         }
-
       }
       //#global-limiter-flow
 

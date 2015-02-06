@@ -50,7 +50,9 @@ object OperationAttributes {
     private[akka] def asScala = scaladsl.OperationAttributes.dispatcher(dispatcher)
   }
 
-  private[akka] val none: OperationAttributes = new OperationAttributes {
+  def none() = _none
+
+  val _none: OperationAttributes = new OperationAttributes {
     private[akka] def asScala = scaladsl.OperationAttributes.none
   }
 }

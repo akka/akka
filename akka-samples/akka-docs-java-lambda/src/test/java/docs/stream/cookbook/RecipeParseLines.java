@@ -3,17 +3,18 @@
  */
 package docs.stream.cookbook;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import akka.stream.stage.Context;
 import akka.stream.stage.Directive;
 import akka.stream.stage.StageState;
 import akka.stream.stage.StatefulStage;
 import akka.util.ByteString;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class RecipeParseLines {
 
+  //#parse-lines
   public static StatefulStage<ByteString, String> parseLines(String separator, int maximumLineBytes) {
     return new StatefulStage<ByteString, String>() {
       
@@ -72,5 +73,6 @@ public class RecipeParseLines {
       
     };
   }
+  //#parse-lines
 
 }
