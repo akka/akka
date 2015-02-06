@@ -210,6 +210,8 @@ abstract class StatefulStage[In, Out] extends PushPullStage[In, Out] {
 
   /**
    * Concrete subclass must return the initial behavior from this method.
+   *
+   * **Warning:** This method must not be implemented as `val`.
    */
   def initial: StageState[In, Out]
 
