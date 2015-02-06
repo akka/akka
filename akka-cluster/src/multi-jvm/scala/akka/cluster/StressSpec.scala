@@ -246,21 +246,21 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   class ClusterResultAggregator(title: String, expectedResults: Int, settings: Settings) extends Actor with ActorLogging {
     import settings.reportMetricsInterval
     import settings.infolog
-    val cluster = Cluster(context.system)
-    var reportTo: Option[ActorRef] = None
-    var results = Vector.empty[ClusterResult]
-    var nodeMetrics = Set.empty[NodeMetrics]
-    var phiValuesObservedByNode = {
+    private val cluster = Cluster(context.system)
+    private var reportTo: Option[ActorRef] = None
+    private var results = Vector.empty[ClusterResult]
+    private var nodeMetrics = Set.empty[NodeMetrics]
+    private var phiValuesObservedByNode = {
       import akka.cluster.Member.addressOrdering
       immutable.SortedMap.empty[Address, immutable.SortedSet[PhiValue]]
     }
-    var clusterStatsObservedByNode = {
+    private var clusterStatsObservedByNode = {
       import akka.cluster.Member.addressOrdering
       immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
     import context.dispatcher
-    val reportMetricsTask = context.system.scheduler.schedule(
+    private val reportMetricsTask = context.system.scheduler.schedule(
       reportMetricsInterval, reportMetricsInterval, self, ReportTick)
 
     // subscribe to ClusterMetricsChanged, re-subscribe when restart
@@ -441,9 +441,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   }
 
   class StatsObserver extends Actor {
-    val cluster = Cluster(context.system)
-    var reportTo: Option[ActorRef] = None
-    var startStats: Option[GossipStats] = None
+    private val cluster = Cluster(context.system)
+    private var reportTo: Option[ActorRef] = None
+    private var startStats: Option[GossipStats] = None
 
     override def preStart(): Unit = cluster.subscribe(self, classOf[CurrentInternalStats])
     override def postStop(): Unit = cluster.unsubscribe(self)

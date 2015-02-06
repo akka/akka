@@ -113,7 +113,8 @@ class Worker extends Actor with ActorLogging {
 //#messages
 object CounterService {
   final case class Increment(n: Int)
-  case object GetCurrentCount
+  sealed abstract class GetCurrentCount
+  case object GetCurrentCount extends GetCurrentCount
   final case class CurrentCount(key: String, count: Long)
   class ServiceUnavailable(msg: String) extends RuntimeException(msg)
 
@@ -176,9 +177,9 @@ class CounterService extends Actor {
       for ((replyTo, msg) <- backlog) c.tell(msg, sender = replyTo)
       backlog = IndexedSeq.empty
 
-    case msg @ Increment(n)    => forwardOrPlaceInBacklog(msg)
+    case msg: Increment       => forwardOrPlaceInBacklog(msg)
 
-    case msg @ GetCurrentCount => forwardOrPlaceInBacklog(msg)
+    case msg: GetCurrentCount => forwardOrPlaceInBacklog(msg)
 
     case Terminated(actorRef) if Some(actorRef) == storage =>
       // After 3 restarts the storage child is stopped.

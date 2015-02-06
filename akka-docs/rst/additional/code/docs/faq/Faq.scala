@@ -21,6 +21,9 @@ class MyActor extends Actor {
       case BarMessage(bar) => sender() ! BazMessage("Got " + bar)
       // warning here: 
       // "match may not be exhaustive. It would fail on the following input: FooMessage(_)"
+      //#exhaustiveness-check
+      case FooMessage(_)   => // avoid the warning in our build logs
+      //#exhaustiveness-check
     }
   }
 }

@@ -554,6 +554,7 @@ public class FutureDocTest {
   }
 
   @Test(expected = IllegalStateException.class)
+  @SuppressWarnings("unchecked")
   public void useAfter() throws Exception {
     //#after
     final ExecutionContext ec = system.dispatcher();

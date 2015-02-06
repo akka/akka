@@ -227,12 +227,13 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
   "A TestActorRef" must {
 
     "allow access to internals" in {
-      val ref = TestActorRef(new TActor {
+      class TA extends TActor {
         var s: String = _
         def receiveT = {
           case x: String ⇒ s = x
         }
-      })
+      }
+      val ref = TestActorRef(new TA)
       ref ! "hallo"
       val actor = ref.underlyingActor
       actor.s should be("hallo")

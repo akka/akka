@@ -97,9 +97,10 @@ object LoggerSpec {
     override def mdc(currentMessage: Any): MDC = {
       reqId += 1
       val always = Map("requestId" -> reqId)
+      val cmim = "Current Message in MDC"
       val perMessage = currentMessage match {
-        case cm @ "Current Message in MDC" ⇒ Map("currentMsg" -> cm, "currentMsgLength" -> cm.length)
-        case _                             ⇒ Map()
+        case `cmim` ⇒ Map[String, Any]("currentMsg" -> cmim, "currentMsgLength" -> cmim.length)
+        case _      ⇒ Map()
       }
       always ++ perMessage
     }

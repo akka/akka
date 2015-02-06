@@ -143,7 +143,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
     //#typed-actor-call-strict
     //#typed-actor-calls
 
-    Await.result(fSquare, 3 seconds) should be(100)
+    Await.result(fSquare, 3.seconds) should be(100)
 
     oSquare should be(Some(100))
 
@@ -193,7 +193,7 @@ class TypedActorDocSpec extends AkkaSpec(Map("akka.loglevel" -> "INFO")) {
 
     TypedActor(system).poisonPill(awesomeFooBar)
     //#typed-actor-supercharge-usage
-    Await.result(f, 3 seconds) should be("YES")
+    Await.result(f, 3.seconds) should be("YES")
   }
 
   "typed router pattern" in {

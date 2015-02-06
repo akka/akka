@@ -51,6 +51,27 @@ object FutureSpec {
 
   final case class Req[T](req: T)
   final case class Res[T](res: T)
+
+  sealed trait IntAction { def apply(that: Int): Int }
+  final case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
+  final case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
+  final case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
+  final case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
+
+  sealed trait FutureAction {
+    def /:(that: Try[Int]): Try[Int]
+    def /:(that: Future[Int]): Future[Int]
+  }
+
+  final case class MapAction(action: IntAction)(implicit ec: ExecutionContext) extends FutureAction {
+    def /:(that: Try[Int]): Try[Int] = that map action.apply
+    def /:(that: Future[Int]): Future[Int] = that map action.apply
+  }
+
+  final case class FlatMapAction(action: IntAction)(implicit ec: ExecutionContext) extends FutureAction {
+    def /:(that: Try[Int]): Try[Int] = that map action.apply
+    def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
+  }
 }
 
 class JavaFutureSpec extends JavaFutureTests with JUnitSuiteLike
@@ -628,7 +649,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "filter result" in {
       f { (future, result) ⇒
         Await.result((future filter (_ ⇒ true)), timeout.duration) should be(result)
-        evaluating { Await.result((future filter (_ ⇒ false)), timeout.duration) } should produce[java.util.NoSuchElementException]
+        intercept[java.util.NoSuchElementException] { Await.result((future filter (_ ⇒ false)), timeout.duration) }
       }
     }
     "transform result with map" in { f((future, result) ⇒ Await.result((future map (_.toString.length)), timeout.duration) should be(result.toString.length)) }
@@ -648,7 +669,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
     "zip properly" in {
       f { (future, result) ⇒
         Await.result(future zip Promise.successful("foo").future, timeout.duration) should be((result, "foo"))
-        (evaluating { Await.result(future zip Promise.failed(new RuntimeException("ohnoes")).future, timeout.duration) } should produce[RuntimeException]).getMessage should be("ohnoes")
+        (intercept[RuntimeException] { Await.result(future zip Promise.failed(new RuntimeException("ohnoes")).future, timeout.duration) }).getMessage should be("ohnoes")
       }
     }
     "not recover from exception" in { f((future, result) ⇒ Await.result(future.recover({ case _ ⇒ "pigdog" }), timeout.duration) should be(result)) }
@@ -659,7 +680,7 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         Await.result(p.future, timeout.duration) should be(result)
       }
     }
-    "not project a failure" in { f((future, result) ⇒ (evaluating { Await.result(future.failed, timeout.duration) } should produce[NoSuchElementException]).getMessage should be("Future.failed not completed with a throwable.")) }
+    "not project a failure" in { f((future, result) ⇒ (intercept[NoSuchElementException] { Await.result(future.failed, timeout.duration) }).getMessage should be("Future.failed not completed with a throwable.")) }
     "not perform action on exception" is pending
     "cast using mapTo" in { f((future, result) ⇒ Await.result(future.mapTo[Boolean].recover({ case _: ClassCastException ⇒ false }), timeout.duration) should be(false)) }
   }
@@ -674,20 +695,20 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
         f.getMessage should be(message)
       })
     }
-    "throw exception with 'get'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)) }
-    "throw exception with 'Await.result'" in { f((future, message) ⇒ (evaluating { Await.result(future, timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)) }
+    "throw exception with 'get'" in { f((future, message) ⇒ (intercept[java.lang.Exception] { Await.result(future, timeout.duration) }).getMessage should be(message)) }
+    "throw exception with 'Await.result'" in { f((future, message) ⇒ (intercept[java.lang.Exception] { Await.result(future, timeout.duration) }).getMessage should be(message)) }
     "retain exception with filter" in {
       f { (future, message) ⇒
-        (evaluating { Await.result(future filter (_ ⇒ true), timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)
-        (evaluating { Await.result(future filter (_ ⇒ false), timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)
+        (intercept[java.lang.Exception] { Await.result(future filter (_ ⇒ true), timeout.duration) }).getMessage should be(message)
+        (intercept[java.lang.Exception] { Await.result(future filter (_ ⇒ false), timeout.duration) }).getMessage should be(message)
       }
     }
-    "retain exception with map" in { f((future, message) ⇒ (evaluating { Await.result(future map (_.toString.length), timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)) }
-    "retain exception with flatMap" in { f((future, message) ⇒ (evaluating { Await.result(future flatMap (_ ⇒ Promise.successful[Any]("foo").future), timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)) }
+    "retain exception with map" in { f((future, message) ⇒ (intercept[java.lang.Exception] { Await.result(future map (_.toString.length), timeout.duration) }).getMessage should be(message)) }
+    "retain exception with flatMap" in { f((future, message) ⇒ (intercept[java.lang.Exception] { Await.result(future flatMap (_ ⇒ Promise.successful[Any]("foo").future), timeout.duration) }).getMessage should be(message)) }
     "not perform action with foreach" is pending
 
     "zip properly" in {
-      f { (future, message) ⇒ (evaluating { Await.result(future zip Promise.successful("foo").future, timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message) }
+      f { (future, message) ⇒ (intercept[java.lang.Exception] { Await.result(future zip Promise.successful("foo").future, timeout.duration) }).getMessage should be(message) }
     }
     "recover from exception" in { f((future, message) ⇒ Await.result(future.recover({ case e if e.getMessage == message ⇒ "pigdog" }), timeout.duration) should be("pigdog")) }
     "not perform action on result" is pending
@@ -700,27 +721,6 @@ class FutureSpec extends AkkaSpec with Checkers with BeforeAndAfterAll with Defa
       }
     }
     "always cast successfully using mapTo" in { f((future, message) ⇒ (evaluating { Await.result(future.mapTo[java.lang.Thread], timeout.duration) } should produce[java.lang.Exception]).getMessage should be(message)) }
-  }
-
-  sealed trait IntAction { def apply(that: Int): Int }
-  final case class IntAdd(n: Int) extends IntAction { def apply(that: Int) = that + n }
-  final case class IntSub(n: Int) extends IntAction { def apply(that: Int) = that - n }
-  final case class IntMul(n: Int) extends IntAction { def apply(that: Int) = that * n }
-  final case class IntDiv(n: Int) extends IntAction { def apply(that: Int) = that / n }
-
-  sealed trait FutureAction {
-    def /:(that: Try[Int]): Try[Int]
-    def /:(that: Future[Int]): Future[Int]
-  }
-
-  final case class MapAction(action: IntAction) extends FutureAction {
-    def /:(that: Try[Int]): Try[Int] = that map action.apply
-    def /:(that: Future[Int]): Future[Int] = that map action.apply
-  }
-
-  final case class FlatMapAction(action: IntAction) extends FutureAction {
-    def /:(that: Try[Int]): Try[Int] = that map action.apply
-    def /:(that: Future[Int]): Future[Int] = that flatMap (n ⇒ Future.successful(action(n)))
   }
 
   implicit def arbFuture: Arbitrary[Future[Int]] = Arbitrary(for (n ← arbitrary[Int]) yield Future(n))

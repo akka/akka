@@ -87,8 +87,9 @@ object ScalaUdpDocSpec {
       //#connected
       case msg: String =>
         connection ! UdpConnected.Send(ByteString(msg))
-      case d @ UdpConnected.Disconnect => connection ! d
-      case UdpConnected.Disconnected   => context.stop(self)
+      case UdpConnected.Disconnect =>
+        connection ! UdpConnected.Disconnect
+      case UdpConnected.Disconnected => context.stop(self)
     }
   }
   //#connected

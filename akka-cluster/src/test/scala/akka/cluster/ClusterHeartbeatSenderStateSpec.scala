@@ -49,14 +49,14 @@ class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
   val dd = UniqueAddress(Address("akka.tcp", "sys", "dd", 2552), 4)
   val ee = UniqueAddress(Address("akka.tcp", "sys", "ee", 2552), 5)
 
-  def emptyState: ClusterHeartbeatSenderState = emptyState(aa)
+  private def emptyState: ClusterHeartbeatSenderState = emptyState(aa)
 
-  def emptyState(selfUniqueAddress: UniqueAddress) = ClusterHeartbeatSenderState(
+  private def emptyState(selfUniqueAddress: UniqueAddress) = ClusterHeartbeatSenderState(
     ring = HeartbeatNodeRing(selfUniqueAddress, Set(selfUniqueAddress), Set.empty, monitoredByNrOfMembers = 3),
     oldReceiversNowUnreachable = Set.empty[UniqueAddress],
     failureDetector = new DefaultFailureDetectorRegistry[Address](() ⇒ new FailureDetectorStub))
 
-  def fd(state: ClusterHeartbeatSenderState, node: UniqueAddress): FailureDetectorStub =
+  private def fd(state: ClusterHeartbeatSenderState, node: UniqueAddress): FailureDetectorStub =
     state.failureDetector.asInstanceOf[DefaultFailureDetectorRegistry[Address]].failureDetector(node.address).
       get.asInstanceOf[FailureDetectorStub]
 
