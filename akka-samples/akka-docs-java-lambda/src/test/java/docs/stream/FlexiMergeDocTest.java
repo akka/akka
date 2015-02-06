@@ -301,7 +301,7 @@ public class FlexiMergeDocTest {
               }
             };
           
-        private final State<Integer, Integer> mostylFirst =
+        private final State<Integer, Integer> mostlyFirst =
             new State<Integer, Integer>(readPreferred(first, second, third)) {
               @Override
               public State<Integer, Integer> onInput(MergeLogicContext<Integer> ctx, 
