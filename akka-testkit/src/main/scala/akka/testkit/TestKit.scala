@@ -702,9 +702,9 @@ trait TestKitBase {
  * class Test extends TestKit(ActorSystem()) {
  *   try {
  *
- *     val test = system.actorOf(Props[SomeActor]
+ *     val test = system.actorOf(Props[SomeActor])
  *
- *       within (1 second) {
+ *       within (1.second) {
  *         test ! SomeWork
  *         expectMsg(Result1) // bounded to 1 second
  *         expectMsg(Result2) // bounded to the remainder of the 1 second
