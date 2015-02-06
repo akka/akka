@@ -3,6 +3,8 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.impl.fusing.Map
+
 import scala.util.control.NoStackTrace
 
 class InterpreterSpec extends InterpreterSpecKit {
@@ -416,6 +418,38 @@ class InterpreterSpec extends InterpreterSpecKit {
 
       downstream.requestOne()
       lastEvents() should be(Set(OnNext(6)))
+
+    }
+
+    "work with jumpback table and completed elements" in new TestSetup(Seq(
+      Map((x: Int) ⇒ x),
+      Map((x: Int) ⇒ x),
+      KeepGoing(),
+      Map((x: Int) ⇒ x),
+      Map((x: Int) ⇒ x))) {
+
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNext(1)
+      lastEvents() should be(Set(OnNext(1)))
+
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNext(2)
+      lastEvents() should be(Set(OnNext(2)))
+
+      upstream.onComplete()
+      lastEvents() should be(Set.empty)
+
+      downstream.requestOne()
+      lastEvents() should be(Set(OnNext(2)))
+
+      downstream.requestOne()
+      lastEvents() should be(Set(OnNext(2)))
 
     }
 

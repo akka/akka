@@ -32,6 +32,23 @@ trait InterpreterSpecKit extends AkkaSpec {
     }
   }
 
+  private[akka] case class KeepGoing[T]() extends PushPullStage[T, T] {
+    var lastElem: T = _
+
+    override def onPush(elem: T, ctx: Context[T]): Directive = {
+      lastElem = elem
+      ctx.push(elem)
+    }
+
+    override def onPull(ctx: Context[T]): Directive = {
+      if (ctx.isFinishing) {
+        ctx.push(lastElem)
+      } else ctx.pull()
+    }
+
+    override def onUpstreamFinish(ctx: Context[T]): TerminationDirective = ctx.absorbTermination()
+  }
+
   abstract class TestSetup(ops: Seq[Stage[_, _]], forkLimit: Int = 100, overflowToHeap: Boolean = false) {
     private var lastEvent: Set[Any] = Set.empty
 
