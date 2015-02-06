@@ -86,7 +86,7 @@ class FlowDocSpec extends AkkaSpec {
     //#compound-source-is-not-keyed-runWith
 
     //#compound-source-is-not-keyed-run
-    // retain the materialized map, in order to retrieve the timers Cancellable
+    // retain the materialized map, in order to retrieve the timer's Cancellable
     val materialized = timerMap.to(Sink.ignore).run()
     val timerCancellable = materialized.get(timer)
     timerCancellable.cancel()
