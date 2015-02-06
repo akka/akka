@@ -20,7 +20,7 @@ private[cluster] object Gossip {
     if (members.isEmpty) empty else empty.copy(members = members)
 
   private val leaderMemberStatus = Set[MemberStatus](Up, Leaving)
-  private val convergenceMemberStatus = Set[MemberStatus](Up, Leaving)
+  val convergenceMemberStatus = Set[MemberStatus](Up, Leaving) // FIXME private
   val convergenceSkipUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
   val removeUnreachableWithMemberStatus = Set[MemberStatus](Down, Exiting)
 
@@ -159,17 +159,24 @@ private[cluster] final case class Gossip(
    *
    * @return true if convergence have been reached and false if not
    */
-  def convergence: Boolean = {
+  def convergence(selfUniqueAddress: UniqueAddress): Boolean = {
     // First check that:
-    //   1. we don't have any members that are unreachable, or
+    //   1. we don't have any members that are unreachable, excluding observations from members
+    //      that have status DOWN, or
     //   2. all unreachable members in the set have status DOWN or EXITING
     // Else we can't continue to check for convergence
     // When that is done we check that all members with a convergence
-    // status is in the seen table and has the latest vector clock
-    // version
-    val unreachable = overview.reachability.allUnreachableOrTerminated map member
+    // status is in the seen table, i.e. has seen this version
+    val unreachable = reachabilityExcludingDownedObservers.allUnreachableOrTerminated.collect {
+      case node if (node != selfUniqueAddress) ⇒ member(node)
+    }
     unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
       !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByNode(m.uniqueAddress))
+  }
+
+  lazy val reachabilityExcludingDownedObservers: Reachability = {
+    val downed = members.collect { case m if m.status == Down ⇒ m }
+    overview.reachability.removeObservers(downed.map(_.uniqueAddress))
   }
 
   def isLeader(node: UniqueAddress): Boolean = leader == Some(node)
