@@ -16,7 +16,9 @@ import scala.util.Failure
 object LocalActorRefProviderSpec {
   val config = """
     akka {
+      log-dead-letters = on
       actor {
+        debug.unhandled = on
         default-dispatcher {
           executor = "thread-pool-executor"
           thread-pool-executor {
@@ -55,6 +57,46 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
       b.path.name should be(childName)
     }
 
+  }
+
+  // #16757: messages sent to /user should be UnhandledMessages instead of DeadLetters
+  "The root guardian in a LocalActorRefProvider" must {
+    "not handle messages other than those it will act upon" in {
+
+      val message = "Hello, Mr. Root Guardian"
+      val rootGuardian = system.actorSelection("/")
+      val deadLettersPath = system.deadLetters.path
+
+      filterEvents(EventFilter.warning(s"unhandled message from Actor[$deadLettersPath]: $message", occurrences = 1)) {
+        rootGuardian ! message
+      }
+    }
+  }
+
+  "The user guardian in a LocalActorRefProvider" must {
+    "not handle messages other than those it will act upon" in {
+
+      val message = "Hello, Mr. User Guardian"
+      val userGuardian = system.actorSelection("/user")
+      val deadLettersPath = system.deadLetters.path
+
+      filterEvents(EventFilter.warning(s"unhandled message from Actor[$deadLettersPath]: $message", occurrences = 1)) {
+        userGuardian ! message
+      }
+    }
+  }
+
+  "The system guardian in a LocalActorRefProvider" must {
+    "not handle messages other than those it will act upon" in {
+
+      val message = "Hello, Mr. System Guardian"
+      val systemGuardian = system.actorSelection("/system")
+      val deadLettersPath = system.deadLetters.path
+
+      filterEvents(EventFilter.warning(s"unhandled message from Actor[$deadLettersPath]: $message", occurrences = 1)) {
+        systemGuardian ! message
+      }
+    }
   }
 
   "A LocalActorRef's ActorCell" must {
