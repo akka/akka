@@ -84,8 +84,7 @@ object AkkaBuild extends Build {
       test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
       test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
       compile in Compile in benchJmh
-      ).dependOn,
-      aggregate in publishM2 := false // REMOVE DURING MERGE INTO release-2.3
+      ).dependOn
     ),
     aggregate = Seq(streamAndHttp) // FIXME DURING MERGE INTO release-2.3
   )
