@@ -236,7 +236,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   var gossipStats = GossipStats()
 
   var seedNodeProcess: Option[ActorRef] = None
-  var seedNodeProcessCounter = 0 // for unique names 
+  var seedNodeProcessCounter = 0 // for unique names
+  var leaderActionCounter = 0
 
   /**
    * Looks up and returns the remote cluster command connection for the specific address.
@@ -608,9 +609,6 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     } else if (envelope.to != selfUniqueAddress) {
       logInfo("Ignoring received gossip intended for someone else, from [{}] to [{}]", from.address, envelope.to)
       Ignored
-    } else if (!remoteGossip.overview.reachability.isReachable(selfUniqueAddress)) {
-      logInfo("Ignoring received gossip with myself as unreachable, from [{}]", from.address)
-      Ignored
     } else if (!localGossip.overview.reachability.isReachable(selfUniqueAddress, from)) {
       logInfo("Ignoring received gossip from unreachable [{}] ", from)
       Ignored
@@ -758,8 +756,21 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   def leaderActions(): Unit =
     if (latestGossip.isLeader(selfUniqueAddress)) {
       // only run the leader actions if we are the LEADER
-      if (latestGossip.convergence)
+      val firstNotice = 20
+      val periodicNotice = 60
+      if (latestGossip.convergence(selfUniqueAddress)) {
+        if (leaderActionCounter >= firstNotice)
+          logInfo("Leader can perform its duties again")
+        leaderActionCounter = 0
         leaderActionsOnConvergence()
+      } else {
+        leaderActionCounter += 1
+        if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
+          logInfo("Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
+            latestGossip.reachabilityExcludingDownedObservers,
+            latestGossip.members.map(m ⇒
+              s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}").mkString(", "))
+      }
     }
 
   /**
@@ -956,7 +967,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
 
   def validNodeForGossip(node: UniqueAddress): Boolean =
     (node != selfUniqueAddress && latestGossip.hasMember(node) &&
-      latestGossip.overview.reachability.isReachable(node))
+      latestGossip.reachabilityExcludingDownedObservers.isReachable(node))
 
   def updateLatestGossip(newGossip: Gossip): Unit = {
     // Updating the vclock version for the changes
