@@ -20,7 +20,7 @@ import org.apache.commons.codec.binary.Hex.encodeHex
 
 object SerializationTests {
 
-  val serializeConf = """
+  val serializeConf = s"""
     akka {
       actor {
         serialize-messages = off
@@ -29,13 +29,13 @@ object SerializationTests {
         }
 
         serialization-bindings {
-          "akka.serialization.SerializationTests$Person" = java
-          "akka.serialization.SerializationTests$Address" = java
+          "akka.serialization.SerializationTests$$Person" = java
+          "akka.serialization.SerializationTests$$Address" = java
           "akka.serialization.TestSerializable" = test
-          "akka.serialization.SerializationTests$PlainMessage" = test
-          "akka.serialization.SerializationTests$A" = java
-          "akka.serialization.SerializationTests$B" = test
-          "akka.serialization.SerializationTests$D" = test
+          "akka.serialization.SerializationTests$$PlainMessage" = test
+          "akka.serialization.SerializationTests$$A" = java
+          "akka.serialization.SerializationTests$$B" = test
+          "akka.serialization.SerializationTests$$D" = test
         }
       }
     }

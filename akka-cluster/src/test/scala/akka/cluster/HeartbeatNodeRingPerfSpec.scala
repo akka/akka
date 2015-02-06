@@ -23,10 +23,10 @@ class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
 
   val heartbeatNodeRing = createHeartbeatNodeRingOfSize(nodesSize)
 
-  def checkThunkForRing(ring: HeartbeatNodeRing, thunk: HeartbeatNodeRing ⇒ Unit, times: Int): Unit =
+  private def checkThunkForRing(ring: HeartbeatNodeRing, thunk: HeartbeatNodeRing ⇒ Unit, times: Int): Unit =
     for (i ← 1 to times) thunk(ring)
 
-  def myReceivers(ring: HeartbeatNodeRing): Unit = {
+  private def myReceivers(ring: HeartbeatNodeRing): Unit = {
     val r = HeartbeatNodeRing(ring.selfAddress, ring.nodes, Set.empty, ring.monitoredByNrOfMembers)
     r.myReceivers.isEmpty should be(false)
   }

@@ -56,9 +56,9 @@ object EventStreamSpec {
 
   // class hierarchy for subchannel test
   class A
-  class B1 extends A
   class B2 extends A
-  class C extends B1
+  class B3 extends A
+  class C extends B2
 
   trait T
   trait AT extends T
@@ -137,12 +137,12 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
 
     "manage sub-channels using classes" in {
       val a = new A
-      val b1 = new B1
-      val b2 = new B2
+      val b1 = new B2
+      val b2 = new B3
       val c = new C
       val bus = new EventStream(system, false)
       within(2 seconds) {
-        bus.subscribe(testActor, classOf[B2]) should be(true)
+        bus.subscribe(testActor, classOf[B3]) should be(true)
         bus.publish(c)
         bus.publish(b2)
         expectMsg(b2)
@@ -151,7 +151,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         expectMsg(c)
         bus.publish(b1)
         expectMsg(b1)
-        bus.unsubscribe(testActor, classOf[B1]) should be(true)
+        bus.unsubscribe(testActor, classOf[B2]) should be(true)
         bus.publish(c)
         bus.publish(b2)
         bus.publish(a)

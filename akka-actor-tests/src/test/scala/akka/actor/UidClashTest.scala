@@ -16,12 +16,12 @@ object UidClashTest {
 
   @volatile var oldActor: ActorRef = _
 
-  class EvilCollidingActorRef(override val provider: ActorRefProvider,
-                              override val path: ActorPath,
-                              val eventStream: EventStream) extends MinimalActorRef {
+  private[akka] class EvilCollidingActorRef(override val provider: ActorRefProvider,
+                                            override val path: ActorPath,
+                                            val eventStream: EventStream) extends MinimalActorRef {
 
     //Ignore everything
-    override def isTerminated(): Boolean = true
+    override def isTerminated: Boolean = true
     override def sendSystemMessage(message: SystemMessage): Unit = ()
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = ()
   }

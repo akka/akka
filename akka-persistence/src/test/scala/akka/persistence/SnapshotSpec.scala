@@ -14,8 +14,8 @@ object SnapshotSpec {
     var state = List.empty[String]
 
     override def receiveRecover: Receive = {
-      case payload: String                          ⇒ state = s"${payload}-${lastSequenceNr}" :: state
-      case SnapshotOffer(_, snapshot: List[String]) ⇒ state = snapshot
+      case payload: String                     ⇒ state = s"${payload}-${lastSequenceNr}" :: state
+      case SnapshotOffer(_, snapshot: List[_]) ⇒ state = snapshot.asInstanceOf[List[String]]
     }
 
     override def receiveCommand = {

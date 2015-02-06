@@ -108,7 +108,7 @@ class FaultHandlingDocSpec extends TestKit(ActorSystem("FaultHandlingDocSpec", t
   }
 
   "A supervisor" must "apply the chosen strategy for its child" in {
-	  //#testkit
+    //#testkit
 
     //#create
     val supervisor = system.actorOf(Props[Supervisor], "supervisor")

@@ -37,7 +37,7 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+    withFallback(ConfigFactory.parseString(s"""
       common-router-settings = {
         router = consistent-hashing-pool
         nr-of-instances = 10
@@ -48,9 +48,9 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
       }
 
       akka.actor.deployment {
-        /router1 = ${common-router-settings}
-        /router3 = ${common-router-settings}
-        /router4 = ${common-router-settings}
+        /router1 = $${common-router-settings}
+        /router3 = $${common-router-settings}
+        /router4 = $${common-router-settings}
       }
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))

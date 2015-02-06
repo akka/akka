@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 import akka.util.Helpers.ConfigOps
 
 object ActorMailboxSpec {
-  val mailboxConf = ConfigFactory.parseString("""
+  val mailboxConf = ConfigFactory.parseString(s"""
     unbounded-dispatcher {
       mailbox-type = "akka.dispatch.UnboundedMailbox"
     }
@@ -46,7 +46,7 @@ object ActorMailboxSpec {
 
     requiring-balancing-bounded-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
-      mailbox-requirement = "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics"
+      mailbox-requirement = "akka.actor.ActorMailboxSpec$$MCBoundedMessageQueueSemantics"
     }
 
     unbounded-mailbox {
@@ -68,7 +68,7 @@ object ActorMailboxSpec {
     mc-bounded-mailbox {
       mailbox-capacity = 1000
       mailbox-push-timeout-time = 10s
-      mailbox-type = "akka.actor.ActorMailboxSpec$MCBoundedMailbox"
+      mailbox-type = "akka.actor.ActorMailboxSpec$$MCBoundedMailbox"
     }
 
     akka.actor.deployment {
@@ -142,7 +142,7 @@ object ActorMailboxSpec {
     }
 
     akka.actor.mailbox.requirements {
-      "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics" =
+      "akka.actor.ActorMailboxSpec$$MCBoundedMessageQueueSemantics" =
         mc-bounded-mailbox
     }
                                               """)

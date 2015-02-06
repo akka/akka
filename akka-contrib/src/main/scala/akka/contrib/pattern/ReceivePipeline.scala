@@ -38,7 +38,7 @@ trait ReceivePipeline extends Actor {
     val around = aroundCache match {
       case Some((`receive`, cached)) ⇒ cached
       case _ ⇒
-        val zipped = pipeline.foldRight(receive)((outer, inner) ⇒ outer(inner) orElse inner)
+        val zipped = pipeline.foldRight[Receive](receive)((outer, inner) ⇒ outer(inner).orElse[Any, Unit](inner))
         aroundCache = Some((receive, zipped))
         zipped
     }

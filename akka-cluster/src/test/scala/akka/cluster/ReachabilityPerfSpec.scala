@@ -16,7 +16,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   val address = Address("akka.tcp", "sys", "a", 2552)
   val node = Address("akka.tcp", "sys", "a", 2552)
 
-  def createReachabilityOfSize(base: Reachability, size: Int): Reachability =
+  private def createReachabilityOfSize(base: Reachability, size: Int): Reachability =
     (base /: (1 to size)) {
       case (r, i) ⇒
         val observer = UniqueAddress(address.copy(host = Some("node-" + i)), i)
@@ -25,7 +25,7 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
         r.unreachable(observer, subject).reachable(observer, subject)
     }
 
-  def addUnreachable(base: Reachability, count: Int): Reachability = {
+  private def addUnreachable(base: Reachability, count: Int): Reachability = {
     val observers = base.allObservers.take(count)
     val subjects = Stream.continually(base.allObservers).flatten.iterator
     (base /: observers) {
@@ -39,43 +39,43 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   val reachability3 = addUnreachable(reachability1, nodesSize / 2)
   val allowed = reachability1.allObservers
 
-  def checkThunkFor(r1: Reachability, r2: Reachability, thunk: (Reachability, Reachability) ⇒ Unit, times: Int): Unit = {
+  private def checkThunkFor(r1: Reachability, r2: Reachability, thunk: (Reachability, Reachability) ⇒ Unit, times: Int): Unit = {
     for (i ← 1 to times) {
       thunk(Reachability(r1.records, r1.versions), Reachability(r2.records, r2.versions))
     }
   }
 
-  def checkThunkFor(r1: Reachability, thunk: Reachability ⇒ Unit, times: Int): Unit = {
+  private def checkThunkFor(r1: Reachability, thunk: Reachability ⇒ Unit, times: Int): Unit = {
     for (i ← 1 to times) {
       thunk(Reachability(r1.records, r1.versions))
     }
   }
 
-  def merge(expectedRecords: Int)(r1: Reachability, r2: Reachability): Unit = {
+  private def merge(expectedRecords: Int)(r1: Reachability, r2: Reachability): Unit = {
     r1.merge(allowed, r2).records.size should be(expectedRecords)
   }
 
-  def checkStatus(r1: Reachability): Unit = {
+  private def checkStatus(r1: Reachability): Unit = {
     val record = r1.records.head
     r1.status(record.observer, record.subject) should be(record.status)
   }
 
-  def checkAggregatedStatus(r1: Reachability): Unit = {
+  private def checkAggregatedStatus(r1: Reachability): Unit = {
     val record = r1.records.head
     r1.status(record.subject) should be(record.status)
   }
 
-  def allUnreachableOrTerminated(r1: Reachability): Unit = {
+  private def allUnreachableOrTerminated(r1: Reachability): Unit = {
     val record = r1.records.head
     r1.allUnreachableOrTerminated.isEmpty should be(false)
   }
 
-  def allUnreachable(r1: Reachability): Unit = {
+  private def allUnreachable(r1: Reachability): Unit = {
     val record = r1.records.head
     r1.allUnreachable.isEmpty should be(false)
   }
 
-  def recordsFrom(r1: Reachability): Unit = {
+  private def recordsFrom(r1: Reachability): Unit = {
     r1.allObservers.foreach { o ⇒
       r1.recordsFrom(o) should not be be(null)
     }
