@@ -375,7 +375,6 @@ private[akka] object LocalActorRefProvider {
     def receive = {
       case Terminated(_)    ⇒ context.stop(self)
       case StopChild(child) ⇒ context.stop(child)
-      case m                ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     // guardian MUST NOT lose its children during restart
@@ -407,13 +406,11 @@ private[akka] object LocalActorRefProvider {
       case RegisterTerminationHook if sender() != context.system.deadLetters ⇒
         terminationHooks += sender()
         context watch sender()
-      case m ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     def terminating: Receive = {
       case Terminated(a)       ⇒ stopWhenAllTerminationHooksDone(a)
       case TerminationHookDone ⇒ stopWhenAllTerminationHooksDone(sender())
-      case m                   ⇒ context.system.deadLetters forward DeadLetter(m, sender(), self)
     }
 
     def stopWhenAllTerminationHooksDone(remove: ActorRef): Unit = {
