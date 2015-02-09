@@ -80,7 +80,7 @@ private[akka] object PersistentView {
  *  - [[autoUpdate]] for turning automated updates on or off
  *  - [[autoUpdateReplayMax]] for limiting the number of replayed messages per view update cycle
  */
-trait PersistentView extends Actor with Snapshotter with Stash with StashFactory {
+trait PersistentView extends Actor with Snapshotter with Stash with StashFactory with PersistenceIdentity {
   import PersistentView._
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
@@ -88,7 +88,9 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
 
   private val extension = Persistence(context.system)
   private val viewSettings = extension.settings.view
-  private lazy val journal = extension.journalFor(persistenceId)
+
+  private[persistence] lazy val journal = extension.journalFor(journalPluginId)
+  private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId)
 
   private var schedule: Option[Cancellable] = None
 
@@ -117,11 +119,6 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
    * }}}
    */
   def viewId: String
-
-  /**
-   * Id of the persistent entity for which messages should be replayed.
-   */
-  def persistenceId: String
 
   /**
    * Returns `viewId`.
@@ -187,11 +184,16 @@ trait PersistentView extends Actor with Snapshotter with Stash with StashFactory
       self, ScheduledUpdate(autoUpdateReplayMax)))
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit = {
     currentState.stateReceive(receive, message)
+  }
+
+  /** INTERNAL API. */
+  override protected[akka] def aroundPreStart(): Unit = {
+    // Fail fast on missing plugins.
+    val j = journal; val s = snapshotStore
+    super.aroundPreStart()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {

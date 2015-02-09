@@ -31,8 +31,10 @@ private[serialization] final case class SnapshotHeader(serializerId: Int, manife
  * [[Snapshot]] serializer.
  */
 class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
-  def identifier: Int = 8
-  def includeManifest: Boolean = false
+
+  val SerializationIdentifiers = "akka.actor.serialization-identifiers" // TODO move to [[Serializer]]
+  override val identifier: Int = system.settings.config.getInt(s"""${SerializationIdentifiers}."${getClass.getName}"""")
+  override val includeManifest: Boolean = false
 
   private lazy val transportInformation: Option[Serialization.Information] = {
     val address = system.provider.getDefaultAddress
