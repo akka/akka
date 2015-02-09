@@ -30,8 +30,9 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
   val PersistentImplClass = classOf[PersistentImpl]
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnap]
 
-  def identifier: Int = 7
-  def includeManifest: Boolean = true
+  val SerializationIdentifiers = "akka.actor.serialization-identifiers" // TODO move to [[Serializer]]
+  override val identifier: Int = system.settings.config.getInt(s"""${SerializationIdentifiers}."${getClass.getName}"""")
+  override val includeManifest: Boolean = true
 
   private lazy val transportInformation: Option[Serialization.Information] = {
     val address = system.provider.getDefaultAddress

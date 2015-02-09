@@ -178,8 +178,3 @@ persistent actor on the sending side.
 
 Read more about at-least-once delivery in the :ref:`documentation for Scala <at-least-once-delivery>` and 
 :ref:`documentation for Java <at-least-once-delivery-java>`.  
-
-
-
-
-   

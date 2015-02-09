@@ -116,14 +116,14 @@ object Recover {
 /**
  * An persistent Actor - can be used to implement command or event sourcing.
  */
-trait PersistentActor extends Eventsourced {
+trait PersistentActor extends Eventsourced with PersistenceIdentity {
   def receive = receiveCommand
 }
 
 /**
  * Java API: an persistent actor - can be used to implement command or event sourcing.
  */
-abstract class UntypedPersistentActor extends UntypedActor with Eventsourced {
+abstract class UntypedPersistentActor extends UntypedActor with Eventsourced with PersistenceIdentity {
 
   final def onReceive(message: Any) = onReceiveCommand(message)
 
