@@ -1210,7 +1210,7 @@ object AkkaBuild extends Build {
       val packageName = "scala.*"
       val ScalaVersion = """(\d+)\.(\d+)\..*""".r
       val ScalaVersion(epoch, major) = version
-      versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
+      versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
     }
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
     def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
