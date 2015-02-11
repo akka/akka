@@ -102,10 +102,8 @@ private[cluster] class ClusterRemoteWatcher(
    * by super RemoteWatcher.
    */
   def takeOverResponsibility(address: Address): Unit = {
-    watching foreach {
-      case (watchee, watcher) ⇒ if (watchee.path.address == address)
-        unwatchRemote(watchee, watcher)
-    }
+    watching.keys.withFilter(_.path.address == address).foreach(clearAllWatches)
+    unwatchNode(address)
   }
 
 }

@@ -171,7 +171,7 @@ abstract class ClusterDeathWatchSpec
         // fifth is not cluster member, so the watch is handled by the RemoteWatcher
         awaitAssert {
           remoteWatcher ! RemoteWatcher.Stats
-          expectMsgType[RemoteWatcher.Stats].watchingRefs should contain((subject5, testActor))
+          expectMsgType[RemoteWatcher.Stats].watchingRefs(subject5) should contain(testActor)
         }
       }
       enterBarrier("remote-watch")
