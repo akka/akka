@@ -54,7 +54,7 @@ class VectorClockSpec extends AkkaSpec {
     }
 
     "pass misc comparison test 3" in {
-      var clock1_1 = VectorClock()
+      val clock1_1 = VectorClock()
       val clock2_1 = clock1_1 :+ Node("1")
 
       val clock1_2 = VectorClock()
@@ -239,12 +239,34 @@ class VectorClockSpec extends AkkaSpec {
       val a1 = a :+ node1
       val b1 = b :+ node2
 
-      var a2 = a1 :+ node1
-      var c = a2.merge(b1)
-      var c1 = c :+ node3
+      val a2 = a1 :+ node1
+      val c = a2.merge(b1)
+      val c1 = c :+ node3
 
       (c1 > a2) should ===(true)
       (c1 > b1) should ===(true)
+    }
+
+    "support pruning" in {
+      val node1 = Node("1")
+      val node2 = Node("2")
+      val node3 = Node("3")
+
+      val a = VectorClock()
+      val b = VectorClock()
+
+      val a1 = a :+ node1
+      val b1 = b :+ node2
+
+      val c = a1.merge(b1)
+      val c1 = c.prune(node1) :+ node3
+      c1.versions.contains(node1) should be(false)
+      (c1 <> c) should be(true)
+
+      (c.prune(node1) merge c1).versions.contains(node1) should be(false)
+
+      val c2 = c :+ node2
+      (c1 <> c2) should be(true)
     }
   }
 }

@@ -213,6 +213,12 @@ private[cluster] final case class Gossip(
     members.maxBy(m ⇒ if (m.upNumber == Int.MaxValue) 0 else m.upNumber)
   }
 
+  def prune(removedNode: VectorClock.Node): Gossip = {
+    val newVersion = version.prune(removedNode)
+    if (newVersion eq version) this
+    else copy(version = newVersion)
+  }
+
   override def toString =
     s"Gossip(members = [${members.mkString(", ")}], overview = ${overview}, version = ${version})"
 }

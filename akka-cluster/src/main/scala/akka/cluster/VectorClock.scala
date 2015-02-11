@@ -187,5 +187,11 @@ final case class VectorClock(
     VectorClock(mergedVersions)
   }
 
+  def prune(removedNode: Node): VectorClock =
+    if (versions.contains(removedNode))
+      copy(versions = versions - removedNode)
+    else
+      this
+
   override def toString = versions.map { case ((n, t)) ⇒ n + " -> " + t }.mkString("VectorClock(", ", ", ")")
 }

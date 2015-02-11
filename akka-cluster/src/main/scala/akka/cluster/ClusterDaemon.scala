@@ -510,6 +510,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     else {
       logInfo("Welcome from [{}]", from.address)
       latestGossip = gossip seen selfUniqueAddress
+      assertLatestGossip()
       publish(latestGossip)
       if (from != selfUniqueAddress)
         gossipTo(from, sender())
@@ -657,10 +658,30 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
           (remoteGossip, !remoteGossip.seenByNode(selfUniqueAddress), Newer)
         case _ ⇒
           // conflicting versions, merge
-          (remoteGossip merge localGossip, true, Merge)
+          // We can see that a removal was done when it is not in one of the gossips has status
+          // Down or Exiting in the other gossip.
+          // Perform the same pruning (clear of VectorClock) as the leader did when removing a member.
+          // Removal of member itself is handled in merge (pickHighestPriority)
+          val prunedLocalGossip = localGossip.members.foldLeft(localGossip) { (g, m) ⇒
+            if (Gossip.removeUnreachableWithMemberStatus(m.status) && !remoteGossip.members.contains(m)) {
+              log.debug("Cluster Node [{}] - Pruned conflicting local gossip: {}", selfAddress, m)
+              g.prune(VectorClock.Node(vclockName(m.uniqueAddress)))
+            } else
+              g
+          }
+          val prunedRemoteGossip = remoteGossip.members.foldLeft(remoteGossip) { (g, m) ⇒
+            if (Gossip.removeUnreachableWithMemberStatus(m.status) && !localGossip.members.contains(m)) {
+              log.debug("Cluster Node [{}] - Pruned conflicting remote gossip: {}", selfAddress, m)
+              g.prune(VectorClock.Node(vclockName(m.uniqueAddress)))
+            } else
+              g
+          }
+
+          (prunedRemoteGossip merge prunedLocalGossip, true, Merge)
       }
 
       latestGossip = winningGossip seen selfUniqueAddress
+      assertLatestGossip()
 
       // for all new joining nodes we remove them from the failure detector
       latestGossip.members foreach {
@@ -886,7 +907,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       // removing REMOVED nodes from the `reachability` table
       val newReachability = localOverview.reachability.remove(removed)
       val newOverview = localOverview copy (seen = newSeen, reachability = newReachability)
-      val newGossip = localGossip copy (members = newMembers, overview = newOverview)
+      // Clear the VectorClock when member is removed. The change made by the leader is stamped
+      // and will propagate as is if there are no other changes on other nodes.
+      // If other concurrent changes on other nodes (e.g. join) the pruning is also
+      // taken care of when receiving gossips.
+      val newVersion = removed.foldLeft(localGossip.version) { (v, node) ⇒
+        v.prune(VectorClock.Node(vclockName(node)))
+      }
+      val newGossip = localGossip copy (members = newMembers, overview = newOverview, version = newVersion)
 
       updateLatestGossip(newGossip)
 
@@ -1016,7 +1044,12 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val seenVersionedGossip = versionedGossip onlySeen (selfUniqueAddress)
     // Update the state with the new gossip
     latestGossip = seenVersionedGossip
+    assertLatestGossip()
   }
+
+  def assertLatestGossip(): Unit =
+    if (Cluster.isAssertInvariantsEnabled && latestGossip.version.versions.size > latestGossip.members.size)
+      throw new IllegalStateException(s"Too many vector clock entries in gossip state ${latestGossip}")
 
   def publish(newGossip: Gossip): Unit = {
     publisher ! PublishChanges(newGossip)
