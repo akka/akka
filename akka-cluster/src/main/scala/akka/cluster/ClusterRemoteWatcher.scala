@@ -36,7 +36,7 @@ private[cluster] object ClusterRemoteWatcher {
  *
  * Specialization of [[akka.remote.RemoteWatcher]] that keeps
  * track of cluster member nodes and is responsible for watchees on cluster nodes.
- * [[akka.actor.AddressTerminate]] is published when node is removed from cluster.
+ * [[akka.actor.AddressTerminated]] is published when node is removed from cluster.
  *
  * `RemoteWatcher` handles non-cluster nodes. `ClusterRemoteWatcher` will take
  * over responsibility from `RemoteWatcher` if a watch is added before a node is member
@@ -52,8 +52,6 @@ private[cluster] class ClusterRemoteWatcher(
     heartbeatInterval,
     unreachableReaperInterval,
     heartbeatExpectedResponseAfter) {
-
-  import RemoteWatcher._
 
   val cluster = Cluster(context.system)
   import cluster.selfAddress
@@ -73,8 +71,6 @@ private[cluster] class ClusterRemoteWatcher(
   override def receive = receiveClusterEvent orElse super.receive
 
   def receiveClusterEvent: Actor.Receive = {
-    case WatchRemote(watchee, watcher) if clusterNodes(watchee.path.address) ⇒
-      () // cluster managed node, don't propagate to super
     case state: CurrentClusterState ⇒
       clusterNodes = state.members.collect { case m if m.address != selfAddress ⇒ m.address }
       clusterNodes foreach takeOverResponsibility
@@ -96,14 +92,18 @@ private[cluster] class ClusterRemoteWatcher(
     case _: MemberEvent ⇒ // not interesting
   }
 
+  override def watchNode(watcheeAddress: Address) =
+    if (!clusterNodes(watcheeAddress)) super.watchNode(watcheeAddress)
+
   /**
    * When a cluster node is added this class takes over the
    * responsibility for watchees on that node already handled
    * by super RemoteWatcher.
    */
-  def takeOverResponsibility(address: Address): Unit = {
-    watching.keys.withFilter(_.path.address == address).foreach(clearAllWatches)
-    unwatchNode(address)
-  }
+  def takeOverResponsibility(address: Address): Unit =
+    if (watchingNodes.contains(address)) {
+      log.debug("Cluster is taking over responsibility of node: [{}]", address)
+      unwatchNode(address)
+    }
 
 }
