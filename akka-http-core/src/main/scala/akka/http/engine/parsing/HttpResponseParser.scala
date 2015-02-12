@@ -38,7 +38,7 @@ private[http] class HttpResponseParser(_settings: ParserSettings, _headerParser:
       } else badProtocol
     } else {
       emit(NeedNextRequestMethod)
-      done()
+      continue(input, offset)(startNewMessage)
     }
 
   override def emit(output: ResponseOutput): Unit = {
