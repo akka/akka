@@ -25,7 +25,10 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed3 = role("seed3")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 0s")).
+    withFallback(ConfigFactory.parseString("""
+      akka.cluster.auto-down-unreachable-after = off
+      akka.cluster.retry-unsuccessful-join-after = 3s
+      """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
@@ -100,17 +103,15 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed1) {
         shutdown(seed1System, remainingOrDefault)
       }
-      runOn(seed2, seed3) {
-        awaitMembersUp(2, canNotBePartOfMemberRing = Set(seedNodes.head))
-        awaitAssert(clusterView.unreachableMembers.map(_.address) should not contain (seedNodes.head))
-      }
       enterBarrier("seed1-shutdown")
 
       // then start restartedSeed1System, which has the same address as seed1System
       runOn(seed1) {
         Cluster(restartedSeed1System).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(restartedSeed1System).readView.members.size should be(3))
-        awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should be(Set(Up)))
+        within(20.seconds) {
+          awaitAssert(Cluster(restartedSeed1System).readView.members.size should be(3))
+          awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should be(Set(Up)))
+        }
       }
       runOn(seed2, seed3) {
         awaitMembersUp(3)
