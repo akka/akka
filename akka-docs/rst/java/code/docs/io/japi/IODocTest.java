@@ -90,6 +90,10 @@ public class IODocTest {
     
     final InetSocketAddress remote;
     final ActorRef listener;
+    
+    public static Props props(InetSocketAddress remote, ActorRef listener) {
+        return Props.create(TcpClientActor.class, remote, listener);
+    }
 
     public Client(InetSocketAddress remote, ActorRef listener) {
       this.remote = remote;
