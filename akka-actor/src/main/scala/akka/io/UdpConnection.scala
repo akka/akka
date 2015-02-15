@@ -43,7 +43,7 @@ private[io] class UdpConnection(udpConn: UdpConnectedExt,
       case NonFatal(e) ⇒
         log.debug("Failure while connecting UDP channel to remote address [{}] local address [{}]: {}",
           remoteAddress, localAddress.getOrElse("undefined"), e)
-        commander ! CommandFailed(connect)
+        commander ! CommandFailed(connect, Some(e))
         context.stop(self)
     }
     datagramChannel

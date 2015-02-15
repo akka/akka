@@ -97,7 +97,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * This is the common trait for all commands understood by TCP actors.
    */
   trait Command extends Message with SelectionHandler.HasFailureMessage {
-    def failureMessage = CommandFailed(this)
+    def failureMessage(cause: Option[Throwable] = None) = CommandFailed(this, cause)
   }
 
   /**
@@ -425,7 +425,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * Whenever a command cannot be completed, the queried actor will reply with
    * this message, wrapping the original command which failed.
    */
-  case class CommandFailed(cmd: Command) extends Event
+  case class CommandFailed(cmd: Command, cause: Option[Throwable] = None) extends Event
 
   /**
    * When `useResumeWriting` is in effect as indicated in the [[Register]] message,
