@@ -293,9 +293,8 @@ terminate the actor system.
 
 .. includecode:: ../../../akka-samples/akka-sample-cluster-java/src/main/java/sample/cluster/factorial/FactorialFrontendMain.java#registerOnRemoved
 
-.. note::
-Register a OnMemberRemoved callback on a cluster that have been shutdown ,the callback will be invoked immediately on
-   the caller thread,otherwise it will be invoked later when the current member status changed to 'Removed'.You may
+.. note:: Register a OnMemberRemoved callback on a cluster that have been shutdown, the callback will be invoked immediately on
+   the caller thread, otherwise it will be invoked later when the current member status changed to 'Removed'. You may
    want to install some cleanup handling after the cluster was started up,but the cluster might already be shutting
    down when you installing, and depending on the race is not healthy.
 
