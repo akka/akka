@@ -35,7 +35,7 @@ private[io] class TcpOutgoingConnection(_tcp: TcpExt,
   channelRegistry.register(channel, 0)
   timeout foreach context.setReceiveTimeout //Initiate connection timeout if supplied
 
-  private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage))
+  private def stop(): Unit = stopWith(CloseInformation(Set(commander), connect.failureMessage()))
 
   private def reportConnectFailure(thunk: ⇒ Unit): Unit = {
     try {

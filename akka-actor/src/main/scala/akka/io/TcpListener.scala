@@ -19,7 +19,7 @@ import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 private[io] object TcpListener {
 
   case class RegisterIncoming(channel: SocketChannel) extends HasFailureMessage with NoSerializationVerificationNeeded {
-    def failureMessage = FailedRegisterIncoming(channel)
+    def failureMessage(cause: Option[Throwable] = None) = FailedRegisterIncoming(channel)
   }
 
   case class FailedRegisterIncoming(channel: SocketChannel) extends NoSerializationVerificationNeeded
@@ -60,7 +60,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
       ret
     } catch {
       case NonFatal(e) ⇒
-        bindCommander ! bind.failureMessage
+        bindCommander ! bind.failureMessage(Some(e))
         log.debug("Bind failed for TCP channel on endpoint [{}]: {}", bind.localAddress, e)
         context.stop(self)
     }

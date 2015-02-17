@@ -44,7 +44,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * The common type of all commands supported by the UDP implementation.
    */
   trait Command extends SelectionHandler.HasFailureMessage with Message {
-    def failureMessage = CommandFailed(this)
+    def failureMessage(cause: Option[Throwable] = None) = CommandFailed(this, cause)
   }
 
   /**
@@ -145,7 +145,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * When a command fails it will be replied to with this message type,
    * wrapping the failing command object.
    */
-  case class CommandFailed(cmd: Command) extends Event
+  case class CommandFailed(cmd: Command, cause: Option[Throwable] = None) extends Event
 
   /**
    * This message is sent by the listener actor in response to a [[Bind]] command.

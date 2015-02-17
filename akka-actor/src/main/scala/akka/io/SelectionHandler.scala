@@ -62,7 +62,7 @@ private[io] trait ChannelRegistration extends NoSerializationVerificationNeeded 
 private[io] object SelectionHandler {
 
   trait HasFailureMessage {
-    def failureMessage: Any
+    def failureMessage(cause: Option[Throwable] = None): Any
   }
 
   case class WorkerForCommand(apiCommand: HasFailureMessage, commander: ActorRef, childProps: ChannelRegistry ⇒ Props)
@@ -280,7 +280,7 @@ private[io] class SelectionHandler(settings: SelectionHandlerSettings) extends A
         context.parent forward Retry(cmd, retriesLeft - 1)
       } else {
         log.warning("Rejecting [{}] with no retries left, aborting...", cmd)
-        cmd.commander ! cmd.apiCommand.failureMessage // I can't do it, Captain!
+        cmd.commander ! cmd.apiCommand.failureMessage() // I can't do it, Captain!
       }
     }
   }

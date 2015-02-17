@@ -313,11 +313,11 @@ class TcpConnectionSpec extends AkkaSpec("""
           // because we don't store more than one piece in flight
           val secondWrite = writeCmd(Ack2)
           writer.send(connectionActor, secondWrite)
-          writer.expectMsg(CommandFailed(secondWrite))
+          writer.expectMsg(CommandFailed(secondWrite, None))
 
           // reject even empty writes
           writer.send(connectionActor, Write.empty)
-          writer.expectMsg(CommandFailed(Write.empty))
+          writer.expectMsg(CommandFailed(Write.empty, None))
 
           // there will be immediately more space in the send buffer because
           // some data will have been sent by now, so we assume we can write
@@ -597,7 +597,7 @@ class TcpConnectionSpec extends AkkaSpec("""
             val forceThisLazyVal = connectionActor.toString
             Thread.sleep(300)
             selector.send(connectionActor, ChannelConnectable)
-            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress)))
+            userHandler.expectMsg(CommandFailed(Connect(UnboundAddress), None))
 
             verifyActorTermination(connectionActor)
           } finally sel.close()
@@ -610,7 +610,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         override lazy val connectionActor = createConnectionActorWithoutRegistration(serverAddress = address)
         run {
           connectionActor ! newChannelRegistration
-          userHandler.expectMsg(30.seconds, CommandFailed(Connect(address)))
+          userHandler.expectMsg(30.seconds, CommandFailed(Connect(address), None))
         }
       }
 
@@ -619,7 +619,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         override lazy val connectionActor = createConnectionActor(serverAddress = UnboundAddress, timeout = Option(100.millis))
         run {
           connectionActor.toString should not be ("")
-          userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis))))
+          userHandler.expectMsg(CommandFailed(Connect(UnboundAddress, timeout = Option(100.millis)), None))
           verifyActorTermination(connectionActor)
         }
       }
@@ -670,15 +670,15 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write, _) ⇒ written -= 1
         }
         writer.msgAvailable should be(false)
 
         // writes must fail now
         writer.send(connectionActor, write)
-        writer.expectMsg(CommandFailed(write))
+        writer.expectMsg(CommandFailed(write, None))
         writer.send(connectionActor, Write.empty)
-        writer.expectMsg(CommandFailed(Write.empty))
+        writer.expectMsg(CommandFailed(Write.empty, None))
 
         // resuming must not immediately work (queue still full)
         writer.send(connectionActor, ResumeWriting)
@@ -708,7 +708,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write, _) ⇒ written -= 1
         }
 
         // drain the queue until it works again
@@ -716,9 +716,9 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         // writes must still fail
         writer.send(connectionActor, write)
-        writer.expectMsg(CommandFailed(write))
+        writer.expectMsg(CommandFailed(write, None))
         writer.send(connectionActor, Write.empty)
-        writer.expectMsg(CommandFailed(Write.empty))
+        writer.expectMsg(CommandFailed(Write.empty, None))
 
         // resuming must work immediately
         writer.send(connectionActor, ResumeWriting)
@@ -744,15 +744,15 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write, _) ⇒ written -= 1
         }
         writer.msgAvailable should be(false)
 
         // writes must fail now
         writer.send(connectionActor, write)
-        writer.expectMsg(CommandFailed(write))
+        writer.expectMsg(CommandFailed(write, None))
         writer.send(connectionActor, Write.empty)
-        writer.expectMsg(CommandFailed(Write.empty))
+        writer.expectMsg(CommandFailed(Write.empty, None))
 
         // so drain the queue until it works again
         pullFromServerSide(TestSize * written)
@@ -777,7 +777,7 @@ class TcpConnectionSpec extends AkkaSpec("""
         }
         // dump the NACKs
         writer.receiveWhile(1.second) {
-          case CommandFailed(write) ⇒ written -= 1
+          case CommandFailed(write, _) ⇒ written -= 1
         }
 
         // drain the queue until it works again

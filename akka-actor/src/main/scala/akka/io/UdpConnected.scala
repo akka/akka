@@ -43,7 +43,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * The common type of all commands supported by the UDP implementation.
    */
   trait Command extends SelectionHandler.HasFailureMessage with Message {
-    def failureMessage = CommandFailed(this)
+    def failureMessage(cause: Option[Throwable] = None) = CommandFailed(this, cause)
   }
 
   /**
@@ -125,7 +125,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * When a command fails it will be replied to with this message type,
    * wrapping the failing command object.
    */
-  case class CommandFailed(cmd: Command) extends Event
+  case class CommandFailed(cmd: Command, cause: Option[Throwable] = None) extends Event
 
   /**
    * This message is sent by the connection actor to the actor which sent the
