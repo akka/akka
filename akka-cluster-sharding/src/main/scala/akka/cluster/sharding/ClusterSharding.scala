@@ -230,6 +230,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   that passed the `idExtractor` will be used
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
+   * @param handOffStopMessage the message that will be sent to entries when they are to be stopped
+   *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
@@ -239,12 +241,14 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     rememberEntries: Boolean,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver,
-    allocationStrategy: ShardAllocationStrategy): ActorRef = {
+    allocationStrategy: ShardAllocationStrategy,
+    handOffStopMessage: Any): ActorRef = {
 
     val resolvedRole = if (roleOverride == None) Role else roleOverride
 
     implicit val timeout = system.settings.CreationTimeout
-    val startMsg = Start(typeName, entryProps, roleOverride, rememberEntries, idExtractor, shardResolver, allocationStrategy)
+    val startMsg = Start(typeName, entryProps, roleOverride, rememberEntries,
+      idExtractor, shardResolver, allocationStrategy, handOffStopMessage)
     val Started(shardRegion) = Await.result(guardian ? startMsg, timeout.duration)
     regions.put(typeName, shardRegion)
     shardRegion
@@ -256,7 +260,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
-   * is used.
+   * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -286,7 +290,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     shardResolver: ShardRegion.ShardResolver): ActorRef = {
 
     start(typeName, entryProps, roleOverride, rememberEntries, idExtractor, shardResolver,
-      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance))
+      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance),
+      PoisonPill)
   }
 
   /**
@@ -310,6 +315,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   entry from the incoming message
    * @param allocationStrategy possibility to use a custom shard allocation and
    *   rebalancing logic
+   * @param handOffStopMessage the message that will be sent to entries when they are to be stopped
+   *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
    */
   def start(
@@ -318,7 +325,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     roleOverride: Option[String],
     rememberEntries: Boolean,
     messageExtractor: ShardRegion.MessageExtractor,
-    allocationStrategy: ShardAllocationStrategy): ActorRef = {
+    allocationStrategy: ShardAllocationStrategy,
+    handOffStopMessage: Any): ActorRef = {
 
     start(typeName, entryProps = Option(entryProps), roleOverride, rememberEntries,
       idExtractor = {
@@ -326,7 +334,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
           (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
       },
       shardResolver = msg ⇒ messageExtractor.shardId(msg),
-      allocationStrategy = allocationStrategy)
+      allocationStrategy = allocationStrategy,
+      handOffStopMessage = handOffStopMessage)
   }
 
   /**
@@ -335,7 +344,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    * for this type can later be retrieved with the [[#shardRegion]] method.
    *
    * The default shard allocation strategy [[ShardCoordinator.LeastShardAllocationStrategy]]
-   * is used.
+   * is used. [[akka.actor.PoisonPill]] is used as `handOffStopMessage`.
    *
    * Some settings can be configured as described in the `akka.cluster.sharding` section
    * of the `reference.conf`.
@@ -361,7 +370,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
     messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
     start(typeName, entryProps, roleOverride, rememberEntries, messageExtractor,
-      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance))
+      new LeastShardAllocationStrategy(LeastShardAllocationRebalanceThreshold, LeastShardAllocationMaxSimultaneousRebalance),
+      PoisonPill)
   }
 
   /**
@@ -382,7 +392,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
 private[akka] object ClusterShardingGuardian {
   import ShardCoordinator.ShardAllocationStrategy
   final case class Start(typeName: String, entryProps: Option[Props], role: Option[String], rememberEntries: Boolean,
-                         idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver, allocationStrategy: ShardAllocationStrategy)
+                         idExtractor: ShardRegion.IdExtractor, shardResolver: ShardRegion.ShardResolver,
+                         allocationStrategy: ShardAllocationStrategy, handOffStopMessage: Any)
     extends NoSerializationVerificationNeeded
   final case class Started(shardRegion: ActorRef) extends NoSerializationVerificationNeeded
 }
@@ -399,7 +410,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
   import sharding.Settings._
 
   def receive = {
-    case Start(typeName, entryProps, role, rememberEntries, idExtractor, shardResolver, allocationStrategy) ⇒
+    case Start(typeName, entryProps, role, rememberEntries, idExtractor, shardResolver, allocationStrategy, handOffStopMessage) ⇒
       val encName = URLEncoder.encode(typeName, "utf-8")
       val coordinatorSingletonManagerName = encName + "Coordinator"
       val coordinatorPath = (self.path / coordinatorSingletonManagerName / "singleton" / "coordinator").toStringWithoutAddress
@@ -430,7 +441,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
           bufferSize = BufferSize,
           rememberEntries = rememberEntries,
           idExtractor = idExtractor,
-          shardResolver = shardResolver),
+          shardResolver = shardResolver,
+          handOffStopMessage = handOffStopMessage),
           name = encName)
       }
       sender() ! Started(shardRegion)
@@ -459,8 +471,10 @@ object ShardRegion {
     bufferSize: Int,
     rememberEntries: Boolean,
     idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): Props =
-    Props(new ShardRegion(typeName, entryProps, role, coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff, snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver))
+    shardResolver: ShardRegion.ShardResolver,
+    handOffStopMessage: Any): Props =
+    Props(new ShardRegion(typeName, entryProps, role, coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff,
+      snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver, handOffStopMessage))
 
   /**
    * Scala API: Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
@@ -477,8 +491,10 @@ object ShardRegion {
     bufferSize: Int,
     rememberEntries: Boolean,
     idExtractor: ShardRegion.IdExtractor,
-    shardResolver: ShardRegion.ShardResolver): Props =
-    props(typeName, Some(entryProps), role, coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff, snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver)
+    shardResolver: ShardRegion.ShardResolver,
+    handOffStopMessage: Any): Props =
+    props(typeName, Some(entryProps), role, coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff,
+      snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver, handOffStopMessage)
 
   /**
    * Java API: Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor.
@@ -494,14 +510,17 @@ object ShardRegion {
     snapshotInterval: FiniteDuration,
     bufferSize: Int,
     rememberEntries: Boolean,
-    messageExtractor: ShardRegion.MessageExtractor): Props = {
+    messageExtractor: ShardRegion.MessageExtractor,
+    handOffStopMessage: Any): Props = {
 
-    props(typeName, Option(entryProps), roleOption(role), coordinatorPath, retryInterval, shardFailureBackoff, entryRestartBackoff, snapshotInterval, bufferSize, rememberEntries,
+    props(typeName, Option(entryProps), roleOption(role), coordinatorPath, retryInterval, shardFailureBackoff,
+      entryRestartBackoff, snapshotInterval, bufferSize, rememberEntries,
       idExtractor = {
         case msg if messageExtractor.entryId(msg) ne null ⇒
           (messageExtractor.entryId(msg), messageExtractor.entryMessage(msg))
       }: ShardRegion.IdExtractor,
-      shardResolver = msg ⇒ messageExtractor.shardId(msg))
+      shardResolver = msg ⇒ messageExtractor.shardId(msg),
+      handOffStopMessage = handOffStopMessage)
   }
 
   /**
@@ -516,7 +535,8 @@ object ShardRegion {
     bufferSize: Int,
     idExtractor: ShardRegion.IdExtractor,
     shardResolver: ShardRegion.ShardResolver): Props =
-    Props(new ShardRegion(typeName, None, role, coordinatorPath, retryInterval, Duration.Zero, Duration.Zero, Duration.Zero, bufferSize, false, idExtractor, shardResolver))
+    Props(new ShardRegion(typeName, None, role, coordinatorPath, retryInterval, Duration.Zero, Duration.Zero,
+      Duration.Zero, bufferSize, false, idExtractor, shardResolver, PoisonPill))
 
   /**
    * Java API: : Factory method for the [[akka.actor.Props]] of the [[ShardRegion]] actor
@@ -611,21 +631,36 @@ object ShardRegion {
    */
   @SerialVersionUID(1L) final case class Passivate(stopMessage: Any) extends ShardRegionCommand
 
+  /*
+   * Send this message to the `ShardRegion` actor to handoff all shards that are hosted by
+   * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
+   * it to know when it is completed.
+   */
+  @SerialVersionUID(1L) final case object GracefulShutdown extends ShardRegionCommand
+
+  /**
+   * Java API: Send this message to the `ShardRegion` actor to handoff all shards that are hosted by
+   * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
+   * it to know when it is completed.
+   */
+  def gracefulShutdownInstance = GracefulShutdown
+
   private case object Retry extends ShardRegionCommand
 
   private def roleOption(role: String): Option[String] =
     if (role == "") None else Option(role)
 
   /**
-   * INTERNAL API. Sends `PoisonPill` to the entries and when all of them have terminated
-   * it replies with `ShardStopped`.
+   * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entries and when all of
+   * them have terminated it replies with `ShardStopped`.
    */
-  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entries: Set[ActorRef]) extends Actor {
+  private[akka] class HandOffStopper(shard: String, replyTo: ActorRef, entries: Set[ActorRef], stopMessage: Any)
+    extends Actor {
     import ShardCoordinator.Internal.ShardStopped
 
     entries.foreach { a ⇒
       context watch a
-      a ! PoisonPill
+      a ! stopMessage
     }
 
     var remaining = entries
@@ -640,8 +675,9 @@ object ShardRegion {
     }
   }
 
-  private[akka] def handOffStopperProps(shard: String, replyTo: ActorRef, entries: Set[ActorRef]): Props =
-    Props(new HandOffStopper(shard, replyTo, entries))
+  private[akka] def handOffStopperProps(
+    shard: String, replyTo: ActorRef, entries: Set[ActorRef], stopMessage: Any): Props =
+    Props(new HandOffStopper(shard, replyTo, entries, stopMessage))
 }
 
 /**
@@ -663,7 +699,8 @@ class ShardRegion(
   bufferSize: Int,
   rememberEntries: Boolean,
   idExtractor: ShardRegion.IdExtractor,
-  shardResolver: ShardRegion.ShardResolver) extends Actor with ActorLogging {
+  shardResolver: ShardRegion.ShardResolver,
+  handOffStopMessage: Any) extends Actor with ActorLogging {
 
   import ShardCoordinator.Internal._
   import ShardRegion._
@@ -680,6 +717,7 @@ class ShardRegion(
   var shards = Map.empty[ShardId, ActorRef]
   var shardsByRef = Map.empty[ActorRef, ShardId]
   var handingOff = Set.empty[ActorRef]
+  var gracefulShutdownInProgress = false
 
   def totalBufferSize = shardBuffers.foldLeft(0) { (sum, entry) ⇒ sum + entry._2.size }
 
@@ -817,8 +855,15 @@ class ShardRegion(
     case Retry ⇒
       if (coordinator.isEmpty)
         register()
-      else
+      else {
+        sendGracefulShutdownToCoordinator()
         requestShardBufferHomes()
+      }
+
+    case GracefulShutdown ⇒
+      log.debug("Starting graceful shutdown of region and all its shards")
+      gracefulShutdownInProgress = true
+      sendGracefulShutdownToCoordinator()
 
     case _ ⇒ unhandled(cmd)
   }
@@ -844,6 +889,9 @@ class ShardRegion(
       } else {
         throw new IllegalStateException(s"Shard [$shardId] terminated while not being handed off.")
       }
+
+      if (gracefulShutdownInProgress && shards.isEmpty && shardBuffers.isEmpty)
+        context.stop(self) // all shards have been rebalanced, complete graceful shutdown
     }
   }
 
@@ -916,7 +964,8 @@ class ShardRegion(
             bufferSize,
             rememberEntries,
             idExtractor,
-            shardResolver),
+            shardResolver,
+            handOffStopMessage),
           name))
         shards = shards.updated(id, shard)
         shardsByRef = shardsByRef.updated(shard, id)
@@ -924,6 +973,10 @@ class ShardRegion(
       case None ⇒
         throw new IllegalStateException("Shard must not be allocated to a proxy only ShardRegion")
     })
+
+  def sendGracefulShutdownToCoordinator(): Unit =
+    if (gracefulShutdownInProgress)
+      coordinator.foreach(_ ! GracefulShutdownReq(self))
 }
 
 /**
@@ -992,8 +1045,10 @@ private[akka] object Shard {
             bufferSize: Int,
             rememberEntries: Boolean,
             idExtractor: ShardRegion.IdExtractor,
-            shardResolver: ShardRegion.ShardResolver): Props =
-    Props(new Shard(typeName, shardId, entryProps, shardFailureBackoff, entryRestartBackoff, snapshotInterval, bufferSize, rememberEntries, idExtractor, shardResolver))
+            shardResolver: ShardRegion.ShardResolver,
+            handOffStopMessage: Any): Props =
+    Props(new Shard(typeName, shardId, entryProps, shardFailureBackoff, entryRestartBackoff, snapshotInterval,
+      bufferSize, rememberEntries, idExtractor, shardResolver, handOffStopMessage))
 }
 
 /**
@@ -1014,7 +1069,8 @@ private[akka] class Shard(
   bufferSize: Int,
   rememberEntries: Boolean,
   idExtractor: ShardRegion.IdExtractor,
-  shardResolver: ShardRegion.ShardResolver) extends PersistentActor with ActorLogging {
+  shardResolver: ShardRegion.ShardResolver,
+  handOffStopMessage: Any) extends PersistentActor with ActorLogging {
 
   import ShardRegion.{ handOffStopperProps, EntryId, Msg, Passivate }
   import ShardCoordinator.Internal.{ HandOff, ShardStopped }
@@ -1105,7 +1161,8 @@ private[akka] class Shard(
       log.debug("HandOff shard [{}]", shardId)
 
       if (state.entries.nonEmpty) {
-        handOffStopper = Some(context.watch(context.actorOf(handOffStopperProps(shardId, replyTo, idByRef.keySet))))
+        handOffStopper = Some(context.watch(context.actorOf(
+          handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage))))
 
         //During hand off we only care about watching for termination of the hand off stopper
         context become {
@@ -1470,6 +1527,11 @@ object ShardCoordinator {
      */
     @SerialVersionUID(1L) final case class RebalanceResult(shards: Set[ShardId]) extends CoordinatorCommand
 
+    /**
+     * `ShardRegion` requests full handoff to be able to shutdown gracefully.
+     */
+    @SerialVersionUID(1L) final case class GracefulShutdownReq(shardRegion: ActorRef) extends CoordinatorCommand
+
     // DomainEvents for the persistent state of the event sourced ShardCoordinator
     sealed trait DomainEvent
     @SerialVersionUID(1L) final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
@@ -1605,6 +1667,8 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
   var persistentState = State.empty
   var rebalanceInProgress = Set.empty[ShardId]
   var unAckedHostShards = Map.empty[ShardId, Cancellable]
+  // regions that have requested handoff, for graceful shutdown
+  var gracefulShutdownInProgress = Set.empty[ActorRef]
 
   import context.dispatcher
   val rebalanceTask = context.system.scheduler.schedule(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
@@ -1665,7 +1729,8 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
       log.debug("ShardRegion registered: [{}]", region)
       if (persistentState.regions.contains(region))
         sender() ! RegisterAck(self)
-      else
+      else {
+        gracefulShutdownInProgress -= region
         persist(ShardRegionRegistered(region)) { evt ⇒
           val firstRegion = persistentState.regions.isEmpty
 
@@ -1676,6 +1741,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
           if (firstRegion)
             allocateShardHomes()
         }
+      }
 
     case RegisterProxy(proxy) ⇒
       log.debug("ShardRegion proxy registered: [{}]", proxy)
@@ -1695,6 +1761,8 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
         require(persistentState.regions.contains(ref), s"Terminated region $ref not registered")
         persistentState.regions(ref).foreach { s ⇒ self ! GetShardHome(s) }
 
+        gracefulShutdownInProgress -= ref
+
         persist(ShardRegionTerminated(ref)) { evt ⇒
           persistentState = persistentState.updated(evt)
           allocateShardHomes()
@@ -1711,9 +1779,10 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
         persistentState.shards.get(shard) match {
           case Some(ref) ⇒ sender() ! ShardHome(shard, ref)
           case None ⇒
-            if (persistentState.regions.nonEmpty) {
+            val activeRegions = persistentState.regions -- gracefulShutdownInProgress
+            if (activeRegions.nonEmpty) {
               val getShardHomeSender = sender()
-              val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, persistentState.regions)
+              val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
               regionFuture.value match {
                 case Some(Success(region)) ⇒
                   continueGetShardHome(shard, region, getShardHomeSender)
@@ -1771,11 +1840,24 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
       rebalanceInProgress -= shard
       log.debug("Rebalance shard [{}] done [{}]", shard, ok)
       // The shard could have been removed by ShardRegionTerminated
-      if (ok && persistentState.shards.contains(shard))
-        persist(ShardHomeDeallocated(shard)) { evt ⇒
-          persistentState = persistentState.updated(evt)
-          log.debug("Shard [{}] deallocated", evt.shard)
-          allocateShardHomes()
+      if (persistentState.shards.contains(shard))
+        if (ok)
+          persist(ShardHomeDeallocated(shard)) { evt ⇒
+            persistentState = persistentState.updated(evt)
+            log.debug("Shard [{}] deallocated", evt.shard)
+            allocateShardHomes()
+          }
+        else // rebalance not completed, graceful shutdown will be retried
+          gracefulShutdownInProgress -= persistentState.shards(shard)
+
+    case GracefulShutdownReq(region) ⇒
+      if (!gracefulShutdownInProgress(region))
+        persistentState.regions.get(region) match {
+          case Some(shards) ⇒
+            log.debug("Graceful shutdown of region [{}] with shards [{}]", region, shards)
+            gracefulShutdownInProgress += region
+            continueRebalance(shards.toSet)
+          case None ⇒
         }
 
     case SnapshotTick ⇒
@@ -1818,7 +1900,7 @@ class ShardCoordinator(handOffTimeout: FiniteDuration, shardStartTimeout: Finite
       persistentState.shards.get(shard) match {
         case Some(ref) ⇒ getShardHomeSender ! ShardHome(shard, ref)
         case None ⇒
-          if (persistentState.regions.contains(region)) {
+          if (persistentState.regions.contains(region) && !gracefulShutdownInProgress.contains(region)) {
             persist(ShardHomeAllocated(shard, region)) { evt ⇒
               persistentState = persistentState.updated(evt)
               log.debug("Shard [{}] allocated at [{}]", evt.shard, evt.region)

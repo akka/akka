@@ -5,16 +5,20 @@
 package akka.cluster.sharding;
 
 import java.util.concurrent.TimeUnit;
-
 import scala.concurrent.duration.Duration;
+
+import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.PoisonPill;
 import akka.actor.Props;
+import akka.actor.Terminated;
 import akka.actor.ReceiveTimeout;
 import akka.japi.Procedure;
 import akka.japi.Option;
 import akka.persistence.UntypedPersistentActor;
+import akka.cluster.Cluster;
+import akka.japi.pf.ReceiveBuilder;
 
 // Doc code, compile only
 public class ClusterShardingTest {
@@ -66,7 +70,7 @@ public class ClusterShardingTest {
 
     //#counter-start
     Option<String> roleOption = Option.none();
-    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter", 
+    ActorRef startedCounterRegion = ClusterSharding.get(system).start("Counter",
       Props.create(Counter.class), Option.java2ScalaOption(roleOption), false, messageExtractor);
     //#counter-start
 
@@ -169,5 +173,26 @@ public class ClusterShardingTest {
   }
 
   //#counter-actor
+
+  static//#graceful-shutdown
+  public class IllustrateGracefulShutdown extends AbstractActor {
+
+    public IllustrateGracefulShutdown() {
+      final ActorSystem system = context().system();
+      final Cluster cluster = Cluster.get(system);
+      final ActorRef region = ClusterSharding.get(system).shardRegion("Entity");
+
+      receive(ReceiveBuilder.
+        match(String.class, s -> s.equals("leave"), s -> {
+          context().watch(region);
+          region.tell(ShardRegion.gracefulShutdownInstance(), self());
+        }).
+        match(Terminated.class, t -> t.actor().equals(region), t -> {
+          cluster.registerOnMemberRemoved(() -> system.terminate());
+          cluster.leave(cluster.selfAddress());
+        }).build());
+    }
+  }
+  //#graceful-shutdown
 
 }
