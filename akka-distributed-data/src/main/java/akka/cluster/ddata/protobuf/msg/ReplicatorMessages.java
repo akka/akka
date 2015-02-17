@@ -6,10 +6,10 @@ package akka.cluster.ddata.protobuf.msg;
 public final class ReplicatorMessages {
   private ReplicatorMessages() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   public interface GetOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -63,14 +63,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Get}
    */
   public static final class Get extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements GetOrBuilder {
     // Use Get.newBuilder() to construct.
-    private Get(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Get(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Get(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Get(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Get defaultInstance;
     public static Get getDefaultInstance() {
@@ -81,20 +81,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Get(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -148,40 +148,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Get> PARSER =
-        new com.google.protobuf.AbstractParser<Get>() {
+    public static akka.protobuf.Parser<Get> PARSER =
+        new akka.protobuf.AbstractParser<Get>() {
       public Get parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Get(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Get> getParserForType() {
+    public akka.protobuf.Parser<Get> getParserForType() {
       return PARSER;
     }
 
@@ -299,7 +299,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -324,19 +324,19 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeSInt32Size(2, consistency_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(3, timeout_);
       }
       if (((bitField0_ & 0x00000008) == 0x00000008)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(4, request_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -352,24 +352,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(java.io.InputStream input)
@@ -378,7 +378,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -388,18 +388,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -413,7 +413,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -421,14 +421,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Get}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -441,12 +441,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
           getRequestFieldBuilder();
         }
@@ -480,7 +480,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Get_descriptor;
       }
@@ -530,7 +530,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get)other);
         } else {
@@ -584,13 +584,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Get) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -604,7 +604,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -705,11 +705,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -787,7 +787,7 @@ public final class ReplicatorMessages {
 
       // optional .akka.cluster.ddata.OtherMessage request = 4;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
@@ -888,11 +888,11 @@ public final class ReplicatorMessages {
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getRequestFieldBuilder() {
         if (requestBuilder_ == null) {
-          requestBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          requestBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   request_,
                   getParentForChildren(),
@@ -914,7 +914,7 @@ public final class ReplicatorMessages {
   }
 
   public interface GetSuccessOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -962,14 +962,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.GetSuccess}
    */
   public static final class GetSuccess extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements GetSuccessOrBuilder {
     // Use GetSuccess.newBuilder() to construct.
-    private GetSuccess(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private GetSuccess(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private GetSuccess(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private GetSuccess(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final GetSuccess defaultInstance;
     public static GetSuccess getDefaultInstance() {
@@ -980,20 +980,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private GetSuccess(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1050,40 +1050,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<GetSuccess> PARSER =
-        new com.google.protobuf.AbstractParser<GetSuccess>() {
+    public static akka.protobuf.Parser<GetSuccess> PARSER =
+        new akka.protobuf.AbstractParser<GetSuccess>() {
       public GetSuccess parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new GetSuccess(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<GetSuccess> getParserForType() {
+    public akka.protobuf.Parser<GetSuccess> getParserForType() {
       return PARSER;
     }
 
@@ -1190,7 +1190,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -1212,15 +1212,15 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, data_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(4, request_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -1236,24 +1236,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(java.io.InputStream input)
@@ -1262,7 +1262,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1272,18 +1272,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -1297,7 +1297,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -1305,14 +1305,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.GetSuccess}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccessOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -1325,12 +1325,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
           getDataFieldBuilder();
           getRequestFieldBuilder();
@@ -1367,7 +1367,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetSuccess_descriptor;
       }
@@ -1417,7 +1417,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess)other);
         } else {
@@ -1468,13 +1468,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetSuccess) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -1488,7 +1488,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -1589,11 +1589,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -1605,7 +1605,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage data = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
@@ -1706,11 +1706,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getDataFieldBuilder() {
         if (dataBuilder_ == null) {
-          dataBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          dataBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   data_,
                   getParentForChildren(),
@@ -1722,7 +1722,7 @@ public final class ReplicatorMessages {
 
       // optional .akka.cluster.ddata.OtherMessage request = 4;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
@@ -1823,11 +1823,11 @@ public final class ReplicatorMessages {
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getRequestFieldBuilder() {
         if (requestBuilder_ == null) {
-          requestBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          requestBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   request_,
                   getParentForChildren(),
@@ -1849,7 +1849,7 @@ public final class ReplicatorMessages {
   }
 
   public interface NotFoundOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -1883,14 +1883,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.NotFound}
    */
   public static final class NotFound extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements NotFoundOrBuilder {
     // Use NotFound.newBuilder() to construct.
-    private NotFound(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private NotFound(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private NotFound(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private NotFound(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final NotFound defaultInstance;
     public static NotFound getDefaultInstance() {
@@ -1901,20 +1901,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private NotFound(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -1958,40 +1958,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<NotFound> PARSER =
-        new com.google.protobuf.AbstractParser<NotFound>() {
+    public static akka.protobuf.Parser<NotFound> PARSER =
+        new akka.protobuf.AbstractParser<NotFound>() {
       public NotFound parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new NotFound(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<NotFound> getParserForType() {
+    public akka.protobuf.Parser<NotFound> getParserForType() {
       return PARSER;
     }
 
@@ -2067,7 +2067,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2086,11 +2086,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, request_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -2106,24 +2106,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(java.io.InputStream input)
@@ -2132,7 +2132,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2142,18 +2142,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2167,7 +2167,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2175,14 +2175,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.NotFound}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFoundOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2195,12 +2195,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
           getRequestFieldBuilder();
         }
@@ -2230,7 +2230,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_NotFound_descriptor;
       }
@@ -2272,7 +2272,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound)other);
         } else {
@@ -2312,13 +2312,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.NotFound) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -2332,7 +2332,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -2433,11 +2433,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -2449,7 +2449,7 @@ public final class ReplicatorMessages {
 
       // optional .akka.cluster.ddata.OtherMessage request = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
@@ -2550,11 +2550,11 @@ public final class ReplicatorMessages {
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getRequestFieldBuilder() {
         if (requestBuilder_ == null) {
-          requestBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          requestBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   request_,
                   getParentForChildren(),
@@ -2576,7 +2576,7 @@ public final class ReplicatorMessages {
   }
 
   public interface GetFailureOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -2610,14 +2610,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.GetFailure}
    */
   public static final class GetFailure extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements GetFailureOrBuilder {
     // Use GetFailure.newBuilder() to construct.
-    private GetFailure(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private GetFailure(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private GetFailure(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private GetFailure(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final GetFailure defaultInstance;
     public static GetFailure getDefaultInstance() {
@@ -2628,20 +2628,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private GetFailure(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -2685,40 +2685,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<GetFailure> PARSER =
-        new com.google.protobuf.AbstractParser<GetFailure>() {
+    public static akka.protobuf.Parser<GetFailure> PARSER =
+        new akka.protobuf.AbstractParser<GetFailure>() {
       public GetFailure parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new GetFailure(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<GetFailure> getParserForType() {
+    public akka.protobuf.Parser<GetFailure> getParserForType() {
       return PARSER;
     }
 
@@ -2794,7 +2794,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -2813,11 +2813,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, request_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -2833,24 +2833,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(java.io.InputStream input)
@@ -2859,7 +2859,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2869,18 +2869,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -2894,7 +2894,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -2902,14 +2902,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.GetFailure}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailureOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -2922,12 +2922,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
           getRequestFieldBuilder();
         }
@@ -2957,7 +2957,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_GetFailure_descriptor;
       }
@@ -2999,7 +2999,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure)other);
         } else {
@@ -3039,13 +3039,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GetFailure) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -3059,7 +3059,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -3160,11 +3160,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -3176,7 +3176,7 @@ public final class ReplicatorMessages {
 
       // optional .akka.cluster.ddata.OtherMessage request = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
@@ -3277,11 +3277,11 @@ public final class ReplicatorMessages {
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getRequestFieldBuilder() {
         if (requestBuilder_ == null) {
-          requestBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          requestBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   request_,
                   getParentForChildren(),
@@ -3303,7 +3303,7 @@ public final class ReplicatorMessages {
   }
 
   public interface SubscribeOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -3331,21 +3331,21 @@ public final class ReplicatorMessages {
     /**
      * <code>required string ref = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRefBytes();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.Subscribe}
    */
   public static final class Subscribe extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements SubscribeOrBuilder {
     // Use Subscribe.newBuilder() to construct.
-    private Subscribe(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Subscribe(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Subscribe(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Subscribe(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Subscribe defaultInstance;
     public static Subscribe getDefaultInstance() {
@@ -3356,20 +3356,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Subscribe(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -3405,40 +3405,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Subscribe> PARSER =
-        new com.google.protobuf.AbstractParser<Subscribe>() {
+    public static akka.protobuf.Parser<Subscribe> PARSER =
+        new akka.protobuf.AbstractParser<Subscribe>() {
       public Subscribe parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Subscribe(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Subscribe> getParserForType() {
+    public akka.protobuf.Parser<Subscribe> getParserForType() {
       return PARSER;
     }
 
@@ -3482,8 +3482,8 @@ public final class ReplicatorMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           ref_ = s;
@@ -3494,17 +3494,17 @@ public final class ReplicatorMessages {
     /**
      * <code>required string ref = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRefBytes() {
       java.lang.Object ref = ref_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         ref_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -3533,7 +3533,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -3552,11 +3552,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getRefBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -3572,24 +3572,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(java.io.InputStream input)
@@ -3598,7 +3598,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3608,18 +3608,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -3633,7 +3633,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -3641,14 +3641,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Subscribe}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.SubscribeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -3661,12 +3661,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
         }
       }
@@ -3691,7 +3691,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Subscribe_descriptor;
       }
@@ -3729,7 +3729,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe)other);
         } else {
@@ -3769,13 +3769,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Subscribe) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -3789,7 +3789,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -3890,11 +3890,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -3918,7 +3918,7 @@ public final class ReplicatorMessages {
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           ref_ = s;
           return s;
@@ -3929,17 +3929,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string ref = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRefBytes() {
         java.lang.Object ref = ref_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           ref_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -3968,7 +3968,7 @@ public final class ReplicatorMessages {
        * <code>required string ref = 2;</code>
        */
       public Builder setRefBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -3990,7 +3990,7 @@ public final class ReplicatorMessages {
   }
 
   public interface UnsubscribeOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -4018,21 +4018,21 @@ public final class ReplicatorMessages {
     /**
      * <code>required string ref = 2;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getRefBytes();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.Unsubscribe}
    */
   public static final class Unsubscribe extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements UnsubscribeOrBuilder {
     // Use Unsubscribe.newBuilder() to construct.
-    private Unsubscribe(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Unsubscribe(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Unsubscribe(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Unsubscribe(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Unsubscribe defaultInstance;
     public static Unsubscribe getDefaultInstance() {
@@ -4043,20 +4043,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Unsubscribe(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4092,40 +4092,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Unsubscribe> PARSER =
-        new com.google.protobuf.AbstractParser<Unsubscribe>() {
+    public static akka.protobuf.Parser<Unsubscribe> PARSER =
+        new akka.protobuf.AbstractParser<Unsubscribe>() {
       public Unsubscribe parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Unsubscribe(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Unsubscribe> getParserForType() {
+    public akka.protobuf.Parser<Unsubscribe> getParserForType() {
       return PARSER;
     }
 
@@ -4169,8 +4169,8 @@ public final class ReplicatorMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           ref_ = s;
@@ -4181,17 +4181,17 @@ public final class ReplicatorMessages {
     /**
      * <code>required string ref = 2;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getRefBytes() {
       java.lang.Object ref = ref_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         ref_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -4220,7 +4220,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4239,11 +4239,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(2, getRefBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -4259,24 +4259,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(java.io.InputStream input)
@@ -4285,7 +4285,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4295,18 +4295,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4320,7 +4320,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -4328,14 +4328,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Unsubscribe}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UnsubscribeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -4348,12 +4348,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
         }
       }
@@ -4378,7 +4378,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Unsubscribe_descriptor;
       }
@@ -4416,7 +4416,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe)other);
         } else {
@@ -4456,13 +4456,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Unsubscribe) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -4476,7 +4476,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -4577,11 +4577,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -4605,7 +4605,7 @@ public final class ReplicatorMessages {
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           ref_ = s;
           return s;
@@ -4616,17 +4616,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string ref = 2;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getRefBytes() {
         java.lang.Object ref = ref_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           ref_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -4655,7 +4655,7 @@ public final class ReplicatorMessages {
        * <code>required string ref = 2;</code>
        */
       public Builder setRefBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -4677,7 +4677,7 @@ public final class ReplicatorMessages {
   }
 
   public interface ChangedOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage key = 1;
     /**
@@ -4711,14 +4711,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Changed}
    */
   public static final class Changed extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ChangedOrBuilder {
     // Use Changed.newBuilder() to construct.
-    private Changed(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Changed(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Changed(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Changed(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Changed defaultInstance;
     public static Changed getDefaultInstance() {
@@ -4729,20 +4729,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Changed(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -4786,40 +4786,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Changed> PARSER =
-        new com.google.protobuf.AbstractParser<Changed>() {
+    public static akka.protobuf.Parser<Changed> PARSER =
+        new akka.protobuf.AbstractParser<Changed>() {
       public Changed parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Changed(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Changed> getParserForType() {
+    public akka.protobuf.Parser<Changed> getParserForType() {
       return PARSER;
     }
 
@@ -4897,7 +4897,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -4916,11 +4916,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, key_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, data_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -4936,24 +4936,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(java.io.InputStream input)
@@ -4962,7 +4962,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4972,18 +4972,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -4997,7 +4997,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5005,14 +5005,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Changed}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ChangedOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5025,12 +5025,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getKeyFieldBuilder();
           getDataFieldBuilder();
         }
@@ -5060,7 +5060,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Changed_descriptor;
       }
@@ -5102,7 +5102,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed)other);
         } else {
@@ -5144,13 +5144,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Changed) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5164,7 +5164,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage key = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
@@ -5265,11 +5265,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getKeyFieldBuilder() {
         if (keyBuilder_ == null) {
-          keyBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          keyBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   key_,
                   getParentForChildren(),
@@ -5281,7 +5281,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage data = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
@@ -5382,11 +5382,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getDataFieldBuilder() {
         if (dataBuilder_ == null) {
-          dataBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          dataBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   data_,
                   getParentForChildren(),
@@ -5408,7 +5408,7 @@ public final class ReplicatorMessages {
   }
 
   public interface WriteOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string key = 1;
     /**
@@ -5422,7 +5422,7 @@ public final class ReplicatorMessages {
     /**
      * <code>required string key = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getKeyBytes();
 
     // required .akka.cluster.ddata.DataEnvelope envelope = 2;
@@ -5443,14 +5443,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Write}
    */
   public static final class Write extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements WriteOrBuilder {
     // Use Write.newBuilder() to construct.
-    private Write(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Write(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Write(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Write(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Write defaultInstance;
     public static Write getDefaultInstance() {
@@ -5461,20 +5461,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Write(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -5510,40 +5510,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Write> PARSER =
-        new com.google.protobuf.AbstractParser<Write>() {
+    public static akka.protobuf.Parser<Write> PARSER =
+        new akka.protobuf.AbstractParser<Write>() {
       public Write parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Write(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Write> getParserForType() {
+    public akka.protobuf.Parser<Write> getParserForType() {
       return PARSER;
     }
 
@@ -5565,8 +5565,8 @@ public final class ReplicatorMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           key_ = s;
@@ -5577,17 +5577,17 @@ public final class ReplicatorMessages {
     /**
      * <code>required string key = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getKeyBytes() {
       java.lang.Object ref = key_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         key_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -5638,7 +5638,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -5657,11 +5657,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getKeyBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, envelope_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -5677,24 +5677,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(java.io.InputStream input)
@@ -5703,7 +5703,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5713,18 +5713,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -5738,7 +5738,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -5746,14 +5746,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Write}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.WriteOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -5766,12 +5766,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getEnvelopeFieldBuilder();
         }
       }
@@ -5796,7 +5796,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Write_descriptor;
       }
@@ -5834,7 +5834,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write)other);
         } else {
@@ -5874,13 +5874,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Write) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -5906,7 +5906,7 @@ public final class ReplicatorMessages {
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           key_ = s;
           return s;
@@ -5917,17 +5917,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           key_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -5956,7 +5956,7 @@ public final class ReplicatorMessages {
        * <code>required string key = 1;</code>
        */
       public Builder setKeyBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -5968,7 +5968,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.DataEnvelope envelope = 2;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
@@ -6069,11 +6069,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> 
           getEnvelopeFieldBuilder() {
         if (envelopeBuilder_ == null) {
-          envelopeBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          envelopeBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder>(
                   envelope_,
                   getParentForChildren(),
@@ -6095,20 +6095,20 @@ public final class ReplicatorMessages {
   }
 
   public interface EmptyOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.Empty}
    */
   public static final class Empty extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements EmptyOrBuilder {
     // Use Empty.newBuilder() to construct.
-    private Empty(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Empty(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Empty(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Empty(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Empty defaultInstance;
     public static Empty getDefaultInstance() {
@@ -6119,19 +6119,19 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Empty(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6149,40 +6149,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Empty> PARSER =
-        new com.google.protobuf.AbstractParser<Empty>() {
+    public static akka.protobuf.Parser<Empty> PARSER =
+        new akka.protobuf.AbstractParser<Empty>() {
       public Empty parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Empty(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Empty> getParserForType() {
+    public akka.protobuf.Parser<Empty> getParserForType() {
       return PARSER;
     }
 
@@ -6197,7 +6197,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       getUnknownFields().writeTo(output);
@@ -6222,24 +6222,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(java.io.InputStream input)
@@ -6248,7 +6248,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6258,18 +6258,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6283,7 +6283,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -6291,14 +6291,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Empty}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.EmptyOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -6311,12 +6311,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -6332,7 +6332,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Empty_descriptor;
       }
@@ -6355,7 +6355,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty)other);
         } else {
@@ -6375,13 +6375,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Empty) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -6404,7 +6404,7 @@ public final class ReplicatorMessages {
   }
 
   public interface ReadOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string key = 1;
     /**
@@ -6418,21 +6418,21 @@ public final class ReplicatorMessages {
     /**
      * <code>required string key = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getKeyBytes();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.Read}
    */
   public static final class Read extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ReadOrBuilder {
     // Use Read.newBuilder() to construct.
-    private Read(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Read(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Read(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Read(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Read defaultInstance;
     public static Read getDefaultInstance() {
@@ -6443,20 +6443,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Read(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6479,40 +6479,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Read> PARSER =
-        new com.google.protobuf.AbstractParser<Read>() {
+    public static akka.protobuf.Parser<Read> PARSER =
+        new akka.protobuf.AbstractParser<Read>() {
       public Read parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Read(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Read> getParserForType() {
+    public akka.protobuf.Parser<Read> getParserForType() {
       return PARSER;
     }
 
@@ -6534,8 +6534,8 @@ public final class ReplicatorMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           key_ = s;
@@ -6546,17 +6546,17 @@ public final class ReplicatorMessages {
     /**
      * <code>required string key = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getKeyBytes() {
       java.lang.Object ref = key_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         key_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -6576,7 +6576,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -6592,7 +6592,7 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getKeyBytes());
       }
       size += getUnknownFields().getSerializedSize();
@@ -6608,24 +6608,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(java.io.InputStream input)
@@ -6634,7 +6634,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6644,18 +6644,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -6669,7 +6669,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -6677,14 +6677,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Read}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -6697,12 +6697,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -6720,7 +6720,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Read_descriptor;
       }
@@ -6750,7 +6750,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read)other);
         } else {
@@ -6779,13 +6779,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Read) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -6811,7 +6811,7 @@ public final class ReplicatorMessages {
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           key_ = s;
           return s;
@@ -6822,17 +6822,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           key_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -6861,7 +6861,7 @@ public final class ReplicatorMessages {
        * <code>required string key = 1;</code>
        */
       public Builder setKeyBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -6883,7 +6883,7 @@ public final class ReplicatorMessages {
   }
 
   public interface ReadResultOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // optional .akka.cluster.ddata.DataEnvelope envelope = 1;
     /**
@@ -6903,14 +6903,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.ReadResult}
    */
   public static final class ReadResult extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ReadResultOrBuilder {
     // Use ReadResult.newBuilder() to construct.
-    private ReadResult(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private ReadResult(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private ReadResult(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private ReadResult(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final ReadResult defaultInstance;
     public static ReadResult getDefaultInstance() {
@@ -6921,20 +6921,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private ReadResult(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -6965,40 +6965,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<ReadResult> PARSER =
-        new com.google.protobuf.AbstractParser<ReadResult>() {
+    public static akka.protobuf.Parser<ReadResult> PARSER =
+        new akka.protobuf.AbstractParser<ReadResult>() {
       public ReadResult parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new ReadResult(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<ReadResult> getParserForType() {
+    public akka.protobuf.Parser<ReadResult> getParserForType() {
       return PARSER;
     }
 
@@ -7043,7 +7043,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -7059,7 +7059,7 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, envelope_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -7075,24 +7075,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(java.io.InputStream input)
@@ -7101,7 +7101,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -7111,18 +7111,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -7136,7 +7136,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -7144,14 +7144,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.ReadResult}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResultOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -7164,12 +7164,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getEnvelopeFieldBuilder();
         }
       }
@@ -7192,7 +7192,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_ReadResult_descriptor;
       }
@@ -7226,7 +7226,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult)other);
         } else {
@@ -7255,13 +7255,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.ReadResult) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -7275,7 +7275,7 @@ public final class ReplicatorMessages {
 
       // optional .akka.cluster.ddata.DataEnvelope envelope = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
@@ -7376,11 +7376,11 @@ public final class ReplicatorMessages {
       /**
        * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> 
           getEnvelopeFieldBuilder() {
         if (envelopeBuilder_ == null) {
-          envelopeBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          envelopeBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder>(
                   envelope_,
                   getParentForChildren(),
@@ -7402,7 +7402,7 @@ public final class ReplicatorMessages {
   }
 
   public interface DataEnvelopeOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.OtherMessage data = 1;
     /**
@@ -7447,14 +7447,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.DataEnvelope}
    */
   public static final class DataEnvelope extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements DataEnvelopeOrBuilder {
     // Use DataEnvelope.newBuilder() to construct.
-    private DataEnvelope(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private DataEnvelope(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private DataEnvelope(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private DataEnvelope(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final DataEnvelope defaultInstance;
     public static DataEnvelope getDefaultInstance() {
@@ -7465,20 +7465,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private DataEnvelope(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -7517,10 +7517,10 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
@@ -7530,35 +7530,35 @@ public final class ReplicatorMessages {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<DataEnvelope> PARSER =
-        new com.google.protobuf.AbstractParser<DataEnvelope>() {
+    public static akka.protobuf.Parser<DataEnvelope> PARSER =
+        new akka.protobuf.AbstractParser<DataEnvelope>() {
       public DataEnvelope parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new DataEnvelope(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<DataEnvelope> getParserForType() {
+    public akka.protobuf.Parser<DataEnvelope> getParserForType() {
       return PARSER;
     }
 
     public interface PruningEntryOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required .akka.cluster.ddata.UniqueAddress removedAddress = 1;
       /**
@@ -7627,14 +7627,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.DataEnvelope.PruningEntry}
      */
     public static final class PruningEntry extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements PruningEntryOrBuilder {
       // Use PruningEntry.newBuilder() to construct.
-      private PruningEntry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private PruningEntry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private PruningEntry(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private PruningEntry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final PruningEntry defaultInstance;
       public static PruningEntry getDefaultInstance() {
@@ -7645,20 +7645,20 @@ public final class ReplicatorMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private PruningEntry(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -7715,10 +7715,10 @@ public final class ReplicatorMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           if (((mutable_bitField0_ & 0x00000008) == 0x00000008)) {
@@ -7728,30 +7728,30 @@ public final class ReplicatorMessages {
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<PruningEntry> PARSER =
-          new com.google.protobuf.AbstractParser<PruningEntry>() {
+      public static akka.protobuf.Parser<PruningEntry> PARSER =
+          new akka.protobuf.AbstractParser<PruningEntry>() {
         public PruningEntry parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new PruningEntry(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<PruningEntry> getParserForType() {
+      public akka.protobuf.Parser<PruningEntry> getParserForType() {
         return PARSER;
       }
 
@@ -7893,7 +7893,7 @@ public final class ReplicatorMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -7918,19 +7918,19 @@ public final class ReplicatorMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(1, removedAddress_);
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, ownerAddress_);
         }
         if (((bitField0_ & 0x00000004) == 0x00000004)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBoolSize(3, performed_);
         }
         for (int i = 0; i < seen_.size(); i++) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(4, seen_.get(i));
         }
         size += getUnknownFields().getSerializedSize();
@@ -7946,24 +7946,24 @@ public final class ReplicatorMessages {
       }
 
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(java.io.InputStream input)
@@ -7972,7 +7972,7 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -7982,18 +7982,18 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -8007,7 +8007,7 @@ public final class ReplicatorMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -8015,14 +8015,14 @@ public final class ReplicatorMessages {
        * Protobuf type {@code akka.cluster.ddata.DataEnvelope.PruningEntry}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -8035,12 +8035,12 @@ public final class ReplicatorMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getRemovedAddressFieldBuilder();
             getOwnerAddressFieldBuilder();
             getSeenFieldBuilder();
@@ -8079,7 +8079,7 @@ public final class ReplicatorMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor;
         }
@@ -8134,7 +8134,7 @@ public final class ReplicatorMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry) {
             return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry)other);
           } else {
@@ -8173,7 +8173,7 @@ public final class ReplicatorMessages {
                 seen_ = other.seen_;
                 bitField0_ = (bitField0_ & ~0x00000008);
                 seenBuilder_ = 
-                  com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                  akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                      getSeenFieldBuilder() : null;
               } else {
                 seenBuilder_.addAllMessages(other.seen_);
@@ -8215,13 +8215,13 @@ public final class ReplicatorMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -8235,7 +8235,7 @@ public final class ReplicatorMessages {
 
         // required .akka.cluster.ddata.UniqueAddress removedAddress = 1;
         private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress removedAddress_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> removedAddressBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
@@ -8336,11 +8336,11 @@ public final class ReplicatorMessages {
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
          */
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> 
             getRemovedAddressFieldBuilder() {
           if (removedAddressBuilder_ == null) {
-            removedAddressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            removedAddressBuilder_ = new akka.protobuf.SingleFieldBuilder<
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder>(
                     removedAddress_,
                     getParentForChildren(),
@@ -8352,7 +8352,7 @@ public final class ReplicatorMessages {
 
         // required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;
         private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress ownerAddress_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance();
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> ownerAddressBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
@@ -8453,11 +8453,11 @@ public final class ReplicatorMessages {
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
          */
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> 
             getOwnerAddressFieldBuilder() {
           if (ownerAddressBuilder_ == null) {
-            ownerAddressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            ownerAddressBuilder_ = new akka.protobuf.SingleFieldBuilder<
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder>(
                     ownerAddress_,
                     getParentForChildren(),
@@ -8510,7 +8510,7 @@ public final class ReplicatorMessages {
            }
         }
 
-        private com.google.protobuf.RepeatedFieldBuilder<
+        private akka.protobuf.RepeatedFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder> seenBuilder_;
 
         /**
@@ -8725,11 +8725,11 @@ public final class ReplicatorMessages {
              getSeenBuilderList() {
           return getSeenFieldBuilder().getBuilderList();
         }
-        private com.google.protobuf.RepeatedFieldBuilder<
+        private akka.protobuf.RepeatedFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder> 
             getSeenFieldBuilder() {
           if (seenBuilder_ == null) {
-            seenBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+            seenBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder>(
                     seen_,
                     ((bitField0_ & 0x00000008) == 0x00000008),
@@ -8837,7 +8837,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -8856,11 +8856,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, data_);
       }
       for (int i = 0; i < pruning_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, pruning_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -8876,24 +8876,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(java.io.InputStream input)
@@ -8902,7 +8902,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -8912,18 +8912,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -8937,7 +8937,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -8945,14 +8945,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.DataEnvelope}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -8965,12 +8965,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getDataFieldBuilder();
           getPruningFieldBuilder();
         }
@@ -9000,7 +9000,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_DataEnvelope_descriptor;
       }
@@ -9043,7 +9043,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope)other);
         } else {
@@ -9076,7 +9076,7 @@ public final class ReplicatorMessages {
               pruning_ = other.pruning_;
               bitField0_ = (bitField0_ & ~0x00000002);
               pruningBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getPruningFieldBuilder() : null;
             } else {
               pruningBuilder_.addAllMessages(other.pruning_);
@@ -9106,13 +9106,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -9126,7 +9126,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.OtherMessage data = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
@@ -9227,11 +9227,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> 
           getDataFieldBuilder() {
         if (dataBuilder_ == null) {
-          dataBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          dataBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder>(
                   data_,
                   getParentForChildren(),
@@ -9251,7 +9251,7 @@ public final class ReplicatorMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> pruningBuilder_;
 
       /**
@@ -9466,11 +9466,11 @@ public final class ReplicatorMessages {
            getPruningBuilderList() {
         return getPruningFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder> 
           getPruningFieldBuilder() {
         if (pruningBuilder_ == null) {
-          pruningBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          pruningBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.PruningEntryOrBuilder>(
                   pruning_,
                   ((bitField0_ & 0x00000002) == 0x00000002),
@@ -9493,7 +9493,7 @@ public final class ReplicatorMessages {
   }
 
   public interface StatusOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required uint32 chunk = 1;
     /**
@@ -9544,14 +9544,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Status}
    */
   public static final class Status extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements StatusOrBuilder {
     // Use Status.newBuilder() to construct.
-    private Status(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Status(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Status(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Status(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Status defaultInstance;
     public static Status getDefaultInstance() {
@@ -9562,20 +9562,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Status(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -9611,10 +9611,10 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000004) == 0x00000004)) {
@@ -9624,35 +9624,35 @@ public final class ReplicatorMessages {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Status> PARSER =
-        new com.google.protobuf.AbstractParser<Status>() {
+    public static akka.protobuf.Parser<Status> PARSER =
+        new akka.protobuf.AbstractParser<Status>() {
       public Status parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Status(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Status> getParserForType() {
+    public akka.protobuf.Parser<Status> getParserForType() {
       return PARSER;
     }
 
     public interface EntryOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required string key = 1;
       /**
@@ -9666,7 +9666,7 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getKeyBytes();
 
       // required bytes digest = 2;
@@ -9677,20 +9677,20 @@ public final class ReplicatorMessages {
       /**
        * <code>required bytes digest = 2;</code>
        */
-      com.google.protobuf.ByteString getDigest();
+      akka.protobuf.ByteString getDigest();
     }
     /**
      * Protobuf type {@code akka.cluster.ddata.Status.Entry}
      */
     public static final class Entry extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements EntryOrBuilder {
       // Use Entry.newBuilder() to construct.
-      private Entry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private Entry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private Entry(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Entry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final Entry defaultInstance;
       public static Entry getDefaultInstance() {
@@ -9701,20 +9701,20 @@ public final class ReplicatorMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private Entry(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -9742,40 +9742,40 @@ public final class ReplicatorMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<Entry> PARSER =
-          new com.google.protobuf.AbstractParser<Entry>() {
+      public static akka.protobuf.Parser<Entry> PARSER =
+          new akka.protobuf.AbstractParser<Entry>() {
         public Entry parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new Entry(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<Entry> getParserForType() {
+      public akka.protobuf.Parser<Entry> getParserForType() {
         return PARSER;
       }
 
@@ -9797,8 +9797,8 @@ public final class ReplicatorMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             key_ = s;
@@ -9809,23 +9809,23 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           key_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
       // required bytes digest = 2;
       public static final int DIGEST_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString digest_;
+      private akka.protobuf.ByteString digest_;
       /**
        * <code>required bytes digest = 2;</code>
        */
@@ -9835,13 +9835,13 @@ public final class ReplicatorMessages {
       /**
        * <code>required bytes digest = 2;</code>
        */
-      public com.google.protobuf.ByteString getDigest() {
+      public akka.protobuf.ByteString getDigest() {
         return digest_;
       }
 
       private void initFields() {
         key_ = "";
-        digest_ = com.google.protobuf.ByteString.EMPTY;
+        digest_ = akka.protobuf.ByteString.EMPTY;
       }
       private byte memoizedIsInitialized = -1;
       public final boolean isInitialized() {
@@ -9860,7 +9860,7 @@ public final class ReplicatorMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -9879,11 +9879,11 @@ public final class ReplicatorMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(1, getKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(2, digest_);
         }
         size += getUnknownFields().getSerializedSize();
@@ -9899,24 +9899,24 @@ public final class ReplicatorMessages {
       }
 
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(java.io.InputStream input)
@@ -9925,7 +9925,7 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -9935,18 +9935,18 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -9960,7 +9960,7 @@ public final class ReplicatorMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -9968,14 +9968,14 @@ public final class ReplicatorMessages {
        * Protobuf type {@code akka.cluster.ddata.Status.Entry}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.EntryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -9988,12 +9988,12 @@ public final class ReplicatorMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           }
         }
         private static Builder create() {
@@ -10004,7 +10004,7 @@ public final class ReplicatorMessages {
           super.clear();
           key_ = "";
           bitField0_ = (bitField0_ & ~0x00000001);
-          digest_ = com.google.protobuf.ByteString.EMPTY;
+          digest_ = akka.protobuf.ByteString.EMPTY;
           bitField0_ = (bitField0_ & ~0x00000002);
           return this;
         }
@@ -10013,7 +10013,7 @@ public final class ReplicatorMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_Entry_descriptor;
         }
@@ -10047,7 +10047,7 @@ public final class ReplicatorMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry) {
             return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry)other);
           } else {
@@ -10083,13 +10083,13 @@ public final class ReplicatorMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -10115,7 +10115,7 @@ public final class ReplicatorMessages {
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             key_ = s;
             return s;
@@ -10126,17 +10126,17 @@ public final class ReplicatorMessages {
         /**
          * <code>required string key = 1;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getKeyBytes() {
           java.lang.Object ref = key_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             key_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -10165,7 +10165,7 @@ public final class ReplicatorMessages {
          * <code>required string key = 1;</code>
          */
         public Builder setKeyBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -10176,7 +10176,7 @@ public final class ReplicatorMessages {
         }
 
         // required bytes digest = 2;
-        private com.google.protobuf.ByteString digest_ = com.google.protobuf.ByteString.EMPTY;
+        private akka.protobuf.ByteString digest_ = akka.protobuf.ByteString.EMPTY;
         /**
          * <code>required bytes digest = 2;</code>
          */
@@ -10186,13 +10186,13 @@ public final class ReplicatorMessages {
         /**
          * <code>required bytes digest = 2;</code>
          */
-        public com.google.protobuf.ByteString getDigest() {
+        public akka.protobuf.ByteString getDigest() {
           return digest_;
         }
         /**
          * <code>required bytes digest = 2;</code>
          */
-        public Builder setDigest(com.google.protobuf.ByteString value) {
+        public Builder setDigest(akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -10319,7 +10319,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -10341,15 +10341,15 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(1, chunk_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(2, totChunks_);
       }
       for (int i = 0; i < entries_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(3, entries_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -10365,24 +10365,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(java.io.InputStream input)
@@ -10391,7 +10391,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -10401,18 +10401,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -10426,7 +10426,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -10434,14 +10434,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Status}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StatusOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -10454,12 +10454,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getEntriesFieldBuilder();
         }
       }
@@ -10486,7 +10486,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Status_descriptor;
       }
@@ -10529,7 +10529,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status)other);
         } else {
@@ -10565,7 +10565,7 @@ public final class ReplicatorMessages {
               entries_ = other.entries_;
               bitField0_ = (bitField0_ & ~0x00000004);
               entriesBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getEntriesFieldBuilder() : null;
             } else {
               entriesBuilder_.addAllMessages(other.entries_);
@@ -10595,13 +10595,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -10689,7 +10689,7 @@ public final class ReplicatorMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.EntryOrBuilder> entriesBuilder_;
 
       /**
@@ -10904,11 +10904,11 @@ public final class ReplicatorMessages {
            getEntriesBuilderList() {
         return getEntriesFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.EntryOrBuilder> 
           getEntriesFieldBuilder() {
         if (entriesBuilder_ == null) {
-          entriesBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          entriesBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Status.EntryOrBuilder>(
                   entries_,
                   ((bitField0_ & 0x00000004) == 0x00000004),
@@ -10931,7 +10931,7 @@ public final class ReplicatorMessages {
   }
 
   public interface GossipOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required bool sendBack = 1;
     /**
@@ -10972,14 +10972,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Gossip}
    */
   public static final class Gossip extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements GossipOrBuilder {
     // Use Gossip.newBuilder() to construct.
-    private Gossip(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Gossip(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Gossip(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Gossip(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Gossip defaultInstance;
     public static Gossip getDefaultInstance() {
@@ -10990,20 +10990,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Gossip(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -11034,10 +11034,10 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000002) == 0x00000002)) {
@@ -11047,35 +11047,35 @@ public final class ReplicatorMessages {
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Gossip> PARSER =
-        new com.google.protobuf.AbstractParser<Gossip>() {
+    public static akka.protobuf.Parser<Gossip> PARSER =
+        new akka.protobuf.AbstractParser<Gossip>() {
       public Gossip parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Gossip(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Gossip> getParserForType() {
+    public akka.protobuf.Parser<Gossip> getParserForType() {
       return PARSER;
     }
 
     public interface EntryOrBuilder
-        extends com.google.protobuf.MessageOrBuilder {
+        extends akka.protobuf.MessageOrBuilder {
 
       // required string key = 1;
       /**
@@ -11089,7 +11089,7 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      com.google.protobuf.ByteString
+      akka.protobuf.ByteString
           getKeyBytes();
 
       // required .akka.cluster.ddata.DataEnvelope envelope = 2;
@@ -11110,14 +11110,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Gossip.Entry}
      */
     public static final class Entry extends
-        com.google.protobuf.GeneratedMessage
+        akka.protobuf.GeneratedMessage
         implements EntryOrBuilder {
       // Use Entry.newBuilder() to construct.
-      private Entry(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+      private Entry(akka.protobuf.GeneratedMessage.Builder<?> builder) {
         super(builder);
         this.unknownFields = builder.getUnknownFields();
       }
-      private Entry(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+      private Entry(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
       private static final Entry defaultInstance;
       public static Entry getDefaultInstance() {
@@ -11128,20 +11128,20 @@ public final class ReplicatorMessages {
         return defaultInstance;
       }
 
-      private final com.google.protobuf.UnknownFieldSet unknownFields;
+      private final akka.protobuf.UnknownFieldSet unknownFields;
       @java.lang.Override
-      public final com.google.protobuf.UnknownFieldSet
+      public final akka.protobuf.UnknownFieldSet
           getUnknownFields() {
         return this.unknownFields;
       }
       private Entry(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         initFields();
         int mutable_bitField0_ = 0;
-        com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-            com.google.protobuf.UnknownFieldSet.newBuilder();
+        akka.protobuf.UnknownFieldSet.Builder unknownFields =
+            akka.protobuf.UnknownFieldSet.newBuilder();
         try {
           boolean done = false;
           while (!done) {
@@ -11177,40 +11177,40 @@ public final class ReplicatorMessages {
               }
             }
           }
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           throw e.setUnfinishedMessage(this);
         } catch (java.io.IOException e) {
-          throw new com.google.protobuf.InvalidProtocolBufferException(
+          throw new akka.protobuf.InvalidProtocolBufferException(
               e.getMessage()).setUnfinishedMessage(this);
         } finally {
           this.unknownFields = unknownFields.build();
           makeExtensionsImmutable();
         }
       }
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry.Builder.class);
       }
 
-      public static com.google.protobuf.Parser<Entry> PARSER =
-          new com.google.protobuf.AbstractParser<Entry>() {
+      public static akka.protobuf.Parser<Entry> PARSER =
+          new akka.protobuf.AbstractParser<Entry>() {
         public Entry parsePartialFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-            throws com.google.protobuf.InvalidProtocolBufferException {
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
+            throws akka.protobuf.InvalidProtocolBufferException {
           return new Entry(input, extensionRegistry);
         }
       };
 
       @java.lang.Override
-      public com.google.protobuf.Parser<Entry> getParserForType() {
+      public akka.protobuf.Parser<Entry> getParserForType() {
         return PARSER;
       }
 
@@ -11232,8 +11232,8 @@ public final class ReplicatorMessages {
         if (ref instanceof java.lang.String) {
           return (java.lang.String) ref;
         } else {
-          com.google.protobuf.ByteString bs = 
-              (com.google.protobuf.ByteString) ref;
+          akka.protobuf.ByteString bs = 
+              (akka.protobuf.ByteString) ref;
           java.lang.String s = bs.toStringUtf8();
           if (bs.isValidUtf8()) {
             key_ = s;
@@ -11244,17 +11244,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string key = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getKeyBytes() {
         java.lang.Object ref = key_;
         if (ref instanceof java.lang.String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           key_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
 
@@ -11305,7 +11305,7 @@ public final class ReplicatorMessages {
         return true;
       }
 
-      public void writeTo(com.google.protobuf.CodedOutputStream output)
+      public void writeTo(akka.protobuf.CodedOutputStream output)
                           throws java.io.IOException {
         getSerializedSize();
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -11324,11 +11324,11 @@ public final class ReplicatorMessages {
 
         size = 0;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeBytesSize(1, getKeyBytes());
         }
         if (((bitField0_ & 0x00000002) == 0x00000002)) {
-          size += com.google.protobuf.CodedOutputStream
+          size += akka.protobuf.CodedOutputStream
             .computeMessageSize(2, envelope_);
         }
         size += getUnknownFields().getSerializedSize();
@@ -11344,24 +11344,24 @@ public final class ReplicatorMessages {
       }
 
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
-          com.google.protobuf.ByteString data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
-          com.google.protobuf.ByteString data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ByteString data,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(byte[] data)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
           byte[] data,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return PARSER.parseFrom(data, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(java.io.InputStream input)
@@ -11370,7 +11370,7 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -11380,18 +11380,18 @@ public final class ReplicatorMessages {
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseDelimitedFrom(
           java.io.InputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseDelimitedFrom(input, extensionRegistry);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input)
+          akka.protobuf.CodedInputStream input)
           throws java.io.IOException {
         return PARSER.parseFrom(input);
       }
       public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parseFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         return PARSER.parseFrom(input, extensionRegistry);
       }
@@ -11405,7 +11405,7 @@ public final class ReplicatorMessages {
 
       @java.lang.Override
       protected Builder newBuilderForType(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         Builder builder = new Builder(parent);
         return builder;
       }
@@ -11413,14 +11413,14 @@ public final class ReplicatorMessages {
        * Protobuf type {@code akka.cluster.ddata.Gossip.Entry}
        */
       public static final class Builder extends
-          com.google.protobuf.GeneratedMessage.Builder<Builder>
+          akka.protobuf.GeneratedMessage.Builder<Builder>
          implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.EntryOrBuilder {
-        public static final com.google.protobuf.Descriptors.Descriptor
+        public static final akka.protobuf.Descriptors.Descriptor
             getDescriptor() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_descriptor;
         }
 
-        protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+        protected akka.protobuf.GeneratedMessage.FieldAccessorTable
             internalGetFieldAccessorTable() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_fieldAccessorTable
               .ensureFieldAccessorsInitialized(
@@ -11433,12 +11433,12 @@ public final class ReplicatorMessages {
         }
 
         private Builder(
-            com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+            akka.protobuf.GeneratedMessage.BuilderParent parent) {
           super(parent);
           maybeForceBuilderInitialization();
         }
         private void maybeForceBuilderInitialization() {
-          if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+          if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
             getEnvelopeFieldBuilder();
           }
         }
@@ -11463,7 +11463,7 @@ public final class ReplicatorMessages {
           return create().mergeFrom(buildPartial());
         }
 
-        public com.google.protobuf.Descriptors.Descriptor
+        public akka.protobuf.Descriptors.Descriptor
             getDescriptorForType() {
           return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_Entry_descriptor;
         }
@@ -11501,7 +11501,7 @@ public final class ReplicatorMessages {
           return result;
         }
 
-        public Builder mergeFrom(com.google.protobuf.Message other) {
+        public Builder mergeFrom(akka.protobuf.Message other) {
           if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry) {
             return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry)other);
           } else {
@@ -11541,13 +11541,13 @@ public final class ReplicatorMessages {
         }
 
         public Builder mergeFrom(
-            com.google.protobuf.CodedInputStream input,
-            com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+            akka.protobuf.CodedInputStream input,
+            akka.protobuf.ExtensionRegistryLite extensionRegistry)
             throws java.io.IOException {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry parsedMessage = null;
           try {
             parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-          } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          } catch (akka.protobuf.InvalidProtocolBufferException e) {
             parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry) e.getUnfinishedMessage();
             throw e;
           } finally {
@@ -11573,7 +11573,7 @@ public final class ReplicatorMessages {
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
           if (!(ref instanceof java.lang.String)) {
-            java.lang.String s = ((com.google.protobuf.ByteString) ref)
+            java.lang.String s = ((akka.protobuf.ByteString) ref)
                 .toStringUtf8();
             key_ = s;
             return s;
@@ -11584,17 +11584,17 @@ public final class ReplicatorMessages {
         /**
          * <code>required string key = 1;</code>
          */
-        public com.google.protobuf.ByteString
+        public akka.protobuf.ByteString
             getKeyBytes() {
           java.lang.Object ref = key_;
           if (ref instanceof String) {
-            com.google.protobuf.ByteString b = 
-                com.google.protobuf.ByteString.copyFromUtf8(
+            akka.protobuf.ByteString b = 
+                akka.protobuf.ByteString.copyFromUtf8(
                     (java.lang.String) ref);
             key_ = b;
             return b;
           } else {
-            return (com.google.protobuf.ByteString) ref;
+            return (akka.protobuf.ByteString) ref;
           }
         }
         /**
@@ -11623,7 +11623,7 @@ public final class ReplicatorMessages {
          * <code>required string key = 1;</code>
          */
         public Builder setKeyBytes(
-            com.google.protobuf.ByteString value) {
+            akka.protobuf.ByteString value) {
           if (value == null) {
     throw new NullPointerException();
   }
@@ -11635,7 +11635,7 @@ public final class ReplicatorMessages {
 
         // required .akka.cluster.ddata.DataEnvelope envelope = 2;
         private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance();
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
@@ -11736,11 +11736,11 @@ public final class ReplicatorMessages {
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
          */
-        private com.google.protobuf.SingleFieldBuilder<
+        private akka.protobuf.SingleFieldBuilder<
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> 
             getEnvelopeFieldBuilder() {
           if (envelopeBuilder_ == null) {
-            envelopeBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+            envelopeBuilder_ = new akka.protobuf.SingleFieldBuilder<
                 akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder>(
                     envelope_,
                     getParentForChildren(),
@@ -11837,7 +11837,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -11856,11 +11856,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBoolSize(1, sendBack_);
       }
       for (int i = 0; i < entries_.size(); i++) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(2, entries_.get(i));
       }
       size += getUnknownFields().getSerializedSize();
@@ -11876,24 +11876,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(java.io.InputStream input)
@@ -11902,7 +11902,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -11912,18 +11912,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -11937,7 +11937,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -11945,14 +11945,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Gossip}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.GossipOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -11965,12 +11965,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getEntriesFieldBuilder();
         }
       }
@@ -11995,7 +11995,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Gossip_descriptor;
       }
@@ -12034,7 +12034,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip)other);
         } else {
@@ -12067,7 +12067,7 @@ public final class ReplicatorMessages {
               entries_ = other.entries_;
               bitField0_ = (bitField0_ & ~0x00000002);
               entriesBuilder_ = 
-                com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
+                akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders ?
                    getEntriesFieldBuilder() : null;
             } else {
               entriesBuilder_.addAllMessages(other.entries_);
@@ -12093,13 +12093,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -12154,7 +12154,7 @@ public final class ReplicatorMessages {
          }
       }
 
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.EntryOrBuilder> entriesBuilder_;
 
       /**
@@ -12369,11 +12369,11 @@ public final class ReplicatorMessages {
            getEntriesBuilderList() {
         return getEntriesFieldBuilder().getBuilderList();
       }
-      private com.google.protobuf.RepeatedFieldBuilder<
+      private akka.protobuf.RepeatedFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.EntryOrBuilder> 
           getEntriesFieldBuilder() {
         if (entriesBuilder_ == null) {
-          entriesBuilder_ = new com.google.protobuf.RepeatedFieldBuilder<
+          entriesBuilder_ = new akka.protobuf.RepeatedFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.Entry.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Gossip.EntryOrBuilder>(
                   entries_,
                   ((bitField0_ & 0x00000002) == 0x00000002),
@@ -12396,7 +12396,7 @@ public final class ReplicatorMessages {
   }
 
   public interface UniqueAddressOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required .akka.cluster.ddata.Address address = 1;
     /**
@@ -12426,14 +12426,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.UniqueAddress}
    */
   public static final class UniqueAddress extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements UniqueAddressOrBuilder {
     // Use UniqueAddress.newBuilder() to construct.
-    private UniqueAddress(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private UniqueAddress(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private UniqueAddress(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private UniqueAddress(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final UniqueAddress defaultInstance;
     public static UniqueAddress getDefaultInstance() {
@@ -12444,20 +12444,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private UniqueAddress(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -12493,40 +12493,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<UniqueAddress> PARSER =
-        new com.google.protobuf.AbstractParser<UniqueAddress>() {
+    public static akka.protobuf.Parser<UniqueAddress> PARSER =
+        new akka.protobuf.AbstractParser<UniqueAddress>() {
       public UniqueAddress parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new UniqueAddress(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<UniqueAddress> getParserForType() {
+    public akka.protobuf.Parser<UniqueAddress> getParserForType() {
       return PARSER;
     }
 
@@ -12594,7 +12594,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -12613,11 +12613,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeMessageSize(1, address_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeSFixed32Size(2, uid_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -12633,24 +12633,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(java.io.InputStream input)
@@ -12659,7 +12659,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -12669,18 +12669,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -12694,7 +12694,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -12702,14 +12702,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.UniqueAddress}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -12722,12 +12722,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
           getAddressFieldBuilder();
         }
       }
@@ -12752,7 +12752,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_UniqueAddress_descriptor;
       }
@@ -12790,7 +12790,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress)other);
         } else {
@@ -12828,13 +12828,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -12848,7 +12848,7 @@ public final class ReplicatorMessages {
 
       // required .akka.cluster.ddata.Address address = 1;
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address address_ = akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.getDefaultInstance();
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .akka.cluster.ddata.Address address = 1;</code>
@@ -12949,11 +12949,11 @@ public final class ReplicatorMessages {
       /**
        * <code>required .akka.cluster.ddata.Address address = 1;</code>
        */
-      private com.google.protobuf.SingleFieldBuilder<
+      private akka.protobuf.SingleFieldBuilder<
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder> 
           getAddressFieldBuilder() {
         if (addressBuilder_ == null) {
-          addressBuilder_ = new com.google.protobuf.SingleFieldBuilder<
+          addressBuilder_ = new akka.protobuf.SingleFieldBuilder<
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder>(
                   address_,
                   getParentForChildren(),
@@ -13008,7 +13008,7 @@ public final class ReplicatorMessages {
   }
 
   public interface AddressOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required string hostname = 1;
     /**
@@ -13022,7 +13022,7 @@ public final class ReplicatorMessages {
     /**
      * <code>required string hostname = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getHostnameBytes();
 
     // required uint32 port = 2;
@@ -13039,14 +13039,14 @@ public final class ReplicatorMessages {
    * Protobuf type {@code akka.cluster.ddata.Address}
    */
   public static final class Address extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements AddressOrBuilder {
     // Use Address.newBuilder() to construct.
-    private Address(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Address(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Address(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Address(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Address defaultInstance;
     public static Address getDefaultInstance() {
@@ -13057,20 +13057,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Address(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -13098,40 +13098,40 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Address> PARSER =
-        new com.google.protobuf.AbstractParser<Address>() {
+    public static akka.protobuf.Parser<Address> PARSER =
+        new akka.protobuf.AbstractParser<Address>() {
       public Address parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Address(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Address> getParserForType() {
+    public akka.protobuf.Parser<Address> getParserForType() {
       return PARSER;
     }
 
@@ -13153,8 +13153,8 @@ public final class ReplicatorMessages {
       if (ref instanceof java.lang.String) {
         return (java.lang.String) ref;
       } else {
-        com.google.protobuf.ByteString bs = 
-            (com.google.protobuf.ByteString) ref;
+        akka.protobuf.ByteString bs = 
+            (akka.protobuf.ByteString) ref;
         java.lang.String s = bs.toStringUtf8();
         if (bs.isValidUtf8()) {
           hostname_ = s;
@@ -13165,17 +13165,17 @@ public final class ReplicatorMessages {
     /**
      * <code>required string hostname = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getHostnameBytes() {
       java.lang.Object ref = hostname_;
       if (ref instanceof java.lang.String) {
-        com.google.protobuf.ByteString b = 
-            com.google.protobuf.ByteString.copyFromUtf8(
+        akka.protobuf.ByteString b = 
+            akka.protobuf.ByteString.copyFromUtf8(
                 (java.lang.String) ref);
         hostname_ = b;
         return b;
       } else {
-        return (com.google.protobuf.ByteString) ref;
+        return (akka.protobuf.ByteString) ref;
       }
     }
 
@@ -13216,7 +13216,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -13235,11 +13235,11 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, getHostnameBytes());
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeUInt32Size(2, port_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -13255,24 +13255,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(java.io.InputStream input)
@@ -13281,7 +13281,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -13291,18 +13291,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -13316,7 +13316,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -13324,14 +13324,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.Address}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -13344,12 +13344,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -13369,7 +13369,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_Address_descriptor;
       }
@@ -13403,7 +13403,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address)other);
         } else {
@@ -13439,13 +13439,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -13471,7 +13471,7 @@ public final class ReplicatorMessages {
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
         if (!(ref instanceof java.lang.String)) {
-          java.lang.String s = ((com.google.protobuf.ByteString) ref)
+          java.lang.String s = ((akka.protobuf.ByteString) ref)
               .toStringUtf8();
           hostname_ = s;
           return s;
@@ -13482,17 +13482,17 @@ public final class ReplicatorMessages {
       /**
        * <code>required string hostname = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getHostnameBytes() {
         java.lang.Object ref = hostname_;
         if (ref instanceof String) {
-          com.google.protobuf.ByteString b = 
-              com.google.protobuf.ByteString.copyFromUtf8(
+          akka.protobuf.ByteString b = 
+              akka.protobuf.ByteString.copyFromUtf8(
                   (java.lang.String) ref);
           hostname_ = b;
           return b;
         } else {
-          return (com.google.protobuf.ByteString) ref;
+          return (akka.protobuf.ByteString) ref;
         }
       }
       /**
@@ -13521,7 +13521,7 @@ public final class ReplicatorMessages {
        * <code>required string hostname = 1;</code>
        */
       public Builder setHostnameBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -13576,7 +13576,7 @@ public final class ReplicatorMessages {
   }
 
   public interface OtherMessageOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // required bytes enclosedMessage = 1;
     /**
@@ -13586,7 +13586,7 @@ public final class ReplicatorMessages {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    com.google.protobuf.ByteString getEnclosedMessage();
+    akka.protobuf.ByteString getEnclosedMessage();
 
     // required int32 serializerId = 2;
     /**
@@ -13606,20 +13606,20 @@ public final class ReplicatorMessages {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    com.google.protobuf.ByteString getMessageManifest();
+    akka.protobuf.ByteString getMessageManifest();
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.OtherMessage}
    */
   public static final class OtherMessage extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements OtherMessageOrBuilder {
     // Use OtherMessage.newBuilder() to construct.
-    private OtherMessage(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private OtherMessage(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private OtherMessage(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private OtherMessage(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final OtherMessage defaultInstance;
     public static OtherMessage getDefaultInstance() {
@@ -13630,20 +13630,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private OtherMessage(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -13676,47 +13676,47 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<OtherMessage> PARSER =
-        new com.google.protobuf.AbstractParser<OtherMessage>() {
+    public static akka.protobuf.Parser<OtherMessage> PARSER =
+        new akka.protobuf.AbstractParser<OtherMessage>() {
       public OtherMessage parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new OtherMessage(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<OtherMessage> getParserForType() {
+    public akka.protobuf.Parser<OtherMessage> getParserForType() {
       return PARSER;
     }
 
     private int bitField0_;
     // required bytes enclosedMessage = 1;
     public static final int ENCLOSEDMESSAGE_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString enclosedMessage_;
+    private akka.protobuf.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
@@ -13726,7 +13726,7 @@ public final class ReplicatorMessages {
     /**
      * <code>required bytes enclosedMessage = 1;</code>
      */
-    public com.google.protobuf.ByteString getEnclosedMessage() {
+    public akka.protobuf.ByteString getEnclosedMessage() {
       return enclosedMessage_;
     }
 
@@ -13748,7 +13748,7 @@ public final class ReplicatorMessages {
 
     // optional bytes messageManifest = 4;
     public static final int MESSAGEMANIFEST_FIELD_NUMBER = 4;
-    private com.google.protobuf.ByteString messageManifest_;
+    private akka.protobuf.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
@@ -13758,14 +13758,14 @@ public final class ReplicatorMessages {
     /**
      * <code>optional bytes messageManifest = 4;</code>
      */
-    public com.google.protobuf.ByteString getMessageManifest() {
+    public akka.protobuf.ByteString getMessageManifest() {
       return messageManifest_;
     }
 
     private void initFields() {
-      enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       serializerId_ = 0;
-      messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      messageManifest_ = akka.protobuf.ByteString.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -13784,7 +13784,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
@@ -13806,15 +13806,15 @@ public final class ReplicatorMessages {
 
       size = 0;
       if (((bitField0_ & 0x00000001) == 0x00000001)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(1, enclosedMessage_);
       }
       if (((bitField0_ & 0x00000002) == 0x00000002)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeInt32Size(2, serializerId_);
       }
       if (((bitField0_ & 0x00000004) == 0x00000004)) {
-        size += com.google.protobuf.CodedOutputStream
+        size += akka.protobuf.CodedOutputStream
           .computeBytesSize(4, messageManifest_);
       }
       size += getUnknownFields().getSerializedSize();
@@ -13830,24 +13830,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(java.io.InputStream input)
@@ -13856,7 +13856,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -13866,18 +13866,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -13891,7 +13891,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -13899,14 +13899,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.OtherMessage}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -13919,12 +13919,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -13933,11 +13933,11 @@ public final class ReplicatorMessages {
 
       public Builder clear() {
         super.clear();
-        enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+        enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         serializerId_ = 0;
         bitField0_ = (bitField0_ & ~0x00000002);
-        messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+        messageManifest_ = akka.protobuf.ByteString.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
@@ -13946,7 +13946,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_OtherMessage_descriptor;
       }
@@ -13984,7 +13984,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage)other);
         } else {
@@ -14021,13 +14021,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -14040,7 +14040,7 @@ public final class ReplicatorMessages {
       private int bitField0_;
 
       // required bytes enclosedMessage = 1;
-      private com.google.protobuf.ByteString enclosedMessage_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString enclosedMessage_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
@@ -14050,13 +14050,13 @@ public final class ReplicatorMessages {
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public com.google.protobuf.ByteString getEnclosedMessage() {
+      public akka.protobuf.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
        */
-      public Builder setEnclosedMessage(com.google.protobuf.ByteString value) {
+      public Builder setEnclosedMessage(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -14109,7 +14109,7 @@ public final class ReplicatorMessages {
       }
 
       // optional bytes messageManifest = 4;
-      private com.google.protobuf.ByteString messageManifest_ = com.google.protobuf.ByteString.EMPTY;
+      private akka.protobuf.ByteString messageManifest_ = akka.protobuf.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
@@ -14119,13 +14119,13 @@ public final class ReplicatorMessages {
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public com.google.protobuf.ByteString getMessageManifest() {
+      public akka.protobuf.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
        */
-      public Builder setMessageManifest(com.google.protobuf.ByteString value) {
+      public Builder setMessageManifest(akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -14156,7 +14156,7 @@ public final class ReplicatorMessages {
   }
 
   public interface StringGSetOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated string elements = 1;
     /**
@@ -14175,21 +14175,21 @@ public final class ReplicatorMessages {
     /**
      * <code>repeated string elements = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getElementsBytes(int index);
   }
   /**
    * Protobuf type {@code akka.cluster.ddata.StringGSet}
    */
   public static final class StringGSet extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements StringGSetOrBuilder {
     // Use StringGSet.newBuilder() to construct.
-    private StringGSet(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private StringGSet(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private StringGSet(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private StringGSet(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final StringGSet defaultInstance;
     public static StringGSet getDefaultInstance() {
@@ -14200,20 +14200,20 @@ public final class ReplicatorMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private StringGSet(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -14231,7 +14231,7 @@ public final class ReplicatorMessages {
             }
             case 10: {
               if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                elements_ = new com.google.protobuf.LazyStringArrayList();
+                elements_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000001;
               }
               elements_.add(input.readBytes());
@@ -14239,49 +14239,49 @@ public final class ReplicatorMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-          elements_ = new com.google.protobuf.UnmodifiableLazyStringList(elements_);
+          elements_ = new akka.protobuf.UnmodifiableLazyStringList(elements_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet.class, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<StringGSet> PARSER =
-        new com.google.protobuf.AbstractParser<StringGSet>() {
+    public static akka.protobuf.Parser<StringGSet> PARSER =
+        new akka.protobuf.AbstractParser<StringGSet>() {
       public StringGSet parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new StringGSet(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<StringGSet> getParserForType() {
+    public akka.protobuf.Parser<StringGSet> getParserForType() {
       return PARSER;
     }
 
     // repeated string elements = 1;
     public static final int ELEMENTS_FIELD_NUMBER = 1;
-    private com.google.protobuf.LazyStringList elements_;
+    private akka.protobuf.LazyStringList elements_;
     /**
      * <code>repeated string elements = 1;</code>
      */
@@ -14304,13 +14304,13 @@ public final class ReplicatorMessages {
     /**
      * <code>repeated string elements = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getElementsBytes(int index) {
       return elements_.getByteString(index);
     }
 
     private void initFields() {
-      elements_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      elements_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -14321,7 +14321,7 @@ public final class ReplicatorMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < elements_.size(); i++) {
@@ -14339,7 +14339,7 @@ public final class ReplicatorMessages {
       {
         int dataSize = 0;
         for (int i = 0; i < elements_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(elements_.getByteString(i));
         }
         size += dataSize;
@@ -14358,24 +14358,24 @@ public final class ReplicatorMessages {
     }
 
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(java.io.InputStream input)
@@ -14384,7 +14384,7 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -14394,18 +14394,18 @@ public final class ReplicatorMessages {
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -14419,7 +14419,7 @@ public final class ReplicatorMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -14427,14 +14427,14 @@ public final class ReplicatorMessages {
      * Protobuf type {@code akka.cluster.ddata.StringGSet}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSetOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -14447,12 +14447,12 @@ public final class ReplicatorMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -14461,7 +14461,7 @@ public final class ReplicatorMessages {
 
       public Builder clear() {
         super.clear();
-        elements_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        elements_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
@@ -14470,7 +14470,7 @@ public final class ReplicatorMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.ddata.protobuf.msg.ReplicatorMessages.internal_static_akka_cluster_ddata_StringGSet_descriptor;
       }
@@ -14491,7 +14491,7 @@ public final class ReplicatorMessages {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet result = new akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet(this);
         int from_bitField0_ = bitField0_;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          elements_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          elements_ = new akka.protobuf.UnmodifiableLazyStringList(
               elements_);
           bitField0_ = (bitField0_ & ~0x00000001);
         }
@@ -14500,7 +14500,7 @@ public final class ReplicatorMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet) {
           return mergeFrom((akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet)other);
         } else {
@@ -14530,13 +14530,13 @@ public final class ReplicatorMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.ddata.protobuf.msg.ReplicatorMessages.StringGSet) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -14549,10 +14549,10 @@ public final class ReplicatorMessages {
       private int bitField0_;
 
       // repeated string elements = 1;
-      private com.google.protobuf.LazyStringList elements_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList elements_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureElementsIsMutable() {
         if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-          elements_ = new com.google.protobuf.LazyStringArrayList(elements_);
+          elements_ = new akka.protobuf.LazyStringArrayList(elements_);
           bitField0_ |= 0x00000001;
          }
       }
@@ -14578,7 +14578,7 @@ public final class ReplicatorMessages {
       /**
        * <code>repeated string elements = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getElementsBytes(int index) {
         return elements_.getByteString(index);
       }
@@ -14622,7 +14622,7 @@ public final class ReplicatorMessages {
        * <code>repeated string elements = 1;</code>
        */
       public Builder clearElements() {
-        elements_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        elements_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
@@ -14631,7 +14631,7 @@ public final class ReplicatorMessages {
        * <code>repeated string elements = 1;</code>
        */
       public Builder addElementsBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -14652,117 +14652,117 @@ public final class ReplicatorMessages {
     // @@protoc_insertion_point(class_scope:akka.cluster.ddata.StringGSet)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Get_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Get_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_GetSuccess_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_GetSuccess_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_NotFound_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_NotFound_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_GetFailure_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_GetFailure_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Subscribe_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Subscribe_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Unsubscribe_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Unsubscribe_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Changed_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Changed_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Write_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Write_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Empty_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Empty_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Read_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Read_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_ReadResult_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_ReadResult_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_DataEnvelope_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_DataEnvelope_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Status_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Status_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Status_Entry_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Status_Entry_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Gossip_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Gossip_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Gossip_Entry_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Gossip_Entry_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_UniqueAddress_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_UniqueAddress_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_Address_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_Address_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_OtherMessage_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_OtherMessage_fieldAccessorTable;
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_akka_cluster_ddata_StringGSet_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_akka_cluster_ddata_StringGSet_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -14815,143 +14815,143 @@ public final class ReplicatorMessages {
       "ts\030\001 \003(\tB#\n\037akka.cluster.ddata.protobuf." +
       "msgH\001"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_akka_cluster_ddata_Get_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_akka_cluster_ddata_Get_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Get_descriptor,
               new java.lang.String[] { "Key", "Consistency", "Timeout", "Request", });
           internal_static_akka_cluster_ddata_GetSuccess_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_akka_cluster_ddata_GetSuccess_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_GetSuccess_descriptor,
               new java.lang.String[] { "Key", "Data", "Request", });
           internal_static_akka_cluster_ddata_NotFound_descriptor =
             getDescriptor().getMessageTypes().get(2);
           internal_static_akka_cluster_ddata_NotFound_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_NotFound_descriptor,
               new java.lang.String[] { "Key", "Request", });
           internal_static_akka_cluster_ddata_GetFailure_descriptor =
             getDescriptor().getMessageTypes().get(3);
           internal_static_akka_cluster_ddata_GetFailure_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_GetFailure_descriptor,
               new java.lang.String[] { "Key", "Request", });
           internal_static_akka_cluster_ddata_Subscribe_descriptor =
             getDescriptor().getMessageTypes().get(4);
           internal_static_akka_cluster_ddata_Subscribe_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Subscribe_descriptor,
               new java.lang.String[] { "Key", "Ref", });
           internal_static_akka_cluster_ddata_Unsubscribe_descriptor =
             getDescriptor().getMessageTypes().get(5);
           internal_static_akka_cluster_ddata_Unsubscribe_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Unsubscribe_descriptor,
               new java.lang.String[] { "Key", "Ref", });
           internal_static_akka_cluster_ddata_Changed_descriptor =
             getDescriptor().getMessageTypes().get(6);
           internal_static_akka_cluster_ddata_Changed_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Changed_descriptor,
               new java.lang.String[] { "Key", "Data", });
           internal_static_akka_cluster_ddata_Write_descriptor =
             getDescriptor().getMessageTypes().get(7);
           internal_static_akka_cluster_ddata_Write_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Write_descriptor,
               new java.lang.String[] { "Key", "Envelope", });
           internal_static_akka_cluster_ddata_Empty_descriptor =
             getDescriptor().getMessageTypes().get(8);
           internal_static_akka_cluster_ddata_Empty_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Empty_descriptor,
               new java.lang.String[] { });
           internal_static_akka_cluster_ddata_Read_descriptor =
             getDescriptor().getMessageTypes().get(9);
           internal_static_akka_cluster_ddata_Read_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Read_descriptor,
               new java.lang.String[] { "Key", });
           internal_static_akka_cluster_ddata_ReadResult_descriptor =
             getDescriptor().getMessageTypes().get(10);
           internal_static_akka_cluster_ddata_ReadResult_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_ReadResult_descriptor,
               new java.lang.String[] { "Envelope", });
           internal_static_akka_cluster_ddata_DataEnvelope_descriptor =
             getDescriptor().getMessageTypes().get(11);
           internal_static_akka_cluster_ddata_DataEnvelope_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_DataEnvelope_descriptor,
               new java.lang.String[] { "Data", "Pruning", });
           internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor =
             internal_static_akka_cluster_ddata_DataEnvelope_descriptor.getNestedTypes().get(0);
           internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_DataEnvelope_PruningEntry_descriptor,
               new java.lang.String[] { "RemovedAddress", "OwnerAddress", "Performed", "Seen", });
           internal_static_akka_cluster_ddata_Status_descriptor =
             getDescriptor().getMessageTypes().get(12);
           internal_static_akka_cluster_ddata_Status_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Status_descriptor,
               new java.lang.String[] { "Chunk", "TotChunks", "Entries", });
           internal_static_akka_cluster_ddata_Status_Entry_descriptor =
             internal_static_akka_cluster_ddata_Status_descriptor.getNestedTypes().get(0);
           internal_static_akka_cluster_ddata_Status_Entry_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Status_Entry_descriptor,
               new java.lang.String[] { "Key", "Digest", });
           internal_static_akka_cluster_ddata_Gossip_descriptor =
             getDescriptor().getMessageTypes().get(13);
           internal_static_akka_cluster_ddata_Gossip_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Gossip_descriptor,
               new java.lang.String[] { "SendBack", "Entries", });
           internal_static_akka_cluster_ddata_Gossip_Entry_descriptor =
             internal_static_akka_cluster_ddata_Gossip_descriptor.getNestedTypes().get(0);
           internal_static_akka_cluster_ddata_Gossip_Entry_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Gossip_Entry_descriptor,
               new java.lang.String[] { "Key", "Envelope", });
           internal_static_akka_cluster_ddata_UniqueAddress_descriptor =
             getDescriptor().getMessageTypes().get(14);
           internal_static_akka_cluster_ddata_UniqueAddress_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_UniqueAddress_descriptor,
               new java.lang.String[] { "Address", "Uid", });
           internal_static_akka_cluster_ddata_Address_descriptor =
             getDescriptor().getMessageTypes().get(15);
           internal_static_akka_cluster_ddata_Address_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_Address_descriptor,
               new java.lang.String[] { "Hostname", "Port", });
           internal_static_akka_cluster_ddata_OtherMessage_descriptor =
             getDescriptor().getMessageTypes().get(16);
           internal_static_akka_cluster_ddata_OtherMessage_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_OtherMessage_descriptor,
               new java.lang.String[] { "EnclosedMessage", "SerializerId", "MessageManifest", });
           internal_static_akka_cluster_ddata_StringGSet_descriptor =
             getDescriptor().getMessageTypes().get(17);
           internal_static_akka_cluster_ddata_StringGSet_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_akka_cluster_ddata_StringGSet_descriptor,
               new java.lang.String[] { "Elements", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 

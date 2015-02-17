@@ -54,7 +54,7 @@ object AkkaBuild extends Build {
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed)
+      slf4j, agent, persistence, persistenceQuery, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, benchJmh, typed, protobuf)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -64,7 +64,7 @@ object AkkaBuild extends Build {
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel,
       cluster, clusterMetrics, clusterTools, clusterSharding, distributedData,
-      slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed)
+      slf4j, persistence, persistenceQuery, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, benchJmh, typed, protobuf)
   ).disablePlugins(ValidatePullRequest)
 
   lazy val actor = Project(
@@ -87,7 +87,7 @@ object AkkaBuild extends Build {
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
-    dependencies = Seq(testkit % "compile;test->test")
+    dependencies = Seq(testkit % "compile;test->test", protobuf)
   )
 
   lazy val benchJmh = Project(
@@ -96,10 +96,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test;provided->provided")
   ).disablePlugins(ValidatePullRequest)
 
+  lazy val protobuf = Project(
+    id = "akka-protobuf",
+    base = file("akka-protobuf")
+  )
+
   lazy val remote = Project(
     id = "akka-remote",
     base = file("akka-remote"),
-    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test")
+    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test", protobuf)
   )
 
   lazy val multiNodeTestkit = Project(
@@ -164,7 +169,7 @@ object AkkaBuild extends Build {
   lazy val persistence = Project(
     id = "akka-persistence",
     base = file("akka-persistence"),
-    dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
+    dependencies = Seq(actor, remote % "test->test", testkit % "test->test", protobuf)
   )
 
   lazy val persistenceQuery = Project(

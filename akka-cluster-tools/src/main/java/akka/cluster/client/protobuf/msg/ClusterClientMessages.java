@@ -6,10 +6,10 @@ package akka.cluster.client.protobuf.msg;
 public final class ClusterClientMessages {
   private ClusterClientMessages() {}
   public static void registerAllExtensions(
-      com.google.protobuf.ExtensionRegistry registry) {
+      akka.protobuf.ExtensionRegistry registry) {
   }
   public interface ContactsOrBuilder
-      extends com.google.protobuf.MessageOrBuilder {
+      extends akka.protobuf.MessageOrBuilder {
 
     // repeated string contactPoints = 1;
     /**
@@ -28,21 +28,21 @@ public final class ClusterClientMessages {
     /**
      * <code>repeated string contactPoints = 1;</code>
      */
-    com.google.protobuf.ByteString
+    akka.protobuf.ByteString
         getContactPointsBytes(int index);
   }
   /**
    * Protobuf type {@code Contacts}
    */
   public static final class Contacts extends
-      com.google.protobuf.GeneratedMessage
+      akka.protobuf.GeneratedMessage
       implements ContactsOrBuilder {
     // Use Contacts.newBuilder() to construct.
-    private Contacts(com.google.protobuf.GeneratedMessage.Builder<?> builder) {
+    private Contacts(akka.protobuf.GeneratedMessage.Builder<?> builder) {
       super(builder);
       this.unknownFields = builder.getUnknownFields();
     }
-    private Contacts(boolean noInit) { this.unknownFields = com.google.protobuf.UnknownFieldSet.getDefaultInstance(); }
+    private Contacts(boolean noInit) { this.unknownFields = akka.protobuf.UnknownFieldSet.getDefaultInstance(); }
 
     private static final Contacts defaultInstance;
     public static Contacts getDefaultInstance() {
@@ -53,20 +53,20 @@ public final class ClusterClientMessages {
       return defaultInstance;
     }
 
-    private final com.google.protobuf.UnknownFieldSet unknownFields;
+    private final akka.protobuf.UnknownFieldSet unknownFields;
     @java.lang.Override
-    public final com.google.protobuf.UnknownFieldSet
+    public final akka.protobuf.UnknownFieldSet
         getUnknownFields() {
       return this.unknownFields;
     }
     private Contacts(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       initFields();
       int mutable_bitField0_ = 0;
-      com.google.protobuf.UnknownFieldSet.Builder unknownFields =
-          com.google.protobuf.UnknownFieldSet.newBuilder();
+      akka.protobuf.UnknownFieldSet.Builder unknownFields =
+          akka.protobuf.UnknownFieldSet.newBuilder();
       try {
         boolean done = false;
         while (!done) {
@@ -84,7 +84,7 @@ public final class ClusterClientMessages {
             }
             case 10: {
               if (!((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-                contactPoints_ = new com.google.protobuf.LazyStringArrayList();
+                contactPoints_ = new akka.protobuf.LazyStringArrayList();
                 mutable_bitField0_ |= 0x00000001;
               }
               contactPoints_.add(input.readBytes());
@@ -92,49 +92,49 @@ public final class ClusterClientMessages {
             }
           }
         }
-      } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+      } catch (akka.protobuf.InvalidProtocolBufferException e) {
         throw e.setUnfinishedMessage(this);
       } catch (java.io.IOException e) {
-        throw new com.google.protobuf.InvalidProtocolBufferException(
+        throw new akka.protobuf.InvalidProtocolBufferException(
             e.getMessage()).setUnfinishedMessage(this);
       } finally {
         if (((mutable_bitField0_ & 0x00000001) == 0x00000001)) {
-          contactPoints_ = new com.google.protobuf.UnmodifiableLazyStringList(contactPoints_);
+          contactPoints_ = new akka.protobuf.UnmodifiableLazyStringList(contactPoints_);
         }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
     }
-    public static final com.google.protobuf.Descriptors.Descriptor
+    public static final akka.protobuf.Descriptors.Descriptor
         getDescriptor() {
       return akka.cluster.client.protobuf.msg.ClusterClientMessages.internal_static_Contacts_descriptor;
     }
 
-    protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    protected akka.protobuf.GeneratedMessage.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.cluster.client.protobuf.msg.ClusterClientMessages.internal_static_Contacts_fieldAccessorTable
           .ensureFieldAccessorsInitialized(
               akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts.class, akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts.Builder.class);
     }
 
-    public static com.google.protobuf.Parser<Contacts> PARSER =
-        new com.google.protobuf.AbstractParser<Contacts>() {
+    public static akka.protobuf.Parser<Contacts> PARSER =
+        new akka.protobuf.AbstractParser<Contacts>() {
       public Contacts parsePartialFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-          throws com.google.protobuf.InvalidProtocolBufferException {
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws akka.protobuf.InvalidProtocolBufferException {
         return new Contacts(input, extensionRegistry);
       }
     };
 
     @java.lang.Override
-    public com.google.protobuf.Parser<Contacts> getParserForType() {
+    public akka.protobuf.Parser<Contacts> getParserForType() {
       return PARSER;
     }
 
     // repeated string contactPoints = 1;
     public static final int CONTACTPOINTS_FIELD_NUMBER = 1;
-    private com.google.protobuf.LazyStringList contactPoints_;
+    private akka.protobuf.LazyStringList contactPoints_;
     /**
      * <code>repeated string contactPoints = 1;</code>
      */
@@ -157,13 +157,13 @@ public final class ClusterClientMessages {
     /**
      * <code>repeated string contactPoints = 1;</code>
      */
-    public com.google.protobuf.ByteString
+    public akka.protobuf.ByteString
         getContactPointsBytes(int index) {
       return contactPoints_.getByteString(index);
     }
 
     private void initFields() {
-      contactPoints_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      contactPoints_ = akka.protobuf.LazyStringArrayList.EMPTY;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -174,7 +174,7 @@ public final class ClusterClientMessages {
       return true;
     }
 
-    public void writeTo(com.google.protobuf.CodedOutputStream output)
+    public void writeTo(akka.protobuf.CodedOutputStream output)
                         throws java.io.IOException {
       getSerializedSize();
       for (int i = 0; i < contactPoints_.size(); i++) {
@@ -192,7 +192,7 @@ public final class ClusterClientMessages {
       {
         int dataSize = 0;
         for (int i = 0; i < contactPoints_.size(); i++) {
-          dataSize += com.google.protobuf.CodedOutputStream
+          dataSize += akka.protobuf.CodedOutputStream
             .computeBytesSizeNoTag(contactPoints_.getByteString(i));
         }
         size += dataSize;
@@ -211,24 +211,24 @@ public final class ClusterClientMessages {
     }
 
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
-        com.google.protobuf.ByteString data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
-        com.google.protobuf.ByteString data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ByteString data,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(byte[] data)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
         byte[] data,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
-        throws com.google.protobuf.InvalidProtocolBufferException {
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws akka.protobuf.InvalidProtocolBufferException {
       return PARSER.parseFrom(data, extensionRegistry);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(java.io.InputStream input)
@@ -237,7 +237,7 @@ public final class ClusterClientMessages {
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -247,18 +247,18 @@ public final class ClusterClientMessages {
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseDelimitedFrom(
         java.io.InputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseDelimitedFrom(input, extensionRegistry);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
-        com.google.protobuf.CodedInputStream input)
+        akka.protobuf.CodedInputStream input)
         throws java.io.IOException {
       return PARSER.parseFrom(input);
     }
     public static akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parseFrom(
-        com.google.protobuf.CodedInputStream input,
-        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        akka.protobuf.CodedInputStream input,
+        akka.protobuf.ExtensionRegistryLite extensionRegistry)
         throws java.io.IOException {
       return PARSER.parseFrom(input, extensionRegistry);
     }
@@ -272,7 +272,7 @@ public final class ClusterClientMessages {
 
     @java.lang.Override
     protected Builder newBuilderForType(
-        com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+        akka.protobuf.GeneratedMessage.BuilderParent parent) {
       Builder builder = new Builder(parent);
       return builder;
     }
@@ -280,14 +280,14 @@ public final class ClusterClientMessages {
      * Protobuf type {@code Contacts}
      */
     public static final class Builder extends
-        com.google.protobuf.GeneratedMessage.Builder<Builder>
+        akka.protobuf.GeneratedMessage.Builder<Builder>
        implements akka.cluster.client.protobuf.msg.ClusterClientMessages.ContactsOrBuilder {
-      public static final com.google.protobuf.Descriptors.Descriptor
+      public static final akka.protobuf.Descriptors.Descriptor
           getDescriptor() {
         return akka.cluster.client.protobuf.msg.ClusterClientMessages.internal_static_Contacts_descriptor;
       }
 
-      protected com.google.protobuf.GeneratedMessage.FieldAccessorTable
+      protected akka.protobuf.GeneratedMessage.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.cluster.client.protobuf.msg.ClusterClientMessages.internal_static_Contacts_fieldAccessorTable
             .ensureFieldAccessorsInitialized(
@@ -300,12 +300,12 @@ public final class ClusterClientMessages {
       }
 
       private Builder(
-          com.google.protobuf.GeneratedMessage.BuilderParent parent) {
+          akka.protobuf.GeneratedMessage.BuilderParent parent) {
         super(parent);
         maybeForceBuilderInitialization();
       }
       private void maybeForceBuilderInitialization() {
-        if (com.google.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
+        if (akka.protobuf.GeneratedMessage.alwaysUseFieldBuilders) {
         }
       }
       private static Builder create() {
@@ -314,7 +314,7 @@ public final class ClusterClientMessages {
 
       public Builder clear() {
         super.clear();
-        contactPoints_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        contactPoints_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         return this;
       }
@@ -323,7 +323,7 @@ public final class ClusterClientMessages {
         return create().mergeFrom(buildPartial());
       }
 
-      public com.google.protobuf.Descriptors.Descriptor
+      public akka.protobuf.Descriptors.Descriptor
           getDescriptorForType() {
         return akka.cluster.client.protobuf.msg.ClusterClientMessages.internal_static_Contacts_descriptor;
       }
@@ -344,7 +344,7 @@ public final class ClusterClientMessages {
         akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts result = new akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts(this);
         int from_bitField0_ = bitField0_;
         if (((bitField0_ & 0x00000001) == 0x00000001)) {
-          contactPoints_ = new com.google.protobuf.UnmodifiableLazyStringList(
+          contactPoints_ = new akka.protobuf.UnmodifiableLazyStringList(
               contactPoints_);
           bitField0_ = (bitField0_ & ~0x00000001);
         }
@@ -353,7 +353,7 @@ public final class ClusterClientMessages {
         return result;
       }
 
-      public Builder mergeFrom(com.google.protobuf.Message other) {
+      public Builder mergeFrom(akka.protobuf.Message other) {
         if (other instanceof akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts) {
           return mergeFrom((akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts)other);
         } else {
@@ -383,13 +383,13 @@ public final class ClusterClientMessages {
       }
 
       public Builder mergeFrom(
-          com.google.protobuf.CodedInputStream input,
-          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          akka.protobuf.CodedInputStream input,
+          akka.protobuf.ExtensionRegistryLite extensionRegistry)
           throws java.io.IOException {
         akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts parsedMessage = null;
         try {
           parsedMessage = PARSER.parsePartialFrom(input, extensionRegistry);
-        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+        } catch (akka.protobuf.InvalidProtocolBufferException e) {
           parsedMessage = (akka.cluster.client.protobuf.msg.ClusterClientMessages.Contacts) e.getUnfinishedMessage();
           throw e;
         } finally {
@@ -402,10 +402,10 @@ public final class ClusterClientMessages {
       private int bitField0_;
 
       // repeated string contactPoints = 1;
-      private com.google.protobuf.LazyStringList contactPoints_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+      private akka.protobuf.LazyStringList contactPoints_ = akka.protobuf.LazyStringArrayList.EMPTY;
       private void ensureContactPointsIsMutable() {
         if (!((bitField0_ & 0x00000001) == 0x00000001)) {
-          contactPoints_ = new com.google.protobuf.LazyStringArrayList(contactPoints_);
+          contactPoints_ = new akka.protobuf.LazyStringArrayList(contactPoints_);
           bitField0_ |= 0x00000001;
          }
       }
@@ -431,7 +431,7 @@ public final class ClusterClientMessages {
       /**
        * <code>repeated string contactPoints = 1;</code>
        */
-      public com.google.protobuf.ByteString
+      public akka.protobuf.ByteString
           getContactPointsBytes(int index) {
         return contactPoints_.getByteString(index);
       }
@@ -475,7 +475,7 @@ public final class ClusterClientMessages {
        * <code>repeated string contactPoints = 1;</code>
        */
       public Builder clearContactPoints() {
-        contactPoints_ = com.google.protobuf.LazyStringArrayList.EMPTY;
+        contactPoints_ = akka.protobuf.LazyStringArrayList.EMPTY;
         bitField0_ = (bitField0_ & ~0x00000001);
         onChanged();
         return this;
@@ -484,7 +484,7 @@ public final class ClusterClientMessages {
        * <code>repeated string contactPoints = 1;</code>
        */
       public Builder addContactPointsBytes(
-          com.google.protobuf.ByteString value) {
+          akka.protobuf.ByteString value) {
         if (value == null) {
     throw new NullPointerException();
   }
@@ -505,17 +505,17 @@ public final class ClusterClientMessages {
     // @@protoc_insertion_point(class_scope:Contacts)
   }
 
-  private static com.google.protobuf.Descriptors.Descriptor
+  private static akka.protobuf.Descriptors.Descriptor
     internal_static_Contacts_descriptor;
   private static
-    com.google.protobuf.GeneratedMessage.FieldAccessorTable
+    akka.protobuf.GeneratedMessage.FieldAccessorTable
       internal_static_Contacts_fieldAccessorTable;
 
-  public static com.google.protobuf.Descriptors.FileDescriptor
+  public static akka.protobuf.Descriptors.FileDescriptor
       getDescriptor() {
     return descriptor;
   }
-  private static com.google.protobuf.Descriptors.FileDescriptor
+  private static akka.protobuf.Descriptors.FileDescriptor
       descriptor;
   static {
     java.lang.String[] descriptorData = {
@@ -523,23 +523,23 @@ public final class ClusterClientMessages {
       "s\022\025\n\rcontactPoints\030\001 \003(\tB$\n akka.cluster" +
       ".client.protobuf.msgH\001"
     };
-    com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
-      new com.google.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
-        public com.google.protobuf.ExtensionRegistry assignDescriptors(
-            com.google.protobuf.Descriptors.FileDescriptor root) {
+    akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
+      new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
+        public akka.protobuf.ExtensionRegistry assignDescriptors(
+            akka.protobuf.Descriptors.FileDescriptor root) {
           descriptor = root;
           internal_static_Contacts_descriptor =
             getDescriptor().getMessageTypes().get(0);
           internal_static_Contacts_fieldAccessorTable = new
-            com.google.protobuf.GeneratedMessage.FieldAccessorTable(
+            akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_Contacts_descriptor,
               new java.lang.String[] { "ContactPoints", });
           return null;
         }
       };
-    com.google.protobuf.Descriptors.FileDescriptor
+    akka.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
-        new com.google.protobuf.Descriptors.FileDescriptor[] {
+        new akka.protobuf.Descriptors.FileDescriptor[] {
         }, assigner);
   }
 

@@ -12,7 +12,7 @@ import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
 import akka.cluster.metrics.{ ClusterMetricsMessage, ClusterMetricsSettings, EWMA, Metric, MetricsGossip, MetricsGossipEnvelope, NodeMetrics }
 import akka.serialization.BaseSerializer
 import akka.util.ClassLoaderObjectInputStream
-import com.google.protobuf.{ ByteString, MessageLite }
+import akka.protobuf.{ ByteString, MessageLite }
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferConverter, setAsJavaSetConverter }
 import akka.serialization.SerializerWithStringManifest

@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.remote.WireFormats.ActorRefData
 import akka.serialization.{ Serialization, BaseSerializer }
-import com.google.protobuf.Message
+import akka.protobuf.Message
 
 import scala.annotation.tailrec
 
@@ -35,7 +35,7 @@ object ProtobufSerializer {
 }
 
 /**
- * This Serializer serializes `com.google.protobuf.Message`s
+ * This Serializer serializes `akka.protobuf.Message`s
  */
 class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 

@@ -5,7 +5,7 @@
 package akka.remote
 
 import akka.remote.WireFormats._
-import com.google.protobuf.ByteString
+import akka.protobuf.ByteString
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest

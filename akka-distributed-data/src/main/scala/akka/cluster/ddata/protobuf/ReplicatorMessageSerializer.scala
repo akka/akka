@@ -19,7 +19,7 @@ import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
 import akka.serialization.BaseSerializer
 import akka.util.{ ByteString ⇒ AkkaByteString }
-import com.google.protobuf.ByteString
+import akka.protobuf.ByteString
 import akka.cluster.ddata.Key.KeyR
 
 /**
