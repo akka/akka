@@ -26,17 +26,19 @@ object OSGi {
 
   val camel = exports(Seq("akka.camel.*"))
 
-  val cluster = exports(Seq("akka.cluster.*"), imports = Seq(protobufImport()))
+  val cluster = exports(Seq("akka.cluster.*"))
 
-  val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(protobufImport(),kamonImport(),sigarImport()))
+  val clusterMetrics = exports(Seq("akka.cluster.metrics.*"), imports = Seq(kamonImport(), sigarImport()))
 
   val osgi = exports(Seq("akka.osgi.*"))
 
-  val remote = exports(Seq("akka.remote.*"), imports = Seq(protobufImport()))
+  val protobuf = exports(Seq("akka.protobuf.*"))
+
+  val remote = exports(Seq("akka.remote.*"))
 
   val slf4j = exports(Seq("akka.event.slf4j.*"))
 
-  val persistence = exports(Seq("akka.persistence.*"), imports = Seq(protobufImport()))
+  val persistence = exports(Seq("akka.persistence.*"))
 
   val testkit = exports(Seq("akka.testkit.*"))
 
@@ -44,8 +46,7 @@ object OSGi {
     // needed because testkit is normally not used in the application bundle,
     // but it should still be included as transitive dependency and used by BundleDelegatingClassLoader
     // to be able to find refererence.conf
-    "akka.testkit",
-    "com.google.protobuf")
+    "akka.testkit")
 
   def exports(packages: Seq[String] = Seq(), imports: Seq[String] = Nil) = osgiSettings ++ Seq(
     OsgiKeys.importPackage := imports ++ scalaVersion(defaultImports).value,
@@ -54,7 +55,6 @@ object OSGi {
   def defaultImports(scalaVersion: String) = Seq("!sun.misc", akkaImport(), configImport(), scalaImport(scalaVersion), "*")
   def akkaImport(packageName: String = "akka.*") = versionedImport(packageName, "2.4", "2.5")
   def configImport(packageName: String = "com.typesafe.config.*") = versionedImport(packageName, "1.2.0", "1.3.0")
-  def protobufImport(packageName: String = "com.google.protobuf.*") = versionedImport(packageName, "2.5.0", "2.6.0")
   def scalaImport(version: String) = {
     val packageName = "scala.*"
     val ScalaVersion = """(\d+)\.(\d+)\..*""".r

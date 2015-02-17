@@ -7,6 +7,7 @@ package akka
 import sbt._
 import Process._
 import Keys._
+import com.typesafe.sbt.preprocess.Preprocess._
 
 import java.io.File
 
@@ -18,11 +19,36 @@ object Protobuf {
   val generate = TaskKey[Unit]("protobuf-generate", "Compile the protobuf sources and do all processing.")
 
   lazy val settings: Seq[Setting[_]] = Seq(
-    paths <<= (sourceDirectory in Compile, sourceDirectory in Test) { (a, b) => Seq(a, b) map (_ / "protobuf") },
-    outputPaths <<= (sourceDirectory in Compile, sourceDirectory in Test) { (a, b) => Seq(a, b) map (_ / "java") },
+    paths := Seq((sourceDirectory in Compile).value, (sourceDirectory in Test).value).map(_ / "protobuf"),
+    outputPaths := Seq((sourceDirectory in Compile).value, (sourceDirectory in Test).value).map(_ / "java"),
     protoc := "protoc",
     protocVersion := "2.5.0",
-    generate <<= generateSourceTask
+    generate := {
+      val sourceDirs = paths.value
+      val targetDirs = outputPaths.value
+
+      if (sourceDirs.size != targetDirs.size)
+        sys.error(s"Unbalanced number of paths and destination paths!\nPaths: $sourceDirs\nDestination Paths: $targetDirs")
+
+      if (sourceDirs exists (_.exists)) {
+        val cmd = protoc.value
+        val log = streams.value.log
+        checkProtocVersion(cmd, protocVersion.value, log)
+
+        val base = baseDirectory.value
+        val sources = base / "src"
+        val targets = target.value
+        val cache = targets / "protoc" / "cache"
+
+        (sourceDirs zip targetDirs) map { case (src, dst) =>
+          val relative = src.relativeTo(sources).getOrElse(throw new Exception(s"path $src is not a in source tree $sources")).toString
+          val tmp = targets / "protoc" / relative
+          IO.delete(tmp)
+          generate(cmd, src, tmp, log)
+          transformDirectory(tmp, dst, _ => true, transformFile(_.replace("com.google.protobuf", "akka.protobuf")), cache, log)
+        }
+      }
+    }
   )
 
   private def callProtoc[T](protoc: String, args: Seq[String], log: Logger, thunk: (ProcessBuilder, Logger) => T): T =
@@ -56,22 +82,6 @@ object Protobuf {
           protoFiles.map(_.absolutePath), log, { (p, l) => p ! l })
         if (exitCode != 0)
           sys.error("protoc returned exit code: %d" format exitCode)
-      }
-  }
-
-  private def generateSourceTask: Project.Initialize[Task[Unit]] = (streams, paths, outputPaths, protoc, protocVersion) map {
-    (out, sourceDirs, targetDirs, protoc, protocVersion) =>
-      if (sourceDirs.size != targetDirs.size)
-        sys.error("Unbalanced number of paths and destination paths!\nPaths: %s\nDestination Paths: %s" format
-          (sourceDirs, targetDirs))
-
-      if (sourceDirs exists { _.exists }) {
-        checkProtocVersion(protoc, protocVersion, out.log)
-
-        (sourceDirs zip targetDirs) map {
-          case (sourceDir, targetDir) =>
-            generate(protoc, sourceDir, targetDir, out.log)
-        }
       }
   }
 }
