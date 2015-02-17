@@ -8,8 +8,8 @@ import akka.actor.{ AddressFromURIString, InternalActorRef, Address, ActorRef }
 import akka.remote.WireFormats._
 import akka.remote._
 import akka.util.ByteString
-import com.google.protobuf.InvalidProtocolBufferException
-import com.google.protobuf.{ ByteString ⇒ PByteString }
+import akka.protobuf.InvalidProtocolBufferException
+import akka.protobuf.{ ByteString ⇒ PByteString }
 
 /**
  * INTERNAL API
