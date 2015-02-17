@@ -62,7 +62,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
-        log.debug("Bind failed for TCP channel on endpoint [{}]: {}", bind.localAddress, e)
+        log.error(e, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }
 
