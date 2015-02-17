@@ -153,7 +153,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |   |   ┌─o-r-i-g-i-n-:- (origin)
           |   |   |                   ┌─e-n-t-i-c-a-t-e-:- (proxy-authenticate)
           |   | ┌─p-r-o-x-y---a-u-t-h-o-r-i-z-a-t-i-o-n-:- (proxy-authorization)
-          |   | | └─r-a-n-g-e-:- (range)
+          |   | | |   ┌─a-n-g-e-:- (range)
+          |   | | └─r-e-f-e-r-e-r-:- (referer)
           |   └─s-e-r-v-e-r-:- (server)
           |     |   └─t---c-o-o-k-i-e-:- (set-cookie)
           |     | ┌─t-r-a-n-s-f-e-r---e-n-c-o-d-i-n-g-:- (transfer-encoding)
@@ -162,7 +163,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
           |       └─x---f-o-r-w-a-r-d-e-d---f-o-r-:- (x-forwarded-for)
           |""" -> parser.formatTrie
       }
-      parser.formatSizes shouldEqual "602 nodes, 42 branchData rows, 57 values"
+      parser.formatSizes shouldEqual "610 nodes, 43 branchData rows, 58 values"
       parser.contentHistogram shouldEqual
         Map("connection" -> 3, "Content-Length" -> 1, "accept" -> 2, "cache-control" -> 2, "expect" -> 1)
     }
@@ -234,8 +235,8 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       }
       randomHeaders.take(300).foldLeft(0) {
         case (acc, rawHeader) ⇒ acc + parseAndCache(rawHeader.toString + "\r\nx", rawHeader)
-      } shouldEqual 99 // number of cache hits
-      parser.formatSizes shouldEqual "3040 nodes, 115 branchData rows, 255 values"
+      } shouldEqual 98 // number of cache hits
+      parser.formatSizes shouldEqual "3036 nodes, 115 branchData rows, 255 values"
     }
 
     "continue parsing modelled headers even if the overall cache capacity is reached" in new TestSetup() {
@@ -247,7 +248,7 @@ class HttpHeaderParserSpec extends WordSpec with Matchers with BeforeAndAfterAll
       randomHostHeaders.take(300).foldLeft(0) {
         case (acc, header) ⇒ acc + parseAndCache(header.toString + "\r\nx", header)
       } shouldEqual 12 // number of cache hits
-      parser.formatSizes shouldEqual "766 nodes, 51 branchData rows, 69 values"
+      parser.formatSizes shouldEqual "774 nodes, 52 branchData rows, 70 values"
     }
 
     "continue parsing raw headers even if the header-specific cache capacity is reached" in new TestSetup() {

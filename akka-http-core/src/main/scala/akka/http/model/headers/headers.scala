@@ -537,6 +537,19 @@ final case class `Remote-Address`(address: RemoteAddress) extends japi.headers.R
   protected def companion = `Remote-Address`
 }
 
+// http://tools.ietf.org/html/rfc7231#section-5.5.2
+object Referer extends ModeledCompanion
+final case class Referer(uri: Uri) extends japi.headers.Referer with ModeledHeader {
+  require(uri.fragment == None, "Referer header URI must not contain a fragment")
+  require(uri.authority.userinfo.isEmpty, "Referer header URI must not contain a userinfo component")
+
+  def renderValue[R <: Rendering](r: R): r.type = { import UriRendering.UriRenderer; r ~~ uri }
+  protected def companion = Referer
+
+  /** Java API */
+  def getUri: akka.http.model.japi.Uri = uri.asJava
+}
+
 // http://tools.ietf.org/html/rfc7231#section-7.4.2
 object Server extends ModeledCompanion {
   def apply(products: String): Server = apply(ProductVersion.parseMultiple(products))

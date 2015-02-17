@@ -168,6 +168,13 @@ private[parser] trait SimpleHeaders { this: Parser with CommonRules with CommonA
   // http://tools.ietf.org/html/rfc7233#section-3.1
   def `range` = rule { `byte-ranges-specifier` /*| `other-ranges-specifier` */ ~ EOI ~> (Range(_, _)) }
 
+  // http://tools.ietf.org/html/rfc7231#section-5.5.2
+  def referer = rule {
+    // we are bit more relaxed than the spec here by also parsing a potential fragment
+    // but catch it in the `Referer` instance validation (with a `require` in the constructor)
+    runSubParser(new UriParser(_).`URI-reference-pushed`) ~ EOI ~> (Referer(_))
+  }
+
   // http://tools.ietf.org/html/rfc7231#section-7.4.2
   def server = rule { products ~> (Server(_)) }
 

@@ -339,6 +339,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         `Proxy-Authorization`(GenericHttpCredentials("Fancy", Map("yes" -> "no", "nonce" -> """4\2""")))
     }
 
+    "Referer" in {
+      "Referer: https://spray.io/secure" =!= Referer(Uri("https://spray.io/secure"))
+      "Referer: /en-us/default.aspx?foo=bar" =!= Referer(Uri("/en-us/default.aspx?foo=bar"))
+      "Referer: https://akka.io/#sec" =!= ErrorInfo("Illegal HTTP header 'Referer': requirement failed",
+        "Referer header URI must not contain a fragment")
+    }
+
     "Server" in {
       "Server: as fghf.fdf/xx" =!= `Server`(Vector(ProductVersion("as"), ProductVersion("fghf.fdf", "xx")))
     }
