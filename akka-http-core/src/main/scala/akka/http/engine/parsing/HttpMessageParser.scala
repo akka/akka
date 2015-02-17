@@ -285,7 +285,11 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
     done()
   }
 
-  def done(): StateResult = null // StateResult is a phantom type
+  /**
+   * Use [[continue]] or [[terminate]] to suspend or terminate processing.
+   * Do not call this directly.
+   */
+  private def done(): StateResult = null // StateResult is a phantom type
 
   def contentType(cth: Option[`Content-Type`]) = cth match {
     case Some(x) ⇒ x.contentType
