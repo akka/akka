@@ -26,7 +26,8 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
   with IpAddressParsing
   with LinkHeader
   with SimpleHeaders
-  with StringBuilding {
+  with StringBuilding
+  with WebsocketHeaders {
 
   def errorInfo(e: ParseError) = ErrorInfo(formatError(e, showLine = false), formatErrorLine(e))
 
@@ -101,6 +102,11 @@ object HeaderParser {
     "proxy-authorization",
     "range",
     "server",
+    "sec-websocket-accept",
+    "sec-websocket-extensions",
+    "sec-websocket-key",
+    "sec-websocket-protocol",
+    "sec-websocket-version",
     "set-cookie",
     "transfer-encoding",
     "user-agent",
