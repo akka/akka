@@ -55,6 +55,7 @@ final case class Connection(tokens: immutable.Seq[String]) extends ModeledHeader
   def renderValue[R <: Rendering](r: R): r.type = r ~~ tokens
   def hasClose = has("close")
   def hasKeepAlive = has("keep-alive")
+  def hasUpgrade = has("upgrade")
   def append(tokens: immutable.Seq[String]) = Connection(this.tokens ++ tokens)
   @tailrec private def has(item: String, ix: Int = 0): Boolean =
     if (ix < tokens.length)
@@ -709,6 +710,19 @@ final case class `Transfer-Encoding`(encodings: immutable.Seq[TransferEncoding])
 
   /** Java API */
   def getEncodings: Iterable[japi.TransferEncoding] = encodings.asJava
+}
+
+// http://tools.ietf.org/html/rfc7230#section-6.7
+object Upgrade extends ModeledCompanion {
+  implicit val protocolsRenderer = Renderer.defaultSeqRenderer[UpgradeProtocol]
+}
+final case class Upgrade(protocols: immutable.Seq[UpgradeProtocol]) extends ModeledHeader {
+  import Upgrade.protocolsRenderer
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ protocols
+
+  protected def companion: ModeledCompanion = Upgrade
+
+  def hasWebsocket: Boolean = protocols.exists(_.name equalsIgnoreCase "websocket")
 }
 
 // http://tools.ietf.org/html/rfc7231#section-5.5.3
