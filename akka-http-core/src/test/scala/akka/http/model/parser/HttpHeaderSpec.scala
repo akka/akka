@@ -483,6 +483,13 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
         .renderedTo("PLAY_FLASH=; Expires=Sun, 07 Dec 2014 22:48:47 GMT; Path=/; HttpOnly")
     }
 
+    "Upgrade" in {
+      "Upgrade: abc, def" =!= Upgrade(Vector(UpgradeProtocol("abc"), UpgradeProtocol("def")))
+      "Upgrade: abc, def/38.1" =!= Upgrade(Vector(UpgradeProtocol("abc"), UpgradeProtocol("def", Some("38.1"))))
+
+      "Upgrade: websocket" =!= Upgrade(Vector(UpgradeProtocol("websocket")))
+    }
+
     "User-Agent" in {
       "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_3) AppleWebKit/537.31" =!=
         `User-Agent`(ProductVersion("Mozilla", "5.0", "Macintosh; Intel Mac OS X 10_8_3"), ProductVersion("AppleWebKit", "537.31"))
