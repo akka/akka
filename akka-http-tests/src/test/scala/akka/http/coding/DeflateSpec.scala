@@ -18,12 +18,11 @@ class DeflateSpec extends CoderSpec {
   protected def newEncodedOutputStream(underlying: OutputStream): OutputStream =
     new DeflaterOutputStream(underlying)
 
-  protected def corruptInputMessage: Option[String] = Some("invalid code -- missing end-of-block")
-
   override def extraTests(): Unit = {
     "throw early if header is corrupt" in {
-      val ex = the[DataFormatException] thrownBy ourDecode(ByteString(0, 1, 2, 3, 4))
-      ex.getMessage should equal("incorrect header check")
+      a[DataFormatException] should be thrownBy {
+        ourDecode(ByteString(0, 1, 2, 3, 4))
+      }
     }
   }
 }

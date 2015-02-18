@@ -14,61 +14,30 @@ import akka.util.ByteString
 import org.scalatest.matchers.Matcher
 
 class CodingDirectivesExamplesSpec extends RoutingSpec {
-  "compressResponse-0" in {
-    val route = compressResponse() { complete("content") }
-
-    Get("/") ~> route ~> check {
-      response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
-      response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
-      response should haveContentEncoding(deflate)
-    }
-    Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
-      status shouldEqual StatusCodes.OK
-      response should haveContentEncoding(identity)
-      responseAs[String] shouldEqual "content"
-    }
-  }
-  "compressResponse-1" in {
-    val route = compressResponse(Gzip) { complete("content") }
-
-    Get("/") ~> route ~> check {
-      response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
-      response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
-      rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
-      rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
-    }
-  }
-  "compressResponseIfRequested" in {
-    val route = compressResponseIfRequested() { complete("content") }
-
-    Get("/") ~> route ~> check {
-      response should haveContentEncoding(identity)
-    }
-    Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
-      response should haveContentEncoding(gzip)
-    }
-    Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
-      response should haveContentEncoding(deflate)
-    }
-    Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
-      response should haveContentEncoding(identity)
-    }
-  }
   "encodeResponse" in {
-    val route = encodeResponse(Gzip) { complete("content") }
+    val route = encodeResponse { complete("content") }
+
+    Get("/") ~> route ~> check {
+      response should haveContentEncoding(identity)
+    }
+    Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
+      response should haveContentEncoding(gzip)
+    }
+    Get("/") ~> `Accept-Encoding`(deflate) ~> route ~> check {
+      response should haveContentEncoding(deflate)
+    }
+    Get("/") ~> `Accept-Encoding`(identity) ~> route ~> check {
+      response should haveContentEncoding(identity)
+    }
+  }
+  "encodeResponseWith" in {
+    val route = encodeResponseWith(Gzip) { complete("content") }
 
     Get("/") ~> route ~> check {
       response should haveContentEncoding(gzip)
+    }
+    Get("/") ~> `Accept-Encoding`() ~> route ~> check {
+      rejection shouldEqual UnacceptedResponseEncodingRejection(gzip)
     }
     Get("/") ~> `Accept-Encoding`(gzip, deflate) ~> route ~> check {
       response should haveContentEncoding(gzip)
@@ -85,25 +54,7 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
   val helloDeflated = compress("Hello", Deflate)
   "decodeRequest" in {
     val route =
-      decodeRequest(Gzip) {
-        entity(as[String]) { content: String =>
-          complete(s"Request content: '$content'")
-        }
-      }
-
-    Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> route ~> check {
-      responseAs[String] shouldEqual "Request content: 'Hello'"
-    }
-    Post("/", helloDeflated) ~> `Content-Encoding`(deflate) ~> route ~> check {
-      rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
-    }
-    Post("/", "hello") ~> `Content-Encoding`(identity) ~> route ~> check {
-      rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
-    }
-  }
-  "decompressRequest-0" in {
-    val route =
-      decompressRequest() {
+      decodeRequest {
         entity(as[String]) { content: String =>
           complete(s"Request content: '$content'")
         }
@@ -119,9 +70,27 @@ class CodingDirectivesExamplesSpec extends RoutingSpec {
       responseAs[String] shouldEqual "Request content: 'hello uncompressed'"
     }
   }
-  "decompressRequest-1" in {
+  "decodeRequestWith-0" in {
     val route =
-      decompressRequest(Gzip, NoCoding) {
+      decodeRequestWith(Gzip) {
+        entity(as[String]) { content: String =>
+          complete(s"Request content: '$content'")
+        }
+      }
+
+    Post("/", helloGzipped) ~> `Content-Encoding`(gzip) ~> route ~> check {
+      responseAs[String] shouldEqual "Request content: 'Hello'"
+    }
+    Post("/", helloDeflated) ~> `Content-Encoding`(deflate) ~> route ~> check {
+      rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
+    }
+    Post("/", "hello") ~> `Content-Encoding`(identity) ~> route ~> check {
+      rejection shouldEqual UnsupportedRequestEncodingRejection(gzip)
+    }
+  }
+  "decodeRequestWith-1" in {
+    val route =
+      decodeRequestWith(Gzip, NoCoding) {
         entity(as[String]) { content: String =>
           complete(s"Request content: '$content'")
         }

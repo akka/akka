@@ -21,7 +21,7 @@ import scala.collection.immutable
 
 import akka.http.model.HttpHeader
 import akka.http.model.headers.CustomHeader
-import akka.http.server.{ Route ⇒ ScalaRoute, Directive ⇒ ScalaDirective, Directive0, Directives }
+import akka.http.server.{ Route ⇒ ScalaRoute, Directive0, Directives }
 import RouteStructure._
 
 /**
@@ -119,7 +119,8 @@ private[japi] object RouteImplementation extends Directives with server.RouteCon
       }.apply(inner)
 
     case EncodeResponse(coders, children) ⇒
-      compressResponse(coders.map(_._underlyingScalaCoder()): _*).apply(apply(RouteAlternatives(children)))
+      val scalaCoders = coders.map(_._underlyingScalaCoder())
+      encodeResponseWith(scalaCoders.head, scalaCoders.tail: _*).apply(apply(RouteAlternatives(children)))
 
     case Conditional(eTag, lastModified, children) ⇒
       conditional(eTag.asScala, lastModified.asScala).apply(apply(RouteAlternatives(children)))
