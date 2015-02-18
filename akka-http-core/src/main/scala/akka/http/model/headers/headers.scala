@@ -7,7 +7,10 @@ package headers
 
 import java.lang.Iterable
 import java.net.InetSocketAddress
+import java.security.MessageDigest
 import java.util
+import akka.parboiled2.util.Base64
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.http.util._
@@ -561,6 +564,103 @@ final case class Referer(uri: Uri) extends japi.headers.Referer with ModeledHead
 
   /** Java API */
   def getUri: akka.http.model.japi.Uri = uri.asJava
+}
+
+/**
+ * INTERNAL API
+ */
+// http://tools.ietf.org/html/rfc6455#section-4.3
+private[http] object `Sec-WebSocket-Accept` extends ModeledCompanion {
+  // Defined at http://tools.ietf.org/html/rfc6455#section-4.2.2
+  val MagicGuid = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+
+  /** Generates the matching accept header for this key */
+  def forKey(key: `Sec-WebSocket-Key`): `Sec-WebSocket-Accept` = {
+    val sha1 = MessageDigest.getInstance("sha1")
+    val salted = key.key + MagicGuid
+    val hash = sha1.digest(salted.asciiBytes)
+    val acceptKey = Base64.rfc2045().encodeToString(hash, false)
+    `Sec-WebSocket-Accept`(acceptKey)
+  }
+}
+/**
+ * INTERNAL API
+ */
+private[http] final case class `Sec-WebSocket-Accept`(key: String) extends ModeledHeader {
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
+
+  protected def companion = `Sec-WebSocket-Accept`
+}
+
+/**
+ * INTERNAL API
+ */
+// http://tools.ietf.org/html/rfc6455#section-4.3
+private[http] object `Sec-WebSocket-Extensions` extends ModeledCompanion {
+  implicit val extensionsRenderer = Renderer.defaultSeqRenderer[WebsocketExtension]
+}
+/**
+ * INTERNAL API
+ */
+private[http] final case class `Sec-WebSocket-Extensions`(extensions: immutable.Seq[WebsocketExtension]) extends ModeledHeader {
+  require(extensions.nonEmpty, "Sec-WebSocket-Extensions.extensions must not be empty")
+  import `Sec-WebSocket-Extensions`.extensionsRenderer
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ extensions
+
+  protected def companion = `Sec-WebSocket-Extensions`
+}
+
+// http://tools.ietf.org/html/rfc6455#section-4.3
+/**
+ * INTERNAL API
+ */
+private[http] object `Sec-WebSocket-Key` extends ModeledCompanion
+/**
+ * INTERNAL API
+ */
+private[http] final case class `Sec-WebSocket-Key`(key: String) extends ModeledHeader {
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ key
+
+  protected def companion = `Sec-WebSocket-Key`
+}
+
+// http://tools.ietf.org/html/rfc6455#section-4.3
+/**
+ * INTERNAL API
+ */
+private[http] object `Sec-WebSocket-Protocol` extends ModeledCompanion {
+  implicit val protocolsRenderer = Renderer.defaultSeqRenderer[String]
+}
+/**
+ * INTERNAL API
+ */
+private[http] final case class `Sec-WebSocket-Protocol`(protocols: immutable.Seq[String]) extends ModeledHeader {
+  require(protocols.nonEmpty, "Sec-WebSocket-Protocol.protocols must not be empty")
+  import `Sec-WebSocket-Protocol`.protocolsRenderer
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ protocols
+
+  protected def companion = `Sec-WebSocket-Protocol`
+}
+
+// http://tools.ietf.org/html/rfc6455#section-4.3
+/**
+ * INTERNAL API
+ */
+private[http] object `Sec-WebSocket-Version` extends ModeledCompanion {
+  implicit val versionsRenderer = Renderer.defaultSeqRenderer[Int]
+}
+/**
+ * INTERNAL API
+ */
+private[http] final case class `Sec-WebSocket-Version`(versions: immutable.Seq[Int]) extends ModeledHeader {
+  require(versions.nonEmpty, "Sec-WebSocket-Version.versions must not be empty")
+  require(versions.forall(v ⇒ v >= 0 && v <= 255), s"Sec-WebSocket-Version.versions must be in the range 0 <= version <= 255 but were $versions")
+  import `Sec-WebSocket-Version`.versionsRenderer
+  protected[http] def renderValue[R <: Rendering](r: R): r.type = r ~~ versions
+
+  def hasVersion(versionNumber: Int): Boolean = versions.exists(_ == versionNumber)
+
+  protected def companion = `Sec-WebSocket-Version`
 }
 
 // http://tools.ietf.org/html/rfc7231#section-7.4.2
