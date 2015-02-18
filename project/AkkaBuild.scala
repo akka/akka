@@ -1140,7 +1140,7 @@ object AkkaBuild extends Build {
 
     java8Home in GlobalScope := {
       def isJavaHome(dirName: String) = (dirName != null) && {
-        val dir = file(dirName)
+        val dir = file(dirName.trim)
         dir.exists && dir.isDirectory && new File(dir, "bin/javac").exists
       }
       (Seq(
@@ -1151,7 +1151,7 @@ object AkkaBuild extends Build {
         Try("/usr/libexec/java_home -v 1.8".!!).toOption.toSeq // OS/X method
         )
         .find(isJavaHome)
-        .map(file(_))
+        .map(dirName => file(dirName.trim))
     },
 
     validatePullRequestTask
