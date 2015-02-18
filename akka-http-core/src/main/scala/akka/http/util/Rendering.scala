@@ -84,6 +84,9 @@ private[http] object Renderer {
   implicit object CharRenderer extends Renderer[Char] {
     def render[R <: Rendering](r: R, value: Char): r.type = r ~~ value
   }
+  implicit object IntRenderer extends Renderer[Int] {
+    def render[R <: Rendering](r: R, value: Int): r.type = r ~~ value
+  }
   implicit object StringRenderer extends Renderer[String] {
     def render[R <: Rendering](r: R, value: String): r.type = r ~~ value
   }

@@ -369,6 +369,44 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
       "Range: bytes=0-1, 2-3, -99" =!= Range(ByteRange(0, 1), ByteRange(2, 3), ByteRange.suffix(99))
     }
 
+    "Sec-WebSocket-Accept" in {
+      "Sec-WebSocket-Accept: ZGgwOTM0Z2owcmViamRvcGcK" =!= `Sec-WebSocket-Accept`("ZGgwOTM0Z2owcmViamRvcGcK")
+    }
+    "Sec-WebSocket-Extensions" in {
+      "Sec-WebSocket-Extensions: abc" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc")))
+      "Sec-WebSocket-Extensions: abc, def" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc"), WebsocketExtension("def")))
+      "Sec-WebSocket-Extensions: abc; param=2; use_y, def" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc", Map("param" -> "2", "use_y" -> "")), WebsocketExtension("def")))
+      "Sec-WebSocket-Extensions: abc; param=\",xyz\", def" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("abc", Map("param" -> ",xyz")), WebsocketExtension("def")))
+
+      // real examples from https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-19
+      "Sec-WebSocket-Extensions: permessage-deflate" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("permessage-deflate")))
+      "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10" =!=
+        `Sec-WebSocket-Extensions`(Vector(WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10"))))
+      "Sec-WebSocket-Extensions: permessage-deflate; client_max_window_bits; server_max_window_bits=10, permessage-deflate; client_max_window_bits" =!=
+        `Sec-WebSocket-Extensions`(Vector(
+          WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> "", "server_max_window_bits" -> "10")),
+          WebsocketExtension("permessage-deflate", Map("client_max_window_bits" -> ""))))
+    }
+    "Sec-WebSocket-Key" in {
+      "Sec-WebSocket-Key: c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==" =!= `Sec-WebSocket-Key`("c2Zxb3JpbmgyMzA5dGpoMDIzOWdlcm5vZ2luCg==")
+    }
+    "Sec-WebSocket-Protocol" in {
+      "Sec-WebSocket-Protocol: chat" =!= `Sec-WebSocket-Protocol`(Vector("chat"))
+      "Sec-WebSocket-Protocol: chat, superchat" =!= `Sec-WebSocket-Protocol`(Vector("chat", "superchat"))
+    }
+    "Sec-WebSocket-Version" in {
+      "Sec-WebSocket-Version: 25" =!= `Sec-WebSocket-Version`(Vector(25))
+      "Sec-WebSocket-Version: 13, 8, 7" =!= `Sec-WebSocket-Version`(Vector(13, 8, 7))
+
+      "Sec-WebSocket-Version: 255" =!= `Sec-WebSocket-Version`(Vector(255))
+      "Sec-WebSocket-Version: 0" =!= `Sec-WebSocket-Version`(Vector(0))
+    }
+
     "Set-Cookie" in {
       "Set-Cookie: SID=\"31d4d96e407aad42\"" =!=
         `Set-Cookie`(HttpCookie("SID", "31d4d96e407aad42")).renderedTo("SID=31d4d96e407aad42")
