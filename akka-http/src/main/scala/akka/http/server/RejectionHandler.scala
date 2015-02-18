@@ -94,13 +94,16 @@ object RejectionHandler {
 
     case rejections @ (UnacceptedResponseContentTypeRejection(_) +: _) ⇒
       val supported = rejections.flatMap {
-        case UnacceptedResponseContentTypeRejection(supported) ⇒ supported
-        case _ ⇒ Nil
+        case UnacceptedResponseContentTypeRejection(x) ⇒ x
+        case _                                         ⇒ Nil
       }
       complete(NotAcceptable, "Resource representation is only available with these Content-Types:\n" + supported.map(_.value).mkString("\n"))
 
     case rejections @ (UnacceptedResponseEncodingRejection(_) +: _) ⇒
-      val supported = rejections.collect { case UnacceptedResponseEncodingRejection(x) ⇒ x }
+      val supported = rejections.flatMap {
+        case UnacceptedResponseEncodingRejection(x) ⇒ x
+        case _                                      ⇒ Nil
+      }
       complete(NotAcceptable, "Resource representation is only available with these Content-Encodings:\n" + supported.map(_.value).mkString("\n"))
 
     case rejections @ (UnsupportedRequestContentTypeRejection(_) +: _) ⇒
