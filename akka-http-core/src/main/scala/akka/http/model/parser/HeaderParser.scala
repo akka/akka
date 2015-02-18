@@ -109,6 +109,7 @@ object HeaderParser {
     "sec-websocket-version",
     "set-cookie",
     "transfer-encoding",
+    "upgrade",
     "user-agent",
     "www-authenticate",
     "x-forwarded-for")
