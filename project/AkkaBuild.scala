@@ -79,9 +79,12 @@ object AkkaBuild extends Build {
         archivesPathFinder.get.map(file => (file -> ("akka/" + file.getName)))
       },
       Maven.projects in Maven.mvn := Seq(file("akka-samples") / "akka-docs-java-lambda"),
+      // FIXME when jenkins issue is solved, re-enable pr validation of:
+      //       Maven.mvnExec
+      //       test in Test in httpJava8Tests
       validatePullRequest <<= Seq(test in Test in stream, SphinxSupport.generate in Sphinx in docsDev,
-      Maven.mvnExec, test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
-      test in Test in httpCore, test in Test in http, test in Test in httpJavaTests, test in Test in httpJava8Tests,
+      test in Test in streamTestkit, test in Test in streamTests, test in Test in streamTck,
+      test in Test in httpCore, test in Test in http, test in Test in httpJavaTests,
       test in Test in httpTestkit, test in Test in httpTests, test in Test in docsDev,
       compile in Compile in benchJmh
       ).dependOn
@@ -1140,7 +1143,7 @@ object AkkaBuild extends Build {
 
     java8Home in GlobalScope := {
       def isJavaHome(dirName: String) = (dirName != null) && {
-        val dir = file(dirName)
+        val dir = file(dirName.trim)
         dir.exists && dir.isDirectory && new File(dir, "bin/javac").exists
       }
       (Seq(
@@ -1151,7 +1154,7 @@ object AkkaBuild extends Build {
         Try("/usr/libexec/java_home -v 1.8".!!).toOption.toSeq // OS/X method
         )
         .find(isJavaHome)
-        .map(file(_))
+        .map(dirName => file(dirName.trim))
     },
 
     validatePullRequestTask
