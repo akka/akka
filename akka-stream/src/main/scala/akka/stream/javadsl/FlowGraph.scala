@@ -178,6 +178,15 @@ object Balance {
 
   /**
    * Create a new `Balance` vertex with the specified input type.
+   *
+   * @param waitForAllDownstreams if `true` it will not start emitting
+   *   elements to downstream outputs until all of them have requested at least one element
+   */
+  def create[T](waitForAllDownstreams: Boolean): Balance[T] =
+    create(waitForAllDownstreams, OperationAttributes.none)
+
+  /**
+   * Create a new `Balance` vertex with the specified input type.
    */
   def create[T](): Balance[T] = create(false, OperationAttributes.none)
 

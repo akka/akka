@@ -44,16 +44,6 @@ import static junit.framework.TestCase.assertTrue;
 
 public class IntegrationDocTest {
 
-  static class MockSystem {
-    class Println {
-      @SuppressWarnings("UnusedParameters")
-      <T> void println(T s) { /* ignore */ }
-    }
-
-    public final Println out = new Println();
-  }
-  private static final MockSystem System = new MockSystem();
-
   static ActorSystem system;
 
   @BeforeClass
@@ -491,17 +481,7 @@ public class IntegrationDocTest {
       final TestProbe probe = new TestProbe(system);
       final EmailServer emailServer = new EmailServer(probe.ref());
 
-      class MockSystem {
-        class Println {
-          public <T> void println(T s) {
-            if (s.toString().startsWith("after:"))
-              probe.ref().tell(s, ActorRef.noSender());
-          }
-        }
-      
-        public final Println out = new Println();
-      }
-      private final MockSystem System = new MockSystem();
+      final SilenceSystemOut.System System = SilenceSystemOut.get((String m) -> m.startsWith("after"), probe.ref());
       
       {
         //#sometimes-slow-mapAsync
@@ -537,17 +517,7 @@ public class IntegrationDocTest {
       final TestProbe probe = new TestProbe(system);
       final EmailServer emailServer = new EmailServer(probe.ref());
 
-      class MockSystem {
-        class Println {
-          public <T> void println(T s) {
-            if (s.toString().startsWith("after:"))
-              probe.ref().tell(s, ActorRef.noSender());
-          }
-        }
-
-        public final Println out = new Println();
-      }
-      private final MockSystem System = new MockSystem();
+      final SilenceSystemOut.System System = SilenceSystemOut.get((String m) -> m.startsWith("after"), probe.ref());
       
       {
         //#sometimes-slow-mapAsyncUnordered

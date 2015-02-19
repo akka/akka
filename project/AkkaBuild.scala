@@ -595,7 +595,8 @@ object AkkaBuild extends Build {
     settings = defaultSettings ++ formatSettings ++ scaladocSettings ++ experimentalSettings ++ javadocSettings ++ Seq(
       version := streamAndHttpVersion,
       libraryDependencies ++= Dependencies.streamTestkit,
-      previousArtifact := None
+      previousArtifact := None,
+      publishArtifact in (Test, packageBin) := true
     )
   )
 

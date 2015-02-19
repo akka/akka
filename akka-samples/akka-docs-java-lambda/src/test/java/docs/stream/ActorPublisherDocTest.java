@@ -121,16 +121,8 @@ public class ActorPublisherDocTest {
   @Test
   public void demonstrateActorPublisherUsage() {
     new JavaTestKit(system) {
-      class MockSystem {
-        class Println {
-          public <T> void println(T s) {
-            getTestActor().tell(s, ActorRef.noSender());
-          }
-        }
 
-        public final Println out = new Println();
-      }
-      private final MockSystem System = new MockSystem();
+      final SilenceSystemOut.System System = SilenceSystemOut.get(getTestActor());
       
       {
         //#actor-publisher-usage
