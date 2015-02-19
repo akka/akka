@@ -239,11 +239,11 @@ private[akka] final case class Supervise(child: ActorRef, async: Boolean) extend
  * INTERNAL API
  */
 @SerialVersionUID(1L)
-private[akka] case class Watch(watchee: InternalActorRef, watcher: InternalActorRef) extends SystemMessage // sent to establish a DeathWatch
+private[akka] final case class Watch(watchee: InternalActorRef, watcher: InternalActorRef) extends SystemMessage // sent to establish a DeathWatch
 /**
  * INTERNAL API
  */
-@SerialVersionUID(1L)
+@SerialVersionUID(1L) // Watch and Unwatch have different signatures, but this can't be changed without breaking serialization compatibility
 private[akka] final case class Unwatch(watchee: ActorRef, watcher: ActorRef) extends SystemMessage // sent to tear down a DeathWatch
 /**
  * INTERNAL API
