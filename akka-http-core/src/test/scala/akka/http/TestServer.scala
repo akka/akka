@@ -5,9 +5,10 @@
 package akka.http
 
 import akka.actor.ActorSystem
+import akka.http.engine.ws.{ UpgradeToWebsocket, TextMessage, Message }
 import akka.http.model._
 import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.{ Source, Flow }
 import com.typesafe.config.{ ConfigFactory, Config }
 import HttpMethods._
 
@@ -25,7 +26,12 @@ object TestServer extends App {
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
     case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
     case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")
-    case _: HttpRequest                                ⇒ HttpResponse(404, entity = "Unknown resource!")
+    case req @ HttpRequest(GET, Uri.Path("/ws-greeter"), _, _, _) ⇒
+      req.header[UpgradeToWebsocket] match {
+        case Some(upgrade) ⇒ upgrade.handleMessages(greeterWebsocketService)
+        case None          ⇒ HttpResponse(400, entity = "Not a valid websocket request!")
+      }
+    case _: HttpRequest ⇒ HttpResponse(404, entity = "Unknown resource!")
   }
 
   println(s"Server online at http://localhost:8080")
@@ -48,4 +54,12 @@ object TestServer extends App {
          |    </ul>
          |  </body>
          |</html>""".stripMargin))
+
+  def greeterWebsocketService: Flow[Message, Message] =
+    Flow[Message]
+      .collect {
+        case TextMessage.Strict(name)         ⇒ TextMessage.Strict(s"Hello '$name'")
+        case TextMessage.Streamed(nameStream) ⇒ TextMessage.Streamed(Source.single("Hello ") ++ nameStream)
+        // ignore binary messages
+      }
 }
