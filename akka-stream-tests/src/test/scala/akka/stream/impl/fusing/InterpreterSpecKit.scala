@@ -13,6 +13,7 @@ trait InterpreterSpecKit extends AkkaSpec {
   case class OnError(cause: Throwable)
   case class OnNext(elem: Any)
   case object RequestOne
+  case object RequestAnother
 
   private[akka] case class Doubler[T]() extends PushPullStage[T, T] {
     var oneMore: Boolean = false
@@ -71,7 +72,10 @@ trait InterpreterSpecKit extends AkkaSpec {
       }
 
       override def onPull(ctx: BoundaryContext): Directive = {
-        lastEvent += RequestOne
+        if (lastEvent(RequestOne))
+          lastEvent += RequestAnother
+        else
+          lastEvent += RequestOne
         ctx.exit()
       }
 

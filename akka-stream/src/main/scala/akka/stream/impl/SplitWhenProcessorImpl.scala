@@ -3,9 +3,11 @@
  */
 package akka.stream.impl
 
-import akka.stream.ActorFlowMaterializerSettings
-import akka.stream.scaladsl.Source
+import scala.util.control.NonFatal
 import akka.actor.Props
+import akka.stream.ActorFlowMaterializerSettings
+import akka.stream.Supervision
+import akka.stream.scaladsl.Source
 
 /**
  * INTERNAL API
@@ -13,6 +15,11 @@ import akka.actor.Props
 private[akka] object SplitWhenProcessorImpl {
   def props(settings: ActorFlowMaterializerSettings, splitPredicate: Any ⇒ Boolean): Props =
     Props(new SplitWhenProcessorImpl(settings, splitPredicate))
+
+  private trait SplitDecision
+  private case object Split extends SplitDecision
+  private case object Continue extends SplitDecision
+  private case object Drop extends SplitDecision
 }
 
 /**
@@ -22,7 +29,9 @@ private[akka] class SplitWhenProcessorImpl(_settings: ActorFlowMaterializerSetti
   extends MultiStreamOutputProcessor(_settings) {
 
   import MultiStreamOutputProcessor._
+  import SplitWhenProcessorImpl._
 
+  val decider = settings.supervisionDecider
   var currentSubstream: SubstreamOutput = _
 
   val waitFirst = TransferPhase(primaryInputs.NeedsInput && primaryOutputs.NeedsDemand) { () ⇒
@@ -46,18 +55,32 @@ private[akka] class SplitWhenProcessorImpl(_settings: ActorFlowMaterializerSetti
   // Note that this phase is allocated only once per _slice_ and not per element
   def serveSubstreamRest(substream: SubstreamOutput) = TransferPhase(primaryInputs.NeedsInput && substream.NeedsDemand) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
-    if (splitPredicate(elem)) {
-      completeSubstreamOutput(currentSubstream.key)
-      currentSubstream = null
-      nextPhase(openSubstream(elem))
-    } else substream.enqueueOutputElement(elem)
+    decideSplit(elem) match {
+      case Continue ⇒ substream.enqueueOutputElement(elem)
+      case Split ⇒
+        completeSubstreamOutput(currentSubstream.key)
+        currentSubstream = null
+        nextPhase(openSubstream(elem))
+      case Drop ⇒ // drop elem and continue
+    }
   }
 
   // Ignore elements for a cancelled substream until a new substream needs to be opened
   val ignoreUntilNewSubstream = TransferPhase(primaryInputs.NeedsInput) { () ⇒
     val elem = primaryInputs.dequeueInputElement()
-    if (splitPredicate(elem)) nextPhase(openSubstream(elem))
+    decideSplit(elem) match {
+      case Continue | Drop ⇒ // ignore elem
+      case Split           ⇒ nextPhase(openSubstream(elem))
+    }
   }
+
+  private def decideSplit(elem: Any): SplitDecision =
+    try if (splitPredicate(elem)) Split else Continue catch {
+      case NonFatal(e) if decider(e) != Supervision.Stop ⇒
+        if (settings.debugLogging)
+          log.debug("Dropped element [{}] due to exception from splitWhen function: {}", elem, e.getMessage)
+        Drop
+    }
 
   nextPhase(waitFirst)
 

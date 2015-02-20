@@ -7,21 +7,26 @@ import scala.collection.immutable
 import akka.stream.OverflowStrategy
 import akka.stream.impl.FixedSizeBuffer
 import akka.stream.stage._
+import akka.stream.Supervision
 
 /**
  * INTERNAL API
  */
-private[akka] final case class Map[In, Out](f: In ⇒ Out) extends PushStage[In, Out] {
+private[akka] final case class Map[In, Out](f: In ⇒ Out, decider: Supervision.Decider) extends PushStage[In, Out] {
   override def onPush(elem: In, ctx: Context[Out]): Directive = ctx.push(f(elem))
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final case class Filter[T](p: T ⇒ Boolean) extends PushStage[T, T] {
+private[akka] final case class Filter[T](p: T ⇒ Boolean, decider: Supervision.Decider) extends PushStage[T, T] {
   override def onPush(elem: T, ctx: Context[T]): Directive =
     if (p(elem)) ctx.push(elem)
     else ctx.pull()
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
 
 private[akka] final object Collect {
@@ -31,19 +36,21 @@ private[akka] final object Collect {
   final val NotApplied: Any ⇒ Any = _ ⇒ Collect.NotApplied
 }
 
-private[akka] final case class Collect[In, Out](pf: PartialFunction[In, Out]) extends PushStage[In, Out] {
+private[akka] final case class Collect[In, Out](decider: Supervision.Decider)(pf: PartialFunction[In, Out]) extends PushStage[In, Out] {
   import Collect.NotApplied
   override def onPush(elem: In, ctx: Context[Out]): Directive =
     pf.applyOrElse(elem, NotApplied) match {
       case NotApplied             ⇒ ctx.pull()
       case result: Out @unchecked ⇒ ctx.push(result)
     }
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) extends PushPullStage[In, Out] {
+private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out], decider: Supervision.Decider) extends PushPullStage[In, Out] {
   private var currentIterator: Iterator[Out] = Iterator.empty
 
   override def onPush(elem: In, ctx: Context[Out]): Directive = {
@@ -59,6 +66,10 @@ private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out]) 
 
   override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective =
     ctx.absorbTermination()
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
+
+  override def restart(): MapConcat[In, Out] = copy()
 }
 
 /**
@@ -90,7 +101,7 @@ private[akka] final case class Drop[T](count: Int) extends PushStage[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends PushPullStage[In, Out] {
+private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out, decider: Supervision.Decider) extends PushPullStage[In, Out] {
   private var aggregator = zero
 
   override def onPush(elem: In, ctx: Context[Out]): Directive = {
@@ -104,12 +115,16 @@ private[akka] final case class Scan[In, Out](zero: Out, f: (Out, In) ⇒ Out) ex
     else ctx.pull()
 
   override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective = ctx.absorbTermination()
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
+
+  override def restart(): Scan[In, Out] = copy()
 }
 
 /**
  * INTERNAL API
  */
-private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) extends PushPullStage[In, Out] {
+private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out, decider: Supervision.Decider) extends PushPullStage[In, Out] {
   private var aggregator = zero
 
   override def onPush(elem: In, ctx: Context[Out]): Directive = {
@@ -122,6 +137,10 @@ private[akka] final case class Fold[In, Out](zero: Out, f: (Out, In) ⇒ Out) ex
     else ctx.pull()
 
   override def onUpstreamFinish(ctx: Context[Out]): TerminationDirective = ctx.absorbTermination()
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
+
+  override def restart(): Fold[In, Out] = copy()
 }
 
 /**
@@ -229,12 +248,14 @@ private[akka] final case class Completed[T]() extends PushPullStage[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out) extends DetachedStage[In, Out] {
+private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (Out, In) ⇒ Out,
+                                                 decider: Supervision.Decider) extends DetachedStage[In, Out] {
   private var agg: Any = null
 
   override def onPush(elem: In, ctx: DetachedContext[Out]): UpstreamDirective = {
-    agg = if (agg == null) seed(elem)
-    else aggregate(agg.asInstanceOf[Out], elem)
+    agg =
+      if (agg == null) seed(elem)
+      else aggregate(agg.asInstanceOf[Out], elem)
 
     if (!ctx.isHolding) ctx.pull()
     else {
@@ -255,12 +276,17 @@ private[akka] final case class Conflate[In, Out](seed: In ⇒ Out, aggregate: (O
     } else if (agg == null) ctx.hold()
     else {
       val result = agg.asInstanceOf[Out]
+      if (result == null) throw new NullPointerException
       agg = null
       ctx.push(result)
     }
   }
 
   override def onUpstreamFinish(ctx: DetachedContext[Out]): TerminationDirective = ctx.absorbTermination()
+
+  override def decide(t: Throwable): Supervision.Directive = decider(t)
+
+  override def restart(): Conflate[In, Out] = copy()
 }
 
 /**
@@ -302,4 +328,9 @@ private[akka] final case class Expand[In, Out, Seed](seed: In ⇒ Seed, extrapol
     if (expanded) ctx.finish()
     else ctx.absorbTermination()
   }
+
+  final override def decide(t: Throwable): Supervision.Directive = Supervision.Stop
+
+  final override def restart(): Expand[In, Out, Seed] =
+    throw new UnsupportedOperationException("Expand doesn't support restart")
 }
