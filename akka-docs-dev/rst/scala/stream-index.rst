@@ -14,6 +14,7 @@ Streams
    stream-rate
    stream-customize
    stream-integrations
+   stream-error
    stream-io
    stream-cookbook
    ../stream-configuration

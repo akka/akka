@@ -3,7 +3,10 @@
  */
 package akka.stream.impl.fusing
 
+import akka.stream.Supervision
+
 class InterpreterStressSpec extends InterpreterSpecKit {
+  import Supervision.stoppingDecider
 
   val chainLength = 1000 * 1000
   val halfLength = chainLength / 2
@@ -11,7 +14,7 @@ class InterpreterStressSpec extends InterpreterSpecKit {
 
   "Interpreter" must {
 
-    "work with a massive chain of maps" in new TestSetup(Seq.fill(chainLength)(Map((x: Int) ⇒ x + 1))) {
+    "work with a massive chain of maps" in new TestSetup(Seq.fill(chainLength)(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
 
@@ -33,9 +36,9 @@ class InterpreterStressSpec extends InterpreterSpecKit {
       info(s"Chain finished in $time seconds ${(chainLength * repetition) / (time * 1000 * 1000)} million maps/s")
     }
 
-    "work with a massive chain of maps with early complete" in new TestSetup(Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1)) ++
+    "work with a massive chain of maps with early complete" in new TestSetup(Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1, stoppingDecider)) ++
       Seq(Take(repetition / 2)) ++
-      Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1))) {
+      Seq.fill(halfLength)(Map((x: Int) ⇒ x + 1, stoppingDecider))) {
 
       lastEvents() should be(Set.empty)
       val tstamp = System.nanoTime()
@@ -92,7 +95,8 @@ class InterpreterStressSpec extends InterpreterSpecKit {
 
     "work with a massive chain of conflates by overflowing to the heap" in new TestSetup(Seq.fill(100000)(Conflate(
       (in: Int) ⇒ in,
-      (agg: Int, in: Int) ⇒ agg + in)),
+      (agg: Int, in: Int) ⇒ agg + in,
+      Supervision.stoppingDecider)),
       forkLimit = 100,
       overflowToHeap = true) {
 

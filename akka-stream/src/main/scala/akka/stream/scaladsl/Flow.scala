@@ -160,6 +160,14 @@ trait FlowOps[+Out] {
    * downstream may run in parallel and may complete in any order, but the elements that
    * are emitted downstream are in the same order as received from upstream.
    *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision.Stop]]
+   * the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
+   * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
+   *
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](f: Out ⇒ Future[T]): Repr[T] =
@@ -172,6 +180,14 @@ trait FlowOps[+Out] {
    * downstream may run in parallel and each processed element will be emitted dowstream
    * as soon as it is ready, i.e. it is possible that the elements are not emitted downstream
    * in the same order as received from upstream.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision.Stop]]
+   * the stream will be completed with failure.
+   *
+   * If the group by function `f` throws an exception or if the `Future` is completed
+   * with failure and the supervision decision is [[akka.stream.Supervision.Resume]] or
+   * [[akka.stream.Supervision.Restart]] the element is dropped and the stream continues.
    *
    * @see [[#mapAsync]]
    */
@@ -203,6 +219,10 @@ trait FlowOps[+Out] {
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,
    * emitting the next current value.
+   *
+   * If the function `f` throws an exception and the supervision decision is
+   * [[akka.stream.Supervision.Restart]] current value starts at `zero` again
+   * the stream will continue.
    */
   def scan[T](zero: T)(f: (T, Out) ⇒ T): Repr[T] = andThen(Scan(zero, f.asInstanceOf[(Any, Any) ⇒ Any]))
 
@@ -325,6 +345,9 @@ trait FlowOps[+Out] {
    * This means that if the upstream is actually faster than the upstream it will be backpressured by the downstream
    * subscriber.
    *
+   * Expand does not support [[akka.stream.Supervision.Restart]] and [[akka.stream.Supervision.Resume]].
+   * Exceptions from the `seed` or `extrapolate` functions will complete the stream with failure.
+   *
    * @param seed Provides the first state for extrapolation using the first unconsumed element
    * @param extrapolate Takes the current extrapolation state to produce an output element and the next extrapolation
    *                    state.
@@ -369,6 +392,14 @@ trait FlowOps[+Out] {
    * stop this processor from processing more elements, therefore you must take
    * care to unblock (or cancel) all of the produced streams even if you want
    * to consume only one of them.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the group by function `f` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream and substreams continue.
    */
   def groupBy[K, U >: Out](f: Out ⇒ K): Repr[(K, Source[U])] =
     andThen(GroupBy(f.asInstanceOf[Any ⇒ Any]))
@@ -385,6 +416,14 @@ trait FlowOps[+Out] {
    * true, false,       // elements go into second substream
    * true, false, false // elements go into third substream
    * }}}
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Stop]] the stream and substreams will be completed
+   * with failure.
+   *
+   * If the split predicate `p` throws an exception and the supervision decision
+   * is [[akka.stream.Supervision.Resume]] or [[akka.stream.Supervision.Restart]]
+   * the element is dropped and the stream and substreams continue.
    */
   def splitWhen[U >: Out](p: Out ⇒ Boolean): Repr[Source[U]] =
     andThen(SplitWhen(p.asInstanceOf[Any ⇒ Boolean]))
