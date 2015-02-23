@@ -6,7 +6,7 @@ Error Handling
 
 Strategies for how to handle exceptions from processing stream elements can be defined when
 materializing the stream. The error handling strategies are inspired by actor supervision
-strategies, but the semantics has been adapted to the domain of stream processing.
+strategies, but the semantics have been adapted to the domain of stream processing.
 
 Supervision Strategies
 ======================
@@ -32,7 +32,10 @@ The default supervision strategy for a stream can be defined on the settings of 
 Here you can see that all ``ArithmeticException`` will resume the processing, i.e. the 
 elements that cause the division by zero are effectively dropped.
 
-Be aware that dropping elements may result in deadlocks in graphs with cycles, as explained in :ref:`graph-cycles-scala`.
+.. note::
+
+  Be aware that dropping elements may result in deadlocks in graphs with
+  cycles, as explained in :ref:`graph-cycles-scala`.
 
 The supervision strategy can also be defined for a section of flow operators.
 
