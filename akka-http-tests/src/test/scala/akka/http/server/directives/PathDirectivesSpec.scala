@@ -199,10 +199,34 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     "accept [/foo/] and clear the unmatchedPath" in test("")
   }
 
-  """pathPrefix(IntNumber.repeat(separator = "|"))""" should {
-    val test = testFor(pathPrefix(IntNumber.repeat(maxIterations = 5, separator = "|")) { echoCaptureAndUnmatchedPath })
-    "accept [/1|2|3rest]" in test("List(1, 2, 3):rest")
-    "accept [/rest]" in test("List():rest")
+  """pathPrefix(IntNumber.repeat(separator = "."))""" should {
+    {
+      val test = testFor(pathPrefix(IntNumber.repeat(min = 2, max = 5, separator = ".")) { echoCaptureAndUnmatchedPath })
+      "reject [/foo]" in test()
+      "reject [/1foo]" in test()
+      "reject [/1.foo]" in test()
+      "accept [/1.2foo]" in test("List(1, 2):foo")
+      "accept [/1.2.foo]" in test("List(1, 2):.foo")
+      "accept [/1.2.3foo]" in test("List(1, 2, 3):foo")
+      "accept [/1.2.3.foo]" in test("List(1, 2, 3):.foo")
+      "accept [/1.2.3.4foo]" in test("List(1, 2, 3, 4):foo")
+      "accept [/1.2.3.4.foo]" in test("List(1, 2, 3, 4):.foo")
+      "accept [/1.2.3.4.5foo]" in test("List(1, 2, 3, 4, 5):foo")
+      "accept [/1.2.3.4.5.foo]" in test("List(1, 2, 3, 4, 5):.foo")
+      "accept [/1.2.3.4.5.6foo]" in test("List(1, 2, 3, 4, 5):.6foo")
+      "accept [/1.2.3.]" in test("List(1, 2, 3):.")
+      "accept [/1.2.3/]" in test("List(1, 2, 3):/")
+      "accept [/1.2.3./]" in test("List(1, 2, 3):./")
+    }
+    {
+      val test = testFor(pathPrefix(IntNumber.repeat(2, ".")) { echoCaptureAndUnmatchedPath })
+      "reject [/bar]" in test()
+      "reject [/1bar]" in test()
+      "reject [/1.bar]" in test()
+      "accept [/1.2bar]" in test("List(1, 2):bar")
+      "accept [/1.2.bar]" in test("List(1, 2):.bar")
+      "accept [/1.2.3bar]" in test("List(1, 2):.3bar")
+    }
   }
 
   "PathMatchers" should {
@@ -235,7 +259,7 @@ class PathDirectivesSpec extends RoutingSpec with Inside {
     def apply(expectedResponse: String = null): String ⇒ Unit = exampleString ⇒
       "\\[([^\\]]+)\\]".r.findFirstMatchIn(exampleString) match {
         case Some(uri) ⇒ Get(uri.group(1)) ~> route ~> check {
-          if (expectedResponse eq null) handled shouldEqual (false)
+          if (expectedResponse eq null) handled shouldEqual false
           else responseAs[String] shouldEqual expectedResponse
         }
         case None ⇒ failTest("Example '" + exampleString + "' doesn't contain a test uri")
