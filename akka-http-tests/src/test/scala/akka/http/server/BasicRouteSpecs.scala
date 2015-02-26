@@ -163,5 +163,16 @@ class BasicRouteSpecs extends RoutingSpec {
         status shouldEqual StatusCodes.InternalServerError
       }
     }
+    "always prioritize MethodRejections over AuthorizationFailedRejections" in {
+      Get("/abc") ~> Route.seal {
+        post { completeOk } ~
+          authorize(false) { completeOk }
+      } ~> check { status shouldEqual StatusCodes.MethodNotAllowed }
+
+      Get("/abc") ~> Route.seal {
+        authorize(false) { completeOk } ~
+          post { completeOk }
+      } ~> check { status shouldEqual StatusCodes.MethodNotAllowed }
+    }
   }
 }

@@ -25,11 +25,8 @@ object Route {
     val sealedExceptionHandler =
       if (exceptionHandler.isDefault) exceptionHandler
       else exceptionHandler orElse ExceptionHandler.default(settings)
-    val sealedRejectionHandler =
-      if (rejectionHandler.isDefault) rejectionHandler
-      else rejectionHandler orElse RejectionHandler.default
     handleExceptions(sealedExceptionHandler) {
-      handleRejections(sealedRejectionHandler) {
+      handleRejections(rejectionHandler.seal) {
         route
       }
     }

@@ -40,7 +40,7 @@ private[http] class RequestContextImpl(
       }(executionContext)
 
   override def reject(rejections: Rejection*): Future[RouteResult] =
-    FastFuture.successful(RouteResult.Rejected(rejections.toVector))
+    FastFuture.successful(RouteResult.Rejected(rejections.toList))
 
   override def fail(error: Throwable): Future[RouteResult] =
     FastFuture.failed(error)

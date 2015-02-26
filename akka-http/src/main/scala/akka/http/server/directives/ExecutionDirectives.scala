@@ -5,11 +5,10 @@
 package akka.http.server
 package directives
 
-import akka.http.util.FastFuture
-import FastFuture._
-
 import scala.concurrent.Future
 import scala.util.control.NonFatal
+import akka.http.util.FastFuture
+import FastFuture._
 
 trait ExecutionDirectives {
   import BasicDirectives._
@@ -38,12 +37,12 @@ trait ExecutionDirectives {
     extractRequestContext flatMap { ctx ⇒
       recoverRejectionsWith { rejections ⇒
         val filteredRejections = RejectionHandler.applyTransformations(rejections)
-        if (handler isDefinedAt filteredRejections) {
-          val errorMsg = "The RejectionHandler for %s must not itself produce rejections (received %s)!"
-          recoverRejections(r ⇒ sys.error(errorMsg.format(filteredRejections, r))) {
-            handler(filteredRejections)
-          }(ctx.withAcceptAll)
-        } else FastFuture.successful(RouteResult.Rejected(filteredRejections))
+        handler(filteredRejections) match {
+          case Some(route) ⇒
+            val errorMsg = "The RejectionHandler for %s must not itself produce rejections (received %s)!"
+            recoverRejections(r ⇒ sys.error(errorMsg.format(filteredRejections, r)))(route)(ctx.withAcceptAll)
+          case None ⇒ FastFuture.successful(RouteResult.Rejected(filteredRejections))
+        }
       }
     }
 }
