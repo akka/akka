@@ -3,13 +3,13 @@ package akka.stream.scaladsl
 import scala.collection.immutable
 import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit.{ OnNext, SubscriberProbe }
 import akka.util.ByteString
 import akka.stream.{ Inlet, Outlet, Shape, Graph }
+import org.scalautils.ConversionCheckedTripleEquals
 
 object GraphOpsIntegrationSpec {
   import FlowGraph.Implicits._
@@ -43,7 +43,7 @@ object GraphOpsIntegrationSpec {
 
 }
 
-class GraphOpsIntegrationSpec extends AkkaSpec {
+class GraphOpsIntegrationSpec extends AkkaSpec with ConversionCheckedTripleEquals {
   import akka.stream.scaladsl.GraphOpsIntegrationSpec._
   import FlowGraph.Implicits._
 
@@ -185,19 +185,12 @@ class GraphOpsIntegrationSpec extends AkkaSpec {
           s3.out1 ~> merge.in(0)
           s3.out2 ~> merge.in(1)
 
-          merge.out.grouped(1000) ~> sink.inlet
+          merge.out.grouped(1000) ~> sink
       }.run()
 
       val result = Await.result(f, 3.seconds)
 
-      result.sorted should be(List(4, 5, 6, 13, 14, 15))
-
-      result.indexOf(4) < result.indexOf(5) should be(true)
-      result.indexOf(5) < result.indexOf(6) should be(true)
-
-      result.indexOf(13) < result.indexOf(14) should be(true)
-      result.indexOf(14) < result.indexOf(15) should be(true)
-
+      result.toSet should ===(Set(4, 5, 6, 13, 14, 15))
     }
 
   }

@@ -146,6 +146,7 @@ public class FlexiRouteTest {
       return new RouteLogic<T>() {
         
         private State<OutPort, T> emitToAnyWithDemand = new State<OutPort, T>(demandFromAny(s.out(0), s.out(1))) {
+          @SuppressWarnings("unchecked")
           @Override
           public State<T, T> onInput(RouteLogicContext<T> ctx, OutPort out, T element) {
             ctx.emit((Outlet<T>) out, element);
