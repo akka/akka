@@ -19,8 +19,7 @@ import scala.concurrent.Future
  */
 private[stream] object Stages {
 
-  // FIXME Fix the name `Defaults` is waaaay too opaque. How about "Names"?
-  object Defaults {
+  object DefaultAttributes {
     val timerTransform = name("timerTransform")
     val stageFactory = name("stageFactory")
     val fused = name("fused")
@@ -57,7 +56,7 @@ private[stream] object Stages {
     val identityJunction = name("identityJunction")
   }
 
-  import Defaults._
+  import DefaultAttributes._
 
   sealed trait StageModule extends FlowModule[Any, Any, Any] {
 
@@ -85,14 +84,14 @@ private[stream] object Stages {
     override protected def newInstance: StageModule = this.copy()
   }
 
-  object Fused {
-    def apply(ops: immutable.Seq[Stage[_, _]]): Fused =
-      Fused(ops, name(ops.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+"))) //FIXME change to something more performant for name
-  }
-
   final case class Identity(attributes: OperationAttributes = OperationAttributes.name("identity")) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
+  }
+
+  object Fused {
+    def apply(ops: immutable.Seq[Stage[_, _]]): Fused =
+      Fused(ops, name(ops.iterator.map(x ⇒ Logging.simpleName(x).toLowerCase).mkString("+")))
   }
 
   final case class Fused(ops: immutable.Seq[Stage[_, _]], attributes: OperationAttributes = fused) extends StageModule {

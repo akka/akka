@@ -204,9 +204,9 @@ private[akka] object StreamLayout {
   }
 
   object EmptyModule extends Module {
-    override def shape = EmptyShape
+    override def shape = ClosedShape
     override def replaceShape(s: Shape) =
-      if (s == EmptyShape) this
+      if (s == ClosedShape) this
       else throw new UnsupportedOperationException("cannot replace the shape of the EmptyModule")
 
     override def grow(that: Module): Module = that

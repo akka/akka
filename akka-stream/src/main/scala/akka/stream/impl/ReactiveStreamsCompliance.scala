@@ -41,16 +41,15 @@ private[stream] object ReactiveStreamsCompliance {
   final def rejectDueToNonPositiveDemand[T](subscriber: Subscriber[T]): Unit =
     tryOnError(subscriber, numberOfElementsInRequestMustBePositiveException)
 
-  sealed trait SpecViolation {
-    self: Throwable ⇒
-    def violation: Throwable = self // this method is needed because Scalac is not smart enough to handle it otherwise
-  }
-  //FIXME serialVersionUid?
+  @SerialVersionUID(1L)
+  sealed trait SpecViolation extends Throwable
+
+  @SerialVersionUID(1L)
   final class SignalThrewException(message: String, cause: Throwable) extends IllegalStateException(message, cause) with SpecViolation
 
   final def tryOnError[T](subscriber: Subscriber[T], error: Throwable): Unit =
     error match {
-      case sv: SpecViolation ⇒ throw new IllegalStateException("It is not legal to try to signal onError with a SpecViolation", sv.violation)
+      case sv: SpecViolation ⇒ throw new IllegalStateException("It is not legal to try to signal onError with a SpecViolation", sv)
       case other ⇒
         try subscriber.onError(other) catch {
           case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onError", t)
