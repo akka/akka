@@ -139,7 +139,7 @@ private[http] class UriParser(val input: ParserInput,
   def `reg-name` = rule(
     clearSBForDecoding() ~ oneOrMore(`lower-reg-name-char` ~ appendSB() | UPPER_ALPHA ~ appendLowered() | `pct-encoded`) ~
       run(_host = NamedHost(getDecodedStringAndLowerIfEncoded(UTF8)))
-    | run(_host = NamedHost("")))
+    | run(_host = Host.Empty))
 
   def `path-abempty`  = rule { clearSB() ~ slashSegments ~ savePath() }
   def `path-absolute` = rule { clearSB() ~ '/' ~ appendSB('/') ~ optional(`segment-nz` ~ slashSegments) ~ savePath() }
