@@ -135,6 +135,12 @@ object Source {
     new Source(scaladsl.Source.single(element))
 
   /**
+   * Create a `Source` that will continually emit the given element.
+   */
+  def repeat[T](element: T): Source[T, Unit] =
+    new Source(scaladsl.Source.repeat(element))
+
+  /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
    */
   def failed[T](cause: Throwable): Source[T, Unit] =
