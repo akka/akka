@@ -11,8 +11,6 @@ import akka.stream.ActorFlowMaterializer;
 import akka.stream.FlowMaterializer;
 import akka.stream.actor.AbstractActorPublisher;
 import akka.stream.actor.ActorPublisherMessage;
-import akka.stream.javadsl.KeyedSource;
-import akka.stream.javadsl.MaterializedMap;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.JavaTestKit;
@@ -134,10 +132,10 @@ public class ActorPublisherDocTest {
       
       {
         //#actor-publisher-usage
-        final KeyedSource<JobManagerProtocol.Job, ActorRef> jobManagerSource = 
+        final Source<JobManagerProtocol.Job, ActorRef> jobManagerSource = 
           Source.from(JobManager.props());
 
-        final MaterializedMap materializedMap = jobManagerSource
+        final ActorRef ref = jobManagerSource
           .map(job -> job.payload.toUpperCase())
           .map(elem -> {
             System.out.println(elem);
@@ -146,7 +144,6 @@ public class ActorPublisherDocTest {
           .to(Sink.ignore())
           .run(mat);
 
-        final ActorRef ref = materializedMap.get(jobManagerSource);
         ref.tell(new JobManagerProtocol.Job("a"), ActorRef.noSender());
         ref.tell(new JobManagerProtocol.Job("b"), ActorRef.noSender());
         ref.tell(new JobManagerProtocol.Job("c"), ActorRef.noSender());

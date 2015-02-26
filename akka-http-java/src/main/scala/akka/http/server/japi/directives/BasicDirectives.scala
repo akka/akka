@@ -12,7 +12,7 @@ import akka.http.server.japi.impl._
 
 import scala.annotation.varargs
 
-trait BasicDirectives {
+abstract class BasicDirectives {
   /**
    * Tries the given routes in sequence until the first one matches.
    */

@@ -13,7 +13,7 @@ import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl
 import akka.util.ByteString
 import akka.japi.Util.immutableSeq
@@ -60,7 +60,7 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      */
-    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: ActorFlowMaterializer): Mat =
+    def handleWith[Mat](handler: Flow[ByteString, ByteString, Mat], materializer: FlowMaterializer): Mat =
       delegate.handleWith(handler.asScala)(materializer)
 
     /**

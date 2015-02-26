@@ -5,17 +5,12 @@
 package akka.http.server.japi
 
 import akka.http.server.japi.directives._
-
 import scala.collection.immutable
+import scala.annotation.varargs
+import akka.http.model.japi.HttpMethods
 
 // FIXME: add support for the remaining directives, see #16436
-trait AllDirectives
-  extends BasicDirectives
-  with CacheConditionDirectives
-  with CodingDirectives
-  with FileAndResourceDirectives
-  with MethodDirectives
-  with PathDirectives
+abstract class AllDirectives extends PathDirectives
 
 /**
  *

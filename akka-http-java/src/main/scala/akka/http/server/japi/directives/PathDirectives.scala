@@ -10,7 +10,7 @@ import akka.http.server.japi.impl.RouteStructure
 import scala.annotation.varargs
 import scala.collection.immutable
 
-trait PathDirectives {
+abstract class PathDirectives extends MethodDirectives {
   /**
    * Tries to consumes the complete unmatched path given a number of PathMatchers. Between each
    * of the matchers a `/` will be matched automatically.

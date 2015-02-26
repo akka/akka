@@ -11,7 +11,7 @@ import akka.http.server.japi.impl.RouteStructure
 
 import scala.annotation.varargs
 
-trait CacheConditionDirectives {
+abstract class CacheConditionDirectives extends BasicDirectives {
   /**
    * Wraps its inner route with support for Conditional Requests as defined
    * by tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26
