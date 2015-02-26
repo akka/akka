@@ -35,10 +35,8 @@ class FlowGraphDocSpec extends AkkaSpec {
 
       val f1, f2, f3, f4 = Flow[Int].map(_ + 10)
 
-      in ~> f1 ~> bcast.in
-                  bcast.out(0) ~> f2 ~> merge.in(0)
-                  bcast.out(1) ~> f4 ~> merge.in(1)
-                                        merge.out ~> f3 ~> out
+      in ~> f1 ~> bcast ~> f2 ~> merge ~> f3 ~> out
+                  bcast ~> f4 ~> merge
     }
     //#simple-flow-graph
     //format: ON
