@@ -22,10 +22,7 @@ object Route {
   def seal(route: Route)(implicit setup: RoutingSetup): Route = {
     import directives.ExecutionDirectives._
     import setup._
-    val sealedExceptionHandler =
-      if (exceptionHandler.isDefault) exceptionHandler
-      else exceptionHandler orElse ExceptionHandler.default(settings)
-    handleExceptions(sealedExceptionHandler) {
+    handleExceptions(exceptionHandler.seal(settings)) {
       handleRejections(rejectionHandler.seal) {
         route
       }
