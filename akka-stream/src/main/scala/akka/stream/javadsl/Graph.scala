@@ -296,6 +296,6 @@ object FlowGraph {
 
     def sink[T](sink: Sink[T, _]): Inlet[T] = delegate.add(sink.asScala)
 
-    def run(mat: ActorFlowMaterializer): Unit = delegate.buildRunnable().run()(mat)
+    def run(mat: FlowMaterializer): Unit = delegate.buildRunnable().run()(mat)
   }
 }
