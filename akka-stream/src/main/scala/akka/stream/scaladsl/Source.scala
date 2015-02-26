@@ -325,6 +325,11 @@ object Source extends SourceApply {
   def single[T](element: T): Source[T, Unit] = apply(SynchronousIterablePublisher(List(element), "single")) // FIXME optimize
 
   /**
+   * Create a `Source` that will continually emit the given element.
+   */
+  def repeat[T](element: T): Source[T, Unit] = apply(() ⇒ Iterator.continually(element)) // FIXME optimize
+
+  /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
   def empty[T](): Source[T, Unit] = _empty
