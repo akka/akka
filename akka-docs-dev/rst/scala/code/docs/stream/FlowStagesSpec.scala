@@ -1,13 +1,13 @@
 package docs.stream
 
 import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.{ RunnableFlow, Sink, Source, Flow }
+import akka.stream.scaladsl.{ RunnableFlow, Sink, Source, Flow, Keep }
 import akka.stream.stage.PushPullStage
 import akka.stream.testkit.AkkaSpec
 import org.scalatest.concurrent.{ ScalaFutures, Futures }
 
 import scala.collection.immutable
-import scala.concurrent.Await
+import scala.concurrent.{ Future, Await }
 import scala.concurrent.duration._
 
 class FlowStagesSpec extends AkkaSpec with ScalaFutures {
@@ -75,17 +75,17 @@ class FlowStagesSpec extends AkkaSpec with ScalaFutures {
       //#one-to-many
 
       val keyedSink = Sink.head[immutable.Seq[Int]]
-      val sink = Flow[Int].grouped(10).to(keyedSink)
+      val sink = Flow[Int].grouped(10).toMat(keyedSink)(Keep.right)
 
       //#stage-chain
-      val runnable: RunnableFlow = Source(1 to 10)
+      val resultFuture = Source(1 to 10)
         .transform(() => new Filter(_ % 2 == 0))
         .transform(() => new Duplicator())
         .transform(() => new Map(_ / 2))
-        .to(sink)
+        .runWith(sink)
       //#stage-chain
 
-      Await.result(runnable.run().get(keyedSink), 3.seconds) should be(Seq(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
+      Await.result(resultFuture, 3.seconds) should be(Seq(1, 1, 2, 2, 3, 3, 4, 4, 5, 5))
 
     }
 

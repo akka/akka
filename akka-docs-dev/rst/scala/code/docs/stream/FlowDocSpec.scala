@@ -36,13 +36,10 @@ class FlowDocSpec extends AkkaSpec {
     val sink = Sink.fold[Int, Int](0)(_ + _)
 
     // connect the Source to the Sink, obtaining a RunnableFlow
-    val runnable: RunnableFlow = source.to(sink)
+    val runnable: RunnableFlow[Future[Int]] = source.toMat(sink)(Keep.right)
 
-    // materialize the flow
-    val materialized: MaterializedMap = runnable.run()
-
-    // get the materialized value of the FoldSink
-    val sum: Future[Int] = materialized.get(sink)
+    // materialize the flow and get the value of the FoldSink
+    val sum: Future[Int] = runnable.run()
 
     //#materialization-in-steps
   }
@@ -61,17 +58,20 @@ class FlowDocSpec extends AkkaSpec {
     //#stream-reuse
     // connect the Source to the Sink, obtaining a RunnableFlow
     val sink = Sink.fold[Int, Int](0)(_ + _)
-    val runnable: RunnableFlow = Source(1 to 10).to(sink)
+    val runnable: RunnableFlow[Future[Int]] =
+      Source(1 to 10).toMat(sink)(Keep.right)
 
     // get the materialized value of the FoldSink
-    val sum1: Future[Int] = runnable.run().get(sink)
-    val sum2: Future[Int] = runnable.run().get(sink)
+    val sum1: Future[Int] = runnable.run()
+    val sum2: Future[Int] = runnable.run()
 
     // sum1 and sum2 are different Futures!
     //#stream-reuse
   }
 
   "compound source cannot be used as key" in {
+    // FIXME #16902 This example is now turned around
+    // The WRONG case has been switched
     //#compound-source-is-not-keyed-runWith
     import scala.concurrent.duration._
     case object Tick
@@ -82,14 +82,14 @@ class FlowDocSpec extends AkkaSpec {
     timerCancel.cancel()
 
     val timerMap = timer.map(tick => "tick")
-    val _ = Sink.ignore.runWith(timerMap) // WRONG: returned type is not the timers Cancellable!
+    // materialize the flow and retrieve the timers Cancellable
+    val timerCancellable = Sink.ignore.runWith(timerMap)
+    timerCancellable.cancel()
     //#compound-source-is-not-keyed-runWith
 
     //#compound-source-is-not-keyed-run
-    // retain the materialized map, in order to retrieve the timer's Cancellable
-    val materialized = timerMap.to(Sink.ignore).run()
-    val timerCancellable = materialized.get(timer)
-    timerCancellable.cancel()
+    val timerCancellable2 = timerMap.to(Sink.ignore).run()
+    timerCancellable2.cancel()
     //#compound-source-is-not-keyed-run
   }
 
@@ -133,7 +133,7 @@ class FlowDocSpec extends AkkaSpec {
     source.to(Sink.foreach(println(_)))
 
     // Starting from a Sink
-    val sink: Sink[Int] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
+    val sink: Sink[Int, Unit] = Flow[Int].map(_ * 2).to(Sink.foreach(println(_)))
     Source(1 to 6).to(sink)
 
     //#flow-connecting

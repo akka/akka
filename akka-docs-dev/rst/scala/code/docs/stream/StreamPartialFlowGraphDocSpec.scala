@@ -3,20 +3,11 @@
  */
 package docs.stream
 
-import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.Broadcast
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.FlowGraph
-import akka.stream.scaladsl.FlowGraphImplicits
-import akka.stream.scaladsl.PartialFlowGraph
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.Source
-import akka.stream.scaladsl.UndefinedSink
-import akka.stream.scaladsl.UndefinedSource
-import akka.stream.scaladsl.Zip
-import akka.stream.scaladsl.ZipWith
+import akka.stream.scaladsl._
+import akka.stream._
 import akka.stream.testkit.AkkaSpec
 
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -28,83 +19,55 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   implicit val mat = ActorFlowMaterializer()
 
   "build with open ports" in {
-    // format: OFF
     //#simple-partial-flow-graph
-    // defined outside as they will be used by different FlowGraphs
-    // 1) first by the PartialFlowGraph to mark its open input and output ports
-    // 2) then by the assembling FlowGraph which will attach real sinks and sources to them
-    val in1 = UndefinedSource[Int]
-    val in2 = UndefinedSource[Int]
-    val in3 = UndefinedSource[Int]
-    val out = UndefinedSink[Int]
+    val pickMaxOfThree = FlowGraph.partial() { implicit b =>
+      import FlowGraph.Implicits._
 
-    val pickMaxOfThree: PartialFlowGraph = PartialFlowGraph { implicit b =>
-      import FlowGraphImplicits._
+      val zip1 = b.add(ZipWith[Int, Int, Int](math.max _))
+      val zip2 = b.add(ZipWith[Int, Int, Int](math.max _))
+      zip1.out ~> zip2.in0
 
-      val zip1 = ZipWith[Int, Int, Int](math.max _)
-      val zip2 = ZipWith[Int, Int, Int](math.max _)
-
-      in1 ~> zip1.left
-      in2 ~> zip1.right
-             zip1.out ~> zip2.left
-                  in3 ~> zip2.right
-                         zip2.out ~> out
+      UniformFanInShape(zip2.out, zip1.in0, zip1.in1, zip2.in1)
     }
-    //#simple-partial-flow-graph
-    // format: ON
-    //#simple-partial-flow-graph
 
     val resultSink = Sink.head[Int]
 
-    val g = FlowGraph { b =>
-      // import the partial flow graph explicitly
-      b.importPartialFlowGraph(pickMaxOfThree)
+    val g = FlowGraph.closed(resultSink) { implicit b =>
+      sink =>
+        import FlowGraph.Implicits._
 
-      b.attachSource(in1, Source.single(1))
-      b.attachSource(in2, Source.single(2))
-      b.attachSource(in3, Source.single(3))
-      b.attachSink(out, resultSink)
+        // importing the partial graph will return its shape (inlets & outlets)
+        val pm3 = b.add(pickMaxOfThree)
+
+        Source.single(1) ~> pm3.in(0)
+        Source.single(2) ~> pm3.in(1)
+        Source.single(3) ~> pm3.in(2)
+        pm3.out ~> sink.inlet
     }
 
-    val materialized = g.run()
-    val max: Future[Int] = materialized.get(resultSink)
+    val max: Future[Int] = g.run()
     Await.result(max, 300.millis) should equal(3)
     //#simple-partial-flow-graph
-
-    val g2 =
-      //#simple-partial-flow-graph-import-shorthand
-      FlowGraph(pickMaxOfThree) { b =>
-        b.attachSource(in1, Source.single(1))
-        b.attachSource(in2, Source.single(2))
-        b.attachSource(in3, Source.single(3))
-        b.attachSink(out, resultSink)
-      }
-    //#simple-partial-flow-graph-import-shorthand
-    val materialized2 = g.run()
-    val max2: Future[Int] = materialized2.get(resultSink)
-    Await.result(max2, 300.millis) should equal(3)
   }
 
   "build source from partial flow graph" in {
     //#source-from-partial-flow-graph
-    val pairs: Source[(Int, Int)] = Source() { implicit b =>
-      import FlowGraphImplicits._
+    val pairs = Source() { implicit b =>
+      import FlowGraph.Implicits._
 
       // prepare graph elements
-      val undefinedSink = UndefinedSink[(Int, Int)]
-      val zip = Zip[Int, Int]
+      val zip = b.add(Zip[Int, Int]())
       def ints = Source(() => Iterator.from(1))
 
       // connect the graph
-      ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.left
-      ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.right
-      zip.out ~> undefinedSink
+      ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.in0
+      ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.in1
 
-      // expose undefined sink
-      undefinedSink
+      // expose port
+      zip.out
     }
 
-    val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
+    val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head())
     //#source-from-partial-flow-graph
     Await.result(firstPair, 300.millis) should equal(1 -> 2)
   }
@@ -112,23 +75,18 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
   "build flow from partial flow graph" in {
     //#flow-from-partial-flow-graph
     val pairUpWithToString = Flow() { implicit b =>
-      import FlowGraphImplicits._
+      import FlowGraph.Implicits._
 
       // prepare graph elements
-      val undefinedSource = UndefinedSource[Int]
-      val undefinedSink = UndefinedSink[(Int, String)]
-
-      val broadcast = Broadcast[Int]
-      val zip = Zip[Int, String]
+      val broadcast = b.add(Broadcast[Int](2))
+      val zip = b.add(Zip[Int, String]())
 
       // connect the graph
-      undefinedSource ~> broadcast
-      broadcast ~> Flow[Int].map(identity) ~> zip.left
-      broadcast ~> Flow[Int].map(_.toString) ~> zip.right
-      zip.out ~> undefinedSink
+      broadcast.out(0) ~> Flow[Int].map(identity) ~> zip.in0
+      broadcast.out(1) ~> Flow[Int].map(_.toString) ~> zip.in1
 
-      // expose undefined ports
-      (undefinedSource, undefinedSink)
+      // expose ports
+      (broadcast.in, zip.out)
     }
 
     //#flow-from-partial-flow-graph
@@ -136,7 +94,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
       //#flow-from-partial-flow-graph
-    pairUpWithToString.runWith(Source(List(1)), Sink.head)
+    pairUpWithToString.runWith(Source(List(1)), Sink.head())
     //#flow-from-partial-flow-graph
     // format: ON
 

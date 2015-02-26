@@ -51,14 +51,14 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
 
   def newRenderer: HttpResponseRenderer = new HttpResponseRenderer
 
-  final class HttpResponseRenderer extends PushStage[ResponseRenderingContext, Source[ByteString]] {
+  final class HttpResponseRenderer extends PushStage[ResponseRenderingContext, Source[ByteString, Unit]] {
 
     private[this] var close = false // signals whether the connection is to be closed after the current response
 
     // need this for testing
     private[http] def isComplete = close
 
-    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ByteString]]): Directive = {
+    override def onPush(ctx: ResponseRenderingContext, opCtx: Context[Source[ByteString, Unit]]): Directive = {
       val r = new ByteStringRendering(responseHeaderSizeHint)
 
       import ctx.response._
@@ -140,10 +140,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       def renderContentLengthHeader(contentLength: Long) =
         if (status.allowsEntity) r ~~ `Content-Length` ~~ contentLength ~~ CrLf else r
 
-      def byteStrings(entityBytes: ⇒ Source[ByteString]): Source[ByteString] =
+      def byteStrings(entityBytes: ⇒ Source[ByteString, Unit]): Source[ByteString, Unit] =
         renderByteStrings(r, entityBytes, skipEntity = noEntity)
 
-      def completeResponseRendering(entity: ResponseEntity): Source[ByteString] =
+      def completeResponseRendering(entity: ResponseEntity): Source[ByteString, Unit] =
         entity match {
           case HttpEntity.Strict(_, data) ⇒
             renderHeaders(headers.toList)

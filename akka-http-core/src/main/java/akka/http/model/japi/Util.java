@@ -27,12 +27,12 @@ public abstract class Util {
     @SuppressWarnings("unchecked") // no support for covariance of Publisher in Java
     // needed to provide covariant conversions that the Java interfaces don't provide automatically.
     // The alternative would be having to cast around everywhere instead of doing it here in a central place.
-    public static <U, T extends U> Source<U> convertPublisher(Source<T> p) {
-        return (Source<U>)(Source) p;
+    public static <U, T extends U> Source<U, scala.Unit> convertPublisher(Source<T, scala.Unit> p) {
+        return (Source<U, scala.Unit>)(Source) p;
     }
     @SuppressWarnings("unchecked")
-    public static <T, U extends T> Source<U> upcastSource(Source<T> p) {
-        return (Source<U>)(Source) p;
+    public static <T, U extends T> Source<U, scala.Unit> upcastSource(Source<T, scala.Unit> p) {
+        return (Source<U, scala.Unit>)(Source) p;
     }
     @SuppressWarnings("unchecked")
     public static scala.collection.immutable.Map<String, String> convertMapToScala(Map<String, String> map) {

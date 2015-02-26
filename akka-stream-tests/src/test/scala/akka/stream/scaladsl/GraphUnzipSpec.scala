@@ -4,7 +4,6 @@ import scala.concurrent.duration._
 
 import akka.stream.{ OverflowStrategy, ActorFlowMaterializerSettings }
 import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.FlowGraphImplicits._
 import akka.stream.testkit.{ StreamTestKit, AkkaSpec }
 
 class GraphUnzipSpec extends AkkaSpec {
@@ -15,16 +14,17 @@ class GraphUnzipSpec extends AkkaSpec {
   implicit val materializer = ActorFlowMaterializer(settings)
 
   "A unzip" must {
+    import FlowGraph.Implicits._
 
     "unzip to two subscribers" in {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
 
-      FlowGraph { implicit b ⇒
-        val unzip = Unzip[Int, String]
+      FlowGraph.closed() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.right ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
-        unzip.left ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> Sink(c1)
+        unzip.out1 ~> Flow[String].buffer(16, OverflowStrategy.backpressure) ~> Sink(c2)
+        unzip.out0 ~> Flow[Int].buffer(16, OverflowStrategy.backpressure).map(_ * 2) ~> Sink(c1)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -49,11 +49,11 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
 
-      FlowGraph { implicit b ⇒
-        val unzip = Unzip[Int, String]
+      FlowGraph.closed() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> Sink(c1)
-        unzip.right ~> Sink(c2)
+        unzip.out0 ~> Sink(c1)
+        unzip.out1 ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -70,11 +70,11 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
 
-      FlowGraph { implicit b ⇒
-        val unzip = Unzip[Int, String]
+      FlowGraph.closed() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> Sink(c1)
-        unzip.right ~> Sink(c2)
+        unzip.out0 ~> Sink(c1)
+        unzip.out1 ~> Sink(c2)
       }.run()
 
       val sub1 = c1.expectSubscription()
@@ -92,11 +92,11 @@ class GraphUnzipSpec extends AkkaSpec {
       val c1 = StreamTestKit.SubscriberProbe[Int]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
 
-      FlowGraph { implicit b ⇒
-        val unzip = Unzip[Int, String]
+      FlowGraph.closed() { implicit b ⇒
+        val unzip = b.add(Unzip[Int, String]())
         Source(p1.getPublisher) ~> unzip.in
-        unzip.left ~> Sink(c1)
-        unzip.right ~> Sink(c2)
+        unzip.out0 ~> Sink(c1)
+        unzip.out1 ~> Sink(c2)
       }.run()
 
       val p1Sub = p1.expectSubscription()
@@ -118,13 +118,12 @@ class GraphUnzipSpec extends AkkaSpec {
 
     "work with zip" in {
       val c1 = StreamTestKit.SubscriberProbe[(Int, String)]()
-      FlowGraph { implicit b ⇒
-        val zip = Zip[Int, String]
-        val unzip = Unzip[Int, String]
-        import FlowGraphImplicits._
+      FlowGraph.closed() { implicit b ⇒
+        val zip = b.add(Zip[Int, String]())
+        val unzip = b.add(Unzip[Int, String]())
         Source(List(1 -> "a", 2 -> "b", 3 -> "c")) ~> unzip.in
-        unzip.left ~> zip.left
-        unzip.right ~> zip.right
+        unzip.out0 ~> zip.in0
+        unzip.out1 ~> zip.in1
         zip.out ~> Sink(c1)
       }.run()
 

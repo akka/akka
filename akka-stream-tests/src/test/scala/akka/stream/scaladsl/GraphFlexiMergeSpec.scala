@@ -1,50 +1,32 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
 package akka.stream.scaladsl
 
-import FlowGraphImplicits._
 import akka.stream.ActorFlowMaterializer
+import akka.stream.scaladsl.FlexiMerge._
 import akka.stream.testkit.AkkaSpec
-import akka.stream.testkit.StreamTestKit.AutoPublisher
-import akka.stream.testkit.StreamTestKit.OnNext
-import akka.stream.testkit.StreamTestKit.PublisherProbe
-import akka.stream.testkit.StreamTestKit.SubscriberProbe
+import akka.stream.testkit.StreamTestKit.{ PublisherProbe, AutoPublisher, OnNext, SubscriberProbe }
+import org.reactivestreams.Publisher
+import akka.stream._
 import scala.util.control.NoStackTrace
+import scala.collection.immutable
 import akka.actor.ActorRef
 import akka.testkit.TestProbe
 
 object GraphFlexiMergeSpec {
 
-  /**
-   * This is fair in that sense that after dequeueing from an input it yields to other inputs if
-   * they are available. Or in other words, if all inputs have elements available at the same
-   * time then in finite steps all those elements are dequeued from them.
-   */
-  class Fair[T] extends FlexiMerge[T] {
-    import FlexiMerge._
-    val input1 = createInputPort[T]()
-    val input2 = createInputPort[T]()
-
-    def createMergeLogic: MergeLogic[T] = new MergeLogic[T] {
-      override def inputHandles(inputCount: Int) = Vector(input1, input2)
-      override def initialState = State[T](ReadAny(input1, input2)) { (ctx, input, element) ⇒
+  class Fair[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), OperationAttributes.name("FairMerge")) {
+    def createMergeLogic(p: PortT): MergeLogic[T] = new MergeLogic[T] {
+      override def initialState = State[T](ReadAny(p.in(0), p.in(1))) { (ctx, input, element) ⇒
         ctx.emit(element)
         SameState
       }
     }
   }
 
-  /**
-   * It never skips an input while cycling but waits on it instead (closed inputs are skipped though).
-   * The fair merge above is a non-strict round-robin (skips currently unavailable inputs).
-   */
-  class StrictRoundRobin[T] extends FlexiMerge[T] {
-    import FlexiMerge._
-    val input1 = createInputPort[T]()
-    val input2 = createInputPort[T]()
-
-    def createMergeLogic = new MergeLogic[T] {
-
-      override def inputHandles(inputCount: Int) = Vector(input1, input2)
-
+  class StrictRoundRobin[T] extends FlexiMerge[T, UniformFanInShape[T, T]](new UniformFanInShape(2), OperationAttributes.name("RoundRobinMerge")) {
+    def createMergeLogic(p: PortT): MergeLogic[T] = new MergeLogic[T] {
       val emitOtherOnClose = CompletionHandling(
         onUpstreamFinish = { (ctx, input) ⇒
           ctx.changeCompletionHandling(defaultCompletionHandling)
@@ -55,19 +37,19 @@ object GraphFlexiMergeSpec {
           SameState
         })
 
-      def other(input: InputHandle): InputHandle = if (input eq input1) input2 else input1
+      def other(input: InPort): Inlet[T] = if (input eq p.in(0)) p.in(1) else p.in(0)
 
-      val read1: State[T] = State[T](Read(input1)) { (ctx, input, element) ⇒
+      val read1: State[T] = State(Read(p.in(0))) { (ctx, input, element) ⇒
         ctx.emit(element)
         read2
       }
 
-      val read2 = State[T](Read(input2)) { (ctx, input, element) ⇒
+      val read2: State[T] = State(Read(p.in(1))) { (ctx, input, element) ⇒
         ctx.emit(element)
         read1
       }
 
-      def readRemaining(input: InputHandle) = State[T](Read(input)) { (ctx, input, element) ⇒
+      def readRemaining(input: Inlet[T]) = State(Read(input)) { (ctx, input, element) ⇒
         ctx.emit(element)
         SameState
       }
@@ -78,25 +60,16 @@ object GraphFlexiMergeSpec {
     }
   }
 
-  class Zip[A, B] extends FlexiMerge[(A, B)] {
-    import FlexiMerge._
-    val input1 = createInputPort[A]()
-    val input2 = createInputPort[B]()
-
-    def createMergeLogic = new MergeLogic[(A, B)] {
+  class MyZip[A, B] extends FlexiMerge[(A, B), FanInShape2[A, B, (A, B)]](new FanInShape2("MyZip"), OperationAttributes.name("MyZip")) {
+    def createMergeLogic(p: PortT): MergeLogic[(A, B)] = new MergeLogic[(A, B)] {
       var lastInA: A = _
 
-      override def inputHandles(inputCount: Int) = {
-        require(inputCount == 2, s"Zip must have two connected inputs, was $inputCount")
-        Vector(input1, input2)
-      }
-
-      val readA: State[A] = State[A](Read(input1)) { (ctx, input, element) ⇒
+      val readA: State[A] = State[A](Read(p.in0)) { (ctx, input, element) ⇒
         lastInA = element
         readB
       }
 
-      val readB: State[B] = State[B](Read(input2)) { (ctx, input, element) ⇒
+      val readB: State[B] = State[B](Read(p.in1)) { (ctx, input, element) ⇒
         ctx.emit((lastInA, element))
         readA
       }
@@ -106,123 +79,112 @@ object GraphFlexiMergeSpec {
       override def initialState: State[_] = readA
     }
   }
-}
 
-class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue) extends FlexiMerge[(A, B, C)] {
-  import FlexiMerge._
-  val ssoonCancelledInputInput = createInputPort[A]()
-  val stableInput1 = createInputPort[B]()
-  val stableInput2 = createInputPort[C]()
+  class TripleCancellingZip[A, B, C](var cancelAfter: Int = Int.MaxValue, defVal: Option[A] = None)
+    extends FlexiMerge[(A, B, C), FanInShape3[A, B, C, (A, B, C)]](new FanInShape3("TripleCancellingZip"), OperationAttributes.name("TripleCancellingZip")) {
+    def createMergeLogic(p: PortT) = new MergeLogic[(A, B, C)] {
+      override def initialState = State(ReadAll(p.in0, p.in1, p.in2)) {
+        case (ctx, input, inputs) ⇒
+          val a = inputs.getOrElse(p.in0, defVal.get)
+          val b = inputs(p.in1)
+          val c = inputs(p.in2)
 
-  def createMergeLogic = new MergeLogic[(A, B, C)] {
+          ctx.emit((a, b, c))
+          if (cancelAfter == 0)
+            ctx.cancel(p.in0)
+          cancelAfter -= 1
 
-    override def inputHandles(inputCount: Int) = {
-      require(inputCount == 3, s"TripleZip must have 3 connected inputs, was $inputCount")
-      Vector(ssoonCancelledInputInput, stableInput1, stableInput2)
-    }
+          SameState
+      }
 
-    override def initialState = State[ReadAllInputs](ReadAll(ssoonCancelledInputInput, stableInput1, stableInput2)) {
-      case (ctx, input, inputs) ⇒
-        val a = inputs.getOrElse(ssoonCancelledInputInput, null)
-        val b = inputs.getOrElse(stableInput1, null)
-        val c = inputs.getOrElse(stableInput2, null)
-
-        ctx.emit((a, b, c))
-        if (cancelAfter == 0)
-          ctx.cancel(ssoonCancelledInputInput)
-        cancelAfter -= 1
-
-        SameState
-    }
-
-    override def initialCompletionHandling = eagerClose
-  }
-}
-
-class PreferringMerge extends FlexiMerge[Int] {
-  import FlexiMerge._
-  val preferred = createInputPort[Int]()
-  val secondary1 = createInputPort[Int]()
-  val secondary2 = createInputPort[Int]()
-
-  def createMergeLogic = new MergeLogic[Int] {
-    override def inputHandles(inputCount: Int) = Vector(preferred, secondary1, secondary2)
-
-    override def initialState = State[Int](ReadPreferred(preferred)(secondary1, secondary2)) {
-      (ctx, input, element) ⇒
-        ctx.emit(element)
-        SameState
+      override def initialCompletionHandling = eagerClose
     }
   }
-}
 
-class TestMerge(completionProbe: ActorRef) extends FlexiMerge[String] {
-  import FlexiMerge._
-  val input1 = createInputPort[String]()
-  val input2 = createInputPort[String]()
-  val input3 = createInputPort[String]()
-
-  def createMergeLogic: MergeLogic[String] = new MergeLogic[String] {
-    val handles = Vector(input1, input2, input3)
-    override def inputHandles(inputCount: Int) = handles
-    var throwFromOnComplete = false
-
-    override def initialState = State[String](ReadAny(handles)) {
-      (ctx, input, element) ⇒
-        if (element == "cancel")
-          ctx.cancel(input)
-        else if (element == "err")
-          ctx.fail(new RuntimeException("err") with NoStackTrace)
-        else if (element == "exc")
-          throw new RuntimeException("exc") with NoStackTrace
-        else if (element == "finish")
-          ctx.finish()
-        else if (element == "onUpstreamFinish-exc")
-          throwFromOnComplete = true
-        else
-          ctx.emit("onInput: " + element)
-
-        SameState
+  object PreferringMerge extends FlexiMerge[Int, UniformFanInShape[Int, Int]](new UniformFanInShape(3), OperationAttributes.name("PreferringMerge")) {
+    def createMergeLogic(p: PortT) = new MergeLogic[Int] {
+      override def initialState = State(Read(p.in(0))) {
+        (ctx, input, element) ⇒
+          ctx.emit(element)
+          running
+      }
+      val running = State(ReadPreferred(p.in(0), p.in(1), p.in(2))) {
+        (ctx, input, element) ⇒
+          ctx.emit(element)
+          SameState
+      }
     }
-
-    override def initialCompletionHandling = CompletionHandling(
-      onUpstreamFinish = { (ctx, input) ⇒
-        if (throwFromOnComplete)
-          throw new RuntimeException("onUpstreamFinish-exc") with NoStackTrace
-        completionProbe ! "onUpstreamFinish: " + input.portIndex
-        SameState
-      },
-      onUpstreamFailure = { (ctx, input, cause) ⇒
-        cause match {
-          case _: IllegalArgumentException ⇒ // swallow
-          case _                           ⇒ ctx.fail(cause)
-        }
-        SameState
-      })
   }
+
+  class TestMerge(completionProbe: ActorRef)
+    extends FlexiMerge[String, UniformFanInShape[String, String]](new UniformFanInShape(3), OperationAttributes.name("TestMerge")) {
+
+    def createMergeLogic(p: PortT) = new MergeLogic[String] {
+      var throwFromOnComplete = false
+
+      override def initialState = State(ReadAny(p.inArray: _*)) {
+        (ctx, input, element) ⇒
+          if (element == "cancel")
+            ctx.cancel(input)
+          else if (element == "err")
+            ctx.fail(new RuntimeException("err") with NoStackTrace)
+          else if (element == "exc")
+            throw new RuntimeException("exc") with NoStackTrace
+          else if (element == "complete")
+            ctx.finish()
+          else if (element == "onUpstreamFinish-exc")
+            throwFromOnComplete = true
+          else
+            ctx.emit("onInput: " + element)
+
+          SameState
+      }
+
+      override def initialCompletionHandling = CompletionHandling(
+        onUpstreamFinish = { (ctx, input) ⇒
+          if (throwFromOnComplete)
+            throw new RuntimeException("onUpstreamFinish-exc") with NoStackTrace
+          completionProbe ! input.toString
+          SameState
+        },
+        onUpstreamFailure = { (ctx, input, cause) ⇒
+          cause match {
+            case _: IllegalArgumentException ⇒ // swallow
+            case _                           ⇒ ctx.fail(cause)
+          }
+          SameState
+        })
+    }
+  }
+
 }
 
 class GraphFlexiMergeSpec extends AkkaSpec {
   import GraphFlexiMergeSpec._
+  import FlowGraph.Implicits._
 
   implicit val materializer = ActorFlowMaterializer()
 
   val in1 = Source(List("a", "b", "c", "d"))
   val in2 = Source(List("e", "f"))
 
-  val out1 = Sink.publisher[String]
+  val out = Sink.publisher[String]
+
+  val fairString = new Fair[String]
 
   "FlexiMerge" must {
 
     "build simple fair merge" in {
-      val m = FlowGraph { implicit b ⇒
-        val merge = new Fair[String]
-        in1 ~> merge.input1 ~> out1
-        in2 ~> merge.input2
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(fairString)
+
+          in1 ~> merge.in(0)
+          in2 ~> merge.in(1)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -231,16 +193,101 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectComplete()
     }
 
-    "build simple round robin merge" in {
-      val m = FlowGraph { implicit b ⇒
-        val merge = new StrictRoundRobin[String]
-        in1 ~> merge.input1
-        in2 ~> merge.input2
-        merge.out ~> out1
+    "be able to have two fleximerges in a graph" in {
+      val p = FlowGraph.closed(in1, in2, out)((i1, i2, o) ⇒ o) { implicit b ⇒
+        (in1, in2, o) ⇒
+          val m1 = b.add(fairString)
+          val m2 = b.add(fairString)
+
+          // format: OFF
+          in1.outlet ~> m1.in(0)
+          in2.outlet ~> m1.in(1)
+
+          Source(List("A", "B", "C", "D", "E", "F")) ~> m2.in(0)
+                                              m1.out ~> m2.in(1)
+                                                        m2.out ~> o.inlet
+        // format: ON
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(20)
+      (s.probe.receiveN(12).map { case OnNext(elem) ⇒ elem }).toSet should be(
+        Set("a", "b", "c", "d", "e", "f", "A", "B", "C", "D", "E", "F"))
+      s.expectComplete()
+    }
+
+    "allow reuse" in {
+      val flow = Flow() { implicit b ⇒
+        val merge = b.add(new Fair[String])
+
+        Source(() ⇒ Iterator.continually("+")) ~> merge.in(0)
+
+        merge.in(1) → merge.out
+      }
+
+      val g = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val zip = b add Zip[String, String]()
+          in1 ~> flow ~> Flow[String].map { of ⇒ of } ~> zip.in0
+          in2 ~> flow ~> Flow[String].map { tf ⇒ tf } ~> zip.in1
+          zip.out.map { x ⇒ x.toString } ~> o.inlet
+      }
+
+      val p = g.run()
+      val s = SubscriberProbe[String]
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(1000)
+      val received = s.probe.receiveN(1000).map { case OnNext(elem: String) ⇒ elem }
+      val first = received.map(_.charAt(1))
+      first.toSet should ===(Set('a', 'b', 'c', 'd', '+'))
+      first.filter(_ != '+') should ===(Seq('a', 'b', 'c', 'd'))
+      val second = received.map(_.charAt(3))
+      second.toSet should ===(Set('e', 'f', '+'))
+      second.filter(_ != '+') should ===(Seq('e', 'f'))
+      sub.cancel()
+    }
+
+    "allow zip reuse" in {
+      val flow = Flow() { implicit b ⇒
+        val zip = b.add(new MyZip[String, String])
+
+        Source(() ⇒ Iterator.continually("+")) ~> zip.in0
+
+        (zip.in1, zip.out)
+      }
+
+      val g = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val zip = b.add(Zip[String, String]())
+
+          in1 ~> flow.map(_.toString()) ~> zip.in0
+          in2 ~> zip.in1
+
+          zip.out.map(_.toString()) ~> o.inlet
+      }
+
+      val p = g.run()
+      val s = SubscriberProbe[String]
+      p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(100)
+      (s.probe.receiveN(2).map { case OnNext(elem) ⇒ elem }).toSet should be(Set("((+,b),f)", "((+,a),e)"))
+      s.expectComplete()
+    }
+
+    "build simple round robin merge" in {
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new StrictRoundRobin[String])
+          in1 ~> merge.in(0)
+          in2 ~> merge.in(1)
+          merge.out ~> o.inlet
+      }.run()
+
+      val s = SubscriberProbe[String]
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -254,16 +301,15 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "build simple zip merge" in {
-      val output = Sink.publisher[(Int, String)]
-      val m = FlowGraph { implicit b ⇒
-        val merge = new Zip[Int, String]
-        Source(List(1, 2, 3, 4)) ~> merge.input1
-        Source(List("a", "b", "c")) ~> merge.input2
-        merge.out ~> output
+      val p = FlowGraph.closed(Sink.publisher[(Int, String)]) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new MyZip[Int, String])
+          Source(List(1, 2, 3, 4)) ~> merge.in0
+          Source(List("a", "b", "c")) ~> merge.in1
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[(Int, String)]
-      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
@@ -272,20 +318,20 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext(3 -> "c")
       s.expectComplete()
     }
+
     "build simple triple-zip merge using ReadAll" in {
-      val output = Sink.publisher[(Long, Int, String)]
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TripleCancellingZip[Long, Int, String]
+      val p = FlowGraph.closed(Sink.publisher[(Long, Int, String)]) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TripleCancellingZip[Long, Int, String])
         // format: OFF
-        Source(List(1L,   2L       )) ~> merge.ssoonCancelledInputInput
-        Source(List(1,    2,   3, 4)) ~> merge.stableInput1
-        Source(List("a", "b", "c"  )) ~> merge.stableInput2
-        merge.out ~> output
+        Source(List(1L,   2L       )) ~> merge.in0
+        Source(List(1,    2,   3, 4)) ~> merge.in1
+        Source(List("a", "b", "c"  )) ~> merge.in2
+        merge.out ~> o.inlet
         // format: ON
       }.run()
 
       val s = SubscriberProbe[(Long, Int, String)]
-      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
 
@@ -294,75 +340,85 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext((2L, 2, "b"))
       s.expectComplete()
     }
+
     "build simple triple-zip merge using ReadAll, and continue with provided value for cancelled input" in {
-      val output = Sink.publisher[(Long, Int, String)]
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TripleCancellingZip[Long, Int, String](cancelAfter = 1)
+      val p = FlowGraph.closed(Sink.publisher[(Long, Int, String)]) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TripleCancellingZip[Long, Int, String](1, Some(0L)))
         // format: OFF
-        Source(List(1L,   2L,  3L,  4L, 5L)) ~> merge.ssoonCancelledInputInput
-        Source(List(1,    2,   3,   4     )) ~> merge.stableInput1
-        Source(List("a", "b", "c"         )) ~> merge.stableInput2
-        merge.out ~> output
+        Source(List(1L,   2L,  3L,  4L, 5L)) ~> merge.in0
+        Source(List(1,    2,   3,   4     )) ~> merge.in1
+        Source(List("a", "b", "c"         )) ~> merge.in2
+        merge.out ~> o.inlet
         // format: ON
       }.run()
 
       val s = SubscriberProbe[(Long, Int, String)]
-      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
 
       sub.request(10)
       s.expectNext((1L, 1, "a"))
       s.expectNext((2L, 2, "b"))
-      // ssoonCancelledInputInput is now cancelled and continues with default (null) value
-      s.expectNext((null.asInstanceOf[Long], 3, "c"))
+      // soonCancelledInput is now cancelled and continues with default (null) value
+      s.expectNext((0L, 3, "c"))
       s.expectComplete()
     }
 
     "build perferring merge" in {
       val output = Sink.publisher[Int]
-      val m = FlowGraph { implicit b ⇒
-        val merge = new PreferringMerge
-        Source(List(1, 2, 3)) ~> merge.preferred
-        Source(List(11, 12, 13)) ~> merge.secondary1
-        Source(List(14, 15, 16)) ~> merge.secondary2
-        merge.out ~> output
+      val p = FlowGraph.closed(output) { implicit b ⇒
+        o ⇒
+          val merge = b.add(PreferringMerge)
+          Source(List(1, 2, 3)) ~> merge.in(0)
+          Source(List(11, 12, 13)) ~> merge.in(1)
+          Source(List(14, 15, 16)) ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[Int]
-      val p = m.get(output)
       p.subscribe(s)
       val sub = s.expectSubscription()
-      sub.request(100)
-      s.expectNext(1)
-      s.expectNext(2)
-      s.expectNext(3)
-      val secondaries = s.expectNext() ::
-        s.expectNext() ::
-        s.expectNext() ::
-        s.expectNext() ::
-        s.expectNext() ::
-        s.expectNext() :: Nil
+
+      def expect(i: Int): Unit = {
+        sub.request(1)
+        s.expectNext(i)
+      }
+      def expectNext(): Int = {
+        sub.request(1)
+        s.expectNext()
+      }
+
+      expect(1)
+      expect(2)
+      expect(3)
+      val secondaries = expectNext() ::
+        expectNext() ::
+        expectNext() ::
+        expectNext() ::
+        expectNext() ::
+        expectNext() :: Nil
 
       secondaries.toSet should equal(Set(11, 12, 13, 14, 15, 16))
       s.expectComplete()
     }
+
     "build perferring merge, manually driven" in {
       val output = Sink.publisher[Int]
       val preferredDriver = PublisherProbe[Int]()
       val otherDriver1 = PublisherProbe[Int]()
       val otherDriver2 = PublisherProbe[Int]()
 
-      val m = FlowGraph { implicit b ⇒
-        val merge = new PreferringMerge
-        Source(preferredDriver) ~> merge.preferred
-        Source(otherDriver1) ~> merge.secondary1
-        Source(otherDriver2) ~> merge.secondary2
-        merge.out ~> output
+      val p = FlowGraph.closed(output) { implicit b ⇒
+        o ⇒
+          val merge = b.add(PreferringMerge)
+          Source(preferredDriver) ~> merge.in(0)
+          Source(otherDriver1) ~> merge.in(1)
+          Source(otherDriver2) ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[Int]
-      val p = m.get(output)
       p.subscribe(s)
 
       val sub = s.expectSubscription()
@@ -383,8 +439,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s.expectNext(2)
 
       sub.request(2)
-      s.expectNext(10)
-      s.expectNext(20)
+      Set(s.expectNext(), s.expectNext()) should ===(Set(10, 20))
 
       p1.sendComplete()
 
@@ -392,9 +447,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       s1.sendNext(11)
       s2.sendNext(21)
       sub.request(2)
-      val d1 = s.expectNext()
-      val d2 = s.expectNext()
-      Set(d1, d2) should equal(Set(11, 21))
+      Set(s.expectNext(), s.expectNext()) should ===(Set(11, 21))
 
       // continue with just one secondary
       s1.sendComplete()
@@ -410,16 +463,16 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     "support cancel of input" in {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(publisher) ~> merge.input1
-        Source(List("b", "c", "d")) ~> merge.input2
-        Source(List("e", "f")) ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(publisher) ~> merge.in(0)
+          Source(List("b", "c", "d")) ~> merge.in(1)
+          Source(List("e", "f")) ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
 
       val autoPublisher = new AutoPublisher(publisher)
@@ -428,14 +481,18 @@ class GraphFlexiMergeSpec extends AkkaSpec {
 
       val sub = s.expectSubscription()
       sub.request(10)
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
-      s.expectNext("onInput: e")
-      s.expectNext("onInput: c")
-      s.expectNext("onInput: f")
-      completionProbe.expectMsg("onUpstreamFinish: 2")
-      s.expectNext("onInput: d")
-      completionProbe.expectMsg("onUpstreamFinish: 1")
+      val outputs =
+        for (_ ← 1 to 6) yield {
+          val next = s.expectNext()
+          if (next.startsWith("onInput: ")) next.substring(9) else next.substring(12)
+        }
+      val one = Seq("a")
+      val two = Seq("b", "c", "d")
+      val three = Seq("e", "f")
+      outputs.filter(one.contains) should ===(one)
+      outputs.filter(two.contains) should ===(two)
+      outputs.filter(three.contains) should ===(three)
+      completionProbe.expectMsgAllOf("UniformFanIn.in1", "UniformFanIn.in2")
 
       autoPublisher.sendNext("x")
 
@@ -447,148 +504,153 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       val publisher2 = PublisherProbe[String]
       val publisher3 = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(publisher1) ~> merge.input1
-        Source(publisher2) ~> merge.input2
-        Source(publisher3) ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(publisher1) ~> merge.in(0)
+          Source(publisher2) ~> merge.in(1)
+          Source(publisher3) ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
+      val sub = s.expectSubscription()
+      sub.request(10)
 
       val autoPublisher1 = new AutoPublisher(publisher1)
       autoPublisher1.sendNext("a")
       autoPublisher1.sendNext("cancel")
+      s.expectNext("onInput: a")
 
       val autoPublisher2 = new AutoPublisher(publisher2)
       autoPublisher2.sendNext("b")
       autoPublisher2.sendNext("cancel")
+      s.expectNext("onInput: b")
 
       val autoPublisher3 = new AutoPublisher(publisher3)
       autoPublisher3.sendNext("c")
       autoPublisher3.sendNext("cancel")
-
-      val sub = s.expectSubscription()
-      sub.request(10)
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
       s.expectNext("onInput: c")
+
       s.expectComplete()
     }
 
     "handle failure" in {
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source.failed[String](new IllegalArgumentException("ERROR") with NoStackTrace) ~> merge.input1
-        Source(List("a", "b")) ~> merge.input2
-        Source(List("c")) ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source.failed[String](new IllegalArgumentException("ERROR") with NoStackTrace) ~> merge.in(0)
+          Source(List("a", "b")) ~> merge.in(1)
+          Source(List("c")) ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
       // IllegalArgumentException is swallowed by the CompletionHandler
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: c")
-      completionProbe.expectMsg("onUpstreamFinish: 2")
-      s.expectNext("onInput: b")
-      completionProbe.expectMsg("onUpstreamFinish: 1")
+      val outputs =
+        for (_ ← 1 to 3) yield {
+          val next = s.expectNext()
+          if (next.startsWith("onInput: ")) next.substring(9) else next.substring(12)
+        }
+      val one = Seq("a", "b")
+      val two = Seq("c")
+      completionProbe.expectMsgAllOf("UniformFanIn.in1", "UniformFanIn.in2")
+      outputs.filter(one.contains) should ===(one)
+      outputs.filter(two.contains) should ===(two)
+
       s.expectComplete()
     }
 
     "propagate failure" in {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(publisher) ~> merge.input1
-        Source.failed[String](new IllegalStateException("ERROR") with NoStackTrace) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(publisher) ~> merge.in(0)
+          Source.failed[String](new IllegalStateException("ERROR") with NoStackTrace) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       s.expectErrorOrSubscriptionFollowedByError().getMessage should be("ERROR")
     }
 
     "emit failure" in {
+      val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(List("a", "err")) ~> merge.input1
-        Source(List("b", "c")) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(List("err")) ~> merge.in(0)
+          Source(publisher) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
+
       s.expectError().getMessage should be("err")
     }
 
     "emit failure for user thrown exception" in {
+      val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(List("a", "exc")) ~> merge.input1
-        Source(List("b", "c")) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(List("exc")) ~> merge.in(0)
+          Source(publisher) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
       s.expectError().getMessage should be("exc")
     }
 
-    "emit failure for user thrown exception in onUpstreamFinish" in {
+    "emit failure for user thrown exception in onComplete" in {
+      val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(List("a", "onUpstreamFinish-exc")) ~> merge.input1
-        Source(List("b", "c")) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(List("onUpstreamFinish-exc")) ~> merge.in(0)
+          Source(publisher) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
-      s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
       s.expectError().getMessage should be("onUpstreamFinish-exc")
     }
 
     "emit failure for user thrown exception in onUpstreamFinish 2" in {
       val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source.empty[String] ~> merge.input1
-        Source(publisher) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source.empty[String] ~> merge.in(0)
+          Source(publisher) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val autoPublisher = new AutoPublisher(publisher)
@@ -596,7 +658,6 @@ class GraphFlexiMergeSpec extends AkkaSpec {
       autoPublisher.sendNext("a")
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(1)
@@ -607,48 +668,25 @@ class GraphFlexiMergeSpec extends AkkaSpec {
     }
 
     "support finish from onInput" in {
+      val publisher = PublisherProbe[String]
       val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(List("a", "finish")) ~> merge.input1
-        Source(List("b", "c")) ~> merge.input2
-        Source.empty[String] ~> merge.input3
-        merge.out ~> out1
+      val p = FlowGraph.closed(out) { implicit b ⇒
+        o ⇒
+          val merge = b.add(new TestMerge(completionProbe.ref))
+          Source(List("a", "complete")) ~> merge.in(0)
+          Source(publisher) ~> merge.in(1)
+          Source.empty[String] ~> merge.in(2)
+          merge.out ~> o.inlet
       }.run()
 
       val s = SubscriberProbe[String]
-      val p = m.get(out1)
       p.subscribe(s)
       val sub = s.expectSubscription()
       sub.request(10)
       s.expectNext("onInput: a")
-      s.expectNext("onInput: b")
-      s.expectComplete()
-    }
-
-    "support unconnected inputs" in {
-      val completionProbe = TestProbe()
-      val m = FlowGraph { implicit b ⇒
-        val merge = new TestMerge(completionProbe.ref)
-        Source(List("a")) ~> merge.input1
-        Source(List("b", "c")) ~> merge.input2
-        // input3 not connected
-        merge.out ~> out1
-      }.run()
-
-      val s = SubscriberProbe[String]
-      val p = m.get(out1)
-      p.subscribe(s)
-      val sub = s.expectSubscription()
-      sub.request(10)
-      s.expectNext("onInput: a")
-      completionProbe.expectMsg("onUpstreamFinish: 0")
-      s.expectNext("onInput: b")
-      s.expectNext("onInput: c")
-      completionProbe.expectMsg("onUpstreamFinish: 1")
       s.expectComplete()
     }
 
   }
-}
 
+}
