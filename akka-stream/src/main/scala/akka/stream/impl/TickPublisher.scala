@@ -77,7 +77,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
         tryOnError(subscriber, error)
     } finally {
       subscriber = null
-      exposedPublisher.shutdown(Some(error)) // FIXME should this not be SupportsOnlyASingleSubscriber?
+      exposedPublisher.shutdown(Some(new IllegalStateException("TickPublisher " + SupportsOnlyASingleSubscriber)))
       context.stop(self)
     }
   }
