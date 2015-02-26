@@ -130,15 +130,15 @@ class GraphBalanceSpec extends AkkaSpec {
       val (r1, r2, r3) = FlowGraph.closed(outputs, outputs, outputs)(Tuple3.apply) { implicit b ⇒
         (o1, o2, o3) ⇒
           val balance = b.add(Balance[Int](3, waitForAllDownstreams = true))
-          Source(Stream.fill(numElementsForSink * 3)(1)) ~> balance.in
+          Source.repeat(1).take(numElementsForSink * 3) ~> balance.in
           balance.out(0) ~> o1.inlet
           balance.out(1) ~> o2.inlet
           balance.out(2) ~> o3.inlet
       }.run()
 
-      Await.result(r1, 3.seconds) should be(numElementsForSink +- 1000)
-      Await.result(r2, 3.seconds) should be(numElementsForSink +- 1000)
-      Await.result(r3, 3.seconds) should be(numElementsForSink +- 1000)
+      Await.result(r1, 3.seconds) should be(numElementsForSink +- 2000)
+      Await.result(r2, 3.seconds) should be(numElementsForSink +- 2000)
+      Await.result(r3, 3.seconds) should be(numElementsForSink +- 2000)
     }
 
     "produce to second even though first cancels" in {
