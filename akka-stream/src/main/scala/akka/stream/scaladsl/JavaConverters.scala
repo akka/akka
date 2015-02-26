@@ -11,41 +11,29 @@ import akka.stream.scaladsl
  */
 private[akka] object JavaConverters {
 
-  implicit final class AddAsJavaSource[Out](val source: scaladsl.Source[Out]) extends AnyVal {
-    def asJava: javadsl.Source[Out] = new javadsl.Source(source)
+  implicit final class AddAsJavaSource[Out, Mat](val source: scaladsl.Source[Out, Mat]) extends AnyVal {
+    def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(source)
   }
-  implicit final class AddAsJavaUndefinedSource[Out](val source: scaladsl.UndefinedSource[Out]) extends AnyVal {
-    def asJava: javadsl.UndefinedSource[Out] = new javadsl.UndefinedSource(source)
+  implicit final class AddAsJavaFlow[In, Out, Mat](val flow: scaladsl.Flow[In, Out, Mat]) extends AnyVal {
+    def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(flow)
   }
-  implicit final class AddAsJavaFlow[In, Out](val flow: scaladsl.Flow[In, Out]) extends AnyVal {
-    def asJava: javadsl.Flow[In, Out] = new javadsl.Flow[In, Out](flow)
+  implicit final class AddAsJavaSink[In, Mat](val sink: scaladsl.Sink[In, Mat]) extends AnyVal {
+    def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(sink)
   }
-  implicit final class AddAsJavaSink[In](val sink: scaladsl.Sink[In]) extends AnyVal {
-    def asJava: javadsl.Sink[In] = new javadsl.Sink[In](sink)
-  }
-  implicit final class AddAsJavaUndefinedSink[Out](val sink: scaladsl.UndefinedSink[Out]) extends AnyVal {
-    def asJava: javadsl.UndefinedSink[Out] = new javadsl.UndefinedSink(sink)
-  }
-  implicit final class AsAsJavaFlowGraphBuilder[Out](val builder: scaladsl.FlowGraphBuilder) extends AnyVal {
-    def asJava: javadsl.FlowGraphBuilder = new javadsl.FlowGraphBuilder(builder)
+  implicit final class AsAsJavaFlowGraphBuilder[Out](val builder: scaladsl.FlowGraph.Builder) extends AnyVal {
+    def asJava: javadsl.FlowGraph.Builder = new javadsl.FlowGraph.Builder(builder)
   }
 
-  implicit final class AddAsScalaSource[Out](val source: javadsl.Source[Out]) extends AnyVal {
-    def asScala: scaladsl.Source[Out] = source.asInstanceOf[javadsl.Source[Out]].asScala
+  implicit final class AddAsScalaSource[Out, Mat](val source: javadsl.Source[Out, Mat]) extends AnyVal {
+    def asScala: scaladsl.Source[Out, Mat] = source.asScala
   }
-  implicit final class AsAsScalaUndefinedSource[Out](val source: javadsl.UndefinedSource[Out]) extends AnyVal {
-    def asScala: scaladsl.UndefinedSource[Out] = source.asScala
+  implicit final class AddAsScalaFlow[In, Out, Mat](val flow: javadsl.Flow[In, Out, Mat]) extends AnyVal {
+    def asScala: scaladsl.Flow[In, Out, Mat] = flow.asScala
   }
-  implicit final class AddAsScalaFlow[In, Out](val flow: javadsl.Flow[In, Out]) extends AnyVal {
-    def asScala: scaladsl.Flow[In, Out] = flow.asInstanceOf[javadsl.Flow[In, Out]].asScala
+  implicit final class AddAsScalaSink[In, Mat](val sink: javadsl.Sink[In, Mat]) extends AnyVal {
+    def asScala: scaladsl.Sink[In, Mat] = sink.asScala
   }
-  implicit final class AddAsScalaSink[In](val sink: javadsl.Sink[In]) extends AnyVal {
-    def asScala: scaladsl.Sink[In] = sink.asInstanceOf[javadsl.Sink[In]].asScala
-  }
-  implicit final class AsAsScalaUndefinedSink[Out](val sink: javadsl.UndefinedSink[Out]) extends AnyVal {
-    def asScala: scaladsl.UndefinedSink[Out] = sink.asScala
-  }
-  implicit final class AsAsScalaFlowGraphBuilder[Out](val builder: javadsl.FlowGraphBuilder) extends AnyVal {
-    def asScala: FlowGraphBuilder = builder.asScala
+  implicit final class AsAsScalaFlowGraphBuilder[Out](val builder: javadsl.FlowGraph.Builder) extends AnyVal {
+    def asScala: FlowGraph.Builder = builder.asScala
   }
 }

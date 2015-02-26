@@ -9,7 +9,7 @@ import akka.util.ByteString
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 import akka.http.util._
 import akka.http.model.japi.JavaMapping.Implicits._
@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
 /**
  * A wrapper for responses
  */
-abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: FlowMaterializer) {
+abstract class TestResponse(_response: HttpResponse, awaitAtMost: FiniteDuration)(implicit ec: ExecutionContext, materializer: ActorFlowMaterializer) {
   lazy val entity: HttpEntityStrict =
     _response.entity.toStrict(awaitAtMost).awaitResult(awaitAtMost)
   lazy val response: HttpResponse = _response.withEntity(entity)

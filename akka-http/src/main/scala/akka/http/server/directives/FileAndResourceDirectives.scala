@@ -52,9 +52,11 @@ trait FileAndResourceDirectives {
     get {
       if (file.isFile && file.canRead)
         conditionalFor(file.length, file.lastModified).apply {
-          withRangeSupport {
-            extractExecutionContext { implicit ec ⇒
-              complete(HttpEntity.Default(contentType, file.length, StreamUtils.fromInputStreamSource(new FileInputStream(file))))
+          withRangeSupport { ctx ⇒
+            import ctx.executionContext
+            ctx.complete {
+              HttpEntity.Default(contentType, file.length,
+                StreamUtils.fromInputStreamSource(new FileInputStream(file), ctx.settings.fileIODispatcher))
             }
           }
         }
@@ -100,11 +102,11 @@ trait FileAndResourceDirectives {
               } finally conn.getInputStream.close()
             }
             conditionalFor(length, lastModified).apply {
-              withRangeSupport {
-                extractExecutionContext { implicit ec ⇒
-                  complete {
-                    HttpEntity.Default(contentType, length, StreamUtils.fromInputStreamSource(url.openStream()))
-                  }
+              withRangeSupport { ctx ⇒
+                import ctx.executionContext
+                ctx.complete {
+                  HttpEntity.Default(contentType, length,
+                    StreamUtils.fromInputStreamSource(url.openStream(), ctx.settings.fileIODispatcher))
                 }
               }
             }

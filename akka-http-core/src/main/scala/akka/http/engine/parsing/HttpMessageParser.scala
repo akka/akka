@@ -305,7 +305,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
 
   def defaultEntity(cth: Option[`Content-Type`],
                     contentLength: Long,
-                    transformData: Source[ByteString] ⇒ Source[ByteString] = identityFunc)(entityParts: Source[_ <: ParserOutput]): UniversalEntity = {
+                    transformData: Source[ByteString, Unit] ⇒ Source[ByteString, Unit] = identityFunc)(entityParts: Source[_ <: ParserOutput, Unit]): UniversalEntity = {
     val data = entityParts.collect {
       case EntityPart(bytes)       ⇒ bytes
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)
@@ -314,7 +314,7 @@ private[http] abstract class HttpMessageParser[Output >: MessageOutput <: Parser
   }
 
   def chunkedEntity(cth: Option[`Content-Type`],
-                    transformChunks: Source[HttpEntity.ChunkStreamPart] ⇒ Source[HttpEntity.ChunkStreamPart] = identityFunc)(entityChunks: Source[_ <: ParserOutput]): RequestEntity = {
+                    transformChunks: Source[HttpEntity.ChunkStreamPart, Unit] ⇒ Source[HttpEntity.ChunkStreamPart, Unit] = identityFunc)(entityChunks: Source[_ <: ParserOutput, Unit]): RequestEntity = {
     val chunks = entityChunks.collect {
       case EntityChunk(chunk)      ⇒ chunk
       case EntityStreamError(info) ⇒ throw EntityStreamException(info)

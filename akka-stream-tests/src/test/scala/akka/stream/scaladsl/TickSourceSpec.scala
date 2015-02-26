@@ -3,6 +3,8 @@
  */
 package akka.stream.scaladsl
 
+import akka.actor.Cancellable
+
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 import akka.stream.ActorFlowMaterializer
@@ -48,7 +50,7 @@ class TickSourceSpec extends AkkaSpec {
     }
 
     "reject multiple subscribers, but keep the first" in {
-      val p = Source(1.second, 1.second, "tick").runWith(Sink.publisher)
+      val p = Source(1.second, 1.second, "tick").runWith(Sink.publisher())
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
       p.subscribe(c1)
@@ -66,11 +68,11 @@ class TickSourceSpec extends AkkaSpec {
     "be usable with zip for a simple form of rate limiting" in {
       val c = StreamTestKit.SubscriberProbe[Int]()
 
-      FlowGraph { implicit b ⇒
-        import FlowGraphImplicits._
-        val zip = Zip[Int, String]
-        Source(1 to 100) ~> zip.left
-        Source(1.second, 1.second, "tick") ~> zip.right
+      FlowGraph.closed() { implicit b ⇒
+        import FlowGraph.Implicits._
+        val zip = b.add(Zip[Int, String]())
+        Source(1 to 100) ~> zip.in0
+        Source(1.second, 1.second, "tick") ~> zip.in1
         zip.out ~> Flow[(Int, String)].map { case (n, _) ⇒ n } ~> Sink(c)
       }.run()
 
@@ -86,8 +88,7 @@ class TickSourceSpec extends AkkaSpec {
     "be possible to cancel" in {
       val c = StreamTestKit.SubscriberProbe[String]()
       val tickSource = Source(1.second, 500.millis, "tick")
-      val m = tickSource.to(Sink(c)).run()
-      val cancellable = m.get(tickSource)
+      val cancellable = tickSource.to(Sink(c)).run()
       val sub = c.expectSubscription()
       sub.request(3)
       c.expectNoMsg(600.millis)

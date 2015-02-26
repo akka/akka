@@ -13,7 +13,7 @@ class RecipeSimpleDrop extends RecipeSpec {
     "work" in {
 
       //#simple-drop
-      val droppyStream: Flow[Message, Message] =
+      val droppyStream: Flow[Message, Message, Unit] =
         Flow[Message].conflate(seed = identity)((lastMessage, newMessage) => newMessage)
       //#simple-drop
 

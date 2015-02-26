@@ -20,7 +20,7 @@ class RecipeMissedTicks extends RecipeSpec {
 
       //#missed-ticks
       // tickStream is a Source[Tick]
-      val missedTicks: Source[Int] =
+      val missedTicks: Source[Int, Unit] =
         tickStream.conflate(seed = (_) => 0)(
           (missedTicks, tick) => missedTicks + 1)
       //#missed-ticks

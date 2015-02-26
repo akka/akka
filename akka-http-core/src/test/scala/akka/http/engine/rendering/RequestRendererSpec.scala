@@ -21,6 +21,7 @@ import akka.stream.ActorFlowMaterializer
 import akka.stream.impl.SynchronousIterablePublisher
 import HttpEntity._
 import HttpMethods._
+import akka.util.ByteString
 
 class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
@@ -255,8 +256,8 @@ class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll 
         val renderer = newRenderer
         val byteStringSource = Await.result(Source.single(RequestRenderingContext(request, serverAddress)).
           section(name("renderer"))(_.transform(() ⇒ renderer)).
-          runWith(Sink.head), 1.second)
-        val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
+          runWith(Sink.head()), 1.second)
+        val future = byteStringSource.grouped(1000).runWith(Sink.head()).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis)
       }
   }

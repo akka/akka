@@ -6,7 +6,7 @@ package akka.http.server.japi
 package impl
 
 import akka.http.unmarshalling.FromMessageUnmarshaller
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 import scala.concurrent.ExecutionContext
 import scala.reflect.ClassTag
@@ -16,5 +16,5 @@ import scala.reflect.ClassTag
  *
  */
 // FIXME: too lenient visibility, currently used to implement Java marshallers, needs proper API, see #16439
-case class UnmarshallerImpl[T](scalaUnmarshaller: (ExecutionContext, FlowMaterializer) ⇒ FromMessageUnmarshaller[T])(implicit val classTag: ClassTag[T])
+case class UnmarshallerImpl[T](scalaUnmarshaller: (ExecutionContext, ActorFlowMaterializer) ⇒ FromMessageUnmarshaller[T])(implicit val classTag: ClassTag[T])
   extends Unmarshaller[T]

@@ -20,11 +20,11 @@ import akka.event.NoLogging
 import akka.http.server
 
 import akka.http.model.japi.HttpRequest
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 
 abstract class RouteTest {
   implicit def system: ActorSystem
-  implicit def materializer: FlowMaterializer
+  implicit def materializer: ActorFlowMaterializer
   implicit def executionContext: ExecutionContext = system.dispatcher
 
   protected def awaitDuration: FiniteDuration = 500.millis

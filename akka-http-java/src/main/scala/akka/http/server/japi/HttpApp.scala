@@ -6,7 +6,8 @@ package akka.http.server.japi
 
 import akka.actor.ActorSystem
 import akka.http.Http.ServerBinding
-import akka.stream.javadsl.MaterializedMap
+
+import scala.concurrent.Future
 
 /**
  * A convenience class to derive from to get everything from HttpService and Directives into scope.
@@ -22,6 +23,6 @@ abstract class HttpApp
    * Starts an HTTP server on the given interface and port. Creates the route by calling the
    * user-implemented [[createRoute]] method and uses the route to handle requests of the server.
    */
-  def bindRoute(interface: String, port: Int, system: ActorSystem): MaterializedMap =
+  def bindRoute(interface: String, port: Int, system: ActorSystem): Future[ServerBinding] =
     bindRoute(interface, port, createRoute(), system)
 }

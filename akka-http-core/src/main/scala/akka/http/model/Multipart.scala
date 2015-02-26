@@ -9,7 +9,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.Source
 import akka.http.util.FastFuture
 import akka.http.model.headers._
@@ -17,14 +17,14 @@ import FastFuture._
 
 trait Multipart {
   def mediaType: MultipartMediaType
-  def parts: Source[Multipart.BodyPart]
+  def parts: Source[Multipart.BodyPart, Unit]
 
   /**
    * Converts this content into its strict counterpart.
    * The given ``timeout`` denotes the max time that an individual part must be read in.
    * The Future is failed with an TimeoutException if one part isn't read completely after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Multipart.Strict]
+  def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Multipart.Strict]
 }
 
 object Multipart {
@@ -47,7 +47,7 @@ object Multipart {
     def dispositionType: Option[ContentDispositionType] =
       contentDispositionHeader.map(_.dispositionType)
 
-    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[BodyPart.Strict]
+    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[BodyPart.Strict]
   }
 
   object BodyPart {
@@ -56,7 +56,7 @@ object Multipart {
     }
   }
 
-  private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP])(f: BP ⇒ Future[BPS])(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Vector[BPS]] =
+  private def strictify[BP <: Multipart.BodyPart, BPS <: Multipart.BodyPart.Strict](parts: Source[BP, Unit])(f: BP ⇒ Future[BPS])(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Vector[BPS]] =
     // TODO: move to Vector `:+` when https://issues.scala-lang.org/browse/SI-8930 is fixed
     parts.runFold(new VectorBuilder[Future[BPS]]) {
       case (builder, part) ⇒ builder += f(part)
@@ -69,28 +69,28 @@ object Multipart {
    */
   sealed abstract class General extends Multipart {
     def mediaType: MultipartMediaType
-    def parts: Source[General.BodyPart]
-    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[General.Strict] =
+    def parts: Source[General.BodyPart, Unit]
+    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[General.Strict] =
       strictify(parts)(_.toStrict(timeout)).fast.map(General.Strict(mediaType, _))
   }
   object General {
     def apply(mediaType: MultipartMediaType, parts: BodyPart.Strict*): Strict = Strict(mediaType, parts.toVector)
 
-    def apply(_mediaType: MultipartMediaType, _parts: Source[BodyPart]): General =
+    def apply(_mediaType: MultipartMediaType, _parts: Source[BodyPart, Unit]): General =
       new General {
         def mediaType = _mediaType
         def parts = _parts
         override def toString = s"General($mediaType, $parts)"
       }
 
-    def unapply(value: General): Option[(MultipartMediaType, Source[BodyPart])] = Some(value.mediaType -> value.parts)
+    def unapply(value: General): Option[(MultipartMediaType, Source[BodyPart, Unit])] = Some(value.mediaType -> value.parts)
 
     /**
      * Strict [[General]].
      */
     case class Strict(mediaType: MultipartMediaType, strictParts: immutable.Seq[BodyPart.Strict]) extends General with Multipart.Strict {
-      def parts: Source[BodyPart.Strict] = Source(strictParts)
-      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+      def parts: Source[BodyPart.Strict, Unit] = Source(strictParts)
+      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer) =
         FastFuture.successful(this)
       override def productPrefix = "General.Strict"
     }
@@ -99,7 +99,7 @@ object Multipart {
      * Body part of the [[General]] model.
      */
     sealed abstract class BodyPart extends Multipart.BodyPart {
-      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[BodyPart.Strict] =
+      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[BodyPart.Strict] =
         entity.toStrict(timeout).map(BodyPart.Strict(_, headers))
       def toFormDataBodyPart: Try[FormData.BodyPart]
       def toByteRangesBodyPart: Try[ByteRanges.BodyPart]
@@ -133,7 +133,7 @@ object Multipart {
        * Strict [[General.BodyPart]].
        */
       case class Strict(entity: HttpEntity.Strict, headers: immutable.Seq[HttpHeader] = Nil) extends BodyPart with Multipart.BodyPart.Strict {
-        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Strict] =
+        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Strict] =
           FastFuture.successful(this)
         override def toFormDataBodyPart: Try[FormData.BodyPart.Strict] = tryCreateFormDataBodyPart(FormData.BodyPart.Strict(_, entity, _, _))
         override def toByteRangesBodyPart: Try[ByteRanges.BodyPart.Strict] = tryCreateByteRangesBodyPart(ByteRanges.BodyPart.Strict(_, entity, _, _))
@@ -148,8 +148,8 @@ object Multipart {
    */
   sealed abstract class FormData extends Multipart {
     def mediaType = MediaTypes.`multipart/form-data`
-    def parts: Source[FormData.BodyPart]
-    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[FormData.Strict] =
+    def parts: Source[FormData.BodyPart, Unit]
+    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[FormData.Strict] =
       strictify(parts)(_.toStrict(timeout)).fast.map(FormData.Strict(_))
   }
   object FormData {
@@ -159,7 +159,7 @@ object Multipart {
       fields.map { case (name, entity) ⇒ BodyPart.Strict(name, entity) }(collection.breakOut)
     }
 
-    def apply(_parts: Source[BodyPart]): FormData = new FormData {
+    def apply(_parts: Source[BodyPart, Unit]): FormData = new FormData {
       def parts = _parts
       override def toString = s"FormData($parts)"
     }
@@ -168,8 +168,8 @@ object Multipart {
      * Strict [[FormData]].
      */
     case class Strict(strictParts: immutable.Seq[BodyPart.Strict]) extends FormData with Multipart.Strict {
-      def parts: Source[BodyPart.Strict] = Source(strictParts)
-      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+      def parts: Source[BodyPart.Strict, Unit] = Source(strictParts)
+      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer) =
         FastFuture.successful(this)
       override def productPrefix = "FormData.Strict"
     }
@@ -186,7 +186,7 @@ object Multipart {
       override def dispositionParams = additionalDispositionParams.updated("name", name)
       override def dispositionType = Some(ContentDispositionTypes.`form-data`)
       def filename: Option[String] = additionalDispositionParams.get("filename")
-      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[BodyPart.Strict] =
+      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[BodyPart.Strict] =
         entity.toStrict(timeout).map(BodyPart.Strict(name, _, additionalDispositionParams, additionalHeaders))
     }
     object BodyPart {
@@ -210,7 +210,7 @@ object Multipart {
       case class Strict(name: String, entity: HttpEntity.Strict,
                         additionalDispositionParams: Map[String, String] = Map.empty,
                         additionalHeaders: immutable.Seq[HttpHeader] = Nil) extends BodyPart with Multipart.BodyPart.Strict {
-        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Strict] =
+        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Strict] =
           FastFuture.successful(this)
         override def productPrefix = "FormData.BodyPart.Strict"
       }
@@ -223,14 +223,14 @@ object Multipart {
    */
   sealed abstract class ByteRanges extends Multipart {
     def mediaType = MediaTypes.`multipart/byteranges`
-    def parts: Source[ByteRanges.BodyPart]
-    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[ByteRanges.Strict] =
+    def parts: Source[ByteRanges.BodyPart, Unit]
+    def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[ByteRanges.Strict] =
       strictify(parts)(_.toStrict(timeout)).fast.map(ByteRanges.Strict(_))
   }
   object ByteRanges {
     def apply(parts: BodyPart.Strict*): Strict = Strict(parts.toVector)
 
-    def apply(_parts: Source[BodyPart]): ByteRanges =
+    def apply(_parts: Source[BodyPart, Unit]): ByteRanges =
       new ByteRanges {
         def parts = _parts
         override def toString = s"ByteRanges($parts)"
@@ -240,8 +240,8 @@ object Multipart {
      * Strict [[ByteRanges]].
      */
     case class Strict(strictParts: immutable.Seq[BodyPart.Strict]) extends ByteRanges with Multipart.Strict {
-      def parts: Source[BodyPart.Strict] = Source(strictParts)
-      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer) =
+      def parts: Source[BodyPart.Strict, Unit] = Source(strictParts)
+      override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer) =
         FastFuture.successful(this)
       override def productPrefix = "ByteRanges.Strict"
     }
@@ -255,7 +255,7 @@ object Multipart {
       def additionalHeaders: immutable.Seq[HttpHeader]
       override def headers = contentRangeHeader +: additionalHeaders
       def contentRangeHeader = `Content-Range`(rangeUnit, contentRange)
-      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[BodyPart.Strict] =
+      def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[BodyPart.Strict] =
         entity.toStrict(timeout).map(BodyPart.Strict(contentRange, _, rangeUnit, additionalHeaders))
     }
     object BodyPart {
@@ -277,7 +277,7 @@ object Multipart {
        */
       case class Strict(contentRange: ContentRange, entity: HttpEntity.Strict, rangeUnit: RangeUnit = RangeUnits.Bytes,
                         additionalHeaders: immutable.Seq[HttpHeader] = Nil) extends BodyPart with Multipart.BodyPart.Strict {
-        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: FlowMaterializer): Future[Strict] =
+        override def toStrict(timeout: FiniteDuration)(implicit ec: ExecutionContext, fm: ActorFlowMaterializer): Future[Strict] =
           FastFuture.successful(this)
         override def productPrefix = "ByteRanges.BodyPart.Strict"
       }

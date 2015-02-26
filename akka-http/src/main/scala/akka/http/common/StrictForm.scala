@@ -8,7 +8,7 @@ import scala.annotation.implicitNotFound
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
 import scala.concurrent.duration._
-import akka.stream.FlowMaterializer
+import akka.stream.ActorFlowMaterializer
 import akka.http.util.FastFuture
 import akka.http.unmarshalling._
 import akka.http.model._
@@ -87,7 +87,7 @@ object StrictForm {
 
   implicit def unmarshaller(implicit formDataUM: FromEntityUnmarshaller[FormData],
                             multipartUM: FromEntityUnmarshaller[Multipart.FormData],
-                            ec: ExecutionContext, fm: FlowMaterializer): FromEntityUnmarshaller[StrictForm] = {
+                            ec: ExecutionContext, fm: ActorFlowMaterializer): FromEntityUnmarshaller[StrictForm] = {
 
     def tryUnmarshalToQueryForm(entity: HttpEntity): Future[StrictForm] =
       for (formData ← formDataUM(entity).fast) yield {

@@ -25,18 +25,14 @@ private[akka] trait TimedOps {
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
-  def timed[I, O](flow: Source[I], measuredOps: Source[I] ⇒ Source[O], onComplete: FiniteDuration ⇒ Unit): Source[O] = {
+  def timed[I, O, Mat, Mat2](source: Source[I, Mat], measuredOps: Source[I, Mat] ⇒ Source[O, Mat2], onComplete: FiniteDuration ⇒ Unit): Source[O, Mat2] = {
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Source[I]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Source[O]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Flow[I, I, Unit]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Flow[O, O, Unit]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
 
-    val measured = ((s: Source[I]) ⇒ s) andThen
-      (_.section(name("startTimed"))(startTimed)) andThen
-      measuredOps andThen
-      (_.section(name("stopTimed"))(stopTimed))
-
-    measured(flow)
+    val begin = source.section(name("startTimed"), (originalMat: Mat, _: Unit) ⇒ originalMat)(startTimed)
+    measuredOps(begin).section(name("stopTimed"), (originalMat: Mat2, _: Unit) ⇒ originalMat)(stopTimed)
   }
 
   /**
@@ -44,20 +40,16 @@ private[akka] trait TimedOps {
    *
    * Measures time from receiving the first element and completion events - one for each subscriber of this `Flow`.
    */
-  def timed[I, O, Out](flow: Flow[I, O], measuredOps: Flow[I, O] ⇒ Flow[O, Out], onComplete: FiniteDuration ⇒ Unit): Flow[O, Out] = {
+  def timed[I, O, Out, Mat, Mat2](flow: Flow[I, O, Mat], measuredOps: Flow[I, O, Mat] ⇒ Flow[I, Out, Mat2], onComplete: FiniteDuration ⇒ Unit): Flow[I, Out, Mat2] = {
     // todo is there any other way to provide this for Flow, without duplicating impl?
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
     val ctx = new TimedFlowContext
 
-    val startTimed = (f: Flow[I, O]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
-    val stopTimed = (f: Flow[O, Out]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
+    val startTimed = (f: Flow[O, O, Unit]) ⇒ f.transform(() ⇒ new StartTimedFlow(ctx))
+    val stopTimed = (f: Flow[Out, Out, Unit]) ⇒ f.transform(() ⇒ new StopTimed(ctx, onComplete))
 
-    val measured = ((f: Flow[I, O]) ⇒ f) andThen
-      (_.section(name("startTimed"))(startTimed)) andThen
-      measuredOps andThen
-      (_.section(name("stopTimed"))(stopTimed))
-
-    measured(flow)
+    val begin: Flow[I, O, Mat] = flow.section(name("startTimed"), (originalMat: Mat, _: Unit) ⇒ originalMat)(startTimed)
+    measuredOps(begin).section(name("stopTimed"), (originalMat: Mat2, _: Unit) ⇒ originalMat)(stopTimed)
   }
 
 }
@@ -74,8 +66,8 @@ private[akka] trait TimedIntervalBetweenOps {
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
-  def timedIntervalBetween[O](flow: Source[O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O] = {
-    flow.section(name("timedInterval")) {
+  def timedIntervalBetween[O, Mat](source: Source[O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Source[O, Mat] = {
+    source.section(name("timedInterval"), (originalMat: Mat, _: Unit) ⇒ originalMat) {
       _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
     }
   }
@@ -83,10 +75,10 @@ private[akka] trait TimedIntervalBetweenOps {
   /**
    * Measures rolling interval between immediately subsequent `matching(o: O)` elements.
    */
-  def timedIntervalBetween[I, O](flow: Flow[I, O], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O] = {
+  def timedIntervalBetween[I, O, Mat](flow: Flow[I, O, Mat], matching: O ⇒ Boolean, onInterval: FiniteDuration ⇒ Unit): Flow[I, O, Mat] = {
     // todo is there any other way to provide this for Flow / Duct, without duplicating impl?
     // they do share a super-type (FlowOps), but all operations of FlowOps return path dependant type
-    flow.section(name("timedInterval")) {
+    flow.section(name("timedInterval"), (originalMat: Mat, _: Unit) ⇒ originalMat) {
       _.transform(() ⇒ new TimedIntervalTransformer[O](matching, onInterval))
     }
   }

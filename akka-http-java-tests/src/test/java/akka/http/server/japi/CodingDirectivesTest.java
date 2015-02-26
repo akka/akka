@@ -6,17 +6,39 @@ package akka.http.server.japi;
 
 import static akka.http.server.japi.Directives.*;
 
+import akka.actor.ActorSystem;
 import akka.http.model.japi.HttpRequest;
 import akka.http.model.japi.headers.AcceptEncoding;
 import akka.http.model.japi.headers.ContentEncoding;
 import akka.http.model.japi.headers.HttpEncodings;
+import akka.stream.ActorFlowMaterializer;
 import akka.util.ByteString;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.*;
+import scala.concurrent.Await;
+import scala.concurrent.duration.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 public class CodingDirectivesTest extends JUnitRouteTest {
+
+    static ActorSystem system;
+
+    @BeforeClass
+    public static void setup() {
+        system = ActorSystem.create("FlowGraphDocTest");
+    }
+
+    @AfterClass
+    public static void tearDown() {
+        system.shutdown();
+        system.awaitTermination();
+        system = null;
+    }
+
+    final ActorFlowMaterializer mat = ActorFlowMaterializer.create(system);
+
     @Test
-    public void testAutomaticEncodingWhenNoEncodingRequested() {
+    public void testAutomaticEncodingWhenNoEncodingRequested() throws Exception {
         TestRoute route =
             testRoute(
                 encodeResponse(
@@ -31,7 +53,7 @@ public class CodingDirectivesTest extends JUnitRouteTest {
         Assert.assertEquals("TestString", response.entityBytes().utf8String());
     }
     @Test
-    public void testAutomaticEncodingWhenDeflateRequested() {
+    public void testAutomaticEncodingWhenDeflateRequested() throws Exception {
         TestRoute route =
             testRoute(
                 encodeResponse(
@@ -45,7 +67,8 @@ public class CodingDirectivesTest extends JUnitRouteTest {
             .assertStatusCode(200)
             .assertHeaderExists(ContentEncoding.create(HttpEncodings.DEFLATE));
 
-        ByteString decompressed = Coder.Deflate.decode(response.entityBytes());
+        ByteString decompressed =
+                Await.result(Coder.Deflate.decode(response.entityBytes(), mat), Duration.apply(3, TimeUnit.SECONDS));
         Assert.assertEquals("tester", decompressed.utf8String());
     }
     @Test

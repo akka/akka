@@ -17,18 +17,12 @@ class RecipeWorkerPool extends RecipeSpec {
       val worker = Flow[String].map(_ + " done")
 
       //#worker-pool
-      def balancer[In, Out](worker: Flow[In, Out], workerCount: Int): Flow[In, Out] = {
-        import FlowGraphImplicits._
+      def balancer[In, Out](worker: Flow[In, Out, Unit], workerCount: Int): Flow[In, Out, Unit] = {
+        import FlowGraph.Implicits._
 
-        Flow[In, Out]() { implicit graphBuilder =>
-          val jobsIn = UndefinedSource[In]
-          val resultsOut = UndefinedSink[Out]
-
-          val balancer = Balance[In](waitForAllDownstreams = true)
-          val merge = Merge[Out]
-
-          jobsIn ~> balancer // Jobs are fed into the balancer
-          merge ~> resultsOut // the merged results are sent out
+        Flow() { implicit b =>
+          val balancer = b.add(Balance[In](workerCount, waitForAllDownstreams = true))
+          val merge = b.add(Merge[Out](workerCount))
 
           for (_ <- 1 to workerCount) {
             // for each worker, add an edge from the balancer to the worker, then wire
@@ -36,14 +30,14 @@ class RecipeWorkerPool extends RecipeSpec {
             balancer ~> worker ~> merge
           }
 
-          (jobsIn, resultsOut)
+          (balancer.in, merge.out)
         }
       }
 
-      val processedJobs: Source[Result] = myJobs.via(balancer(worker, 3))
+      val processedJobs: Source[Result, Unit] = myJobs.via(balancer(worker, 3))
       //#worker-pool
 
-      Await.result(processedJobs.grouped(10).runWith(Sink.head), 3.seconds).toSet should be(Set(
+      Await.result(processedJobs.grouped(10).runWith(Sink.head()), 3.seconds).toSet should be(Set(
         "1 done", "2 done", "3 done", "4 done", "5 done"))
 
     }
