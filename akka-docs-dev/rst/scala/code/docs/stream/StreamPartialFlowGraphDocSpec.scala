@@ -60,8 +60,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
       def ints = Source(() => Iterator.from(1))
 
       // connect the graph
-      ints ~> Flow[Int].filter(_ % 2 != 0) ~> zip.in0
-      ints ~> Flow[Int].filter(_ % 2 == 0) ~> zip.in1
+      ints.filter(_ % 2 != 0) ~> zip.in0
+      ints.filter(_ % 2 == 0) ~> zip.in1
 
       // expose port
       zip.out
@@ -82,8 +82,8 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
       val zip = b.add(Zip[Int, String]())
 
       // connect the graph
-      broadcast.out(0) ~> Flow[Int].map(identity) ~> zip.in0
-      broadcast.out(1) ~> Flow[Int].map(_.toString) ~> zip.in1
+      broadcast.out(0).map(identity) ~> zip.in0
+      broadcast.out(1).map(_.toString) ~> zip.in1
 
       // expose ports
       (broadcast.in, zip.out)
