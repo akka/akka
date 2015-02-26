@@ -89,11 +89,12 @@ class GraphCyclesSpec extends AkkaSpec {
         val zip = b.add(ZipWith((left: Int, right: Int) => left))
         val bcast = b.add(Broadcast[Int](2))
         val concat = b.add(Concat[Int]())
+        val start = Source.single(0)
 
         source ~> zip.in0
         zip.out.map { s => println(s); s } ~> bcast ~> Sink.ignore()
-        zip.in1 <~ concat <~ bcast
-                   concat <~ Source.single(0)
+        zip.in1 <~ concat <~ start
+                   concat         <~          bcast
       }
       //#zipping-live
       // format: ON
