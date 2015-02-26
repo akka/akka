@@ -132,6 +132,51 @@ For defining a ``Flow[T]`` we need to expose both an undefined source and sink:
 
 .. includecode:: code/docs/stream/StreamPartialFlowGraphDocSpec.scala#flow-from-partial-flow-graph
 
+Building reusable Graph components
+----------------------------------
+
+It is possible to build reusable, encapsulated components of arbitrary input and output ports using the graph DSL.
+
+As an example, we will build a graph junction that represents a pool of workers, where a worker is expressed
+as a ``Flow[I,O,_]``, i.e. a simple transformation of jobs of type ``I`` to results of type ``O`` (as you have seen
+already, this flow can actually contain a complex graph inside). Our reusable worker pool junction will
+not preserve the order of the incoming jobs (they are assumed to have a proper ID field) and it will use a ``Balance``
+junction to schedule jobs to available workers. On top of this, our junction will feature a "fastlane", a dedicated port
+where jobs of higher priority can be sent.
+
+Altogether, our junction will have two input ports of type ``I`` (for the normal and priority jobs) and an output port
+of type ``O``. To represent this interface, we need to define a custom :class:`Shape`. The following lines show how to do that.
+
+.. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-shape
+
+In general a custom :class:`Shape` needs to be able to provide all its input and output ports, be able to copy itself, and also be
+able to create a new instance from given ports. There are some predefined shapes provided to avoid unnecessary
+boilerplate
+
+ * :class:`SourceShape`, :class:`SinkShape`, :class:`FlowShape` for simpler shapes,
+ * :class:`UniformFanInShape` and :class:`UniformFanOutShape` for junctions with multiple input (or output) ports
+   of the same type,
+ * :class:`FanInShape1`, :class:`FanInShape2`, ..., :class:`FanOutShape1`, :class:`FanOutShape2`, ... for junctions
+   with multiple input (or output) ports of different types.
+
+Since our shape has two input ports and one output port, we can just reuse the :class:`FanInShape2` class to define
+our custom shape:
+
+.. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-shape2
+
+Now that we have a :class:`Shape` we can wire up a Graph that represents
+our worker pool. First, we will merge incoming normal and priority jobs using ``MergePreferred``, then we will send the jobs
+to a ``Balance`` junction which will fan-out to a configurable number of workers (flows), finally we merge all these
+results together and send them out through our only output port. This is expressed by the following code:
+
+.. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-create
+
+All we need to do now is to use our custom junction in a graph. The following code simulates some simple workers
+and jobs using plain strings and prints out the results. Actually we used *two* instances of our worker pool junction
+using ``add()`` twice.
+
+.. includecode:: code/docs/stream/FlowGraphDocSpec.scala#flow-graph-components-use
+
 .. _graph-cycles-scala:
 
 Graph cycles, liveness and deadlocks

@@ -62,7 +62,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   trait Example1 {
     //#materializer-setup
     implicit val system = ActorSystem("reactive-tweets")
-    implicit val mat = ActorFlowMaterializer()
+    implicit val materializer = ActorFlowMaterializer()
     //#materializer-setup
   }
 
@@ -155,7 +155,7 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
 
   "count elements on finite stream" in {
     //#tweets-fold-count
-    val sumSink = Sink.fold[Int, Int](0)(_ + _)
+    val sumSink: Sink[Int, Future[Int]] = Sink.fold[Int, Int](0)(_ + _)
 
     val counter: RunnableFlow[Future[Int]] = tweets.map(t => 1).toMat(sumSink)(Keep.right)
 
