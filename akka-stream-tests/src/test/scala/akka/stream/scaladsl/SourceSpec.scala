@@ -90,7 +90,7 @@ class SourceSpec extends AkkaSpec {
       c.expectNoMsg(300.millis)
 
       subs.cancel()
-      Await.result(f.future, 300.millis)
+      Await.result(f.future, 500.millis)
     }
 
     "allow external triggering of completion" in {
@@ -102,7 +102,7 @@ class SourceSpec extends AkkaSpec {
       // external cancellation
       neverPromise.success(())
 
-      val ready = Await.ready(counterFuture, 200.millis)
+      val ready = Await.ready(counterFuture, 500.millis)
       val Success(0) = ready.value.get
     }
 
@@ -115,7 +115,7 @@ class SourceSpec extends AkkaSpec {
       // external cancellation
       neverPromise.failure(new Exception("Boom") with NoStackTrace)
 
-      val ready = Await.ready(counterFuture, 200.millis)
+      val ready = Await.ready(counterFuture, 500.millis)
       val Failure(ex) = ready.value.get
       ex.getMessage should include("Boom")
     }
