@@ -3,11 +3,10 @@
  */
 package docs.stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
@@ -44,25 +43,33 @@ public class FlowGraphDocTest {
   final FlowMaterializer mat = ActorFlowMaterializer.create(system);
   
   @Test
-  public void demonstrateBuildSimpleGraph() {
+  public void demonstrateBuildSimpleGraph() throws Exception {
     //#simple-flow-graph
+    final Source<Integer, BoxedUnit> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    final Sink<List<String>, Future<List<String>>> sink = Sink.head();
     final Flow<Integer, Integer, BoxedUnit> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
     final Flow<Integer, Integer, BoxedUnit> f2 = Flow.of(Integer.class).map(elem -> elem + 20);;
     final Flow<Integer, String, BoxedUnit> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
     final Flow<Integer, Integer, BoxedUnit> f4 = Flow.of(Integer.class).map(elem -> elem + 30);;
 
-    final Builder b = FlowGraph.builder();
-    final Outlet<Integer> in = b.source(Source.from(Arrays.asList(1, 2, 3, 4, 5)));
-    final Inlet<String> out = b.sink(Sink.ignore());
-    final UniformFanOutShape<Integer,Integer> bcast = b.graph(Broadcast.create(2));
-    final UniformFanInShape<Integer, Integer> merge = b.graph(Merge.create(2));
-    
-    b.flow(in, f1, bcast.in());
-    b.flow(bcast.out(0), f2, merge.in(0));
-    b.flow(merge.out(), f3, out);
-    b.flow(bcast.out(1), f4, merge.in(1));
-    b.run(mat);
+    final RunnableFlow<Future<List<String>>> result = FlowGraph.factory()
+        .closed(
+            sink,
+            (b, out) -> {
+              final UniformFanOutShape<Integer, Integer> bcast =
+                  b.graph(Broadcast.create(2));
+              final UniformFanInShape<Integer, Integer> merge =
+                  b.graph(Merge.create(2));
+
+              b.from(in).via(f1).via(bcast).via(f2).via(merge)
+                  .via(f3.grouped(1000)).to(out);
+              b.from(bcast).via(f4).to(merge);
+            });
     //#simple-flow-graph
+    final List<String> list = Await.result(result.run(mat), Duration.create(3, TimeUnit.SECONDS));
+    final String[] res = list.toArray(new String[] {});
+    Arrays.sort(res, null);
+    assertArrayEquals(new String[] {"31", "32", "33", "34", "35", "41", "42", "43", "44", "45"}, res);
   }
   
   @Test
