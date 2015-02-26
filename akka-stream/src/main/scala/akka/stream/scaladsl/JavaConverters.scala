@@ -21,7 +21,7 @@ private[akka] object JavaConverters {
     def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(sink)
   }
   implicit final class AsAsJavaFlowGraphBuilder[Out](val builder: scaladsl.FlowGraph.Builder) extends AnyVal {
-    def asJava: javadsl.FlowGraph.Builder = new javadsl.FlowGraph.Builder(builder)
+    def asJava: javadsl.FlowGraph.Builder = new javadsl.FlowGraph.Builder()(builder)
   }
 
   implicit final class AddAsScalaSource[Out, Mat](val source: javadsl.Source[Out, Mat]) extends AnyVal {

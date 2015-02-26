@@ -271,7 +271,7 @@ object FlowGraph extends GraphApply {
   object Implicits {
 
     @tailrec
-    private def findOut[I, O](b: Builder, junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
+    private[stream] def findOut[I, O](b: Builder, junction: UniformFanOutShape[I, O], n: Int): Outlet[O] = {
       if (n == junction.outArray.length)
         throw new IllegalArgumentException(s"no more outlets free on $junction")
       else if (b.module.downstreams.contains(junction.out(n))) findOut(b, junction, n + 1)
@@ -279,7 +279,7 @@ object FlowGraph extends GraphApply {
     }
 
     @tailrec
-    private def findIn[I, O](b: Builder, junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
+    private[stream] def findIn[I, O](b: Builder, junction: UniformFanInShape[I, O], n: Int): Inlet[I] = {
       if (n == junction.inArray.length)
         throw new IllegalArgumentException(s"no more inlets free on $junction")
       else if (b.module.upstreams.contains(junction.in(n))) findIn(b, junction, n + 1)
