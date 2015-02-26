@@ -382,7 +382,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
  *
  * Flow with attached input and output, can be executed.
  */
-trait RunnableFlow[+Mat] {
+trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
   /**
    * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
    */
@@ -395,6 +395,8 @@ trait RunnableFlow[+Mat] {
 
 /** INTERNAL API */
 private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat]) extends RunnableFlow[Mat] {
+  def shape = ClosedShape
+  def module = runnable.module
   override def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2] =
     new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
   override def run(materializer: ActorFlowMaterializer): Mat = runnable.run()(materializer)

@@ -100,6 +100,7 @@ final class FutureSource[Out](future: Future[Out], val attributes: OperationAttr
 }
 
 final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Unit]](shape) {
+  import ReactiveStreamsCompliance._
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val p = Promise[Unit]()
@@ -109,15 +110,15 @@ final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: Sou
     // so we can enable it then, though it will require external completing of the promise
     val pub = new Publisher[Unit] {
       override def subscribe(s: Subscriber[_ >: Unit]) = {
-        s.onSubscribe(new Subscription {
+        tryOnSubscribe(s, new Subscription {
           override def request(n: Long): Unit = ()
 
           override def cancel(): Unit = p.success(())
         })
         p.future.onComplete {
-          case Success(_)  ⇒ s.onComplete()
-          case Failure(ex) ⇒ s.onError(ex) // due to external signal
-        }(materializer.asInstanceOf[ActorFlowMaterializerImpl].executionContext) // TODO: Should it use this EC or something else?
+          case Success(_)  ⇒ tryOnComplete(s)
+          case Failure(ex) ⇒ tryOnError(s, ex) // due to external signal
+        }(materializer.executionContext)
       }
     }
 

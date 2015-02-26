@@ -175,8 +175,9 @@ object Flow extends FlowApply {
 /**
  * Flow with attached input and output, can be executed.
  */
-case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) {
+case class RunnableFlow[+Mat](private[stream] val module: StreamLayout.Module) extends Graph[ClosedShape, Mat] {
   assert(module.isRunnable)
+  def shape = ClosedShape
 
   /**
    * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.

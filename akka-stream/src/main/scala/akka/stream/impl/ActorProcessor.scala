@@ -106,10 +106,13 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
 
   protected def onSubscribe(subscription: Subscription): Unit = {
     assert(subscription != null)
-    upstream = subscription
-    // Prefetch
-    upstream.request(inputBuffer.length)
-    subreceive.become(upstreamRunning)
+    if (upstreamCompleted) subscription.cancel()
+    else {
+      upstream = subscription
+      // Prefetch
+      upstream.request(inputBuffer.length)
+      subreceive.become(upstreamRunning)
+    }
   }
 
   protected def onError(e: Throwable): Unit = {
@@ -132,7 +135,7 @@ private[akka] abstract class BatchingInputBuffer(val size: Int, val pump: Pump) 
   }
 
   protected def completed: Actor.Receive = {
-    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber") // FIXME "shutdown subscriber"?!
+    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("onSubscribe called after onError or onComplete")
   }
 
   protected def inputOnError(e: Throwable): Unit = {
@@ -247,7 +250,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
     }
   }
 
-  def activeReceive: Receive = primaryInputs.subreceive orElse primaryOutputs.subreceive
+  def activeReceive: Receive = primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive)
 
   protected def onError(e: Throwable): Unit = fail(e)
 

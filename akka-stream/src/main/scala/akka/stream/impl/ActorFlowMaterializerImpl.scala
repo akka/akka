@@ -17,13 +17,13 @@ import akka.stream.scaladsl._
 import akka.stream._
 import org.reactivestreams._
 
-import scala.concurrent.{ Await, ExecutionContext }
+import scala.concurrent.{ Await, ExecutionContextExecutor }
 
 /**
  * INTERNAL API
  */
 case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterializerSettings,
-                                     dispatchers: Dispatchers, // FIXME is this the right choice for loading an EC?
+                                     dispatchers: Dispatchers,
                                      supervisor: ActorRef,
                                      flowNameCounter: AtomicLong,
                                      namePrefix: String,
@@ -37,7 +37,7 @@ case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterialize
 
   private[this] def createFlowName(): String = s"$namePrefix-${nextFlowNameCount()}"
 
-  override def materialize[Mat](runnableFlow: RunnableFlow[Mat]): Mat = {
+  override def materialize[Mat](runnableFlow: Graph[ClosedShape, Mat]): Mat = {
     runnableFlow.module.validate()
 
     val session = new MaterializerSession(runnableFlow.module) {
@@ -84,13 +84,13 @@ case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterialize
         op match {
           case fanin: FanInModule ⇒
             val (props, inputs, output) = fanin match {
+
               case MergeModule(shape, _) ⇒
                 (FairMerge.props(effectiveAttributes.settings(settings), shape.inArray.size), shape.inArray.toSeq, shape.out)
 
               case f: FlexiMergeModule[t, p] ⇒
                 val flexi = f.flexi(f.shape)
                 (FlexiMerge.props(effectiveAttributes.settings(settings), f.shape, flexi), f.shape.inlets, f.shape.outlets.head)
-              // TODO each materialization needs its own logic
 
               case MergePreferredModule(shape, _) ⇒
                 (UnfairMerge.props(effectiveAttributes.settings(settings), shape.inlets.size), shape.preferred +: shape.inArray.toSeq, shape.out)
@@ -112,20 +112,28 @@ case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterialize
 
           case fanout: FanOutModule ⇒
             val (props, in, outs) = fanout match {
+
               case r: FlexiRouteModule[t, p] ⇒
                 val flexi = r.flexi(r.shape)
                 (FlexiRoute.props(effectiveAttributes.settings(settings), r.shape, flexi), r.shape.inlets.head: InPort, r.shape.outlets)
+
               case BroadcastModule(shape, _) ⇒
                 (Broadcast.props(effectiveAttributes.settings(settings), shape.outArray.size), shape.in, shape.outArray.toSeq)
+
               case BalanceModule(shape, waitForDownstreams, _) ⇒
                 (Balance.props(effectiveAttributes.settings(settings), shape.outArray.size, waitForDownstreams), shape.in, shape.outArray.toSeq)
+
               case UnzipModule(shape, _) ⇒
                 (Unzip.props(effectiveAttributes.settings(settings)), shape.in, shape.outlets)
             }
             val impl = actorOf(props, stageName(effectiveAttributes), effectiveAttributes.settings(settings).dispatcher)
-            val publishers = Vector.tabulate(outs.size)(id ⇒ new ActorPublisher[Any](impl) { // FIXME switch to List.tabulate for inputCount < 8?
+            val size = outs.size
+            def factory(id: Int) = new ActorPublisher[Any](impl) {
               override val wakeUpMsg = FanOut.SubstreamSubscribePending(id)
-            })
+            }
+            val publishers =
+              if (outs.size < 8) Vector.tabulate(size)(factory)
+              else List.tabulate(size)(factory)
             impl ! FanOut.ExposedPublishers(publishers)
 
             publishers.zip(outs).foreach { case (pub, out) ⇒ assignPort(out, pub) }
@@ -140,7 +148,7 @@ case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterialize
     session.materialize().asInstanceOf[Mat]
   }
 
-  def executionContext: ExecutionContext = dispatchers.lookup(settings.dispatcher match {
+  lazy val executionContext: ExecutionContextExecutor = dispatchers.lookup(settings.dispatcher match {
     case Deploy.NoDispatcherGiven ⇒ Dispatchers.DefaultDispatcherId
     case other                    ⇒ other
   })
@@ -238,7 +246,7 @@ private[akka] object ActorProcessorFactory {
       case MaterializingStageFactory(mkStageAndMat, _) ⇒
         val (stage, mat) = mkStageAndMat()
         (ActorInterpreter.props(settings, List(stage)), mat)
-
+      case DirectProcessor(p, m) ⇒ throw new AssertionError("DirectProcessor cannot end up in ActorProcessorFactory")
     }
   }
 

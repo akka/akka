@@ -41,7 +41,7 @@ private[akka] object SynchronousIterablePublisher {
     } catch {
       case sv: SpecViolation ⇒
         cancel()
-        throw sv.violation // I think it is prudent to "escalate" the spec violation
+        throw sv // I think it is prudent to "escalate" the spec violation
       case NonFatal(e) ⇒
         cancel()
         tryOnError(subscriber, e)
@@ -80,7 +80,7 @@ private[akka] object SynchronousIterablePublisher {
           } catch {
             case sv: SpecViolation ⇒
               cancel()
-              throw sv.violation // I think it is prudent to "escalate" the spec violation
+              throw sv // I think it is prudent to "escalate" the spec violation
             case NonFatal(e) ⇒
               cancel()
               tryOnError(subscriber, e)

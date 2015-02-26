@@ -5,16 +5,15 @@ package akka.stream
 
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-
 import akka.actor.{ ActorContext, ActorRef, ActorRefFactory, ActorSystem, ExtendedActorSystem, Props }
 import akka.stream.impl._
 import akka.stream.scaladsl.RunnableFlow
 import com.typesafe.config.Config
-
 import scala.concurrent.duration._
 import akka.actor.Props
 import akka.actor.ActorRef
 import akka.stream.javadsl.japi
+import scala.concurrent.ExecutionContextExecutor
 
 object ActorFlowMaterializer {
 
@@ -152,13 +151,20 @@ abstract class FlowMaterializer {
    */
   def withNamePrefix(name: String): FlowMaterializer
 
-  // FIXME this is scaladsl specific
   /**
    * This method interprets the given Flow description and creates the running
    * stream. The result can be highly implementation specific, ranging from
    * local actor chains to remote-deployed processing networks.
    */
-  def materialize[Mat](runnable: RunnableFlow[Mat]): Mat
+  def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat
+
+  /**
+   * Running a flow graph will require execution resources, as will computations
+   * within Sources, Sinks, etc. This [[scala.concurrent.ExecutionContextExecutor]]
+   * can be used by parts of the flow to submit processing jobs for execution,
+   * run Future callbacks, etc.
+   */
+  def executionContext: ExecutionContextExecutor
 
 }
 

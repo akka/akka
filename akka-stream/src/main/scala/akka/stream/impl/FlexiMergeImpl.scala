@@ -133,7 +133,6 @@ private[akka] class FlexiMergeImpl[T, S <: Shape](
         triggerCompletionAfterRead(inputHandle)
       case Read(input) ⇒
         val elem = inputBunch.dequeue(indexOf(input))
-        // FIXME: callOnInput
         callOnInput(input, elem)
         triggerCompletionAfterRead(input)
       case read: ReadAll[t] ⇒

@@ -12,6 +12,12 @@ sealed abstract class OutPort
 final class Inlet[-T](override val toString: String) extends InPort
 final class Outlet[+T](override val toString: String) extends OutPort
 
+/**
+ * A Shape describes the inlets and outlets of a [[Graph]]. In keeping with the
+ * philosophy that a Graph is a freely reusable blueprint, everything that
+ * matters from the outside are the connections that can be made with it,
+ * otherwise it is just a black box.
+ */
 abstract class Shape {
   /**
    * Scala API: get a list of all input ports
@@ -55,7 +61,7 @@ abstract class Shape {
   /**
    * Compare this to another shape and determine whether the arrangement of ports is the same (including their ordering).
    */
-  def hasSameShapeAs(s: Shape): Boolean =
+  def hasSamePortsAndShapeAs(s: Shape): Boolean =
     inlets == s.inlets && outlets == s.outlets
 
   /**
@@ -66,17 +72,23 @@ abstract class Shape {
   /**
    * Asserting version of [[#hasSameShapeAs]].
    */
-  def requireSameShapeAs(s: Shape): Unit = require(hasSameShapeAs(s), nonCorrespondingMessage(s))
+  def requireSamePortsAndShapeAs(s: Shape): Unit = require(hasSamePortsAndShapeAs(s), nonCorrespondingMessage(s))
 
   private def nonCorrespondingMessage(s: Shape) =
     s"The inlets [${s.inlets.mkString(", ")}] and outlets [${s.outlets.mkString(", ")}] must correspond to the inlets [${inlets.mkString(", ")}] and outlets [${outlets.mkString(", ")}]"
 }
 
 /**
- * Java API for creating custom Shape types.
+ * Java API for creating custom [[Shape]] types.
  */
 abstract class AbstractShape extends Shape {
+  /**
+   * Provide the list of all input ports of this shape.
+   */
   def allInlets: java.util.List[Inlet[_]]
+  /**
+   * Provide the list of all output ports of this shape.
+   */
   def allOutlets: java.util.List[Outlet[_]]
 
   final override lazy val inlets: immutable.Seq[Inlet[_]] = allInlets.asScala.toList
@@ -86,22 +98,33 @@ abstract class AbstractShape extends Shape {
   final override def getOutlets = allOutlets
 }
 
-object EmptyShape extends Shape {
+/**
+ * This [[Shape]] is used for graphs that have neither open inputs nor open
+ * outputs. Only such a [[Graph]] can be materialized by a [[FlowMaterializer]].
+ */
+sealed abstract class ClosedShape extends Shape
+object ClosedShape extends ClosedShape {
   override val inlets: immutable.Seq[Inlet[_]] = Nil
   override val outlets: immutable.Seq[Outlet[_]] = Nil
   override def deepCopy() = this
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
-    require(inlets.isEmpty, s"proposed inlets [${inlets.mkString(", ")}] do not fit EmptyShape")
-    require(outlets.isEmpty, s"proposed outlets [${outlets.mkString(", ")}] do not fit EmptyShape")
+    require(inlets.isEmpty, s"proposed inlets [${inlets.mkString(", ")}] do not fit ClosedShape")
+    require(outlets.isEmpty, s"proposed outlets [${outlets.mkString(", ")}] do not fit ClosedShape")
     this
   }
 
   /**
-   * Java API: obtain EmptyShape instance
+   * Java API: obtain ClosedShape instance
    */
   def getInstance: Shape = this
 }
 
+/**
+ * This type of [[Shape]] can express any number of inputs and outputs at the
+ * expense of forgetting about their specific types. It is used mainly in the
+ * implementation of the [[Graph]] builders and typically replaced by a more
+ * meaningful type of Shape when the building is finished.
+ */
 case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]) extends Shape {
   override def deepCopy() = AmorphousShape(
     inlets.map(i ⇒ new Inlet[Any](i.toString)),
@@ -109,6 +132,10 @@ case class AmorphousShape(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Se
   override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = AmorphousShape(inlets, outlets)
 }
 
+/**
+ * A Source [[Shape]] has exactly one output and no inputs, it models a source
+ * of data.
+ */
 final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = Nil
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
@@ -121,6 +148,11 @@ final case class SourceShape[+T](outlet: Outlet[T]) extends Shape {
   }
 }
 
+/**
+ * A Flow [[Shape]] has exactly one input and one output, it looks from the
+ * outside like a pipe (but it can be a complex topology of streams within of
+ * course).
+ */
 final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = List(outlet)
@@ -133,6 +165,9 @@ final case class FlowShape[-I, +O](inlet: Inlet[I], outlet: Outlet[O]) extends S
   }
 }
 
+/**
+ * A Sink [[Shape]] has exactly one input and no outputs, it models a data sink.
+ */
 final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(inlet)
   override val outlets: immutable.Seq[Outlet[_]] = Nil
@@ -146,8 +181,13 @@ final case class SinkShape[-T](inlet: Inlet[T]) extends Shape {
 }
 
 /**
+ * A bidirectional flow of elements that consequently has two inputs and two
+ * outputs, arranged like this:
+ *
+ * {{{
  * In1  => Out1
  * Out2 <= In2
+ * }}}
  */
 final case class BidiShape[-In1, +Out1, -In2, +Out2](in1: Inlet[In1], out1: Outlet[Out1], in2: Inlet[In2], out2: Outlet[Out2]) extends Shape {
   override val inlets: immutable.Seq[Inlet[_]] = List(in1, in2)
