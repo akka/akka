@@ -157,4 +157,13 @@ class SourceSpec extends AkkaSpec {
     }
   }
 
+  "Repeat Source" must {
+    "repeat as long as it takes" in {
+      import FlowGraph.Implicits._
+      val result = Await.result(Source.repeat(42).grouped(10000).runWith(Sink.head()), 1.second)
+      result.size should ===(10000)
+      result.toSet should ===(Set(42))
+    }
+  }
+
 }

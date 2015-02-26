@@ -451,4 +451,12 @@ public class SourceTest extends StreamTest {
     String result = Await.result(future2, probe.dilated(FiniteDuration.create(3, TimeUnit.SECONDS)));
     assertEquals("A", result);
   }
+  
+  @Test
+  public void mustRepeat() throws Exception {
+    final Future<List<Integer>> f = Source.repeat(42).grouped(10000).runWith(Sink.<List<Integer>> head(), materializer);
+    final List<Integer> result = Await.result(f, FiniteDuration.create(3, TimeUnit.SECONDS));
+    assertEquals(result.size(), 10000);
+    for (Integer i: result) assertEquals(i, (Integer) 42);
+  }
 }
