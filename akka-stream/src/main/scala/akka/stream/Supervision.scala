@@ -10,7 +10,7 @@ object Supervision {
   sealed trait Directive
 
   /**
-   * The stream will be completed with failure if application code for processing an element
+   * Scala API: The stream will be completed with failure if application code for processing an element
    * throws an exception.
    */
   case object Stop extends Directive
@@ -22,7 +22,7 @@ object Supervision {
   def stop = Stop
 
   /**
-   * The element is dropped and the stream continues if application code for processing
+   * Scala API: The element is dropped and the stream continues if application code for processing
    * an element throws an exception.
    */
   case object Resume extends Directive
@@ -34,7 +34,7 @@ object Supervision {
   def resume = Resume
 
   /**
-   * The element is dropped and the stream continues after restarting the stage
+   * Scala API: The element is dropped and the stream continues after restarting the stage
    * if application code for processing an element throws an exception.
    * Restarting a stage means that any accumulated state is cleared. This is typically
    * performed by creating a new instance of the stage.
@@ -54,46 +54,40 @@ object Supervision {
   /**
    * Scala API: [[Decider]] that returns [[Stop]] for all exceptions.
    */
-  val stoppingDecider: Decider = {
-    case NonFatal(_) ⇒ Stop
-  }
+  val stoppingDecider: Decider with japi.Function[Throwable, Directive] =
+    new Decider with japi.Function[Throwable, Directive] {
+      override def apply(e: Throwable) = Stop
+    }
 
   /**
    * Java API: Decider function that returns [[#stop]] for all exceptions.
    */
-  val getStoppingDecider: japi.Function[Throwable, Directive] =
-    new japi.Function[Throwable, Directive] {
-      override def apply(e: Throwable): Directive = stoppingDecider(e)
-    }
+  val getStoppingDecider: japi.Function[Throwable, Directive] = stoppingDecider
 
   /**
    * Scala API: [[Decider]] that returns [[Resume]] for all exceptions.
    */
-  val resumingDecider: Decider = {
-    case NonFatal(_) ⇒ Resume
-  }
+  val resumingDecider: Decider with japi.Function[Throwable, Directive] =
+    new Decider with japi.Function[Throwable, Directive] {
+      override def apply(e: Throwable) = Resume
+    }
 
   /**
    * Java API: Decider function that returns [[#resume]] for all exceptions.
    */
-  val getResumingDecider: japi.Function[Throwable, Directive] =
-    new japi.Function[Throwable, Directive] {
-      override def apply(e: Throwable): Directive = resumingDecider(e)
-    }
+  val getResumingDecider: japi.Function[Throwable, Directive] = resumingDecider
 
   /**
    * Scala API: [[Decider]] that returns [[Restart]] for all exceptions.
    */
-  val restartingDecider: Decider = {
-    case NonFatal(_) ⇒ Restart
-  }
+  val restartingDecider: Decider with japi.Function[Throwable, Directive] =
+    new Decider with japi.Function[Throwable, Directive] {
+      override def apply(e: Throwable) = Restart
+    }
 
   /**
    * Java API: Decider function that returns [[#restart]] for all exceptions.
    */
-  val getRestartingDecider: japi.Function[Throwable, Directive] =
-    new japi.Function[Throwable, Directive] {
-      override def apply(e: Throwable): Directive = restartingDecider(e)
-    }
+  val getRestartingDecider: japi.Function[Throwable, Directive] = restartingDecider
 
 }
