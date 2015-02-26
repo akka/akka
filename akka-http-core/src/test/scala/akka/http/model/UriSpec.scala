@@ -16,6 +16,10 @@ class UriSpec extends WordSpec with Matchers {
 
   "Uri.Host instances" should {
 
+    "correctly parse empty hosts" in {
+      Host("") shouldEqual Host.Empty
+    }
+
     "parse correctly from IPv4 literals" in {
       Host("192.0.2.16") shouldEqual IPv4Host("192.0.2.16")
       Host("255.0.0.0") shouldEqual IPv4Host("255.0.0.0")
@@ -25,6 +29,7 @@ class UriSpec extends WordSpec with Matchers {
       Host("3.0.0.0") shouldEqual IPv4Host("3.0.0.0")
       Host("30.0.0.0") shouldEqual IPv4Host("30.0.0.0")
     }
+
     "support inetAddresses round-trip for Inet4Addresses" in {
       def roundTrip(ip: String): Unit = {
         val inetAddr = InetAddress.getByName(ip)
@@ -354,7 +359,7 @@ class UriSpec extends WordSpec with Matchers {
         Uri.from(scheme = "urn", path = "oasis:names:specification:docbook:dtd:xml:4.1.2")
 
       // more examples
-      Uri("http://") shouldEqual Uri(scheme = "http", authority = Authority(host = NamedHost("")))
+      Uri("http://") shouldEqual Uri(scheme = "http", authority = Authority(Host.Empty))
       Uri("http:?") shouldEqual Uri.from(scheme = "http", query = Query(""))
       Uri("?a+b=c%2Bd") shouldEqual Uri.from(query = ("a b", "c+d") +: Query.Empty)
 
@@ -372,6 +377,10 @@ class UriSpec extends WordSpec with Matchers {
       // render
       Uri("https://server.com/path/to/here?st=12345").toString shouldEqual "https://server.com/path/to/here?st=12345"
       Uri("/foo/?a#b").toString shouldEqual "/foo/?a#b"
+
+      // empty host
+      Uri("http://:8000/foo") shouldEqual Uri("http", Authority(Host.Empty, 8000), Path / "foo")
+      Uri("http://:80/foo") shouldEqual Uri("http", Authority.Empty, Path / "foo")
     }
 
     "properly complete a normalization cycle" in {
@@ -388,8 +397,12 @@ class UriSpec extends WordSpec with Matchers {
       normalize("Http://Localhost") shouldEqual "http://localhost"
       normalize("hTtP://localHost") shouldEqual "http://localhost"
       normalize("https://:443") shouldEqual "https://"
+      normalize("https://:444") shouldEqual "https://:444"
+      normalize("http://:80/foo") shouldEqual "http:///foo"
+      normalize("http://:8080/foo") shouldEqual "http://:8080/foo"
       normalize("ftp://example.com:21") shouldEqual "ftp://example.com"
-      normalize("example.com:21") shouldEqual "example.com:21"
+      normalize("example.com:21") shouldEqual "example.com://21" // example.com is parsed as the SCHEME (which is correct)
+      normalize("//example.com:21") shouldEqual "//example.com:21"
       normalize("ftp://example.com:22") shouldEqual "ftp://example.com:22"
 
       normalize("//user:pass@[::1]:80/segment/index.html?query#frag") shouldEqual "//user:pass@[::1]:80/segment/index.html?query#frag"
@@ -406,7 +419,7 @@ class UriSpec extends WordSpec with Matchers {
       normalize("http://sourceforge.net/projects/uriparser/") shouldEqual "http://sourceforge.net/projects/uriparser/"
       normalize("http://sourceforge.net/project/platformdownload.php?group_id=182840") shouldEqual "http://sourceforge.net/project/platformdownload.php?group_id=182840"
       normalize("mailto:test@example.com") shouldEqual "mailto:test@example.com"
-      normalize("file:///bin/bash") shouldEqual "file:///bin/bash"
+      normalize("file:/bin/bash") shouldEqual "file:///bin/bash"
       normalize("http://www.example.com/name%20with%20spaces/") shouldEqual "http://www.example.com/name%20with%20spaces/"
       normalize("http://examp%4Ce.com/") shouldEqual "http://example.com/"
       normalize("http://example.com/a/b/%2E%2E/") shouldEqual "http://example.com/a/"
@@ -499,7 +512,7 @@ class UriSpec extends WordSpec with Matchers {
       def resolve(uri: String) = parseAndResolve(uri, base).toString
 
       "normal examples" in {
-        resolve("g:h") shouldEqual "g:h"
+        resolve("g:h") shouldEqual "g://h"
         resolve("g") shouldEqual "http://a/b/c/g"
         resolve("./g") shouldEqual "http://a/b/c/g"
         resolve("g/") shouldEqual "http://a/b/c/g/"
@@ -547,7 +560,7 @@ class UriSpec extends WordSpec with Matchers {
         resolve("g#s/./x") shouldEqual "http://a/b/c/g#s/./x"
         resolve("g#s/../x") shouldEqual "http://a/b/c/g#s/../x"
 
-        resolve("http:g") shouldEqual "http:g"
+        resolve("http:g") shouldEqual "http://g"
       }
     }
 

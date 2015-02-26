@@ -292,7 +292,8 @@ object Uri {
   def httpScheme(securedConnection: Boolean = false) = if (securedConnection) "https" else "http"
 
   final case class Authority(host: Host, port: Int = 0, userinfo: String = "") {
-    def isEmpty = host.isEmpty
+    def isEmpty = equals(Authority.Empty)
+    def nonEmpty = !isEmpty
     def normalizedForHttp(encrypted: Boolean = false) =
       normalizedFor(httpScheme(encrypted))
     def normalizedFor(scheme: String): Authority = {
@@ -791,22 +792,19 @@ object UriRendering {
     if (isAbsolute) r ~~ scheme ~~ ':'
     renderAuthority(r, authority, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
-    if (!query.isEmpty) renderQuery(r ~~ '?', query, charset)
-    r
+    if (query.nonEmpty) renderQuery(r ~~ '?', query, charset) else r
   }
 
   def renderAuthority[R <: Rendering](r: R, authority: Authority, scheme: String, charset: Charset): r.type =
-    if (authority.isEmpty) r else {
+    if (authority.nonEmpty) {
       import authority._
-
       r ~~ '/' ~~ '/'
       if (!userinfo.isEmpty) encode(r, userinfo, charset, `userinfo-char`) ~~ '@'
       r ~~ host
-      if (port != 0) normalizePort(port, scheme) match {
-        case 0 ⇒ r
-        case x ⇒ r ~~ ':' ~~ port
-      }
-      else r
+      if (port != 0) r ~~ ':' ~~ port else r
+    } else scheme match {
+      case "" | "mailto" ⇒ r
+      case _             ⇒ r ~~ '/' ~~ '/'
     }
 
   def renderPath[R <: Rendering](r: R, path: Path, charset: Charset, encodeFirstSegmentColons: Boolean = false): r.type =
