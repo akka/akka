@@ -20,13 +20,13 @@ class FlowGraphDocSpec extends AkkaSpec {
   "build simple graph" in {
     //format: OFF
     //#simple-flow-graph
-    val g = FlowGraph.closed() { implicit b =>
+    val g = FlowGraph.closed() { implicit builder: FlowGraph.Builder =>
       import FlowGraph.Implicits._
       val in = Source(1 to 10)
       val out = Sink.ignore
 
-      val bcast = b.add(Broadcast[Int](2))
-      val merge = b.add(Merge[Int](2))
+      val bcast = builder.add(Broadcast[Int](2))
+      val merge = builder.add(Merge[Int](2))
 
       val f1, f2, f3, f4 = Flow[Int].map(_ + 10)
 
@@ -43,21 +43,21 @@ class FlowGraphDocSpec extends AkkaSpec {
 
   "build simple graph without implicits" in {
     //#simple-flow-graph-no-implicits
-    val g = FlowGraph.closed() { b =>
+    val g = FlowGraph.closed() { builder: FlowGraph.Builder =>
       val in = Source(1 to 10)
       val out = Sink.ignore
 
-      val broadcast = b.add(Broadcast[Int](2))
-      val merge = b.add(Merge[Int](2))
+      val broadcast = builder.add(Broadcast[Int](2))
+      val merge = builder.add(Merge[Int](2))
 
       val f1 = Flow[Int].map(_ + 10)
       val f3 = Flow[Int].map(_.toString)
       val f2 = Flow[Int].map(_ + 20)
 
-      b.addEdge(b.add(in), broadcast.in)
-      b.addEdge(broadcast.out(0), f1, merge.in(0))
-      b.addEdge(broadcast.out(1), f2, merge.in(1))
-      b.addEdge(merge.out, f3, b.add(out))
+      builder.addEdge(builder.add(in), broadcast.in)
+      builder.addEdge(broadcast.out(0), f1, merge.in(0))
+      builder.addEdge(broadcast.out(1), f2, merge.in(1))
+      builder.addEdge(merge.out, f3, builder.add(out))
     }
     //#simple-flow-graph-no-implicits
 
@@ -67,12 +67,12 @@ class FlowGraphDocSpec extends AkkaSpec {
   "flow connection errors" in {
     intercept[IllegalArgumentException] {
       //#simple-graph
-      FlowGraph.closed() { implicit b =>
+      FlowGraph.closed() { implicit builder =>
         import FlowGraph.Implicits._
         val source1 = Source(1 to 10)
         val source2 = Source(1 to 10)
 
-        val zip = b.add(Zip[Int, Int]())
+        val zip = builder.add(Zip[Int, Int]())
 
         source1 ~> zip.in0
         source2 ~> zip.in1
@@ -94,10 +94,10 @@ class FlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val g =
     //#flow-graph-reusing-a-flow
-    FlowGraph.closed(topHeadSink, bottomHeadSink)((_, _)) { implicit b =>
+    FlowGraph.closed(topHeadSink, bottomHeadSink)((_, _)) { implicit builder =>
       (topHS, bottomHS) =>
       import FlowGraph.Implicits._
-      val broadcast = b.add(Broadcast[Int](2))
+      val broadcast = builder.add(Broadcast[Int](2))
       Source.single(1) ~> broadcast.in
 
       broadcast.out(0) ~> sharedDoubler ~> topHS.inlet
@@ -207,12 +207,13 @@ class FlowGraphDocSpec extends AkkaSpec {
     import FanInShape.Name
     import FanInShape.Init
 
-    case class PriorityWorkerPoolShape2[In, Out](
-      _init: Init[Out] = Name("PriorityWorkerPool")) extends FanInShape2[In, In, Out](_init) {
+    class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
+        extends FanInShape[Out](_init) {
+      protected override def construct(i: Init[Out]) = new PriorityWorkerPoolShape2(i)
 
-      def jobsIn: Inlet[In] = in0
-      def priorityJobsIn: Inlet[In] = in1
-      def resultsOut: Outlet[Out] = out
+      val jobsIn = newInlet[In]("jobsIn")
+      val priorityJobsIn = newInlet[In]("priorityJobsIn")
+      // Outlet[Out] with name "out" is automatically created
     }
     //#flow-graph-components-shape2
 
