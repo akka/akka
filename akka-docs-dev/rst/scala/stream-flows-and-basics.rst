@@ -60,9 +60,12 @@ one actor prepare the work, and then have it be materialized at some completely 
 
 .. includecode:: code/docs/stream/FlowDocSpec.scala#materialization-in-steps
 
-After running (materializing) the ``RunnableFlow`` we get a special container object, the ``MaterializedMap``. Both
-sources and sinks are able to put specific objects into this map. Whether they put something in or not is implementation
-dependent. For example a ``FoldSink`` will make a ``Future`` available in this map which will represent the result
+After running (materializing) the ``RunnableFlow[T]`` we get back the materialized value of type T. Every stream processing
+stage can produce a materialized value, and it is the responsibility of the user to combine them to a new type.
+In the above example we used ``toMat`` to indicate that we want to transform the materialized value of the source and
+sink, and we used the convenience function ``Keep.right`` to say that we are only interested in the materialized value
+of the sink.
+In our example the ``FoldSink`` materializes a value of type ``Future`` which will represent the result
 of the folding process over the stream.  In general, a stream can expose multiple materialized values,
 but it is quite common to be interested in only the value of the Source or the Sink in the stream. For this reason
 there is a convenience method called ``runWith()`` available for ``Sink``, ``Source`` or ``Flow`` requiring, respectively,
@@ -85,7 +88,8 @@ instead of modifying the existing instance, so while constructing long flows, re
 In the above example we used the ``runWith`` method, which both materializes the stream and returns the materialized value
 of the given sink or source.
 
-Since a stream can be materialized multiple times, the ``MaterializedMap`` returned is different for each materialization.
+Since a stream can be materialized multiple times, the materialized value will also be calculated anew for each such
+materialization, usually leading to different values being returned each time.
 In the example below we create two running materialized instance of the stream that we described in the ``runnable``
 variable, and both materializations give us a different ``Future`` from the map even though we used the same ``sink``
 to refer to the future:
@@ -196,6 +200,15 @@ which will be running on the thread pools they have been configured to run on - 
    Reusing *instances* of linear computation stages (Source, Sink, Flow) inside FlowGraphs is legal,
    yet will materialize that stage multiple times.
 
+Combining materialized values
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Since every processing stage in Akka Streams can provide a materialized value after being materialized, it is necessary
+to somehow express how these values should be composed to a final value when we plug these stages together. For this,
+many combinator methods have variants that take an additional argument, a function, that will be used to combine the
+resulting values. Some examples of using these combiners are illustrated in the example below.
+
+.. includecode:: code/docs/stream/FlowDocSpec.scala#flow-mat-combine
 
 Stream ordering
 ===============
