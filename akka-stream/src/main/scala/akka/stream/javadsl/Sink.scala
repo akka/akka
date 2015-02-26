@@ -116,7 +116,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   /**
    * Connect this `Sink` to a `Source` and run it.
    */
-  def runWith[M](source: javadsl.Source[In, M], materializer: ActorFlowMaterializer): M =
+  def runWith[M](source: javadsl.Source[In, M], materializer: FlowMaterializer): M =
     asScala.runWith(source.asScala)(materializer)
 
   /**

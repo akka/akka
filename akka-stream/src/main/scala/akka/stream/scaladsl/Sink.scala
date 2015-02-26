@@ -12,7 +12,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Promise, Future }
 import scala.util.{ Success, Failure, Try }
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.stream.impl.StreamLayout.Module
 
 /**
@@ -28,7 +28,7 @@ final class Sink[-In, +Mat](private[stream] override val module: Module)
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[SubscriberSource]].
    */
-  def runWith[Mat2](source: Source[In, Mat2])(implicit materializer: ActorFlowMaterializer): Mat2 =
+  def runWith[Mat2](source: Source[In, Mat2])(implicit materializer: FlowMaterializer): Mat2 =
     source.to(this).run()
 
   def mapMaterialized[Mat2](f: Mat ⇒ Mat2): Sink[In, Mat2] =

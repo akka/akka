@@ -203,10 +203,16 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
     new RunnableFlowAdapter(delegate.to(sink.asScala))
 
   /**
+   * Connect this [[Source]] to a [[Sink]], concatenating the processing steps of both.
+   */
+  def to[M, M2](sink: javadsl.Sink[Out, M], combine: japi.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
+    new RunnableFlowAdapter(delegate.toMat(sink.asScala)(combinerToScala(combine)))
+
+  /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
    */
-  def runWith[M](sink: Sink[Out, M], materializer: ActorFlowMaterializer): M =
+  def runWith[M](sink: Sink[Out, M], materializer: FlowMaterializer): M =
     delegate.runWith(sink.asScala)(materializer)
 
   /**
@@ -217,7 +223,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
    */
-  def runFold[U](zero: U, f: japi.Function2[U, Out, U], materializer: ActorFlowMaterializer): Future[U] =
+  def runFold[U](zero: U, f: japi.Function2[U, Out, U], materializer: FlowMaterializer): Future[U] =
     runWith(Sink.fold(zero, f), materializer)
 
   /**
@@ -235,7 +241,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * normal end of the stream, or completed with `Failure` if there is a failure is signaled in
    * the stream.
    */
-  def runForeach(f: japi.Procedure[Out], materializer: ActorFlowMaterializer): Future[Unit] =
+  def runForeach(f: japi.Procedure[Out], materializer: FlowMaterializer): Future[Unit] =
     runWith(Sink.foreach(f), materializer)
 
   // COMMON OPS //

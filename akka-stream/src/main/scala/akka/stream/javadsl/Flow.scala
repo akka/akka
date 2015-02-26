@@ -97,7 +97,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * @tparam T materialized type of given KeyedSource
    * @tparam U materialized type of given KeyedSink
    */
-  def runWith[T, U](source: javadsl.Source[In, T], sink: javadsl.Sink[Out, U], materializer: ActorFlowMaterializer): akka.japi.Pair[T, U] = {
+  def runWith[T, U](source: javadsl.Source[In, T], sink: javadsl.Sink[Out, U], materializer: FlowMaterializer): akka.japi.Pair[T, U] = {
     val p = delegate.runWith(source.asScala, sink.asScala)(materializer)
     akka.japi.Pair(p._1.asInstanceOf[T], p._2.asInstanceOf[U])
   }
@@ -386,7 +386,7 @@ trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
   /**
    * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
    */
-  def run(materializer: ActorFlowMaterializer): Mat
+  def run(materializer: FlowMaterializer): Mat
   /**
    * Transform only the materialized value of this RunnableFlow, leaving all other properties as they were.
    */
@@ -399,5 +399,5 @@ private[akka] class RunnableFlowAdapter[Mat](runnable: scaladsl.RunnableFlow[Mat
   def module = runnable.module
   override def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): RunnableFlow[Mat2] =
     new RunnableFlowAdapter(runnable.mapMaterialized(f.apply _))
-  override def run(materializer: ActorFlowMaterializer): Mat = runnable.run()(materializer)
+  override def run(materializer: FlowMaterializer): Mat = runnable.run()(materializer)
 }
