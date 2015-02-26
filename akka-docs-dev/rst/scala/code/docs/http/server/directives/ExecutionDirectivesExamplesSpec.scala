@@ -29,10 +29,9 @@ class ExecutionDirectivesExamplesSpec extends RoutingSpec {
     }
   }
   "handleRejections" in {
-    val totallyMissingHandler = RejectionHandler {
-      case Nil /* secret code for path not found */ =>
-        complete(StatusCodes.NotFound, "Oh man, what you are looking for is long gone.")
-    }
+    val totallyMissingHandler = RejectionHandler.newBuilder()
+      .handleNotFound { complete(StatusCodes.NotFound, "Oh man, what you are looking for is long gone.") }
+      .result()
     val route =
       pathPrefix("handled") {
         handleRejections(totallyMissingHandler) {
