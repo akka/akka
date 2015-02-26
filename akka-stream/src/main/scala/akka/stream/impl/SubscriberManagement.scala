@@ -126,8 +126,16 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
                   // if we are at end-of-stream and have nothing more to read we complete now rather than after the next `requestMore`
                   if ((eos ne NotReached) && buffer.count(subscription) == 0) Long.MinValue else 0
                 } else if (buffer.count(subscription) > 0) {
-                  subscription.dispatch(buffer.read(subscription)) // FIXME this does not gracefully handle the case if onNext throws
-                  dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos)
+                  val goOn = try {
+                    subscription.dispatch(buffer.read(subscription))
+                    true
+                  } catch {
+                    case _: SpecViolation ⇒
+                      unregisterSubscriptionInternal(subscription)
+                      false
+                  }
+                  if (goOn) dispatchFromBufferAndReturnRemainingRequested(requested - 1, eos)
+                  else Long.MinValue
                 } else if (eos ne NotReached) Long.MinValue
                 else requested
 
@@ -225,11 +233,15 @@ private[akka] trait SubscriberManagement[T] extends ResizableMultiReaderRingBuff
     case eos ⇒ eos(subscriber)
   }
 
-  protected def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
+  private def addSubscription(subscriber: Subscriber[_ >: T]): Unit = {
+    import ReactiveStreamsCompliance._
     val newSubscription = createSubscription(subscriber)
     subscriptions ::= newSubscription
     buffer.initCursor(newSubscription)
-    ReactiveStreamsCompliance.tryOnSubscribe(subscriber, newSubscription) // FIXME what if this throws?
+    try tryOnSubscribe(subscriber, newSubscription)
+    catch {
+      case _: SpecViolation ⇒ unregisterSubscriptionInternal(newSubscription)
+    }
   }
 
   /**
