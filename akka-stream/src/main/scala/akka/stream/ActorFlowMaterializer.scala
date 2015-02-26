@@ -252,8 +252,15 @@ final case class ActorFlowMaterializerSettings(
    * overridden for specific sections of the stream operations with
    * [[akka.stream.javadsl.OperationAttributes#supervisionStrategy]].
    */
-  def withSupervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings =
-    copy(supervisionDecider = e ⇒ decider.apply(e))
+  def withSupervisionStrategy(decider: japi.Function[Throwable, Supervision.Directive]): ActorFlowMaterializerSettings = {
+    import Supervision._
+    copy(supervisionDecider = decider match {
+      case `resumingDecider`   => resumingDecider
+      case `restartingDecider` => restartingDecider
+      case `stoppingDecider`   => stoppingDecider
+      case other               => other.apply _
+    })
+  }
 
   def withDebugLogging(enable: Boolean): ActorFlowMaterializerSettings =
     copy(debugLogging = enable)
