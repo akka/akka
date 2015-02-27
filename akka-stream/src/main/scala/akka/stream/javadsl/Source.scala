@@ -12,7 +12,7 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
+import scala.concurrent.{Promise, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import scala.language.implicitConversions
@@ -46,8 +46,8 @@ object Source {
    * be used to externally trigger completion, which the source then signalls
    * to its downstream.
    */
-  def lazyEmpty[T]() =
-    new Source(scaladsl.Source.lazyEmpty())
+  def lazyEmpty[T](): Source[T, Promise[Unit]] =
+    new Source[T, Promise[Unit]](scaladsl.Source.lazyEmpty())
 
   /**
    * Helper to create [[Source]] from `Publisher`.
