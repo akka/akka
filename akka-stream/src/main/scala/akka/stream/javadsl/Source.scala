@@ -78,7 +78,7 @@ object Source {
    * in accordance with the demand coming from the downstream transformation
    * steps.
    */
-  def from[O](f: japi.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
+  def fromIterator[O](f: japi.Creator[java.util.Iterator[O]]): javadsl.Source[O, Unit] =
     new Source(scaladsl.Source(() ⇒ f.create().asScala))
 
   /**

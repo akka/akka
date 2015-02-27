@@ -4,33 +4,22 @@
 package docs.stream;
 
 import static org.junit.Assert.assertEquals;
-import java.util.Arrays;
+
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-
+import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.javadsl.Broadcast;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.FlowGraph;
-import akka.stream.javadsl.FlowGraphBuilder;
-import akka.stream.javadsl.KeyedSink;
-import akka.stream.javadsl.MaterializedMap;
-import akka.stream.javadsl.PartialFlowGraph;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.javadsl.UndefinedSink;
-import akka.stream.javadsl.UndefinedSource;
-import akka.stream.javadsl.Zip;
-import akka.stream.javadsl.Zip2With;
-import akka.stream.javadsl.ZipWith;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
 public class StreamPartialFlowGraphDocTest {
@@ -54,105 +43,92 @@ public class StreamPartialFlowGraphDocTest {
   @Test
   public void demonstrateBuildWithOpenPorts() throws Exception {
     //#simple-partial-flow-graph
-    // defined outside as they will be used by different FlowGraphs
-    // 1) first by the PartialFlowGraph to mark its open input and output ports
-    // 2) then by the assembling FlowGraph which will attach real sinks and sources to them
-    final UndefinedSource<Integer> in1 = UndefinedSource.create();
-    final UndefinedSource<Integer> in2 = UndefinedSource.create();
-    final UndefinedSource<Integer> in3 = UndefinedSource.create();
-    final UndefinedSink<Integer> out = UndefinedSink.create();
-
-    final Zip2With<Integer, Integer, Integer> zip1 = ZipWith.create((a, b) -> Math.max(a, b));
-    final Zip2With<Integer, Integer, Integer> zip2 = ZipWith.create((a, b) -> Math.max(a, b));
-        
-    final PartialFlowGraph pickMaxOfThree = FlowGraph.builder()
-      .addEdge(in1, zip1.left())
-      .addEdge(in2, zip1.right())
-      .addEdge(zip1.out(), zip2.left())
-      .addEdge(in3, zip2.right())
-      .addEdge(zip2.out(), out)
-      .buildPartial();
-    //#simple-partial-flow-graph
+    final Graph<FanInShape2<Integer, Integer, Integer>, BoxedUnit> zip =
+      ZipWith.create((Integer left, Integer right) -> Math.max(left, right));
     
-    //#simple-partial-flow-graph
+    final Graph<UniformFanInShape<Integer, Integer>, BoxedUnit> pickMaxOfThree =
+        FlowGraph.factory().partial(builder -> {
+          final FanInShape2<Integer, Integer, Integer> zip1 = builder.graph(zip);
+          final FanInShape2<Integer, Integer, Integer> zip2 = builder.graph(zip);
+          
+          builder.edge(zip1.out(), zip2.in0());
+          return new UniformFanInShape<Integer, Integer>(zip2.out(), 
+              new Inlet[] {zip1.in0(), zip1.in1(), zip2.in1()});
+        });
 
-    final KeyedSink<Integer, Future<Integer>> resultSink = Sink.<Integer>head();
+    final Sink<Integer, Future<Integer>> resultSink = Sink.<Integer>head();
 
-    final FlowGraphBuilder b = FlowGraph.builder();
-    // import the partial flow graph explicitly
-    b.importPartialFlowGraph(pickMaxOfThree);
-
-    b.attachSource(in1, Source.single(1));
-    b.attachSource(in2, Source.single(2));
-    b.attachSource(in3, Source.single(3));
-    b.attachSink(out, resultSink);
-
-    final MaterializedMap materialized = b.build().run(mat);
-    final Future<Integer> max = materialized.get(resultSink);
+    final RunnableFlow<Future<Integer>> g = FlowGraph.factory()
+        .closed(resultSink, (builder, sink) -> {
+          // import the partial flow graph explicitly
+          final UniformFanInShape<Integer, Integer> pm = builder.graph(pickMaxOfThree);
+          
+          builder.from(Source.single(1)).to(pm.in(0));
+          builder.from(Source.single(2)).to(pm.in(1));
+          builder.from(Source.single(3)).to(pm.in(2));
+          builder.from(pm.out()).to(sink);
+        });
+    
+    final Future<Integer> max = g.run(mat);
     //#simple-partial-flow-graph
     assertEquals(Integer.valueOf(3), Await.result(max, Duration.create(3, TimeUnit.SECONDS)));
-
-    //#simple-partial-flow-graph-import-shorthand
-    final FlowGraphBuilder b2 = FlowGraph.builder(pickMaxOfThree);
-    b2.attachSource(in1, Source.single(1));
-    b2.attachSource(in2, Source.single(2));
-    b2.attachSource(in3, Source.single(3));
-    b2.attachSink(out, resultSink);
-    //#simple-partial-flow-graph-import-shorthand
-    final MaterializedMap materialized2 = b2.run(mat);
-    final Future<Integer> max2 = materialized2.get(resultSink);
-    assertEquals(Integer.valueOf(3), Await.result(max2, Duration.create(3, TimeUnit.SECONDS)));
   }
+
+  //#source-from-partial-flow-graph
+  class Ints implements Iterator<Integer> {
+    private int next = 0;
+    @Override
+    public boolean hasNext() {
+      return true;
+    }
+    @Override
+    public Integer next() {
+      return next++;
+    }
+  }
+  //#source-from-partial-flow-graph
   
   @Test
   public void demonstrateBuildSourceFromPartialFlowGraph() throws Exception {
     //#source-from-partial-flow-graph
-    // prepare graph elements
-    final UndefinedSink<Pair<Integer, Integer>> undefinedSink = UndefinedSink.create();
-    final Zip2With<Integer, Integer, Pair<Integer, Integer>> zip = Zip.create();
-    final Source<Integer> ints = Source.from(Arrays.asList(1, 2, 3, 4, 5));
-    final Source<Pair<Integer, Integer>> pairs = Source.fromGraph(builder -> {
-      // connect the graph
-      builder
-        .addEdge(ints, Flow.of(Integer.class).filter(e -> e % 2 != 0), zip.left())
-        .addEdge(ints, Flow.of(Integer.class).filter(e -> e % 2 == 0), zip.right())
-        .addEdge(zip.out(), undefinedSink);
-      // expose undefinedSink
-      return undefinedSink;
-    });
+    final Source<Integer, BoxedUnit> ints = Source.fromIterator(() -> new Ints());
+    
+    final Source<Pair<Integer, Integer>, BoxedUnit> pairs = Source.factory().create(
+        builder -> {
+          final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip =
+              builder.graph(Zip.create());
 
+          builder.from(ints.filter(i -> i % 2 == 0)).to(zip.in0());
+          builder.from(ints.filter(i -> i % 2 == 1)).to(zip.in1());
+          
+          return zip.out();
+        });
+    
     final Future<Pair<Integer, Integer>> firstPair = 
         pairs.runWith(Sink.<Pair<Integer, Integer>>head(), mat);
     //#source-from-partial-flow-graph
-    assertEquals(new Pair<>(1, 2), Await.result(firstPair, Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(new Pair<>(0, 1), Await.result(firstPair, Duration.create(3, TimeUnit.SECONDS)));
   }
   
   @Test
   public void demonstrateBuildFlowFromPartialFlowGraph() throws Exception {
     //#flow-from-partial-flow-graph
-    // prepare graph elements
-    final UndefinedSource<Integer> undefinedSource = UndefinedSource.create();
-    final UndefinedSink<Pair<Integer, String>> undefinedSink = UndefinedSink.create();
-    final Broadcast<Integer> broadcast = Broadcast.create();
-    final Zip2With<Integer, String, Pair<Integer, String>> zip = Zip.create();
-    final Flow<Integer, Pair<Integer, String>> pairUpWithToString = 
-      Flow.create(builder -> {
-        // connect the graph
-        builder
-          .addEdge(undefinedSource, broadcast)
-          .addEdge(broadcast, Flow.of(Integer.class).map(e -> e), zip.left())
-          .addEdge(broadcast, Flow.of(Integer.class).map(e -> e.toString()), zip.right())
-          .addEdge(zip.out(), undefinedSink);
+    final Flow<Integer, Pair<Integer, String>, BoxedUnit> pairs = Flow.factory().create(
+        builder -> {
+          final UniformFanOutShape<Integer, Integer> bcast = builder.graph(Broadcast.create(2));
+          final FanInShape2<Integer, String, Pair<Integer, String>> zip =
+              builder.graph(Zip.create());
 
-        // expose undefined ports
-        return new Pair<>(undefinedSource, undefinedSink);
-      });
-      
+          builder.from(bcast).to(zip.in0());
+          builder.from(bcast).via(Flow.of(Integer.class).map(i -> i.toString())).to(zip.in1());
+          
+          return new Pair<>(bcast.in(), zip.out());
+        });
+    
     //#flow-from-partial-flow-graph
-
     final Future<Pair<Integer, String>> matSink =
     //#flow-from-partial-flow-graph
-    Source.single(1).via(pairUpWithToString).runWith(Sink.<Pair<Integer, String>>head(), mat);
+    Source.single(1).via(pairs).runWith(Sink.<Pair<Integer, String>>head(), mat);
     //#flow-from-partial-flow-graph
 
     assertEquals(new Pair<>(1, "1"), Await.result(matSink, Duration.create(3, TimeUnit.SECONDS)));

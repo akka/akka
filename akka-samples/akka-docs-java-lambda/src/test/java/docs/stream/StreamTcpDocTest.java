@@ -18,16 +18,14 @@ import org.junit.Test;
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+import scala.runtime.BoxedUnit;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
+import akka.stream.*;
 import akka.stream.javadsl.FlexiMerge.ReadAllInputs;
 import akka.stream.javadsl.*;
-import akka.stream.javadsl.StreamTcp.IncomingConnection;
-import akka.stream.javadsl.StreamTcp.OutgoingConnection;
-import akka.stream.javadsl.StreamTcp.ServerBinding;
+import akka.stream.javadsl.StreamTcp.*;
 import akka.stream.stage.Context;
 import akka.stream.stage.Directive;
 import akka.stream.stage.PushStage;
@@ -70,16 +68,16 @@ public class StreamTcpDocTest {
     //#echo-server-simple-bind
     final InetSocketAddress localhost = 
         new InetSocketAddress("127.0.0.1", 8889);
-    final ServerBinding binding = StreamTcp.get(system).bind(localhost);
+    // IncomingConnection and ServerBinding imported from StreamTcp
+    final Source<IncomingConnection,Future<ServerBinding>> connections =
+        StreamTcp.get(system).bind(localhost);
     //#echo-server-simple-bind
 
     //#echo-server-simple-handle
-    final Source<IncomingConnection> connections = binding.connections();
-
     connections.runForeach(connection -> {
       System.out.println("New connection from: " + connection.remoteAddress());
 
-      final Flow<ByteString, ByteString> echo = Flow.of(ByteString.class)
+      final Flow<ByteString, ByteString, BoxedUnit> echo = Flow.of(ByteString.class)
         .transform(() -> RecipeParseLines.parseLines("\n", 256))
         .map(s -> s + "!!!\n")
         .map(s -> ByteString.fromString(s));
@@ -93,50 +91,49 @@ public class StreamTcpDocTest {
   public void actuallyWorkingClientServerApp() {
     final TestProbe serverProbe = new TestProbe(system);
 
-    final ServerBinding binding = StreamTcp.get(system).bind(localhost);
+    final Source<IncomingConnection,Future<ServerBinding>> connections =
+        StreamTcp.get(system).bind(localhost);
     //#welcome-banner-chat-server
-    binding.connections().runForeach(connection -> {
-      // to be filled in by StreamTCP
-      UndefinedSource<ByteString> in = UndefinedSource.create();
-      UndefinedSink<ByteString> out = UndefinedSink.create();
-
+    connections.runForeach(connection -> {
       // server logic, parses incoming commands
       final PushStage<String, String> commandParser = new PushStage<String, String>() {
         @Override public Directive onPush(String elem, Context<String> ctx) {
           if (elem.equals("BYE")) 
             return ctx.finish();
-           else
-             return ctx.push(elem + "!");
-          }
-        };
+          else
+            return ctx.push(elem + "!");
+        }
+      };
 
       final String welcomeMsg = "Welcome to: " + connection.localAddress() + 
           " you are: " + connection.remoteAddress() + "!\n";
 
-      final Source<ByteString> welcome = 
+      final Source<ByteString, BoxedUnit> welcome = 
           Source.single(ByteString.fromString(welcomeMsg));
-      final Flow<ByteString, ByteString> echo = Flow.of(ByteString.class)
-        .transform(() -> RecipeParseLines.parseLines("\n", 256))
-        //#welcome-banner-chat-server
-        .map(command -> { 
-          serverProbe.ref().tell(command, null); 
-          return command; 
-        })
-        //#welcome-banner-chat-server
-        .transform(() -> commandParser)
-        .map(s ->  s + "\n")
-        .map(s -> ByteString.fromString(s));
+      final Flow<ByteString, ByteString, BoxedUnit> echoFlow =
+          Flow.of(ByteString.class)
+            .transform(() -> RecipeParseLines.parseLines("\n", 256))
+            //#welcome-banner-chat-server
+            .map(command -> { 
+              serverProbe.ref().tell(command, null); 
+              return command; 
+            })
+            //#welcome-banner-chat-server
+            .transform(() -> commandParser)
+            .map(s ->  s + "\n")
+            .map(s -> ByteString.fromString(s));
 
-      final Concat<ByteString> concat = Concat.create();
-      
-      final Flow<ByteString, ByteString> serverLogic = Flow.create(builder -> {
-        builder
-          // first we emit the welcome message,
-          .addEdge(welcome, concat.first())
-          // then we continue using the echo-logic Flow
-          .addEdge(in, echo, concat.second())
-          .addEdge(concat.out(), out);
-        return new Pair<>(in, out);
+      final Flow<ByteString, ByteString, BoxedUnit> serverLogic =
+          Flow.factory().create(builder -> {
+            final UniformFanInShape<ByteString, ByteString> concat =
+                builder.graph(Concat.create());
+            final FlowShape<ByteString, ByteString> echo = builder.graph(echoFlow);
+            
+            builder
+              .from(welcome).to(concat)
+              .from(echo).to(concat);
+            
+            return new Pair<>(echo.inlet(), concat.out());
       });
 
       connection.handleWith(serverLogic, mat);
@@ -145,8 +142,8 @@ public class StreamTcpDocTest {
     //#welcome-banner-chat-server
 
     //#repl-client
-    final OutgoingConnection connection = StreamTcp.get(system)
-        .outgoingConnection(localhost);
+    final Flow<ByteString, ByteString, Future<OutgoingConnection>> connection =
+        StreamTcp.get(system).outgoingConnection(localhost);
 
     final PushStage<String, ByteString> replParser = new PushStage<String, ByteString>() {
       @Override public Directive onPush(String elem, Context<ByteString> ctx) {
@@ -157,13 +154,13 @@ public class StreamTcpDocTest {
       }
     };
 
-    final Flow<ByteString, ByteString> repl = Flow.of(ByteString.class)
+    final Flow<ByteString, ByteString, BoxedUnit> repl = Flow.of(ByteString.class)
       .transform(() -> RecipeParseLines.parseLines("\n", 256))
       .map(text -> {System.out.println("Server: " + text); return "next";})
       .map(elem -> readLine("> "))
       .transform(() -> replParser);
 
-    connection.handleWith(repl, mat);
+    connection.join(repl).run(mat);
     //#repl-client
 
     serverProbe.expectMsg("Hello world");

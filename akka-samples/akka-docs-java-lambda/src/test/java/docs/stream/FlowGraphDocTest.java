@@ -107,9 +107,9 @@ public class FlowGraphDocTest {
             (b, top, bottom) -> {
               final UniformFanOutShape<Integer, Integer> bcast = b
                   .graph(Broadcast.create(2));
-              b.edge(b.source(Source.single(1)), bcast.in());
-              b.flow(bcast.out(0), sharedDoubler, top.inlet());
-              b.flow(bcast.out(1), sharedDoubler, bottom.inlet());
+              
+              b.from(Source.single(1)).via(bcast).via(sharedDoubler).to(top);
+                                    b.from(bcast).via(sharedDoubler).to(bottom);
             });
     //#flow-graph-reusing-a-flow
     final Pair<Future<Integer>, Future<Integer>> pair = g.run(mat);

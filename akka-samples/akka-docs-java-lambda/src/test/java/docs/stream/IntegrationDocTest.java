@@ -4,21 +4,12 @@
 
 package docs.stream;
 
-import akka.actor.AbstractActor;
-import akka.actor.ActorRef;
-import akka.actor.ActorSystem;
-import akka.actor.Props;
+import akka.actor.*;
 import akka.dispatch.Futures;
 import akka.dispatch.MessageDispatcher;
 import akka.japi.pf.ReceiveBuilder;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.ActorFlowMaterializerSettings;
-import akka.stream.FlowMaterializer;
-import akka.stream.Supervision;
-import akka.stream.javadsl.OperationAttributes;
-import akka.stream.javadsl.RunnableFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 
@@ -32,6 +23,7 @@ import org.junit.Test;
 import scala.collection.immutable.Seq;
 import scala.concurrent.ExecutionContext;
 import scala.concurrent.Future;
+import scala.runtime.BoxedUnit;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Optional;
@@ -307,14 +299,14 @@ public class IntegrationDocTest {
 
       {
         //#tweet-authors
-        final Source<Author> authors = tweets
+        final Source<Author, BoxedUnit> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
         
         //#tweet-authors
         
         //#email-addresses-mapAsync
-        final Source<String> emailAddresses = authors
+        final Source<String, BoxedUnit> emailAddresses = authors
           .mapAsync(author -> addressSystem.lookupEmail(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
@@ -322,7 +314,7 @@ public class IntegrationDocTest {
         //#email-addresses-mapAsync
 
         //#send-emails
-        final RunnableFlow sendEmails = emailAddresses
+        final RunnableFlow<BoxedUnit> sendEmails = emailAddresses
           .mapAsync(address ->
             emailServer.send(new Email(address, "Akka", "I like your tweet")))
           .to(Sink.ignore());
@@ -348,14 +340,14 @@ public class IntegrationDocTest {
       final AddressSystem2 addressSystem = new AddressSystem2();
 
       {
-        final Source<Author> authors = tweets
+        final Source<Author, BoxedUnit> authors = tweets
           .filter(t -> t.hashtags().contains(AKKA))
           .map(t -> t.author);
         
         //#email-addresses-mapAsync-supervision
         final OperationAttributes resumeAttrib =
           OperationAttributes.supervisionStrategy(Supervision.getResumingDecider());
-        final Source<String> emailAddresses = authors.section(resumeAttrib,
+        final Source<String, BoxedUnit> emailAddresses = authors.section(resumeAttrib,
           flow -> flow.mapAsync(author -> addressSystem.lookupEmail(author.handle)));
         
         //#email-addresses-mapAsync-supervision
@@ -372,18 +364,18 @@ public class IntegrationDocTest {
 
       {
         //#external-service-mapAsyncUnordered
-        final Source<Author> authors =
+        final Source<Author, BoxedUnit> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
 
-        final Source<String> emailAddresses =
+        final Source<String, BoxedUnit> emailAddresses =
           authors
             .mapAsyncUnordered(author -> addressSystem.lookupEmail(author.handle))
             .filter(o -> o.isPresent())
             .map(o -> o.get());
 
-        final RunnableFlow sendEmails =
+        final RunnableFlow<BoxedUnit> sendEmails =
           emailAddresses
             .mapAsyncUnordered( address ->
               emailServer.send(new Email(address, "Akka", "I like your tweet")))
@@ -398,18 +390,17 @@ public class IntegrationDocTest {
   @Test
   public void carefulManagedBlockingWithMapAsync() throws Exception {
     new JavaTestKit(system) {
-      final TestProbe probe = new TestProbe(system);
       final AddressSystem addressSystem = new AddressSystem();
-      final EmailServer emailServer = new EmailServer(probe.ref());
-      final SmsServer smsServer = new SmsServer(probe.ref());
+      final EmailServer emailServer = new EmailServer(getRef());
+      final SmsServer smsServer = new SmsServer(getRef());
 
       {
-        final Source<Author> authors =
+        final Source<Author, BoxedUnit> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
         
-        final Source<String> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
@@ -428,11 +419,8 @@ public class IntegrationDocTest {
         sendTextMessages.run(mat);
         //#blocking-mapAsync
         
-        Seq<Object> got = probe.receiveN(7);
-          Set<Object> set = new HashSet<>(got.size());
-          for (int i = 0; i < got.size(); i++) {
-            set.add(got.apply(i));
-          }
+        final Object[] got = receiveN(7);
+        final Set<Object> set = new HashSet<>(Arrays.asList(got));
 
         assertTrue(set.contains(String.valueOf("rolandkuhn".hashCode())));
         assertTrue(set.contains(String.valueOf("patriknw".hashCode())));
@@ -454,12 +442,12 @@ public class IntegrationDocTest {
       final SmsServer smsServer = new SmsServer(probe.ref());
 
       {
-        final Source<Author> authors =
+        final Source<Author, BoxedUnit> authors =
           tweets
             .filter(t -> t.hashtags().contains(AKKA))
             .map(t -> t.author);
         
-        final Source<String> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
+        final Source<String, BoxedUnit> phoneNumbers = authors.mapAsync(author -> addressSystem.lookupPhoneNumber(author.handle))
           .filter(o -> o.isPresent())
           .map(o -> o.get());
 
@@ -495,7 +483,7 @@ public class IntegrationDocTest {
 
       {
         //#save-tweets
-        final Source<Tweet> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
+        final Source<Tweet, BoxedUnit> akkaTweets = tweets.filter(t -> t.hashtags().contains(AKKA));
 
         final RunnableFlow saveTweets =
           akkaTweets
@@ -565,14 +553,13 @@ public class IntegrationDocTest {
   @Test
   public void illustrateOrderingAndParallelismOfMapAsyncUnordered() throws Exception {
     new JavaTestKit(system) {
-      final TestProbe probe = new TestProbe(system);
-      final EmailServer emailServer = new EmailServer(probe.ref());
+      final EmailServer emailServer = new EmailServer(getRef());
 
       class MockSystem {
         class Println {
           public <T> void println(T s) {
             if (s.toString().startsWith("after:"))
-              probe.ref().tell(s, ActorRef.noSender());
+              getRef().tell(s, ActorRef.noSender());
           }
         }
 
@@ -594,11 +581,9 @@ public class IntegrationDocTest {
           .runForeach(elem -> System.out.println("after: " + elem), mat);
         //#sometimes-slow-mapAsyncUnordered
 
-        Seq<Object> got = probe.receiveN(10);
-        Set<Object> set = new HashSet<>(got.size());
-        for (int i = 0; i < got.size(); i++) {
-          set.add(got.apply(i));
-        }
+        final Object[] got = receiveN(10);
+        final Set<Object> set = new HashSet<>(Arrays.asList(got));
+
         assertTrue(set.contains("after: A"));
         assertTrue(set.contains("after: B"));
         assertTrue(set.contains("after: C"));

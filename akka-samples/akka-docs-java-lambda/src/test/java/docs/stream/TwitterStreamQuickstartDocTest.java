@@ -6,20 +6,21 @@ package docs.stream;
 import akka.actor.ActorSystem;
 import akka.dispatch.Foreach;
 import akka.japi.JavaPartialFunction;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.OverflowStrategy;
+import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Hashtag;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
+import scala.runtime.BoxedUnit;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -166,7 +167,7 @@ public class TwitterStreamQuickstartDocTest {
     public static final Hashtag AKKA = new Hashtag("#akka"); 
     //#model
     
-    public static final Source<Tweet> tweets = Source.from(
+    public static final Source<Tweet, BoxedUnit> tweets = Source.from(
       Arrays.asList(new Tweet[] {
         new Tweet(new Author("rolandkuhn"), System.currentTimeMillis(), "#akka rocks!"), 
         new Tweet(new Author("patriknw"), System.currentTimeMillis(), "#akka !"), 
@@ -183,7 +184,7 @@ public class TwitterStreamQuickstartDocTest {
   
   static abstract class Example0 {
     //#tweet-source
-    Source<Tweet> tweets; 
+    Source<Tweet, BoxedUnit> tweets; 
     //#tweet-source
   }
   
@@ -213,7 +214,7 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateFilterAndMap() {
     //#authors-filter-map
-    final Source<Author> authors =
+    final Source<Author, BoxedUnit> authors =
       tweets
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> t.author);
@@ -233,7 +234,7 @@ public class TwitterStreamQuickstartDocTest {
           }
         };
       
-      final Source<Author> authors =
+      final Source<Author, BoxedUnit> authors =
         tweets.collect(collectFunction);
       //#authors-collect
     };
@@ -250,33 +251,33 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateMapConcat() {
     //#hashtags-mapConcat
-    final Source<Hashtag> hashtags = 
+    final Source<Hashtag, BoxedUnit> hashtags = 
       tweets.mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
     //#hashtags-mapConcat
   }
   
   static abstract class HiddenDefinitions {
     //#flow-graph-broadcast
-    Sink<Author> writeAuthors; 
-    Sink<Hashtag> writeHashtags;
+    Sink<Author, BoxedUnit> writeAuthors; 
+    Sink<Hashtag, BoxedUnit> writeHashtags;
     //#flow-graph-broadcast
   }
   
   @Test
   public void demonstrateBroadcast() {
-    final Sink<Author> writeAuthors = Sink.ignore();
-    final Sink<Hashtag> writeHashtags = Sink.ignore();
+    final Sink<Author, BoxedUnit> writeAuthors = Sink.ignore();
+    final Sink<Hashtag, BoxedUnit> writeHashtags = Sink.ignore();
 
     //#flow-graph-broadcast
-    final Broadcast<Tweet> b = Broadcast.create();
-    final FlowGraph g = FlowGraph.builder()
-      .addEdge(tweets, b)  
-      .addEdge(b, Flow.<Tweet>empty().map(t -> t.author), writeAuthors)
-      .addEdge(b, Flow.<Tweet>empty().mapConcat(t -> new ArrayList<Hashtag>(t.hashtags())), 
-          writeHashtags)
-      .build();
-    
-    g.run(mat);
+    FlowGraph.factory().closed(b -> {
+      final UniformFanOutShape<Tweet, Tweet> bcast = b.graph(Broadcast.create(2));
+      final Flow<Tweet, Author, BoxedUnit> toAuthor = Flow.of(Tweet.class).map(t -> t.author);
+      final Flow<Tweet, Hashtag, BoxedUnit> toTags =
+          Flow.of(Tweet.class).mapConcat(t -> new ArrayList<Hashtag>(t.hashtags()));
+      
+      b.from(tweets).via(bcast).via(toAuthor).to(writeAuthors);
+                  b.from(bcast).via(toTags).to(writeHashtags);
+    }).run(mat);
     //#flow-graph-broadcast
   }
   
@@ -301,13 +302,13 @@ public class TwitterStreamQuickstartDocTest {
   @Test
   public void demonstrateCountOnFiniteStream() {
     //#tweets-fold-count
-    final KeyedSink<Integer, Future<Integer>> sumSink = 
+    final Sink<Integer, Future<Integer>> sumSink = 
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
 
-    final RunnableFlow counter = tweets.map(t -> 1).to(sumSink);
-    final MaterializedMap map = counter.run(mat);
+    final RunnableFlow<Future<Integer>> counter =
+        tweets.map(t -> 1).to(sumSink, Keep.right());
 
-    final Future<Integer> sum = map.get(sumSink);
+    final Future<Integer> sum = counter.run(mat);
 
     sum.foreach(new Foreach<Integer>() {
       public void each(Integer c) {
@@ -325,38 +326,23 @@ public class TwitterStreamQuickstartDocTest {
   
   @Test
   public void demonstrateMaterializeMultipleTimes() {
-    final Source<Tweet> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
+    final Source<Tweet, BoxedUnit> tweetsInMinuteFromNow = tweets; // not really in second, just acting as if
 
     //#tweets-runnable-flow-materialized-twice
-    final KeyedSink<Integer, Future<Integer>> sumSink = 
+    final Sink<Integer, Future<Integer>> sumSink = 
       Sink.<Integer, Integer>fold(0, (acc, elem) -> acc + elem);
-    final RunnableFlow counterRunnableFlow =
+    final RunnableFlow<Future<Integer>> counterRunnableFlow =
       tweetsInMinuteFromNow
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> 1)
-        .to(sumSink);
+        .to(sumSink, Keep.right());
 
     // materialize the stream once in the morning
-    final MaterializedMap morningMaterialized = counterRunnableFlow.run(mat);
-    // and once in the evening, reusing the
-    final MaterializedMap eveningMaterialized = counterRunnableFlow.run(mat);
-
-    // the sumSink materialized two different futures
-    // we use it as key to get the materialized value out of the materialized map
-    final Future<Integer> morningTweetsCount = morningMaterialized.get(sumSink);
-    final Future<Integer> eveningTweetsCount = eveningMaterialized.get(sumSink);
+    final Future<Integer> morningTweetsCount = counterRunnableFlow.run(mat);
+    // and once in the evening, reusing the blueprint
+    final Future<Integer> eveningTweetsCount = counterRunnableFlow.run(mat);
     //#tweets-runnable-flow-materialized-twice
 
-    final MaterializedMap map = counterRunnableFlow.run(mat);
-
-    final Future<Integer> sum = map.get(sumSink);
-    
-    sum.foreach(new Foreach<Integer>() {
-      public void each(Integer c) {
-        System.out.println("Total tweets processed: " + c);
-      }
-    }, system.dispatcher());
-    
   }
 
 }

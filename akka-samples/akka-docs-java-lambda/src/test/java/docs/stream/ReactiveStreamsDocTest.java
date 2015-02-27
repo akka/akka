@@ -7,13 +7,13 @@ package docs.stream;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
+import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 import akka.testkit.TestProbe;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Author;
 import docs.stream.TwitterStreamQuickstartDocTest.Model.Tweet;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -23,6 +23,7 @@ import org.reactivestreams.Subscriber;
 //#imports
 import org.reactivestreams.Subscription;
 
+import scala.runtime.BoxedUnit;
 import static docs.stream.ReactiveStreamsDocTest.Fixture.Data.authors;
 import static docs.stream.TwitterStreamQuickstartDocTest.Model.AKKA;
 
@@ -49,7 +50,7 @@ public class ReactiveStreamsDocTest {
     static class Data {
       
       static //#authors
-      final Flow<Tweet, Author> authors = Flow.of(Tweet.class)
+      final Flow<Tweet, Author, BoxedUnit> authors = Flow.of(Tweet.class)
         .filter(t -> t.hashtags().contains(AKKA))
         .map(t -> t.author);
 
