@@ -18,10 +18,12 @@ object MyRejectionHandler {
   import StatusCodes._
   import Directives._
 
-  implicit val myRejectionHandler = RejectionHandler {
-    case MissingCookieRejection(cookieName) :: _ =>
-      complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
-  }
+  implicit val myRejectionHandler = RejectionHandler.newBuilder()
+    .handle {
+      case MissingCookieRejection(cookieName) =>
+        complete(HttpResponse(BadRequest, entity = "No cookies, no service!!!"))
+    }
+    .result()
 
   object MyApp {
     implicit val system = ActorSystem()
