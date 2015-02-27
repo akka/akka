@@ -33,10 +33,16 @@ Let's assume we have a stream of tweets readily available, in Akka this is expre
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#tweet-source
 
-Streams always start flowing from a :class:`Source<Out>` then can continue through :class:`Flow<In,Out>` elements or
-more advanced graph elements to finally be consumed by a :class:`Sink<In>`. Both Sources and Flows provide stream operations
-that can be used to transform the flowing data, a :class:`Sink` however does not since its the "end of stream" and its
-behavior depends on the type of :class:`Sink` used.
+Streams always start flowing from a :class:`Source<Out>` then can continue
+through :class:`Flow<In,Out>` elements or more advanced graph elements to
+finally be consumed by a :class:`Sink<In>`. The first type
+parameter—:class:`Tweet` in this case—designates the kind of elements produced
+by the source while the second one describes the object that is created during
+materialization (see below)—:class:`BoxedUnit` (from the ``scala.runtime``
+package) means that no value is produced, it is the generic equivalent of
+``void``. Both Sources and Flows provide stream operations that can be used to
+transform the flowing data, a :class:`Sink` however does not since its the "end
+of stream" and its behavior depends on the type of :class:`Sink` used.
 
 In our case let's say we want to find all twitter handles of users which tweet about ``#akka``, the operations should look
 familiar to anyone who has used the Scala Collections library, however they operate on streams and not collections of data:
@@ -46,7 +52,7 @@ familiar to anyone who has used the Scala Collections library, however they oper
 Finally in order to :ref:`materialize <stream-materialization-java>` and run the stream computation we need to attach
 the Flow to a :class:`Sink<T>` that will get the flow running. The simplest way to do this is to call
 ``runWith(sink)`` on a ``Source<Out>``. For convenience a number of common Sinks are predefined and collected as static methods on
-the `Sink class <http://doc.akka.io/japi/akka-stream-and-http-experimental/1.0-M2/akka/stream/javadsl/Sink.html>`_.
+the `Sink class <http://doc.akka.io/japi/akka-stream-and-http-experimental/1.0-M4/akka/stream/javadsl/Sink.html>`_.
 For now let's simply print each author:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/TwitterStreamQuickstartDocTest.java#authors-foreachsink-println
