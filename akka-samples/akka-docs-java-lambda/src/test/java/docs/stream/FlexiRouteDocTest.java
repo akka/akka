@@ -5,15 +5,17 @@ package docs.stream;
 
 import java.util.Arrays;
 import java.util.List;
+
+import akka.stream.*;
+import akka.stream.javadsl.OperationAttributes;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
 import akka.stream.javadsl.FlexiRoute;
 import akka.testkit.JavaTestKit;
+import scala.runtime.BoxedUnit;
 
 public class FlexiRouteDocTest {
   
@@ -34,32 +36,21 @@ public class FlexiRouteDocTest {
   
   
   static//#flexiroute-unzip
-  public class Unzip<A, B> extends FlexiRoute<Pair<A, B>, Object> {
-
-    public final OutputPort<Pair<A, B>, A> outA = createOutputPort();
-    public final OutputPort<Pair<A, B>, B> outB = createOutputPort();
-
+  public class Unzip<A, B> extends FlexiRoute<Pair<A, B>, FanOutShape2<Pair<A, B>, A, B>> {
+    public Unzip() {
+      super(new FanOutShape2<Pair<A, B>, A, B>("Unzip"), OperationAttributes.name("Unzip"));
+    }
     @Override
-    public RouteLogic<Pair<A, B>, Object> createRouteLogic() {
-      return new RouteLogic<Pair<A, B>, Object>() {
-
+    public RouteLogic<Pair<A, B>> createRouteLogic(final FanOutShape2<Pair<A, B>, A, B> s) {
+      return new RouteLogic<Pair<A, B>>() {
         @Override
-        public List<OutputHandle> outputHandles(int outputCount) {
-          if (outputCount != 2)
-            throw new IllegalArgumentException(
-                "Unzip must have two connected outputs, was " + outputCount);
-          return Arrays.asList(outA, outB);
-        }
-
-        @Override
-        public State<Pair<A, B>, Object> initialState() {
-          return new State<Pair<A, B>, Object>(demandFromAll(outA, outB)) {
+        public State<BoxedUnit, Pair<A, B>> initialState() {
+          return new State<BoxedUnit, Pair<A, B>>(demandFromAll(s.out0(), s.out1())) {
             @Override
-            public State<Pair<A, B>, Object> onInput(RouteLogicContext<Pair<A, B>, 
-                Object> ctx, 
-                OutputHandle preferred, Pair<A, B> element) {
-              ctx.emit(outA, element.first());
-              ctx.emit(outB, element.second());
+            public State<BoxedUnit, Pair<A, B>> onInput(RouteLogicContext<Pair<A, B>> ctx, BoxedUnit x,
+                                                        Pair<A, B> element) {
+              ctx.emit(s.out0(), element.first());
+              ctx.emit(s.out1(), element.second());
               return sameState();
             }
           };
@@ -76,30 +67,23 @@ public class FlexiRouteDocTest {
   //#flexiroute-unzip
   
   static//#flexiroute-completion
-  public class ImportantRoute<T> extends FlexiRoute<T, T> {
+  public class ImportantRoute<T> extends FlexiRoute<T, FanOutShape3<T, T, T, T>> {
 
-    public final OutputPort<T, T> important = createOutputPort();
-    public final OutputPort<T, T> additional1 = createOutputPort();
-    public final OutputPort<T, T> additional2 = createOutputPort();
+    public ImportantRoute() {
+      super(new FanOutShape3<T, T, T, T>("ImportantRoute"), OperationAttributes.name("ImportantRoute"));
+    }
 
     @Override
-    public RouteLogic<T, T> createRouteLogic() {
-      return new RouteLogic<T, T>() {
-        @Override
-        public List<OutputHandle> outputHandles(int outputCount) {
-          if (outputCount != 3)
-            throw new IllegalArgumentException(
-                "Unzip must have 3 connected outputs, was " + outputCount);
-          return Arrays.asList(additional1.handle(), additional2.handle());
-        }
-        
+    public RouteLogic<T> createRouteLogic(FanOutShape3<T, T, T, T> s) {
+      return new RouteLogic<T>() {
+
         @Override
         public CompletionHandling<T> initialCompletionHandling() {
           return new CompletionHandling<T>() {
             @Override
             public State<T, T> onDownstreamFinish(RouteLogicContextBase<T> ctx,
-                OutputHandle output) {
-              if (output == important) {
+                OutPort output) {
+              if (output == s.out0()) {
                 // finish all downstreams, and cancel the upstream
                 ctx.finish();
                 return sameState();
@@ -121,9 +105,9 @@ public class FlexiRouteDocTest {
 
         @Override
         public State<T, T> initialState() {
-          return new State<T, T>(demandFromAny(important, additional1, additional2)) {
+          return new State<T, T>(demandFromAny(s.out0(), s.out1(), s.out2())) {
             @Override
-            public State<T, T> onInput(RouteLogicContext<T, T> ctx, OutputHandle preferred, T element) {
+            public State<T, T> onInput(RouteLogicContext<T> ctx, Outlet<T> preferred, T element) {
               ctx.emit(preferred, element);
               return sameState();
             }
