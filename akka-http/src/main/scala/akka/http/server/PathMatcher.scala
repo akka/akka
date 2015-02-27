@@ -48,8 +48,25 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
   def tflatMap[R: Tuple](f: L ⇒ Option[R]): PathMatcher[R] = transform(_.flatMap(f))
 
   /**
-   * Turns this ``PathMatcher`` into one that always matches, consumes zero or more times (with the given separator)
+   * Same as ``repeat(min = count, max = count)``.
+   */
+  def repeat(count: Int)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
+    repeat(min = count, max = count)
+
+  /**
+   * Same as ``repeat(min = count, max = count, separator = separator)``.
+   */
+  def repeat(count: Int, separator: PathMatcher0)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
+    repeat(min = count, max = count, separator = separator)
+
+  /**
+   * Turns this ``PathMatcher`` into one that matches a number of times (with the given separator)
    * and potentially extracts a ``List`` of the underlying matcher's extractions.
+   * If less than ``min`` applications of the underlying matcher have succeeded the produced matcher fails,
+   * otherwise it matches up to the given ``max`` number of applications.
+   * Note that it won't fail even if more than ``max`` applications could succeed!
+   * The "surplus" path elements will simply be left unmatched.
+   *
    * The result type depends on the type of the underlying matcher:
    *
    * <table>
@@ -59,22 +76,24 @@ abstract class PathMatcher[L](implicit val ev: Tuple[L]) extends (Path ⇒ PathM
    * <tr><td>``PathMatcher[L :Tuple]``</td><td>``PathMatcher[List[L]]``</td></tr>
    * </table>
    */
-  def repeat(maxIterations: Int, separator: PathMatcher0 = PathMatchers.Neutral)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
+  def repeat(min: Int, max: Int, separator: PathMatcher0 = PathMatchers.Neutral)(implicit lift: PathMatcher.Lift[L, List]): PathMatcher[lift.Out] =
     new PathMatcher[lift.Out]()(lift.OutIsTuple) {
-      def apply(path: Path) = rec(path, maxIterations)
-      def rec(path: Path, iterationsLeft: Int): Matching[lift.Out] = {
-        def done = Matched(path, lift())
-        if (iterationsLeft > 0) {
+      require(min >= 0, "`min` must be >= 0")
+      require(max >= min, "`max` must be >= `min`")
+      def apply(path: Path) = rec(path, 1)
+      def rec(path: Path, count: Int): Matching[lift.Out] = {
+        def done = if (count >= min) Matched(path, lift()) else Unmatched
+        if (count <= max) {
           self(path) match {
             case Matched(remaining, extractions) ⇒
-              def result1 = Matched(remaining, lift(extractions))
+              def done1 = if (count >= min) Matched(remaining, lift(extractions)) else Unmatched
               separator(remaining) match {
-                case Matched(remaining2, _) ⇒ rec(remaining2, iterationsLeft - 1) match {
-                  case Matched(`remaining2`, _) ⇒ result1 // we made no progress, so "go back" to before the separator
+                case Matched(remaining2, _) ⇒ rec(remaining2, count + 1) match {
+                  case Matched(`remaining2`, _) ⇒ done1 // we made no progress, so "go back" to before the separator
                   case Matched(rest, result)    ⇒ Matched(rest, lift(extractions, result))
-                  case Unmatched                ⇒ throw new IllegalStateException
+                  case Unmatched                ⇒ Unmatched
                 }
-                case Unmatched ⇒ result1
+                case Unmatched ⇒ done1
               }
             case Unmatched ⇒ done
           }
@@ -429,14 +448,21 @@ trait PathMatchers {
    * This can also be no segments resulting in the empty list.
    * If the path has a trailing slash this slash will *not* be matched.
    */
-  val Segments: PathMatcher1[List[String]] = Segments(128)
+  val Segments: PathMatcher1[List[String]] = Segments(min = 0, max = 128)
 
   /**
-   * A PathMatcher that matches up to the configured number of remaining segments as a List[String].
-   * This can also be no segments resulting in the empty list.
+   * A PathMatcher that matches the given number of path segments (separated by slashes) as a List[String].
+   * If there are more than ``count`` segments present the remaining ones will be left unmatched.
    * If the path has a trailing slash this slash will *not* be matched.
    */
-  def Segments(maxSegments: Int): PathMatcher1[List[String]] = Segment.repeat(maxIterations = maxSegments, separator = Slash)
+  def Segments(count: Int): PathMatcher1[List[String]] = Segment.repeat(count, separator = Slash)
+
+  /**
+   * A PathMatcher that matches between ``min`` and ``max`` (both inclusively) path segments (separated by slashes)
+   * as a List[String]. If there are more than ``count`` segments present the remaining ones will be left unmatched.
+   * If the path has a trailing slash this slash will *not* be matched.
+   */
+  def Segments(min: Int, max: Int): PathMatcher1[List[String]] = Segment.repeat(min, max, separator = Slash)
 
   /**
    * A PathMatcher that never matches anything.
