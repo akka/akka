@@ -137,5 +137,20 @@ class FlowMapAsyncSpec extends AkkaSpec {
       c.expectComplete()
     }
 
+    "should handle cancel properly" in {
+      val pub = StreamTestKit.PublisherProbe[Int]()
+      val sub = StreamTestKit.SubscriberProbe[Int]()
+
+      Source(pub).mapAsync(Future.successful).runWith(Sink(sub))
+
+      val upstream = pub.expectSubscription()
+      upstream.expectRequest()
+
+      sub.expectSubscription().cancel()
+
+      upstream.expectCancellation()
+
+    }
+
   }
 }

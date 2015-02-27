@@ -133,5 +133,20 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       c.probe.receiveN(5).toSet should be(expected)
     }
 
+    "should handle cancel properly" in {
+      val pub = StreamTestKit.PublisherProbe[Int]()
+      val sub = StreamTestKit.SubscriberProbe[Int]()
+
+      Source(pub).mapAsyncUnordered(Future.successful).runWith(Sink(sub))
+
+      val upstream = pub.expectSubscription()
+      upstream.expectRequest()
+
+      sub.expectSubscription().cancel()
+
+      upstream.expectCancellation()
+
+    }
+
   }
 }
