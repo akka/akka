@@ -47,23 +47,27 @@ public class FlowGraphDocTest {
     //#simple-flow-graph
     final Source<Integer, BoxedUnit> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
     final Sink<List<String>, Future<List<String>>> sink = Sink.head();
-    final Flow<Integer, Integer, BoxedUnit> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
-    final Flow<Integer, Integer, BoxedUnit> f2 = Flow.of(Integer.class).map(elem -> elem + 20);;
-    final Flow<Integer, String, BoxedUnit> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
-    final Flow<Integer, Integer, BoxedUnit> f4 = Flow.of(Integer.class).map(elem -> elem + 30);;
+    final Flow<Integer, Integer, BoxedUnit> f1 =
+        Flow.of(Integer.class).map(elem -> elem + 10);
+    final Flow<Integer, Integer, BoxedUnit> f2 =
+        Flow.of(Integer.class).map(elem -> elem + 20);
+    final Flow<Integer, String, BoxedUnit> f3 =
+        Flow.of(Integer.class).map(elem -> elem.toString());
+    final Flow<Integer, Integer, BoxedUnit> f4 =
+        Flow.of(Integer.class).map(elem -> elem + 30);
 
     final RunnableFlow<Future<List<String>>> result = FlowGraph.factory()
         .closed(
             sink,
-            (b, out) -> {
+            (builder, out) -> {
               final UniformFanOutShape<Integer, Integer> bcast =
-                  b.graph(Broadcast.create(2));
+                  builder.graph(Broadcast.create(2));
               final UniformFanInShape<Integer, Integer> merge =
-                  b.graph(Merge.create(2));
+                  builder.graph(Merge.create(2));
 
-              b.from(in).via(f1).via(bcast).via(f2).via(merge)
+              builder.from(in).via(f1).via(bcast).via(f2).via(merge)
                   .via(f3.grouped(1000)).to(out);
-              b.from(bcast).via(f4).to(merge);
+              builder.from(bcast).via(f4).to(merge);
             });
     //#simple-flow-graph
     final List<String> list = Await.result(result.run(mat), Duration.create(3, TimeUnit.SECONDS));
@@ -97,12 +101,13 @@ public class FlowGraphDocTest {
     //#flow-graph-reusing-a-flow
     final Sink<Integer, Future<Integer>> topHeadSink = Sink.head();
     final Sink<Integer, Future<Integer>> bottomHeadSink = Sink.head();
-    final Flow<Integer, Integer, BoxedUnit> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
+    final Flow<Integer, Integer, BoxedUnit> sharedDoubler =
+        Flow.of(Integer.class).map(elem -> elem * 2);
 
     final RunnableFlow<Pair<Future<Integer>, Future<Integer>>> g = FlowGraph
         .factory().closed(
-            topHeadSink,
-            bottomHeadSink,
+            topHeadSink,    // import this sink into the graph
+            bottomHeadSink, // and this as well
             Keep.both(),
             (b, top, bottom) -> {
               final UniformFanOutShape<Integer, Integer> bcast = b

@@ -52,6 +52,7 @@ public class StreamPartialFlowGraphDocTest {
           final FanInShape2<Integer, Integer, Integer> zip2 = builder.graph(zip);
           
           builder.edge(zip1.out(), zip2.in0());
+          // return the shape, which has three inputs and one output
           return new UniformFanInShape<Integer, Integer>(zip2.out(), 
               new Inlet[] {zip1.in0(), zip1.in1(), zip2.in1()});
         });
@@ -74,18 +75,19 @@ public class StreamPartialFlowGraphDocTest {
     assertEquals(Integer.valueOf(3), Await.result(max, Duration.create(3, TimeUnit.SECONDS)));
   }
 
-  //#source-from-partial-flow-graph
-  class Ints implements Iterator<Integer> {
-    private int next = 0;
-    @Override
-    public boolean hasNext() {
-      return true;
+    //#source-from-partial-flow-graph
+    // first create an indefinite source of integer numbers
+    class Ints implements Iterator<Integer> {
+      private int next = 0;
+      @Override
+      public boolean hasNext() {
+        return true;
+      }
+      @Override
+      public Integer next() {
+        return next++;
+      }
     }
-    @Override
-    public Integer next() {
-      return next++;
-    }
-  }
   //#source-from-partial-flow-graph
   
   @Test
@@ -114,13 +116,13 @@ public class StreamPartialFlowGraphDocTest {
   public void demonstrateBuildFlowFromPartialFlowGraph() throws Exception {
     //#flow-from-partial-flow-graph
     final Flow<Integer, Pair<Integer, String>, BoxedUnit> pairs = Flow.factory().create(
-        builder -> {
-          final UniformFanOutShape<Integer, Integer> bcast = builder.graph(Broadcast.create(2));
+        b -> {
+          final UniformFanOutShape<Integer, Integer> bcast = b.graph(Broadcast.create(2));
           final FanInShape2<Integer, String, Pair<Integer, String>> zip =
-              builder.graph(Zip.create());
+              b.graph(Zip.create());
 
-          builder.from(bcast).to(zip.in0());
-          builder.from(bcast).via(Flow.of(Integer.class).map(i -> i.toString())).to(zip.in1());
+          b.from(bcast).to(zip.in0());
+          b.from(bcast).via(Flow.of(Integer.class).map(i -> i.toString())).to(zip.in1());
           
           return new Pair<>(bcast.in(), zip.out());
         });
