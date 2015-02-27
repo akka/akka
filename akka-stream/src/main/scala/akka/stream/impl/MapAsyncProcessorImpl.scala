@@ -129,7 +129,7 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
   object RunningPhaseCondition extends TransferState {
     def isReady = (primaryInputs.inputsAvailable && primaryOutputs.demandCount - gap > 0) ||
       (primaryInputs.inputsDepleted && gap == 0)
-    def isCompleted = false
+    def isCompleted = primaryOutputs.isClosed
   }
 
   val running: TransferPhase = TransferPhase(RunningPhaseCondition) { () ⇒
