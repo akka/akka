@@ -260,7 +260,7 @@ public class SourceTest extends StreamTest {
         return input1.iterator();
       }
     };
-    Source.from(input).runForeach(new Procedure<Integer>() {
+    Source.fromIterator(input).runForeach(new Procedure<Integer>() {
       public void apply(Integer elem) {
         probe.getRef().tell(elem, ActorRef.noSender());
       }
