@@ -3,11 +3,9 @@
  */
 package docs.stream;
 
-import java.util.Arrays;
-import java.util.List;
-
 import akka.stream.*;
 import akka.stream.javadsl.OperationAttributes;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -104,11 +102,12 @@ public class FlexiRouteDocTest {
         }
 
         @Override
-        public State<T, T> initialState() {
-          return new State<T, T>(demandFromAny(s.out0(), s.out1(), s.out2())) {
+        public State<OutPort, T> initialState() {
+          return new State<OutPort, T>(demandFromAny(s.out0(), s.out1(), s.out2())) {
+            @SuppressWarnings("unchecked")
             @Override
-            public State<T, T> onInput(RouteLogicContext<T> ctx, Outlet<T> preferred, T element) {
-              ctx.emit(preferred, element);
+            public State<T, T> onInput(RouteLogicContext<T> ctx, OutPort preferred, T element) {
+              ctx.emit((Outlet<T>) preferred, element);
               return sameState();
             }
           };
