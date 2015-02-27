@@ -178,7 +178,7 @@ class FlexiDocSpec extends AkkaSpec {
 
   "flexi preferring merge" in {
     import FanInShape._
-    //#flexi-preferring-merge
+    //#flexi-preferring-merge-ports
     class PreferringMergeShape[A](_init: Init[A] = Name("PreferringMerge"))
       extends FanInShape[A](_init) {
       val preferred = newInlet[A]("preferred")
@@ -186,6 +186,10 @@ class FlexiDocSpec extends AkkaSpec {
       val secondary2 = newInlet[A]("secondary2")
       protected override def construct(i: Init[A]) = new PreferringMergeShape(i)
     }
+    //#flexi-preferring-merge-ports
+
+    //#flexi-preferring-merge
+
     class PreferringMerge extends FlexiMerge[Int, PreferringMergeShape[Int]](
       new PreferringMergeShape, OperationAttributes.name("ImportantWithBackups")) {
       import akka.stream.scaladsl.FlexiMerge._
