@@ -204,7 +204,7 @@ to somehow express how these values should be composed to a final value when we 
 many combinator methods have variants that take an additional argument, a function, that will be used to combine the
 resulting values. Some examples of using these combiners are illustrated in the example below.
 
-.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocSpec.scala#flow-mat-combine
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/FlowDocTest.java#flow-mat-combine
 
 
 Stream ordering
