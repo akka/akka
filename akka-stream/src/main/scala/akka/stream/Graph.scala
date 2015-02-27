@@ -4,12 +4,13 @@
 package akka.stream
 
 import akka.stream.impl.StreamLayout
+import scala.annotation.unchecked.uncheckedVariance
 
 trait Graph[+S <: Shape, +M] {
   /**
    * Type-level accessor for the shape parameter of this graph.
    */
-  type Shape = S
+  type Shape = S @uncheckedVariance
   /**
    * The shape of a graph is all that is externally visible: its inlets and outlets.
    */
