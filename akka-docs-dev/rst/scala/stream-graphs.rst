@@ -90,6 +90,7 @@ materialized as two connections between the corresponding Sources and Sinks:
 
 Constructing and combining Partial Flow Graphs
 ----------------------------------------------
+
 Sometimes it is not possible (or needed) to construct the entire computation graph in one place, but instead construct
 all of its different phases in different places and in the end connect them all into a complete graph and run it.
 
@@ -116,7 +117,7 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 .. warning::
 
    Please note that a :class:`FlowGraph` is not able to provide compile time type-safety about whether or not all
-   elements have been properly connected - this validation is performed as a runtime check during the graph's instantiation.
+   elements have been properly connected—this validation is performed as a runtime check during the graph's instantiation.
 
    A partial flow graph also verifies that all ports are either connected or part of the returned :class:`Shape`.
 
@@ -124,6 +125,7 @@ the undefined elements are rewired to real sources and sinks. The graph can then
 
 Constructing Sources, Sinks and Flows from Partial Graphs
 ---------------------------------------------------------
+
 Instead of treating a partial flow graph as simply a collection of flows and junctions which may not yet all be
 connected it is sometimes useful to expose such a complex graph as a simpler structure,
 such as a :class:`Source`, :class:`Sink` or :class:`Flow`.
