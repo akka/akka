@@ -40,7 +40,7 @@ object AkkaBuild extends Build {
 
   val requestedScalaVersion = System.getProperty("akka.scalaVersion", "2.10.4")
   val Seq(scalaEpoch, scalaMajor) = """(\d+)\.(\d+)\..*""".r.unapplySeq(requestedScalaVersion).get.map(_.toInt)
-  val streamAndHttpVersion = "1.0-SNAPSHOT"
+  val streamAndHttpVersion = "1.0-M4"
 
   lazy val buildSettings = Seq(
     organization := "com.typesafe.akka",
