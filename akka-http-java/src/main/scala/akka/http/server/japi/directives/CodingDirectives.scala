@@ -6,10 +6,10 @@ package akka.http.server.japi.directives
 
 import akka.http.server.japi.impl.RouteStructure
 import akka.http.server.japi.{ Coder, Directive, Directives, Route }
-
 import scala.annotation.varargs
+import akka.http.server.directives.CacheConditionDirectives
 
-trait CodingDirectives {
+abstract class CodingDirectives extends CacheConditionDirectives {
   /**
    * Wraps the inner routes with encoding support. The response will be encoded
    * using one of the predefined coders, `Gzip`, `Deflate`, or `NoCoding` depending on

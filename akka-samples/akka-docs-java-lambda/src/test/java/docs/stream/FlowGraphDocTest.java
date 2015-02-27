@@ -3,32 +3,25 @@
  */
 package docs.stream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
-
+import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.javadsl.Broadcast;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.FlowGraph;
-import akka.stream.javadsl.KeyedSink;
-import akka.stream.javadsl.MaterializedMap;
-import akka.stream.javadsl.Merge;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.javadsl.Zip;
-import akka.stream.javadsl.Zip2With;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.stream.javadsl.FlowGraph.Builder;
 import akka.testkit.JavaTestKit;
 
 public class FlowGraphDocTest {
@@ -50,26 +43,37 @@ public class FlowGraphDocTest {
   final FlowMaterializer mat = ActorFlowMaterializer.create(system);
   
   @Test
-  public void demonstrateBuildSimpleGraph() {
+  public void demonstrateBuildSimpleGraph() throws Exception {
     //#simple-flow-graph
-    final Source<Integer> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
-    final Sink<String> out = Sink.ignore();
-    final Broadcast<Integer> bcast = Broadcast.create();
-    final Merge<Integer> merge = Merge.create();
-    final Flow<Integer, Integer> f1 = Flow.of(Integer.class).map(elem -> elem + 10);
-    final Flow<Integer, Integer> f2 = Flow.of(Integer.class).map(elem -> elem + 20);;
-    final Flow<Integer, String> f3 = Flow.of(Integer.class).map(elem -> elem.toString());
-    final Flow<Integer, Integer> f4 = Flow.of(Integer.class).map(elem -> elem + 30);;
-        
-    final FlowGraph g = FlowGraph.builder()
-      .addEdge(in, f1, bcast)
-      .addEdge(bcast, f2, merge)
-      .addEdge(merge, f3, out)
-      .addEdge(bcast, f4, merge)
-      .build();
+    final Source<Integer, BoxedUnit> in = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    final Sink<List<String>, Future<List<String>>> sink = Sink.head();
+    final Flow<Integer, Integer, BoxedUnit> f1 =
+        Flow.of(Integer.class).map(elem -> elem + 10);
+    final Flow<Integer, Integer, BoxedUnit> f2 =
+        Flow.of(Integer.class).map(elem -> elem + 20);
+    final Flow<Integer, String, BoxedUnit> f3 =
+        Flow.of(Integer.class).map(elem -> elem.toString());
+    final Flow<Integer, Integer, BoxedUnit> f4 =
+        Flow.of(Integer.class).map(elem -> elem + 30);
+
+    final RunnableFlow<Future<List<String>>> result = FlowGraph.factory()
+        .closed(
+            sink,
+            (builder, out) -> {
+              final UniformFanOutShape<Integer, Integer> bcast =
+                  builder.graph(Broadcast.create(2));
+              final UniformFanInShape<Integer, Integer> merge =
+                  builder.graph(Merge.create(2));
+
+              builder.from(in).via(f1).via(bcast).via(f2).via(merge)
+                  .via(f3.grouped(1000)).to(out);
+              builder.from(bcast).via(f4).to(merge);
+            });
     //#simple-flow-graph
-    
-    g.run(mat);
+    final List<String> list = Await.result(result.run(mat), Duration.create(3, TimeUnit.SECONDS));
+    final String[] res = list.toArray(new String[] {});
+    Arrays.sort(res, null);
+    assertArrayEquals(new String[] {"31", "32", "33", "34", "35", "41", "42", "43", "44", "45"}, res);
   }
   
   @Test
@@ -77,43 +81,45 @@ public class FlowGraphDocTest {
   public void demonstrateConnectErrors() {
     try {
       //#simple-graph
-      final Source<Integer> source1 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
-      final Source<Integer> source2 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
-      final Zip2With<Integer, Integer, Pair<Integer, Integer>> zip = Zip.create();
-      final FlowGraph g = FlowGraph.builder()
-        .addEdge(source1, zip.left())
-        .addEdge(source2, zip.right())
-        .build();
-        // unconnected zip.out (!) => "must have at least 1 outgoing edge"
-      
+      final Builder b = FlowGraph.builder();
+      final Source<Integer, BoxedUnit> source1 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+      final Source<Integer, BoxedUnit> source2 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+      final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip = b.graph(Zip.create());
+      b.edge(b.source(source1), zip.in0());
+      b.edge(b.source(source2), zip.in1());
+      b.run(mat);
+      // unconnected zip.out (!) => "must have at least 1 outgoing edge"
       //#simple-graph
       fail("expected IllegalArgumentException");
     } catch (IllegalArgumentException e) {
-      assertTrue(e.getMessage().contains("must have at least 1 outgoing edge"));  
+      assertTrue(e.getMessage().contains("unconnected"));  
     }
   }
   
   @Test
   public void demonstrateReusingFlowInGraph() throws Exception {
     //#flow-graph-reusing-a-flow
+    final Sink<Integer, Future<Integer>> topHeadSink = Sink.head();
+    final Sink<Integer, Future<Integer>> bottomHeadSink = Sink.head();
+    final Flow<Integer, Integer, BoxedUnit> sharedDoubler =
+        Flow.of(Integer.class).map(elem -> elem * 2);
 
-    final KeyedSink<Integer, Future<Integer>> topHeadSink = Sink.<Integer>head();
-    final KeyedSink<Integer, Future<Integer>> bottomHeadSink = Sink.<Integer>head();
-    final Flow<Integer, Integer> sharedDoubler = Flow.of(Integer.class).map(elem -> elem * 2);
-
-    final Broadcast<Integer> broadcast = Broadcast.create();
+    final RunnableFlow<Pair<Future<Integer>, Future<Integer>>> g = FlowGraph
+        .factory().closed(
+            topHeadSink,    // import this sink into the graph
+            bottomHeadSink, // and this as well
+            Keep.both(),
+            (b, top, bottom) -> {
+              final UniformFanOutShape<Integer, Integer> bcast = b
+                  .graph(Broadcast.create(2));
+              
+              b.from(Source.single(1)).via(bcast).via(sharedDoubler).to(top);
+                                    b.from(bcast).via(sharedDoubler).to(bottom);
+            });
     //#flow-graph-reusing-a-flow
-    final FlowGraph g =
-    //#flow-graph-reusing-a-flow
-    FlowGraph.builder()
-      .addEdge(Source.single(1), broadcast)
-      .addEdge(broadcast, sharedDoubler, topHeadSink)
-      .addEdge(broadcast, sharedDoubler, bottomHeadSink)
-      .build();
-    //#flow-graph-reusing-a-flow
-    final MaterializedMap map = g.run(mat);
-    assertEquals(Integer.valueOf(2), Await.result(map.get(topHeadSink), Duration.create(3, TimeUnit.SECONDS)));
-    assertEquals(Integer.valueOf(2), Await.result(map.get(bottomHeadSink), Duration.create(3, TimeUnit.SECONDS)));
+    final Pair<Future<Integer>, Future<Integer>> pair = g.run(mat);
+    assertEquals(Integer.valueOf(2), Await.result(pair.first(), Duration.create(3, TimeUnit.SECONDS)));
+    assertEquals(Integer.valueOf(2), Await.result(pair.second(), Duration.create(3, TimeUnit.SECONDS)));
   }
   
 }

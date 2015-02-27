@@ -73,7 +73,7 @@ object FileAndResourceRoute {
     }
 }
 
-trait FileAndResourceDirectives {
+abstract class FileAndResourceDirectives extends CodingDirectives {
   /**
    * Completes GET requests with the content of the given resource loaded from the default ClassLoader.
    * If the resource cannot be found or read the Route rejects the request.

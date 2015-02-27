@@ -18,20 +18,9 @@ import scala.concurrent.Future;
 import scala.concurrent.duration.FiniteDuration;
 
 import akka.actor.ActorSystem;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.KeyedSink;
-import akka.stream.javadsl.RunnableFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.stage.Context;
-import akka.stream.stage.Directive;
-import akka.stream.stage.PushPullStage;
-import akka.stream.stage.PushStage;
-import akka.stream.stage.StageState;
-import akka.stream.stage.StatefulStage;
-import akka.stream.stage.TerminationDirective;
+import akka.stream.*;
+import akka.stream.javadsl.*;
+import akka.stream.stage.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowStagesDocTest {
@@ -159,20 +148,21 @@ public class FlowStagesDocTest {
 
   @Test
   public void demonstrateVariousPushPullStages() throws Exception {
-    final KeyedSink<List<Integer>, Future<List<Integer>>> keyedSink = 
-        Sink.<List<Integer>>head();
-    final Sink<Integer> sink = Flow.of(Integer.class).grouped(10).to(keyedSink);
+    final Sink<Integer, Future<List<Integer>>> sink = 
+        Flow.of(Integer.class).grouped(10).to(Sink.head(), Keep.right());
 
     //#stage-chain
-    final RunnableFlow runnable = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-      .transform(() -> new Filter<Integer>(elem -> elem % 2 == 0))
-      .transform(() -> new Duplicator<Integer>())
-      .transform(() -> new Map<Integer, Integer>(elem -> elem / 2))
-      .to(sink);
+    final RunnableFlow<Future<List<Integer>>> runnable =
+      Source
+        .from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+        .transform(() -> new Filter<Integer>(elem -> elem % 2 == 0))
+        .transform(() -> new Duplicator<Integer>())
+        .transform(() -> new Map<Integer, Integer>(elem -> elem / 2))
+        .to(sink, Keep.right());
     //#stage-chain
 
     assertEquals(Arrays.asList(1, 1, 2, 2, 3, 3, 4, 4, 5, 5), 
-        Await.result(runnable.run(mat).get(keyedSink), FiniteDuration.create(3, TimeUnit.SECONDS)));
+        Await.result(runnable.run(mat), FiniteDuration.create(3, TimeUnit.SECONDS)));
   }
   
 }

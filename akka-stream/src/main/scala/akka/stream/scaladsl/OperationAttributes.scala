@@ -3,7 +3,6 @@
  */
 package akka.stream.scaladsl
 
-import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.impl.Stages.StageModule
 import akka.stream.Supervision
 
@@ -11,7 +10,7 @@ import akka.stream.Supervision
  * Holds attributes which can be used to alter [[Flow]] or [[FlowGraph]]
  * materialization.
  */
-final case class OperationAttributes private (private val attributes: List[OperationAttributes.Attribute] = Nil) {
+final case class OperationAttributes private (attributes: List[OperationAttributes.Attribute] = Nil) {
 
   import OperationAttributes._
 
@@ -33,14 +32,6 @@ final case class OperationAttributes private (private val attributes: List[Opera
     case _          ⇒ "unknown-operation"
   }
 
-  private[akka] def settings: ActorFlowMaterializerSettings ⇒ ActorFlowMaterializerSettings =
-    attributes.collect {
-      case InputBuffer(initial, max) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withInputBuffer(initial, max)
-      case Dispatcher(dispatcher) ⇒ (s: ActorFlowMaterializerSettings) ⇒ s.withDispatcher(dispatcher)
-      case SupervisionStrategy(decider) ⇒ (s: ActorFlowMaterializerSettings) ⇒
-        s.withSupervisionStrategy(decider)
-    }.reduceOption(_ andThen _).getOrElse(identity) // FIXME is this the optimal way of encoding this?
-
   private[akka] def transform(node: StageModule): StageModule =
     if ((this eq OperationAttributes.none) || (this eq node.attributes)) node
     else node.withAttributes(attributes = this and node.attributes)
@@ -60,11 +51,11 @@ final case class OperationAttributes private (private val attributes: List[Opera
 
 object OperationAttributes {
 
-  private[OperationAttributes] trait Attribute
-  private[OperationAttributes] final case class Name(n: String) extends Attribute
-  private[OperationAttributes] final case class InputBuffer(initial: Int, max: Int) extends Attribute
-  private[OperationAttributes] final case class Dispatcher(dispatcher: String) extends Attribute
-  private[OperationAttributes] final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
+  sealed trait Attribute
+  final case class Name(n: String) extends Attribute
+  final case class InputBuffer(initial: Int, max: Int) extends Attribute
+  final case class Dispatcher(dispatcher: String) extends Attribute
+  final case class SupervisionStrategy(decider: Supervision.Decider) extends Attribute
 
   private[OperationAttributes] def apply(attribute: Attribute): OperationAttributes =
     apply(List(attribute))

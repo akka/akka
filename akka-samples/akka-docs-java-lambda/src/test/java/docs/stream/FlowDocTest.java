@@ -4,30 +4,26 @@
 package docs.stream;
 
 import static org.junit.Assert.assertEquals;
+
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import scala.concurrent.Await;
 import scala.concurrent.Future;
 import scala.concurrent.duration.Duration;
 import scala.concurrent.duration.FiniteDuration;
-
+import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
 import akka.actor.Cancellable;
 import akka.dispatch.Futures;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.FlowMaterializer;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.KeyedSink;
-import akka.stream.javadsl.KeyedSource;
-import akka.stream.javadsl.MaterializedMap;
-import akka.stream.javadsl.RunnableFlow;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
 public class FlowDocTest {
@@ -50,14 +46,14 @@ public class FlowDocTest {
     @Test
     public void sourceIsImmutable() throws Exception {
         //#source-immutable
-        final Source<Integer> source = 
+        final Source<Integer, BoxedUnit> source = 
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         source.map(x -> 0); // has no effect on source, since it's immutable
         source.runWith(Sink.fold(0, (agg, next) -> agg + next), mat); // 55
 
         // returns new Source<Integer>, with `map()` appended
-        final Source<Integer> zeroes = source.map(x -> 0); 
-        final KeyedSink<Integer, Future<Integer>> fold = 
+        final Source<Integer, BoxedUnit> zeroes = source.map(x -> 0); 
+        final Sink<Integer, Future<Integer>> fold = 
             Sink.fold(0, (agg, next) -> agg + next);
         zeroes.runWith(fold, mat); // 0
         //#source-immutable
@@ -72,20 +68,18 @@ public class FlowDocTest {
     @Test
     public void materializationInSteps() throws Exception {
         //#materialization-in-steps
-        final Source<Integer> source = 
+        final Source<Integer, BoxedUnit> source = 
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
         // note that the Future is scala.concurrent.Future
-        final KeyedSink<Integer, Future<Integer>> sink = 
+        final Sink<Integer, Future<Integer>> sink = 
             Sink.fold(0, (aggr, next) -> aggr + next);
 
         // connect the Source to the Sink, obtaining a RunnableFlow
-        final RunnableFlow runnable = source.to(sink);
+        final RunnableFlow<Future<Integer>> runnable =
+            source.to(sink, Keep.right());
 
         // materialize the flow
-        final MaterializedMap materialized = runnable.run(mat);
-
-        // get the materialized value of the FoldSink
-        final Future<Integer> sum = materialized.get(sink);
+        final Future<Integer> sum = runnable.run(mat);
         //#materialization-in-steps
 
         int result = Await.result(sum, Duration.create(3, TimeUnit.SECONDS));
@@ -95,9 +89,9 @@ public class FlowDocTest {
     @Test
     public void materializationRunWith() throws Exception {
         //#materialization-runWith
-        final Source<Integer> source = 
+        final Source<Integer, BoxedUnit> source = 
             Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
-        final KeyedSink<Integer, Future<Integer>> sink = 
+        final Sink<Integer, Future<Integer>> sink = 
             Sink.fold(0, (aggr, next) -> aggr + next);
 
         // materialize the flow, getting the Sinks materialized value
@@ -112,14 +106,14 @@ public class FlowDocTest {
     public void materializedMapUnique() throws Exception {
         //#stream-reuse
         // connect the Source to the Sink, obtaining a RunnableFlow
-        final KeyedSink<Integer, Future<Integer>> sink = 
+        final Sink<Integer, Future<Integer>> sink = 
           Sink.fold(0, (aggr, next) -> aggr + next);
-        final RunnableFlow runnable = 
-            Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).to(sink);
+        final RunnableFlow<Future<Integer>> runnable = 
+            Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).to(sink, Keep.right());
 
         // get the materialized value of the FoldSink
-        final Future<Integer> sum1 = runnable.run(mat).get(sink);
-        final Future<Integer> sum2 = runnable.run(mat).get(sink);
+        final Future<Integer> sum1 = runnable.run(mat);
+        final Future<Integer> sum2 = runnable.run(mat);
 
         // sum1 and sum2 are different Futures!
         //#stream-reuse
@@ -138,20 +132,19 @@ public class FlowDocTest {
 
         final FiniteDuration oneSecond = Duration.create(1, TimeUnit.SECONDS);
         //akka.actor.Cancellable
-        final KeyedSource<Object, Cancellable> timer =
+        final Source<Object, Cancellable> timer =
             Source.from(oneSecond, oneSecond, tick);
 
         Sink.ignore().runWith(timer, mat);
 
-        final Source<String> timerMap = timer.map(t -> "tick");
+        final Source<String, Cancellable> timerMap = timer.map(t -> "tick");
         // WRONG: returned type is not the timers Cancellable!
         // Cancellable timerCancellable = Sink.ignore().runWith(timerMap, mat);
         //#compound-source-is-not-keyed-runWith
 
         //#compound-source-is-not-keyed-run
         // retain the materialized map, in order to retrieve the timer's Cancellable
-        final MaterializedMap materialized = timer.to(Sink.ignore()).run(mat);
-        final Cancellable timerCancellable = materialized.get(timer);
+        final Cancellable timerCancellable = timer.to(Sink.ignore()).run(mat);
         timerCancellable.cancel();
         //#compound-source-is-not-keyed-run
     }
@@ -200,12 +193,12 @@ public class FlowDocTest {
         .to(Sink.foreach(System.out::println));
 
       // Starting from a Source
-      final Source<Integer> source = Source.from(Arrays.asList(1, 2, 3, 4))
+      final Source<Integer, BoxedUnit> source = Source.from(Arrays.asList(1, 2, 3, 4))
           .map(elem -> elem * 2);
       source.to(Sink.foreach(System.out::println));
 
       // Starting from a Sink
-      final Sink<Integer> sink = Flow.of(Integer.class)
+      final Sink<Integer, BoxedUnit> sink = Flow.of(Integer.class)
           .map(elem -> elem * 2).to(Sink.foreach(System.out::println));
       Source.from(Arrays.asList(1, 2, 3, 4)).to(sink);
       //#flow-connecting

@@ -10,7 +10,7 @@ import akka.http.server.japi.impl.RouteStructure
 
 import scala.annotation.varargs
 
-trait MethodDirectives {
+abstract class MethodDirectives extends FileAndResourceDirectives {
   /** Handles the inner routes if the incoming request is a GET request, rejects the request otherwise */
   @varargs
   def get(innerRoutes: Route*): Route = method(HttpMethods.GET, innerRoutes: _*)

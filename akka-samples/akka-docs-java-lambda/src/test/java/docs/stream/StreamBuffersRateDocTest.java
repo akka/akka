@@ -5,23 +5,17 @@ package docs.stream;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import scala.concurrent.duration.FiniteDuration;
 
+import scala.concurrent.duration.FiniteDuration;
+import scala.runtime.BoxedUnit;
 import akka.actor.ActorSystem;
-import akka.stream.ActorFlowMaterializer;
-import akka.stream.ActorFlowMaterializerSettings;
-import akka.stream.FlowMaterializer;
-import akka.stream.OverflowStrategy;
-import akka.stream.javadsl.Flow;
-import akka.stream.javadsl.FlowGraph;
-import akka.stream.javadsl.OperationAttributes;
-import akka.stream.javadsl.Sink;
-import akka.stream.javadsl.Source;
-import akka.stream.javadsl.Zip2With;
-import akka.stream.javadsl.ZipWith;
+import akka.actor.Cancellable;
+import akka.stream.*;
+import akka.stream.javadsl.*;
 import akka.testkit.JavaTestKit;
 
 public class StreamBuffersRateDocTest {
@@ -64,7 +58,7 @@ public class StreamBuffersRateDocTest {
     //#materializer-buffer
 
     //#section-buffer
-    final Flow<Integer, Integer> flow =
+    final Flow<Integer, Integer, BoxedUnit> flow =
       Flow.of(Integer.class)
         .section(OperationAttributes.inputBuffer(1, 1), sectionFlow -> 
           // the buffer size of this map is 1
@@ -77,32 +71,33 @@ public class StreamBuffersRateDocTest {
   @Test
   public void demonstrateBufferAbstractionLeak() {
     //#buffering-abstraction-leak
-    final Zip2With<String, Integer, Integer> zipper = 
-        ZipWith.create((tick, count) -> count);
     final FiniteDuration oneSecond = 
         FiniteDuration.create(1, TimeUnit.SECONDS);
-    final Source<String> msgSource = 
+    final Source<String, Cancellable> msgSource = 
         Source.from(oneSecond, oneSecond, "message!");
-    final Source<String> tickSource = 
+    final Source<String, Cancellable> tickSource = 
         Source.from(oneSecond.mul(3), oneSecond.mul(3), "tick");
-    final Flow<String, Integer> conflate =
+    final Flow<String, Integer, BoxedUnit> conflate =
         Flow.of(String.class).conflate(
             first -> 1, (count, elem) -> count + 1); 
-    
-    FlowGraph.builder()
-      .addEdge(msgSource, conflate, zipper.right())
-      .addEdge(tickSource, zipper.left())
-      .addEdge(zipper.out(), Sink.foreach(elem -> System.out.println(elem)))
-      .run(mat);
+
+    FlowGraph.factory().closed(b -> {
+      final FanInShape2<String, Integer, Integer> zipper = 
+          b.graph(ZipWith.create((String tick, Integer count) -> count));
+      
+      b.from(msgSource).via(conflate).to(zipper.in1());
+      b.from(tickSource).to(zipper.in0());
+      b.from(zipper.out()).to(Sink.foreach(elem -> System.out.println(elem)));
+    }).run(mat);
     //#buffering-abstraction-leak
   }
   
   @Test
   public void demonstrateExplicitBuffers() {
-    final Source<Job> inboundJobsConnector = Source.empty();
+    final Source<Job, BoxedUnit> inboundJobsConnector = Source.empty();
     //#explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
-    final Source<Job> jobs = inboundJobsConnector;
+    final Source<Job, BoxedUnit> jobs = inboundJobsConnector;
     jobs.buffer(1000, OverflowStrategy.backpressure());
     //#explicit-buffers-backpressure
 
