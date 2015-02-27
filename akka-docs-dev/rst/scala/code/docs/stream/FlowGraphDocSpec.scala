@@ -208,7 +208,7 @@ class FlowGraphDocSpec extends AkkaSpec {
     import FanInShape.Init
 
     class PriorityWorkerPoolShape2[In, Out](_init: Init[Out] = Name("PriorityWorkerPool"))
-        extends FanInShape[Out](_init) {
+      extends FanInShape[Out](_init) {
       protected override def construct(i: Init[Out]) = new PriorityWorkerPoolShape2(i)
 
       val jobsIn = newInlet[In]("jobsIn")
