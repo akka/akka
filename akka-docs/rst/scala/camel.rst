@@ -41,7 +41,7 @@ clients can immediately send messages to and receive responses from that
 actor. If the message exchange should go over HTTP (via Camel's `Jetty
 component`_), only the actor's endpointUri method must be changed.
 
-.. _Mina component: http://camel.apache.org/mina.html
+.. _Mina component: http://camel.apache.org/mina2.html
 .. _Jetty component: http://camel.apache.org/jetty.html
 
 .. includecode:: code/docs/camel/Introduction.scala#Consumer
