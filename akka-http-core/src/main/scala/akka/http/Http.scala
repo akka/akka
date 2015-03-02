@@ -13,11 +13,11 @@ import scala.concurrent.Future
 import akka.event.LoggingAdapter
 import akka.util.ByteString
 import akka.io.Inet
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.http.engine.client.{ HttpClient, ClientConnectionSettings }
 import akka.http.engine.server.{ HttpServer, ServerSettings }
-import akka.http.model.{ ErrorInfo, HttpResponse, HttpRequest }
+import akka.http.model.{ HttpResponse, HttpRequest }
 import akka.actor._
 
 class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.Extension {
@@ -29,7 +29,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
   def bind(interface: String, port: Int = 80, backlog: Int = 100,
            options: immutable.Traversable[Inet.SocketOption] = Nil,
            settings: Option[ServerSettings] = None,
-           log: LoggingAdapter = system.log)(implicit fm: ActorFlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] = {
+           log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Source[IncomingConnection, Future[ServerBinding]] = {
     val endpoint = new InetSocketAddress(interface, port)
     val effectiveSettings = ServerSettings(settings)
 
@@ -64,7 +64,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                interface: String, port: Int = 80, backlog: Int = 100,
                                options: immutable.Traversable[Inet.SocketOption] = Nil,
                                settings: Option[ServerSettings] = None,
-                               log: LoggingAdapter = system.log)(implicit fm: ActorFlowMaterializer): Future[ServerBinding] = {
+                               log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] = {
     bind(interface, port, backlog, options, settings, log).toMat(Sink.foreach { conn ⇒
       conn.flow.join(handler)
     })(Keep.left).run()
@@ -81,7 +81,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                           interface: String, port: Int = 80, backlog: Int = 100,
                                           options: immutable.Traversable[Inet.SocketOption] = Nil,
                                           settings: Option[ServerSettings] = None,
-                                          log: LoggingAdapter = system.log)(implicit fm: ActorFlowMaterializer): Future[ServerBinding] =
+                                          log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
     bindAndstartHandlingWith(Flow[HttpRequest].map(handler), interface, port, backlog, options, settings, log)
 
   /**
@@ -95,7 +95,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                     interface: String, port: Int = 80, backlog: Int = 100,
                                     options: immutable.Traversable[Inet.SocketOption] = Nil,
                                     settings: Option[ServerSettings] = None,
-                                    log: LoggingAdapter = system.log)(implicit fm: ActorFlowMaterializer): Future[ServerBinding] =
+                                    log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
     bindAndstartHandlingWith(Flow[HttpRequest].mapAsync(handler), interface, port, backlog, options, settings, log)
 
   /**
@@ -103,7 +103,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    */
   def serverFlowToTransport[Mat](serverFlow: Flow[HttpRequest, HttpResponse, Mat],
                                  settings: Option[ServerSettings] = None,
-                                 log: LoggingAdapter = system.log)(implicit mat: ActorFlowMaterializer): Flow[ByteString, ByteString, Mat] = {
+                                 log: LoggingAdapter = system.log)(implicit mat: FlowMaterializer): Flow[ByteString, ByteString, Mat] = {
     val effectiveSettings = ServerSettings(settings)
     val serverBlueprint: Graph[HttpServerPorts, Unit] = HttpServer.serverBlueprint(effectiveSettings, log)
 
@@ -198,23 +198,23 @@ object Http extends ExtensionId[HttpExt] with ExtensionIdProvider {
 
     /**
      * Handles the connection with the given flow, which is materialized exactly once
-     * and the respective [[MaterializedMap]] returned.
+     * and the respective materialization result returned.
      */
-    def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat])(implicit fm: ActorFlowMaterializer): Mat =
+    def handleWith[Mat](handler: Flow[HttpRequest, HttpResponse, Mat])(implicit fm: FlowMaterializer): Mat =
       flow.join(handler).mapMaterialized(_._2).run()
 
     /**
      * Handles the connection with the given handler function.
-     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     * Returns the materialization result of the underlying flow materialization.
      */
-    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: ActorFlowMaterializer): Unit =
+    def handleWithSyncHandler(handler: HttpRequest ⇒ HttpResponse)(implicit fm: FlowMaterializer): Unit =
       handleWith(Flow[HttpRequest].map(handler))
 
     /**
      * Handles the connection with the given handler function.
-     * Returns the [[MaterializedMap]] of the underlying flow materialization.
+     * Returns the materialization result of the underlying flow materialization.
      */
-    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: ActorFlowMaterializer): Unit =
+    def handleWithAsyncHandler(handler: HttpRequest ⇒ Future[HttpResponse])(implicit fm: FlowMaterializer): Unit =
       handleWith(Flow[HttpRequest].mapAsync(handler))
   }
 
