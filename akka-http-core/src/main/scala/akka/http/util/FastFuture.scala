@@ -26,8 +26,9 @@ class FastFuture[A](val future: Future[A]) extends AnyVal {
     transformWith(f, FastFuture.failed)
 
   def filter(pred: A ⇒ Boolean)(implicit executor: ExecutionContext): Future[A] =
-    flatMap {
-      r ⇒ if (pred(r)) future else throw new NoSuchElementException("Future.filter predicate is not satisfied")
+    flatMap { r ⇒
+      if (pred(r)) future
+      else throw new NoSuchElementException("Future.filter predicate is not satisfied") // FIXME: avoid stack trace generation
     }
 
   def foreach(f: A ⇒ Unit)(implicit ec: ExecutionContext): Unit = map(f)
