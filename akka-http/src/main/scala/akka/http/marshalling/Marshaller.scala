@@ -68,14 +68,14 @@ object Marshaller
 
   /**
    * Helper for creating a "super-marshaller" from a number of "sub-marshallers".
-   * Content-negotiation determines, which "sub-marshallers" eventually gets to do the job.
+   * Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
    */
   def oneOf[A, B](marshallers: Marshaller[A, B]*)(implicit ec: ExecutionContext): Marshaller[A, B] =
     Marshaller { a ⇒ FastFuture.sequence(marshallers.map(_(a))).fast.map(_.flatten.toList) }
 
   /**
    * Helper for creating a "super-marshaller" from a number of values and a function producing "sub-marshallers"
-   * from these values. Content-negotiation determines, which "sub-marshallers" eventually gets to do the job.
+   * from these values. Content-negotiation determines, which "sub-marshaller" eventually gets to do the job.
    */
   def oneOf[T, A, B](values: T*)(f: T ⇒ Marshaller[A, B])(implicit ec: ExecutionContext): Marshaller[A, B] =
     oneOf(values map f: _*)
