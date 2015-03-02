@@ -4,16 +4,15 @@
 
 package akka.http.engine.server
 
+import scala.collection.immutable
+import scala.util.control.NonFatal
+import akka.util.ByteString
+import akka.event.LoggingAdapter
+import akka.actor.{ ActorRef, Props }
+import akka.stream.stage.PushPullStage
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.scaladsl._
 import akka.stream._
-
-import scala.collection.immutable
-import scala.util.control.NonFatal
-import akka.actor.{ ActorRef, Props }
-import akka.util.ByteString
-import akka.event.LoggingAdapter
-import akka.stream.stage.PushPullStage
 import akka.http.engine.parsing.{ HttpHeaderParser, HttpRequestParser }
 import akka.http.engine.rendering.{ ResponseRenderingContext, HttpResponseRendererFactory }
 import akka.http.engine.parsing.ParserOutput._
@@ -50,7 +49,7 @@ private[http] object HttpServer {
   }
 
   def serverBlueprint(settings: ServerSettings,
-                      log: LoggingAdapter)(implicit mat: ActorFlowMaterializer): Graph[HttpServerPorts, Unit] = {
+                      log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[HttpServerPorts, Unit] = {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache

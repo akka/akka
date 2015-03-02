@@ -5,22 +5,16 @@
 package akka.http.util
 
 import java.io.InputStream
-
 import java.util.concurrent.atomic.AtomicBoolean
-
-import scala.annotation.tailrec
+import org.reactivestreams.Publisher
 import scala.collection.immutable
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.Try
-import akka.actor.Props
-import akka.http.model.RequestEntity
-import akka.stream.{ ActorFlowMaterializerSettings, ActorFlowMaterializer, impl }
-import akka.stream.impl.fusing.IteratorInterpreter
-import akka.stream.scaladsl._
-import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.stage._
 import akka.util.ByteString
-import org.reactivestreams.{ Subscriber, Publisher }
+import akka.http.model.RequestEntity
+import akka.stream.{ FlowMaterializer, impl }
+import akka.stream.scaladsl._
+import akka.stream.stage._
+import OperationAttributes._
 
 /**
  * INTERNAL API
@@ -134,7 +128,7 @@ private[http] object StreamUtils {
    * Applies a sequence of transformers on one source and returns a sequence of sources with the result. The input source
    * will only be traversed once.
    */
-  def transformMultiple(input: Source[ByteString, Unit], transformers: immutable.Seq[Flow[ByteString, ByteString, _]])(implicit materializer: ActorFlowMaterializer): immutable.Seq[Source[ByteString, Unit]] =
+  def transformMultiple(input: Source[ByteString, Unit], transformers: immutable.Seq[Flow[ByteString, ByteString, _]])(implicit materializer: FlowMaterializer): immutable.Seq[Source[ByteString, Unit]] =
     transformers match {
       case Nil      ⇒ Nil
       case Seq(one) ⇒ Vector(input.via(one))
@@ -206,8 +200,8 @@ private[http] object StreamUtils {
  * INTERNAL API
  */
 private[http] class EnhancedByteStringSource[Mat](val byteStringStream: Source[ByteString, Mat]) extends AnyVal {
-  def join(implicit materializer: ActorFlowMaterializer): Future[ByteString] =
+  def join(implicit materializer: FlowMaterializer): Future[ByteString] =
     byteStringStream.runFold(ByteString.empty)(_ ++ _)
-  def utf8String(implicit materializer: ActorFlowMaterializer, ec: ExecutionContext): Future[String] =
+  def utf8String(implicit materializer: FlowMaterializer, ec: ExecutionContext): Future[String] =
     join.map(_.utf8String)
 }

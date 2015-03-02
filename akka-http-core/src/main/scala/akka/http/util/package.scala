@@ -6,10 +6,9 @@ package akka.http
 
 import language.implicitConversions
 import language.higherKinds
-import scala.collection.immutable
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import akka.stream.{ ActorFlowMaterializer, FlattenStrategy }
+import akka.stream.FlattenStrategy
 import akka.stream.scaladsl.{ Flow, Source }
 import akka.stream.stage._
 import scala.concurrent.duration.Duration

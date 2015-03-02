@@ -7,7 +7,6 @@ package akka.http
 import akka.actor.ActorSystem
 import akka.http.model._
 import akka.stream.ActorFlowMaterializer
-import akka.stream.scaladsl.Flow
 import com.typesafe.config.{ ConfigFactory, Config }
 import HttpMethods._
 

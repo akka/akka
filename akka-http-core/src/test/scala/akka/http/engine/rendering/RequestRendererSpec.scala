@@ -18,10 +18,8 @@ import akka.http.util._
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
 import akka.stream.ActorFlowMaterializer
-import akka.stream.impl.SynchronousIterablePublisher
 import HttpEntity._
 import HttpMethods._
-import akka.util.ByteString
 
 class RequestRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
