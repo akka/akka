@@ -12,7 +12,7 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.JavaConverters._
-import scala.concurrent.{Promise, Future}
+import scala.concurrent.{ Promise, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.language.higherKinds
 import scala.language.implicitConversions

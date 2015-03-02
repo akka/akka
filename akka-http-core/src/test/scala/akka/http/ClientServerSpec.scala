@@ -6,7 +6,6 @@ package akka.http
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
-import akka.stream.impl.{ PublisherSink, SubscriberSource }
 import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.concurrent.Await
@@ -206,8 +205,8 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
     def acceptConnection(): (SubscriberProbe[HttpRequest], PublisherProbe[HttpResponse]) = {
       connSourceSub.request(1)
       val incomingConnection = connSource.expectNext()
-      val sink = Sink.publisher[HttpRequest]
-      val source = Source.subscriber[HttpResponse]
+      val sink = Sink.publisher[HttpRequest]()
+      val source = Source.subscriber[HttpResponse]()
 
       val handler = Flow(sink, source)(Keep.both) { implicit b ⇒
         (snk, src) ⇒
