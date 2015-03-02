@@ -7,6 +7,7 @@ package akka.util
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
+import scala.annotation.varargs
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.immutable
@@ -58,6 +59,14 @@ object ByteString {
    */
   def fromArray(array: Array[Byte], offset: Int, length: Int): ByteString =
     CompactByteString.fromArray(array, offset, length)
+
+  /**
+   * JAVA API
+   * Creates a new ByteString by copying an int array by converting from integral numbers to bytes.
+   */
+  @varargs
+  def fromInts(array: Int*): ByteString =
+    apply(array:_*)(scala.math.Numeric.IntIsIntegral)
 
   /**
    * Creates a new ByteString which will contain the UTF-8 representation of the given String
