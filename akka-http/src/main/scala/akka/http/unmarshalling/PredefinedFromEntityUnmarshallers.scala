@@ -5,24 +5,24 @@
 package akka.http.unmarshalling
 
 import scala.concurrent.ExecutionContext
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.util.ByteString
 import akka.http.util.FastFuture
 import akka.http.model._
 
 trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
 
-  implicit def byteStringUnmarshaller(implicit fm: ActorFlowMaterializer): FromEntityUnmarshaller[ByteString] =
+  implicit def byteStringUnmarshaller(implicit fm: FlowMaterializer): FromEntityUnmarshaller[ByteString] =
     Unmarshaller {
       case HttpEntity.Strict(_, data) ⇒ FastFuture.successful(data)
       case entity                     ⇒ entity.dataBytes.runFold(ByteString.empty)(_ ++ _)
     }
 
-  implicit def byteArrayUnmarshaller(implicit fm: ActorFlowMaterializer,
+  implicit def byteArrayUnmarshaller(implicit fm: FlowMaterializer,
                                      ec: ExecutionContext): FromEntityUnmarshaller[Array[Byte]] =
     byteStringUnmarshaller.map(_.toArray[Byte])
 
-  implicit def charArrayUnmarshaller(implicit fm: ActorFlowMaterializer,
+  implicit def charArrayUnmarshaller(implicit fm: FlowMaterializer,
                                      ec: ExecutionContext): FromEntityUnmarshaller[Array[Char]] =
     byteStringUnmarshaller(fm) mapWithInput { (entity, bytes) ⇒
       val charBuffer = entity.contentType.charset.nioCharset.decode(bytes.asByteBuffer)
@@ -31,17 +31,17 @@ trait PredefinedFromEntityUnmarshallers extends MultipartUnmarshallers {
       array
     }
 
-  implicit def stringUnmarshaller(implicit fm: ActorFlowMaterializer,
+  implicit def stringUnmarshaller(implicit fm: FlowMaterializer,
                                   ec: ExecutionContext): FromEntityUnmarshaller[String] =
     byteStringUnmarshaller(fm) mapWithInput { (entity, bytes) ⇒
       // FIXME: add `ByteString::decodeString(java.nio.Charset): String` overload!!!
       bytes.decodeString(entity.contentType.charset.nioCharset.name) // ouch!!!
     }
 
-  implicit def defaultUrlEncodedFormDataUnmarshaller(implicit fm: ActorFlowMaterializer,
+  implicit def defaultUrlEncodedFormDataUnmarshaller(implicit fm: FlowMaterializer,
                                                      ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
     urlEncodedFormDataUnmarshaller(MediaTypes.`application/x-www-form-urlencoded`)
-  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*)(implicit fm: ActorFlowMaterializer,
+  def urlEncodedFormDataUnmarshaller(ranges: ContentTypeRange*)(implicit fm: FlowMaterializer,
                                                                 ec: ExecutionContext): FromEntityUnmarshaller[FormData] =
     stringUnmarshaller.forContentTypes(ranges: _*).mapWithInput { (entity, string) ⇒
       try {

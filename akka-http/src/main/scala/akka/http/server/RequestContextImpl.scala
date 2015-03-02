@@ -4,9 +4,8 @@
 
 package akka.http.server
 
-import akka.stream.ActorFlowMaterializer
-
 import scala.concurrent.{ Future, ExecutionContext }
+import akka.stream.FlowMaterializer
 import akka.event.LoggingAdapter
 import akka.http.marshalling.{ Marshal, ToResponseMarshallable }
 import akka.http.util.FastFuture
@@ -20,14 +19,14 @@ private[http] class RequestContextImpl(
   val request: HttpRequest,
   val unmatchedPath: Uri.Path,
   val executionContext: ExecutionContext,
-  val flowMaterializer: ActorFlowMaterializer,
+  val flowMaterializer: FlowMaterializer,
   val log: LoggingAdapter,
   val settings: RoutingSettings) extends RequestContext {
 
-  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext, materializer: ActorFlowMaterializer) =
+  def this(request: HttpRequest, log: LoggingAdapter, settings: RoutingSettings)(implicit ec: ExecutionContext, materializer: FlowMaterializer) =
     this(request, request.uri.path, ec, materializer, log, settings)
 
-  def reconfigure(executionContext: ExecutionContext, flowMaterializer: ActorFlowMaterializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
+  def reconfigure(executionContext: ExecutionContext, flowMaterializer: FlowMaterializer, log: LoggingAdapter, settings: RoutingSettings): RequestContext =
     copy(executionContext = executionContext, flowMaterializer = flowMaterializer, log = log, settings = settings)
 
   override def complete(trm: ToResponseMarshallable): Future[RouteResult] =
@@ -51,7 +50,7 @@ private[http] class RequestContextImpl(
   override def withExecutionContext(executionContext: ExecutionContext): RequestContext =
     if (executionContext != this.executionContext) copy(executionContext = executionContext) else this
 
-  override def withFlowMaterializer(flowMaterializer: ActorFlowMaterializer): RequestContext =
+  override def withFlowMaterializer(flowMaterializer: FlowMaterializer): RequestContext =
     if (flowMaterializer != this.flowMaterializer) copy(flowMaterializer = flowMaterializer) else this
 
   override def withLog(log: LoggingAdapter): RequestContext =
@@ -85,7 +84,7 @@ private[http] class RequestContextImpl(
   private def copy(request: HttpRequest = request,
                    unmatchedPath: Uri.Path = unmatchedPath,
                    executionContext: ExecutionContext = executionContext,
-                   flowMaterializer: ActorFlowMaterializer = flowMaterializer,
+                   flowMaterializer: FlowMaterializer = flowMaterializer,
                    log: LoggingAdapter = log,
                    settings: RoutingSettings = settings) =
     new RequestContextImpl(request, unmatchedPath, executionContext, flowMaterializer, log, settings)

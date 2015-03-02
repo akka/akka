@@ -5,11 +5,10 @@
 package akka.http.server
 package directives
 
-import akka.event.LoggingAdapter
-import akka.stream.ActorFlowMaterializer
-
 import scala.concurrent.{ Future, ExecutionContext }
 import scala.collection.immutable
+import akka.event.LoggingAdapter
+import akka.stream.FlowMaterializer
 import akka.http.server.util.Tuple
 import akka.http.util.FastFuture
 import akka.http.model._
@@ -144,13 +143,13 @@ trait BasicDirectives {
   /**
    * Runs its inner route with the given alternative [[FlowMaterializer]].
    */
-  def withFlowMaterializer(materializer: ActorFlowMaterializer): Directive0 =
+  def withFlowMaterializer(materializer: FlowMaterializer): Directive0 =
     mapRequestContext(_ withFlowMaterializer materializer)
 
   /**
    * Extracts the [[ExecutionContext]] from the [[RequestContext]].
    */
-  def extractFlowMaterializer: Directive1[ActorFlowMaterializer] = BasicDirectives._extractFlowMaterializer
+  def extractFlowMaterializer: Directive1[FlowMaterializer] = BasicDirectives._extractFlowMaterializer
 
   /**
    * Runs its inner route with the given alternative [[LoggingAdapter]].
@@ -193,7 +192,7 @@ object BasicDirectives extends BasicDirectives {
   private val _extractRequest: Directive1[HttpRequest] = extract(_.request)
   private val _extractUri: Directive1[Uri] = extract(_.request.uri)
   private val _extractExecutionContext: Directive1[ExecutionContext] = extract(_.executionContext)
-  private val _extractFlowMaterializer: Directive1[ActorFlowMaterializer] = extract(_.flowMaterializer)
+  private val _extractFlowMaterializer: Directive1[FlowMaterializer] = extract(_.flowMaterializer)
   private val _extractLog: Directive1[LoggingAdapter] = extract(_.log)
   private val _extractSettings: Directive1[RoutingSettings] = extract(_.settings)
   private val _extractRequestContext: Directive1[RequestContext] = extract(akka.http.util.identityFunc)
