@@ -4,14 +4,13 @@
 
 package akka.http.marshallers.jackson
 
+import scala.reflect.ClassTag
 import akka.http.marshalling
 import akka.http.unmarshalling
 import akka.http.model.MediaTypes._
 import akka.http.server.japi.{ Unmarshaller, Marshaller }
 import akka.http.server.japi.impl.{ UnmarshallerImpl, MarshallerImpl }
 import com.fasterxml.jackson.databind.{ MapperFeature, ObjectMapper }
-
-import scala.reflect.ClassTag
 
 object Jackson {
   def json[T <: AnyRef]: Marshaller[T] = _jsonMarshaller.asInstanceOf[Marshaller[T]]

@@ -4,14 +4,13 @@
 
 package akka.http.server.japi
 
+import scala.concurrent.Future
 import akka.actor.ActorSystem
 import akka.http.{ server, Http }
 import akka.http.Http.ServerBinding
 import akka.http.server.japi.impl.RouteImplementation
-import akka.stream.ActorFlowMaterializer
+import akka.stream.{ ActorFlowMaterializer, FlowMaterializer }
 import akka.stream.scaladsl.{ Keep, Sink }
-
-import scala.concurrent.Future
 
 trait HttpServiceBase {
   /**
@@ -26,13 +25,13 @@ trait HttpServiceBase {
   /**
    * Starts a server on the given interface and port and uses the route to handle incoming requests.
    */
-  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: ActorFlowMaterializer): Future[ServerBinding] =
+  def bindRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): Future[ServerBinding] =
     handleConnectionsWithRoute(interface, port, route, system, flowMaterializer)
 
   /**
    * Uses the route to handle incoming connections and requests for the ServerBinding.
    */
-  def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: ActorFlowMaterializer): Future[ServerBinding] = {
+  def handleConnectionsWithRoute(interface: String, port: Int, route: Route, system: ActorSystem, flowMaterializer: FlowMaterializer): Future[ServerBinding] = {
     implicit val sys = system
     implicit val mat = flowMaterializer
 

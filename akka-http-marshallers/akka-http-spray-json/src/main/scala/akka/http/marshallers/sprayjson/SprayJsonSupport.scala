@@ -6,7 +6,7 @@ package akka.http.marshallers.sprayjson
 
 import scala.language.implicitConversions
 import scala.concurrent.ExecutionContext
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.http.marshalling.{ ToEntityMarshaller, Marshaller }
 import akka.http.unmarshalling.{ FromEntityUnmarshaller, Unmarshaller }
 import akka.http.model.{ ContentTypes, HttpCharsets }
@@ -17,11 +17,11 @@ import spray.json._
  * A trait providing automatic to and from JSON marshalling/unmarshalling using an in-scope *spray-json* protocol.
  */
 trait SprayJsonSupport {
-  implicit def sprayJsonUnmarshallerConverter[T](reader: RootJsonReader[T])(implicit ec: ExecutionContext, mat: ActorFlowMaterializer): FromEntityUnmarshaller[T] =
+  implicit def sprayJsonUnmarshallerConverter[T](reader: RootJsonReader[T])(implicit ec: ExecutionContext, mat: FlowMaterializer): FromEntityUnmarshaller[T] =
     sprayJsonUnmarshaller(reader, ec, mat)
-  implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T], ec: ExecutionContext, mat: ActorFlowMaterializer): FromEntityUnmarshaller[T] =
+  implicit def sprayJsonUnmarshaller[T](implicit reader: RootJsonReader[T], ec: ExecutionContext, mat: FlowMaterializer): FromEntityUnmarshaller[T] =
     sprayJsValueUnmarshaller.map(jsonReader[T].read)
-  implicit def sprayJsValueUnmarshaller(implicit ec: ExecutionContext, mat: ActorFlowMaterializer): FromEntityUnmarshaller[JsValue] =
+  implicit def sprayJsValueUnmarshaller(implicit ec: ExecutionContext, mat: FlowMaterializer): FromEntityUnmarshaller[JsValue] =
     Unmarshaller.byteStringUnmarshaller.forContentTypes(`application/json`).mapWithCharset { (data, charset) ⇒
       val input =
         if (charset == HttpCharsets.`UTF-8`) ParserInput(data.toArray)

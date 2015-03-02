@@ -5,7 +5,8 @@
 package akka.http.server.japi
 
 import java.{ util ⇒ ju }
-
+import scala.concurrent.Future
+import scala.reflect.ClassTag
 import akka.http.model.japi.JavaMapping.Implicits._
 import akka.http.model.japi.HttpMethod
 import akka.http.server
@@ -13,9 +14,6 @@ import akka.http.server._
 import akka.http.server.directives.{ RouteDirectives, BasicDirectives }
 import akka.http.server.japi.impl.{ UnmarshallerImpl, ExtractingStandaloneExtractionImpl, RequestContextImpl, StandaloneExtractionImpl }
 import akka.http.util.FastFuture
-
-import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 /**
  * A collection of predefined [[RequestVals]].
