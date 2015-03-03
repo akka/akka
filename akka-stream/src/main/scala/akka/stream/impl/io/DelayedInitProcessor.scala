@@ -20,12 +20,16 @@ private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[
   @volatile private var impl: Processor[I, O] = _
   private val setVarFuture = implFuture.andThen { case Success(p) ⇒ impl = p }
 
-  override def onSubscribe(s: Subscription): Unit = setVarFuture.onComplete {
-    case Success(x) ⇒ tryOnSubscribe(x, s)
-    case Failure(_) ⇒ s.cancel()
+  override def onSubscribe(s: Subscription): Unit = {
+    requireNonNullSubscription(s)
+    setVarFuture.onComplete {
+      case Success(x) ⇒ tryOnSubscribe(x, s)
+      case Failure(_) ⇒ s.cancel()
+    }
   }
 
   override def onError(t: Throwable): Unit = {
+    requireNonNullException(t)
     if (impl eq null) setVarFuture.onSuccess { case p ⇒ p.onError(t) }
     else impl.onError(t)
   }
@@ -35,10 +39,16 @@ private[akka] class DelayedInitProcessor[I, O](val implFuture: Future[Processor[
     else impl.onComplete()
   }
 
-  override def onNext(t: I): Unit = impl.onNext(t)
+  override def onNext(t: I): Unit = {
+    requireNonNullElement(t)
+    impl.onNext(t)
+  }
 
-  override def subscribe(s: Subscriber[_ >: O]): Unit = setVarFuture.onComplete {
-    case Success(x) ⇒ x.subscribe(s)
-    case Failure(e) ⇒ s.onError(e)
+  override def subscribe(s: Subscriber[_ >: O]): Unit = {
+    requireNonNullSubscriber(s)
+    setVarFuture.onComplete {
+      case Success(x) ⇒ x.subscribe(s)
+      case Failure(e) ⇒ s.onError(e)
+    }
   }
 }

@@ -35,7 +35,7 @@ class FlowFromFutureSpec extends AkkaSpec {
       val p = Source(Future.failed[Int](ex)).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectError(ex)
+      c.expectSubscriptionAndError(ex)
     }
 
     "produce one element when Future is completed" in {

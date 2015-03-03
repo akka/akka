@@ -15,6 +15,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.UntypedActor
 import akka.actor.DeadLetterSuppression
+import akka.stream.impl.ReactiveStreamsCompliance
 
 object ActorSubscriber {
 
@@ -274,10 +275,19 @@ trait ActorSubscriber extends Actor {
  */
 private[akka] final class ActorSubscriberImpl[T](val impl: ActorRef) extends Subscriber[T] {
   import ActorSubscriberMessage._
-  override def onError(cause: Throwable): Unit = impl ! OnError(cause)
+  override def onError(cause: Throwable): Unit = {
+    ReactiveStreamsCompliance.requireNonNullException(cause)
+    impl ! OnError(cause)
+  }
   override def onComplete(): Unit = impl ! OnComplete
-  override def onNext(element: T): Unit = impl ! OnNext(element)
-  override def onSubscribe(subscription: Subscription): Unit = impl ! ActorSubscriber.OnSubscribe(subscription)
+  override def onNext(element: T): Unit = {
+    ReactiveStreamsCompliance.requireNonNullElement(element)
+    impl ! OnNext(element)
+  }
+  override def onSubscribe(subscription: Subscription): Unit = {
+    ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
+    impl ! ActorSubscriber.OnSubscribe(subscription)
+  }
 }
 
 /**

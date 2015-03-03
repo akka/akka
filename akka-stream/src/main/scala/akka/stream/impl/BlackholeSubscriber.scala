@@ -19,15 +19,20 @@ private[akka] class BlackholeSubscriber[T](highWatermark: Int) extends Subscribe
   private val subscription: AtomicReference[Subscription] = new AtomicReference(null)
 
   override def onSubscribe(sub: Subscription): Unit = {
+    ReactiveStreamsCompliance.requireNonNullSubscription(sub)
     if (subscription.compareAndSet(null, sub)) requestMore()
     else sub.cancel()
   }
 
-  override def onError(cause: Throwable): Unit = ()
+  override def onError(cause: Throwable): Unit = {
+    ReactiveStreamsCompliance.requireNonNullException(cause)
+    ()
+  }
 
   override def onComplete(): Unit = ()
 
   override def onNext(element: T): Unit = {
+    ReactiveStreamsCompliance.requireNonNullElement(element)
     requested -= 1
     requestMore()
   }

@@ -113,6 +113,23 @@ object StreamTestKit {
     def expectError(cause: Throwable): Unit = probe.expectMsg(OnError(cause))
     def expectError(): Throwable = probe.expectMsgType[OnError].cause
 
+    def expectSubscriptionAndError(cause: Throwable): Unit = {
+      val sub = expectSubscription()
+      sub.request(1)
+      expectError(cause)
+    }
+    def expectSubscriptionAndError(): Throwable = {
+      val sub = expectSubscription()
+      sub.request(1)
+      expectError()
+    }
+
+    def expectSubscriptionAndComplete(): Unit = {
+      val sub = expectSubscription()
+      sub.request(1)
+      expectComplete()
+    }
+
     def expectNextOrError(element: I, cause: Throwable): Either[Throwable, I] = {
       probe.fishForMessage(hint = s"OnNext($element) or ${cause.getClass.getName}") {
         case OnNext(n)        ⇒ true
@@ -120,28 +137,6 @@ object StreamTestKit {
       } match {
         case OnNext(n: I @unchecked) ⇒ Right(n)
         case OnError(err)            ⇒ Left(err)
-      }
-    }
-
-    def expectErrorOrSubscriptionFollowedByError(cause: Throwable): Unit = {
-      val t = expectErrorOrSubscriptionFollowedByError()
-      assert(t == cause, s"expected $cause, found $cause")
-    }
-
-    def expectErrorOrSubscriptionFollowedByError(): Throwable =
-      probe.expectMsgPF() {
-        case s: OnSubscribe ⇒
-          s.subscription.request(1)
-          expectError()
-        case OnError(cause) ⇒ cause
-      }
-
-    def expectCompletedOrSubscriptionFollowedByComplete(): Unit = {
-      probe.expectMsgPF() {
-        case s: OnSubscribe ⇒
-          s.subscription.request(1)
-          expectComplete()
-        case OnComplete ⇒
       }
     }
 

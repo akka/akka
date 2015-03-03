@@ -25,9 +25,7 @@ private[akka] object FanOut {
   final case class SubstreamSubscribePending(id: Int) extends DeadLetterSuppression
 
   class SubstreamSubscription(val parent: ActorRef, val id: Int) extends Subscription {
-    override def request(elements: Long): Unit =
-      if (elements <= 0) throw new IllegalArgumentException("The number of requested elements must be > 0")
-      else parent ! SubstreamRequestMore(id, elements)
+    override def request(elements: Long): Unit = parent ! SubstreamRequestMore(id, elements)
     override def cancel(): Unit = parent ! SubstreamCancel(id)
     override def toString = "SubstreamSubscription" + System.identityHashCode(this)
   }
@@ -100,7 +98,7 @@ private[akka] object FanOut {
 
     def error(output: Int, e: Throwable): Unit =
       if (!errored(output) && !cancelled(output) && !completed(output)) {
-        outputs(output).cancel(e)
+        outputs(output).error(e)
         errored(output) = true
         unmarkOutput(output)
       }
@@ -217,9 +215,13 @@ private[akka] object FanOut {
         }
 
       case SubstreamRequestMore(id, demand) ⇒
-        if (marked(id) && !pending(id)) markedPending += 1
-        pending(id) = true
-        outputs(id).subreceive(RequestMore(null, demand))
+        if (demand < 1) // According to Reactive Streams Spec 3.9, with non-positive demand must yield onError
+          error(id, ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
+        else {
+          if (marked(id) && !pending(id)) markedPending += 1
+          pending(id) = true
+          outputs(id).subreceive(RequestMore(null, demand))
+        }
       case SubstreamCancel(id) ⇒
         if (unmarkCancelled) {
           unmarkOutput(id)
@@ -256,7 +258,6 @@ private[akka] abstract class FanOut(val settings: ActorFlowMaterializerSettings,
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    // FIXME: escalate to supervisor
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()

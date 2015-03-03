@@ -24,6 +24,5 @@ class ActorSubscriberOneByOneRequestTest extends AkkaSubscriberBlackboxVerificat
     ActorSubscriber(system.actorOf(props.withDispatcher("akka.test.stream-dispatcher")))
   }
 
-  override def createHelperPublisher(elements: Long) =
-    createSimpleIntPublisher(elements)
+  override def createElement(element: Int): Int = element
 }

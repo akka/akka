@@ -169,7 +169,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       ref ! Err("early err")
       val s = StreamTestKit.SubscriberProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectError.getMessage should be("early err")
+      s.expectSubscriptionAndError.getMessage should be("early err")
     }
 
     "drop onNext elements after cancel" in {
@@ -225,7 +225,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       ref ! Complete
       val s = StreamTestKit.SubscriberProbe[String]()
       ActorPublisher[String](ref).subscribe(s)
-      s.expectComplete
+      s.expectSubscriptionAndComplete
     }
 
     "only allow one subscriber" in {
@@ -236,7 +236,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       s.expectSubscription
       val s2 = StreamTestKit.SubscriberProbe[String]()
       ActorPublisher[String](ref).subscribe(s2)
-      s2.expectError.getClass should be(classOf[IllegalStateException])
+      s2.expectSubscriptionAndError.getClass should be(classOf[IllegalStateException])
     }
 
     "signal onCompete when actor is stopped" in {
@@ -325,7 +325,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
       // now subscribers will already be rejected, while the actor could perform some clean-up
       val sub = StreamTestKit.SubscriberProbe()
       pub.subscribe(sub)
-      sub.expectError()
+      sub.expectSubscriptionAndError()
 
       expectMsg("cleaned-up")
       // termination is tiggered by user code
@@ -343,6 +343,7 @@ class ActorPublisherSpec extends AkkaSpec with ImplicitSender {
 
         // subscribe right away, should cancel subscription-timeout
         pub.subscribe(sub)
+        sub.expectSubscription()
 
         expectNoMsg()
       }

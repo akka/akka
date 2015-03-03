@@ -3,8 +3,6 @@
  */
 package akka.stream.tck
 
-import java.util.concurrent.atomic.AtomicInteger
-
 import akka.stream.{ ActorFlowMaterializer, ActorFlowMaterializerSettings }
 import akka.stream.impl.ActorFlowMaterializerImpl
 import akka.stream.impl.Stages.Identity
@@ -14,8 +12,6 @@ import akka.stream.stage.{ Context, PushStage }
 import org.reactivestreams.{ Processor, Publisher }
 
 class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
-
-  val processorCounter = new AtomicInteger
 
   override def createIdentityProcessor(maxBufferSize: Int): Processor[Int, Int] = {
     val settings = ActorFlowMaterializerSettings(system)
@@ -31,10 +27,6 @@ class TransformProcessorTest extends AkkaIdentityProcessorVerification[Int] {
     processorFromFlow(Flow[Int].transform(mkStage))
   }
 
-  override def createHelperPublisher(elements: Long): Publisher[Int] = {
-    implicit val mat = ActorFlowMaterializer()(system)
-
-    createSimpleIntPublisher(elements)(mat)
-  }
+  override def createElement(element: Int): Int = element
 
 }
