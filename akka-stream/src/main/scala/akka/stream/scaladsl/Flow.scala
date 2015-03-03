@@ -325,7 +325,7 @@ trait FlowOps[+Out, +Mat] {
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): Repr[Out, Mat] = andThen(Drop(n))
+  def drop(n: Long): Repr[Out, Mat] = andThen(Drop(n))
 
   /**
    * Discard the elements received within the given duration at beginning of the stream.
@@ -355,7 +355,7 @@ trait FlowOps[+Out, +Mat] {
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    */
-  def take(n: Int): Repr[Out, Mat] = andThen(Take(n))
+  def take(n: Long): Repr[Out, Mat] = andThen(Take(n))
 
   /**
    * Terminate processing (and cancel the upstream publisher) after the given

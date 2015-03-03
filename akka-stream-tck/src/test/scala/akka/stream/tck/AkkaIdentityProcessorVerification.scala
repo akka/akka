@@ -3,51 +3,32 @@
  */
 package akka.stream.tck
 
-import akka.event.Logging
-
-import scala.collection.{ mutable, immutable }
-import akka.actor.ActorSystem
+import java.util.concurrent.Executors
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.TimeUnit
+import scala.concurrent.duration._
 import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
-import akka.stream.testkit.AkkaSpec
 import akka.stream.testkit.StreamTestKit
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent
 import org.reactivestreams.{ Subscriber, Subscription, Processor, Publisher }
 import org.reactivestreams.tck.IdentityProcessorVerification
 import org.reactivestreams.tck.TestEnvironment
 import org.scalatest.testng.TestNGSuiteLike
+import org.testng.annotations.AfterClass
 
-abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
+abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publisherShutdownTimeout: Long)
   extends IdentityProcessorVerification[T](env, publisherShutdownTimeout)
-  with TestNGSuiteLike {
+  with TestNGSuiteLike with ActorSystemLifecycle {
 
-  system.eventStream.publish(TestEvent.Mute(EventFilter[RuntimeException]("Test exception")))
+  def this(printlnDebug: Boolean) =
+    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
 
-  def this(system: ActorSystem, printlnDebug: Boolean) {
-    this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system), printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
-  }
-
-  def this(printlnDebug: Boolean) {
-    this(ActorSystem(Logging.simpleName(classOf[IterablePublisherTest]), AkkaSpec.testConf), printlnDebug)
-  }
-
-  def this() {
-    this(false)
-  }
+  def this() = this(false)
 
   override def createErrorStatePublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
 
-  def createSimpleIntPublisher(elements: Long)(implicit mat: ActorFlowMaterializer): Publisher[Int] = {
-    val iterable: immutable.Iterable[Int] =
-      if (elements == Long.MaxValue) 1 to Int.MaxValue
-      else 0 until elements.toInt
-
-    Source(iterable).runWith(Sink.publisher())
-  }
-
-  def processorFromFlow[T](flow: Flow[T, T, _])(implicit mat: ActorFlowMaterializer): Processor[T, T] = {
+  def processorFromFlow(flow: Flow[T, T, _])(implicit mat: ActorFlowMaterializer): Processor[T, T] = {
     val (sub: Subscriber[T], pub: Publisher[T]) = flow.runWith(Source.subscriber[T](), Sink.publisher[T]())
 
     new Processor[T, T] {
@@ -61,4 +42,13 @@ abstract class AkkaIdentityProcessorVerification[T](val system: ActorSystem, env
 
   /** By default Akka Publishers do not support Fanout! */
   override def maxSupportedSubscribers: Long = 1L
+
+  override lazy val publisherExecutorService: ExecutorService =
+    Executors.newFixedThreadPool(3)
+
+  @AfterClass
+  def shutdownPublisherExecutorService(): Unit = {
+    publisherExecutorService.shutdown()
+    publisherExecutorService.awaitTermination(3, TimeUnit.SECONDS)
+  }
 }

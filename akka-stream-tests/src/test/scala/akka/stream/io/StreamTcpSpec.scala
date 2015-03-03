@@ -294,7 +294,7 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
       val serverConnection = server.waitAccept()
 
       serverConnection.abort()
-      tcpReadProbe.subscriberProbe.expectErrorOrSubscriptionFollowedByError()
+      tcpReadProbe.subscriberProbe.expectSubscriptionAndError()
       tcpWriteProbe.tcpWriteSubscription.expectCancellation()
 
       serverConnection.expectTerminated()
@@ -408,11 +408,11 @@ class StreamTcpSpec extends AkkaSpec with TcpHelper {
 
       val probe2 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
       val binding2F = bind.to(Sink(probe2)).run()
-      probe2.expectErrorOrSubscriptionFollowedByError(BindFailedException)
+      probe2.expectSubscriptionAndError(BindFailedException)
 
       val probe3 = StreamTestKit.SubscriberProbe[StreamTcp.IncomingConnection]()
       val binding3F = bind.to(Sink(probe3)).run()
-      probe3.expectErrorOrSubscriptionFollowedByError()
+      probe3.expectSubscriptionAndError()
 
       an[BindFailedException] shouldBe thrownBy { Await.result(binding2F, 1.second) }
       an[BindFailedException] shouldBe thrownBy { Await.result(binding3F, 1.second) }

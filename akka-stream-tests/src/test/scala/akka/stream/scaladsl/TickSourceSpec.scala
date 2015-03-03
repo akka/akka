@@ -56,7 +56,7 @@ class TickSourceSpec extends AkkaSpec {
       p.subscribe(c1)
       p.subscribe(c2)
       val sub1 = c1.expectSubscription()
-      c2.expectError()
+      c2.expectSubscriptionAndError()
       sub1.request(1)
       c1.expectNext("tick")
       c1.expectNoMsg(200.millis)

@@ -90,8 +90,10 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
         val ex = BindFailedException
         localAddressPromise.failure(ex)
         unbindPromise.success(() ⇒ Future.successful(()))
-        try tryOnError(flowSubscriber, ex)
-        finally fail(ex)
+        try {
+          tryOnSubscribe(flowSubscriber, CancelledSubscription)
+          tryOnError(flowSubscriber, ex)
+        } finally fail(ex)
     }
 
     def running: Receive = {
@@ -159,6 +161,6 @@ private[akka] class TcpListenStreamActor(localAddressPromise: Promise[InetSocket
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     incomingConnections.cancel()
-    primaryOutputs.cancel(e)
+    primaryOutputs.error(e)
   }
 }

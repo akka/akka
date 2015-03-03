@@ -16,10 +16,19 @@ object StreamSubscriptionTimeoutSupport {
    * A subscriber who calls `cancel` directly from `onSubscribe` and ignores all other callbacks.
    */
   final case object CancelingSubscriber extends Subscriber[Any] {
-    override def onSubscribe(s: Subscription): Unit = s.cancel()
-    override def onError(t: Throwable): Unit = ()
+    override def onSubscribe(s: Subscription): Unit = {
+      ReactiveStreamsCompliance.requireNonNullSubscription(s)
+      s.cancel()
+    }
+    override def onError(t: Throwable): Unit = {
+      ReactiveStreamsCompliance.requireNonNullException(t)
+      ()
+    }
     override def onComplete(): Unit = ()
-    override def onNext(t: Any): Unit = ()
+    override def onNext(elem: Any): Unit = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
+      ()
+    }
   }
 
   /**

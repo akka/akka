@@ -141,7 +141,10 @@ private[akka] class MapAsyncProcessorImpl(_settings: ActorFlowMaterializerSettin
         val future = f(elem)
         submittedSeqNo += 1
         val seqNo = submittedSeqNo
-        future.map(FutureElement(seqNo, _)).recover {
+        future.map { elem ⇒
+          ReactiveStreamsCompliance.requireNonNullElement(elem)
+          FutureElement(seqNo, elem)
+        }.recover {
           case err: Throwable if decider(err) != Supervision.Stop ⇒
             FutureElement(seqNo, RecoveredError(elem, err))
           case err ⇒ FutureFailure(err)

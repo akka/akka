@@ -17,11 +17,13 @@ private[stream] object ReactiveStreamsCompliance {
   final val NumberOfElementsInRequestMustBePositiveMsg =
     "The number of requested elements must be > 0 (see reactive-streams specification, rule 3.9)"
 
-  final val TotalPendingDemandMustNotExceedLongMaxValue =
-    "Total pending demand MUST NOT be > `java.lang.Long.MAX_VALUE` (see reactive-streams specification, rule 3.17)"
+  final val SubscriberMustNotBeNullMsg = "Subscriber must not be null, rule 1.9"
 
-  final def totalPendingDemandMustNotExceedLongMaxValueException: Throwable =
-    new IllegalStateException(TotalPendingDemandMustNotExceedLongMaxValue)
+  final val ExceptionMustNotBeNullMsg = "Exception must not be null, rule 2.13"
+
+  final val ElementMustNotBeNullMsg = "Element must not be null, rule 2.13"
+
+  final val SubscriptionMustNotBeNullMsg = "Subscription must not be null, rule 2.13"
 
   final def numberOfElementsInRequestMustBePositiveException: Throwable =
     new IllegalArgumentException(NumberOfElementsInRequestMustBePositiveMsg)
@@ -29,17 +31,43 @@ private[stream] object ReactiveStreamsCompliance {
   final def canNotSubscribeTheSameSubscriberMultipleTimesException: Throwable =
     new IllegalStateException(CanNotSubscribeTheSameSubscriberMultipleTimes)
 
-  final def rejectDuplicateSubscriber[T](subscriber: Subscriber[T]): Unit =
+  final def subscriberMustNotBeNullException: Throwable =
+    new NullPointerException(SubscriberMustNotBeNullMsg)
+
+  final def exceptionMustNotBeNullException: Throwable =
+    new NullPointerException(ExceptionMustNotBeNullMsg)
+
+  final def elementMustNotBeNullException: Throwable =
+    new NullPointerException(ElementMustNotBeNullMsg)
+
+  final def subscriptionMustNotBeNullException: Throwable =
+    new NullPointerException(SubscriptionMustNotBeNullMsg)
+
+  final def rejectDuplicateSubscriber[T](subscriber: Subscriber[T]): Unit = {
+    // since it is already subscribed it has received the subscription first
+    // and we can emit onError immediately
     tryOnError(subscriber, canNotSubscribeTheSameSubscriberMultipleTimesException)
+  }
 
-  final def rejectAdditionalSubscriber[T](subscriber: Subscriber[T], rejector: Publisher[T]): Unit =
+  final def rejectAdditionalSubscriber[T](subscriber: Subscriber[T], rejector: String): Unit = {
+    tryOnSubscribe(subscriber, CancelledSubscription)
     tryOnError(subscriber, new IllegalStateException(s"$rejector $SupportsOnlyASingleSubscriber"))
-
-  final def rejectDueToOverflow[T](subscriber: Subscriber[T]): Unit =
-    tryOnError(subscriber, totalPendingDemandMustNotExceedLongMaxValueException)
+  }
 
   final def rejectDueToNonPositiveDemand[T](subscriber: Subscriber[T]): Unit =
     tryOnError(subscriber, numberOfElementsInRequestMustBePositiveException)
+
+  final def requireNonNullSubscriber[T](subscriber: Subscriber[T]): Unit =
+    if (subscriber eq null) throw subscriberMustNotBeNullException
+
+  final def requireNonNullException(cause: Throwable): Unit =
+    if (cause eq null) throw exceptionMustNotBeNullException
+
+  final def requireNonNullElement[T](element: T): Unit =
+    if (element == null) throw elementMustNotBeNullException
+
+  final def requireNonNullSubscription(subscription: Subscription): Unit =
+    if (subscription == null) throw subscriptionMustNotBeNullException
 
   @SerialVersionUID(1L)
   sealed trait SpecViolation extends Throwable
@@ -56,15 +84,18 @@ private[stream] object ReactiveStreamsCompliance {
         }
     }
 
-  final def tryOnNext[T](subscriber: Subscriber[T], element: T): Unit =
+  final def tryOnNext[T](subscriber: Subscriber[T], element: T): Unit = {
+    requireNonNullElement(element)
     try subscriber.onNext(element) catch {
       case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onNext", t)
     }
+  }
 
-  final def tryOnSubscribe[T](subscriber: Subscriber[T], subscription: Subscription): Unit =
+  final def tryOnSubscribe[T](subscriber: Subscriber[T], subscription: Subscription): Unit = {
     try subscriber.onSubscribe(subscription) catch {
       case NonFatal(t) ⇒ throw new SignalThrewException(subscriber + ".onSubscribe", t)
     }
+  }
 
   final def tryOnComplete[T](subscriber: Subscriber[T]): Unit =
     try subscriber.onComplete() catch {

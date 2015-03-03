@@ -56,11 +56,11 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
 
       val probe2 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe2)).run(), 3.seconds) }
-      probe2.expectErrorOrSubscriptionFollowedByError()
+      probe2.expectSubscriptionAndError()
 
       val probe3 = StreamTestKit.SubscriberProbe[Http.IncomingConnection]()
       an[BindFailedException] shouldBe thrownBy { Await.result(binding.to(Sink(probe3)).run(), 3.seconds) }
-      probe3.expectErrorOrSubscriptionFollowedByError()
+      probe3.expectSubscriptionAndError()
 
       // Now unbind the first
       Await.result(b1.unbind(), 1.second)

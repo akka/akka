@@ -133,10 +133,11 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
 
     }
 
-    override def cancel(e: Throwable): Unit = {
+    override def error(e: Throwable): Unit = {
       if (!closed && initialized) connection ! Abort
       closed = true
     }
+
     override def complete(): Unit = {
       if (!closed && initialized) {
         closed = true
@@ -144,10 +145,13 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
           connection ! Close
         else
           connection ! ConfirmedClose
-
       }
     }
+
+    override def cancel(): Unit = complete()
+
     override def enqueueOutputElement(elem: Any): Unit = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       connection ! Write(elem.asInstanceOf[ByteString], WriteAck)
       pendingDemand = false
     }
@@ -217,9 +221,9 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     tcpInputs.cancel()
-    tcpOutputs.cancel(e)
+    tcpOutputs.error(e)
     primaryInputs.cancel()
-    primaryOutputs.cancel(e)
+    primaryOutputs.error(e)
   }
 
   def tryShutdown(): Unit =

@@ -36,17 +36,6 @@ final case class OperationAttributes private (attributes: List[OperationAttribut
     if ((this eq OperationAttributes.none) || (this eq node.attributes)) node
     else node.withAttributes(attributes = this and node.attributes)
 
-  /**
-   * Filtering out name attributes is needed for Vertex.newInstance().
-   * However there is an ongoing discussion for removing this feature,
-   * after which this will not be needed anymore.
-   *
-   * https://github.com/akka/akka/issues/16392
-   */
-  private[akka] def withoutName = this.copy( // FIXME should return OperationAttributes.none if empty
-    attributes = attributes.filterNot { // FIXME should return the same instance if didn't have any Name
-      case attr: Name ⇒ true
-    })
 }
 
 object OperationAttributes {

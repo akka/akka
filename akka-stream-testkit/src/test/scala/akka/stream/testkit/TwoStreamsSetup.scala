@@ -53,39 +53,39 @@ abstract class TwoStreamsSetup extends AkkaSpec {
   def commonTests() = {
     "work with two immediately completed publishers" in {
       val subscriber = setup(completedPublisher, completedPublisher)
-      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber.expectSubscriptionAndComplete()
     }
 
     "work with two delayed completed publishers" in {
       val subscriber = setup(soonToCompletePublisher, soonToCompletePublisher)
-      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber.expectSubscriptionAndComplete()
     }
 
     "work with one immediately completed and one delayed completed publisher" in {
       val subscriber = setup(completedPublisher, soonToCompletePublisher)
-      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber.expectSubscriptionAndComplete()
     }
 
     "work with two immediately failed publishers" in {
       val subscriber = setup(failedPublisher, failedPublisher)
-      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber.expectSubscriptionAndError(TestException)
     }
 
     "work with two delayed failed publishers" in {
       val subscriber = setup(soonToFailPublisher, soonToFailPublisher)
-      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber.expectSubscriptionAndError(TestException)
     }
 
     // Warning: The two test cases below are somewhat implementation specific and might fail if the implementation
     // is changed. They are here to be an early warning though.
     "work with one immediately failed and one delayed failed publisher (case 1)" in {
       val subscriber = setup(soonToFailPublisher, failedPublisher)
-      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber.expectSubscriptionAndError(TestException)
     }
 
     "work with one immediately failed and one delayed failed publisher (case 2)" in {
       val subscriber = setup(failedPublisher, soonToFailPublisher)
-      subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber.expectSubscriptionAndError(TestException)
     }
   }
 

@@ -114,13 +114,11 @@ private[stream] object Stages {
     override protected def newInstance: StageModule = this.copy()
   }
 
-  // FIXME Replace with OperateAsync
   final case class MapAsync(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsync) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  //FIXME Should be OperateUnorderedAsync
   final case class MapAsyncUnordered(f: Any ⇒ Future[Any], attributes: OperationAttributes = mapAsyncUnordered) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
@@ -133,14 +131,12 @@ private[stream] object Stages {
     override protected def newInstance: StageModule = this.copy()
   }
 
-  //FIXME should be `n: Long`
-  final case class Take(n: Int, attributes: OperationAttributes = take) extends StageModule {
+  final case class Take(n: Long, attributes: OperationAttributes = take) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }
 
-  //FIXME should be `n: Long`
-  final case class Drop(n: Int, attributes: OperationAttributes = drop) extends StageModule {
+  final case class Drop(n: Long, attributes: OperationAttributes = drop) extends StageModule {
     def withAttributes(attributes: OperationAttributes) = copy(attributes = attributes)
     override protected def newInstance: StageModule = this.copy()
   }

@@ -10,6 +10,7 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import akka.stream.impl.ReactiveStreamsCompliance._
 
 /**
  * INTERNAL API
@@ -56,10 +57,9 @@ private[akka] object SynchronousIterablePublisher {
         rejectDueToNonPositiveDemand(subscriber)
       } else {
         pendingDemand += elements
-        if (pendingDemand < 1) { // According to Reactive Streams Spec 3:17, if we overflow 2^63-1, we need to yield onError
-          cancel()
-          rejectDueToOverflow(subscriber)
-        } else if (!pushing) {
+        if (pendingDemand < 1)
+          pendingDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+        if (!pushing) {
           // According to Reactive Streams Spec 3:3, we must prevent unbounded recursion
           try {
             pushing = true
@@ -113,8 +113,10 @@ private[akka] final class SynchronousIterablePublisher[T](
 
   import SynchronousIterablePublisher.IteratorSubscription
 
-  override def subscribe(subscriber: Subscriber[_ >: T]): Unit =
+  override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
+    requireNonNullSubscriber(subscriber)
     IteratorSubscription(subscriber, try iterable.iterator catch { case NonFatal(t) ⇒ Iterator.continually(throw t) })
+  }
 
   override def toString: String = name
 }

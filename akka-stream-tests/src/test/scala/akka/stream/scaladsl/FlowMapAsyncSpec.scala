@@ -16,6 +16,7 @@ import akka.testkit.TestLatch
 import akka.testkit.TestProbe
 import akka.stream.scaladsl.OperationAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
+import akka.stream.impl.ReactiveStreamsCompliance
 
 class FlowMapAsyncSpec extends AkkaSpec {
 
@@ -134,6 +135,25 @@ class FlowMapAsyncSpec extends AkkaSpec {
       val sub = c.expectSubscription()
       sub.request(10)
       for (n ← List(1, 2, 4, 5)) c.expectNext(n)
+      c.expectComplete()
+    }
+
+    "signal NPE when future is completed with null" in {
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val p = Source(List("a", "b")).mapAsync(elem ⇒ Future.successful(null)).to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
+    }
+
+    "resume when future is completed with null" in {
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val p = Source(List("a", "b", "c")).section(supervisionStrategy(resumingDecider))(
+        _.mapAsync(elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem)))
+        .to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      for (elem ← List("a", "c")) c.expectNext(elem)
       c.expectComplete()
     }
 

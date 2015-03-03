@@ -333,7 +333,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): javadsl.Source[Out, Mat] =
+  def drop(n: Long): javadsl.Source[Out, Mat] =
     new Source(delegate.drop(n))
 
   /**
@@ -350,7 +350,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    *
    * @param n if `n` is zero or negative the stream will be completed without producing any elements.
    */
-  def take(n: Int): javadsl.Source[Out, Mat] =
+  def take(n: Long): javadsl.Source[Out, Mat] =
     new Source(delegate.take(n))
 
   /**

@@ -97,10 +97,10 @@ class GraphConcatSpec extends TwoStreamsSetup {
 
     "work with one immediately failed and one nonempty publisher" in {
       val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
-      subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "work with one delayed failed and first nonempty publisher" in {
@@ -113,7 +113,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(2, TestException).isLeft
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(3, TestException).isLeft
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(4, TestException).isLeft
-      if (!errorSignalled) subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
     "work with one delayed failed and second nonempty publisher" in {
@@ -126,7 +126,7 @@ class GraphConcatSpec extends TwoStreamsSetup {
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(2, TestException).isLeft
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(3, TestException).isLeft
       if (!errorSignalled) errorSignalled ||= subscriber.expectNextOrError(4, TestException).isLeft
-      if (!errorSignalled) subscriber.expectErrorOrSubscriptionFollowedByError(TestException)
+      if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
     "correctly handle async errors in secondary upstream" in {

@@ -14,7 +14,6 @@ object Timeouts {
 
   def publisherShutdownTimeoutMillis: Int = 1000
 
-  def defaultTimeoutMillis(implicit system: ActorSystem): Int =
-    500.millis.dilated(system).toMillis.toInt
+  def defaultTimeoutMillis: Int = 500
 
 }

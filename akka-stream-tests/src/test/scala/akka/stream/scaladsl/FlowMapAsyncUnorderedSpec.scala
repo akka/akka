@@ -17,6 +17,7 @@ import akka.stream.scaladsl.OperationAttributes.supervisionStrategy
 import akka.stream.Supervision.resumingDecider
 import akka.stream.testkit.StreamTestKit.OnNext
 import akka.stream.testkit.StreamTestKit.OnComplete
+import akka.stream.impl.ReactiveStreamsCompliance
 
 class FlowMapAsyncUnorderedSpec extends AkkaSpec {
 
@@ -131,6 +132,25 @@ class FlowMapAsyncUnorderedSpec extends AkkaSpec {
       sub.request(10)
       val expected = (OnComplete :: List(1, 2, 4, 5).map(OnNext.apply)).toSet
       c.probe.receiveN(5).toSet should be(expected)
+    }
+
+    "signal NPE when future is completed with null" in {
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val p = Source(List("a", "b")).mapAsyncUnordered(elem ⇒ Future.successful(null)).to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      c.expectError.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
+    }
+
+    "resume when future is completed with null" in {
+      val c = StreamTestKit.SubscriberProbe[String]()
+      val p = Source(List("a", "b", "c")).section(supervisionStrategy(resumingDecider))(
+        _.mapAsyncUnordered(elem ⇒ if (elem == "b") Future.successful(null) else Future.successful(elem)))
+        .to(Sink(c)).run()
+      val sub = c.expectSubscription()
+      sub.request(10)
+      for (elem ← List("a", "c")) c.expectNext(elem)
+      c.expectComplete()
     }
 
     "should handle cancel properly" in {

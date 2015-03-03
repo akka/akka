@@ -19,6 +19,8 @@ import akka.actor.UntypedActor
 import concurrent.duration.Duration
 import concurrent.duration.FiniteDuration
 import akka.actor.DeadLetterSuppression
+import akka.stream.impl.CancelledSubscription
+import akka.stream.impl.ReactiveStreamsCompliance._
 
 object ActorPublisher {
 
@@ -240,10 +242,9 @@ trait ActorPublisher[T] extends Actor {
           super.aroundReceive(receive, msg)
       } else {
         demand += n
-        if (demand < 0 && lifecycleState == Active) // Long has overflown
-          onError(totalPendingDemandMustNotExceedLongMaxValueException)
-        else
-          super.aroundReceive(receive, msg)
+        if (demand < 0)
+          demand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+        super.aroundReceive(receive, msg)
       }
 
     case Subscribe(sub: Subscriber[_]) ⇒
@@ -253,11 +254,16 @@ trait ActorPublisher[T] extends Actor {
           subscriber = sub
           lifecycleState = Active
           tryOnSubscribe(sub, new ActorPublisherSubscription(self))
-        case ErrorEmitted(cause) ⇒ tryOnError(sub, cause)
-        case Completed           ⇒ tryOnComplete(sub)
+        case ErrorEmitted(cause) ⇒
+          tryOnSubscribe(sub, CancelledSubscription)
+          tryOnError(sub, cause)
+        case Completed ⇒
+          tryOnSubscribe(sub, CancelledSubscription)
+          tryOnComplete(sub)
         case Active | Canceled ⇒
+          tryOnSubscribe(sub, CancelledSubscription)
           tryOnError(sub,
-            if (subscriber eq sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
+            if (subscriber == sub) ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException
             else ReactiveStreamsCompliance.canNotSubscribeTheSameSubscriberMultipleTimesException)
       }
 
@@ -337,8 +343,10 @@ private[akka] final case class ActorPublisherImpl[T](ref: ActorRef) extends Publ
   import ActorPublisher._
   import ActorPublisher.Internal._
 
-  override def subscribe(sub: Subscriber[_ >: T]): Unit =
+  override def subscribe(sub: Subscriber[_ >: T]): Unit = {
+    requireNonNullSubscriber(sub)
     ref ! Subscribe(sub.asInstanceOf[Subscriber[Any]])
+  }
 }
 
 /**

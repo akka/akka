@@ -21,6 +21,7 @@ import akka.io.Inet.SocketOption
 import akka.io.Tcp
 import akka.stream._
 import akka.stream.impl._
+import akka.stream.impl.ReactiveStreamsCompliance._
 import akka.stream.scaladsl._
 import akka.util.ByteString
 import org.reactivestreams.{ Publisher, Processor, Subscriber, Subscription }
@@ -92,6 +93,7 @@ class StreamTcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       val publisher = new Publisher[IncomingConnection] {
 
         override def subscribe(s: Subscriber[_ >: IncomingConnection]): Unit = {
+          requireNonNullSubscriber(s)
           manager ! StreamTcpManager.Bind(
             localAddressPromise,
             unbindPromise,

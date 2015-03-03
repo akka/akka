@@ -69,7 +69,8 @@ private[akka] trait Outputs {
   def demandCount: Long = -1L
 
   def complete(): Unit
-  def cancel(e: Throwable): Unit
+  def cancel(): Unit
+  def error(e: Throwable): Unit
   def isClosed: Boolean
   def isOpen: Boolean = !isClosed
 }

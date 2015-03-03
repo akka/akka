@@ -25,17 +25,20 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   override val subreceive = new SubReceive(waitingExposedPublisher)
 
   def enqueueOutputElement(elem: Any): Unit = {
+    ReactiveStreamsCompliance.requireNonNullElement(elem)
     downstreamBufferSpace -= 1
     pushToDownstream(elem)
   }
 
-  def complete(): Unit =
+  override def complete(): Unit =
     if (!downstreamCompleted) {
       downstreamCompleted = true
       completeDownstream()
     }
 
-  def cancel(e: Throwable): Unit = {
+  override def cancel(): Unit = complete()
+
+  override def error(e: Throwable): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
       abortDownstream(e)
@@ -105,11 +108,10 @@ private[akka] class FanoutProcessorImpl(
   }
 
   override def fail(e: Throwable): Unit = {
-    // FIXME: escalate to supervisor
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
-    primaryOutputs.cancel(e)
+    primaryOutputs.error(e)
     // Stopping will happen after flush
   }
 

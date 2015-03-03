@@ -73,34 +73,34 @@ class GraphZipWithSpec extends TwoStreamsSetup {
 
     "work with one immediately completed and one nonempty publisher" in {
       val subscriber1 = setup(completedPublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber1.expectSubscriptionAndComplete()
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), completedPublisher)
-      subscriber2.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber2.expectSubscriptionAndComplete()
     }
 
     "work with one delayed completed and one nonempty publisher" in {
       val subscriber1 = setup(soonToCompletePublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber1.expectSubscriptionAndComplete()
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToCompletePublisher)
-      subscriber2.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber2.expectSubscriptionAndComplete()
     }
 
     "work with one immediately failed and one nonempty publisher" in {
       val subscriber1 = setup(failedPublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), failedPublisher)
-      subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "work with one delayed failed and one nonempty publisher" in {
       val subscriber1 = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
-      subscriber1.expectErrorOrSubscriptionFollowedByError(TestException)
+      subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectErrorOrSubscriptionFollowedByError(TestException)
+      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "zipWith a ETA expanded Person.apply (3 inputs)" in {

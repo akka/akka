@@ -33,7 +33,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       prefix should be(Nil)
       val tailSubscriber = SubscriberProbe[Int]
       tailFlow.to(Sink(tailSubscriber)).run()
-      tailSubscriber.expectComplete()
+      tailSubscriber.expectSubscriptionAndComplete()
     }
 
     "work on short input" in {
@@ -43,7 +43,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
       prefix should be(List(1, 2, 3))
       val tailSubscriber = SubscriberProbe[Int]
       tailFlow.to(Sink(tailSubscriber)).run()
-      tailSubscriber.expectComplete()
+      tailSubscriber.expectSubscriptionAndComplete()
     }
 
     "work on longer inputs" in {
@@ -87,7 +87,7 @@ class FlowPrefixAndTailSpec extends AkkaSpec {
 
       val subscriber = StreamTestKit.SubscriberProbe[Int]()
       tail.to(Sink(subscriber)).run()
-      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber.expectSubscriptionAndComplete()
     }
 
     "handle onError when no substream open" in {

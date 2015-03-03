@@ -82,12 +82,23 @@ object HeadSink {
   /** INTERNAL API */
   private[akka] class HeadSinkSubscriber[In](p: Promise[In]) extends Subscriber[In] {
     private val sub = new AtomicReference[Subscription]
-    override def onSubscribe(s: Subscription): Unit =
+    override def onSubscribe(s: Subscription): Unit = {
+      ReactiveStreamsCompliance.requireNonNullSubscription(s)
       if (!sub.compareAndSet(null, s)) s.cancel()
       else s.request(1)
+    }
 
-    override def onNext(t: In): Unit = { p.trySuccess(t); sub.get.cancel() }
-    override def onError(t: Throwable): Unit = p.tryFailure(t)
+    override def onNext(elem: In): Unit = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
+      p.trySuccess(elem)
+      sub.get.cancel()
+    }
+
+    override def onError(t: Throwable): Unit = {
+      ReactiveStreamsCompliance.requireNonNullException(t)
+      p.tryFailure(t)
+    }
+
     override def onComplete(): Unit = p.tryFailure(new NoSuchElementException("empty stream"))
   }
 

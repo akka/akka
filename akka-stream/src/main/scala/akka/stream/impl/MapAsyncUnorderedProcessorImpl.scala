@@ -80,7 +80,10 @@ private[akka] class MapAsyncUnorderedProcessorImpl(_settings: ActorFlowMateriali
       try {
         val future = f(elem)
         inProgressCount += 1
-        future.map(FutureElement.apply).recover {
+        future.map { elem ⇒
+          ReactiveStreamsCompliance.requireNonNullElement(elem)
+          FutureElement(elem)
+        }.recover {
           case err ⇒ FutureFailure(elem, err)
         }.pipeTo(self)
       } catch {
