@@ -580,7 +580,7 @@ class GraphFlexiMergeSpec extends AkkaSpec {
 
       val s = SubscriberProbe[String]
       p.subscribe(s)
-      s.expectErrorOrSubscriptionFollowedByError().getMessage should be("ERROR")
+      s.expectSubscriptionAndError().getMessage should be("ERROR")
     }
 
     "emit failure" in {

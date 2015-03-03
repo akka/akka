@@ -121,7 +121,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
     }
 
   def registerSubscriber(subscriber: Subscriber[Any]): Unit = {
-    if (subscribers.contains(subscriber)) // FIXME this is not legal AFAICT, needs to check identity, not equality
+    if (subscribers.contains(subscriber))
       rejectDuplicateSubscriber(subscriber)
     else {
       val subscription = new FutureSubscription(self)

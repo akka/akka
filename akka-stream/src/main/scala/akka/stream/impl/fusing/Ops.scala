@@ -75,8 +75,8 @@ private[akka] final case class MapConcat[In, Out](f: In ⇒ immutable.Seq[Out], 
 /**
  * INTERNAL API
  */
-private[akka] final case class Take[T](count: Int) extends PushStage[T, T] {
-  private var left: Int = count
+private[akka] final case class Take[T](count: Long) extends PushStage[T, T] {
+  private var left: Long = count
 
   override def onPush(elem: T, ctx: Context[T]): Directive = {
     left -= 1
@@ -89,8 +89,8 @@ private[akka] final case class Take[T](count: Int) extends PushStage[T, T] {
 /**
  * INTERNAL API
  */
-private[akka] final case class Drop[T](count: Int) extends PushStage[T, T] {
-  private var left: Int = count
+private[akka] final case class Drop[T](count: Long) extends PushStage[T, T] {
+  private var left: Long = count
   override def onPush(elem: T, ctx: Context[T]): Directive =
     if (left > 0) {
       left -= 1

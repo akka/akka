@@ -12,6 +12,7 @@ import scala.util.control.NoStackTrace
 import scala.concurrent.Await
 import akka.stream.testkit.StreamTestKit.SubscriberProbe
 import akka.stream.Supervision
+import akka.stream.impl.ReactiveStreamsCompliance
 
 class FlowSupervisionSpec extends AkkaSpec {
   import OperationAttributes.supervisionStrategy
@@ -36,6 +37,20 @@ class FlowSupervisionSpec extends AkkaSpec {
     "support resume " in {
       val result = run(failingMap.withAttributes(supervisionStrategy(Supervision.resumingDecider)))
       result should be(List(1, 2, 4, 5))
+    }
+
+    "complete stream with NPE failure when null is emitted" in {
+      intercept[NullPointerException] {
+        Await.result(Source(List("a", "b")).map(_ ⇒ null).grouped(1000).runWith(Sink.head()), 3.seconds)
+      }.getMessage should be(ReactiveStreamsCompliance.ElementMustNotBeNullMsg)
+    }
+
+    "resume stream when null is emitted" in {
+      val nullMap = Flow[String].map(elem ⇒ if (elem == "b") null else elem)
+        .withAttributes(supervisionStrategy(Supervision.resumingDecider))
+      val result = Await.result(Source(List("a", "b", "c")).via(nullMap)
+        .grouped(1000).runWith(Sink.head()), 3.seconds)
+      result should be(List("a", "c"))
     }
 
   }

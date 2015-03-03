@@ -83,7 +83,7 @@ final class PublisherSource[Out](p: Publisher[Out], val attributes: OperationAtt
  * may happen before or after materializing the `Flow`.
  * The stream terminates with an error if the `Future` is completed with a failure.
  */
-final class FutureSource[Out](future: Future[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) { // FIXME Why does this have anything to do with Actors?
+final class FutureSource[Out](future: Future[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) =
     future.value match {
       case Some(Success(element)) ⇒
@@ -105,15 +105,12 @@ final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: Sou
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val p = Promise[Unit]()
 
-    // Not TCK verified as RC1 does not allow "empty publishers", 
-    // reactive-streams on master now contains support for empty publishers.
-    // so we can enable it then, though it will require external completing of the promise
     val pub = new Publisher[Unit] {
       override def subscribe(s: Subscriber[_ >: Unit]) = {
+        requireNonNullSubscriber(s)
         tryOnSubscribe(s, new Subscription {
           override def request(n: Long): Unit = ()
-
-          override def cancel(): Unit = p.success(())
+          override def cancel(): Unit = p.trySuccess(())
         })
         p.future.onComplete {
           case Success(_)  ⇒ tryOnComplete(s)
@@ -136,7 +133,7 @@ final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: Sou
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) { // FIXME Why does this have anything to do with Actors?
+final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val cancelled = new AtomicBoolean(false)

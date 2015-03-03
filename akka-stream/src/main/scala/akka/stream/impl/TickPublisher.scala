@@ -11,6 +11,7 @@ import scala.collection.mutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
 import akka.actor.DeadLetterSuppression
+import akka.event.Logging
 
 /**
  * INTERNAL API
@@ -98,8 +99,8 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
         handleFailure(numberOfElementsInRequestMustBePositiveException)
       } else {
         demand += elements
-        if (demand < 0) // Long has overflown, reactive-streams specification rule 3.17
-          handleFailure(totalPendingDemandMustNotExceedLongMaxValueException)
+        if (demand < 0)
+          demand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
       }
 
     case Cancel ⇒
@@ -116,7 +117,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
       subscriber = s
       tryOnSubscribe(s, subscription)
     case _ ⇒
-      rejectAdditionalSubscriber(s, exposedPublisher)
+      rejectAdditionalSubscriber(s, s"${Logging.simpleName(this)}")
   }
 
   override def postStop(): Unit = {

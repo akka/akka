@@ -56,7 +56,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       val p = createSource(immutable.Iterable.empty[Int]).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectCompletedOrSubscriptionFollowedByComplete()
+      c.expectSubscriptionAndComplete()
       c.expectNoMsg(100.millis)
     }
 
@@ -167,7 +167,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       val p = createSource(iterable).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectErrorOrSubscriptionFollowedByError().getMessage should be("no good iterator")
+      c.expectSubscriptionAndError().getMessage should be("no good iterator")
       c.expectNoMsg(100.millis)
     }
 
@@ -181,7 +181,7 @@ abstract class AbstractFlowIteratorSpec extends AkkaSpec {
       val p = createSource(iterable).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectErrorOrSubscriptionFollowedByError().getMessage should be("no next")
+      c.expectSubscriptionAndError().getMessage should be("no next")
       c.expectNoMsg(100.millis)
     }
   }
