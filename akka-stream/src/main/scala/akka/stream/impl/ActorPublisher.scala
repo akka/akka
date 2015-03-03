@@ -65,8 +65,7 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
 
   def takePendingSubscribers(): immutable.Seq[Subscriber[_ >: T]] = {
     val pending = pendingSubscribers.getAndSet(Nil)
-    assert(pending ne null, "takePendingSubscribers must not be called after shutdown")
-    pending.reverse
+    if (pending eq null) Nil else pending.reverse
   }
 
   def shutdown(reason: Option[Throwable]): Unit = {

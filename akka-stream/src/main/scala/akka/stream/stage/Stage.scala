@@ -60,6 +60,9 @@ private[stream] abstract class AbstractStage[-In, Out, PushD <: Directive, PullD
    * with [[akka.stream.stage.Context#isFinishing]].
    *
    * By default the finish signal is immediately propagated with [[akka.stream.stage.Context#finish]].
+   *
+   * *IMPORTANT NOTICE:* this signal is not back-pressured, it might arrive from upstream even though
+   * the last action by this stage was a “push”.
    */
   def onUpstreamFinish(ctx: Ctx): TerminationDirective = ctx.finish()
 
