@@ -16,6 +16,7 @@ import scala.util.control.NonFatal
 import akka.actor.Props
 import akka.actor.ActorLogging
 import akka.event.LoggingAdapter
+import akka.actor.DeadLetterSuppression
 
 /**
  * INTERNAL API
@@ -39,6 +40,8 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
   private var batchRemaining = requestBatchSize
 
   val subreceive: SubReceive = new SubReceive(waitingForUpstream)
+
+  def isFinished = (upstream ne null) && upstreamCompleted
 
   private def dequeue(): Any = {
     val elem = inputBuffer(nextInputElementCursor)
@@ -82,7 +85,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
 
   override def onDownstreamFinish(ctx: BoundaryContext): TerminationDirective = {
     cancel()
-    ctx.exit()
+    ctx.finish()
   }
 
   def cancel(): Unit = {
@@ -102,7 +105,7 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
   private def onComplete(): Unit =
     if (!upstreamCompleted) {
       upstreamCompleted = true
-      subreceive.become(completed)
+      // onUpstreamFinish is not back-pressured, stages need to deal with this
       if (inputBufferElements == 0) enter().finish()
     }
 
@@ -119,7 +122,6 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
 
   private def onError(e: Throwable): Unit = {
     upstreamCompleted = true
-    subreceive.become(completed)
     enter().fail(e)
   }
 
@@ -142,18 +144,25 @@ private[akka] class BatchingActorInputBoundary(val size: Int)
     case OnSubscribe(subscription) ⇒ subscription.cancel() // spec rule 2.5
   }
 
-  private def completed: Actor.Receive = {
-    case OnSubscribe(subscription) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
-  }
+}
 
+private[akka] object ActorOutputBoundary {
+  /**
+   * INTERNAL API.
+   */
+  private case object ContinuePulling extends DeadLetterSuppression
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boolean, log: LoggingAdapter)
+private[akka] class ActorOutputBoundary(val actor: ActorRef,
+                                        val debugLogging: Boolean,
+                                        val log: LoggingAdapter,
+                                        val outputBurstLimit: Int)
   extends BoundaryStage {
   import ReactiveStreamsCompliance._
+  import ActorOutputBoundary._
 
   private var exposedPublisher: ActorPublisher[Any] = _
 
@@ -162,7 +171,31 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
   // This flag is only used if complete/fail is called externally since this op turns into a Finished one inside the
   // interpreter (i.e. inside this op this flag has no effects since if it is completed the op will not be invoked)
   private var downstreamCompleted = false
+  // this is true while we “hold the ball”; while “false” incoming demand will just be queued up
   private var upstreamWaiting = true
+  // the number of elements emitted during a single execution is bounded
+  private var burstRemaining = outputBurstLimit
+
+  private def tryBounceBall(ctx: BoundaryContext) = {
+    burstRemaining -= 1
+    if (burstRemaining > 0) ctx.pull()
+    else {
+      actor ! ContinuePulling
+      takeBallOut(ctx)
+    }
+  }
+
+  private def takeBallOut(ctx: BoundaryContext) = {
+    upstreamWaiting = true
+    ctx.exit()
+  }
+
+  private def tryPutBallIn() =
+    if (upstreamWaiting) {
+      burstRemaining = outputBurstLimit
+      upstreamWaiting = false
+      enter().pull()
+    }
 
   val subreceive = new SubReceive(waitingExposedPublisher)
 
@@ -191,12 +224,9 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
 
   override def onPush(elem: Any, ctx: BoundaryContext): Directive = {
     onNext(elem)
-    if (downstreamDemand > 0) ctx.pull()
-    else if (downstreamCompleted) ctx.finish()
-    else {
-      upstreamWaiting = true
-      ctx.exit()
-    }
+    if (downstreamCompleted) ctx.finish()
+    else if (downstreamDemand > 0) tryBounceBall(ctx)
+    else takeBallOut(ctx)
   }
 
   override def onPull(ctx: BoundaryContext): Directive =
@@ -240,11 +270,11 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
         downstreamDemand += elements
         if (downstreamDemand < 0)
           downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
-        if (upstreamWaiting) {
-          upstreamWaiting = false
-          enter().pull()
-        }
+        tryPutBallIn()
       }
+
+    case ContinuePulling ⇒
+      if (!downstreamCompleted && downstreamDemand > 0) tryPutBallIn()
 
     case Cancel(subscription) ⇒
       downstreamCompleted = true
@@ -270,7 +300,7 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
   extends Actor with ActorLogging {
 
   private val upstream = new BatchingActorInputBoundary(settings.initialInputBufferSize)
-  private val downstream = new ActorOutputBoundary(self, settings.debugLogging, log)
+  private val downstream = new ActorOutputBoundary(self, settings.debugLogging, log, settings.outputBurstLimit)
   private val interpreter = new OneBoundedInterpreter(upstream +: ops :+ downstream)
   interpreter.init()
 
@@ -278,7 +308,7 @@ private[akka] class ActorInterpreter(val settings: ActorFlowMaterializerSettings
 
   override protected[akka] def aroundReceive(receive: Actor.Receive, msg: Any): Unit = {
     super.aroundReceive(receive, msg)
-    if (interpreter.isFinished) context.stop(self)
+    if (interpreter.isFinished && upstream.isFinished) context.stop(self)
   }
 
   override def postStop(): Unit = {
