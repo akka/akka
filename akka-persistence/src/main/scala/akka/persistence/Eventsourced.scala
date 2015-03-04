@@ -12,6 +12,7 @@ import akka.actor.Stash
 import akka.actor.StashFactory
 import akka.event.Logging
 import akka.event.LoggingAdapter
+import akka.actor.ActorRef
 
 /**
  * INTERNAL API
@@ -36,13 +37,15 @@ private[persistence] object Eventsourced {
  * Scala API and implementation details of [[PersistentActor]], [[AbstractPersistentActor]] and
  * [[UntypedPersistentActor]].
  */
-private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory {
+private[persistence] trait Eventsourced extends Snapshotter with Stash with StashFactory with PersistenceIdentity {
   import JournalProtocol._
   import SnapshotProtocol.LoadSnapshotResult
   import Eventsourced._
 
   private val extension = Persistence(context.system)
-  private lazy val journal = extension.journalFor(persistenceId)
+
+  private[persistence] lazy val journal = extension.journalFor(journalPluginId)
+  private[persistence] lazy val snapshotStore = extension.snapshotStoreFor(snapshotPluginId)
 
   private val instanceId: Int = Eventsourced.instanceIdCounter.getAndIncrement()
 
@@ -67,11 +70,6 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     case _: ReplayedMessage     ⇒ false
     case _                      ⇒ true
   }
-
-  /**
-   * Id of the persistent entity for which messages should be replayed.
-   */
-  def persistenceId: String
 
   /**
    * Returns `persistenceId`.
@@ -114,15 +112,18 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
   override def preStart(): Unit =
     self ! Recover()
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   override protected[akka] def aroundReceive(receive: Receive, message: Any): Unit =
     currentState.stateReceive(receive, message)
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
+  override protected[akka] def aroundPreStart(): Unit = {
+    // Fail fast on missing plugins.
+    val j = journal; val s = snapshotStore
+    super.aroundPreStart()
+  }
+
+  /** INTERNAL API. */
   override protected[akka] def aroundPreRestart(reason: Throwable, message: Option[Any]): Unit = {
     try {
       internalStash.unstashAll()
@@ -145,9 +146,7 @@ private[persistence] trait Eventsourced extends Snapshotter with Stash with Stas
     }
   }
 
-  /**
-   * INTERNAL API.
-   */
+  /** INTERNAL API. */
   override protected[akka] def aroundPostStop(): Unit =
     try {
       internalStash.unstashAll()

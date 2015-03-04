@@ -5,13 +5,15 @@
 package akka.persistence
 
 import scala.concurrent.duration._
-
 import com.typesafe.config.Config
-
 import akka.actor._
 import akka.dispatch.Dispatchers
 import akka.persistence.journal.AsyncWriteJournal
 import akka.util.Helpers.ConfigOps
+import akka.event.LoggingAdapter
+import akka.event.Logging
+import java.util.concurrent.atomic.AtomicReference
+import scala.annotation.tailrec
 
 /**
  * Persistence configuration.
@@ -70,68 +72,142 @@ final class PersistenceSettings(config: Config) {
 }
 
 /**
- * Persistence extension.
+ * Identification of [[PersistentActor]] or [[PersistentView]].
+ */
+//#persistence-identity
+trait PersistenceIdentity {
+
+  /**
+   * Id of the persistent entity for which messages should be replayed.
+   */
+  def persistenceId: String
+
+  /**
+   * Configuration id of the journal plugin servicing this persistent actor or view.
+   * When empty, looks in `akka.persistence.journal.plugin` to find configuration entry path.
+   * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
+   * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
+   */
+  def journalPluginId: String = ""
+
+  /**
+   * Configuration id of the snapshot plugin servicing this persistent actor or view.
+   * When empty, looks in `akka.persistence.snapshot-store.plugin` to find configuration entry path.
+   * When configured, uses `snapshotPluginId` as absolute path to the snapshot store configuration entry.
+   * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
+   */
+  def snapshotPluginId: String = ""
+
+}
+//#persistence-identity
+
+/**
+ * Persistence extension provider.
  */
 object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
-  /**
-   * Java API.
-   */
+  /** Java API. */
   override def get(system: ActorSystem): Persistence = super.get(system)
-
   def createExtension(system: ExtendedActorSystem): Persistence = new Persistence(system)
-
   def lookup() = Persistence
+  /** INTERNAL API. */
+  private[persistence] case class PluginHolder(actor: ActorRef) extends Extension
 }
 
 /**
  * Persistence extension.
  */
 class Persistence(val system: ExtendedActorSystem) extends Extension {
+  import Persistence._
+
+  private def log: LoggingAdapter = Logging(system, getClass.getName)
+
   private val DefaultPluginDispatcherId = "akka.persistence.dispatchers.default-plugin-dispatcher"
+
   private val config = system.settings.config.getConfig("akka.persistence")
+
+  // Lazy, so user is not forced to configure defaults when she is not using them.
+  private lazy val defaultJournalPluginId = config.getString("journal.plugin")
+
+  // Lazy, so user is not forced to configure defaults when she is not using them.
+  private lazy val defaultSnapshotPluginId = config.getString("snapshot-store.plugin")
 
   val settings = new PersistenceSettings(config)
 
-  private val snapshotStore = createPlugin("snapshot-store") { _ ⇒
-    DefaultPluginDispatcherId
-  }
+  private def journalDispatchSelector(klaz: Class[_]): String =
+    if (classOf[AsyncWriteJournal].isAssignableFrom(klaz)) Dispatchers.DefaultDispatcherId else DefaultPluginDispatcherId
 
-  private val journal = createPlugin("journal") { clazz ⇒
-    if (classOf[AsyncWriteJournal].isAssignableFrom(clazz)) Dispatchers.DefaultDispatcherId
-    else DefaultPluginDispatcherId
+  private def snapshotDispatchSelector(klaz: Class[_]): String =
+    DefaultPluginDispatcherId
+
+  /** Check for default identity. */
+  private def isDefault(text: String) = text == null || text.length == 0
+
+  /** Discovered persistence journal plugins. */
+  private val journalPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
+
+  /** Discovered persistence snapshot store plugins. */
+  private val snapshotPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
+
+  /**
+   * Returns a journal plugin actor identified by `journalPluginId`.
+   * When empty, looks in `akka.persistence.journal.plugin` to find configuration entry path.
+   * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
+   * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
+   */
+  @tailrec final def journalFor(journalPluginId: String): ActorRef = {
+    val configPath = if (isDefault(journalPluginId)) defaultJournalPluginId else journalPluginId
+    val extensionIdMap = journalPluginExtensionId.get
+    extensionIdMap.get(configPath) match {
+      case Some(extensionId) ⇒
+        extensionId(system).actor
+      case None ⇒
+        val extensionId = new ExtensionId[PluginHolder] {
+          override def createExtension(system: ExtendedActorSystem): PluginHolder =
+            PluginHolder(createPlugin(configPath)(journalDispatchSelector))
+        }
+        journalPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
+        journalFor(journalPluginId) // Recursive invocation.
+    }
   }
 
   /**
-   * Creates a canonical persistent actor id from a persistent actor ref.
+   * Returns a snapshot store plugin actor identified by `snapshotPluginId`.
+   * When empty, looks in `akka.persistence.snapshot-store.plugin` to find configuration entry path.
+   * When configured, uses `snapshotPluginId` as absolute path to the snapshot store configuration entry.
+   * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
+  @tailrec final def snapshotStoreFor(snapshotPluginId: String): ActorRef = {
+    val configPath = if (isDefault(snapshotPluginId)) defaultSnapshotPluginId else snapshotPluginId
+    val extensionIdMap = snapshotPluginExtensionId.get
+    extensionIdMap.get(configPath) match {
+      case Some(extensionId) ⇒
+        extensionId(system).actor
+      case None ⇒
+        val extensionId = new ExtensionId[PluginHolder] {
+          override def createExtension(system: ExtendedActorSystem): PluginHolder =
+            PluginHolder(createPlugin(configPath)(snapshotDispatchSelector))
+        }
+        snapshotPluginExtensionId.compareAndSet(extensionIdMap, extensionIdMap.updated(configPath, extensionId))
+        snapshotStoreFor(snapshotPluginId) // Recursive invocation.
+    }
+  }
+
+  private def createPlugin(configPath: String)(dispatcherSelector: Class[_] ⇒ String) = {
+    val pluginActorName = configPath
+    val pluginConfig = system.settings.config.getConfig(configPath)
+    val pluginClassName = pluginConfig.getString("class")
+    log.debug(s"Create plugin: ${pluginActorName} ${pluginClassName}")
+    val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
+    val pluginInjectConfig = if (pluginConfig.hasPath("inject-config")) pluginConfig.getBoolean("inject-config") else false
+    val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
+    val pluginActorArgs = if (pluginInjectConfig) List(pluginConfig) else Nil
+    val pluginActorProps = Props(Deploy(dispatcher = pluginDispatcherId), pluginClass, pluginActorArgs)
+    system.systemActorOf(pluginActorProps, pluginActorName)
+  }
+
+  /** Creates a canonical persistent actor id from a persistent actor ref. */
   def persistenceId(persistentActor: ActorRef): String = id(persistentActor)
 
-  /**
-   * Returns a snapshot store for a persistent actor identified by `persistenceId`.
-   */
-  def snapshotStoreFor(persistenceId: String): ActorRef = {
-    // Currently returns a snapshot store singleton but this methods allows for later
-    // optimizations where each persistent actor can have its own snapshot store actor.
-    snapshotStore
-  }
-
-  /**
-   * Returns a journal for a persistent actor identified by `persistenceId`.
-   */
-  def journalFor(persistenceId: String): ActorRef = {
-    // Currently returns a journal singleton but this methods allows for later
-    // optimizations where each persistent actor can have its own journal actor.
-    journal
-  }
-
-  private def createPlugin(pluginType: String)(dispatcherSelector: Class[_] ⇒ String) = {
-    val pluginConfigPath = config.getString(s"${pluginType}.plugin")
-    val pluginConfig = system.settings.config.getConfig(pluginConfigPath)
-    val pluginClassName = pluginConfig.getString("class")
-    val pluginClass = system.dynamicAccess.getClassFor[AnyRef](pluginClassName).get
-    val pluginDispatcherId = if (pluginConfig.hasPath("plugin-dispatcher")) pluginConfig.getString("plugin-dispatcher") else dispatcherSelector(pluginClass)
-    system.systemActorOf(Props(pluginClass).withDispatcher(pluginDispatcherId), pluginType)
-  }
-
   private def id(ref: ActorRef) = ref.path.toStringWithoutAddress
+
 }
