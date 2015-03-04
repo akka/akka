@@ -6,8 +6,6 @@ package akka.http.model
 
 import java.util.concurrent.TimeoutException
 import com.typesafe.config.{ ConfigFactory, Config }
-import org.reactivestreams.Publisher
-import scala.collection.immutable
 import scala.concurrent.{ Promise, Await }
 import scala.concurrent.duration._
 import org.scalatest.{ BeforeAndAfterAll, MustMatchers, FreeSpec }
