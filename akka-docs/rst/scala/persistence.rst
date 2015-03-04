@@ -668,3 +668,24 @@ Configuration
 There are several configuration properties for the persistence module, please refer
 to the :ref:`reference configuration <config-akka-persistence>`.
 
+Multiple persistence plugin configurations
+==========================================
+
+By default, persistent actor or view will use "default" journal and snapshot store plugins
+configured in the following sections of the ``reference.conf`` configuration resource:
+
+.. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#default-config
+
+Note that in this case actor or view overrides only ``persistenceId`` method:
+
+.. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#default-plugins
+
+When persistent actor or view overrides ``journalPluginId`` and ``snapshotPluginId`` methods, 
+the actor or view will be serviced by these specific persistence plugins instead of the defaults:
+
+.. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#override-plugins
+
+Note that ``journalPluginId`` and ``snapshotPluginId`` must refer to properly configured ``reference.conf``
+plugin entires with standard ``class`` property as well as settings which are specific for those plugins, i.e.: 
+
+.. includecode:: code/docs/persistence/PersistenceMultiDocSpec.scala#override-config
