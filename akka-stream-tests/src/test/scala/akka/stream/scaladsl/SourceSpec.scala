@@ -166,4 +166,11 @@ class SourceSpec extends AkkaSpec {
     }
   }
 
+  "Iterator Source" must {
+    "properly iterate" in {
+      val result = Await.result(Source(() ⇒ Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head), 1.second)
+      result should ===(Seq(false, true, false, true, false, true, false, true, false, true))
+    }
+  }
+
 }

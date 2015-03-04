@@ -1,0 +1,28 @@
+/**
+ * Copyright (C) 2015 Typesafe Inc. <http://www.typesafe.com>
+ */
+package akka.stream.javadsl
+
+import akka.stream.scaladsl
+import akka.stream.{ Inlet, Outlet, Shape, Graph, BidiShape }
+import akka.stream.scaladsl.JavaConverters._
+import akka.japi.Pair
+
+trait BidiFlowCreate {
+
+  import language.implicitConversions
+  private implicit def p[A, B](pair: Pair[A, B]): (A, B) = pair.first -> pair.second
+
+  def create[I1, O1, I2, O2](block: japi.Function[FlowGraph.Builder, BidiShape[I1, O1, I2, O2]]): BidiFlow[I1, O1, I2, O2, Unit] =
+    new BidiFlow(scaladsl.BidiFlow() { b ⇒ block.apply(b.asJava) })
+
+  def create[I1, O1, I2, O2, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder, S, BidiShape[I1, O1, I2, O2]]): BidiFlow[I1, O1, I2, O2, M] =
+    new BidiFlow(scaladsl.BidiFlow(g1) { b ⇒ s => block.apply(b.asJava, s) })
+
+  [2..21#def create[I##1, O##1, I##2, O##2, [#S1 <: Shape#], [#M1#], M]([#g1: Graph[S1, M1]#], combineMat: japi.Function1[[#M1#], M],
+      block: japi.Function2[FlowGraph.Builder, [#S1#], BidiShape[I##1, O##1, I##2, O##2]]): BidiFlow[I##1, O##1, I##2, O##2, M] =
+    new BidiFlow(scaladsl.BidiFlow([#g1#])(combineMat.apply _) { b => ([#s1#]) => block.apply(b.asJava, [#s1#]) })#
+  
+  ]
+
+}

@@ -17,6 +17,9 @@ private[akka] object JavaConverters {
   implicit final class AddAsJavaFlow[In, Out, Mat](val flow: scaladsl.Flow[In, Out, Mat]) extends AnyVal {
     def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(flow)
   }
+  implicit final class AddAsJavaBidiFlow[I1, O1, I2, O2, Mat](val flow: scaladsl.BidiFlow[I1, O1, I2, O2, Mat]) extends AnyVal {
+    def asJava: javadsl.BidiFlow[I1, O1, I2, O2, Mat] = new javadsl.BidiFlow(flow)
+  }
   implicit final class AddAsJavaSink[In, Mat](val sink: scaladsl.Sink[In, Mat]) extends AnyVal {
     def asJava: javadsl.Sink[In, Mat] = new javadsl.Sink(sink)
   }
@@ -29,6 +32,9 @@ private[akka] object JavaConverters {
   }
   implicit final class AddAsScalaFlow[In, Out, Mat](val flow: javadsl.Flow[In, Out, Mat]) extends AnyVal {
     def asScala: scaladsl.Flow[In, Out, Mat] = flow.asScala
+  }
+  implicit final class AddAsScalaBidiFlow[I1, O1, I2, O2, Mat](val flow: javadsl.BidiFlow[I1, O1, I2, O2, Mat]) extends AnyVal {
+    def asScala: scaladsl.BidiFlow[I1, O1, I2, O2, Mat] = flow.asScala
   }
   implicit final class AddAsScalaSink[In, Mat](val sink: javadsl.Sink[In, Mat]) extends AnyVal {
     def asScala: scaladsl.Sink[In, Mat] = sink.asScala

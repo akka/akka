@@ -49,7 +49,7 @@ object Sink extends SinkApply {
   private def shape[T](name: String): SinkShape[T] = SinkShape(new Inlet(name + ".in"))
 
   /**
-   * A graph with the shape of a source logically is a source, this method makes
+   * A graph with the shape of a sink logically is a sink, this method makes
    * it so also in type.
    */
   def wrap[T, M](g: Graph[SinkShape[T], M]): Sink[T, M] = new Sink(g.module)

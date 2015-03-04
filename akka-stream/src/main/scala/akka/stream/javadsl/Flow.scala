@@ -33,6 +33,12 @@ object Flow {
   /** Create a `Flow` which can process elements of type `T`. */
   def of[T](clazz: Class[T]): javadsl.Flow[T, T, Unit] =
     create[T]()
+
+  /**
+   * A graph with the shape of a flow logically is a flow, this method makes
+   * it so also in type.
+   */
+  def wrap[I, O, M](g: Graph[FlowShape[I, O], M]): Flow[I, O, M] = new Flow(scaladsl.Flow.wrap(g))
 }
 
 /** Create a `Flow` which can process elements of type `T`. */
@@ -79,14 +85,53 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
-  def join[M](flow: javadsl.Flow[Out, In, M]): javadsl.RunnableFlow[Mat @uncheckedVariance Pair M] =
-    new RunnableFlowAdapter(delegate.join(flow.asScala).mapMaterialized(p ⇒ new Pair(p._1, p._2)))
+  def join[M](flow: javadsl.Flow[Out, In, M]): javadsl.RunnableFlow[Mat] =
+    new RunnableFlowAdapter(delegate.join(flow.asScala))
 
   /**
    * Join this [[Flow]] to another [[Flow]], by cross connecting the inputs and outputs, creating a [[RunnableFlow]]
    */
   def join[M, M2](flow: javadsl.Flow[Out, In, M], combine: japi.Function2[Mat, M, M2]): javadsl.RunnableFlow[M2] =
     new RunnableFlowAdapter(delegate.joinMat(flow.asScala)(combinerToScala(combine)))
+
+  /**
+   * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
+   * {{{
+   * +---------------------------+
+   * | Resulting Flow            |
+   * |                           |
+   * | +------+        +------+  |
+   * | |      | ~Out~> |      | ~~> O2
+   * | | flow |        | bidi |  |
+   * | |      | <~In~  |      | <~~ I2
+   * | +------+        +------+  |
+   * +---------------------------+
+   * }}}
+   * The materialized value of the combined [[Flow]] will be the materialized
+   * value of the current flow (ignoring the [[BidiFlow]]’s value), use
+   * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
+   */
+  def join[I2, O2, Mat2](bidi: BidiFlow[Out, O2, I2, In, Mat2]): Flow[I2, O2, Mat] =
+    new Flow(delegate.join(bidi.asScala))
+
+  /**
+   * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
+   * {{{
+   * +---------------------------+
+   * | Resulting Flow            |
+   * |                           |
+   * | +------+        +------+  |
+   * | |      | ~Out~> |      | ~~> O2
+   * | | flow |        | bidi |  |
+   * | |      | <~In~  |      | <~~ I2
+   * | +------+        +------+  |
+   * +---------------------------+
+   * }}}
+   * The `combine` function is used to compose the materialized values of this flow and that
+   * [[BidiFlow]] into the materialized value of the resulting [[Flow]].
+   */
+  def join[I2, O2, Mat2, M](bidi: BidiFlow[Out, O2, I2, In, Mat2], combine: japi.Function2[Mat, Mat2, M]): Flow[I2, O2, M] =
+    new Flow(delegate.joinMat(bidi.asScala)(combinerToScala(combine)))
 
   /**
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.

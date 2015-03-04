@@ -253,6 +253,17 @@ object FlowGraph extends GraphApply {
       new Flow(moduleInProgress.replaceShape(FlowShape(inlet, outlet)))
     }
 
+    private[stream] def buildBidiFlow[I1, O1, I2, O2, Mat](shape: BidiShape[I1, O1, I2, O2]): BidiFlow[I1, O1, I2, O2, Mat] = {
+      if (!moduleInProgress.isBidiFlow)
+        throw new IllegalArgumentException(
+          s"Cannot build BidiFlow with open inputs (${moduleInProgress.inPorts.mkString(",")}) and outputs (${moduleInProgress.outPorts.mkString(",")})")
+      if (moduleInProgress.outPorts.toSet != shape.outlets.toSet)
+        throw new IllegalArgumentException(s"provided Outlets [${shape.outlets.mkString(",")}] does not equal the module’s open Outlets [${moduleInProgress.outPorts.mkString(",")}]")
+      if (moduleInProgress.inPorts.toSet != shape.inlets.toSet)
+        throw new IllegalArgumentException(s"provided Inlets [${shape.inlets.mkString(",")}] does not equal the module’s open Inlets [${moduleInProgress.inPorts.mkString(",")}]")
+      new BidiFlow(moduleInProgress.replaceShape(shape))
+    }
+
     private[stream] def buildSink[T, Mat](inlet: Inlet[T]): Sink[T, Mat] = {
       if (moduleInProgress.isRunnable)
         throw new IllegalArgumentException("Cannot build the Sink since no ports remain open")
@@ -429,6 +440,75 @@ object FlowGraph extends GraphApply {
 
     implicit class FlowShapeArrow[I, O](val f: FlowShape[I, O]) extends AnyVal with ReverseCombinerBase[I] {
       override def importAndGetPortReverse(b: Builder): Inlet[I] = f.inlet
+
+      def <~>[I2, O2, Mat](bidi: BidiFlow[O, O2, I2, I, Mat])(implicit b: Builder): BidiShape[O, O2, I2, I] = {
+        val shape = b.add(bidi)
+        b.addEdge(f.outlet, shape.in1)
+        b.addEdge(shape.out2, f.inlet)
+        shape
+      }
+
+      def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder): BidiShape[O, O2, I2, I] = {
+        b.addEdge(f.outlet, bidi.in1)
+        b.addEdge(bidi.out2, f.inlet)
+        bidi
+      }
+
+      def <~>[M](flow: Flow[O, I, M])(implicit b: Builder): Unit = {
+        val shape = b.add(flow)
+        b.addEdge(shape.outlet, f.inlet)
+        b.addEdge(f.outlet, shape.inlet)
+      }
+    }
+
+    implicit class FlowArrow[I, O, M](val f: Flow[I, O, M]) extends AnyVal {
+      def <~>[I2, O2, Mat](bidi: BidiFlow[O, O2, I2, I, Mat])(implicit b: Builder): BidiShape[O, O2, I2, I] = {
+        val shape = b.add(bidi)
+        val flow = b.add(f)
+        b.addEdge(flow.outlet, shape.in1)
+        b.addEdge(shape.out2, flow.inlet)
+        shape
+      }
+
+      def <~>[I2, O2](bidi: BidiShape[O, O2, I2, I])(implicit b: Builder): BidiShape[O, O2, I2, I] = {
+        val flow = b.add(f)
+        b.addEdge(flow.outlet, bidi.in1)
+        b.addEdge(bidi.out2, flow.inlet)
+        bidi
+      }
+
+      def <~>[M2](flow: Flow[O, I, M2])(implicit b: Builder): Unit = {
+        val shape = b.add(flow)
+        val ff = b.add(f)
+        b.addEdge(shape.outlet, ff.inlet)
+        b.addEdge(ff.outlet, shape.inlet)
+      }
+    }
+
+    implicit class BidiFlowShapeArrow[I1, O1, I2, O2](val bidi: BidiShape[I1, O1, I2, O2]) extends AnyVal {
+      def <~>[I3, O3](other: BidiShape[O1, O3, I3, I2])(implicit b: Builder): BidiShape[O1, O3, I3, I2] = {
+        b.addEdge(bidi.out1, other.in1)
+        b.addEdge(other.out2, bidi.in2)
+        other
+      }
+
+      def <~>[I3, O3, M](otherFlow: BidiFlow[O1, O3, I3, I2, M])(implicit b: Builder): BidiShape[O1, O3, I3, I2] = {
+        val other = b.add(otherFlow)
+        b.addEdge(bidi.out1, other.in1)
+        b.addEdge(other.out2, bidi.in2)
+        other
+      }
+
+      def <~>(flow: FlowShape[O1, I2])(implicit b: Builder): Unit = {
+        b.addEdge(bidi.out1, flow.inlet)
+        b.addEdge(flow.outlet, bidi.in2)
+      }
+
+      def <~>[M](f: Flow[O1, I2, M])(implicit b: Builder): Unit = {
+        val flow = b.add(f)
+        b.addEdge(bidi.out1, flow.inlet)
+        b.addEdge(flow.outlet, bidi.in2)
+      }
     }
 
     import scala.language.implicitConversions
