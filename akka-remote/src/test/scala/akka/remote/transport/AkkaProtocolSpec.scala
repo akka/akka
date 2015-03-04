@@ -9,7 +9,7 @@ import akka.remote.transport.Transport._
 import akka.remote.{ SeqNo, WireFormats, RemoteActorRefProvider, FailureDetector }
 import akka.testkit.{ ImplicitSender, AkkaSpec }
 import akka.util.ByteString
-import com.google.protobuf.{ ByteString ⇒ PByteString }
+import akka.protobuf.{ ByteString ⇒ PByteString }
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }

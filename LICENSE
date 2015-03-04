@@ -18,3 +18,9 @@ the License.
 
 Licenses for dependency projects can be found here:
 [http://akka.io/docs/akka/snapshot/project/licenses.html]
+
+---------------
+
+akka-protobuf contains the sources of Google protobuf 2.5.0 runtime support,
+moved into the source package `akka.protobuf` so as to avoid version conflicts.
+For license information see COPYING.protobuf

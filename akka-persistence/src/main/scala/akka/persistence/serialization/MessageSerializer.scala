@@ -5,7 +5,7 @@
 package akka.persistence.serialization
 
 import scala.language.existentials
-import com.google.protobuf._
+import akka.protobuf._
 import akka.actor.{ ActorPath, ExtendedActorSystem }
 import akka.japi.Util.immutableSeq
 import akka.persistence._

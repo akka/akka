@@ -54,7 +54,7 @@ object AkkaBuild extends Build {
       }
     ),
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, clusterMetrics, slf4j, agent,
-      persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit)
+      persistence, persistenceTck, kernel, osgi, docs, contrib, samples, multiNodeTestkit, protobuf)
   )
 
   lazy val akkaScalaNightly = Project(
@@ -63,7 +63,7 @@ object AkkaBuild extends Build {
     // remove dependencies that we have to build ourselves (Scala STM)
     // samples don't work with dbuild right now
     aggregate = Seq(actor, testkit, actorTests, remote, remoteTests, camel, cluster, slf4j,
-      persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit)
+      persistence, persistenceTck, kernel, osgi, contrib, multiNodeTestkit, protobuf)
   ).disablePlugins(ValidatePullRequest)
 
   lazy val actor = Project(
@@ -86,7 +86,7 @@ object AkkaBuild extends Build {
   lazy val actorTests = Project(
     id = "akka-actor-tests",
     base = file("akka-actor-tests"),
-    dependencies = Seq(testkit % "compile;test->test")
+    dependencies = Seq(testkit % "compile;test->test", protobuf)
   )
 
   lazy val benchJmh = Project(
@@ -95,10 +95,15 @@ object AkkaBuild extends Build {
     dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test")
   ).disablePlugins(ValidatePullRequest)
 
+  lazy val protobuf = Project(
+    id = "akka-protobuf",
+    base = file("akka-protobuf")
+  )
+
   lazy val remote = Project(
     id = "akka-remote",
     base = file("akka-remote"),
-    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test")
+    dependencies = Seq(actor, actorTests % "test->test", testkit % "test->test", protobuf)
   )
 
   lazy val multiNodeTestkit = Project(
@@ -140,7 +145,7 @@ object AkkaBuild extends Build {
   lazy val persistence = Project(
     id = "akka-persistence-experimental",
     base = file("akka-persistence"),
-    dependencies = Seq(actor, remote % "test->test", testkit % "test->test")
+    dependencies = Seq(actor, remote % "test->test", testkit % "test->test", protobuf)
   )
 
   lazy val persistenceTck = Project(

@@ -24,7 +24,6 @@ object Dependencies {
     // when updating config version, update links ActorSystem ScalaDoc to link to the updated version
     val config        = "com.typesafe"                % "config"                       % "1.2.1"       // ApacheV2
     val netty         = "io.netty"                    % "netty"                        % "3.8.0.Final" // ApacheV2
-    val protobuf      = "com.google.protobuf"         % "protobuf-java"                % "2.5.0"       // New BSD
     val scalaStm      = "org.scala-stm"              %% "scala-stm"                    % scalaStmVersion // Modified BSD (Scala)
 
     val slf4jApi      = "org.slf4j"                   % "slf4j-api"                    % "1.7.7"       // MIT
@@ -77,9 +76,9 @@ object Dependencies {
 
   val testkit = Seq(Test.junit, Test.scalatest) ++ Test.metricsAll
 
-  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, protobuf, Test.junitIntf)
+  val actorTests = Seq(Test.junit, Test.scalatest, Test.commonsCodec, Test.commonsMath, Test.mockito, Test.scalacheck, Test.junitIntf)
 
-  val remote = Seq(netty, protobuf, uncommonsMath, Test.junit, Test.scalatest)
+  val remote = Seq(netty, uncommonsMath, Test.junit, Test.scalatest)
 
   val remoteTests = deps(Test.junit, Test.scalatest, Test.scalaXml)
 
@@ -91,7 +90,7 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
+  val persistence = deps(levelDB, levelDBNative, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 

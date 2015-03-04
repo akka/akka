@@ -4,7 +4,7 @@
 package akka.remote.serialization
 
 import scala.collection.immutable
-import com.google.protobuf.ByteString
+import akka.protobuf.ByteString
 import akka.actor.ActorSelectionMessage
 import akka.actor.ExtendedActorSystem
 import akka.actor.SelectChildName
