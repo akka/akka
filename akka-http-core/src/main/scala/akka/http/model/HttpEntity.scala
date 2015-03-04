@@ -7,19 +7,16 @@ package akka.http.model
 import language.implicitConversions
 import java.io.File
 import java.lang.{ Iterable ⇒ JIterable }
-import scala.concurrent.{ Future, ExecutionContext }
+import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
-import scala.util.control.NonFatal
 import akka.util.ByteString
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.ActorFlowMaterializer
+import akka.stream.FlowMaterializer
 import akka.stream.scaladsl._
 import akka.stream.TimerTransformer
 import akka.http.util._
 import japi.JavaMapping.Implicits._
-import scala.util.Success
-import scala.util.Failure
 
 /**
  * Models the entity (aka "body" or "content) of an HTTP message.
@@ -44,7 +41,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
    * Collects all possible parts and returns a potentially future Strict entity for easier processing.
    * The Future is failed with an TimeoutException if the stream isn't completed after the given timeout.
    */
-  def toStrict(timeout: FiniteDuration)(implicit fm: ActorFlowMaterializer): Future[HttpEntity.Strict] = {
+  def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer): Future[HttpEntity.Strict] = {
     def transformer() =
       new TimerTransformer[ByteString, HttpEntity.Strict] {
         var bytes = ByteString.newBuilder
@@ -56,7 +53,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
         }
 
         override def onTermination(e: Option[Throwable]): immutable.Seq[HttpEntity.Strict] =
-          HttpEntity.Strict(contentType, bytes.result) :: Nil
+          HttpEntity.Strict(contentType, bytes.result()) :: Nil
 
         def onTimer(timerKey: Any): immutable.Seq[HttpEntity.Strict] =
           throw new java.util.concurrent.TimeoutException(
@@ -160,7 +157,7 @@ object HttpEntity {
 
     def dataBytes: Source[ByteString, Unit] = Source(data :: Nil)
 
-    override def toStrict(timeout: FiniteDuration)(implicit fm: ActorFlowMaterializer) =
+    override def toStrict(timeout: FiniteDuration)(implicit fm: FlowMaterializer) =
       FastFuture.successful(this)
 
     override def transformDataBytes(transformer: Flow[ByteString, ByteString, _]): MessageEntity =
