@@ -510,7 +510,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
         val downstream2 = StreamTestKit.SubscriberProbe[String]()
         publisher.subscribe(downstream2)
-        downstream2.expectError() should be(TestException)
+        downstream2.expectSubscriptionAndError() should be(TestException)
       }
     }
 
@@ -524,7 +524,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         val downstream2 = StreamTestKit.SubscriberProbe[Any]()
         publisher.subscribe(downstream2)
         // IllegalStateException shut down
-        downstream2.expectError().isInstanceOf[IllegalStateException] should be(true)
+        downstream2.expectSubscriptionAndError().isInstanceOf[IllegalStateException] should be(true)
       }
     }
   }
@@ -572,6 +572,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
 
           val downstream3 = StreamTestKit.SubscriberProbe[Any]()
           publisher.subscribe(downstream3)
+          downstream3.expectSubscription()
           // IllegalStateException terminated abruptly
           checkError(downstream3)
         } finally {

@@ -3,17 +3,13 @@
  */
 package akka.stream.tck
 
-import akka.stream.impl.HeadSink
 import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
 
-import scala.concurrent.Promise
-
-class HeadSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
-  import HeadSink._
+class FoldSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 
   override def createSubscriber(): Subscriber[Int] =
-    new HeadSinkSubscriber[Int](Promise[Int]())
+    Flow[Int].to(Sink.fold(0)(_ + _)).runWith(Source.subscriber())
 
   override def createElement(element: Int): Int = element
 }

@@ -8,6 +8,7 @@ import scala.collection.breakOut
 import scala.util.control.NonFatal
 import akka.stream.stage._
 import akka.stream.Supervision
+import akka.stream.impl.ReactiveStreamsCompliance
 
 // TODO:
 // fix jumpback table with keep-going-on-complete ops (we might jump between otherwise isolated execution regions)
@@ -221,6 +222,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     def run(): Unit
 
     override def push(elem: Any): DownstreamDirective = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       if (currentOp.holding) throw new IllegalStateException("Cannot push while holding, only pushAndPull")
       currentOp.allowedToPush = false
       elementInFlight = elem
@@ -244,6 +246,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     def isFinishing: Boolean = currentOp.terminationPending
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       pipeline(activeOpIndex) = Finished.asInstanceOf[UntypedOp]
       // This MUST be an unsafeFork because the execution of PushFinish MUST strictly come before the finish execution
       // path. Other forks are not order dependent because they execute on isolated execution domains which cannot
@@ -271,6 +274,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def isHolding: Boolean = currentOp.holding
 
     override def pushAndPull(elem: Any): FreeDirective = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       if (!currentOp.holding) throw new IllegalStateException("Cannot pushAndPull without holding first")
       currentOp.holding = false
       fork(Pushing, elem)
@@ -301,6 +305,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
 
     override def pushAndFinish(elem: Any): DownstreamDirective = {
+      ReactiveStreamsCompliance.requireNonNullElement(elem)
       elementInFlight = elem
       state = PushFinish
       null
@@ -493,6 +498,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
           override def advance(): Unit = ()
 
           override def push(elem: Any): DownstreamDirective = {
+            ReactiveStreamsCompliance.requireNonNullElement(elem)
             activeOpIndex = entryPoint
             super.push(elem)
             execute()
@@ -528,6 +534,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
           }
 
           override def pushAndPull(elem: Any): FreeDirective = {
+            ReactiveStreamsCompliance.requireNonNullElement(elem)
             activeOpIndex = entryPoint
             super.pushAndPull(elem)
             execute()

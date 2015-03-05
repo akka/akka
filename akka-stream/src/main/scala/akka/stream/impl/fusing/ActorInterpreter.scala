@@ -218,7 +218,7 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
         subscriber = sub
         tryOnSubscribe(subscriber, new ActorSubscription(actor, subscriber))
       } else
-        tryOnError(sub, new IllegalStateException(s"${Logging.simpleName(this)} ${SupportsOnlyASingleSubscriber}"))
+        rejectAdditionalSubscriber(subscriber, s"${Logging.simpleName(this)}")
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
@@ -238,11 +238,9 @@ private[akka] class ActorOutputBoundary(val actor: ActorRef, debugLogging: Boole
         fail(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
         downstreamDemand += elements
-        // Long has overflown
-        if (downstreamDemand < 0) {
-          enter().finish()
-          fail(ReactiveStreamsCompliance.totalPendingDemandMustNotExceedLongMaxValueException)
-        } else if (upstreamWaiting) {
+        if (downstreamDemand < 0)
+          downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+        if (upstreamWaiting) {
           upstreamWaiting = false
           enter().pull()
         }

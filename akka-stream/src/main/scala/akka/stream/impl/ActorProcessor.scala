@@ -28,10 +28,19 @@ private[akka] object ActorProcessor {
  */
 private[akka] class ActorProcessor[I, O](impl: ActorRef) extends ActorPublisher[O](impl)
   with Processor[I, O] {
-  override def onSubscribe(s: Subscription): Unit = impl ! OnSubscribe(s)
-  override def onError(t: Throwable): Unit = impl ! OnError(t)
+  override def onSubscribe(s: Subscription): Unit = {
+    ReactiveStreamsCompliance.requireNonNullSubscription(s)
+    impl ! OnSubscribe(s)
+  }
+  override def onError(t: Throwable): Unit = {
+    ReactiveStreamsCompliance.requireNonNullException(t)
+    impl ! OnError(t)
+  }
   override def onComplete(): Unit = impl ! OnComplete
-  override def onNext(t: I): Unit = impl ! OnNext(t)
+  override def onNext(elem: I): Unit = {
+    ReactiveStreamsCompliance.requireNonNullElement(elem)
+    impl ! OnNext(elem)
+  }
 }
 
 /**
@@ -162,11 +171,12 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
   private val _subreceive = new SubReceive(waitingExposedPublisher)
 
   def enqueueOutputElement(elem: Any): Unit = {
+    ReactiveStreamsCompliance.requireNonNullElement(elem)
     downstreamDemand -= 1
     tryOnNext(subscriber, elem)
   }
 
-  def complete(): Unit = {
+  override def complete(): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
       if (exposedPublisher ne null) exposedPublisher.shutdown(None)
@@ -174,7 +184,14 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
     }
   }
 
-  def cancel(e: Throwable): Unit = {
+  override def cancel(): Unit = {
+    if (!downstreamCompleted) {
+      downstreamCompleted = true
+      if (exposedPublisher ne null) exposedPublisher.shutdown(None)
+    }
+  }
+
+  override def error(e: Throwable): Unit = {
     if (!downstreamCompleted) {
       downstreamCompleted = true
       if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
@@ -182,7 +199,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
     }
   }
 
-  def isClosed: Boolean = downstreamCompleted
+  override def isClosed: Boolean = downstreamCompleted
 
   protected def createSubscription(): Subscription = new ActorSubscription(actor, subscriber)
 
@@ -192,7 +209,7 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
         subscriber = sub
         tryOnSubscribe(subscriber, createSubscription())
       } else
-        tryOnError(sub, new IllegalStateException(s"${Logging.simpleName(this)} ${SupportsOnlyASingleSubscriber}"))
+        rejectAdditionalSubscriber(sub, s"${Logging.simpleName(this)}")
     }
 
   protected def waitingExposedPublisher: Actor.Receive = {
@@ -208,14 +225,12 @@ private[akka] class SimpleOutputs(val actor: ActorRef, val pump: Pump) extends D
       subscribePending(exposedPublisher.takePendingSubscribers())
     case RequestMore(subscription, elements) ⇒
       if (elements < 1) {
-        cancel(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
+        error(ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException)
       } else {
         downstreamDemand += elements
-        if (downstreamDemand < 1) { // Long has overflown
-          cancel(ReactiveStreamsCompliance.totalPendingDemandMustNotExceedLongMaxValueException)
-        }
-
-        pump.pump() // FIXME should this be called even on overflow, sounds like a bug to me
+        if (downstreamDemand < 1)
+          downstreamDemand = Long.MaxValue // Long overflow, Reactive Streams Spec 3:17: effectively unbounded
+        pump.pump()
       }
     case Cancel(subscription) ⇒
       downstreamCompleted = true
@@ -255,11 +270,10 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
   protected def onError(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    // FIXME: escalate to supervisor
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
-    primaryOutputs.cancel(e)
+    primaryOutputs.error(e)
     context.stop(self)
   }
 
@@ -273,7 +287,7 @@ private[akka] abstract class ActorProcessorImpl(val settings: ActorFlowMateriali
 
   override def postStop(): Unit = {
     primaryInputs.cancel()
-    primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
+    primaryOutputs.error(new IllegalStateException("Processor actor terminated abruptly"))
   }
 
   override def postRestart(reason: Throwable): Unit = {
