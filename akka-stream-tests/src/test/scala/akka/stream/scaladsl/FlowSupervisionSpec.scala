@@ -23,7 +23,7 @@ class FlowSupervisionSpec extends AkkaSpec {
   val failingMap = Flow[Int].map(n ⇒ if (n == 3) throw exc else n)
 
   def run(f: Flow[Int, Int, Unit]): immutable.Seq[Int] =
-    Await.result(Source(1 to 5).via(f).grouped(1000).runWith(Sink.head()), 3.seconds)
+    Await.result(Source((1 to 5).toSeq ++ (1 to 5)).via(f).grouped(1000).runWith(Sink.head()), 3.seconds)
 
   "Stream supervision" must {
 
@@ -35,7 +35,12 @@ class FlowSupervisionSpec extends AkkaSpec {
 
     "support resume " in {
       val result = run(failingMap.withAttributes(supervisionStrategy(Supervision.resumingDecider)))
-      result should be(List(1, 2, 4, 5))
+      result should be(List(1, 2, 4, 5, 1, 2, 4, 5))
+    }
+
+    "support restart " in {
+      val result = run(failingMap.withAttributes(supervisionStrategy(Supervision.restartingDecider)))
+      result should be(List(1, 2, 4, 5, 1, 2, 4, 5))
     }
 
   }
