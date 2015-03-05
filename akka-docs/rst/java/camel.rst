@@ -42,7 +42,7 @@ component`_), the actor's `getEndpointUri` method should return a different URI,
 In the above case an extra constructor is added that can set the endpoint URI, which would result in
 the `getEndpointUri` returning the URI that was set using this constructor.
 
-.. _Mina component: http://camel.apache.org/mina.html
+.. _Mina component: http://camel.apache.org/mina2.html
 .. _Jetty component: http://camel.apache.org/jetty.html
 
 Producer
