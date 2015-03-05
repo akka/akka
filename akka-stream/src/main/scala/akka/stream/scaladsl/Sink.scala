@@ -14,6 +14,8 @@ import scala.concurrent.{ Promise, Future }
 import scala.util.{ Success, Failure, Try }
 import akka.stream.FlowMaterializer
 import akka.stream.impl.StreamLayout.Module
+import scala.util.control.NonFatal
+import akka.stream.Supervision
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input and an attached output.
@@ -154,6 +156,12 @@ object Sink extends SinkApply {
           promise.success(())
           ctx.finish()
         }
+
+        override def decide(cause: Throwable): Supervision.Directive = {
+          // supervision will be implemented by #16916
+          promise.tryFailure(cause)
+          super.decide(cause)
+        }
       }
 
       (stage, promise.future)
@@ -191,6 +199,12 @@ object Sink extends SinkApply {
         override def onUpstreamFinish(ctx: Context[U]): TerminationDirective = {
           promise.success(aggregator)
           ctx.finish()
+        }
+
+        override def decide(cause: Throwable): Supervision.Directive = {
+          // supervision will be implemented by #16916
+          promise.tryFailure(cause)
+          super.decide(cause)
         }
       }
 
