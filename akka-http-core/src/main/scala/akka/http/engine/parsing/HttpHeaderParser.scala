@@ -59,7 +59,7 @@ import akka.http.model.parser.CharacterClasses._
  */
 private[engine] final class HttpHeaderParser private (
   val settings: HttpHeaderParser.Settings,
-  warnOnIllegalHeader: ErrorInfo ⇒ Unit,
+  onIllegalHeader: ErrorInfo ⇒ Unit,
   private[this] var nodes: Array[Char] = new Array(512), // initial size, can grow as needed
   private[this] var nodeCount: Int = 0,
   private[this] var branchData: Array[Short] = new Array(254 * 3),
@@ -84,7 +84,7 @@ private[engine] final class HttpHeaderParser private (
    * Returns a copy of this parser that shares the trie data with this instance.
    */
   def createShallowCopy(): HttpHeaderParser =
-    new HttpHeaderParser(settings, warnOnIllegalHeader, nodes, nodeCount, branchData, branchDataCount, values, valueCount)
+    new HttpHeaderParser(settings, onIllegalHeader, nodes, nodeCount, branchData, branchDataCount, values, valueCount)
 
   /**
    * Parses a header line and returns the line start index of the subsequent line.
@@ -98,7 +98,7 @@ private[engine] final class HttpHeaderParser private (
   @tailrec
   def parseHeaderLine(input: ByteString, lineStart: Int = 0)(cursor: Int = lineStart, nodeIx: Int = 0): Int = {
     def startValueBranch(rootValueIx: Int, valueParser: HeaderValueParser) = {
-      val (header, endIx) = valueParser(input, cursor, warnOnIllegalHeader)
+      val (header, endIx) = valueParser(input, cursor, onIllegalHeader)
       if (valueParser.cachingEnabled)
         try {
           val valueIx = newValueIndex // compute early in order to trigger OutOfTrieSpaceExceptions before any change
@@ -155,7 +155,7 @@ private[engine] final class HttpHeaderParser private (
   @tailrec
   private def parseHeaderValue(input: ByteString, valueStart: Int, branch: ValueBranch)(cursor: Int = valueStart, nodeIx: Int = branch.branchRootNodeIx): Int = {
     def parseAndInsertHeader() = {
-      val (header, endIx) = branch.parser(input, valueStart, warnOnIllegalHeader)
+      val (header, endIx) = branch.parser(input, valueStart, onIllegalHeader)
       if (branch.spaceLeft)
         try {
           insert(input, header)(cursor, endIx, nodeIx, colonIx = 0)
@@ -379,7 +379,6 @@ private[http] object HttpHeaderParser {
   trait Settings {
     def maxHeaderNameLength: Int
     def maxHeaderValueLength: Int
-    def maxHeaderCount: Int
     def headerValueCacheLimit(headerName: String): Int
   }
 
@@ -402,8 +401,8 @@ private[http] object HttpHeaderParser {
     "Cache-Control: no-cache",
     "Expect: 100-continue")
 
-  def apply(settings: HttpHeaderParser.Settings)(warnOnIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
-    prime(unprimed(settings, warnOnIllegalHeader))
+  def apply(settings: HttpHeaderParser.Settings)(onIllegalHeader: ErrorInfo ⇒ Unit = info ⇒ throw IllegalHeaderException(info)) =
+    prime(unprimed(settings, onIllegalHeader))
 
   def unprimed(settings: HttpHeaderParser.Settings, warnOnIllegalHeader: ErrorInfo ⇒ Unit) =
     new HttpHeaderParser(settings, warnOnIllegalHeader)
@@ -441,21 +440,21 @@ private[http] object HttpHeaderParser {
     parser.insertRemainingCharsAsNewNodes(input, value)()
 
   abstract class HeaderValueParser(val headerName: String, val maxValueCount: Int) {
-    def apply(input: ByteString, valueStart: Int, warnOnIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int)
+    def apply(input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int)
     override def toString: String = s"HeaderValueParser[$headerName]"
     def cachingEnabled = maxValueCount > 0
   }
 
   class ModelledHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int)
     extends HeaderValueParser(headerName, maxValueCount) {
-    def apply(input: ByteString, valueStart: Int, warnOnIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
+    def apply(input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       // TODO: optimize by running the header value parser directly on the input ByteString (rather than an extracted String)
       val (headerValue, endIx) = scanHeaderValue(input, valueStart, valueStart + maxHeaderValueLength)()
       val trimmedHeaderValue = headerValue.trim
       val header = HeaderParser.dispatch(new HeaderParser(trimmedHeaderValue), headerName) match {
         case Right(h) ⇒ h
         case Left(error) ⇒
-          warnOnIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
+          onIllegalHeader(error.withSummaryPrepended(s"Illegal '$headerName' header"))
           RawHeader(headerName, trimmedHeaderValue)
       }
       header -> endIx
@@ -464,7 +463,7 @@ private[http] object HttpHeaderParser {
 
   class RawHeaderValueParser(headerName: String, maxHeaderValueLength: Int, maxValueCount: Int)
     extends HeaderValueParser(headerName, maxValueCount) {
-    def apply(input: ByteString, valueStart: Int, warnOnIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
+    def apply(input: ByteString, valueStart: Int, onIllegalHeader: ErrorInfo ⇒ Unit): (HttpHeader, Int) = {
       val (headerValue, endIx) = scanHeaderValue(input, valueStart, valueStart + maxHeaderValueLength)()
       RawHeader(headerName, headerValue.trim) -> endIx
     }
@@ -489,7 +488,7 @@ private[http] object HttpHeaderParser {
           if (WSP(byteChar(input, ix + 2))) scanHeaderValue(input, start, maxHeaderValueEndIx)(spaceAppended, ix + 3)
           else (if (sb != null) sb.toString else asciiString(input, start, ix), ix + 2)
         case c if c >= ' ' ⇒ scanHeaderValue(input, start, maxHeaderValueEndIx)(if (sb != null) sb.append(c) else sb, ix + 1)
-        case c             ⇒ fail(s"Illegal character '${escape(c)}' in header name")
+        case c             ⇒ fail(s"Illegal character '${escape(c)}' in header value")
       }
     else fail(s"HTTP header value exceeds the configured limit of ${maxHeaderValueEndIx - start} characters")
   }
