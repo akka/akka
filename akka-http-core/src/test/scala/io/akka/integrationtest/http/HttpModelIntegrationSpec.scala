@@ -11,8 +11,8 @@ import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 import akka.util.ByteString
 import akka.stream.ActorFlowMaterializer
 import akka.actor.ActorSystem
-import akka.http.model.parser.HeaderParser
 import akka.http.model._
+import akka.stream.ActorFlowMaterializer
 import akka.stream.scaladsl._
 import headers._
 
@@ -109,9 +109,10 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
       // we use Akka HTTP's HeaderParser to parse the headers, giving us a
       // List[HttpHeader].
 
-      val rawHeaders = textHeaders.map { case (name, value) ⇒ RawHeader(name, value) }
-      val (parseErrors, convertedHeaders): (List[_], List[HttpHeader]) = HeaderParser.parseHeaders(rawHeaders.to[List])
-      parseErrors shouldEqual Nil
+      val parsingResults = textHeaders map { case (name, value) ⇒ HttpHeader.parse(name, value) }
+      val convertedHeaders = parsingResults collect { case HttpHeader.ParsingResult.Ok(h, _) ⇒ h }
+      val parseErrors = parsingResults.flatMap(_.errors)
+      parseErrors shouldBe empty
 
       // Most of these headers are modeled by Akka HTTP as a Seq[HttpHeader],
       // but the the Content-Type and Content-Length are special: their
@@ -177,9 +178,10 @@ class HttpModelIntegrationSpec extends WordSpec with Matchers with BeforeAndAfte
 
         // Headers can be created from strings.
         def header(name: String, value: String): TypedHeader = {
-          val parsedHeader = HeaderParser.parseHeader(RawHeader(name, value)).fold(
-            error ⇒ sys.error(s"Failed to parse: $error"),
-            parsed ⇒ parsed)
+          val parsedHeader = HttpHeader.parse(name, value) match {
+            case HttpHeader.ParsingResult.Ok(h, Nil) ⇒ h
+            case x                                   ⇒ sys.error(s"Failed to parse: ${x.errors}")
+          }
           parsedHeader match {
             case `Content-Type`(contentType) ⇒ ContentTypeHeader(contentType)
             case `Content-Length`(length)    ⇒ ContentLengthHeader(length)

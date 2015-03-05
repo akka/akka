@@ -502,11 +502,33 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
     }
   }
 
+  "The header parser should" - {
+    import HttpHeader._
+    "not accept illegal header names" in {
+      parse("X:", "a") shouldEqual ParsingResult.Error(ErrorInfo("Illegal HTTP header name", "X:"))
+      parse(" X", "a") shouldEqual ParsingResult.Error(ErrorInfo("Illegal HTTP header name", " X"))
+    }
+    "not accept illegal header values" in {
+      parse("Foo", "ba\u0000r") shouldEqual ParsingResult.Error(ErrorInfo(
+        "Illegal HTTP header value: Invalid input '\\u0000', expected VCHAR, obs-text, WSP, '\\r' or 'EOI' (line 1, column 3)",
+        "ba\u0000r\n  ^"))
+      parse("Flood-Resistant-Hammerdrill", "árvíztűrő ütvefúrógép") shouldEqual ParsingResult.Error(ErrorInfo(
+        "Illegal HTTP header value: Invalid input 'ű', expected VCHAR, obs-text, WSP, '\\r' or 'EOI' (line 1, column 7)",
+        "árvíztűrő ütvefúrógép\n      ^"))
+    }
+    "compress value whitespace into single spaces and trim" in {
+      parse("Foo", " b  a \tr\t") shouldEqual ParsingResult.Ok(RawHeader("Foo", "b a r"), Nil)
+    }
+    "resolve obs-fold occurrences" in {
+      parse("Foo", "b\r\n\ta \r\n r") shouldEqual ParsingResult.Ok(RawHeader("Foo", "b a r"), Nil)
+    }
+  }
+
   implicit class TestLine(line: String) {
     def =!=(testHeader: TestExample) = testHeader(line)
     def =!=>(expectedRendering: String) = {
       val Array(name, value) = line.split(": ", 2)
-      val Right(header) = HeaderParser.parseHeader(RawHeader(name, value))
+      val HttpHeader.ParsingResult.Ok(header, Nil) = HttpHeader.parse(name, value)
       header.toString shouldEqual header.renderedTo(expectedRendering).rendering("")
     }
   }
@@ -514,7 +536,7 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
   implicit class TestHeader(val header: HttpHeader) extends TestExample {
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HeaderParser.parseHeader(RawHeader(name, value)) should (equal(Right(header)) and renderFromHeaderTo(this, line))
+      HttpHeader.parse(name, value) should (equal(HttpHeader.ParsingResult.Ok(header, Nil)) and renderFromHeaderTo(this, line))
     }
     def rendering(line: String): String = line
     def renderedTo(expectedRendering: String): TestHeader =
@@ -529,16 +551,18 @@ class HttpHeaderSpec extends FreeSpec with Matchers {
   implicit class TestError(expectedError: ErrorInfo) extends TestExample {
     def apply(line: String) = {
       val Array(name, value) = line.split(": ", 2)
-      HeaderParser.parseHeader(RawHeader(name, value)) shouldBe Left(expectedError)
+      HttpHeader.parse(name, value) should matchPattern { case HttpHeader.ParsingResult.Ok(_, `expectedError` :: Nil) ⇒ }
     }
   }
 
-  def renderFromHeaderTo(header: TestHeader, line: String): Matcher[Either[ErrorInfo, HttpHeader]] =
+  def renderFromHeaderTo(header: TestHeader, line: String): Matcher[HttpHeader.ParsingResult] =
     Matcher {
-      case Right(h) ⇒
+      case HttpHeader.ParsingResult.Ok(h, Nil) ⇒
         MatchResult(
           h.toString === header.rendering(line),
           s"doesn't render to '${header.rendering(line)}' but '${h.toString}'", "XXX")
-      case Left(info) ⇒ fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
+      case result ⇒
+        val info = result.errors.head
+        fail(s"Input `${header.header}` failed to parse:\n${info.summary}\n${info.detail}")
     }
 }
