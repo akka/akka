@@ -6,7 +6,7 @@ package akka.pattern
 import language.postfixOps
 
 import akka.actor._
-import akka.testkit.AkkaSpec
+import akka.testkit.{ TestProbe, AkkaSpec }
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -92,6 +92,94 @@ class AskSpec extends AkkaSpec {
         .mapTo[ActorIdentity].map(_.ref.get)
 
       Await.result(identityFuture, 5 seconds) should be(echo)
+    }
+
+    "work when reply uses actor selection" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val deadListener = TestProbe()
+      system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
+
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ context.actorSelection(sender().path) ! x } }), "select-echo2")
+      val f = echo ? "hi"
+
+      Await.result(f, 1 seconds) should be("hi")
+
+      deadListener.expectNoMsg(200 milliseconds)
+    }
+
+    "throw AskTimeoutException on using *" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val deadListener = TestProbe()
+      system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
+
+      val echo = system.actorOf(Props(new Actor { def receive = { case x ⇒ context.actorSelection("/temp/*") ! x } }), "select-echo3")
+      val f = echo ? "hi"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 seconds)
+      }
+
+      deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
+    }
+
+    "throw AskTimeoutException on using .." in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val deadListener = TestProbe()
+      system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
+
+      val echo = system.actorOf(Props(new Actor {
+        def receive = {
+          case x ⇒
+            val name = sender.path.name
+            val parent = sender.path.parent
+            context.actorSelection(parent / ".." / "temp" / name) ! x
+        }
+      }), "select-echo4")
+      val f = echo ? "hi"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 seconds) should be("hi")
+      }
+
+      deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
+    }
+
+    "send to DeadLetter when child does not exist" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val deadListener = TestProbe()
+      system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
+
+      val echo = system.actorOf(Props(new Actor {
+        def receive = {
+          case x ⇒
+            val name = sender.path.name
+            val parent = sender.path.parent
+            context.actorSelection(parent / "missing") ! x
+        }
+      }), "select-echo5")
+      val f = echo ? "hi"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 seconds) should be("hi")
+      }
+      deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
+    }
+
+    "send DeadLetter when answering to grandchild" in {
+      implicit val timeout = Timeout(0.5 seconds)
+      val deadListener = TestProbe()
+      system.eventStream.subscribe(deadListener.ref, classOf[DeadLetter])
+
+      val echo = system.actorOf(Props(new Actor {
+        def receive = {
+          case x ⇒
+            val name = sender.path.name
+            val parent = sender.path.parent
+            context.actorSelection(sender().path / "missing") ! x
+        }
+      }), "select-echo6")
+      val f = echo ? "hi"
+      intercept[AskTimeoutException] {
+        Await.result(f, 1 seconds) should be(ActorSelectionMessage("hi", Vector(SelectChildName("missing")), false))
+      }
+      deadListener.expectMsgClass(200 milliseconds, classOf[DeadLetter])
     }
 
   }
