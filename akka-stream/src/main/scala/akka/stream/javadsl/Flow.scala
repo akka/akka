@@ -210,7 +210,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Discard the given number of elements at the beginning of the stream.
    * No elements will be dropped if `n` is zero or negative.
    */
-  def drop(n: Int): javadsl.Flow[In, Out, Mat] =
+  def drop(n: Long): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.drop(n))
 
   /**
@@ -228,7 +228,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * The stream will be completed without producing any elements if `n` is zero
    * or negative.
    */
-  def take(n: Int): javadsl.Flow[In, Out, Mat] =
+  def take(n: Long): javadsl.Flow[In, Out, Mat] =
     new Flow(delegate.take(n))
 
   /**

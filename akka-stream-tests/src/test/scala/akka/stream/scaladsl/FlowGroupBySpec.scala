@@ -142,7 +142,7 @@ class FlowGroupBySpec extends AkkaSpec {
       val subscriber = StreamTestKit.SubscriberProbe[(Int, Source[Int, _])]()
       publisher.subscribe(subscriber)
 
-      subscriber.expectCompletedOrSubscriptionFollowedByComplete()
+      subscriber.expectSubscriptionAndComplete()
     }
 
     "abort on onError from upstream" in {

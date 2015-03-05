@@ -25,10 +25,19 @@ private[akka] object FanIn {
   final case class OnSubscribe(id: Int, subscription: Subscription) extends DeadLetterSuppression
 
   private[akka] final case class SubInput[T](impl: ActorRef, id: Int) extends Subscriber[T] {
-    override def onError(cause: Throwable): Unit = impl ! OnError(id, cause)
+    override def onError(cause: Throwable): Unit = {
+      ReactiveStreamsCompliance.requireNonNullException(cause)
+      impl ! OnError(id, cause)
+    }
     override def onComplete(): Unit = impl ! OnComplete(id)
-    override def onNext(element: T): Unit = impl ! OnNext(id, element)
-    override def onSubscribe(subscription: Subscription): Unit = impl ! OnSubscribe(id, subscription)
+    override def onNext(element: T): Unit = {
+      ReactiveStreamsCompliance.requireNonNullElement(element)
+      impl ! OnNext(id, element)
+    }
+    override def onSubscribe(subscription: Subscription): Unit = {
+      ReactiveStreamsCompliance.requireNonNullSubscription(subscription)
+      impl ! OnSubscribe(id, subscription)
+    }
   }
 
   abstract class InputBunch(inputCount: Int, bufferSize: Int, pump: Pump) {
@@ -226,17 +235,16 @@ private[akka] abstract class FanIn(val settings: ActorFlowMaterializerSettings, 
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    // FIXME: escalate to supervisor
     if (settings.debugLogging)
       log.debug("fail due to: {}", e.getMessage)
     inputBunch.cancel()
-    primaryOutputs.cancel(e)
+    primaryOutputs.error(e)
     context.stop(self)
   }
 
   override def postStop(): Unit = {
     inputBunch.cancel()
-    primaryOutputs.cancel(new IllegalStateException("Processor actor terminated abruptly"))
+    primaryOutputs.error(new IllegalStateException("Processor actor terminated abruptly"))
   }
 
   override def postRestart(reason: Throwable): Unit = {

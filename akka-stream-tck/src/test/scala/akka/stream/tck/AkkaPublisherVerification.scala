@@ -3,10 +3,9 @@
  */
 package akka.stream.tck
 
+import scala.collection.immutable
 import akka.event.Logging
-
 import scala.concurrent.duration._
-
 import akka.actor.ActorSystem
 import akka.stream.ActorFlowMaterializerSettings
 import akka.stream.ActorFlowMaterializer
@@ -16,31 +15,26 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.tck.{ PublisherVerification, TestEnvironment }
 import org.scalatest.testng.TestNGSuiteLike
 import org.testng.annotations.AfterClass
+import akka.actor.ActorSystemImpl
+import java.util.concurrent.TimeoutException
 
-abstract class AkkaPublisherVerification[T](val system: ActorSystem, env: TestEnvironment, publisherShutdownTimeout: Long)
+abstract class AkkaPublisherVerification[T](val env: TestEnvironment, publisherShutdownTimeout: Long)
   extends PublisherVerification[T](env, publisherShutdownTimeout)
-  with TestNGSuiteLike {
+  with TestNGSuiteLike with ActorSystemLifecycle {
 
-  def this(system: ActorSystem, printlnDebug: Boolean) {
-    this(system, new TestEnvironment(Timeouts.defaultTimeoutMillis(system), printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
-  }
+  def this(printlnDebug: Boolean) =
+    this(new TestEnvironment(Timeouts.defaultTimeoutMillis, printlnDebug), Timeouts.publisherShutdownTimeoutMillis)
 
-  def this(printlnDebug: Boolean) {
-    this(ActorSystem(Logging.simpleName(classOf[IterablePublisherTest]), AkkaSpec.testConf), printlnDebug)
-  }
+  def this() = this(false)
 
-  def this() {
-    this(false)
-  }
-
-  implicit val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
-
-  @AfterClass
-  def shutdownActorSystem(): Unit = {
-    system.shutdown()
-    system.awaitTermination(10.seconds)
-  }
+  implicit lazy val materializer = ActorFlowMaterializer(ActorFlowMaterializerSettings(system).copy(maxInputBufferSize = 512))(system)
 
   override def createErrorStatePublisher(): Publisher[T] =
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
+
+  def iterable(elements: Long): immutable.Iterable[Int] =
+    if (elements > Int.MaxValue)
+      new immutable.Iterable[Int] { override def iterator = Iterator from 0 }
+    else
+      0 until elements.toInt
 }

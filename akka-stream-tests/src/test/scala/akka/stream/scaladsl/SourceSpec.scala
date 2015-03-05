@@ -53,11 +53,11 @@ class SourceSpec extends AkkaSpec {
       val p = Source.empty.runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectComplete()
+      c.expectSubscriptionAndComplete()
 
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c2)
-      c2.expectComplete()
+      c2.expectSubscriptionAndComplete()
     }
   }
 
@@ -67,11 +67,11 @@ class SourceSpec extends AkkaSpec {
       val p = Source.failed(ex).runWith(Sink.publisher())
       val c = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c)
-      c.expectError(ex)
+      c.expectSubscriptionAndError(ex)
 
       val c2 = StreamTestKit.SubscriberProbe[Int]()
       p.subscribe(c2)
-      c2.expectError(ex)
+      c2.expectSubscriptionAndError(ex)
     }
   }
 

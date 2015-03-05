@@ -47,7 +47,8 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
   protected val wakeUpMsg: Any = SubscribePending
 
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
-    @tailrec def doSubscribe(subscriber: Subscriber[_ >: T]): Unit = {
+    requireNonNullSubscriber(subscriber)
+    @tailrec def doSubscribe(): Unit = {
       val current = pendingSubscribers.get
       if (current eq null)
         reportSubscribeFailure(subscriber)
@@ -55,11 +56,11 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
         if (pendingSubscribers.compareAndSet(current, subscriber +: current))
           impl ! wakeUpMsg
         else
-          doSubscribe(subscriber) // CAS retry
+          doSubscribe() // CAS retry
       }
     }
 
-    doSubscribe(subscriber)
+    doSubscribe()
   }
 
   def takePendingSubscribers(): immutable.Seq[Subscriber[_ >: T]] = {
@@ -82,11 +83,11 @@ private[akka] class ActorPublisher[T](val impl: ActorRef) extends Publisher[T] {
     try shutdownReason match {
       case Some(e: SpecViolation) ⇒ // ok, not allowed to call onError
       case Some(e) ⇒
-        if (shutdownReason eq ActorPublisher.NormalShutdownReason)
-          (new RuntimeException("BOOM")).printStackTrace()
-
+        tryOnSubscribe(subscriber, CancelledSubscription)
         tryOnError(subscriber, e)
-      case None ⇒ tryOnComplete(subscriber)
+      case None ⇒
+        tryOnSubscribe(subscriber, CancelledSubscription)
+        tryOnComplete(subscriber)
     } catch {
       case _: SpecViolation ⇒ // nothing to do
     }

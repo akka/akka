@@ -89,4 +89,9 @@ private[akka] class SplitWhenProcessorImpl(_settings: ActorFlowMaterializerSetti
     super.completeSubstreamOutput(substream)
   }
 
+  override def cancelSubstreamOutput(substream: SubstreamKey): Unit = {
+    if ((currentSubstream ne null) && substream == currentSubstream.key) nextPhase(ignoreUntilNewSubstream)
+    super.cancelSubstreamOutput(substream)
+  }
+
 }
