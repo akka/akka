@@ -423,9 +423,14 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
         case NonFatal(e) if lastOpFailing != activeOpIndex ⇒
           lastOpFailing = activeOpIndex
           decide(e) match {
-            case Supervision.Stop   ⇒ state.fail(e)
-            case Supervision.Resume ⇒ state.pull()
+            case Supervision.Stop ⇒ state.fail(e)
+            case Supervision.Resume ⇒
+              // reset, purpose of lastOpFailing is to avoid infinite loops when fail fails -- double fault
+              lastOpFailing = -1
+              state.pull()
             case Supervision.Restart ⇒
+              // reset, purpose of lastOpFailing is to avoid infinite loops when fail fails -- double fault
+              lastOpFailing = -1
               pipeline(activeOpIndex) = pipeline(activeOpIndex).restart().asInstanceOf[UntypedOp]
               state.pull()
           }

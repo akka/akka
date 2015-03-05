@@ -124,10 +124,17 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       upstream.onNext(0) // boom
       lastEvents() should be(Set(RequestOne))
 
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
       upstream.onNext(3)
       lastEvents() should be(Set(OnNext(3)))
+
+      // try one more time
+      downstream.requestOne()
+      lastEvents() should be(Set(RequestOne))
+      upstream.onNext(0) // boom
+      lastEvents() should be(Set(RequestOne))
+
+      upstream.onNext(4)
+      lastEvents() should be(Set(OnNext(4)))
     }
 
     "resume when Map throws in middle of the chain" in new TestSetup(Seq(
@@ -145,8 +152,6 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       upstream.onNext(-1) // boom
       lastEvents() should be(Set(RequestOne))
 
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
       upstream.onNext(3)
       lastEvents() should be(Set(OnNext(114)))
     }
@@ -214,8 +219,6 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
         upstream.onNext(-1) // boom
         lastEvents() should be(Set(RequestOne))
 
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
         upstream.onNext(3)
         lastEvents() should be(Set(OnNext(104)))
       }
@@ -246,8 +249,6 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
         upstream.onNext(-1) // boom
         lastEvents() should be(Set(RequestOne))
 
-        downstream.requestOne()
-        lastEvents() should be(Set(RequestOne))
         upstream.onNext(3)
         lastEvents() should be(Set(OnNext(104)))
       }
@@ -311,8 +312,6 @@ class InterpreterSupervisionSpec extends InterpreterSpecKit {
       upstream.onNext(0) // boom
       lastEvents() should be(Set(RequestOne))
 
-      downstream.requestOne()
-      lastEvents() should be(Set(RequestOne))
       upstream.onNext(2)
       lastEvents() should be(Set(OnNext(2)))
       downstream.requestOne()
