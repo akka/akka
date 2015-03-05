@@ -11,7 +11,7 @@ import java.{ lang ⇒ jl }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages ⇒ cm }
 import akka.cluster.metrics.{ ClusterMetricsMessage, ClusterMetricsSettings, EWMA, Metric, MetricsGossip, MetricsGossipEnvelope, NodeMetrics }
-import akka.serialization.Serializer
+import akka.serialization.BaseSerializer
 import akka.util.ClassLoaderObjectInputStream
 import com.google.protobuf.{ ByteString, MessageLite }
 
@@ -21,7 +21,7 @@ import scala.collection.JavaConverters.{ asJavaIterableConverter, asScalaBufferC
 /**
  * Protobuf serializer for [[ClusterMetricsMessage]] types.
  */
-class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
+class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private final val BufferSize = 4 * 1024
 
@@ -29,8 +29,6 @@ class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
     classOf[MetricsGossipEnvelope] -> metricsGossipEnvelopeFromBinary)
 
   override val includeManifest: Boolean = true
-
-  override val identifier = ClusterMetricsSettings(system.settings.config).SerializerIdentifier
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: MetricsGossipEnvelope ⇒

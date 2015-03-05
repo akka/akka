@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.remote.WireFormats.ActorRefData
-import akka.serialization.{ Serialization, Serializer }
+import akka.serialization.{ Serialization, BaseSerializer }
 import com.google.protobuf.Message
 
 import scala.annotation.tailrec
@@ -37,11 +37,9 @@ object ProtobufSerializer {
 /**
  * This Serializer serializes `com.google.protobuf.Message`s
  */
-class ProtobufSerializer extends Serializer {
+class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
-
-  override def identifier: Int = 2
 
   override def includeManifest: Boolean = true
 

@@ -25,7 +25,6 @@ case class ClusterMetricsSettings(config: Config) {
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
   val NativeLibraryExtractFolder: String = cc.getString("native-library-extract-folder")
-  val SerializerIdentifier: Int = cc.getInt("serializer-identifier")
 
   // Supervisor.
   val SupervisorName: String = cc.getString("supervisor.name")
