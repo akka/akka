@@ -143,7 +143,7 @@ class GraphFlowSpec extends AkkaSpec {
       "work with a Sink when having KeyedSource inside" in {
         val probe = StreamTestKit.SubscriberProbe[Int]()
 
-        val source = Source.apply(Source.subscriber[Int]()) { implicit b ⇒
+        val source = Source.apply(Source.subscriber[Int]) { implicit b ⇒
           subSource ⇒
             subSource.outlet
         }
@@ -317,7 +317,7 @@ class GraphFlowSpec extends AkkaSpec {
 
         val subscriber = m1
         val publisher = m3
-        source1.runWith(Sink.publisher()).subscribe(subscriber)
+        source1.runWith(Sink.publisher).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, stdRequests, stdResult)
@@ -347,7 +347,7 @@ class GraphFlowSpec extends AkkaSpec {
         val subscriber = m1
         val publisher = m2
 
-        source1.runWith(Sink.publisher()).subscribe(subscriber)
+        source1.runWith(Sink.publisher).subscribe(subscriber)
         publisher.subscribe(probe)
 
         validateProbe(probe, 4, (0 to 3).toSet)

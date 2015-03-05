@@ -16,7 +16,7 @@ class RecipeToStrict extends RecipeSpec {
 
       //#draining-to-seq
       val strict: Future[immutable.Seq[Message]] =
-        myData.grouped(MaxAllowedSeqSize).runWith(Sink.head())
+        myData.grouped(MaxAllowedSeqSize).runWith(Sink.head)
       //#draining-to-seq
 
       Await.result(strict, 3.seconds) should be(List("1", "2", "3"))

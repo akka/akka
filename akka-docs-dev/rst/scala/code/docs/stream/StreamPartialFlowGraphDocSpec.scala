@@ -67,7 +67,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
       zip.out
     }
 
-    val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head())
+    val firstPair: Future[(Int, Int)] = pairs.runWith(Sink.head)
     //#source-from-partial-flow-graph
     Await.result(firstPair, 300.millis) should equal(1 -> 2)
   }
@@ -94,7 +94,7 @@ class StreamPartialFlowGraphDocSpec extends AkkaSpec {
     // format: OFF
     val (_, matSink: Future[(Int, String)]) =
       //#flow-from-partial-flow-graph
-    pairUpWithToString.runWith(Source(List(1)), Sink.head())
+    pairUpWithToString.runWith(Source(List(1)), Sink.head)
     //#flow-from-partial-flow-graph
     // format: ON
 

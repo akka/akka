@@ -24,7 +24,7 @@ class RecipeParseLines extends RecipeSpec {
 
       val linesStream = rawData.transform(() => parseLines("\r\n", 100))
 
-      Await.result(linesStream.grouped(10).runWith(Sink.head()), 3.seconds) should be(List(
+      Await.result(linesStream.grouped(10).runWith(Sink.head), 3.seconds) should be(List(
         "Hello World\r!",
         "Hello Akka!",
         "Hello Streams!",
