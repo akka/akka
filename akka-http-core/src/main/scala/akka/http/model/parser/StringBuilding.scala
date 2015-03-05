@@ -24,7 +24,7 @@ import akka.parboiled2._
  *
  * Mixing this trait into your parser gives you a simple facility to support this.
  */
-trait StringBuilding { this: Parser ⇒
+private[parser] trait StringBuilding { this: Parser ⇒
   protected val sb = new java.lang.StringBuilder
 
   def clearSB(): Rule0 = rule { run(sb.setLength(0)) }
