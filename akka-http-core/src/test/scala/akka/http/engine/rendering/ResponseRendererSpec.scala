@@ -413,8 +413,8 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
         val renderer = newRenderer
         val byteStringSource = Await.result(Source.single(ctx).
           section(name("renderer"))(_.transform(() ⇒ renderer)).
-          runWith(Sink.head()), 1.second)
-        val future = byteStringSource.grouped(1000).runWith(Sink.head()).map(_.reduceLeft(_ ++ _).utf8String)
+          runWith(Sink.head), 1.second)
+        val future = byteStringSource.grouped(1000).runWith(Sink.head).map(_.reduceLeft(_ ++ _).utf8String)
         Await.result(future, 250.millis) -> renderer.isComplete
       }
 

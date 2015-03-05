@@ -28,7 +28,7 @@ trait Decoder {
 
   def decoderFlow: Flow[ByteString, ByteString, Unit]
   def decode(input: ByteString)(implicit mat: FlowMaterializer): Future[ByteString] =
-    Source.single(input).via(decoderFlow).runWith(Sink.head())
+    Source.single(input).via(decoderFlow).runWith(Sink.head)
 }
 object Decoder {
   val MaxBytesPerChunkDefault: Int = 65536

@@ -26,7 +26,7 @@ class FlowForeachSpec extends AkkaSpec {
     }
 
     "complete the future for an empty stream" in {
-      Source.empty.runForeach(testActor ! _) onSuccess {
+      Source.empty[String].runForeach(testActor ! _) onSuccess {
         case _ ⇒ testActor ! "done"
       }
       expectMsg("done")

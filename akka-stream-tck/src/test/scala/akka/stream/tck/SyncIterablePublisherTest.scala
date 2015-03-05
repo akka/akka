@@ -19,7 +19,7 @@ class SyncIterablePublisherTest extends AkkaPublisherVerification[Int] {
       else
         0 until elements.toInt
 
-    Source(SynchronousIterablePublisher(iterable, "synchronous-iterable-publisher")).runWith(Sink.publisher())
+    Source(SynchronousIterablePublisher(iterable, "synchronous-iterable-publisher")).runWith(Sink.publisher)
   }
 
 }

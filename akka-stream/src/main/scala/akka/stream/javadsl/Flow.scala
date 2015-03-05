@@ -92,7 +92,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Connect the `KeyedSource` to this `Flow` and then connect it to the `KeyedSink` and run it.
    *
    * The returned tuple contains the materialized values of the `KeyedSource` and `KeyedSink`,
-   * e.g. the `Subscriber` of a `Source.subscriber()` and `Publisher` of a `Sink.publisher()`.
+   * e.g. the `Subscriber` of a `Source.subscriber` and `Publisher` of a `Sink.publisher`.
    *
    * @tparam T materialized type of given KeyedSource
    * @tparam U materialized type of given KeyedSink
@@ -375,6 +375,12 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
       val javaToScala = (flow: javadsl.Flow[Out, O, M]) ⇒ flow.asScala
       scalaToJava andThen section.apply andThen javaToScala
     })
+
+  def withAttributes(attr: OperationAttributes): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.withAttributes(attr.asScala))
+
+  def named(name: String): javadsl.Flow[In, Out, Mat] =
+    new Flow(delegate.named(name))
 }
 
 /**

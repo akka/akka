@@ -25,7 +25,7 @@ object TestClient extends App {
   println(s"Fetching HTTP server version of host `$host` ...")
 
   val connection = Http().outgoingConnection(host)
-  val result = Source.single(HttpRequest()).via(connection).runWith(Sink.head())
+  val result = Source.single(HttpRequest()).via(connection).runWith(Sink.head)
 
   result.map(_.header[headers.Server]) onComplete {
     case Success(res)   ⇒ println(s"$host is running ${res mkString ", "}")

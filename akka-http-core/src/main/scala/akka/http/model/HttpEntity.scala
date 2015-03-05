@@ -61,7 +61,7 @@ sealed trait HttpEntity extends japi.HttpEntity {
       }
 
     // TODO timerTransform is meant to be replaced / rewritten, it's currently private[akka]; See https://github.com/akka/akka/issues/16393
-    dataBytes.section(name("toStrict"))(_.timerTransform(transformer)).runWith(Sink.head())
+    dataBytes.section(name("toStrict"))(_.timerTransform(transformer)).runWith(Sink.head)
   }
 
   /**

@@ -111,7 +111,7 @@ abstract class CoderSpec extends WordSpec with CodecSpecSupport with Inspectors 
       val resultBs =
         Source.single(compressed)
           .via(Coder.withMaxBytesPerChunk(limit).decoderFlow)
-          .grouped(4200).runWith(Sink.head())
+          .grouped(4200).runWith(Sink.head)
           .awaitResult(1.second)
 
       forAll(resultBs) { bs ⇒

@@ -22,15 +22,27 @@ final case class OperationAttributes private (attributes: List[OperationAttribut
     else if (other.attributes.isEmpty) this
     else OperationAttributes(attributes ::: other.attributes)
 
+  /**
+   * INTERNAL API
+   */
   private[akka] def nameLifted: Option[String] =
     attributes.collect {
       case Name(name) ⇒ name
     }.reduceOption(_ + "-" + _) // FIXME don't do a double-traversal, use a fold instead
 
+  /**
+   * INTERNAL API
+   */
   private[akka] def name: String = nameLifted match {
     case Some(name) ⇒ name
     case _          ⇒ "unknown-operation"
   }
+
+  /**
+   * INTERNAL API
+   */
+  private[akka] def nameOption: Option[String] =
+    attributes.collectFirst { case Name(name) ⇒ name }
 
   private[akka] def transform(node: StageModule): StageModule =
     if ((this eq OperationAttributes.none) || (this eq node.attributes)) node
@@ -53,8 +65,11 @@ object OperationAttributes {
 
   /**
    * Specifies the name of the operation.
+   * If the name is null or empty the name is ignored, i.e. [[#none]] is returned.
    */
-  def name(name: String): OperationAttributes = OperationAttributes(Name(name))
+  def name(name: String): OperationAttributes =
+    if (name == null || name.isEmpty) none
+    else OperationAttributes(Name(name))
 
   /**
    * Specifies the initial and maximum size of the input buffer.

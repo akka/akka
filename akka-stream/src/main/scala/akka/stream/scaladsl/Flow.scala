@@ -530,6 +530,8 @@ trait FlowOps[+Out, +Mat] {
 
   def withAttributes(attr: OperationAttributes): Repr[Out, Mat]
 
+  def named(name: String): Repr[Out, Mat] = withAttributes(OperationAttributes.name(name))
+
   /** INTERNAL API */
   private[scaladsl] def andThen[U](op: StageModule): Repr[U, Mat]
 

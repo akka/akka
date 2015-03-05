@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Sink
 class LazyEmptySourceTest extends AkkaPublisherVerification[Int] {
 
   def createPublisher(elements: Long): Publisher[Int] =
-    Source.lazyEmpty[Int].runWith(Sink.publisher())
+    Source.lazyEmpty[Int].runWith(Sink.publisher)
 
   override def maxElementsFromPublisher(): Long = 0
 }

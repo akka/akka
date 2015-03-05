@@ -276,10 +276,10 @@ public class SourceTest extends StreamTest {
     final JavaTestKit probe = new JavaTestKit(system);
     final Iterable<String> input = Arrays.asList("A", "B", "C");
 
-    Source.from(input).runWith(Sink.<String>onComplete(new Procedure<BoxedUnit>() {
+    Source.from(input).runWith(Sink.<String>onComplete(new Procedure<Try<BoxedUnit>>() {
       @Override
-      public void apply(BoxedUnit param) throws Exception {
-        probe.getRef().tell(param, ActorRef.noSender());
+      public void apply(Try<BoxedUnit> param) throws Exception {
+        probe.getRef().tell(param.get(), ActorRef.noSender());
       }
     }), materializer);
 

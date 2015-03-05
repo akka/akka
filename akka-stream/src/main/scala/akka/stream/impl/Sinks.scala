@@ -14,7 +14,10 @@ import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.{ Future, Promise }
 
-abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends Module {
+/**
+ * INTERNAL API
+ */
+private[akka] abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends Module {
 
   def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Subscriber[In] @uncheckedVariance, Mat)
 
@@ -31,15 +34,24 @@ abstract class SinkModule[-In, Mat](val shape: SinkShape[In]) extends Module {
   }
 
   override def subModules: Set[Module] = Set.empty
+
+  def amendShape(attr: OperationAttributes): SinkShape[In] = {
+    attr.nameOption match {
+      case None ⇒ shape
+      case s: Some[String] if s == attributes.nameOption ⇒ shape
+      case Some(name) ⇒ shape.copy(inlet = new Inlet(name + ".in"))
+    }
+  }
 }
 
 /**
+ * INTERNAL API
  * Holds the downstream-most [[org.reactivestreams.Publisher]] interface of the materialized flow.
  * The stream will not have any subscribers attached at this point, which means that after prefetching
  * elements to fill the internal buffers it will assert back-pressure until
  * a subscriber connects and creates demand for elements to be emitted.
  */
-class PublisherSink[In](val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
+private[akka] class PublisherSink[In](val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Publisher[In]](shape) {
 
   override def toString: String = "PublisherSink"
 
@@ -54,10 +66,13 @@ class PublisherSink[In](val attributes: OperationAttributes, shape: SinkShape[In
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Publisher[In]] = new PublisherSink[In](attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PublisherSink[In](attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new PublisherSink[In](attr, amendShape(attr))
 }
 
-final class FanoutPublisherSink[In](
+/**
+ * INTERNAL API
+ */
+private[akka] final class FanoutPublisherSink[In](
   initialBufferSize: Int,
   maximumBufferSize: Int,
   val attributes: OperationAttributes,
@@ -75,12 +90,14 @@ final class FanoutPublisherSink[In](
     new FanoutPublisherSink[In](initialBufferSize, maximumBufferSize, attributes, shape)
 
   override def withAttributes(attr: OperationAttributes): Module =
-    new FanoutPublisherSink[In](initialBufferSize, maximumBufferSize, attr, shape)
+    new FanoutPublisherSink[In](initialBufferSize, maximumBufferSize, attr, amendShape(attr))
 }
 
-object HeadSink {
-  /** INTERNAL API */
-  private[akka] class HeadSinkSubscriber[In](p: Promise[In]) extends Subscriber[In] {
+/**
+ * INTERNAL API
+ */
+private[akka] object HeadSink {
+  class HeadSinkSubscriber[In](p: Promise[In]) extends Subscriber[In] {
     private val sub = new AtomicReference[Subscription]
     override def onSubscribe(s: Subscription): Unit = {
       ReactiveStreamsCompliance.requireNonNullSubscription(s)
@@ -105,13 +122,14 @@ object HeadSink {
 }
 
 /**
+ * INTERNAL API
  * Holds a [[scala.concurrent.Future]] that will be fulfilled with the first
  * thing that is signaled to this stream, which can be either an element (after
  * which the upstream subscription is canceled), an error condition (putting
  * the Future into the corresponding failed state) or the end-of-stream
  * (failing the Future with a NoSuchElementException).
  */
-class HeadSink[In](val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Future[In]](shape) {
+private[akka] class HeadSink[In](val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Future[In]](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val p = Promise[In]()
@@ -120,39 +138,42 @@ class HeadSink[In](val attributes: OperationAttributes, shape: SinkShape[In]) ex
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Future[In]] = new HeadSink[In](attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new HeadSink[In](attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new HeadSink[In](attr, amendShape(attr))
 
   override def toString: String = "HeadSink"
 }
 
 /**
+ * INTERNAL API
  * Attaches a subscriber to this stream which will just discard all received
  * elements.
  */
-final class BlackholeSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
+private[akka] final class BlackholeSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) =
     (new BlackholeSubscriber[Any](materializer.settings.maxInputBufferSize), ())
 
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Unit] = new BlackholeSink(attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new BlackholeSink(attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new BlackholeSink(attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Attaches a subscriber to this stream.
  */
-final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Unit](shape) {
+private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, Unit](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = (subscriber, ())
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, Unit] = new SubscriberSink[In](subscriber, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new SubscriberSink[In](subscriber, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new SubscriberSink[In](subscriber, attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * A sink that immediately cancels its upstream upon materialization.
  */
-final class CancelSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
+private[akka] final class CancelSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
 
   /**
    * This method is only used for Sinks that return true from [[#isActive]], which then must
@@ -169,14 +190,15 @@ final class CancelSink(val attributes: OperationAttributes, shape: SinkShape[Any
   }
 
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, Unit] = new CancelSink(attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new CancelSink(attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new CancelSink(attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
  */
-final class PropsSink[In](props: Props, val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
+private[akka] final class PropsSink[In](props: Props, val attributes: OperationAttributes, shape: SinkShape[In]) extends SinkModule[In, ActorRef](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val subscriberRef = materializer.actorOf(props, name = s"$flowName-props")
@@ -184,5 +206,5 @@ final class PropsSink[In](props: Props, val attributes: OperationAttributes, sha
   }
 
   override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] = new PropsSink[In](props, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PropsSink[In](props, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new PropsSink[In](props, attr, amendShape(attr))
 }

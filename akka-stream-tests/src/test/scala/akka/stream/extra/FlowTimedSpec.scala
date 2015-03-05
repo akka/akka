@@ -108,7 +108,7 @@ class FlowTimedSpec extends AkkaSpec with ScriptedTest {
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = flowOut.subscribe(c1)
 
-      val p = Source(0 to 100).runWith(Sink.publisher())
+      val p = Source(0 to 100).runWith(Sink.publisher)
       p.subscribe(flowIn)
 
       val s = c1.expectSubscription()
