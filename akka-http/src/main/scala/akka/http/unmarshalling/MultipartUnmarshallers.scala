@@ -74,7 +74,7 @@ trait MultipartUnmarshallers {
                   // note that iter.next() will throw exception if stream fails
                   iter.foreach {
                     case BodyPartStart(headers, createEntity) ⇒
-                      val entity = createEntity(Source.empty()) match {
+                      val entity = createEntity(Source.empty) match {
                         case x: HttpEntity.Strict ⇒ x
                         case x                    ⇒ throw new IllegalStateException("Unexpected entity type from strict BodyPartParser: " + x)
                       }

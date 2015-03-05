@@ -50,7 +50,7 @@ class TickSourceSpec extends AkkaSpec {
     }
 
     "reject multiple subscribers, but keep the first" in {
-      val p = Source(1.second, 1.second, "tick").runWith(Sink.publisher())
+      val p = Source(1.second, 1.second, "tick").runWith(Sink.publisher)
       val c1 = StreamTestKit.SubscriberProbe[String]()
       val c2 = StreamTestKit.SubscriberProbe[String]()
       p.subscribe(c1)

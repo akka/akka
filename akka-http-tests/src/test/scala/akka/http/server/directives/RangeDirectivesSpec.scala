@@ -99,7 +99,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         wrs { complete("Some random and not super short entity.") }
       } ~> check {
         header[`Content-Range`] should be(None)
-        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.grouped(1000).runWith(Sink.head()), 1.second)
+        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.grouped(1000).runWith(Sink.head), 1.second)
         parts.size shouldEqual 2
         inside(parts(0)) {
           case Multipart.ByteRanges.BodyPart(range, entity, unit, headers) ⇒
@@ -124,7 +124,7 @@ class RangeDirectivesSpec extends RoutingSpec with Inspectors with Inside {
         wrs { complete(HttpEntity.Default(MediaTypes.`text/plain`, content.length, entityData())) }
       } ~> check {
         header[`Content-Range`] should be(None)
-        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.grouped(1000).runWith(Sink.head()), 1.second)
+        val parts = Await.result(responseAs[Multipart.ByteRanges].parts.grouped(1000).runWith(Sink.head), 1.second)
         parts.size shouldEqual 2
       }
     }

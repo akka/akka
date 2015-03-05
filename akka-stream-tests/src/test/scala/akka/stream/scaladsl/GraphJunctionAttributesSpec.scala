@@ -40,7 +40,7 @@ class GraphJunctionAttributesSpec extends AkkaSpec {
         zip.out
       }
 
-      val future = source.grouped(10).runWith(Sink.head())
+      val future = source.grouped(10).runWith(Sink.head)
 
       // FIXME #16435 drop(2) needed because first two SlowTicks get only one FastTick
       Await.result(future, 2.seconds).map(_._2.size).filter(_ == 1).drop(2) should be(Nil)
