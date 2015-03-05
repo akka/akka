@@ -4,9 +4,9 @@
 package akka.stream.scaladsl
 
 import scala.util.control.NoStackTrace
-
 import akka.stream.ActorFlowMaterializer
 import akka.stream.testkit.{ AkkaSpec, StreamTestKit }
+import scala.concurrent.Await
 
 class FlowForeachSpec extends AkkaSpec {
 
@@ -42,6 +42,12 @@ class FlowForeachSpec extends AkkaSpec {
       val ex = new RuntimeException("ex") with NoStackTrace
       proc.sendError(ex)
       expectMsg(ex)
+    }
+
+    "complete future with failure when function throws" in {
+      val error = new Exception with NoStackTrace
+      val future = Source.single(1).runForeach(_ ⇒ throw error)
+      the[Exception] thrownBy Await.result(future, remaining) should be(error)
     }
 
   }
