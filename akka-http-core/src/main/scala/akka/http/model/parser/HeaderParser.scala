@@ -5,14 +5,14 @@
 package akka.http.model
 package parser
 
-import scala.annotation.tailrec
-import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.http.util.SingletonException
-import akka.http.model.{ ErrorInfo, HttpHeader }
 import akka.parboiled2._
 import akka.shapeless._
 
+/**
+ * INTERNAL API.
+ */
 private[http] class HeaderParser(val input: ParserInput) extends Parser with DynamicRuleHandler[HeaderParser, HttpHeader :: HNil]
   with CommonRules
   with AcceptCharsetHeader
@@ -27,15 +27,32 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
   with LinkHeader
   with SimpleHeaders
   with StringBuilding {
+  import CharacterClasses._
 
-  def errorInfo(e: ParseError) = ErrorInfo(formatError(e, showLine = false), formatErrorLine(e))
+  // http://www.rfc-editor.org/errata_search.php?rfc=7230 errata id 4189
+  def `header-field-value`: Rule1[String] = rule {
+    FWS ~ clearSB() ~ `field-value` ~ FWS ~ EOI ~ push(sb.toString)
+  }
+  def `field-value` = {
+    var fwsStart = cursor
+    rule {
+      zeroOrMore(`field-value-chunk`).separatedBy { // zeroOrMore because we need to also accept empty values
+        run { fwsStart = cursor } ~ FWS ~ &(`field-value-char`) ~ run { if (cursor > fwsStart) sb.append(' ') }
+      }
+    }
+  }
+  def `field-value-chunk` = rule { oneOrMore(`field-value-char` ~ appendSB()) }
+  def `field-value-char` = rule { VCHAR | `obs-text` }
+  def FWS = rule { zeroOrMore(WSP) ~ zeroOrMore(`obs-fold`) }
+  def `obs-fold` = rule { CRLF ~ oneOrMore(WSP) }
 
   ///////////////// DynamicRuleHandler //////////////
 
   type Result = Either[ErrorInfo, HttpHeader]
   def parser: HeaderParser = this
   def success(result: HttpHeader :: HNil): Result = Right(result.head)
-  def parseError(error: ParseError): Result = Left(errorInfo(error))
+  def parseError(error: ParseError): Result =
+    Left(ErrorInfo(formatError(error, showLine = false), formatErrorLine(error)))
   def failure(error: Throwable): Result = error match {
     case IllegalUriException(info) ⇒ Left(info)
     case NonFatal(e)               ⇒ Left(ErrorInfo.fromCompoundString(e.getMessage))
@@ -43,18 +60,11 @@ private[http] class HeaderParser(val input: ParserInput) extends Parser with Dyn
   def ruleNotFound(ruleName: String): Result = throw HeaderParser.RuleNotFoundException
 }
 
-object HeaderParser {
+/**
+ * INTERNAL API.
+ */
+private[http] object HeaderParser {
   object RuleNotFoundException extends SingletonException
-
-  @tailrec def parseHeaders(headers: List[HttpHeader], errors: List[ErrorInfo] = Nil,
-                            result: List[HttpHeader] = Nil): (List[ErrorInfo], List[HttpHeader]) =
-    headers match {
-      case Nil ⇒ errors -> result
-      case immutable.::(head, tail) ⇒ parseHeader(head) match {
-        case Right(h)    ⇒ parseHeaders(tail, errors, h :: result)
-        case Left(error) ⇒ parseHeaders(tail, error :: errors, head :: result)
-      }
-    }
 
   val (dispatch, ruleNames) = DynamicRuleDispatch[HeaderParser, HttpHeader :: HNil](
     "accept",
@@ -106,18 +116,4 @@ object HeaderParser {
     "user-agent",
     "www-authenticate",
     "x-forwarded-for")
-
-  def parseHeader(header: HttpHeader): Either[ErrorInfo, HttpHeader] =
-    header match {
-      case rawHeader @ headers.RawHeader(name, value) ⇒
-        try {
-          dispatch(new HeaderParser(value), rawHeader.lowercaseName) match {
-            case x @ Right(_) ⇒ x
-            case Left(info)   ⇒ Left(info.withSummaryPrepended(s"Illegal HTTP header '$name'"))
-          }
-        } catch {
-          case RuleNotFoundException ⇒ Right(rawHeader) // if we don't have a rule for the header we leave it unparsed
-        }
-      case x ⇒ Right(x) // already parsed
-    }
 }

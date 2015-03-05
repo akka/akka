@@ -8,11 +8,11 @@ import language.implicitConversions
 import com.typesafe.config.Config
 import scala.concurrent.duration._
 import akka.actor.ActorRefFactory
-import akka.http.engine.parsing.ParserSettings
-import akka.http.model.parser.HeaderParser
-import akka.http.model.headers.{ Server, Host, RawHeader }
-import akka.http.util._
 import akka.ConfigurationException
+import akka.http.engine.parsing.ParserSettings
+import akka.http.model.HttpHeader
+import akka.http.model.headers.{ Server, Host }
+import akka.http.util._
 
 final case class ServerSettings(
   serverHeader: Option[Server],
@@ -46,10 +46,11 @@ object ServerSettings extends SettingsCompanion[ServerSettings]("akka.http.serve
     c getBoolean "verbose-error-messages",
     c getIntBytes "response-header-size-hint",
     defaultHostHeader =
-      HeaderParser.parseHeader(RawHeader("Host", c getString "default-host-header")) match {
-        case Right(x: Host) ⇒ x
-        case Left(error)    ⇒ throw new ConfigurationException(error.withSummary("Configured `default-host-header` is illegal").formatPretty)
-        case Right(_)       ⇒ throw new IllegalStateException
+      HttpHeader.parse("Host", c getString "default-host-header") match {
+        case HttpHeader.ParsingResult.Ok(x: Host, Nil) ⇒ x
+        case result ⇒
+          val info = result.errors.head.withSummary("Configured `default-host-header` is illegal")
+          throw new ConfigurationException(info.formatPretty)
       },
     ParserSettings fromSubConfig c.getConfig("parsing"))
 
