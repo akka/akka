@@ -10,15 +10,15 @@ import akka.stream.scaladsl.JavaConverters._
 trait SinkCreate {
 
   /**
-   * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects
-   * a [[FlowGraphBuilder]] and returns the `UndefinedSource`.
+   * Creates a `Sink` by using a `FlowGraph.Builder` on a block that expects
+   * a [[FlowGraph.Builder]] and returns the `UndefinedSource`.
    */
   def create[T](block: japi.Function[FlowGraph.Builder, Inlet[T]]): Sink[T, Unit] =
     new Sink(scaladsl.Sink() { b ⇒ block.apply(b.asJava) })
 
   /**
-   * Creates a `Sink` by using a FlowGraphBuilder from this [[PartialFlowGraph]] on a block that expects
-   * a [[FlowGraphBuilder]] and returns the `UndefinedSource`.
+   * Creates a `Sink` by using a `FlowGraph.Builder` on a block that expects
+   * a [[FlowGraph.Builder]] and returns the `UndefinedSource`.
    */
   def create[T, S <: Shape, M](g1: Graph[S, M], block: japi.Function2[FlowGraph.Builder, S, Inlet[T]]): Sink[T, M] =
     new Sink(scaladsl.Sink(g1) { b ⇒ s => block.apply(b.asJava, s) })

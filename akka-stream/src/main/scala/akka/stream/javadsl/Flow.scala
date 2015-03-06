@@ -384,7 +384,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
  */
 trait RunnableFlow[+Mat] extends Graph[ClosedShape, Mat] {
   /**
-   * Run this flow and return the [[MaterializedMap]] containing the values for the [[KeyedMaterializable]] of the flow.
+   * Run this flow and return the materialized values of the flow.
    */
   def run(materializer: FlowMaterializer): Mat
   /**

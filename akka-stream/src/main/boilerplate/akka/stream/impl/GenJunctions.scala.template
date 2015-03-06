@@ -10,8 +10,8 @@ import akka.stream.impl.StreamLayout.Module
 import akka.stream.scaladsl.OperationAttributes
 import akka.stream.scaladsl.OperationAttributes._
 
-/** Boilerplate generated Junctions */
-object GenJunctions {
+/** INTERNAL API: Boilerplate generated Junctions */
+private[akka] object GenJunctions {
 
   sealed trait ZipWithModule {
     /** Allows hiding the boilerplate Props creation from the materializer */
