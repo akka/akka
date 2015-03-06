@@ -159,7 +159,7 @@ private[http] object HttpServer {
         State[Any](ReadAny(oneHundredContinueInput.asInstanceOf[Inlet[Any]] :: applicationInput.asInstanceOf[Inlet[Any]] :: Nil)) {
           case (ctx, _, response: HttpResponse) ⇒
             // see the comment on [[OneHundredContinue]] for an explanation of the closing logic here (and more)
-            val close = requestStart.closeAfterResponseCompletion || requestStart.expect100ContinueResponsePending
+            val close = requestStart.closeRequested || requestStart.expect100ContinueResponsePending
             ctx.emit(ResponseRenderingContext(response, requestStart.method, requestStart.protocol, close))
             if (close) finish(ctx) else {
               ctx.changeCompletionHandling(eagerClose)
@@ -175,7 +175,7 @@ private[http] object HttpServer {
 
       val waitingForApplicationResponseCompletionHandling = CompletionHandling(
         onUpstreamFinish = {
-          case (ctx, `bypassInput`) ⇒ { requestStart = requestStart.copy(closeAfterResponseCompletion = true); SameState }
+          case (ctx, `bypassInput`) ⇒ { requestStart = requestStart.copy(closeRequested = true); SameState }
           case (ctx, _)             ⇒ { ctx.finish(); SameState }
         },
         onUpstreamFailure = {
@@ -192,7 +192,7 @@ private[http] object HttpServer {
         ctx match {
           case fullCtx: MergeLogicContext ⇒
             // note that this will throw IllegalArgumentException if no demand available
-            fullCtx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeAfterResponseCompletion = true))
+            fullCtx.emit(ResponseRenderingContext(HttpResponse(status, entity = msg), closeRequested = true))
           case other ⇒ throw new IllegalStateException(s"Unexpected MergeLogicContext [${other.getClass.getName}]")
         }
         //
@@ -259,7 +259,7 @@ private[http] object HttpServer {
         case NonFatal(e) ⇒
           log.error(e, "Internal server error, sending 500 response")
           errorResponse = ResponseRenderingContext(HttpResponse(StatusCodes.InternalServerError),
-            closeAfterResponseCompletion = true)
+            closeRequested = true)
           ctx.absorbTermination()
         case _ ⇒ ctx.fail(error)
       }
