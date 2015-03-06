@@ -67,10 +67,10 @@ object FlexiMerge {
    * Provides typesafe accessors to values from inputs supplied to [[ReadAll]].
    */
   final class ReadAllInputs(map: immutable.Map[InPort, Any]) extends ReadAllInputsBase {
-    /** Returns the value for the given [[InputPort]], or `null` if this input was cancelled. */
+    /** Returns the value for the given [[Inlet]], or `null` if this input was cancelled. */
     def get[T](input: Inlet[T]): T = getOrDefault(input, null)
 
-    /** Returns the value for the given [[InputPort]], or `defaultValue`. */
+    /** Returns the value for the given [[Inlet]], or `defaultValue`. */
     def getOrDefault[T, B >: T](input: Inlet[T], defaultValue: B): T = map.getOrElse(input, defaultValue).asInstanceOf[T]
   }
 

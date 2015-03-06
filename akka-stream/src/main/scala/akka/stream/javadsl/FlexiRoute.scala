@@ -54,9 +54,8 @@ object FlexiRoute {
    */
   trait RouteLogicContext[In] extends RouteLogicContextBase[In] {
     /**
-     * Emit one element downstream. It is only allowed to `emit` when
-     * [[#isDemandAvailable]] is `true` for the given `output`, otherwise
-     * `IllegalArgumentException` is thrown.
+     * Emit one element downstream. It is only allowed to `emit` at most one element to
+     * each output in response to `onInput`, `IllegalStateException` is thrown.
      */
     def emit[T](output: Outlet[T], elem: T): Unit
   }

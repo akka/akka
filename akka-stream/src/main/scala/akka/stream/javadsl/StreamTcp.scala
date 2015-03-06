@@ -26,14 +26,13 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
    */
   class ServerBinding private[akka] (delegate: scaladsl.StreamTcp.ServerBinding) {
     /**
-     * The local address of the endpoint bound by the materialization of the `connections` [[Source]]
-     * whose [[MaterializedMap]] is passed as parameter.
+     * The local address of the endpoint bound by the materialization of the `connections` [[Source]].
      */
     def localAddress: InetSocketAddress = delegate.localAddress
 
     /**
      * Asynchronously triggers the unbinding of the port that was bound by the materialization of the `connections`
-     * [[Source]] whose [[MaterializedMap]] is passed as parameter.
+     * [[Source]].
      *
      * The produced [[scala.concurrent.Future]] is fulfilled when the unbinding has been completed.
      */
@@ -56,7 +55,7 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
 
     /**
      * Handles the connection using the given flow, which is materialized exactly once and the respective
-     * [[MaterializedMap]] returned.
+     * materialized value is returned.
      *
      * Convenience shortcut for: `flow.join(handler).run()`.
      */
@@ -80,8 +79,7 @@ object StreamTcp extends ExtensionId[StreamTcp] with ExtensionIdProvider {
     def remoteAddress: InetSocketAddress = delegate.remoteAddress
 
     /**
-     * The local address of the endpoint bound by the materialization of the connection materialization
-     * whose [[MaterializedMap]] is passed as parameter.
+     * The local address of the endpoint bound by the materialization of the connection materialization.
      */
     def localAddress: InetSocketAddress = delegate.localAddress
   }

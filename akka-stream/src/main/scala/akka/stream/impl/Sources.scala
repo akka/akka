@@ -54,10 +54,6 @@ private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out
  */
 private[akka] final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
 
-  /**
-   * This method is only used for Sources that return true from [[#isActive]], which then must
-   * implement it.
-   */
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Publisher[Out], Subscriber[Out]) = {
     val processor = new Processor[Out, Out] {
       @volatile private var subscriber: Subscriber[_ >: Out] = null

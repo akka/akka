@@ -55,10 +55,6 @@ private[akka] class PublisherSink[In](val attributes: OperationAttributes, shape
 
   override def toString: String = "PublisherSink"
 
-  /**
-   * This method is only used for Sinks that return true from [[#isActive]], which then must
-   * implement it.
-   */
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Subscriber[In], Publisher[In]) = {
     val pub = new VirtualPublisher[In]
     val sub = new VirtualSubscriber[In](pub)
@@ -175,10 +171,6 @@ private[akka] final class SubscriberSink[In](subscriber: Subscriber[In], val att
  */
 private[akka] final class CancelSink(val attributes: OperationAttributes, shape: SinkShape[Any]) extends SinkModule[Any, Unit](shape) {
 
-  /**
-   * This method is only used for Sinks that return true from [[#isActive]], which then must
-   * implement it.
-   */
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Subscriber[Any], Unit) = {
     val subscriber = new Subscriber[Any] {
       override def onError(t: Throwable): Unit = ()

@@ -129,8 +129,8 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
 
   /**
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
-   * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a [[SubscriberSource]] and
-   * and `Publisher` of a [[PublisherSink]].
+   * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
+   * and `Publisher` of a [[Sink#publisher]].
    */
   def runWith[Mat1, Mat2](source: Source[In, Mat1], sink: Sink[Out, Mat2])(implicit materializer: FlowMaterializer): (Mat1, Mat2) = {
     source.via(this).toMat(sink)(Keep.both).run()

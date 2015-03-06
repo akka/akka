@@ -174,7 +174,7 @@ abstract class PushStage[In, Out] extends PushPullStage[In, Out] {
  * (resulting in two signals).
  *
  * However, DetachedStages have the ability to call [[akka.stream.stage.DetachedContext#hold]] as a response to
- * [[#onPush]] and [[akka.stream.stage.DetachedContext##onPull]] which temporarily takes the signal off and
+ * [[#onPush]] and [[#onPull]] which temporarily takes the signal off and
  * stops execution, at the same time putting the stage in an [[akka.stream.stage.DetachedContext#isHolding]] state.
  * If the stage is in a holding state it contains one absorbed signal, therefore in this state the only possible
  * command to call is [[akka.stream.stage.DetachedContext#pushAndPull]] which results in two events making the

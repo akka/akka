@@ -33,12 +33,12 @@ object ActorFlowMaterializerImpl {
 /**
  * INTERNAL API
  */
-case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterializerSettings,
-                                     dispatchers: Dispatchers,
-                                     supervisor: ActorRef,
-                                     flowNameCounter: AtomicLong,
-                                     namePrefix: String,
-                                     optimizations: Optimizations)
+private[akka] case class ActorFlowMaterializerImpl(override val settings: ActorFlowMaterializerSettings,
+                                                   dispatchers: Dispatchers,
+                                                   supervisor: ActorRef,
+                                                   flowNameCounter: AtomicLong,
+                                                   namePrefix: String,
+                                                   optimizations: Optimizations)
   extends ActorFlowMaterializer {
   import ActorFlowMaterializerImpl._
   import akka.stream.impl.Stages._

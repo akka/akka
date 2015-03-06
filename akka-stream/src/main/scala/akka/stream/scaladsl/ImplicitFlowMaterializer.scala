@@ -12,13 +12,13 @@ import akka.stream.ActorFlowMaterializer
  * [[akka.stream.FlowMaterializer]] in scope.
  *
  * Subclass may override [[#flowMaterializerSettings]] to define custom
- * [[akka.stream.FlowMaterializerSettings]] for the `FlowMaterializer`.
+ * [[akka.stream.ActorFlowMaterializerSettings]] for the `FlowMaterializer`.
  */
 trait ImplicitFlowMaterializer { this: Actor ⇒
 
   /**
    * Subclass may override this to define custom
-   * [[akka.stream.FlowMaterializerSettings]] for the `FlowMaterializer`.
+   * [[akka.stream.ActorFlowMaterializerSettings]] for the `FlowMaterializer`.
    */
   def flowMaterializerSettings: ActorFlowMaterializerSettings = ActorFlowMaterializerSettings(context.system)
 
