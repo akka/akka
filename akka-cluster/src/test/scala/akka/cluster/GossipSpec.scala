@@ -120,9 +120,17 @@ class GossipSpec extends WordSpec with Matchers {
     }
 
     "have leader as first member based on ordering, except Exiting status" in {
-      Gossip(members = SortedSet(c2, e2)).leader should ===(Some(c2.uniqueAddress))
-      Gossip(members = SortedSet(c3, e2)).leader should ===(Some(e2.uniqueAddress))
-      Gossip(members = SortedSet(c3)).leader should ===(Some(c3.uniqueAddress))
+      Gossip(members = SortedSet(c2, e2)).leader(c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
+      Gossip(members = SortedSet(c3, e2)).leader(c3.uniqueAddress) should ===(Some(e2.uniqueAddress))
+      Gossip(members = SortedSet(c3)).leader(c3.uniqueAddress) should ===(Some(c3.uniqueAddress))
+    }
+
+    "have leader as first reachable member based on ordering" in {
+      val r1 = Reachability.empty.unreachable(e2.uniqueAddress, c2.uniqueAddress)
+      val g1 = Gossip(members = SortedSet(c2, e2), overview = GossipOverview(reachability = r1))
+      g1.leader(e2.uniqueAddress) should ===(Some(e2.uniqueAddress))
+      // but when c2 is selfUniqueAddress
+      g1.leader(c2.uniqueAddress) should ===(Some(c2.uniqueAddress))
     }
 
     "merge seen table correctly" in {
