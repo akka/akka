@@ -179,16 +179,19 @@ private[cluster] final case class Gossip(
     overview.reachability.removeObservers(downed.map(_.uniqueAddress))
   }
 
-  def isLeader(node: UniqueAddress): Boolean = leader == Some(node)
+  def isLeader(node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
+    leader(selfUniqueAddress) == Some(node)
 
-  def leader: Option[UniqueAddress] = leaderOf(members)
+  def leader(selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members, selfUniqueAddress)
 
-  def roleLeader(role: String): Option[UniqueAddress] = leaderOf(members.filter(_.hasRole(role)))
+  def roleLeader(role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members.filter(_.hasRole(role)), selfUniqueAddress)
 
-  private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[UniqueAddress] = {
+  private def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
     val reachableMembers =
       if (overview.reachability.isAllReachable) mbrs
-      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress))
+      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress)
     if (reachableMembers.isEmpty) None
     else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
       orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)
