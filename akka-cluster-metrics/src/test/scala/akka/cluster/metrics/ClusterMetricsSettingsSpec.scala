@@ -25,7 +25,6 @@ class ClusterMetricsSettingsSpec extends AkkaSpec {
       MetricsDispatcher should be(Dispatchers.DefaultDispatcherId)
       PeriodicTasksInitialDelay should be(1 second)
       NativeLibraryExtractFolder should be(System.getProperty("user.dir") + "/native")
-      SerializerIdentifier should be(10)
 
       // Supervisor.
       SupervisorName should be("cluster-metrics")

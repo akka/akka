@@ -7,8 +7,7 @@ package akka.persistence.serialization
 
 import java.io._
 import akka.actor._
-import akka.serialization.{ Serializer, SerializationExtension }
-import akka.serialization.Serialization
+import akka.serialization._
 import scala.util.Success
 import scala.util.Failure
 
@@ -30,10 +29,8 @@ private[serialization] final case class SnapshotHeader(serializerId: Int, manife
 /**
  * [[Snapshot]] serializer.
  */
-class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
+class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
-  val SerializationIdentifiers = "akka.actor.serialization-identifiers" // TODO move to [[Serializer]]
-  override val identifier: Int = system.settings.config.getInt(s"""${SerializationIdentifiers}."${getClass.getName}"""")
   override val includeManifest: Boolean = false
 
   private lazy val transportInformation: Option[Serialization.Information] = {

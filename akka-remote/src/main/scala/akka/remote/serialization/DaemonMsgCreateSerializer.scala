@@ -4,7 +4,7 @@
 
 package akka.remote.serialization
 
-import akka.serialization.{ Serializer, SerializationExtension }
+import akka.serialization.{ BaseSerializer, SerializationExtension }
 import java.io.Serializable
 import com.google.protobuf.ByteString
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -24,13 +24,13 @@ import util.{ Failure, Success }
  *
  * INTERNAL API
  */
-private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends Serializer {
+private[akka] class DaemonMsgCreateSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import ProtobufSerializer.serializeActorRef
   import ProtobufSerializer.deserializeActorRef
   import Deploy.NoDispatcherGiven
 
   def includeManifest: Boolean = false
-  def identifier = 3
+
   lazy val serialization = SerializationExtension(system)
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
