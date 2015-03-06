@@ -12,6 +12,7 @@ import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
 import scala.concurrent.Future
 import akka.stream.impl.StreamLayout
+import scala.util.Try
 
 /** Java API */
 object Sink {
@@ -51,7 +52,7 @@ object Sink {
   /**
    * A `Sink` that immediately cancels its upstream after materialization.
    */
-  def cancelled[T]: Sink[T, Unit] =
+  def cancelled[T](): Sink[T, Unit] =
     new Sink(scaladsl.Sink.cancelled)
 
   /**
@@ -65,7 +66,7 @@ object Sink {
    * that can handle one [[org.reactivestreams.Subscriber]].
    */
   def publisher[In](): Sink[In, Publisher[In]] =
-    new Sink(scaladsl.Sink.publisher())
+    new Sink(scaladsl.Sink.publisher)
 
   /**
    * A `Sink` that will invoke the given procedure for each received element. The sink is materialized
@@ -88,13 +89,13 @@ object Sink {
    * completion, apply the provided function with [[scala.util.Success]]
    * or [[scala.util.Failure]].
    */
-  def onComplete[In](onComplete: japi.Procedure[Unit]): Sink[In, Unit] =
-    new Sink(scaladsl.Sink.onComplete[In](x ⇒ onComplete.apply(x)))
+  def onComplete[In](callback: japi.Procedure[Try[Unit]]): Sink[In, Unit] =
+    new Sink(scaladsl.Sink.onComplete[In](x ⇒ callback.apply(x)))
 
   /**
    * A `Sink` that materializes into a `Future` of the first value received.
    */
-  def head[In]: Sink[In, Future[In]] =
+  def head[In](): Sink[In, Future[In]] =
     new Sink(scaladsl.Sink.head[In])
 
 }
@@ -124,4 +125,10 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
    */
   def mapMaterialized[Mat2](f: japi.Function[Mat, Mat2]): Sink[In, Mat2] =
     new Sink(delegate.mapMaterialized(f.apply _))
+
+  def withAttributes(attr: OperationAttributes): javadsl.Sink[In, Mat] =
+    new Sink(delegate.withAttributes(attr.asScala))
+
+  def named(name: String): javadsl.Sink[In, Mat] =
+    new Sink(delegate.named(name))
 }

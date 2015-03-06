@@ -156,7 +156,7 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
 object Source extends SourceApply {
 
-  import OperationAttributes.{ none, name ⇒ named }
+  import OperationAttributes.none
 
   private[stream] def apply[Out, Mat](module: SourceModule[Out, Mat]): Source[Out, Mat] =
     new Source(module)
@@ -175,17 +175,6 @@ object Source extends SourceApply {
     new Source(new PublisherSource(publisher, none, shape("PublisherSource")))
 
   /**
-   * Helper to create [[Source]] from `Publisher`.
-   *
-   * Construct a transformation starting with given publisher. The transformation steps
-   * are executed by a series of [[org.reactivestreams.Processor]] instances
-   * that mediate the flow of elements downstream and the propagation of
-   * back-pressure upstream.
-   */
-  def apply[T](publisher: Publisher[T], name: String): Source[T, Unit] =
-    new Source(new PublisherSource(publisher, named(name), shape(name)))
-
-  /**
    * Helper to create [[Source]] from `Iterator`.
    * Example usage: `Source(() => Iterator.from(0))`
    *
@@ -196,22 +185,6 @@ object Source extends SourceApply {
    * from the downstream transformation steps.
    */
   def apply[T](f: () ⇒ Iterator[T]): Source[T, Unit] = {
-    apply(new immutable.Iterable[T] {
-      override def iterator: Iterator[T] = f()
-    })
-  }
-
-  /**
-   * Helper to create [[Source]] from `Iterator`.
-   * Example usage: `Source(() => Iterator.from(0))`
-   *
-   * Start a new `Source` from the given function that produces anIterator.
-   * The produced stream of elements will continue until the iterator runs empty
-   * or fails during evaluation of the `next()` method.
-   * Elements are pulled out of the iterator in accordance with the demand coming
-   * from the downstream transformation steps.
-   */
-  def apply[T](f: () ⇒ Iterator[T], name: String): Source[T, Unit] = {
     apply(new immutable.Iterable[T] {
       override def iterator: Iterator[T] = f()
     })
@@ -232,8 +205,7 @@ object Source extends SourceApply {
    * stream will see an individual flow of elements (always starting from the
    * beginning) regardless of when they subscribed.
    */
-  def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] = { // FIXME add naming of outlet
-
+  def apply[T](iterable: immutable.Iterable[T]): Source[T, Unit] = {
     Source.empty.transform(() ⇒ {
       new PushPullStage[Nothing, T] {
         var iterator: Iterator[T] = null
@@ -263,17 +235,8 @@ object Source extends SourceApply {
         }
       }
 
-    }).withAttributes(OperationAttributes.name("iterable"))
+    }).named("IterableSource")
   }
-
-  /**
-   * Start a new `Source` from the given `Future`. The stream will consist of
-   * one element when the `Future` is completed with a successful value, which
-   * may happen before or after materializing the `Flow`.
-   * The stream terminates with an error if the `Future` is completed with a failure.
-   */
-  def apply[T](future: Future[T]): Source[T, Unit] =
-    new Source(new FutureSource(future, none, shape("FutureSource")))
 
   /**
    * Start a new `Source` from the given `Future`. The stream will consist of
@@ -281,8 +244,8 @@ object Source extends SourceApply {
    * may happen before or after materializing the `Flow`.
    * The stream terminates with a failure if the `Future` is completed with a failure.
    */
-  def apply[T](future: Future[T], name: String): Source[T, Unit] =
-    new Source(new FutureSource(future, named(name), shape(name)))
+  def apply[T](future: Future[T]): Source[T, Unit] =
+    new Source(new FutureSource(future, none, shape("FutureSource")))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -295,45 +258,31 @@ object Source extends SourceApply {
     new Source(new TickSource(initialDelay, interval, tick, none, shape("TickSource")))
 
   /**
-   * Elements are emitted periodically with the specified interval.
-   * The tick element will be delivered to downstream consumers that has requested any elements.
-   * If a consumer has not requested any elements at the point in time when the tick
-   * element is produced it will not receive that tick element later. It will
-   * receive new tick elements as soon as it has requested more elements.
-   */
-  def apply[T](initialDelay: FiniteDuration, interval: FiniteDuration, tick: T, name: String): Source[T, Cancellable] =
-    new Source(new TickSource(initialDelay, interval, tick, named(name), shape(name)))
-
-  /**
    * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
    * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
    * be [[akka.stream.actor.ActorPublisher]].
    */
-  def apply[T](props: Props): Source[T, ActorRef] = new Source(new PropsSource(props, none, shape("PropsSource")))
-
-  /**
-   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorPublisher]].
-   */
-  def apply[T](props: Props, name: String): Source[T, ActorRef] = new Source(new PropsSource(props, named(name), shape(name)))
+  def apply[T](props: Props): Source[T, ActorRef] =
+    new Source(new PropsSource(props, none, shape("PropsSource")))
 
   /**
    * Create a `Source` with one element.
    * Every connected `Sink` of this stream will see an individual stream consisting of one element.
    */
-  def single[T](element: T): Source[T, Unit] = apply(SynchronousIterablePublisher(List(element), "single")) // FIXME optimize
+  def single[T](element: T): Source[T, Unit] =
+    apply(SynchronousIterablePublisher(List(element), "SingleSource")) // FIXME optimize
 
   /**
    * Create a `Source` that will continually emit the given element.
    */
-  def repeat[T](element: T): Source[T, Unit] = apply(() ⇒ Iterator.continually(element)) // FIXME optimize
+  def repeat[T](element: T): Source[T, Unit] =
+    apply(() ⇒ Iterator.continually(element)) // FIXME optimize
 
   /**
    * A `Source` with no elements, i.e. an empty stream that is completed immediately for every connected `Sink`.
    */
-  def empty[T](): Source[T, Unit] = _empty
-  private[this] val _empty: Source[Nothing, Unit] = apply(EmptyPublisher, "EmptySource")
+  def empty[T]: Source[T, Unit] = _empty
+  private[this] val _empty: Source[Nothing, Unit] = apply(EmptyPublisher)
 
   /**
    * Create a `Source` with no elements, which does not complete its downstream,
@@ -344,28 +293,13 @@ object Source extends SourceApply {
    * be used to externally trigger completion, which the source then signalls
    * to its downstream.
    */
-  def lazyEmpty[T](): Source[T, Promise[Unit]] = new Source(new LazyEmptySource[T](none, shape("LazyEmptySource")))
-
-  /**
-   * Create a `Source` with no elements, which does not complete its downstream,
-   * until externally triggered to do so.
-   *
-   * It materializes a [[scala.concurrent.Promise]] which will be completed
-   * when the downstream stage of this source cancels. This promise can also
-   * be used to externally trigger completion, which the source then signalls
-   * to its downstream.
-   */
-  def lazyEmpty[T](name: String): Source[T, Promise[Unit]] = new Source(new LazyEmptySource[T](named(name), shape(name)))
+  def lazyEmpty[T]: Source[T, Promise[Unit]] =
+    new Source(new LazyEmptySource[T](none, shape("LazyEmptySource")))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` error to every connected `Sink`.
    */
-  def failed[T](cause: Throwable): Source[T, Unit] = apply(ErrorPublisher(cause, "failed"), "FailedSource")
-
-  /**
-   * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
-   */
-  def failed[T](cause: Throwable, name: String): Source[T, Unit] = apply(ErrorPublisher(cause, "failed"), name)
+  def failed[T](cause: Throwable): Source[T, Unit] = apply(ErrorPublisher(cause, "FailedSource"))
 
   /**
    * Concatenates two sources so that the first element
@@ -385,11 +319,7 @@ object Source extends SourceApply {
   /**
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
-  def subscriber[T](): Source[T, Subscriber[T]] = new Source(new SubscriberSource[T](none, shape("SubscriberSource")))
-
-  /**
-   * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
-   */
-  def subscriber[T](name: String): Source[T, Subscriber[T]] = new Source(new SubscriberSource[T](named(name), shape(name)))
+  def subscriber[T]: Source[T, Subscriber[T]] =
+    new Source(new SubscriberSource[T](none, shape("SubscriberSource")))
 
 }

@@ -152,14 +152,14 @@ class FlowDocSpec extends AkkaSpec {
 
     //#flow-mat-combine
     // An empty source that can be shut down explicitly from the outside
-    val source: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]()
+    val source: Source[Int, Promise[Unit]] = Source.lazyEmpty[Int]
 
     // A flow that internally throttles elements to 1/second, and returns a Cancellable
     // which can be used to shut down the stream
     val flow: Flow[Int, Int, Cancellable] = throttler
 
     // A sink that returns the first element of a stream in the returned Future
-    val sink: Sink[Int, Future[Int]] = Sink.head[Int]()
+    val sink: Sink[Int, Future[Int]] = Sink.head[Int]
 
     // By default, the materialized value of the leftmost stage is preserved
     val r1: RunnableFlow[Promise[Unit]] = source.via(flow).to(sink)
