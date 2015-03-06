@@ -26,6 +26,7 @@ object AtLeastOnceDeliveryFailureSpec {
       akka.persistence.journal.chaos.replay-failure-rate = 0.25
       akka.persistence.journal.chaos.read-highest-failure-rate = 0.1
       akka.persistence.journal.chaos.class = akka.persistence.journal.chaos.ChaosJournal
+      akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-at-least-once-delivery-failure-spec/"
     """)
 

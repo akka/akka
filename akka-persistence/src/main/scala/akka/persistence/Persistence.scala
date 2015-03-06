@@ -126,10 +126,18 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private val config = system.settings.config.getConfig("akka.persistence")
 
   // Lazy, so user is not forced to configure defaults when she is not using them.
-  private lazy val defaultJournalPluginId = config.getString("journal.plugin")
+  private lazy val defaultJournalPluginId = {
+    val configPath = config.getString("journal.plugin")
+    require(!isEmpty(configPath), "default journal plugin is not configured, see 'reference.conf'")
+    configPath
+  }
 
   // Lazy, so user is not forced to configure defaults when she is not using them.
-  private lazy val defaultSnapshotPluginId = config.getString("snapshot-store.plugin")
+  private lazy val defaultSnapshotPluginId = {
+    val configPath = config.getString("snapshot-store.plugin")
+    require(!isEmpty(configPath), "default snapshot-store plugin is not configured, see 'reference.conf'")
+    configPath
+  }
 
   val settings = new PersistenceSettings(config)
 
@@ -139,8 +147,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   private def snapshotDispatchSelector(klaz: Class[_]): String =
     DefaultPluginDispatcherId
 
-  /** Check for default identity. */
-  private def isDefault(text: String) = text == null || text.length == 0
+  /** Check for default or missing identity. */
+  private def isEmpty(text: String) = text == null || text.length == 0
 
   /** Discovered persistence journal plugins. */
   private val journalPluginExtensionId = new AtomicReference[Map[String, ExtensionId[PluginHolder]]](Map.empty)
@@ -155,7 +163,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
   @tailrec final def journalFor(journalPluginId: String): ActorRef = {
-    val configPath = if (isDefault(journalPluginId)) defaultJournalPluginId else journalPluginId
+    val configPath = if (isEmpty(journalPluginId)) defaultJournalPluginId else journalPluginId
     val extensionIdMap = journalPluginExtensionId.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
@@ -177,7 +185,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
   @tailrec final def snapshotStoreFor(snapshotPluginId: String): ActorRef = {
-    val configPath = if (isDefault(snapshotPluginId)) defaultSnapshotPluginId else snapshotPluginId
+    val configPath = if (isEmpty(snapshotPluginId)) defaultSnapshotPluginId else snapshotPluginId
     val extensionIdMap = snapshotPluginExtensionId.get
     extensionIdMap.get(configPath) match {
       case Some(extensionId) ⇒
@@ -193,6 +201,8 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
   }
 
   private def createPlugin(configPath: String)(dispatcherSelector: Class[_] ⇒ String) = {
+    require(!isEmpty(configPath) && system.settings.config.hasPath(configPath),
+      s"'reference.conf' is missing persistence plugin config path: '${configPath}'")
     val pluginActorName = configPath
     val pluginConfig = system.settings.config.getConfig(configPath)
     val pluginClassName = pluginConfig.getString("class")

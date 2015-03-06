@@ -23,7 +23,10 @@ object SharedLeveldbJournalSpec {
             plugin = "akka.persistence.journal.leveldb-shared"
             leveldb-shared.store.dir = target/journal-SharedLeveldbJournalSpec
           }
-          snapshot-store.local.dir = target/snapshots-SharedLeveldbJournalSpec
+          snapshot-store {
+            plugin = "akka.persistence.snapshot-store.local"
+            local.dir = target/snapshots-SharedLeveldbJournalSpec
+          }
         }
         remote {
           enabled-transports = ["akka.remote.netty.tcp"]
