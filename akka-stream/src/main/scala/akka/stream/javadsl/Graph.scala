@@ -273,9 +273,9 @@ object FlowGraph {
   val factory: GraphCreate = new GraphCreate {}
 
   /**
-   * Start building a [[FlowGraph]] or [[PartialFlowGraph]].
+   * Start building a [[FlowGraph]].
    *
-   * The [[FlowGraphBuilder]] is mutable and not thread-safe,
+   * The [[Builder]] is mutable and not thread-safe,
    * thus you should construct your Graph and then share the constructed immutable [[FlowGraph]].
    */
   def builder(): Builder = new Builder()(new scaladsl.FlowGraph.Builder)
