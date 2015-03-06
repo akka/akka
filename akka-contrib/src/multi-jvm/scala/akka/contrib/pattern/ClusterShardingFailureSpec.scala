@@ -41,6 +41,7 @@ object ClusterShardingFailureSpec extends MultiNodeConfig {
         dir = "target/journal-ClusterShardingFailureSpec"
       }
     }
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingFailureSpec"
     akka.contrib.cluster.sharding.coordinator-failure-backoff = 3s
     akka.contrib.cluster.sharding.shard-failure-backoff = 3s
