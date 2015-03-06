@@ -213,7 +213,7 @@ class UnmarshallingSpec extends FreeSpec with Matchers with BeforeAndAfterAll wi
   def haveParts[T <: Multipart](parts: Multipart.BodyPart*): Matcher[Future[T]] =
     equal(parts).matcher[Seq[Multipart.BodyPart]] compose { x ⇒
       Await.result(x
-        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(Sink.head()))
+        .fast.flatMap(x ⇒ x.parts.grouped(100).runWith(Sink.head))
         .fast.recover { case _: NoSuchElementException ⇒ Nil }, 1.second)
     }
 }

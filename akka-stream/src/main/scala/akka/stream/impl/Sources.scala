@@ -16,7 +16,10 @@ import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success }
 
-abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends Module {
+/**
+ * INTERNAL API
+ */
+private[akka] abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends Module {
 
   def create(materializer: ActorFlowMaterializerImpl, flowName: String): (Publisher[Out] @uncheckedVariance, Mat)
 
@@ -33,13 +36,23 @@ abstract class SourceModule[+Out, +Mat](val shape: SourceShape[Out]) extends Mod
   }
 
   override def subModules: Set[Module] = Set.empty
+
+  def amendShape(attr: OperationAttributes): SourceShape[Out] = {
+    attr.nameOption match {
+      case None ⇒ shape
+      case s: Some[String] if s == attributes.nameOption ⇒ shape
+      case Some(name) ⇒ shape.copy(outlet = new Outlet(name + ".out"))
+    }
+  }
+
 }
 
 /**
+ * INTERNAL API
  * Holds a `Subscriber` representing the input side of the flow.
  * The `Subscriber` can later be connected to an upstream `Publisher`.
  */
-final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
+private[akka] final class SubscriberSource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Subscriber[Out]](shape) {
 
   /**
    * This method is only used for Sources that return true from [[#isActive]], which then must
@@ -61,29 +74,31 @@ final class SubscriberSource[Out](val attributes: OperationAttributes, shape: So
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Subscriber[Out]] = new SubscriberSource[Out](attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new SubscriberSource[Out](attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new SubscriberSource[Out](attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Construct a transformation starting with given publisher. The transformation steps
  * are executed by a series of [[org.reactivestreams.Processor]] instances
  * that mediate the flow of elements downstream and the propagation of
  * back-pressure upstream.
  */
-final class PublisherSource[Out](p: Publisher[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
+private[akka] final class PublisherSource[Out](p: Publisher[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = (p, ())
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new PublisherSource[Out](p, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PublisherSource[Out](p, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new PublisherSource[Out](p, attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Start a new `Source` from the given `Future`. The stream will consist of
  * one element when the `Future` is completed with a successful value, which
  * may happen before or after materializing the `Flow`.
  * The stream terminates with an error if the `Future` is completed with a failure.
  */
-final class FutureSource[Out](future: Future[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
+private[akka] final class FutureSource[Out](future: Future[Out], val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Unit](shape) {
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) =
     future.value match {
       case Some(Success(element)) ⇒
@@ -96,10 +111,13 @@ final class FutureSource[Out](future: Future[Out], val attributes: OperationAttr
     }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Unit] = new FutureSource(future, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new FutureSource(future, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new FutureSource(future, attr, amendShape(attr))
 }
 
-final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Unit]](shape) {
+/**
+ * INTERNAL API
+ */
+private[akka] final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Promise[Unit]](shape) {
   import ReactiveStreamsCompliance._
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
@@ -123,17 +141,18 @@ final class LazyEmptySource[Out](val attributes: OperationAttributes, shape: Sou
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Promise[Unit]] = new LazyEmptySource[Out](attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new LazyEmptySource(attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new LazyEmptySource(attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Elements are emitted periodically with the specified interval.
  * The tick element will be delivered to downstream consumers that has requested any elements.
  * If a consumer has not requested any elements at the point in time when the tick
  * element is produced it will not receive that tick element later. It will
  * receive new tick elements as soon as it has requested more elements.
  */
-final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) {
+private[akka] final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDuration, tick: Out, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, Cancellable](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val cancelled = new AtomicBoolean(false)
@@ -150,14 +169,15 @@ final class TickSource[Out](initialDelay: FiniteDuration, interval: FiniteDurati
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, Cancellable] = new TickSource[Out](initialDelay, interval, tick, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new TickSource(initialDelay, interval, tick, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new TickSource(initialDelay, interval, tick, attr, amendShape(attr))
 }
 
 /**
+ * INTERNAL API
  * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
  * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
  */
-final class PropsSource[Out](props: Props, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
+private[akka] final class PropsSource[Out](props: Props, val attributes: OperationAttributes, shape: SourceShape[Out]) extends SourceModule[Out, ActorRef](shape) {
 
   override def create(materializer: ActorFlowMaterializerImpl, flowName: String) = {
     val publisherRef = materializer.actorOf(props, name = s"$flowName-0-props")
@@ -165,5 +185,5 @@ final class PropsSource[Out](props: Props, val attributes: OperationAttributes, 
   }
 
   override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] = new PropsSource[Out](props, attributes, shape)
-  override def withAttributes(attr: OperationAttributes): Module = new PropsSource(props, attr, shape)
+  override def withAttributes(attr: OperationAttributes): Module = new PropsSource(props, attr, amendShape(attr))
 }

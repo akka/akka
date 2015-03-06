@@ -29,7 +29,7 @@ abstract class AkkaIdentityProcessorVerification[T](env: TestEnvironment, publis
     StreamTestKit.errorPublisher(new Exception("Unable to serve subscribers right now!"))
 
   def processorFromFlow(flow: Flow[T, T, _])(implicit mat: ActorFlowMaterializer): Processor[T, T] = {
-    val (sub: Subscriber[T], pub: Publisher[T]) = flow.runWith(Source.subscriber[T](), Sink.publisher[T]())
+    val (sub: Subscriber[T], pub: Publisher[T]) = flow.runWith(Source.subscriber[T], Sink.publisher[T])
 
     new Processor[T, T] {
       override def onSubscribe(s: Subscription): Unit = sub.onSubscribe(s)

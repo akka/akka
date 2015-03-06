@@ -35,7 +35,7 @@ object Source {
    * for every connected `Sink`.
    */
   def empty[O](): Source[O, Unit] =
-    new Source(scaladsl.Source.empty())
+    new Source(scaladsl.Source.empty)
 
   /**
    * Create a `Source` with no elements, which does not complete its downstream,
@@ -47,7 +47,7 @@ object Source {
    * to its downstream.
    */
   def lazyEmpty[T](): Source[T, Promise[Unit]] =
-    new Source[T, Promise[Unit]](scaladsl.Source.lazyEmpty())
+    new Source[T, Promise[Unit]](scaladsl.Source.lazyEmpty)
 
   /**
    * Helper to create [[Source]] from `Publisher`.
@@ -69,7 +69,7 @@ object Source {
    * data.add(1);
    * data.add(2);
    * data.add(3);
-   * Source.from(data.iterator());
+   * Source.from(() -> data.iterator());
    * }}}
    *
    * Start a new `Source` from the given Iterator. The produced stream of elements
@@ -150,7 +150,7 @@ object Source {
    * Creates a `Source` that is materialized as a [[org.reactivestreams.Subscriber]]
    */
   def subscriber[T](): Source[T, Subscriber[T]] =
-    new Source(scaladsl.Source.subscriber())
+    new Source(scaladsl.Source.subscriber)
 
   /**
    * Concatenates two sources so that the first element
@@ -210,7 +210,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
-   * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher()`.
+   * of the `Sink`, e.g. the `Publisher` of a `Sink.publisher`.
    */
   def runWith[M](sink: Sink[Out, M], materializer: FlowMaterializer): M =
     delegate.runWith(sink.asScala)(materializer)
@@ -471,4 +471,11 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
       val javaToScala = (source: javadsl.Flow[Out, O, M]) ⇒ source.asScala
       scalaToJava andThen section.apply andThen javaToScala
     })
+
+  def withAttributes(attr: OperationAttributes): javadsl.Source[Out, Mat] =
+    new Source(delegate.withAttributes(attr.asScala))
+
+  def named(name: String): javadsl.Source[Out, Mat] =
+    new Source(delegate.named(name))
+
 }

@@ -60,7 +60,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
 
   "explcit buffers" in {
     trait Job
-    def inboundJobsConnector(): Source[Job, Unit] = Source.empty()
+    def inboundJobsConnector(): Source[Job, Unit] = Source.empty
     //#explicit-buffers-backpressure
     // Getting a stream of jobs from an imaginary external system as a Source
     val jobs: Source[Job, Unit] = inboundJobsConnector()
