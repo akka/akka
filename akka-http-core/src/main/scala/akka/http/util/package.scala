@@ -8,8 +8,7 @@ import language.implicitConversions
 import language.higherKinds
 import java.nio.charset.Charset
 import com.typesafe.config.Config
-import akka.stream.FlattenStrategy
-import akka.stream.scaladsl.{ Flow, Source }
+import akka.stream.scaladsl.{ FlattenStrategy, Flow, Source }
 import akka.stream.stage._
 import scala.concurrent.duration.Duration
 import scala.concurrent.{ Await, Future }

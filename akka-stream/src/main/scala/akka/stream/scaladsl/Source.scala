@@ -3,6 +3,7 @@
  */
 package akka.stream.scaladsl
 
+import akka.stream.javadsl
 import akka.stream.impl.Stages.{ MaterializingStageFactory, StageModule }
 import akka.stream.{ SourceShape, Inlet, Outlet }
 import akka.stream.impl.StreamLayout.{ EmptyModule, Module }
@@ -151,6 +152,9 @@ final class Source[+Out, +Mat](private[stream] override val module: Module)
 
   override def withAttributes(attr: OperationAttributes): Repr[Out, Mat] =
     new Source(module.withAttributes(attr).wrap())
+
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  def asJava: javadsl.Source[Out, Mat] = new javadsl.Source(this)
 
 }
 

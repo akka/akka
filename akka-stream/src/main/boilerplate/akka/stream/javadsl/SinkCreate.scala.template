@@ -5,7 +5,6 @@ package akka.stream.javadsl
 
 import akka.stream.scaladsl
 import akka.stream.{ Inlet, Shape, Graph }
-import akka.stream.scaladsl.JavaConverters._
 
 trait SinkCreate {
 

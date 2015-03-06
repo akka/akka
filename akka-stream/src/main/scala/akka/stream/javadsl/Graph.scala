@@ -279,7 +279,7 @@ object FlowGraph {
    */
   def builder[M](): Builder[M] = new Builder()(new scaladsl.FlowGraph.Builder[M])
 
-  final class Builder[Mat]()(private implicit val delegate: scaladsl.FlowGraph.Builder[Mat]) { self ⇒
+  final class Builder[+Mat]()(private implicit val delegate: scaladsl.FlowGraph.Builder[Mat]) { self ⇒
     import akka.stream.scaladsl.FlowGraph.Implicits._
 
     def flow[A, B, M](from: Outlet[A], via: Flow[A, B, M], to: Inlet[B]): Unit = delegate.addEdge(from, via.asScala, to)
