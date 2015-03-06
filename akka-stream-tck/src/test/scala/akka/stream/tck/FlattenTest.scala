@@ -3,10 +3,10 @@
  */
 package akka.stream.tck
 
+import akka.stream.scaladsl.FlattenStrategy
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import org.reactivestreams.Publisher
-import akka.stream.FlattenStrategy
 
 class FlattenTest extends AkkaPublisherVerification[Int] {
 

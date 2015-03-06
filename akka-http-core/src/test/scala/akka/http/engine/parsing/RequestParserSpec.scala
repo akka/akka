@@ -11,7 +11,7 @@ import org.scalatest.{ BeforeAndAfterAll, FreeSpec, Matchers }
 import org.scalatest.matchers.Matcher
 import akka.stream.scaladsl._
 import akka.stream.scaladsl.OperationAttributes._
-import akka.stream.FlattenStrategy
+import akka.stream.scaladsl.FlattenStrategy
 import akka.stream.ActorFlowMaterializer
 import akka.util.ByteString
 import akka.actor.ActorSystem

@@ -17,8 +17,6 @@ import scala.util.Try
 /** Java API */
 object Sink {
 
-  import akka.stream.scaladsl.JavaConverters._
-
   val factory: SinkCreate = new SinkCreate {}
 
   /** Adapt [[scaladsl.Sink]] for use within Java DSL */
@@ -116,7 +114,7 @@ class Sink[-In, +Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkShape[
   override def shape: SinkShape[In] = delegate.shape
   private[stream] def module: StreamLayout.Module = delegate.module
 
-  /** Converts this Sink to it's Scala DSL counterpart */
+  /** Converts this Sink to its Scala DSL counterpart */
   def asScala: scaladsl.Sink[In, Mat] = delegate
 
   /**

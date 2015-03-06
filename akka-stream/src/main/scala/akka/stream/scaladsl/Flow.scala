@@ -286,6 +286,9 @@ final class Flow[-In, +Out, +Mat](private[stream] override val module: Module)
     this.section[O, O2, Mat2, Mat2](attributes, Keep.right)(section)
   }
 
+  /** Converts this Scala DSL element to it's Java DSL counterpart. */
+  def asJava: javadsl.Flow[In, Out, Mat] = new javadsl.Flow(this)
+
 }
 
 object Flow extends FlowApply {
@@ -627,8 +630,8 @@ trait FlowOps[+Out, +Mat] {
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[akka.stream.scaladsl.Source]].
    */
-  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
-    case _: FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll())
+  def flatten[U](strategy: FlattenStrategy[Out, U]): Repr[U, Mat] = strategy match {
+    case _: FlattenStrategy.Concat[Out] | _: javadsl.FlattenStrategy.Concat[Out] ⇒ andThen(ConcatAll())
     case _ ⇒
       throw new IllegalArgumentException(s"Unsupported flattening strategy [${strategy.getClass.getName}]")
   }

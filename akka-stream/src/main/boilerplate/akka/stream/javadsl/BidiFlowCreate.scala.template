@@ -5,7 +5,6 @@ package akka.stream.javadsl
 
 import akka.stream.scaladsl
 import akka.stream.{ Inlet, Outlet, Shape, Graph, BidiShape }
-import akka.stream.scaladsl.JavaConverters._
 import akka.japi.Pair
 
 trait BidiFlowCreate {

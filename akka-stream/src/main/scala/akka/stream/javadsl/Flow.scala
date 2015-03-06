@@ -14,8 +14,6 @@ import akka.stream.impl.StreamLayout
 
 object Flow {
 
-  import akka.stream.scaladsl.JavaConverters._
-
   val factory: FlowCreate = new FlowCreate {}
 
   /** Adapt [[scaladsl.Flow]] for use within Java DSL */
@@ -44,12 +42,11 @@ object Flow {
 /** Create a `Flow` which can process elements of type `T`. */
 class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph[FlowShape[In, Out], Mat] {
   import scala.collection.JavaConverters._
-  import akka.stream.scaladsl.JavaConverters._
 
   override def shape: FlowShape[In, Out] = delegate.shape
   private[stream] def module: StreamLayout.Module = delegate.module
 
-  /** Converts this Flow to it's Scala DSL counterpart */
+  /** Converts this Flow to its Scala DSL counterpart */
   def asScala: scaladsl.Flow[In, Out, Mat] = delegate
 
   /**
@@ -401,7 +398,7 @@ class Flow[-In, +Out, +Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Graph
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[Source]].
    */
-  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Flow[In, U, Mat] =
+  def flatten[U](strategy: FlattenStrategy[Out, U]): javadsl.Flow[In, U, Mat] =
     new Flow(delegate.flatten(strategy))
 
   /**

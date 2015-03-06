@@ -23,8 +23,6 @@ import scala.annotation.varargs
 /** Java API */
 object Source {
 
-  import scaladsl.JavaConverters._
-
   val factory: SourceCreate = new SourceCreate {}
 
   /** Adapt [[scaladsl.Source]] for use within JavaDSL */
@@ -181,14 +179,12 @@ object Source {
  * Can be used as a `Publisher`
  */
 class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[SourceShape[Out], Mat] {
-  import akka.stream.scaladsl.JavaConverters._
-
   import scala.collection.JavaConverters._
 
   override def shape: SourceShape[Out] = delegate.shape
   private[stream] def module: StreamLayout.Module = delegate.module
 
-  /** Converts this Java DSL element to it's Scala DSL counterpart. */
+  /** Converts this Java DSL element to its Scala DSL counterpart. */
   def asScala: scaladsl.Source[Out, Mat] = delegate
 
   /**
@@ -472,7 +468,7 @@ class Source[+Out, +Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[Sour
    * Transforms a stream of streams into a contiguous stream of elements using the provided flattening strategy.
    * This operation can be used on a stream of element type [[Source]].
    */
-  def flatten[U](strategy: akka.stream.FlattenStrategy[Out, U]): javadsl.Source[U, Mat] =
+  def flatten[U](strategy: FlattenStrategy[Out, U]): javadsl.Source[U, Mat] =
     new Source(delegate.flatten(strategy))
 
   /**

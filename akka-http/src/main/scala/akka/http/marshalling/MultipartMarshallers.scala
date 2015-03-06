@@ -8,7 +8,7 @@ import akka.event.{ NoLogging, LoggingAdapter }
 
 import scala.concurrent.forkjoin.ThreadLocalRandom
 import akka.parboiled2.util.Base64
-import akka.stream.FlattenStrategy
+import akka.stream.scaladsl.FlattenStrategy
 import akka.stream.scaladsl._
 import akka.http.engine.rendering.BodyPartRenderer
 import akka.http.util.FastFuture
