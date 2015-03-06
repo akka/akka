@@ -70,7 +70,7 @@ abstract class Shape {
   def requireSamePortsAs(s: Shape): Unit = require(hasSamePortsAs(s), nonCorrespondingMessage(s))
 
   /**
-   * Asserting version of [[#hasSameShapeAs]].
+   * Asserting version of [[#hasSamePortsAndShapeAs]].
    */
   def requireSamePortsAndShapeAs(s: Shape): Unit = require(hasSamePortsAndShapeAs(s), nonCorrespondingMessage(s))
 
