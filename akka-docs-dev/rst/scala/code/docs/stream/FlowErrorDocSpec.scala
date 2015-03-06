@@ -28,7 +28,7 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate resume stream" in {
     //#resume
-    val decider: Supervision.Decider = exc => exc match {
+    val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
@@ -46,7 +46,7 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate resume section" in {
     //#resume-section
     implicit val mat = ActorFlowMaterializer()
-    val decider: Supervision.Decider = exc => exc match {
+    val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
@@ -64,7 +64,7 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate restart section" in {
     //#restart-section
     implicit val mat = ActorFlowMaterializer()
-    val decider: Supervision.Decider = exc => exc match {
+    val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
     }
