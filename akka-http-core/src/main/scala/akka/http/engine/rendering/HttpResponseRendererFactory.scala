@@ -65,7 +65,10 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
       val noEntity = entity.isKnownEmpty || ctx.requestMethod == HttpMethods.HEAD
 
       def renderStatusLine(): Unit =
-        if (status eq StatusCodes.OK) r ~~ DefaultStatusLineBytes else r ~~ StatusLineStartBytes ~~ status ~~ CrLf
+        protocol match {
+          case `HTTP/1.1` ⇒ if (status eq StatusCodes.OK) r ~~ DefaultStatusLineBytes else r ~~ StatusLineStartBytes ~~ status ~~ CrLf
+          case `HTTP/1.0` ⇒ r ~~ protocol ~~ ' ' ~~ status ~~ CrLf
+        }
 
       def render(h: HttpHeader) = r ~~ h ~~ CrLf
 
@@ -125,14 +128,27 @@ private[http] class HttpResponseRendererFactory(serverHeader: Option[headers.Ser
           case Nil ⇒
             if (!serverSeen) renderDefaultServerHeader(r)
             if (!dateSeen) r ~~ dateHeader
-            close = alwaysClose ||
-              ctx.closeAfterResponseCompletion || // request wants to close
-              (connHeader != null && connHeader.hasClose) // application wants to close
-            ctx.requestProtocol match {
-              case `HTTP/1.0` if !close ⇒ r ~~ Connection ~~ KeepAliveBytes ~~ CrLf
-              case `HTTP/1.1` if close  ⇒ r ~~ Connection ~~ CloseBytes ~~ CrLf
-              case _                    ⇒ // no need for rendering
-            }
+
+            // Do we close the connection after this response?
+            close =
+              // if we are prohibited to keep-alive by the spec
+              alwaysClose ||
+                // if the client wants to close and we don't override
+                (ctx.closeRequested && ((connHeader eq null) || !connHeader.hasKeepAlive)) ||
+                // if the application wants to close explicitly
+                (protocol match {
+                  case `HTTP/1.1` ⇒ (connHeader ne null) && connHeader.hasClose
+                  case `HTTP/1.0` ⇒ if (connHeader eq null) ctx.requestProtocol == `HTTP/1.1` else !connHeader.hasKeepAlive
+                })
+
+            // Do we render an explicit Connection header?
+            val renderConnectionHeader =
+              protocol == `HTTP/1.0` && !close || protocol == `HTTP/1.1` && close || // if we don't follow the default behavior
+                close != ctx.closeRequested || // if we override the client's closing request
+                protocol != ctx.requestProtocol // if we reply with a mismatching protocol (let's be very explicit in this case)
+
+            if (renderConnectionHeader)
+              r ~~ Connection ~~ (if (close) CloseBytes else KeepAliveBytes) ~~ CrLf
             if (mustRenderTransferEncodingChunkedHeader && !transferEncodingSeen)
               r ~~ `Transfer-Encoding` ~~ ChunkedBytes ~~ CrLf
         }
@@ -190,4 +206,4 @@ private[http] final case class ResponseRenderingContext(
   response: HttpResponse,
   requestMethod: HttpMethod = HttpMethods.GET,
   requestProtocol: HttpProtocol = HttpProtocols.`HTTP/1.1`,
-  closeAfterResponseCompletion: Boolean = false)
+  closeRequested: Boolean = false)
