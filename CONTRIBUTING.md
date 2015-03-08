@@ -61,7 +61,7 @@ For a Pull Request to be considered at all it has to meet these requirements:
 
     Other guidelines to follow for copyright notices:
 
-    - Use a form of ``Copyright (C) 2011-2013 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
+    - Use a form of ``Copyright (C) 2011-2015 Typesafe Inc. <http://www.typesafe.com>``, where the start year is when the project or file was first created and the end year is the last time the project or file was modified.
     - Never delete or change existing copyright notices, just add additional info.  
     - Do not use ``@author`` tags since it does not encourage [Collective Code Ownership](http://www.extremeprogramming.org/rules/collective.html). However, each project should make sure that the contributors gets the credit they deserve—in a text file or page on the project website and in the release notes etc.
 
