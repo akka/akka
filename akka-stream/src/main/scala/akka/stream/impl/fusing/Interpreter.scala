@@ -170,7 +170,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
   // Points to the current point of execution inside the pipeline
   private var activeOpIndex = -1
   // The current interpreter state that decides what happens at the next round
-  private var state: State = Pushing
+  private var state: State = _
 
   // Counter that keeps track of the depth of recursive forked executions
   private var forkCount = 0
@@ -178,6 +178,23 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
   private var overflowStack = List.empty[(Int, State, Any)]
 
   private var lastOpFailing: Int = -1
+
+  private def pipeName(op: UntypedOp): String = {
+    val o = (op: AbstractStage[_, _, _, _, _])
+    (o match {
+      case Finished               ⇒ "finished"
+      case _: BoundaryStage       ⇒ "boundary"
+      case _: StatefulStage[_, _] ⇒ "stateful"
+      case _: PushStage[_, _]     ⇒ "push"
+      case _: PushPullStage[_, _] ⇒ "pushpull"
+      case _: DetachedStage[_, _] ⇒ "detached"
+      case _                      ⇒ "other"
+    }) + s"(${o.allowedToPush},${o.holding},${o.terminationPending})"
+  }
+  override def toString =
+    s"""|OneBoundedInterpreter
+        |  pipeline = ${pipeline map pipeName mkString ":"}
+        |  activeOp=$activeOpIndex state=$state elem=$elementInFlight forks=$forkCount""".stripMargin
 
   @inline private def currentOp: UntypedOp = pipeline(activeOpIndex)
 
@@ -298,6 +315,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
   private final val Pushing: State = new State {
     override def advance(): Unit = activeOpIndex += 1
     override def run(): Unit = currentOp.onPush(elementInFlight, ctx = this)
+
+    override def toString = "Pushing"
   }
 
   private final val PushFinish: State = new State {
@@ -315,6 +334,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       state = Completing
       null
     }
+
+    override def toString = "PushFinish"
   }
 
   private final val Pulling: State = new State {
@@ -330,6 +351,7 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       super.hold()
     }
 
+    override def toString = "Pulling"
   }
 
   private final val Completing: State = new State {
@@ -357,6 +379,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       else exit()
       null
     }
+
+    override def toString = "Completing"
   }
 
   private final val Cancelling: State = new State {
@@ -375,6 +399,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
       state = Cancelling
       null
     }
+
+    override def toString = "Cancelling"
   }
 
   private final case class Failing(cause: Throwable) extends State {
@@ -545,6 +571,8 @@ private[akka] class OneBoundedInterpreter(ops: Seq[Stage[_, _]], val forkLimit: 
             execute()
             null
           }
+
+          override def toString = s"boundary($op)"
         }
       }
       op += 1
