@@ -171,6 +171,7 @@ object ActorFlowMaterializerSettings {
       supervisionDecider = Supervision.stoppingDecider,
       subscriptionTimeoutSettings = StreamSubscriptionTimeoutSettings(config),
       debugLogging = config.getBoolean("debug-logging"),
+      outputBurstLimit = config.getInt("output-burst-limit"),
       optimizations = Optimizations.none)
 
   /**
@@ -205,6 +206,7 @@ final case class ActorFlowMaterializerSettings(
   supervisionDecider: Supervision.Decider,
   subscriptionTimeoutSettings: StreamSubscriptionTimeoutSettings,
   debugLogging: Boolean,
+  outputBurstLimit: Int,
   optimizations: Optimizations) {
 
   require(initialInputBufferSize > 0, "initialInputBufferSize must be > 0")
