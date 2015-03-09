@@ -4,7 +4,7 @@ package akka.serialization
  * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
  */
 
-import java.io._
+import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
 import java.util.concurrent.Callable
 import akka.util.ClassLoaderObjectInputStream
 import akka.actor.ExtendedActorSystem
@@ -53,16 +53,6 @@ trait Serializer {
    * the class should be loaded using ActorSystem.dynamicAccess.
    */
   def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef
-
-  /**
-   * Produces an object from an InputStream, with an optional type-hint;
-   * the class should be loaded using ActorSystem.dynamicAccess.
-   */
-  def fromInputStream(is: InputStream, manifest: Option[Class[_]]): AnyRef = {
-    val target = new Array[Byte](is.available())
-    is.read(target)
-    fromBinary(target, manifest)
-  }
 
   /**
    * Java API: deserialize without type hint
@@ -167,11 +157,7 @@ class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   }
 
   def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = {
-    fromInputStream(new ByteArrayInputStream(bytes), clazz)
-  }
-
-  override def fromInputStream(is: InputStream, clazz: Option[Class[_]]): AnyRef = {
-    val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, is)
+    val in = new ClassLoaderObjectInputStream(system.dynamicAccess.classLoader, new ByteArrayInputStream(bytes))
     val obj = JavaSerializer.currentSystem.withValue(system) { in.readObject }
     in.close()
     obj
