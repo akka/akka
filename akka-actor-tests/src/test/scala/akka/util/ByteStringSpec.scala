@@ -306,7 +306,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
           val denseUnsafeBs = ByteString.ByteString1(arr)
           val additionalBs = ByteString.ByteString1(Array[Byte](1, 2, 3))
           val bs = if (isDense) denseUnsafeBs
-          else ByteString.ByteStrings(denseUnsafeBs, denseUnsafeBs)
+          else ByteString.ByteStrings(denseUnsafeBs, additionalBs)
 
           //should directly use the underlying buffer
           if (len < 1) true
