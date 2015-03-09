@@ -4,11 +4,9 @@
 
 package akka.util
 
-import java.io.{ ObjectOutputStream, ObjectInputStream, IOException }
+import java.io.InputStream
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
-import java.util
-
 import scala.annotation.varargs
 import scala.collection.IndexedSeqOptimized
 import scala.collection.mutable.{ Builder, WrappedArray }
@@ -297,7 +295,6 @@ object ByteString {
 
     def headByteString: ByteString.ByteString1 = if (length == 0) ByteString1.empty else bytestrings.head
   }
-
 }
 
 /**
@@ -436,6 +433,21 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * Decodes this ByteString using a charset to produce a String.
    */
   def decodeString(charset: String): String
+
+  def inputStream: InputStream = new InputStream {
+    val itr = iterator
+
+    @volatile private var readSoFar = 0
+
+    def read(): Int = synchronized {
+      if(itr.hasNext) {
+        readSoFar += 1
+        itr.next() & 0xFF
+      } else -1
+    }
+
+    override def available: Int = synchronized(length - readSoFar)
+  }
 
   /**
    * map method that will automatically cast Int back into Byte.
