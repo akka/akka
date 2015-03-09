@@ -39,6 +39,7 @@ do is to download and install sbt. You can read more about how to do that in the
 `sbt setup`_ documentation.
 
 .. _sbt: https://github.com/sbt/sbt
+.. _sbt setup: http://www.scala-sbt.org/0.13/tutorial/index.html
 
 The sbt commands that you'll need to build Akka are all included below. If you
 want to find out more about sbt and using it for your own projects do read the
