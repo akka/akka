@@ -361,15 +361,22 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
   }
 
   def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Event, tail: WriteCommand): PendingBufferWrite = {
-    val buffer = bufferPool.acquire()
-    try {
-      val copied = data.copyToBuffer(buffer)
-      buffer.flip()
-      new PendingBufferWrite(commander, data.drop(copied), ack, buffer, tail)
-    } catch {
-      case NonFatal(e) ⇒
-        bufferPool.release(buffer)
-        throw e
+    if (data.headByteString.canWrapAsByteBuffer) {
+      val head = data.headByteString
+      val remaining = data.drop(head.length)
+
+      new PendingBufferWrite(commander, remaining, ack, head.asByteBuffer, tail)
+    } else {
+      val buffer = bufferPool.acquire()
+      try {
+        val copied = data.copyToBuffer(buffer)
+        buffer.flip()
+        new PendingBufferWrite(commander, data.drop(copied), ack, buffer, tail)
+      } catch {
+        case NonFatal(e) ⇒
+          bufferPool.release(buffer)
+          throw e
+      }
     }
   }
 
