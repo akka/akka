@@ -429,6 +429,18 @@ result:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/actor/ActorDocTest.java#selection-local
 
+.. note::
+
+  It is always preferable to communicate with other Actors using their ActorRef
+  instead of relying upon ActorSelection. Exceptions are
+
+    * sending messages using the :ref:`at-least-once-delivery-java-lambda` facility
+    * initiating first contact with a remote system
+
+  In all other cases ActorRefs can be provided during Actor creation or
+  initialization, passing them from parent to child or introducing Actors by
+  sending their ActorRefs to other Actors within messages.
+
 The supplied path is parsed as a :class:`java.net.URI`, which basically means
 that it is split on ``/`` into path elements. If the path starts with ``/``, it
 is absolute and the look-up starts at the root guardian (which is the parent of
