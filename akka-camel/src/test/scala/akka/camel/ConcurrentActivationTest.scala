@@ -58,13 +58,13 @@ class ConcurrentActivationTest extends WordSpec with Matchers with NonSharedCame
         }
         val (activations, deactivations) = Await.result(allRefsFuture, 10.seconds.dilated)
         // should be the size of the activated activated producers and consumers
-        activations.size should be(2 * number * number)
+        activations.size should ===(2 * number * number)
         // should be the size of the activated activated producers and consumers
-        deactivations.size should be(2 * number * number)
+        deactivations.size should ===(2 * number * number)
         def partitionNames(refs: immutable.Seq[ActorRef]) = refs.map(_.path.name).partition(_.startsWith("concurrent-test-echo-consumer"))
         def assertContainsSameElements(lists: (Seq[_], Seq[_])) {
           val (a, b) = lists
-          a.intersect(b).size should be(a.size)
+          a.intersect(b).size should ===(a.size)
         }
         val (activatedConsumerNames, activatedProducerNames) = partitionNames(activations)
         val (deactivatedConsumerNames, deactivatedProducerNames) = partitionNames(deactivations)

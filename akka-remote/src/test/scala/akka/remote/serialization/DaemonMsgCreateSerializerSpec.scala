@@ -34,7 +34,7 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
   "Serialization" must {
 
     "resolve DaemonMsgCreateSerializer" in {
-      ser.serializerFor(classOf[DaemonMsgCreate]).getClass should be(classOf[DaemonMsgCreateSerializer])
+      ser.serializerFor(classOf[DaemonMsgCreate]).getClass should ===(classOf[DaemonMsgCreateSerializer])
     }
 
     "serialize and de-serialize DaemonMsgCreate with FromClassCreator" in {
@@ -99,17 +99,17 @@ class DaemonMsgCreateSerializerSpec extends AkkaSpec {
 
     def assertDaemonMsgCreate(expected: DaemonMsgCreate, got: DaemonMsgCreate): Unit = {
       // can't compare props.creator when function
-      assert(got.props.clazz === expected.props.clazz)
-      assert(got.props.args.length === expected.props.args.length)
+      got.props.clazz should ===(expected.props.clazz)
+      got.props.args.length should ===(expected.props.args.length)
       got.props.args zip expected.props.args foreach {
         case (g, e) ⇒
           if (e.isInstanceOf[Function0[_]]) ()
-          else assert(g === e)
+          else g should ===(e)
       }
-      assert(got.props.deploy === expected.props.deploy)
-      assert(got.deploy === expected.deploy)
-      assert(got.path === expected.path)
-      assert(got.supervisor === expected.supervisor)
+      got.props.deploy should ===(expected.props.deploy)
+      got.deploy should ===(expected.deploy)
+      got.path should ===(expected.path)
+      got.supervisor should ===(expected.supervisor)
     }
 
   }

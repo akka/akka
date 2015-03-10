@@ -154,7 +154,7 @@ class LoggerSpec extends WordSpec with Matchers {
 
     "not log messages to standard output" in {
       val out = createSystemAndLogToBuffer("noLogging", noLoggingConfig, false)
-      out.size should be(0)
+      out.size should ===(0)
     }
   }
 
@@ -231,7 +231,7 @@ class LoggerSpec extends WordSpec with Matchers {
       val minutes = c.get(Calendar.MINUTE)
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
-      Helpers.currentTimeMillisToUTCString(timestamp) should be(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }
 

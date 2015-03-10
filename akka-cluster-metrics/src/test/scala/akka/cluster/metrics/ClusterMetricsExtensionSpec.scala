@@ -49,14 +49,14 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
 
     "collect metrics after start command" in {
       extension.supervisor ! CollectionStartMessage
-      awaitAssert(metricsNodeCount should be(nodeCount), 15 seconds)
+      awaitAssert(metricsNodeCount should ===(nodeCount), 15 seconds)
     }
 
     "collect mock sample during a time window" in {
-      awaitAssert(metricsHistorySize should be(sampleCount), 15 seconds)
+      awaitAssert(metricsHistorySize should ===(sampleCount), 15 seconds)
       extension.supervisor ! CollectionStopMessage
       awaitSample()
-      metricsNodeCount should be(nodeCount)
+      metricsNodeCount should ===(nodeCount)
       metricsHistorySize should be >= (sampleCount)
     }
 
@@ -76,16 +76,16 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
         (0.700, 0.343, 0.137),
         (0.700, 0.372, 0.148))
 
-      expected.size should be(sampleCount)
+      expected.size should ===(sampleCount)
 
       history.zip(expected) foreach {
         case (mockMetrics, expectedData) ⇒
           (mockMetrics, expectedData) match {
             case (Cpu(_, _, loadAverageMock, cpuCombinedMock, cpuStolenMock, _),
               (loadAverageEwma, cpuCombinedEwma, cpuStolenEwma)) ⇒
-              loadAverageMock.get should be(loadAverageEwma +- epsilon)
-              cpuCombinedMock.get should be(cpuCombinedEwma +- epsilon)
-              cpuStolenMock.get should be(cpuStolenEwma +- epsilon)
+              loadAverageMock.get should ===(loadAverageEwma +- epsilon)
+              cpuCombinedMock.get should ===(cpuCombinedEwma +- epsilon)
+              cpuStolenMock.get should ===(cpuStolenEwma +- epsilon)
           }
       }
     }
@@ -97,7 +97,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
         val size1 = metricsHistorySize
         awaitSample()
         val size2 = metricsHistorySize
-        size1 should be(size2)
+        size1 should ===(size2)
 
         extension.supervisor ! CollectionStartMessage
         awaitSample()
@@ -111,7 +111,7 @@ class MetricsExtensionSpec extends AkkaSpec(MetricsConfig.clusterSigarMock)
 
         awaitSample()
         val size5 = metricsHistorySize
-        size5 should be(size4)
+        size5 should ===(size4)
 
       }
 

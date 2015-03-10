@@ -241,8 +241,8 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
   def assertMembers(gotMembers: Iterable[Member], expectedAddresses: Address*): Unit = {
     import Member.addressOrdering
     val members = gotMembers.toIndexedSeq
-    members.size should be(expectedAddresses.length)
-    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address should be(a) }
+    members.size should ===(expectedAddresses.length)
+    expectedAddresses.sorted.zipWithIndex.foreach { case (a, i) ⇒ members(i).address should ===(a) }
   }
 
   /**
@@ -288,22 +288,22 @@ trait MultiNodeClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoro
     within(timeout) {
       if (!canNotBePartOfMemberRing.isEmpty) // don't run this on an empty set
         awaitAssert(canNotBePartOfMemberRing foreach (a ⇒ clusterView.members.map(_.address) should not contain (a)))
-      awaitAssert(clusterView.members.size should be(numberOfMembers))
-      awaitAssert(clusterView.members.map(_.status) should be(Set(MemberStatus.Up)))
+      awaitAssert(clusterView.members.size should ===(numberOfMembers))
+      awaitAssert(clusterView.members.map(_.status) should ===(Set(MemberStatus.Up)))
       // clusterView.leader is updated by LeaderChanged, await that to be updated also
       val expectedLeader = clusterView.members.headOption.map(_.address)
-      awaitAssert(clusterView.leader should be(expectedLeader))
+      awaitAssert(clusterView.leader should ===(expectedLeader))
     }
   }
 
   def awaitAllReachable(): Unit =
-    awaitAssert(clusterView.unreachableMembers should be(Set.empty))
+    awaitAssert(clusterView.unreachableMembers should ===(Set.empty))
 
   /**
    * Wait until the specified nodes have seen the same gossip overview.
    */
   def awaitSeenSameState(addresses: Address*): Unit =
-    awaitAssert((addresses.toSet -- clusterView.seenBy) should be(Set.empty))
+    awaitAssert((addresses.toSet -- clusterView.seenBy) should ===(Set.empty))
 
   /**
    * Leader according to the address ordering of the roles.

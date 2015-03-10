@@ -32,7 +32,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
     "provide Future for stopping an actor" in {
       val target = system.actorOf(Props[TargetActor])
       val result = gracefulStop(target, 5 seconds)
-      Await.result(result, 6 seconds) should be(true)
+      Await.result(result, 6 seconds) should ===(true)
     }
 
     "complete Future when actor already terminated" in {
@@ -56,7 +56,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
       val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.successful(5).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      Await.result(r, remainingOrDefault) should be(5)
+      Await.result(r, remainingOrDefault) should ===(5)
     }
 
     "be completed abnormally eventually" in {
@@ -64,7 +64,7 @@ class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
       val f = akka.pattern.after(1 second, using = system.scheduler)(Promise.failed(new IllegalStateException("Mexico")).future)
 
       val r = Future.firstCompletedOf(Seq(Promise[Int]().future, f))
-      intercept[IllegalStateException] { Await.result(r, remainingOrDefault) }.getMessage should be("Mexico")
+      intercept[IllegalStateException] { Await.result(r, remainingOrDefault) }.getMessage should ===("Mexico")
     }
   }
 }

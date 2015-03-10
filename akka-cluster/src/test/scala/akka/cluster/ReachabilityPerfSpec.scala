@@ -52,27 +52,27 @@ class ReachabilityPerfSpec extends WordSpec with Matchers {
   }
 
   private def merge(expectedRecords: Int)(r1: Reachability, r2: Reachability): Unit = {
-    r1.merge(allowed, r2).records.size should be(expectedRecords)
+    r1.merge(allowed, r2).records.size should ===(expectedRecords)
   }
 
   private def checkStatus(r1: Reachability): Unit = {
     val record = r1.records.head
-    r1.status(record.observer, record.subject) should be(record.status)
+    r1.status(record.observer, record.subject) should ===(record.status)
   }
 
   private def checkAggregatedStatus(r1: Reachability): Unit = {
     val record = r1.records.head
-    r1.status(record.subject) should be(record.status)
+    r1.status(record.subject) should ===(record.status)
   }
 
   private def allUnreachableOrTerminated(r1: Reachability): Unit = {
     val record = r1.records.head
-    r1.allUnreachableOrTerminated.isEmpty should be(false)
+    r1.allUnreachableOrTerminated.isEmpty should ===(false)
   }
 
   private def allUnreachable(r1: Reachability): Unit = {
     val record = r1.records.head
-    r1.allUnreachable.isEmpty should be(false)
+    r1.allUnreachable.isEmpty should ===(false)
   }
 
   private def recordsFrom(r1: Reachability): Unit = {

@@ -122,11 +122,11 @@ class TcpIntegrationSpec extends AkkaSpec("""
 
       clientHandler.send(clientConnection, Write(ByteString("Captain on the bridge!"), Aye))
       clientHandler.expectMsg(Aye)
-      serverHandler.expectMsgType[Received].data.decodeString("ASCII") should be("Captain on the bridge!")
+      serverHandler.expectMsgType[Received].data.decodeString("ASCII") should ===("Captain on the bridge!")
 
       serverHandler.send(serverConnection, Write(ByteString("For the king!"), Yes))
       serverHandler.expectMsg(Yes)
-      clientHandler.expectMsgType[Received].data.decodeString("ASCII") should be("For the king!")
+      clientHandler.expectMsgType[Received].data.decodeString("ASCII") should ===("For the king!")
 
       serverHandler.send(serverConnection, Close)
       serverHandler.expectMsg(Closed)
@@ -157,7 +157,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       connectCommander.send(IO(Tcp), Connect(endpoint))
       // expecting CommandFailed or no reply (within timeout)
       val replies = connectCommander.receiveWhile(1.second) { case m: Connected ⇒ m }
-      replies should be(Nil)
+      replies should ===(Nil)
     }
 
     "handle tcp connection actor death properly" in new TestSetup(shouldBindServer = false) {
@@ -166,12 +166,12 @@ class TcpIntegrationSpec extends AkkaSpec("""
       connectCommander.send(IO(Tcp), Connect(endpoint))
 
       val accept = serverSocket.accept()
-      connectCommander.expectMsgType[Connected].remoteAddress should be(endpoint)
+      connectCommander.expectMsgType[Connected].remoteAddress should ===(endpoint)
       val connectionActor = connectCommander.lastSender
       connectCommander.send(connectionActor, PoisonPill)
       failAfter(3 seconds) {
         try {
-          accept.getInputStream.read() should be(-1)
+          accept.getInputStream.read() should ===(-1)
         } catch {
           case e: IOException ⇒ // this is also fine
         }

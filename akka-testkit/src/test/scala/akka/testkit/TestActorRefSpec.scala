@@ -152,7 +152,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter should be(0)
+      counter should ===(0)
 
       counter = 4
 
@@ -161,7 +161,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       clientRef ! "simple"
       clientRef ! "simple"
 
-      counter should be(0)
+      counter should ===(0)
 
       assertThread()
     }
@@ -180,7 +180,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         expectMsgPF(5 seconds) {
           case WrappedTerminated(Terminated(`a`)) ⇒ true
         }
-        a.isTerminated should be(true)
+        a.isTerminated should ===(true)
         assertThread()
       }
     }
@@ -204,7 +204,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
         boss ! "sendKill"
 
-        counter should be(0)
+        counter should ===(0)
         assertThread()
       }
     }
@@ -214,7 +214,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       val f = a ? "work"
       // CallingThreadDispatcher means that there is no delay
       f should be('completed)
-      Await.result(f, timeout.duration) should be("workDone")
+      Await.result(f, timeout.duration) should ===("workDone")
     }
 
     "support receive timeout" in {
@@ -236,7 +236,7 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
       val ref = TestActorRef(new TA)
       ref ! "hallo"
       val actor = ref.underlyingActor
-      actor.s should be("hallo")
+      actor.s should ===("hallo")
     }
 
     "set receiveTimeout to None" in {
@@ -246,24 +246,24 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
 
     "set CallingThreadDispatcher" in {
       val a = TestActorRef[WorkerActor]
-      a.underlying.dispatcher.getClass should be(classOf[CallingThreadDispatcher])
+      a.underlying.dispatcher.getClass should ===(classOf[CallingThreadDispatcher])
     }
 
     "allow override of dispatcher" in {
       val a = TestActorRef(Props[WorkerActor].withDispatcher("disp1"))
-      a.underlying.dispatcher.getClass should be(classOf[Dispatcher])
+      a.underlying.dispatcher.getClass should ===(classOf[Dispatcher])
     }
 
     "proxy receive for the underlying actor without sender()" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work")
-      ref.isTerminated should be(true)
+      ref.isTerminated should ===(true)
     }
 
     "proxy receive for the underlying actor with sender()" in {
       val ref = TestActorRef[WorkerActor]
       ref.receive("work", testActor)
-      ref.isTerminated should be(true)
+      ref.isTerminated should ===(true)
       expectMsg("workDone")
     }
 

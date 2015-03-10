@@ -141,8 +141,8 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
   "Serialization" must {
 
     "have correct bindings" in {
-      ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } should be(Some(classOf[JavaSerializer]))
-      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should be(Some(classOf[TestSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == addr.getClass ⇒ s.getClass } should ===(Some(classOf[JavaSerializer]))
+      ser.bindings.collectFirst { case (c, s) if c == classOf[PlainMessage] ⇒ s.getClass } should ===(Some(classOf[TestSerializer]))
     }
 
     "serialize Address" in {
@@ -182,7 +182,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
         val in = new ObjectInputStream(new ByteArrayInputStream(outbuf.toByteArray))
         JavaSerializer.currentSystem.withValue(a.asInstanceOf[ActorSystemImpl]) {
           val deadLetters = in.readObject().asInstanceOf[DeadLetterActorRef]
-          (deadLetters eq a.deadLetters) should be(true)
+          (deadLetters eq a.deadLetters) should ===(true)
         }
       } finally {
         shutdown(a)
@@ -190,27 +190,27 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "resolve serializer by direct interface" in {
-      ser.serializerFor(classOf[SimpleMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[SimpleMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "resolve serializer by interface implemented by super class" in {
-      ser.serializerFor(classOf[ExtendedSimpleMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[ExtendedSimpleMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "resolve serializer by indirect interface" in {
-      ser.serializerFor(classOf[AnotherMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[AnotherMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "resolve serializer by indirect interface implemented by super class" in {
-      ser.serializerFor(classOf[ExtendedAnotherMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[ExtendedAnotherMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "resolve serializer for message with binding" in {
-      ser.serializerFor(classOf[PlainMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[PlainMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "resolve serializer for message extending class with with binding" in {
-      ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[ExtendedPlainMessage]).getClass should ===(classOf[TestSerializer])
     }
 
     "give warning for message with several bindings" in {
@@ -220,17 +220,17 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
     }
 
     "resolve serializer in the order of the bindings" in {
-      ser.serializerFor(classOf[A]).getClass should be(classOf[JavaSerializer])
-      ser.serializerFor(classOf[B]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
+      ser.serializerFor(classOf[B]).getClass should ===(classOf[TestSerializer])
       EventFilter.warning(start = "Multiple serializers found", occurrences = 1) intercept {
         ser.serializerFor(classOf[C]).getClass should (be(classOf[TestSerializer]) or be(classOf[JavaSerializer]))
       }
     }
 
     "resolve serializer in the order of most specific binding first" in {
-      ser.serializerFor(classOf[A]).getClass should be(classOf[JavaSerializer])
-      ser.serializerFor(classOf[D]).getClass should be(classOf[TestSerializer])
-      ser.serializerFor(classOf[E]).getClass should be(classOf[TestSerializer])
+      ser.serializerFor(classOf[A]).getClass should ===(classOf[JavaSerializer])
+      ser.serializerFor(classOf[D]).getClass should ===(classOf[TestSerializer])
+      ser.serializerFor(classOf[E]).getClass should ===(classOf[TestSerializer])
     }
 
     "throw java.io.NotSerializableException when no binding" in {
@@ -248,7 +248,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 
       intercept[IllegalArgumentException] {
         byteSerializer.toBinary("pigdog")
-      }.getMessage should be("ByteArraySerializer only serializes byte arrays, not [pigdog]")
+      }.getMessage should ===("ByteArraySerializer only serializes byte arrays, not [pigdog]")
     }
   }
 }
@@ -259,8 +259,8 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   implicit val timeout = Timeout(5 seconds)
 
   "verify config" in {
-    system.settings.SerializeAllCreators should be(true)
-    system.settings.SerializeAllMessages should be(true)
+    system.settings.SerializeAllCreators should ===(true)
+    system.settings.SerializeAllMessages should ===(true)
   }
 
   "verify creators" in {
@@ -278,7 +278,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
 
   "verify messages" in {
     val a = system.actorOf(Props[FooActor])
-    Await.result(a ? "pigdog", timeout.duration) should be("pigdog")
+    Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
     EventFilter[NotSerializableException](occurrences = 1) intercept {
       a ! (new AnyRef)
@@ -293,7 +293,7 @@ class ReferenceSerializationSpec extends AkkaSpec(SerializationTests.mostlyRefer
 
   val ser = SerializationExtension(system)
   def serializerMustBe(toSerialize: Class[_], expectedSerializer: Class[_]) =
-    ser.serializerFor(toSerialize).getClass should be(expectedSerializer)
+    ser.serializerFor(toSerialize).getClass should ===(expectedSerializer)
 
   "Serialization settings from reference.conf" must {
 
@@ -324,7 +324,7 @@ class SerializationCompatibilitySpec extends AkkaSpec(SerializationTests.mostlyR
 
   "Cross-version serialization compatibility" must {
     def verify(obj: SystemMessage, asExpected: String): Unit =
-      String.valueOf(ser.serialize(obj).map(encodeHex).get) should be(asExpected)
+      String.valueOf(ser.serialize(obj).map(encodeHex).get) should ===(asExpected)
 
     "be preserved for the Create SystemMessage" in {
       // Using null as the cause to avoid a large serialized message and JDK differences
@@ -408,7 +408,7 @@ class OverriddenSystemMessageSerializationSpec extends AkkaSpec(SerializationTes
     "resolve to a single serializer" in {
       EventFilter.warning(start = "Multiple serializers found", occurrences = 0) intercept {
         for (smc ← systemMessageClasses) {
-          ser.serializerFor(smc).getClass should be(classOf[TestSerializer])
+          ser.serializerFor(smc).getClass should ===(classOf[TestSerializer])
         }
       }
     }

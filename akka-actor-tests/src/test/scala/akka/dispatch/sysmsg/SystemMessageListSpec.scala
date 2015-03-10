@@ -12,22 +12,22 @@ class SystemMessageListSpec extends AkkaSpec {
   "The SystemMessageList value class" must {
 
     "handle empty lists correctly" in {
-      LNil.head should be(null)
-      LNil.isEmpty should be(true)
-      (LNil.reverse == ENil) should be(true)
+      LNil.head should ===(null)
+      LNil.isEmpty should ===(true)
+      (LNil.reverse == ENil) should ===(true)
     }
 
     "able to append messages" in {
       val create0 = Failed(null, null, 0)
       val create1 = Failed(null, null, 1)
       val create2 = Failed(null, null, 2)
-      ((create0 :: LNil).head eq create0) should be(true)
-      ((create1 :: create0 :: LNil).head eq create1) should be(true)
-      ((create2 :: create1 :: create0 :: LNil).head eq create2) should be(true)
+      ((create0 :: LNil).head eq create0) should ===(true)
+      ((create1 :: create0 :: LNil).head eq create1) should ===(true)
+      ((create2 :: create1 :: create0 :: LNil).head eq create2) should ===(true)
 
-      (create2.next eq create1) should be(true)
-      (create1.next eq create0) should be(true)
-      (create0.next eq null) should be(true)
+      (create2.next eq create1) should ===(true)
+      (create1.next eq create0) should ===(true)
+      (create0.next eq null) should ===(true)
     }
 
     "able to deconstruct head and tail" in {
@@ -36,10 +36,10 @@ class SystemMessageListSpec extends AkkaSpec {
       val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
 
-      (list.head eq create2) should be(true)
-      (list.tail.head eq create1) should be(true)
-      (list.tail.tail.head eq create0) should be(true)
-      (list.tail.tail.tail.head eq null) should be(true)
+      (list.head eq create2) should ===(true)
+      (list.tail.head eq create1) should ===(true)
+      (list.tail.tail.head eq create0) should ===(true)
+      (list.tail.tail.tail.head eq null) should ===(true)
     }
 
     "properly report size and emptyness" in {
@@ -48,17 +48,17 @@ class SystemMessageListSpec extends AkkaSpec {
       val create2 = Failed(null, null, 2)
       val list = create2 :: create1 :: create0 :: LNil
 
-      list.size should be(3)
-      list.isEmpty should be(false)
+      list.size should ===(3)
+      list.isEmpty should ===(false)
 
-      list.tail.size should be(2)
-      list.tail.isEmpty should be(false)
+      list.tail.size should ===(2)
+      list.tail.isEmpty should ===(false)
 
-      list.tail.tail.size should be(1)
-      list.tail.tail.isEmpty should be(false)
+      list.tail.tail.size should ===(1)
+      list.tail.tail.isEmpty should ===(false)
 
-      list.tail.tail.tail.size should be(0)
-      list.tail.tail.tail.isEmpty should be(true)
+      list.tail.tail.tail.size should ===(0)
+      list.tail.tail.tail.isEmpty should ===(true)
 
     }
 
@@ -69,17 +69,17 @@ class SystemMessageListSpec extends AkkaSpec {
       val list = create2 :: create1 :: create0 :: LNil
       val listRev: EarliestFirstSystemMessageList = list.reverse
 
-      listRev.isEmpty should be(false)
-      listRev.size should be(3)
+      listRev.isEmpty should ===(false)
+      listRev.size should ===(3)
 
-      (listRev.head eq create0) should be(true)
-      (listRev.tail.head eq create1) should be(true)
-      (listRev.tail.tail.head eq create2) should be(true)
-      (listRev.tail.tail.tail.head eq null) should be(true)
+      (listRev.head eq create0) should ===(true)
+      (listRev.tail.head eq create1) should ===(true)
+      (listRev.tail.tail.head eq create2) should ===(true)
+      (listRev.tail.tail.tail.head eq null) should ===(true)
 
-      (create0.next eq create1) should be(true)
-      (create1.next eq create2) should be(true)
-      (create2.next eq null) should be(true)
+      (create0.next eq create1) should ===(true)
+      (create1.next eq create2) should ===(true)
+      (create2.next eq null) should ===(true)
     }
 
   }
@@ -99,17 +99,17 @@ class SystemMessageListSpec extends AkkaSpec {
 
       val list = revList reverse_::: fwdList
 
-      (list.head eq create0) should be(true)
-      (list.tail.head eq create1) should be(true)
-      (list.tail.tail.head eq create2) should be(true)
-      (list.tail.tail.tail.head eq create3) should be(true)
-      (list.tail.tail.tail.tail.head eq create4) should be(true)
-      (list.tail.tail.tail.tail.tail.head eq create5) should be(true)
-      (list.tail.tail.tail.tail.tail.tail.head eq null) should be(true)
+      (list.head eq create0) should ===(true)
+      (list.tail.head eq create1) should ===(true)
+      (list.tail.tail.head eq create2) should ===(true)
+      (list.tail.tail.tail.head eq create3) should ===(true)
+      (list.tail.tail.tail.tail.head eq create4) should ===(true)
+      (list.tail.tail.tail.tail.tail.head eq create5) should ===(true)
+      (list.tail.tail.tail.tail.tail.tail.head eq null) should ===(true)
 
-      (LNil reverse_::: ENil) == ENil should be(true)
-      ((create0 :: LNil reverse_::: ENil).head eq create0) should be(true)
-      ((LNil reverse_::: create0 :: ENil).head eq create0) should be(true)
+      (LNil reverse_::: ENil) == ENil should ===(true)
+      ((create0 :: LNil reverse_::: ENil).head eq create0) should ===(true)
+      ((LNil reverse_::: create0 :: ENil).head eq create0) should ===(true)
     }
 
   }

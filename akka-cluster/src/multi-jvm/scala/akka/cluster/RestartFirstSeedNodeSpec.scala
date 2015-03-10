@@ -90,8 +90,8 @@ abstract class RestartFirstSeedNodeSpec
       // now we can join seed1System, seed2, seed3 together
       runOn(seed1) {
         Cluster(seed1System).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(seed1System).readView.members.size should be(3))
-        awaitAssert(Cluster(seed1System).readView.members.map(_.status) should be(Set(Up)))
+        awaitAssert(Cluster(seed1System).readView.members.size should ===(3))
+        awaitAssert(Cluster(seed1System).readView.members.map(_.status) should ===(Set(Up)))
       }
       runOn(seed2, seed3) {
         cluster.joinSeedNodes(seedNodes)
@@ -109,8 +109,8 @@ abstract class RestartFirstSeedNodeSpec
       runOn(seed1) {
         Cluster(restartedSeed1System).joinSeedNodes(seedNodes)
         within(20.seconds) {
-          awaitAssert(Cluster(restartedSeed1System).readView.members.size should be(3))
-          awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should be(Set(Up)))
+          awaitAssert(Cluster(restartedSeed1System).readView.members.size should ===(3))
+          awaitAssert(Cluster(restartedSeed1System).readView.members.map(_.status) should ===(Set(Up)))
         }
       }
       runOn(seed2, seed3) {

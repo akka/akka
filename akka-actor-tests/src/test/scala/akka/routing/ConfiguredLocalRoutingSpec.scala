@@ -99,33 +99,33 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
 
     "be picked up from Props" in {
       val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "someOther")
-      routerConfig(actor) should be(RoundRobinPool(12))
+      routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config" in {
       val actor = system.actorOf(RoundRobinPool(12).props(routeeProps = Props[EchoProps]), "config")
-      routerConfig(actor) should be(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
+      routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "use routees.paths from config" in {
       val actor = system.actorOf(RandomPool(12).props(routeeProps = Props[EchoProps]), "paths")
-      routerConfig(actor) should be(RandomGroup(List("/user/service1", "/user/service2")))
+      routerConfig(actor) should ===(RandomGroup(List("/user/service1", "/user/service2")))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in explicit deployment" in {
       val actor = system.actorOf(FromConfig.props(routeeProps = Props[EchoProps]).
         withDeploy(Deploy(routerConfig = RoundRobinPool(12))), "someOther")
-      routerConfig(actor) should be(RoundRobinPool(12))
+      routerConfig(actor) should ===(RoundRobinPool(12))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
     "be overridable in config even with explicit deployment" in {
       val actor = system.actorOf(FromConfig.props(routeeProps = Props[EchoProps]).
         withDeploy(Deploy(routerConfig = RoundRobinPool(12))), "config")
-      routerConfig(actor) should be(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
+      routerConfig(actor) should ===(RandomPool(nrOfInstances = 4, usePoolDispatcher = true))
       Await.result(gracefulStop(actor, 3 seconds), 3 seconds)
     }
 
@@ -139,7 +139,7 @@ class ConfiguredLocalRoutingSpec extends AkkaSpec(ConfiguredLocalRoutingSpec.con
       val router = system.actorOf(FromConfig.props(routeeProps = Props(classOf[SendRefAtStartup], testActor)), "weird")
       val recv = Set() ++ (for (_ ← 1 to 3) yield expectMsgType[ActorRef])
       val expc = Set('a', 'b', 'c') map (i ⇒ system.actorFor("/user/weird/$" + i))
-      recv should be(expc)
+      recv should ===(expc)
       expectNoMsg(1 second)
     }
 

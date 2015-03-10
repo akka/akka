@@ -31,7 +31,7 @@ class AgentSpec extends AkkaSpec {
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() should be("abcd")
+      agent() should ===("abcd")
     }
 
     "maintain order between send and sendOff" in {
@@ -45,7 +45,7 @@ class AgentSpec extends AkkaSpec {
       agent send countDown
       l2.countDown
       countDown.await(5 seconds)
-      agent() should be("abcd")
+      agent() should ===("abcd")
     }
 
     "maintain order between alter and alterOff" in {
@@ -59,9 +59,9 @@ class AgentSpec extends AkkaSpec {
       val result = Future.sequence(Seq(r1, r2, r3)).map(_.mkString(":"))
       l2.countDown
 
-      Await.result(result, 5 seconds) should be("ab:abc:abcd")
+      Await.result(result, 5 seconds) should ===("ab:abc:abcd")
 
-      agent() should be("abcd")
+      agent() should ===("abcd")
     }
 
     "be immediately readable" in {
@@ -80,14 +80,14 @@ class AgentSpec extends AkkaSpec {
       agent send countDown
 
       countDown.await(5 seconds)
-      read should be(5)
-      agent() should be(10)
+      read should ===(5)
+      agent() should ===(10)
     }
 
     "be readable within a transaction" in {
       val agent = Agent(5)
       val value = atomic { t ⇒ agent() }
-      value should be(5)
+      value should ===(5)
     }
 
     "dispatch sends in successful transactions" in {
@@ -100,7 +100,7 @@ class AgentSpec extends AkkaSpec {
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() should be(10)
+      agent() should ===(10)
     }
 
     "not dispatch sends in aborted transactions" in {
@@ -118,7 +118,7 @@ class AgentSpec extends AkkaSpec {
       agent send countDown
 
       countDown.await(5 seconds)
-      agent() should be(5)
+      agent() should ===(5)
     }
 
     "be able to return a 'queued' future" in {
@@ -126,7 +126,7 @@ class AgentSpec extends AkkaSpec {
       agent send (_ + "b")
       agent send (_ + "c")
 
-      Await.result(agent.future, timeout.duration) should be("abc")
+      Await.result(agent.future, timeout.duration) should ===("abc")
     }
 
     "be able to await the value after updates have completed" in {
@@ -134,15 +134,15 @@ class AgentSpec extends AkkaSpec {
       agent send (_ + "b")
       agent send (_ + "c")
 
-      Await.result(agent.future, timeout.duration) should be("abc")
+      Await.result(agent.future, timeout.duration) should ===("abc")
     }
 
     "be able to be mapped" in {
       val agent1 = Agent(5)
       val agent2 = agent1 map (_ * 2)
 
-      agent1() should be(5)
-      agent2() should be(10)
+      agent1() should ===(5)
+      agent2() should ===(10)
     }
 
     "be able to be used in a 'foreach' for comprehension" in {
@@ -153,15 +153,15 @@ class AgentSpec extends AkkaSpec {
         result += value
       }
 
-      result should be(3)
+      result should ===(3)
     }
 
     "be able to be used in a 'map' for comprehension" in {
       val agent1 = Agent(5)
       val agent2 = for (value ← agent1) yield value * 2
 
-      agent1() should be(5)
-      agent2() should be(10)
+      agent1() should ===(5)
+      agent2() should ===(10)
     }
 
     "be able to be used in a 'flatMap' for comprehension" in {
@@ -173,9 +173,9 @@ class AgentSpec extends AkkaSpec {
         value2 ← agent2
       } yield value1 + value2
 
-      agent1() should be(1)
-      agent2() should be(2)
-      agent3() should be(3)
+      agent1() should ===(1)
+      agent2() should ===(2)
+      agent3() should ===(3)
     }
   }
 }
