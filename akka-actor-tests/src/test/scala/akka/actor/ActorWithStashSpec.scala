@@ -119,7 +119,7 @@ class ActorWithStashSpec extends AkkaSpec(ActorWithStashSpec.testConf) with Defa
       stasher ! "bye"
       stasher ! "hello"
       state.finished.await
-      state.s should be("bye")
+      state.s should ===("bye")
     }
 
     "support protocols" in {

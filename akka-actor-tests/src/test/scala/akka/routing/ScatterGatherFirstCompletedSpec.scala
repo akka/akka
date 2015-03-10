@@ -68,8 +68,8 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
 
       Await.ready(doneLatch, TestLatch.DefaultTimeout)
 
-      counter1.get should be(1)
-      counter2.get should be(1)
+      counter1.get should ===(1)
+      counter2.get should ===(1)
     }
 
     "return response, even if one of the actors has stopped" in {
@@ -81,7 +81,7 @@ class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with 
 
       routedActor ! Broadcast(Stop(Some(1)))
       Await.ready(shutdownLatch, TestLatch.DefaultTimeout)
-      Await.result(routedActor ? Broadcast(0), timeout.duration) should be(14)
+      Await.result(routedActor ? Broadcast(0), timeout.duration) should ===(14)
     }
 
   }

@@ -23,11 +23,11 @@ class ClusterMessageSerializerSpec extends AkkaSpec(
     obj match {
       case env: GossipEnvelope ⇒
         val env2 = obj.asInstanceOf[GossipEnvelope]
-        env2.from should be(env.from)
-        env2.to should be(env.to)
-        env2.gossip should be(env.gossip)
+        env2.from should ===(env.from)
+        env2.to should ===(env.to)
+        env2.gossip should ===(env.gossip)
       case _ ⇒
-        ref should be(obj)
+        ref should ===(obj)
     }
 
   }

@@ -17,7 +17,7 @@ class DefaultTimeoutSpec
 
   "A spec with DefaultTimeout" should {
     "use timeout from settings" in {
-      timeout should be(testKitSettings.DefaultTimeout)
+      timeout should ===(testKitSettings.DefaultTimeout)
     }
   }
 }

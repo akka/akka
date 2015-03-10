@@ -70,13 +70,13 @@ class RandomSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
         }
       }
 
-      counter.get should be(connectionCount)
+      counter.get should ===(connectionCount)
 
       actor ! akka.routing.Broadcast("end")
       Await.ready(doneLatch, 5 seconds)
 
       replies.values foreach { _ should be > (0) }
-      replies.values.sum should be(iterationCount * connectionCount)
+      replies.values.sum should ===(iterationCount * connectionCount)
     }
 
     "deliver a broadcast message using the !" in {

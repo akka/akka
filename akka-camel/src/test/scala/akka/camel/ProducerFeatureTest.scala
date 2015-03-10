@@ -79,12 +79,12 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage should be("failure")
-            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123"))
+            e.getMessage should ===("failure")
+            e.headers should ===(Map(CamelMessage.MessageExchangeId -> "123"))
         }
       }
       Await.ready(latch, timeoutDuration)
-      deadActor should be(Some(producer))
+      deadActor should ===(Some(producer))
     }
 
     "03 produce a message oneway" in {
@@ -121,8 +121,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage should be("failure")
-            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123"))
+            e.getMessage should ===("failure")
+            e.headers should ===(Map(CamelMessage.MessageExchangeId -> "123"))
         }
       }
     }
@@ -144,8 +144,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage should be("failure")
-            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+            e.getMessage should ===("failure")
+            e.headers should ===(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         }
       }
     }
@@ -187,8 +187,8 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
         producer.tell(message, testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e: AkkaCamelException) ⇒
-            e.getMessage should be("failure")
-            e.headers should be(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
+            e.getMessage should ===("failure")
+            e.headers should ===(Map(CamelMessage.MessageExchangeId -> "123", "test" -> "failure"))
         }
       }
     }
@@ -220,7 +220,7 @@ class ProducerFeatureTest extends TestKit(ActorSystem("ProducerFeatureTest", Akk
         val futureFailed = producer.tell("fail", testActor)
         expectMsgPF(timeoutDuration) {
           case Failure(e) ⇒
-            e.getMessage should be("fail")
+            e.getMessage should ===("fail")
         }
         producer.tell("OK", testActor)
         expectMsg("OK")

@@ -79,7 +79,7 @@ class BalancingSpec extends AkkaSpec(
 
     latch.countDown()
     val replies2 = receiveN(poolSize - 1)
-    // the remaining replies come from the blocked 
+    // the remaining replies come from the blocked
     replies2.toSet should be((2 to poolSize).toSet)
     expectNoMsg(500.millis)
 
@@ -109,14 +109,14 @@ class BalancingSpec extends AkkaSpec(
     }
 
     "work with anonymous actor names" in {
-      // the dispatcher-id must not contain invalid config key characters (e.g. $a) 
+      // the dispatcher-id must not contain invalid config key characters (e.g. $a)
       system.actorOf(Props[Parent]) ! "hello"
       expectMsgType[Int]
     }
 
     "work with encoded actor names" in {
       val encName = URLEncoder.encode("abcå6#$€xyz", "utf-8")
-      // % is a valid config key character (e.g. %C3%A5) 
+      // % is a valid config key character (e.g. %C3%A5)
       system.actorOf(Props[Parent], encName) ! "hello"
       expectMsgType[Int]
     }

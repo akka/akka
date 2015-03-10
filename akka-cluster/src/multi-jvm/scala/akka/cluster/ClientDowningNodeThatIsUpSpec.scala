@@ -52,7 +52,7 @@ abstract class ClientDowningNodeThatIsUpSpec(multiNodeConfig: ClientDowningNodeT
         markNodeAsUnavailable(thirdAddress)
 
         awaitMembersUp(numberOfMembers = 3, canNotBePartOfMemberRing = Set(thirdAddress))
-        clusterView.members.exists(_.address == thirdAddress) should be(false)
+        clusterView.members.exists(_.address == thirdAddress) should ===(false)
       }
 
       runOn(third) {

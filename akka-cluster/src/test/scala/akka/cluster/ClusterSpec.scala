@@ -48,7 +48,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
   "A Cluster" must {
 
     "use the address of the remote transport" in {
-      cluster.selfAddress should be(selfAddress)
+      cluster.selfAddress should ===(selfAddress)
     }
 
     "register jmx mbean" in {
@@ -59,13 +59,13 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
     }
 
     "initially become singleton cluster when joining itself and reach convergence" in {
-      clusterView.members.size should be(0)
+      clusterView.members.size should ===(0)
       cluster.join(selfAddress)
       leaderActions() // Joining -> Up
       awaitCond(clusterView.isSingletonCluster)
-      clusterView.self.address should be(selfAddress)
-      clusterView.members.map(_.address) should be(Set(selfAddress))
-      awaitAssert(clusterView.status should be(MemberStatus.Up))
+      clusterView.self.address should ===(selfAddress)
+      clusterView.members.map(_.address) should ===(Set(selfAddress))
+      awaitAssert(clusterView.status should ===(MemberStatus.Up))
     }
 
     "publish inital state as snapshot to subscribers" in {
@@ -98,7 +98,7 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
       expectMsgClass(classOf[ClusterEvent.CurrentClusterState])
 
       cluster.shutdown()
-      expectMsgType[ClusterEvent.MemberRemoved].member.address should be(selfAddress)
+      expectMsgType[ClusterEvent.MemberRemoved].member.address should ===(selfAddress)
     }
 
   }

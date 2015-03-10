@@ -19,11 +19,11 @@ class NodeMetricsSpec extends WordSpec with Matchers {
   "NodeMetrics must" must {
 
     "return correct result for 2 'same' nodes" in {
-      (NodeMetrics(node1, 0) sameAs NodeMetrics(node1, 0)) should be(true)
+      (NodeMetrics(node1, 0) sameAs NodeMetrics(node1, 0)) should ===(true)
     }
 
     "return correct result for 2 not 'same' nodes" in {
-      (NodeMetrics(node1, 0) sameAs NodeMetrics(node2, 0)) should be(false)
+      (NodeMetrics(node1, 0) sameAs NodeMetrics(node2, 0)) should ===(false)
     }
 
     "merge 2 NodeMetrics by most recent" in {
@@ -31,10 +31,10 @@ class NodeMetricsSpec extends WordSpec with Matchers {
       val sample2 = NodeMetrics(node1, 2, Set(Metric.create("a", 11, None), Metric.create("c", 30, None)).flatten)
 
       val merged = sample1 merge sample2
-      merged.timestamp should be(sample2.timestamp)
-      merged.metric("a").map(_.value) should be(Some(11))
-      merged.metric("b").map(_.value) should be(Some(20))
-      merged.metric("c").map(_.value) should be(Some(30))
+      merged.timestamp should ===(sample2.timestamp)
+      merged.metric("a").map(_.value) should ===(Some(11))
+      merged.metric("b").map(_.value) should ===(Some(20))
+      merged.metric("c").map(_.value) should ===(Some(30))
     }
 
     "not merge 2 NodeMetrics if master is more recent" in {
@@ -42,8 +42,8 @@ class NodeMetricsSpec extends WordSpec with Matchers {
       val sample2 = NodeMetrics(node1, 0, Set(Metric.create("a", 11, None), Metric.create("c", 30, None)).flatten)
 
       val merged = sample1 merge sample2 // older and not same
-      merged.timestamp should be(sample1.timestamp)
-      merged.metrics should be(sample1.metrics)
+      merged.timestamp should ===(sample1.timestamp)
+      merged.metrics should ===(sample1.metrics)
     }
   }
 }

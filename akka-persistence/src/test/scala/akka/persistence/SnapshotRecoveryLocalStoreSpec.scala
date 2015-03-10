@@ -57,7 +57,7 @@ class SnapshotRecoveryLocalStoreSpec extends AkkaSpec(PersistenceSpec.config("in
 
       expectMsgPF() {
         case (SnapshotMetadata(pid, seqNo, timestamp), state) ⇒
-          pid should be(persistenceId)
+          pid should ===(persistenceId)
       }
       expectMsg(RecoveryCompleted)
     }

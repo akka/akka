@@ -22,13 +22,13 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
 
       val result = Await.result(transportA.listen, timeout.duration)
 
-      result._1 should be(addressA)
+      result._1 should ===(addressA)
       result._2 should not be null
 
       registry.logSnapshot.exists {
         case ListenAttempt(address) ⇒ address == addressA
         case _                      ⇒ false
-      } should be(true)
+      } should ===(true)
     }
 
     "associate successfully with another TestTransport and log" in {
@@ -47,7 +47,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
         case InboundAssociation(handle) if handle.remoteAddress == addressA ⇒
       }
 
-      registry.logSnapshot.contains(AssociateAttempt(addressA, addressB)) should be(true)
+      registry.logSnapshot.contains(AssociateAttempt(addressA, addressB)) should ===(true)
     }
 
     "fail to associate with nonexisting address" in {
@@ -95,7 +95,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
         case WriteAttempt(sender, recipient, payload) ⇒
           sender == addressA && recipient == addressB && payload == akkaPDU
         case _ ⇒ false
-      } should be(true)
+      } should ===(true)
     }
 
     "emulate disassociation and log it" in {
@@ -132,7 +132,7 @@ class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender
       registry.logSnapshot exists {
         case DisassociateAttempt(requester, remote) if requester == addressA && remote == addressB ⇒ true
         case _ ⇒ false
-      } should be(true)
+      } should ===(true)
     }
 
   }

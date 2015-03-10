@@ -83,7 +83,7 @@ class PeekMailboxSpec extends AkkaSpec("""
         a ! "DIE" // stays in the mailbox
       }
       expectMsg("DIE")
-      expectMsgType[DeadLetter].message should be("DIE")
+      expectMsgType[DeadLetter].message should ===("DIE")
       expectTerminated(a)
     }
 

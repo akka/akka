@@ -31,14 +31,14 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
     "mark node as monitored after a series of successful heartbeats" in {
       val timeInterval = List[Long](0, 1000, 100, 100)
       val fd = createFailureDetector(acceptableLostDuration = 5.seconds, clock = fakeTimeGenerator(timeInterval))
-      fd.isMonitoring should be(false)
+      fd.isMonitoring should ===(false)
 
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
 
-      fd.isMonitoring should be(true)
-      fd.isAvailable should be(true)
+      fd.isMonitoring should ===(true)
+      fd.isAvailable should ===(true)
     }
 
     "mark node as dead if heartbeat are missed" in {
@@ -49,8 +49,8 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       fd.heartbeat() //1000
       fd.heartbeat() //1100
 
-      fd.isAvailable should be(true) //1200
-      fd.isAvailable should be(false) //8200
+      fd.isAvailable should ===(true) //1200
+      fd.isAvailable should ===(false) //8200
     }
 
     "mark node as available if it starts heartbeat again after being marked dead due to detection of failure" in {
@@ -60,15 +60,15 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       val fd = createFailureDetector(acceptableLostDuration = 7.seconds, clock = fakeTimeGenerator(timeIntervals))
 
       for (_ ← 0 until 1000) fd.heartbeat()
-      fd.isAvailable should be(false) // after the long pause
+      fd.isAvailable should ===(false) // after the long pause
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
       fd.heartbeat()
-      fd.isAvailable should be(false) // after the 7 seconds pause
+      fd.isAvailable should ===(false) // after the 7 seconds pause
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
     }
 
     "accept some configured missing heartbeats" in {
@@ -79,9 +79,9 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
     }
 
     "fail after configured acceptable missing heartbeats" in {
@@ -94,9 +94,9 @@ class DeadlineFailureDetectorSpec extends AkkaSpec {
       fd.heartbeat()
       fd.heartbeat()
       fd.heartbeat()
-      fd.isAvailable should be(true)
+      fd.isAvailable should ===(true)
       fd.heartbeat()
-      fd.isAvailable should be(false)
+      fd.isAvailable should ===(false)
     }
 
   }

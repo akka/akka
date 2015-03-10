@@ -40,7 +40,7 @@ class CoronerSpec extends WordSpec with Matchers {
         coroner.cancel()
         Await.ready(coroner, 1.seconds)
       })
-      report should be("")
+      report should ===("")
     }
 
     "display thread counts if enabled" in {

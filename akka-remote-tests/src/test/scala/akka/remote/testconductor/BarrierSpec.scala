@@ -556,7 +556,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
   private def noMsg(probes: TestProbe*) {
     expectNoMsg(1 second)
-    probes foreach (_.msgAvailable should be(false))
+    probes foreach (_.msgAvailable should ===(false))
   }
 
   private def data(clients: Set[Controller.NodeInfo], barrier: String, arrived: List[ActorRef], previous: Data): Data = {

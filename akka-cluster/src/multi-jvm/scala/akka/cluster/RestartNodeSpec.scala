@@ -92,8 +92,8 @@ abstract class RestartNodeSpec
       }
       runOn(second) {
         Cluster(secondSystem).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(secondSystem).readView.members.size should be(3))
-        awaitAssert(Cluster(secondSystem).readView.members.map(_.status) should be(Set(Up)))
+        awaitAssert(Cluster(secondSystem).readView.members.size should ===(3))
+        awaitAssert(Cluster(secondSystem).readView.members.map(_.status) should ===(Set(Up)))
       }
       enterBarrier("started")
 
@@ -106,12 +106,12 @@ abstract class RestartNodeSpec
       // then immediately start restartedSecondSystem, which has the same address as secondSystem
       runOn(second) {
         Cluster(restartedSecondSystem).joinSeedNodes(seedNodes)
-        awaitAssert(Cluster(restartedSecondSystem).readView.members.size should be(3))
-        awaitAssert(Cluster(restartedSecondSystem).readView.members.map(_.status) should be(Set(Up)))
+        awaitAssert(Cluster(restartedSecondSystem).readView.members.size should ===(3))
+        awaitAssert(Cluster(restartedSecondSystem).readView.members.map(_.status) should ===(Set(Up)))
       }
       runOn(first, third) {
         awaitAssert {
-          Cluster(system).readView.members.size should be(3)
+          Cluster(system).readView.members.size should ===(3)
           Cluster(system).readView.members.exists { m ⇒
             m.address == secondUniqueAddress.address && m.uniqueAddress.uid != secondUniqueAddress.uid
           }

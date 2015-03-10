@@ -94,12 +94,12 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       cluster join myself
       awaitAssert {
         clusterView.refreshCurrentState()
-        clusterView.status should be(Joining)
+        clusterView.status should ===(Joining)
       }
     }
     enterBarrier("first-started")
 
-    onUpLatch.isOpen should be(false)
+    onUpLatch.isOpen should ===(false)
 
     runOn(second) {
       cluster.join(first)
@@ -108,14 +108,14 @@ abstract class MinMembersBeforeUpBase(multiNodeConfig: MultiNodeConfig)
       val expectedAddresses = Set(first, second) map address
       awaitAssert {
         clusterView.refreshCurrentState()
-        clusterView.members.map(_.address) should be(expectedAddresses)
+        clusterView.members.map(_.address) should ===(expectedAddresses)
       }
-      clusterView.members.map(_.status) should be(Set(Joining))
+      clusterView.members.map(_.status) should ===(Set(Joining))
       // and it should not change
       1 to 5 foreach { _ ⇒
         Thread.sleep(1000)
-        clusterView.members.map(_.address) should be(expectedAddresses)
-        clusterView.members.map(_.status) should be(Set(Joining))
+        clusterView.members.map(_.address) should ===(expectedAddresses)
+        clusterView.members.map(_.status) should ===(Set(Joining))
       }
     }
     enterBarrier("second-joined")

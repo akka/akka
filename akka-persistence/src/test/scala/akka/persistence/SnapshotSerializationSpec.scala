@@ -90,7 +90,7 @@ class SnapshotSerializationSpec extends AkkaSpec(PersistenceSpec.config("leveldb
       lPersistentActor ! Recover()
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 0, timestamp), state) ⇒
-          state should be(new MySnapshot("blahonga"))
+          state should ===(new MySnapshot("blahonga"))
           timestamp should be > (0L)
       }
     }

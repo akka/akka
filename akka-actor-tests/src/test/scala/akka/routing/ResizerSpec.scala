@@ -58,13 +58,13 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         upperBound = 3)
 
       val c1 = resizer.capacity(Vector.empty[Routee])
-      c1 should be(2)
+      c1 should ===(2)
 
       val current = Vector(
         ActorRefRoutee(system.actorOf(Props[TestActor])),
         ActorRefRoutee(system.actorOf(Props[TestActor])))
       val c2 = resizer.capacity(current)
-      c2 should be(0)
+      c2 should ===(0)
     }
 
     "use settings to evaluate rampUp" in {
@@ -73,9 +73,9 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         upperBound = 10,
         rampupRate = 0.2)
 
-      resizer.rampup(pressure = 9, capacity = 10) should be(0)
-      resizer.rampup(pressure = 5, capacity = 5) should be(1)
-      resizer.rampup(pressure = 6, capacity = 6) should be(2)
+      resizer.rampup(pressure = 9, capacity = 10) should ===(0)
+      resizer.rampup(pressure = 5, capacity = 5) should ===(1)
+      resizer.rampup(pressure = 6, capacity = 6) should ===(2)
     }
 
     "use settings to evaluate backoff" in {
@@ -85,13 +85,13 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         backoffThreshold = 0.3,
         backoffRate = 0.1)
 
-      resizer.backoff(pressure = 10, capacity = 10) should be(0)
-      resizer.backoff(pressure = 4, capacity = 10) should be(0)
-      resizer.backoff(pressure = 3, capacity = 10) should be(0)
-      resizer.backoff(pressure = 2, capacity = 10) should be(-1)
-      resizer.backoff(pressure = 0, capacity = 10) should be(-1)
-      resizer.backoff(pressure = 1, capacity = 9) should be(-1)
-      resizer.backoff(pressure = 0, capacity = 9) should be(-1)
+      resizer.backoff(pressure = 10, capacity = 10) should ===(0)
+      resizer.backoff(pressure = 4, capacity = 10) should ===(0)
+      resizer.backoff(pressure = 3, capacity = 10) should ===(0)
+      resizer.backoff(pressure = 2, capacity = 10) should ===(-1)
+      resizer.backoff(pressure = 0, capacity = 10) should ===(-1)
+      resizer.backoff(pressure = 1, capacity = 9) should ===(-1)
+      resizer.backoff(pressure = 0, capacity = 9) should ===(-1)
     }
 
     "be possible to define programmatically" in {
@@ -110,7 +110,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       Await.ready(latch, remainingOrDefault)
 
       // messagesPerResize is 10 so there is no risk of additional resize
-      routeeSize(router) should be(2)
+      routeeSize(router) should ===(2)
     }
 
     "be possible to define in configuration" in {
@@ -124,7 +124,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       Await.ready(latch, remainingOrDefault)
 
-      routeeSize(router) should be(2)
+      routeeSize(router) should ===(2)
     }
 
     "grow as needed under pressure" in {
@@ -153,7 +153,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       router ! "echo"
       expectMsg("reply")
 
-      routeeSize(router) should be(resizer.lowerBound)
+      routeeSize(router) should ===(resizer.lowerBound)
 
       def loop(loops: Int, d: FiniteDuration) = {
         for (m ← 0 until loops) {
@@ -168,11 +168,11 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
 
       // 2 more should go thru without triggering more
       loop(2, 200 millis)
-      routeeSize(router) should be(resizer.lowerBound)
+      routeeSize(router) should ===(resizer.lowerBound)
 
       // a whole bunch should max it out
       loop(20, 500 millis)
-      routeeSize(router) should be(resizer.upperBound)
+      routeeSize(router) should ===(resizer.upperBound)
     }
 
     "backoff" in within(10 seconds) {

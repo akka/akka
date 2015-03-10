@@ -21,34 +21,34 @@ class CamelConfigSpec extends WordSpec with Matchers {
   }
   "CamelConfigSpec" must {
     "have correct activationTimeout config" in {
-      settings.ActivationTimeout should be(config.getMillisDuration("akka.camel.consumer.activation-timeout"))
+      settings.ActivationTimeout should ===(config.getMillisDuration("akka.camel.consumer.activation-timeout"))
     }
 
     "have correct autoAck config" in {
-      settings.AutoAck should be(config.getBoolean("akka.camel.consumer.auto-ack"))
+      settings.AutoAck should ===(config.getBoolean("akka.camel.consumer.auto-ack"))
     }
 
     "have correct replyTimeout config" in {
-      settings.ReplyTimeout should be(config.getMillisDuration("akka.camel.consumer.reply-timeout"))
+      settings.ReplyTimeout should ===(config.getMillisDuration("akka.camel.consumer.reply-timeout"))
     }
 
     "have correct streamingCache config" in {
-      settings.StreamingCache should be(config.getBoolean("akka.camel.streamingCache"))
+      settings.StreamingCache should ===(config.getBoolean("akka.camel.streamingCache"))
     }
 
     "have correct jmxStatistics config" in {
-      settings.JmxStatistics should be(config.getBoolean("akka.camel.jmx"))
+      settings.JmxStatistics should ===(config.getBoolean("akka.camel.jmx"))
     }
 
     "have correct body conversions config" in {
       val conversions = config.getConfig("akka.camel.conversions")
 
-      conversions.getString("file") should be("java.io.InputStream")
-      conversions.entrySet.size should be(1)
+      conversions.getString("file") should ===("java.io.InputStream")
+      conversions.entrySet.size should ===(1)
     }
 
     "have correct Context Provider" in {
-      settings.ContextProvider.isInstanceOf[DefaultContextProvider] should be(true)
+      settings.ContextProvider.isInstanceOf[DefaultContextProvider] should ===(true)
     }
   }
 }

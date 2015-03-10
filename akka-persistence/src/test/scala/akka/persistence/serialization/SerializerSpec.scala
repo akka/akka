@@ -68,7 +68,7 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       val bytes = serializer.toBinary(wrapped)
       val deserialized = serializer.fromBinary(bytes, None)
 
-      deserialized should be(Snapshot(MySnapshot(".a.")))
+      deserialized should ===(Snapshot(MySnapshot(".a.")))
     }
 
     "be able to read snapshot created with akka 2.3.6 and Scala 2.10" in {
@@ -92,7 +92,7 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
 
       val deserializedDataStr = new String(deserialized.data.asInstanceOf[Array[Byte]], "utf-8")
-      dataStr should be(deserializedDataStr)
+      dataStr should ===(deserializedDataStr)
     }
 
     "be able to read snapshot created with akka 2.3.6 and Scala 2.11" in {
@@ -116,7 +116,7 @@ class SnapshotSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
       val deserialized = serializer.fromBinary(bytes, None).asInstanceOf[Snapshot]
 
       val deserializedDataStr = new String(deserialized.data.asInstanceOf[Array[Byte]], "utf-8")
-      dataStr should be(deserializedDataStr)
+      dataStr should ===(deserializedDataStr)
     }
   }
 }
@@ -133,7 +133,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, None)
 
-        deserialized should be(persistent.withPayload(MyPayload(".a.")))
+        deserialized should ===(persistent.withPayload(MyPayload(".a.")))
       }
     }
     "given a PersistentRepr manifest" must {
@@ -144,7 +144,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val bytes = serializer.toBinary(persistent)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[PersistentRepr]))
 
-        deserialized should be(persistent.withPayload(MyPayload(".b.")))
+        deserialized should ===(persistent.withPayload(MyPayload(".b.")))
       }
     }
 
@@ -157,7 +157,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val bytes = serializer.toBinary(snap)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[AtLeastOnceDeliverySnapshot]))
 
-        deserialized should be(snap)
+        deserialized should ===(snap)
       }
 
       "handle a few unconfirmed" in {
@@ -171,7 +171,7 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val bytes = serializer.toBinary(snap)
         val deserialized = serializer.fromBinary(bytes, Some(classOf[AtLeastOnceDeliverySnapshot]))
 
-        deserialized should be(snap)
+        deserialized should ===(snap)
       }
 
     }

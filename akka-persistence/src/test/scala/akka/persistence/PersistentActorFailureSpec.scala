@@ -193,8 +193,8 @@ class PersistentActorFailureSpec extends AkkaSpec(PersistenceSpec.config("inmem"
       system.actorOf(Props(classOf[Supervisor], testActor)) ! Props(classOf[FailingRecovery], name, Some(probe.ref))
       expectMsgType[ActorRef]
       val recoveryFailure = probe.expectMsgType[RecoveryFailure]
-      recoveryFailure.payload should be(Some(Evt("bad")))
-      recoveryFailure.sequenceNr should be(Some(3L))
+      recoveryFailure.payload should ===(Some(Evt("bad")))
+      recoveryFailure.sequenceNr should ===(Some(3L))
     }
     "continue by handling RecoveryFailure" in {
       prepareFailingRecovery()

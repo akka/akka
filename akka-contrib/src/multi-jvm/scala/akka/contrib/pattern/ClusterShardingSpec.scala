@@ -280,22 +280,22 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! EntryEnvelope(2, Increment)
         region ! Get(2)
         expectMsg(3)
-        lastSender.path should be(node(second) / "user" / "counterRegion" / "2" / "2")
+        lastSender.path should ===(node(second) / "user" / "counterRegion" / "2" / "2")
 
         region ! Get(11)
         expectMsg(1)
         // local on first
-        lastSender.path should be(region.path / "11" / "11")
+        lastSender.path should ===(region.path / "11" / "11")
         region ! Get(12)
         expectMsg(1)
-        lastSender.path should be(node(second) / "user" / "counterRegion" / "0" / "12")
+        lastSender.path should ===(node(second) / "user" / "counterRegion" / "0" / "12")
       }
       enterBarrier("first-update")
 
       runOn(second) {
         region ! Get(2)
         expectMsg(3)
-        lastSender.path should be(region.path / "2" / "2")
+        lastSender.path should ===(region.path / "2" / "2")
       }
 
       enterBarrier("after-3")
@@ -332,7 +332,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           within(1.second) {
             region.tell(Get(2), probe1.ref)
             probe1.expectMsg(4)
-            probe1.lastSender.path should be(region.path / "2" / "2")
+            probe1.lastSender.path should ===(region.path / "2" / "2")
           }
         }
         val probe2 = TestProbe()
@@ -340,7 +340,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           within(1.second) {
             region.tell(Get(12), probe2.ref)
             probe2.expectMsg(1)
-            probe2.lastSender.path should be(region.path / "0" / "12")
+            probe2.lastSender.path should ===(region.path / "0" / "12")
           }
         }
       }
@@ -357,7 +357,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           region ! EntryEnvelope(3, Increment)
         region ! Get(3)
         expectMsg(10)
-        lastSender.path should be(region.path / "3" / "3") // local
+        lastSender.path should ===(region.path / "3" / "3") // local
       }
       enterBarrier("third-update")
 
@@ -366,7 +366,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           region ! EntryEnvelope(4, Increment)
         region ! Get(4)
         expectMsg(20)
-        lastSender.path should be(region.path / "4" / "4") // local
+        lastSender.path should ===(region.path / "4" / "4") // local
       }
       enterBarrier("fourth-update")
 
@@ -374,25 +374,25 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         region ! EntryEnvelope(3, Increment)
         region ! Get(3)
         expectMsg(11)
-        lastSender.path should be(node(third) / "user" / "counterRegion" / "3" / "3")
+        lastSender.path should ===(node(third) / "user" / "counterRegion" / "3" / "3")
 
         region ! EntryEnvelope(4, Increment)
         region ! Get(4)
         expectMsg(21)
-        lastSender.path should be(node(fourth) / "user" / "counterRegion" / "4" / "4")
+        lastSender.path should ===(node(fourth) / "user" / "counterRegion" / "4" / "4")
       }
       enterBarrier("first-update")
 
       runOn(third) {
         region ! Get(3)
         expectMsg(11)
-        lastSender.path should be(region.path / "3" / "3")
+        lastSender.path should ===(region.path / "3" / "3")
       }
 
       runOn(fourth) {
         region ! Get(4)
         expectMsg(21)
-        lastSender.path should be(region.path / "4" / "4")
+        lastSender.path should ===(region.path / "4" / "4")
       }
 
       enterBarrier("after-6")
@@ -412,7 +412,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           within(1.second) {
             region.tell(Get(3), probe3.ref)
             probe3.expectMsg(11)
-            probe3.lastSender.path should be(node(third) / "user" / "counterRegion" / "3" / "3")
+            probe3.lastSender.path should ===(node(third) / "user" / "counterRegion" / "3" / "3")
           }
         }
         val probe4 = TestProbe()
@@ -420,7 +420,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
           within(1.second) {
             region.tell(Get(4), probe4.ref)
             probe4.expectMsg(21)
-            probe4.lastSender.path should be(node(fourth) / "user" / "counterRegion" / "4" / "4")
+            probe4.lastSender.path should ===(node(fourth) / "user" / "counterRegion" / "4" / "4")
           }
         }
 
@@ -636,7 +636,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
         val counter13 = lastSender
 
-        counter1.path.parent should be(counter13.path.parent)
+        counter1.path.parent should ===(counter13.path.parent)
 
         //Send the shard the passivate message from the counter
         watch(counter1)
@@ -726,7 +726,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
         autoMigrateRegion ! Get(1)
         expectMsg(2)
-        lastSender.path should be(node(third) / "user" / "AutoMigrateRegionTestRegion" / "1" / "1")
+        lastSender.path should ===(node(third) / "user" / "AutoMigrateRegionTestRegion" / "1" / "1")
 
         //Kill region 3
         system.actorSelection(lastSender.path.parent.parent) ! PoisonPill
