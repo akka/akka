@@ -295,6 +295,7 @@ object ByteString {
 
     def decodeString(charset: String): String = compact.decodeString(charset)
 
+    //TODO: Must respect length! slice this bytestring if need be
     def headByteString: ByteString.ByteString1 = if (length == 0) ByteString1.empty else bytestrings.head
   }
 

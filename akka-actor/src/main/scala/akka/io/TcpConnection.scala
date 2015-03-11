@@ -360,7 +360,9 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     create(write)
   }
 
-  def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Event, tail: WriteCommand): PendingBufferWrite = {
+  //TODO: move canWrapAsByteBuffer into PendingBufferWrite#doWrite
+  //TODO: check chunk size
+  def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Any, tail: WriteCommand): PendingBufferWrite = {
     if (data.headByteString.canWrapAsByteBuffer) {
       val head = data.headByteString
       val remaining = data.drop(head.length)
@@ -396,6 +398,11 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           if (data eq remainingData) this
           else new PendingBufferWrite(commander, data, ack, buffer, tail) // copy with updated remainingData
 
+        } else if (data.nonEmpty && buffer.isReadOnly) {
+          val head = data.headByteString
+          val remaining = data.drop(head.length)
+
+          PendingBufferWrite(commander, remaining, ack, tail)
         } else if (data.nonEmpty) {
           buffer.clear()
           val copied = data.copyToBuffer(buffer)
