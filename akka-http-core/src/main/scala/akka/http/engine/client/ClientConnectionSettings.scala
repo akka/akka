@@ -18,7 +18,7 @@ final case class ClientConnectionSettings(
   requestHeaderSizeHint: Int,
   parserSettings: ParserSettings) {
 
-  require(connectingTimeout >= Duration.Zero, "connectingTimeout must be > 0")
+  require(connectingTimeout >= Duration.Zero, "connectingTimeout must be >= 0")
   require(requestHeaderSizeHint > 0, "request-size-hint must be > 0")
 }
 

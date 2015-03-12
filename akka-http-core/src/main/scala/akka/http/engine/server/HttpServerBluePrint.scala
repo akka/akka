@@ -23,9 +23,9 @@ import ParserOutput._
 /**
  * INTERNAL API
  */
-private[http] object HttpServer {
+private[http] object HttpServerBluePrint {
 
-  case class HttpServerPorts(
+  case class Ports(
     bytesIn: Inlet[ByteString],
     bytesOut: Outlet[ByteString],
     httpResponses: Inlet[HttpResponse],
@@ -34,7 +34,7 @@ private[http] object HttpServer {
     override def inlets: immutable.Seq[Inlet[_]] = bytesIn :: httpResponses :: Nil
     override def outlets: immutable.Seq[Outlet[_]] = bytesOut :: httpRequests :: Nil
 
-    override def deepCopy() = HttpServerPorts(
+    override def deepCopy() = Ports(
       new Inlet(bytesIn.toString),
       new Outlet(bytesOut.toString),
       new Inlet(httpRequests.toString),
@@ -43,14 +43,12 @@ private[http] object HttpServer {
     override def copyFromPorts(inlets: immutable.Seq[Inlet[_]], outlets: immutable.Seq[Outlet[_]]): Shape = {
       require(inlets.size == 2, s"proposed inlets [${inlets.mkString(", ")}] do not fit BidiShape")
       require(outlets.size == 2, s"proposed outlets [${outlets.mkString(", ")}] do not fit BidiShape")
-      HttpServerPorts(inlets(0).asInstanceOf[Inlet[ByteString]], outlets(0).asInstanceOf[Outlet[ByteString]],
+      Ports(inlets(0).asInstanceOf[Inlet[ByteString]], outlets(0).asInstanceOf[Outlet[ByteString]],
         inlets(1).asInstanceOf[Inlet[HttpResponse]], outlets(1).asInstanceOf[Outlet[HttpRequest]])
     }
   }
 
-  def serverBlueprint(settings: ServerSettings,
-                      log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[HttpServerPorts, Unit] = {
-    import settings._
+  def apply(settings: ServerSettings, log: LoggingAdapter)(implicit mat: FlowMaterializer): Graph[Ports, Unit] = {
 
     // the initial header parser we initially use for every connection,
     // will not be mutated, all "shared copy" parsers copy on first-write into the header cache
@@ -124,7 +122,7 @@ private[http] object HttpServer {
         bypassFanout.out(1) ~> bypass ~> bypassInput
         oneHundredContinueSource ~> bypassOneHundredContinueInput
 
-        HttpServerPorts(
+        Ports(
           requestParsing.inlet,
           renderer.outlet,
           bypassApplicationInput,
