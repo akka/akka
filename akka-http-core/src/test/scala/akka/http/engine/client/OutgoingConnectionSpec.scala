@@ -17,7 +17,7 @@ import akka.http.model._
 import akka.http.model.headers._
 import akka.http.util._
 
-class HttpClientSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
+class OutgoingConnectionSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF") with Inside {
   implicit val materializer = ActorFlowMaterializer()
 
   "The client implementation" should {
@@ -359,7 +359,7 @@ class HttpClientSpec extends AkkaSpec("akka.loggers = []\n akka.loglevel = OFF")
       val netOut = StreamTestKit.SubscriberProbe[ByteString]
       val netIn = StreamTestKit.PublisherProbe[ByteString]
 
-      FlowGraph.closed(HttpClient.clientBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
+      FlowGraph.closed(OutgoingConnectionBlueprint(remoteAddress, settings, NoLogging)) { implicit b ⇒
         client ⇒
           import FlowGraph.Implicits._
           Source(netIn) ~> client.bytesIn
