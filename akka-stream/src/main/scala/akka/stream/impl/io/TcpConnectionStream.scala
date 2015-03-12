@@ -224,6 +224,7 @@ private[akka] abstract class TcpStreamActor(val settings: ActorFlowMaterializerS
     tcpOutputs.error(e)
     primaryInputs.cancel()
     primaryOutputs.error(e)
+    tryShutdown()
   }
 
   def tryShutdown(): Unit =
