@@ -402,7 +402,8 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           val head = data.headByteString
           val remaining = data.drop(head.length)
 
-          PendingBufferWrite(commander, remaining, ack, tail)
+          //this will always start with the direct buffer, or will change over to atmost one
+          PendingBufferWrite(commander, remaining, ack, tail).doWrite(info)
         } else if (data.nonEmpty) {
           buffer.clear()
           val copied = data.copyToBuffer(buffer)
