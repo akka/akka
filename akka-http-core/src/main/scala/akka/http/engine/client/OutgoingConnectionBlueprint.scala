@@ -4,8 +4,8 @@
 
 package akka.http.engine.client
 
+import language.existentials
 import java.net.InetSocketAddress
-
 import scala.annotation.tailrec
 import scala.collection.immutable.Seq
 import scala.collection.mutable.ListBuffer
@@ -23,9 +23,9 @@ import akka.http.util._
 /**
  * INTERNAL API
  */
-private[http] object HttpClient {
+private[http] object OutgoingConnectionBlueprint {
 
-  case class HttpClientPorts(
+  case class Ports(
     bytesIn: Inlet[ByteString],
     bytesOut: Outlet[ByteString],
     httpRequests: Inlet[HttpRequest],
@@ -34,26 +34,40 @@ private[http] object HttpClient {
     override val inlets: Seq[Inlet[_]] = bytesIn :: httpRequests :: Nil
     override val outlets: Seq[Outlet[_]] = bytesOut :: httpResponses :: Nil
 
-    override def deepCopy(): Shape = HttpClientPorts(
+    override def deepCopy(): Shape = Ports(
       new Inlet(bytesIn.toString),
       new Outlet(bytesOut.toString),
       new Inlet(httpResponses.toString),
       new Outlet(httpRequests.toString))
 
-    override def copyFromPorts(inlets: Seq[Inlet[_]], outlets: Seq[Outlet[_]]): Shape = {
-      val bIn :: htpIn :: Nil = inlets
-      val bOut :: htpOut :: Nil = outlets
-      HttpClientPorts(
-        bIn.asInstanceOf[Inlet[ByteString]],
-        bOut.asInstanceOf[Outlet[ByteString]],
-        htpIn.asInstanceOf[Inlet[HttpRequest]],
-        htpOut.asInstanceOf[Outlet[HttpResponse]])
-    }
+    override def copyFromPorts(inlets: Seq[Inlet[_]], outlets: Seq[Outlet[_]]): Shape =
+      Ports(
+        inlets.head.asInstanceOf[Inlet[ByteString]],
+        outlets.head.asInstanceOf[Outlet[ByteString]],
+        inlets.last.asInstanceOf[Inlet[HttpRequest]],
+        outlets.last.asInstanceOf[Outlet[HttpResponse]])
   }
 
-  def clientBlueprint(remoteAddress: InetSocketAddress,
-                      settings: ClientConnectionSettings,
-                      log: LoggingAdapter): Graph[HttpClientPorts, Unit] = {
+  /*
+    Stream Setup
+    ============
+
+    requestIn                                            +----------+
+    +-----------------------------------------------+--->|  Termi-  |   requestRendering
+                                                    |    |  nation  +---------------------> |
+                 +-------------------------------------->|  Merge   |                       |
+                 | Termination Backchannel          |    +----------+                       |  TCP-
+                 |                                  |                                       |  level
+                 |                                  | Method                                |  client
+                 |                +------------+    | Bypass                                |  flow
+    responseOut  |  responsePrep  |  Response  |<---+                                       |
+    <------------+----------------|  Parsing   |                                            |
+                                  |  Merge     |<------------------------------------------ V
+                                  +------------+
+  */
+  def apply(remoteAddress: InetSocketAddress,
+            settings: ClientConnectionSettings,
+            log: LoggingAdapter): Graph[Ports, Unit] = {
     import settings._
 
     // the initial header parser we initially use for every connection,
@@ -64,24 +78,6 @@ private[http] object HttpClient {
     })
 
     val requestRendererFactory = new HttpRequestRendererFactory(userAgentHeader, requestHeaderSizeHint, log)
-
-    /*
-      Basic Stream Setup
-      ==================
-
-      requestIn                                            +----------+
-      +-----------------------------------------------+--->|  Termi-  |   requestRendering
-                                                      |    |  nation  +---------------------> |
-                   +-------------------------------------->|  Merge   |                       |
-                   | Termination Backchannel          |    +----------+                       |  TCP-
-                   |                                  |                                       |  level
-                   |                                  | Method                                |  client
-                   |                +------------+    | Bypass                                |  flow
-      responseOut  |  responsePrep  |  Response  |<---+                                       |
-      <------------+----------------|  Parsing   |                                            |
-                                    |  Merge     |<------------------------------------------ V
-                                    +------------+
-    */
 
     val requestRendering: Flow[HttpRequest, ByteString, Unit] = Flow[HttpRequest]
       .map(RequestRenderingContext(_, remoteAddress))
@@ -122,7 +118,7 @@ private[http] object HttpClient {
       responseParsingMerge.out ~> responsePrep ~> terminationFanout.in
       terminationFanout.out(0) ~> terminationMerge.in1
 
-      HttpClientPorts(bytesIn, bytesOut, methodBypassFanout.in, terminationFanout.out(1))
+      Ports(bytesIn, bytesOut, methodBypassFanout.in, terminationFanout.out(1))
     }
   }
 
