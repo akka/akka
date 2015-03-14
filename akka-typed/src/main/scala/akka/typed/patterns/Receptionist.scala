@@ -7,6 +7,7 @@ import akka.typed.ScalaDSL._
 import akka.typed.ActorRef
 import akka.typed.Behavior
 import akka.typed.Terminated
+import akka.util.TypedMultiMap
 
 /**
  * A Receptionist is an entry point into an Actor hierarchy where select Actors
@@ -17,12 +18,23 @@ import akka.typed.Terminated
 object Receptionist {
 
   /**
+   * Internal representation of [[Receptionist$.ServiceKey]] which is needed
+   * in order to use a TypedMultiMap (using keys with a type parameter does not
+   * work in Scala 2.x).
+   */
+  trait AbstractServiceKey {
+    type Type
+  }
+
+  /**
    * A service key is an object that implements this trait for a given protocol
    * T, meaning that it signifies that the type T is the entry point into the
    * protocol spoken by that service (think of it as the set of first messages
    * that a client could send).
    */
-  trait ServiceKey[T]
+  trait ServiceKey[T] extends AbstractServiceKey {
+    final override type Type = T
+  }
 
   /**
    * The set of commands accepted by a Receptionist.
@@ -56,54 +68,20 @@ object Receptionist {
    * val receptionist: ActorRef[Receptionist.Command] = ctx.spawn(Props(Receptionist.behavior), "receptionist")
    * }}}
    */
-  val behavior: Behavior[Command] = behavior(Map.empty)
+  val behavior: Behavior[Command] = behavior(TypedMultiMap.empty[AbstractServiceKey, KV])
 
-  /*
-   * These wrappers are just there to get around the type madness that would otherwise ensue
-   * by declaring a Map[ServiceKey[_], Set[ActorRef[_]]] (and actually trying to use it).
-   */
-  private class Key(val key: ServiceKey[_]) {
-    override def equals(other: Any) = other match {
-      case k: Key ⇒ key == k.key
-      case _      ⇒ false
-    }
-    override def hashCode = key.hashCode
-  }
-  private object Key {
-    def apply(r: Register[_]) = new Key(r.key)
-    def apply(f: Find[_]) = new Key(f.key)
-  }
+  private type KV[K <: AbstractServiceKey] = ActorRef[K#Type]
 
-  private class Address(val address: ActorRef[_]) {
-    def extract[T]: ActorRef[T] = address.asInstanceOf[ActorRef[T]]
-    override def equals(other: Any) = other match {
-      case a: Address ⇒ address == a.address
-      case _          ⇒ false
-    }
-    override def hashCode = address.hashCode
-  }
-  private object Address {
-    def apply(r: Register[_]) = new Address(r.address)
-    def apply(r: ActorRef[_]) = new Address(r)
-  }
-
-  private def behavior(map: Map[Key, Set[Address]]): Behavior[Command] = Full {
+  private def behavior(map: TypedMultiMap[AbstractServiceKey, KV]): Behavior[Command] = Full {
     case Msg(ctx, r: Register[t]) ⇒
       ctx.watch(r.address)
-      val key = Key(r)
-      val set = map get key match {
-        case Some(old) ⇒ old + Address(r)
-        case None      ⇒ Set(Address(r))
-      }
       r.replyTo ! Registered(r.key, r.address)
-      behavior(map.updated(key, set))
+      behavior(map.inserted(r.key)(r.address))
     case Msg(ctx, f: Find[t]) ⇒
-      val set = map get Key(f) getOrElse Set.empty
-      f.replyTo ! Listing(f.key, set.map(_.extract[t]))
+      val set = map get f.key
+      f.replyTo ! Listing(f.key, set)
       Same
     case Sig(ctx, Terminated(ref)) ⇒
-      val addr = Address(ref)
-      // this is not at all optimized
-      behavior(map.map { case (k, v) ⇒ k -> (v - addr) })
+      behavior(map valueRemoved ref)
   }
 }
