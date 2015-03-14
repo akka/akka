@@ -282,6 +282,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Connection: close
               |Content-Type: application/json; charset=UTF-8
               |
               |abcdefg""", close = true)
@@ -296,6 +297,7 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
             """HTTP/1.1 200 OK
               |Server: akka-http/1.0.0
               |Date: Thu, 25 Aug 2011 09:10:29 GMT
+              |Connection: close
               |Content-Type: text/plain; charset=UTF-8
               |
               |body123""", close = true)
@@ -360,42 +362,129 @@ class ResponseRendererSpec extends FreeSpec with Matchers with BeforeAndAfterAll
       import org.scalatest.prop.TableDrivenPropertyChecks._
       import HttpProtocols._
 
-      def NONE: Option[String] = None
+      def NONE: Option[Connection] = None
+      def CLOSE: Option[Connection] = Some(Connection("close"))
+      def KEEPA: Option[Connection] = Some(Connection("Keep-Alive"))
       // format: OFF
       val table = Table(
-        ("Client Version", "Request"          , "Response"     , "Rendered"        , "Close"),
-        (`HTTP/1.1`      , NONE               , NONE           , NONE              , false),
-        (`HTTP/1.1`      , Some("close")      , NONE           , Some("close")     , true),
-        (`HTTP/1.1`      , Some("Keep-Alive") , NONE           , NONE              , false),
-        (`HTTP/1.0`      , NONE               , NONE           , NONE              , true),
-        (`HTTP/1.0`      , Some("close")      , NONE           , NONE              , true),
-        (`HTTP/1.0`      , Some("Keep-Alive") , NONE           , Some("Keep-Alive"), false),
-        (`HTTP/1.1`      , NONE               , Some("close")  , Some("close")     , true))
+       //--- requested by the client ----// //----- set by server app -----// //--- actually done ---//
+       //            Request    Request               Response    Response    Rendered     Connection
+       // Request    Method     Connection  Response  Connection  Entity      Connection   Closed after
+       // Protocol   is HEAD    Header      Protocol  Header      CloseDelim  Header       Response
+        ("Req Prot", "HEAD Req", "Req CH", "Res Prot", "Res CH", "Res CD",    "Ren Conn",  "Close"),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  NONE,    false,       NONE,        false),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  KEEPA,   false,       NONE,        false),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.1`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, false,      NONE,     `HTTP/1.0`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.1`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, false,      CLOSE,    `HTTP/1.0`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  NONE,    false,       NONE,        false),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  NONE,    true,        NONE,        false),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  KEEPA,   false,       NONE,        false),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.1`,  KEEPA,   true,        NONE,        false),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, true,       NONE,     `HTTP/1.0`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.1`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.1`, true,       CLOSE,    `HTTP/1.0`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.1`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  NONE,    false,       NONE,        true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  NONE,    true,        NONE,        true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  CLOSE,   false,       NONE,        true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  CLOSE,   true,        NONE,        true),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      NONE,     `HTTP/1.0`,  KEEPA,   true,        NONE,        true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  NONE,    false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.1`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  NONE,    false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, false,      KEEPA,    `HTTP/1.0`,  KEEPA,   true,        CLOSE,       true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  NONE,    false,       CLOSE,       true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  NONE,    true,        CLOSE,       true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.1`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  NONE,    false,       NONE,        true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  NONE,    true,        NONE,        true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  CLOSE,   false,       NONE,        true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  CLOSE,   true,        NONE,        true),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       NONE,     `HTTP/1.0`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  NONE,    false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  NONE,    true,        KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.1`,  KEEPA,   true,        KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  NONE,    false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  NONE,    true,        KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  CLOSE,   false,       CLOSE,       true),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  CLOSE,   true,        CLOSE,       true),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  KEEPA,   false,       KEEPA,       false),
+        (`HTTP/1.0`, true,       KEEPA,    `HTTP/1.0`,  KEEPA,   true,        KEEPA,       false))
       // format: ON
 
-      forAll(table) { (reqProto, reqCH, resCH, renCH, close) ⇒
+      forAll(table)((reqProto, headReq, reqCH, resProto, resCH, resCD, renCH, close) ⇒
         ResponseRenderingContext(
-          response = HttpResponse(200, headers = resCH.map(h ⇒ List(Connection(h))) getOrElse Nil),
+          response = HttpResponse(200, headers = resCH.toList,
+            entity = if (resCD) HttpEntity.CloseDelimited(ContentTypes.`text/plain(UTF-8)`,
+              Source.single(ByteString("ENTITY")))
+            else HttpEntity("ENTITY"), protocol = resProto),
+          requestMethod = if (headReq) HttpMethods.HEAD else HttpMethods.GET,
           requestProtocol = reqProto,
-          closeAfterResponseCompletion = HttpMessage.connectionCloseExpected(reqProto, reqCH map (Connection(_)))) should renderTo(
-            expected = renCH match {
-              case Some(connection) ⇒
-                s"""HTTP/1.1 200 OK
-                   |Server: akka-http/1.0.0
-                   |Date: Thu, 25 Aug 2011 09:10:29 GMT
-                   |Connection: $connection
-                   |Content-Length: 0
-                   |
-                   |"""
-              case None ⇒
-                """HTTP/1.1 200 OK
-                  |Server: akka-http/1.0.0
-                  |Date: Thu, 25 Aug 2011 09:10:29 GMT
-                  |Content-Length: 0
-                  |
-                  |"""
-            }, close = close)
-      }
+          closeRequested = HttpMessage.connectionCloseExpected(reqProto, reqCH)) should renderTo(
+            s"""${resProto.value} 200 OK
+                 |Server: akka-http/1.0.0
+                 |Date: Thu, 25 Aug 2011 09:10:29 GMT
+                 |${renCH.fold("")(_ + "\n")}Content-Type: text/plain; charset=UTF-8
+                 |${if (resCD) "" else "Content-Length: 6\n"}
+                 |${if (headReq) "" else "ENTITY"}""", close))
     }
   }
 
