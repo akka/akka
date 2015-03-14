@@ -28,7 +28,7 @@ object TestServer extends App {
       case _                                  ⇒ false
     }
 
-  val bindingFuture = Http().bindAndStartHandlingWith({
+  val bindingFuture = Http().bindAndHandle({
     get {
       path("") {
         complete(index)

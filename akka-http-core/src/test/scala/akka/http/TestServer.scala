@@ -18,7 +18,7 @@ object TestServer extends App {
   implicit val system = ActorSystem("ServerTest", testConf)
   implicit val fm = ActorFlowMaterializer()
 
-  val binding = Http().bindAndStartHandlingWithSyncHandler({
+  val binding = Http().bindAndHandleSync({
     case HttpRequest(GET, Uri.Path("/"), _, _, _)      ⇒ index
     case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  ⇒ HttpResponse(entity = "PONG!")
     case HttpRequest(GET, Uri.Path("/crash"), _, _, _) ⇒ sys.error("BOOM!")

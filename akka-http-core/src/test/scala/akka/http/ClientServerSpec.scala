@@ -77,9 +77,9 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
     }
 
-    "run with bindAndStartHandlingWith" in {
+    "run with bindAndHandle" in {
       val (hostname, port) = temporaryServerHostnameAndPort()
-      val binding = Http().bindAndStartHandlingWith(Flow[HttpRequest].map(_ ⇒ HttpResponse()), hostname, port)
+      val binding = Http().bindAndHandle(Flow[HttpRequest].map(_ ⇒ HttpResponse()), hostname, port)
       val b1 = Await.result(binding, 3.seconds)
 
       val (_, f) = Http().outgoingConnection(hostname, port)
