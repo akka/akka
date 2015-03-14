@@ -60,13 +60,13 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
    * connections are being accepted at maximum rate, which, depending on the applications, might
    * present a DoS risk!
    */
-  def bindAndstartHandlingWith(handler: Flow[HttpRequest, HttpResponse, _],
+  def bindAndStartHandlingWith(handler: Flow[HttpRequest, HttpResponse, _],
                                interface: String, port: Int = 80, backlog: Int = 100,
                                options: immutable.Traversable[Inet.SocketOption] = Nil,
                                settings: Option[ServerSettings] = None,
                                log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] = {
     bind(interface, port, backlog, options, settings, log).toMat(Sink.foreach { conn ⇒
-      conn.flow.join(handler)
+      conn.flow.join(handler).run()
     })(Keep.left).run()
   }
 
@@ -82,7 +82,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                           options: immutable.Traversable[Inet.SocketOption] = Nil,
                                           settings: Option[ServerSettings] = None,
                                           log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
-    bindAndstartHandlingWith(Flow[HttpRequest].map(handler), interface, port, backlog, options, settings, log)
+    bindAndStartHandlingWith(Flow[HttpRequest].map(handler), interface, port, backlog, options, settings, log)
 
   /**
    * Materializes the `connections` [[Source]] and handles all connections with the given flow.
@@ -96,7 +96,7 @@ class HttpExt(config: Config)(implicit system: ActorSystem) extends akka.actor.E
                                     options: immutable.Traversable[Inet.SocketOption] = Nil,
                                     settings: Option[ServerSettings] = None,
                                     log: LoggingAdapter = system.log)(implicit fm: FlowMaterializer): Future[ServerBinding] =
-    bindAndstartHandlingWith(Flow[HttpRequest].mapAsync(handler), interface, port, backlog, options, settings, log)
+    bindAndStartHandlingWith(Flow[HttpRequest].mapAsync(handler), interface, port, backlog, options, settings, log)
 
   /**
    * Transforms a given HTTP-level server [[Flow]] into a lower-level TCP transport flow.

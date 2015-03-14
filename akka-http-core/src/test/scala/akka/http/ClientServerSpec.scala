@@ -6,32 +6,32 @@ package akka.http
 
 import java.io.{ BufferedReader, BufferedWriter, InputStreamReader, OutputStreamWriter }
 import java.net.Socket
+
+import akka.actor.ActorSystem
+import akka.http.TestUtils._
+import akka.http.engine.client.ClientConnectionSettings
+import akka.http.engine.server.ServerSettings
+import akka.http.model.HttpEntity._
+import akka.http.model.HttpMethods._
+import akka.http.model._
+import akka.http.model.headers._
+import akka.http.util._
+import akka.stream.{ ActorFlowMaterializer, BindFailedException }
+import akka.stream.scaladsl._
+import akka.stream.testkit.StreamTestKit
+import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
-import akka.actor.ActorSystem
-import akka.stream.scaladsl._
-import akka.stream.BindFailedException
-import akka.stream.ActorFlowMaterializer
-import akka.stream.testkit.StreamTestKit
-import akka.stream.testkit.StreamTestKit.{ PublisherProbe, SubscriberProbe }
-import akka.http.engine.client.ClientConnectionSettings
-import akka.http.engine.server.ServerSettings
-import akka.http.model._
-import akka.http.util._
-import headers._
-import HttpEntity._
-import HttpMethods._
-import TestUtils._
 
 class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
   val testConf: Config = ConfigFactory.parseString("""
     akka.event-handlers = ["akka.testkit.TestEventListener"]
     akka.loglevel = WARNING""")
   implicit val system = ActorSystem(getClass.getSimpleName, testConf)
-  import system.dispatcher
 
   implicit val materializer = ActorFlowMaterializer()
 
@@ -75,6 +75,18 @@ class ClientServerSpec extends WordSpec with Matchers with BeforeAndAfterAll {
         // clean up
         Await.result(b2.unbind(), 1.second)
       }
+    }
+
+    "run with bindAndStartHandlingWith" in {
+      val (hostname, port) = temporaryServerHostnameAndPort()
+      val binding = Http().bindAndStartHandlingWith(Flow[HttpRequest].map(_ ⇒ HttpResponse()), hostname, port)
+      val b1 = Await.result(binding, 3.seconds)
+
+      val (_, f) = Http().outgoingConnection(hostname, port)
+        .runWith(Source.single(HttpRequest(uri = "/abc")), Sink.head)
+
+      Await.result(f, 1.second)
+      Await.result(b1.unbind(), 1.second)
     }
 
     "properly complete a simple request/response cycle" in new TestSetup {
