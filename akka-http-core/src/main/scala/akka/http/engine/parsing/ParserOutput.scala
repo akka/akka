@@ -30,14 +30,14 @@ private[http] object ParserOutput {
     headers: List[HttpHeader],
     createEntity: Source[RequestOutput, Unit] ⇒ RequestEntity,
     expect100ContinueResponsePending: Boolean,
-    closeAfterResponseCompletion: Boolean) extends MessageStart with RequestOutput
+    closeRequested: Boolean) extends MessageStart with RequestOutput
 
   final case class ResponseStart(
     statusCode: StatusCode,
     protocol: HttpProtocol,
     headers: List[HttpHeader],
     createEntity: Source[ResponseOutput, Unit] ⇒ ResponseEntity,
-    closeAfterResponseCompletion: Boolean) extends MessageStart with ResponseOutput
+    closeRequested: Boolean) extends MessageStart with ResponseOutput
 
   case object MessageEnd extends MessageOutput
 
