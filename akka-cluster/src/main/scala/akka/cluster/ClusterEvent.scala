@@ -268,20 +268,20 @@ object ClusterEvent {
   /**
    * INTERNAL API
    */
-  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip): immutable.Seq[LeaderChanged] = {
-    val newLeader = newGossip.leader
-    if (newLeader != oldGossip.leader) List(LeaderChanged(newLeader.map(_.address)))
+  private[cluster] def diffLeader(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): immutable.Seq[LeaderChanged] = {
+    val newLeader = newGossip.leader(selfUniqueAddress)
+    if (newLeader != oldGossip.leader(selfUniqueAddress)) List(LeaderChanged(newLeader.map(_.address)))
     else Nil
   }
 
   /**
    * INTERNAL API
    */
-  private[cluster] def diffRolesLeader(oldGossip: Gossip, newGossip: Gossip): Set[RoleLeaderChanged] = {
+  private[cluster] def diffRolesLeader(oldGossip: Gossip, newGossip: Gossip, selfUniqueAddress: UniqueAddress): Set[RoleLeaderChanged] = {
     for {
       role ← (oldGossip.allRoles ++ newGossip.allRoles)
-      newLeader = newGossip.roleLeader(role)
-      if newLeader != oldGossip.roleLeader(role)
+      newLeader = newGossip.roleLeader(role, selfUniqueAddress)
+      if newLeader != oldGossip.roleLeader(role, selfUniqueAddress)
     } yield RoleLeaderChanged(role, newLeader.map(_.address))
   }
 
@@ -351,8 +351,9 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
       members = latestGossip.members,
       unreachable = unreachable,
       seenBy = latestGossip.seenBy.map(_.address),
-      leader = latestGossip.leader.map(_.address),
-      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r).map(_.address))(collection.breakOut))
+      leader = latestGossip.leader(selfUniqueAddress).map(_.address),
+      roleLeaderMap = latestGossip.allRoles.map(r ⇒ r -> latestGossip.roleLeader(r, selfUniqueAddress)
+        .map(_.address))(collection.breakOut))
     receiver match {
       case Some(ref) ⇒ ref ! state
       case None      ⇒ publish(state)
@@ -390,8 +391,8 @@ private[cluster] final class ClusterDomainEventPublisher extends Actor with Acto
     diffMemberEvents(oldGossip, newGossip) foreach pub
     diffUnreachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachable(oldGossip, newGossip, selfUniqueAddress) foreach pub
-    diffLeader(oldGossip, newGossip) foreach pub
-    diffRolesLeader(oldGossip, newGossip) foreach pub
+    diffLeader(oldGossip, newGossip, selfUniqueAddress) foreach pub
+    diffRolesLeader(oldGossip, newGossip, selfUniqueAddress) foreach pub
     // publish internal SeenState for testing purposes
     diffSeen(oldGossip, newGossip, selfUniqueAddress) foreach pub
     diffReachability(oldGossip, newGossip) foreach pub

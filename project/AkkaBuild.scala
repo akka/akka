@@ -1099,9 +1099,13 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffReachable"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffUnreachable"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
       ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.convergence"),
-      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.akka$cluster$Gossip$$convergenceMemberStatus")
-      
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.akka$cluster$Gossip$$convergenceMemberStatus"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.isLeader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader")
     )
   }
 

@@ -755,7 +755,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
    */
   def leaderActions(): Unit =
-    if (latestGossip.isLeader(selfUniqueAddress)) {
+    if (latestGossip.isLeader(selfUniqueAddress, selfUniqueAddress)) {
       // only run the leader actions if we are the LEADER
       val firstNotice = 20
       val periodicNotice = 60
