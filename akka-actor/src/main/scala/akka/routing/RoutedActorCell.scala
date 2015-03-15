@@ -160,6 +160,9 @@ private[akka] class RouterActor extends Actor {
     case RemoveRoutee(routee) ⇒
       cell.removeRoutee(routee, stopChild = true)
       stopIfAllRouteesRemoved()
+    case Terminated(child) ⇒
+      cell.removeRoutee(ActorRefRoutee(child), stopChild = false)
+      stopIfAllRouteesRemoved()
     case other if routingLogicController.isDefined ⇒
       routingLogicController.foreach(_.forward(other))
   }
@@ -185,9 +188,6 @@ private[akka] class RouterPoolActor(override val supervisorStrategy: SupervisorS
   }
 
   override def receive = ({
-    case Terminated(child) ⇒
-      cell.removeRoutee(ActorRefRoutee(child), stopChild = false)
-      stopIfAllRouteesRemoved()
     case AdjustPoolSize(change: Int) ⇒
       if (change > 0) {
         val newRoutees = Vector.fill(change)(pool.newRoutee(cell.routeeProps, context))
