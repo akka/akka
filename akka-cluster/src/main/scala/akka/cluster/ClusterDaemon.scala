@@ -16,6 +16,10 @@ import akka.cluster.ClusterEvent._
 import akka.dispatch.{ UnboundedMessageQueueSemantics, RequiresMessageQueue }
 import scala.collection.breakOut
 import akka.remote.QuarantinedEvent
+import com.typesafe.config.Config
+import scala.util.Success
+import scala.util.Try
+import scala.util.Failure
 
 /**
  * Base trait for all cluster messages. All ClusterMessage's are serializable.
@@ -229,6 +233,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val NumberOfGossipsBeforeShutdownWhenLeaderExits = 3
+  val MaxGossipsBeforeShuttingDownMyself = 5
 
   def vclockName(node: UniqueAddress): String = node.address + "-" + node.uid
   val vclockNode = VectorClock.Node(vclockName(selfUniqueAddress))
@@ -274,10 +279,57 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   override def preStart(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
 
-    AutoDownUnreachableAfter match {
-      case d: FiniteDuration ⇒
-        context.actorOf(AutoDown.props(d) withDispatcher (context.props.dispatcher), name = "autoDown")
-      case _ ⇒ // auto-down is disabled
+    def strategyConfig(strategyName: String): Config =
+      context.system.settings.config.getConfig("akka.cluster.split-brain-resolver." + strategyName)
+
+    def role(c: Config): Option[String] = c.getString("role") match {
+      case "" ⇒ None
+      case r  ⇒ Some(r)
+    }
+
+    val strategy = Try {
+      import SplitBrainResolver._
+      import akka.util.Helpers.Requiring
+      DowningStrategy match {
+        case Some(KeepMajorityName) ⇒
+          val c = strategyConfig(KeepMajorityName)
+          Some(new KeepMajority(role(c)))
+        case Some(StaticQuorumName) ⇒
+          val c = strategyConfig(StaticQuorumName)
+          val size = c.getInt("quorum-size").requiring(_ >= 1,
+            s"akka.cluster.split-brain-resolver.$StaticQuorumName.quorum-size must be >= 1")
+          Some(new StaticQuorum(size, role(c)))
+        case Some(KeepOldestName) ⇒
+          val c = strategyConfig(KeepOldestName)
+          val downIfAlone = c.getBoolean("down-if-alone")
+          Some(new KeepOldest(downIfAlone, role(c)))
+        case Some(KeepRefereeName) ⇒
+          val c = strategyConfig(KeepRefereeName)
+          val address = c.getString("address")
+          require(address != "", s"akka.cluster.split-brain-resolver.$KeepRefereeName.address must be defined")
+          val AddressFromURIString(a) = address
+          val downAllIfLessThanNodes = c.getInt("down-all-if-less-than-nodes").requiring(_ >= 0,
+            s"akka.cluster.split-brain-resolver.$KeepRefereeName.down-all-if-less-than-nodes must be >= 0")
+          Some(new KeepReferee(a, downAllIfLessThanNodes))
+        case Some(unknown) ⇒
+          throw new IllegalArgumentException(s"Unknown partition strategy: [$unknown]")
+        case None ⇒ None // partition strategy is disabled
+      }
+    }
+    strategy match {
+      case Success(None) ⇒
+        AutoDownUnreachableAfter match {
+          case d: FiniteDuration ⇒
+            context.actorOf(AutoDown.props(d) withDispatcher (context.props.dispatcher), name = "autoDown")
+          case _ ⇒
+          // auto-down is disabled
+        }
+      case Success(Some(s)) ⇒
+        context.actorOf(SplitBrainResolver.props(DowningStableAfter, s).withDispatcher(context.props.dispatcher),
+          name = "partitionStrategy")
+      case Failure(e) ⇒
+        log.error(e, "Could not initialize partition strategy")
+        cluster.shutdown()
     }
 
     if (SeedNodes.isEmpty)
@@ -370,7 +422,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     case other             ⇒ super.unhandled(other)
   }
 
-  def initJoin(): Unit = sender() ! InitJoinAck(selfAddress)
+  def initJoin(): Unit = {
+    val selfStatus = latestGossip.member(selfUniqueAddress).status
+    if (Gossip.removeUnreachableWithMemberStatus.contains(selfStatus))
+      // prevents a Down and Exiting node from being used for joining
+      sender() ! InitJoinNack(selfAddress)
+    else
+      sender() ! InitJoinAck(selfAddress)
+  }
 
   def joinSeedNodes(seedNodes: immutable.IndexedSeq[Address]): Unit = {
     if (seedNodes.nonEmpty) {
@@ -442,12 +501,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
    * current gossip state, including the new joining member.
    */
   def joining(node: UniqueAddress, roles: Set[String]): Unit = {
+    val selfStatus = latestGossip.member(selfUniqueAddress).status
     if (node.address.protocol != selfAddress.protocol)
       log.warning("Member with wrong protocol tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.protocol, node.address.protocol)
     else if (node.address.system != selfAddress.system)
       log.warning("Member with wrong ActorSystem name tried to join, but was ignored, expected [{}] but was [{}]",
         selfAddress.system, node.address.system)
+    else if (Gossip.removeUnreachableWithMemberStatus.contains(selfStatus))
+      logInfo("Trying to join [{}] to [{}] member, ignoring. Use a member that is Up instead.", node, selfStatus)
     else {
       val localMembers = latestGossip.members
 
@@ -542,15 +604,15 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
     val localReachability = localOverview.reachability
 
     // check if the node to DOWN is in the `members` set
-    localMembers.collectFirst { case m if m.address == address ⇒ m.copy(status = Down) } match {
-      case Some(m) ⇒
+    localMembers.find(_.address == address) match {
+      case Some(m) if (m.status != Down) ⇒
         if (localReachability.isReachable(m.uniqueAddress))
           logInfo("Marking node [{}] as [{}]", m.address, Down)
         else
           logInfo("Marking unreachable node [{}] as [{}]", m.address, Down)
 
         // replace member (changed status)
-        val newMembers = localMembers - m + m
+        val newMembers = localMembers - m + m.copy(status = Down)
         // remove nodes marked as DOWN from the `seen` table
         val newSeen = localSeen - m.uniqueAddress
 
@@ -560,6 +622,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
         updateLatestGossip(newGossip)
 
         publish(latestGossip)
+      case Some(_) ⇒ // already down
       case None ⇒
         logInfo("Ignoring down of unknown node [{}] as [{}]", address)
     }
@@ -673,7 +736,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
       publish(latestGossip)
 
       val selfStatus = latestGossip.member(selfUniqueAddress).status
-      if (selfStatus == Exiting || selfStatus == Down)
+      if (selfStatus == Exiting)
         shutdown()
       else if (talkback) {
         // send back gossip to sender() when sender() had different view, i.e. merge, or sender() had
@@ -763,7 +826,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
   /**
    * Runs periodic leader actions, such as member status transitions, assigning partitions etc.
    */
-  def leaderActions(): Unit =
+  def leaderActions(): Unit = {
     if (latestGossip.isLeader(selfUniqueAddress, selfUniqueAddress)) {
       // only run the leader actions if we are the LEADER
       val firstNotice = 20
@@ -782,6 +845,27 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef) extends Actor with
               s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}").mkString(", "))
       }
     }
+    shutdownSelfWhenDown()
+  }
+
+  def shutdownSelfWhenDown(): Unit = {
+    if (latestGossip.member(selfUniqueAddress).status == Down) {
+      // When all reachable have seen the state this member will shutdown itself when it has
+      // status Down. The down commands should spread before we shutdown.
+      val unreachable = latestGossip.overview.reachability.allUnreachableOrTerminated
+      val downed = latestGossip.members.collect { case m if m.status == Down ⇒ m.uniqueAddress }
+      if (downed.forall(node ⇒ unreachable(node) || latestGossip.seenByNode(node))) {
+        // the reason for not shutting down immediately is to give the gossip a chance to spread
+        // the downing information to other downed nodes, so that they can shutdown themselves
+        logInfo("Shutting down myself")
+        // not crucial to send gossip, but may speedup removal since fallback to failure detection is not needed
+        // if other downed know that this node has seen the version
+        downed.filterNot(n ⇒ unreachable(n) || n == selfUniqueAddress).take(MaxGossipsBeforeShuttingDownMyself)
+          .foreach(gossipTo)
+        shutdown()
+      }
+    }
+  }
 
   /**
    * Leader actions are as follows:

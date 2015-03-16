@@ -69,6 +69,29 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val DowningStableAfter: FiniteDuration = {
+    val key = "split-brain-resolver.stable-after"
+    cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s")
+  }
+
+  val DowningStrategy: Option[String] =
+    if (AutoDownUnreachableAfter.isFinite)
+      None
+    else {
+      cc.getString("split-brain-resolver.active-strategy").toLowerCase(Locale.ROOT) match {
+        case "off"        ⇒ None
+        case strategyName ⇒ Some(strategyName)
+      }
+    }
+
+  val DownRemovalMargin: FiniteDuration = {
+    if (DowningStrategy.isDefined) {
+      val key = "down-removal-margin"
+      cc.getMillisDuration(key) requiring (_ > Duration.Zero, key + " > 0s")
+    } else
+      Duration.Zero
+  }
+
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
     cc.getInt("min-nr-of-members")
