@@ -3,6 +3,7 @@
  */
 package akka.cluster
 
+import scala.concurrent.duration._
 import scala.collection.immutable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigObject
@@ -67,15 +68,34 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     }
   }
 
+  val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
+
+  val DowningStableAfter: FiniteDuration = {
+    val key = "split-brain-resolver.stable-after"
+    cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s")
+  }
+
+  val DowningStrategy: Option[String] =
+    if (AutoDownUnreachableAfter.isFinite)
+      None
+    else {
+      cc.getString("split-brain-resolver.active-strategy").toLowerCase(Locale.ROOT) match {
+        case "off"        ⇒ None
+        case strategyName ⇒ Some(strategyName)
+      }
+    }
+
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"
-    cc.getString(key).toLowerCase(Locale.ROOT) match {
+    val value = cc.getString(key).toLowerCase(Locale.ROOT) match {
       case "off" ⇒ Duration.Zero
       case _     ⇒ cc.getMillisDuration(key) requiring (_ >= Duration.Zero, key + " >= 0s, or off")
     }
+    if (DowningStrategy.isDefined && value == Duration.Zero)
+      DowningStableAfter // use a better default value when Split Brain Resolver is enabled
+    else
+      value
   }
-
-  val AllowWeaklyUpMembers = cc.getBoolean("allow-weakly-up-members")
 
   val Roles: Set[String] = immutableSeq(cc.getStringList("roles")).toSet
   val MinNrOfMembers: Int = {
