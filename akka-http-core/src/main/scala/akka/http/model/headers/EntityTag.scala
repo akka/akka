@@ -13,12 +13,13 @@ final case class EntityTag(tag: String, weak: Boolean = false) extends japi.head
 }
 
 object EntityTag {
-  def matchesRange(eTag: EntityTag, entityTagRange: EntityTagRange, weak: Boolean) = entityTagRange match {
-    case EntityTagRange.`*`           ⇒ weak || !eTag.weak
-    case EntityTagRange.Default(tags) ⇒ tags.exists(matches(eTag, _, weak))
-  }
-  def matches(eTag: EntityTag, other: EntityTag, weak: Boolean) =
-    other.tag == eTag.tag && (weak || !other.weak && !eTag.weak)
+  def matchesRange(eTag: EntityTag, entityTagRange: EntityTagRange, weakComparison: Boolean) =
+    entityTagRange match {
+      case EntityTagRange.`*`           ⇒ weakComparison || !eTag.weak
+      case EntityTagRange.Default(tags) ⇒ tags.exists(matches(eTag, _, weakComparison))
+    }
+  def matches(eTag: EntityTag, other: EntityTag, weakComparison: Boolean) =
+    other.tag == eTag.tag && (weakComparison || !other.weak && !eTag.weak)
 }
 
 sealed abstract class EntityTagRange extends japi.headers.EntityTagRange with ValueRenderable
