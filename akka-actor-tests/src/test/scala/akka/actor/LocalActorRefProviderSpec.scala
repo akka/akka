@@ -156,18 +156,22 @@ class LocalActorRefProviderSpec extends AkkaSpec(LocalActorRefProviderSpec.confi
     }
 
     "throw suitable exceptions for malformed actor names" in {
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, null)).getMessage.contains("null") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "")).getMessage.contains("empty") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage.contains("not start with `$`") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%xx")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%0G")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%gg")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("Illegal actor name") should ===(true)
-      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("include only ASCII") should ===(true)
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, null)).getMessage.contains("null")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "")).getMessage.contains("empty")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "$hallo")).getMessage should include("not start with `$`")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a%")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%3")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%xx")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%0G")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%gg")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "%1t")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "a?")).getMessage.contains("Illegal actor path element")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, "üß")).getMessage.contains("include only ASCII")
+
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, """he"llo""")).getMessage should include("""["] @ 2""")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, """$hello""")).getMessage should include("""[$] @ 0""")
+      intercept[InvalidActorNameException](system.actorOf(Props.empty, """hell>o""")).getMessage should include("""[>] @ 4""")
     }
 
   }
