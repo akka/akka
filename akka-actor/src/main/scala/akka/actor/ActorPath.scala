@@ -2,7 +2,7 @@
  * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.actor
-import scala.annotation.tailrec
+import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
 import akka.japi.Util.immutableSeq
 import java.net.MalformedURLException
@@ -20,6 +20,33 @@ object ActorPath {
   /** INTERNAL API */
   private[akka] final val ValidSymbols = """-_.*$+:@&=,!~';"""
 
+  private final val ValidPathCode = -1
+  private final val EmptyPathCode = -2
+
+  /**
+   * Validates the given actor path element and throws an [[InvalidActorNameException]] if invalid.
+   * See [[isValidPathElement()]] for a non-throwing version.
+   *
+   * @param element actor path element to be validated
+   * @param fullPath optional fullPath element that may be included for better error messages; null if not given
+   */
+  final def validatePathElement(element: String, fullPath: String = null): Unit = {
+    def fullPathMsg = if (fullPath ne null) s""" (in path [$fullPath])""" else ""
+
+    (findInvalidPathElementCharPosition(element): @switch) match {
+      case ValidPathCode ⇒
+      // valid
+      case EmptyPathCode ⇒
+        throw new InvalidActorNameException(s"Actor path element must not be empty $fullPathMsg")
+      case invalidAt ⇒
+        throw new InvalidActorNameException(
+          s"""Invalid actor path element [$element]$fullPathMsg, illegal character [${element(invalidAt)}] at position: $invalidAt. """ +
+            """Actor paths MUST: """ +
+            """not start with `$`, """ +
+            s"""include only ASCII letters and can only contain these special characters: ${ActorPath.ValidSymbols}.""")
+    }
+  }
+
   /**
    * This method is used to validate a path element (Actor Name).
    * Since Actors form a tree, it is addressable using an URL, therefore an Actor Name has to conform to:
@@ -27,7 +54,10 @@ object ActorPath {
    *
    * User defined Actor names may not start from a `$` sign - these are reserved for system names.
    */
-  final def isValidPathElement(s: String): Boolean = {
+  final def isValidPathElement(s: String): Boolean =
+    findInvalidPathElementCharPosition(s) == ValidPathCode
+
+  private final def findInvalidPathElementCharPosition(s: String): Int = if (s.isEmpty) EmptyPathCode else {
     def isValidChar(c: Char): Boolean =
       (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || (ValidSymbols.indexOf(c) != -1)
 
@@ -35,16 +65,16 @@ object ActorPath {
       (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F') || (c >= '0' && c <= '9')
 
     val len = s.length
-    def validate(pos: Int): Boolean =
+    def validate(pos: Int): Int =
       if (pos < len)
         s.charAt(pos) match {
           case c if isValidChar(c) ⇒ validate(pos + 1)
           case '%' if pos + 2 < len && isHexChar(s.charAt(pos + 1)) && isHexChar(s.charAt(pos + 2)) ⇒ validate(pos + 3)
-          case _ ⇒ false
+          case _ ⇒ pos
         }
-      else true
+      else ValidPathCode
 
-    len > 0 && s.charAt(0) != '$' && validate(0)
+    if (len > 0 && s.charAt(0) != '$') validate(0) else 0
   }
 
   private[akka] final val emptyActorPath: immutable.Iterable[String] = List("")
