@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -56,11 +56,11 @@ class VectorClockPerfSpec extends WordSpec with Matchers {
   }
 
   def compareTo(order: Ordering)(vc1: VectorClock, vc2: VectorClock): Unit = {
-    vc1 compareTo vc2 should be(order)
+    vc1 compareTo vc2 should ===(order)
   }
 
   def !==(vc1: VectorClock, vc2: VectorClock): Unit = {
-    vc1 == vc2 should be(false)
+    vc1 == vc2 should ===(false)
   }
 
   s"VectorClock comparisons of size $clockSize" must {

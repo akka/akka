@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
@@ -11,7 +11,9 @@ import akka.persistence.SnapshotProtocol._
  * Snapshot API on top of the internal snapshot protocol.
  */
 trait Snapshotter extends Actor {
-  private lazy val snapshotStore = Persistence(context.system).snapshotStoreFor(snapshotterId)
+
+  /** Snapshot store plugin actor. */
+  private[persistence] def snapshotStore: ActorRef
 
   /**
    * Snapshotter id.

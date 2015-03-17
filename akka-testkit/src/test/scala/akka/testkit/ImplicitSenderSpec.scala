@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2013-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -17,7 +17,7 @@ class ImplicitSenderSpec
 
   "An ImplicitSender" should {
     "have testActor as its self" in {
-      self should be(testActor)
+      self should ===(testActor)
     }
   }
 }

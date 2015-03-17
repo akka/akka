@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -62,7 +62,7 @@ private[io] class TcpListener(selectorRouter: ActorRef,
     } catch {
       case NonFatal(e) ⇒
         bindCommander ! bind.failureMessage
-        log.debug("Bind failed for TCP channel on endpoint [{}]: {}", bind.localAddress, e)
+        log.error(e, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }
 

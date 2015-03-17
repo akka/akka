@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -239,8 +239,8 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
       })
 
       def checkTimersActive(active: Boolean) {
-        for (timer ← timerNames) fsmref.isTimerActive(timer) should be(active)
-        fsmref.isStateTimerActive should be(active)
+        for (timer ← timerNames) fsmref.isTimerActive(timer) should ===(active)
+        fsmref.isStateTimerActive should ===(active)
       }
 
       checkTimersActive(false)

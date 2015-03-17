@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
@@ -83,7 +83,7 @@ class SnapshotFailureRobustnessSpec extends AkkaSpec(PersistenceSpec.config("lev
         lPersistentActor ! Recover()
         expectMsgPF() {
           case (SnapshotMetadata(`persistenceId`, 1, timestamp), state) ⇒
-            state should be("blahonga")
+            state should ===("blahonga")
             timestamp should be > (0L)
         }
         expectMsg("kablama-2")

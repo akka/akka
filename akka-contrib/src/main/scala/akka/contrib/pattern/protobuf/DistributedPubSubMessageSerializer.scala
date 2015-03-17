@@ -1,9 +1,9 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.pattern.protobuf
 
-import akka.serialization.Serializer
+import akka.serialization.BaseSerializer
 import akka.cluster._
 import scala.collection.breakOut
 import akka.actor.{ ExtendedActorSystem, Address }
@@ -31,7 +31,7 @@ import scala.collection.immutable.TreeMap
 /**
  * Protobuf serializer of DistributedPubSubMediator messages.
  */
-class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extends Serializer {
+class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private final val BufferSize = 1024 * 4
 
@@ -43,8 +43,6 @@ class DistributedPubSubMessageSerializer(val system: ExtendedActorSystem) extend
     classOf[Publish] -> publishFromBinary)
 
   def includeManifest: Boolean = true
-
-  def identifier = 9
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: Status    ⇒ compress(statusToProto(m))

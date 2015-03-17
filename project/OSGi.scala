@@ -59,7 +59,7 @@ object OSGi {
     val packageName = "scala.*"
     val ScalaVersion = """(\d+)\.(\d+)\..*""".r
     val ScalaVersion(epoch, major) = version
-    versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
+    versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
   }
   def kamonImport(packageName: String = "kamon.sigar.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))
   def sigarImport(packageName: String = "org.hyperic.*") = optionalResolution(versionedImport(packageName, "1.6.5", "1.6.6"))

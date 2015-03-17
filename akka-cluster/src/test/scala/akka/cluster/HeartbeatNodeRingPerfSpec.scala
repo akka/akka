@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -23,12 +23,12 @@ class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
 
   val heartbeatNodeRing = createHeartbeatNodeRingOfSize(nodesSize)
 
-  def checkThunkForRing(ring: HeartbeatNodeRing, thunk: HeartbeatNodeRing ⇒ Unit, times: Int): Unit =
+  private def checkThunkForRing(ring: HeartbeatNodeRing, thunk: HeartbeatNodeRing ⇒ Unit, times: Int): Unit =
     for (i ← 1 to times) thunk(ring)
 
-  def myReceivers(ring: HeartbeatNodeRing): Unit = {
+  private def myReceivers(ring: HeartbeatNodeRing): Unit = {
     val r = HeartbeatNodeRing(ring.selfAddress, ring.nodes, Set.empty, ring.monitoredByNrOfMembers)
-    r.myReceivers.isEmpty should be(false)
+    r.myReceivers.isEmpty should ===(false)
   }
 
   s"HeartbeatNodeRing of size $nodesSize" must {

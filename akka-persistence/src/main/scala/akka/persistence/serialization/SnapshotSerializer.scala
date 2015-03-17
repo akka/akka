@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  * Copyright (C) 2012-2013 Eligotech BV.
  */
 
@@ -7,8 +7,7 @@ package akka.persistence.serialization
 
 import java.io._
 import akka.actor._
-import akka.serialization.{ Serializer, SerializationExtension }
-import akka.serialization.Serialization
+import akka.serialization._
 import scala.util.Success
 import scala.util.Failure
 
@@ -30,9 +29,9 @@ private[serialization] final case class SnapshotHeader(serializerId: Int, manife
 /**
  * [[Snapshot]] serializer.
  */
-class SnapshotSerializer(system: ExtendedActorSystem) extends Serializer {
-  def identifier: Int = 8
-  def includeManifest: Boolean = false
+class SnapshotSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
+
+  override val includeManifest: Boolean = false
 
   private lazy val transportInformation: Option[Serialization.Information] = {
     val address = system.provider.getDefaultAddress

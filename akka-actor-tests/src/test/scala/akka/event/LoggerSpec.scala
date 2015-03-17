@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.event
 
@@ -97,9 +97,10 @@ object LoggerSpec {
     override def mdc(currentMessage: Any): MDC = {
       reqId += 1
       val always = Map("requestId" -> reqId)
+      val cmim = "Current Message in MDC"
       val perMessage = currentMessage match {
-        case cm @ "Current Message in MDC" ⇒ Map("currentMsg" -> cm, "currentMsgLength" -> cm.length)
-        case _                             ⇒ Map()
+        case `cmim` ⇒ Map[String, Any]("currentMsg" -> cmim, "currentMsgLength" -> cmim.length)
+        case _      ⇒ Map()
       }
       always ++ perMessage
     }
@@ -153,7 +154,7 @@ class LoggerSpec extends WordSpec with Matchers {
 
     "not log messages to standard output" in {
       val out = createSystemAndLogToBuffer("noLogging", noLoggingConfig, false)
-      out.size should be(0)
+      out.size should ===(0)
     }
   }
 
@@ -230,7 +231,7 @@ class LoggerSpec extends WordSpec with Matchers {
       val minutes = c.get(Calendar.MINUTE)
       val seconds = c.get(Calendar.SECOND)
       val ms = c.get(Calendar.MILLISECOND)
-      Helpers.currentTimeMillisToUTCString(timestamp) should be(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
+      Helpers.currentTimeMillisToUTCString(timestamp) should ===(f"$hours%02d:$minutes%02d:$seconds%02d.$ms%03dUTC")
     }
   }
 

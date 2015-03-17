@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster
@@ -159,29 +159,39 @@ private[cluster] final case class Gossip(
    *
    * @return true if convergence have been reached and false if not
    */
-  def convergence: Boolean = {
+  def convergence(selfUniqueAddress: UniqueAddress): Boolean = {
     // First check that:
-    //   1. we don't have any members that are unreachable, or
+    //   1. we don't have any members that are unreachable, excluding observations from members
+    //      that have status DOWN, or
     //   2. all unreachable members in the set have status DOWN or EXITING
     // Else we can't continue to check for convergence
     // When that is done we check that all members with a convergence
-    // status is in the seen table and has the latest vector clock
-    // version
-    val unreachable = overview.reachability.allUnreachableOrTerminated map member
+    // status is in the seen table, i.e. has seen this version
+    val unreachable = reachabilityExcludingDownedObservers.allUnreachableOrTerminated.collect {
+      case node if (node != selfUniqueAddress) ⇒ member(node)
+    }
     unreachable.forall(m ⇒ Gossip.convergenceSkipUnreachableWithMemberStatus(m.status)) &&
       !members.exists(m ⇒ Gossip.convergenceMemberStatus(m.status) && !seenByNode(m.uniqueAddress))
   }
 
-  def isLeader(node: UniqueAddress): Boolean = leader == Some(node)
+  lazy val reachabilityExcludingDownedObservers: Reachability = {
+    val downed = members.collect { case m if m.status == Down ⇒ m }
+    overview.reachability.removeObservers(downed.map(_.uniqueAddress))
+  }
 
-  def leader: Option[UniqueAddress] = leaderOf(members)
+  def isLeader(node: UniqueAddress, selfUniqueAddress: UniqueAddress): Boolean =
+    leader(selfUniqueAddress) == Some(node)
 
-  def roleLeader(role: String): Option[UniqueAddress] = leaderOf(members.filter(_.hasRole(role)))
+  def leader(selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members, selfUniqueAddress)
 
-  private def leaderOf(mbrs: immutable.SortedSet[Member]): Option[UniqueAddress] = {
+  def roleLeader(role: String, selfUniqueAddress: UniqueAddress): Option[UniqueAddress] =
+    leaderOf(members.filter(_.hasRole(role)), selfUniqueAddress)
+
+  private def leaderOf(mbrs: immutable.SortedSet[Member], selfUniqueAddress: UniqueAddress): Option[UniqueAddress] = {
     val reachableMembers =
       if (overview.reachability.isAllReachable) mbrs
-      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress))
+      else mbrs.filter(m ⇒ overview.reachability.isReachable(m.uniqueAddress) || m.uniqueAddress == selfUniqueAddress)
     if (reachableMembers.isEmpty) None
     else reachableMembers.find(m ⇒ Gossip.leaderMemberStatus(m.status)).
       orElse(Some(reachableMembers.min(Member.leaderStatusOrdering))).map(_.uniqueAddress)

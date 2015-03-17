@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -186,6 +186,18 @@ private[cluster] class Reachability private (
       Reachability(newRecords, newVersions)
     }
   }
+
+  def removeObservers(nodes: Set[UniqueAddress]): Reachability =
+    if (nodes.isEmpty)
+      this
+    else {
+      val newRecords = records.filterNot(r ⇒ nodes(r.observer))
+      if (newRecords.size == records.size) this
+      else {
+        val newVersions = versions -- nodes
+        Reachability(newRecords, newVersions)
+      }
+    }
 
   def status(observer: UniqueAddress, subject: UniqueAddress): ReachabilityStatus =
     observerRows(observer) match {

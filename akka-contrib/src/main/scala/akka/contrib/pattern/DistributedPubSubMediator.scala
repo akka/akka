@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.contrib.pattern
@@ -191,7 +191,7 @@ object DistributedPubSubMediator {
 
       def business: Receive
 
-      def receive = business orElse defaultReceive
+      def receive = business.orElse[Any, Unit](defaultReceive)
 
       def remove(ref: ActorRef): Unit = {
         if (subscribers.contains(ref))

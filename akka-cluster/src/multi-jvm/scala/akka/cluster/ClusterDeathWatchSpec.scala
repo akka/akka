@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -204,7 +204,7 @@ abstract class ClusterDeathWatchSpec
 
       enterBarrier("fifth-terminated")
       runOn(first) {
-        expectMsgType[Terminated].actor.path.name should be("subject5")
+        expectMsgType[Terminated].actor.path.name should ===("subject5")
       }
 
       enterBarrier("after-3")
@@ -221,8 +221,8 @@ abstract class ClusterDeathWatchSpec
 
       runOn(fourth) {
         val hello = system.actorOf(Props[Hello], "hello")
-        hello.isInstanceOf[RemoteActorRef] should be(true)
-        hello.path.address should be(address(first))
+        hello.isInstanceOf[RemoteActorRef] should ===(true)
+        hello.path.address should ===(address(first))
         watch(hello)
         enterBarrier("hello-deployed")
 

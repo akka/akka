@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2013-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2013-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -17,7 +17,7 @@ class DefaultTimeoutSpec
 
   "A spec with DefaultTimeout" should {
     "use timeout from settings" in {
-      timeout should be(testKitSettings.DefaultTimeout)
+      timeout should ===(testKitSettings.DefaultTimeout)
     }
   }
 }

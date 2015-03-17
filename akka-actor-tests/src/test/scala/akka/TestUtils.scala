@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka
@@ -10,6 +10,8 @@ import java.net.{ SocketAddress, InetSocketAddress }
 import java.nio.channels.{ DatagramChannel, ServerSocketChannel }
 import akka.actor.{ ActorSystem, ActorRef }
 import akka.testkit.TestProbe
+
+import language.reflectiveCalls
 
 object TestUtils {
 

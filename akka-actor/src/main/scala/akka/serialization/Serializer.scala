@@ -1,7 +1,7 @@
 package akka.serialization
 
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 import java.io.{ ObjectOutputStream, ByteArrayOutputStream, ObjectInputStream, ByteArrayInputStream }
@@ -33,8 +33,8 @@ import akka.serialization.JavaSerializer.CurrentSystem
 trait Serializer {
 
   /**
-   * Completely unique value to identify this implementation of Serializer, used to optimize network traffic
-   * Values from 0 to 16 is reserved for Akka internal usage
+   * Completely unique value to identify this implementation of Serializer, used to optimize network traffic.
+   * Values from 0 to 16 are reserved for Akka internal usage.
    */
   def identifier: Int
 
@@ -63,6 +63,33 @@ trait Serializer {
    * Java API: deserialize with type hint
    */
   final def fromBinary(bytes: Array[Byte], clazz: Class[_]): AnyRef = fromBinary(bytes, Option(clazz))
+}
+
+/**
+ *  Base serializer trait with serialization identifiers configuration contract,
+ *  when globally unique serialization identifier is configured in the `reference.conf`.
+ */
+trait BaseSerializer extends Serializer {
+  /**
+   *  Actor system which is required by most serializer implementations.
+   */
+  val system: ExtendedActorSystem
+  /**
+   * Configuration namespace of serialization identifiers in the `reference.conf`.
+   *
+   * Each serializer implementation must have an entry in the following format:
+   * `akka.actor.serialization-identifiers."FQCN" = ID`
+   * where `FQCN` is fully qualified class name of the serializer implementation
+   * and `ID` is globally unique serializer identifier number.
+   */
+  final val SerializationIdentifiers = "akka.actor.serialization-identifiers"
+  /**
+   * Globally unique serialization identifier configured in the `reference.conf`.
+   *
+   * See [[Serializer#identifier()]].
+   */
+  final override val identifier: Int =
+    system.settings.config.getInt(s"""${SerializationIdentifiers}."${getClass.getName}"""")
 }
 
 /**
@@ -117,11 +144,9 @@ object JavaSerializer {
 /**
  * This Serializer uses standard Java Serialization
  */
-class JavaSerializer(val system: ExtendedActorSystem) extends Serializer {
+class JavaSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   def includeManifest: Boolean = false
-
-  def identifier = 1
 
   def toBinary(o: AnyRef): Array[Byte] = {
     val bos = new ByteArrayOutputStream
@@ -154,9 +179,8 @@ class NullSerializer extends Serializer {
  * This is a special Serializer that Serializes and deserializes byte arrays only,
  * (just returns the byte array unchanged/uncopied)
  */
-class ByteArraySerializer extends Serializer {
+class ByteArraySerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   def includeManifest: Boolean = false
-  def identifier = 4
   def toBinary(o: AnyRef) = o match {
     case null           ⇒ null
     case o: Array[Byte] ⇒ o

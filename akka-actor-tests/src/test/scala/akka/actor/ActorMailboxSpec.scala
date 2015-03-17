@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
 import akka.util.Helpers.ConfigOps
 
 object ActorMailboxSpec {
-  val mailboxConf = ConfigFactory.parseString("""
+  val mailboxConf = ConfigFactory.parseString(s"""
     unbounded-dispatcher {
       mailbox-type = "akka.dispatch.UnboundedMailbox"
     }
@@ -46,7 +46,7 @@ object ActorMailboxSpec {
 
     requiring-balancing-bounded-dispatcher {
       type = "akka.dispatch.BalancingDispatcherConfigurator"
-      mailbox-requirement = "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics"
+      mailbox-requirement = "akka.actor.ActorMailboxSpec$$MCBoundedMessageQueueSemantics"
     }
 
     unbounded-mailbox {
@@ -68,7 +68,7 @@ object ActorMailboxSpec {
     mc-bounded-mailbox {
       mailbox-capacity = 1000
       mailbox-push-timeout-time = 10s
-      mailbox-type = "akka.actor.ActorMailboxSpec$MCBoundedMailbox"
+      mailbox-type = "akka.actor.ActorMailboxSpec$$MCBoundedMailbox"
     }
 
     akka.actor.deployment {
@@ -142,7 +142,7 @@ object ActorMailboxSpec {
     }
 
     akka.actor.mailbox.requirements {
-      "akka.actor.ActorMailboxSpec$MCBoundedMessageQueueSemantics" =
+      "akka.actor.ActorMailboxSpec$$MCBoundedMessageQueueSemantics" =
         mc-bounded-mailbox
     }
                                               """)
@@ -255,7 +255,7 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
 
     "get a bounded message queue with 0 push timeout when defined in dispatcher" in {
       val q = checkMailboxQueue(Props[QueueReportingActor], "default-bounded-mailbox-with-zero-pushtimeout", BoundedMailboxTypes)
-      q.asInstanceOf[BoundedMessageQueueSemantics].pushTimeOut should be(Duration.Zero)
+      q.asInstanceOf[BoundedMessageQueueSemantics].pushTimeOut should ===(Duration.Zero)
     }
 
     "get an unbounded message queue when it's configured as mailbox overriding bounded in dispatcher" in {

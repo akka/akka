@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -48,7 +48,7 @@ class LogSourceSpec extends AkkaSpec(
     "should include host and port for local LogSource" in {
       reporter ! "hello"
       val info = logProbe.expectMsgType[Info]
-      info.message should be("hello")
+      info.message should ===("hello")
       val defaultAddress = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
       info.logSource should include(defaultAddress.toString)
     }

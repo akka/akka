@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit.metrics.reporter
 
@@ -30,7 +30,7 @@ class PrettyDurationSpec extends FlatSpec with Matchers {
   cases foreach {
     case (d, expectedValue) ⇒
       it should s"print $d nanos as $expectedValue" in {
-        d.pretty should be(expectedValue)
+        d.pretty should ===(expectedValue)
       }
   }
 

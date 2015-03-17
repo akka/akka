@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.pattern
 
@@ -300,7 +300,7 @@ class CircuitBreaker(scheduler: Scheduler, maxFailures: Int, callTimeout: Finite
      */
     def callThrough[T](body: ⇒ Future[T]): Future[T] = {
 
-      def materialize[T](value: ⇒ Future[T]): Future[T] = try value catch { case NonFatal(t) ⇒ Future.failed(t) }
+      def materialize[U](value: ⇒ Future[U]): Future[U] = try value catch { case NonFatal(t) ⇒ Future.failed(t) }
 
       if (callTimeout == Duration.Zero) {
         materialize(body)

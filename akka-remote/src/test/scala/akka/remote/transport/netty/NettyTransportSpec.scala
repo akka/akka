@@ -64,7 +64,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should be(address.toAkkaAddress("akka.tcp"))
+      getExternal should ===(address.toAkkaAddress("akka.tcp"))
       getInternal should not contain (address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
@@ -81,7 +81,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should be(address.toAkkaAddress("akka.tcp"))
+      getExternal should ===(address.toAkkaAddress("akka.tcp"))
       getInternal should contain(address.toAkkaAddress("tcp"))
 
       Await.result(sys.terminate(), Duration.Inf)
@@ -98,7 +98,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehaviour {
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
       getInternal should contain(getExternal.withProtocol("tcp"))
-      getInternal.size should be(2)
+      getInternal.size should ===(2)
 
       Await.result(sys.terminate(), Duration.Inf)
     }
@@ -137,7 +137,7 @@ trait BindBehaviour { this: WordSpec with Matchers ⇒
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should be(address.toAkkaAddress(s"akka.$proto"))
+      getExternal should ===(address.toAkkaAddress(s"akka.$proto"))
       getInternal should contain(address.toAkkaAddress(proto))
 
       Await.result(sys.terminate(), Duration.Inf)
@@ -161,7 +161,7 @@ trait BindBehaviour { this: WordSpec with Matchers ⇒
         """)
       implicit val sys = ActorSystem("sys", bindConfig.withFallback(commonConfig))
 
-      getExternal should be(address.toAkkaAddress(s"akka.$proto"))
+      getExternal should ===(address.toAkkaAddress(s"akka.$proto"))
       getInternal should contain(bindAddress.toAkkaAddress(proto))
 
       Await.result(sys.terminate(), Duration.Inf)

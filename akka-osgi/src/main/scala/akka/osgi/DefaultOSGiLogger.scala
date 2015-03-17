@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.osgi
 
@@ -17,7 +17,7 @@ class DefaultOSGiLogger extends DefaultLogger {
 
   val messageFormat = " %s | %s | %s | %s"
 
-  override def receive: Receive = uninitialisedReceive orElse super.receive
+  override def receive: Receive = uninitialisedReceive.orElse[Any, Unit](super.receive)
 
   /**
    * Behaviour of the logger that waits for its LogService

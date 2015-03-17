@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.metrics
@@ -25,7 +25,6 @@ case class ClusterMetricsSettings(config: Config) {
   }
   val PeriodicTasksInitialDelay: FiniteDuration = cc.getMillisDuration("periodic-tasks-initial-delay")
   val NativeLibraryExtractFolder: String = cc.getString("native-library-extract-folder")
-  val SerializerIdentifier: Int = cc.getInt("serializer-identifier")
 
   // Supervisor.
   val SupervisorName: String = cc.getString("supervisor.name")

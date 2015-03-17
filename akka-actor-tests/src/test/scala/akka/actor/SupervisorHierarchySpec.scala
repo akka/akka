@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -859,9 +859,9 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
           failResumer ! "blahonga"
           expectMsg("blahonga")
         }
-      createAttempt.get should be(6)
-      preStartCalled.get should be(1)
-      postRestartCalled.get should be(0)
+      createAttempt.get should ===(6)
+      preStartCalled.get should ===(1)
+      postRestartCalled.get should ===(0)
     }
 
     "survive being stressed" in {

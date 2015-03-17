@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -326,7 +326,7 @@ private[akka] class LocalActorRef private[akka] (
    * If this method returns true, it will never return false again, but if it
    * returns false, you cannot be sure if it's alive still (race condition)
    */
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2") override def isTerminated: Boolean = actorCell.isTerminated
+  override def isTerminated: Boolean = actorCell.isTerminated
 
   /**
    * Starts the actor after initialization.
@@ -598,6 +598,38 @@ private[akka] class VirtualPathContainer(
   val log: LoggingAdapter) extends MinimalActorRef {
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
+
+  /**
+   * In [[ActorSelectionMessage]]s only [[SelectChildName]] elements
+   * are supported, otherwise messages are sent to [[EmptyLocalActorRef]].
+   */
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
+    case sel @ ActorSelectionMessage(msg, elements, wildcardFanOut) ⇒ {
+      require(elements.nonEmpty)
+
+      def emptyRef = new EmptyLocalActorRef(provider, path / sel.elements.map(_.toString),
+        provider.systemGuardian.underlying.system.eventStream)
+
+      elements.head match {
+        case SelectChildName(name) ⇒
+          getChild(name) match {
+            case null ⇒
+              if (!wildcardFanOut)
+                emptyRef.tell(msg, sender)
+            case child ⇒
+              if (elements.tail.isEmpty) {
+                child ! msg
+              } else if (!wildcardFanOut) {
+                emptyRef.tell(msg, sender)
+              }
+          }
+        case _ ⇒
+          if (!wildcardFanOut)
+            emptyRef.tell(msg, sender)
+      }
+    }
+    case _ ⇒ super.!(message)
+  }
 
   def addChild(name: String, ref: InternalActorRef): Unit = {
     children.put(name, ref) match {

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.metrics
@@ -22,23 +22,22 @@ class ClusterMetricsSettingsSpec extends AkkaSpec {
       import settings._
 
       // Extension.
-      MetricsDispatcher should be(Dispatchers.DefaultDispatcherId)
-      PeriodicTasksInitialDelay should be(1 second)
-      NativeLibraryExtractFolder should be(System.getProperty("user.dir") + "/native")
-      SerializerIdentifier should be(10)
+      MetricsDispatcher should ===(Dispatchers.DefaultDispatcherId)
+      PeriodicTasksInitialDelay should ===(1 second)
+      NativeLibraryExtractFolder should ===(System.getProperty("user.dir") + "/native")
 
       // Supervisor.
-      SupervisorName should be("cluster-metrics")
-      SupervisorStrategyProvider should be(classOf[ClusterMetricsStrategy].getName)
-      SupervisorStrategyConfiguration should be(
+      SupervisorName should ===("cluster-metrics")
+      SupervisorStrategyProvider should ===(classOf[ClusterMetricsStrategy].getName)
+      SupervisorStrategyConfiguration should ===(
         ConfigFactory.parseString("loggingEnabled=true,maxNrOfRetries=3,withinTimeRange=3s"))
 
       // Collector.
-      CollectorEnabled should be(true)
-      CollectorProvider should be("")
-      CollectorSampleInterval should be(3 seconds)
-      CollectorGossipInterval should be(3 seconds)
-      CollectorMovingAverageHalfLife should be(12 seconds)
+      CollectorEnabled should ===(true)
+      CollectorProvider should ===("")
+      CollectorSampleInterval should ===(3 seconds)
+      CollectorGossipInterval should ===(3 seconds)
+      CollectorMovingAverageHalfLife should ===(12 seconds)
     }
   }
 }

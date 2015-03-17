@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.camel.internal.component
@@ -20,7 +20,7 @@ class ActorEndpointPathTest extends WordSpec with SharedCamelSystem with Matcher
   }
 
   "findActorIn returns None" when {
-    "non existing valid path" in { find("akka://system/user/unknownactor") should be(None) }
+    "non existing valid path" in { find("akka://system/user/unknownactor") should ===(None) }
   }
   "fromCamelPath throws IllegalArgumentException" when {
     "invalid path" in {

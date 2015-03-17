@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.contrib.mailbox
 
@@ -83,7 +83,7 @@ class PeekMailboxSpec extends AkkaSpec("""
         a ! "DIE" // stays in the mailbox
       }
       expectMsg("DIE")
-      expectMsgType[DeadLetter].message should be("DIE")
+      expectMsgType[DeadLetter].message should ===("DIE")
       expectTerminated(a)
     }
 

@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.remote
@@ -9,7 +9,7 @@ import akka.testkit.AkkaSpec
 class SerializeCreatorsVerificationSpec extends AkkaSpec {
 
   "serialize-creators should be on" in {
-    system.settings.SerializeAllCreators should be(true)
+    system.settings.SerializeAllCreators should ===(true)
   }
 
 }

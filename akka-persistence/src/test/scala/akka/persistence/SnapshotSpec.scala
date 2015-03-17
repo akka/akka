@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
@@ -14,8 +14,8 @@ object SnapshotSpec {
     var state = List.empty[String]
 
     override def receiveRecover: Receive = {
-      case payload: String                          ⇒ state = s"${payload}-${lastSequenceNr}" :: state
-      case SnapshotOffer(_, snapshot: List[String]) ⇒ state = snapshot
+      case payload: String                     ⇒ state = s"${payload}-${lastSequenceNr}" :: state
+      case SnapshotOffer(_, snapshot: List[_]) ⇒ state = snapshot.asInstanceOf[List[String]]
     }
 
     override def receiveCommand = {
@@ -89,7 +89,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
-          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
       expectMsg("e-5")
@@ -104,7 +104,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
-          state should be(List("a-1", "b-2").reverse)
+          state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
       expectMsg("c-3")
@@ -119,7 +119,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 4, timestamp), state) ⇒
-          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           timestamp should be > (0L)
       }
       expectMsg(RecoveryCompleted)
@@ -133,7 +133,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
-          state should be(List("a-1", "b-2").reverse)
+          state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
       expectMsg("c-3")
@@ -150,7 +150,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       expectMsgPF() {
         case (SnapshotMetadata(`persistenceId`, 2, timestamp), state) ⇒
-          state should be(List("a-1", "b-2").reverse)
+          state should ===(List("a-1", "b-2").reverse)
           timestamp should be > (0L)
       }
       expectMsg("c-3")
@@ -180,7 +180,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
 
       val metadata = expectMsgPF() {
         case (md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
-          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
           md
       }
       expectMsg(RecoveryCompleted)
@@ -195,7 +195,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       persistentActor2 ! Recover(toSequenceNr = 4)
       expectMsgPF() {
         case (md @ SnapshotMetadata(`persistenceId`, 2, _), state) ⇒
-          state should be(List("a-1", "b-2").reverse)
+          state should ===(List("a-1", "b-2").reverse)
           md
       }
       expectMsg("c-3")
@@ -215,7 +215,7 @@ class SnapshotSpec extends AkkaSpec(PersistenceSpec.config("leveldb", "SnapshotS
       persistentActor1 ! DeleteN(SnapshotSelectionCriteria(maxSequenceNr = 4))
       expectMsgPF() {
         case (md @ SnapshotMetadata(`persistenceId`, 4, _), state) ⇒
-          state should be(List("a-1", "b-2", "c-3", "d-4").reverse)
+          state should ===(List("a-1", "b-2", "c-3", "d-4").reverse)
       }
       expectMsg(RecoveryCompleted)
       deleteProbe.expectMsgType[DeleteSnapshots]

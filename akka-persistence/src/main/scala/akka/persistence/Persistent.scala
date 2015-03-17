@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence
@@ -21,7 +21,7 @@ import akka.persistence.serialization.Message
  *
  * In essence it is either an [[NonPersistentRepr]] or [[PersistentRepr]].
  */
-private[persistence] sealed trait PersistentEnvelope { // FIXME PN: Rename to PersistentEnvelope
+private[persistence] sealed trait PersistentEnvelope {
   def payload: Any
   def sender: ActorRef
 }

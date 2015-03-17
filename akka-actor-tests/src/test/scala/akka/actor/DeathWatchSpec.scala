@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.actor
@@ -120,11 +120,11 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
 
         terminal ! Kill
         terminal ! Kill
-        Await.result(terminal ? "foo", timeout.duration) should be("foo")
+        Await.result(terminal ? "foo", timeout.duration) should ===("foo")
         terminal ! Kill
 
         expectTerminationOf(terminal)
-        terminal.isTerminated should be(true)
+        terminal.isTerminated should ===(true)
 
         system.stop(supervisor)
       }
@@ -155,7 +155,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout â‡
           case WrappedTerminated(Terminated(`brother`))                                â‡’ 3
         }
         testActor.isTerminated should not be true
-        result should be(Seq(1, 2, 3))
+        result should ===(Seq(1, 2, 3))
       }
     }
 

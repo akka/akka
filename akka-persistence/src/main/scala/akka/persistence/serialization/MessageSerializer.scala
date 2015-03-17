@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.persistence.serialization
@@ -23,15 +23,14 @@ trait Message extends Serializable
 /**
  * Protobuf serializer for [[PersistentRepr]] and [[AtLeastOnceDelivery]] messages.
  */
-class MessageSerializer(val system: ExtendedActorSystem) extends Serializer {
+class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
   import PersistentRepr.Undefined
 
   val PersistentReprClass = classOf[PersistentRepr]
   val PersistentImplClass = classOf[PersistentImpl]
   val AtLeastOnceDeliverySnapshotClass = classOf[AtLeastOnceDeliverySnap]
 
-  def identifier: Int = 7
-  def includeManifest: Boolean = true
+  override val includeManifest: Boolean = true
 
   private lazy val transportInformation: Option[Serialization.Information] = {
     val address = system.provider.getDefaultAddress

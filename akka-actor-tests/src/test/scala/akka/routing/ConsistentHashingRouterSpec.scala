@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -56,7 +56,7 @@ class ConsistentHashingRouterSpec extends AkkaSpec(ConsistentHashingRouterSpec.c
   "consistent hashing router" must {
     "create routees from configuration" in {
       val currentRoutees = Await.result(router1 ? GetRoutees, timeout.duration).asInstanceOf[Routees]
-      currentRoutees.routees.size should be(3)
+      currentRoutees.routees.size should ===(3)
     }
 
     "select destination based on consistentHashKey of the message" in {

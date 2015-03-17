@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2014-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.persistence
 
@@ -42,12 +42,16 @@ object PersistentViewSpec {
       case "boom" ⇒
         throw new TestException("boom")
 
+      case RecoveryFailure(cause) ⇒
+        throw cause // restart
+
       case payload if isPersistent && shouldFailOn(payload) ⇒
         throw new TestException("boom")
 
       case payload if isPersistent ⇒
         last = s"replicated-${payload}-${lastSequenceNr}"
         probe ! last
+
     }
 
     override def postRestart(reason: Throwable): Unit = {

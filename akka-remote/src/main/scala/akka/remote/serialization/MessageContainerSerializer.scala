@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote.serialization
 
@@ -13,11 +13,9 @@ import akka.actor.SelectParent
 import akka.actor.SelectionPathElement
 import akka.remote.ContainerFormats
 import akka.serialization.SerializationExtension
-import akka.serialization.Serializer
+import akka.serialization.BaseSerializer
 
-class MessageContainerSerializer(val system: ExtendedActorSystem) extends Serializer {
-
-  def identifier: Int = 6
+class MessageContainerSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   def includeManifest: Boolean = false
 

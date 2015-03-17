@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.testkit
 
@@ -39,12 +39,11 @@ class AkkaSpecSpec extends WordSpec with Matchers {
         "akka.actor.debug.lifecycle" -> true, "akka.actor.debug.event-stream" -> true,
         "akka.loglevel" -> "DEBUG", "akka.stdout-loglevel" -> "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
-      val spec = new AkkaSpec(system) {
-        val ref = Seq(testActor, system.actorOf(Props.empty, "name"))
-      }
-      spec.ref foreach (_.isTerminated should not be true)
+      var refs = Seq.empty[ActorRef]
+      val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      refs foreach (_.isTerminated should not be true)
       TestKit.shutdownActorSystem(system)
-      spec.awaitCond(spec.ref forall (_.isTerminated), 2 seconds)
+      spec.awaitCond(refs forall (_.isTerminated), 2 seconds)
     }
 
     "stop correctly when sending PoisonPill to rootGuardian" in {
@@ -88,7 +87,7 @@ class AkkaSpecSpec extends WordSpec with Matchers {
         system.registerOnTermination(latch.countDown())
         TestKit.shutdownActorSystem(system)
         Await.ready(latch, 2 seconds)
-        Await.result(davyJones ? "Die!", timeout.duration) should be("finally gone")
+        Await.result(davyJones ? "Die!", timeout.duration) should ===("finally gone")
 
         // this will typically also contain log messages which were sent after the logger shutdown
         locker should contain(DeadLetter(42, davyJones, probe.ref))

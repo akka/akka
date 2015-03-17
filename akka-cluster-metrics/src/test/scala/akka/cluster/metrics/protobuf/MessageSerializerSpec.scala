@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.cluster.metrics.protobuf
@@ -27,7 +27,7 @@ class MessageSerializerSpec extends AkkaSpec(
     val ref = serializer.fromBinary(blob, obj.getClass)
     obj match {
       case _ ⇒
-        ref should be(obj)
+        ref should ===(obj)
     }
 
   }

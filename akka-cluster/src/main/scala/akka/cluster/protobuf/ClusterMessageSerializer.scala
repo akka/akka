@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.protobuf
 
@@ -10,7 +10,7 @@ import java.{ lang ⇒ jl }
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages ⇒ cm }
-import akka.serialization.Serializer
+import akka.serialization.BaseSerializer
 import akka.util.ClassLoaderObjectInputStream
 import com.google.protobuf.{ ByteString, MessageLite }
 
@@ -22,7 +22,7 @@ import scala.concurrent.duration.Deadline
 /**
  * Protobuf serializer of cluster messages.
  */
-class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializer {
+class ClusterMessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer {
 
   private final val BufferSize = 1024 * 4
   // must be lazy because serializer is initialized from Cluster extension constructor
@@ -52,8 +52,6 @@ class ClusterMessageSerializer(val system: ExtendedActorSystem) extends Serializ
     classOf[MetricsGossipEnvelope] -> metricsGossipEnvelopeFromBinary)
 
   def includeManifest: Boolean = true
-
-  def identifier = 5
 
   def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case ClusterHeartbeatSender.Heartbeat(from)      ⇒ addressToProtoByteArray(from)

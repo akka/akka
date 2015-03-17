@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.routing
 
@@ -48,8 +48,8 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       Await.ready(doneLatch, remainingOrDefault)
 
-      counter1.get should be(1)
-      counter2.get should be(1)
+      counter1.get should ===(1)
+      counter2.get should ===(1)
     }
 
     "broadcast message using ?" in {
@@ -80,8 +80,8 @@ class BroadcastSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
 
       Await.ready(doneLatch, remainingOrDefault)
 
-      counter1.get should be(1)
-      counter2.get should be(1)
+      counter1.get should ===(1)
+      counter2.get should ===(1)
     }
   }
 

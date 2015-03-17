@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package docs.actor
 
@@ -108,7 +108,7 @@ class FaultHandlingDocSpec extends TestKit(ActorSystem("FaultHandlingDocSpec", t
   }
 
   "A supervisor" must "apply the chosen strategy for its child" in {
-	  //#testkit
+    //#testkit
 
     //#create
     val supervisor = system.actorOf(Props[Supervisor], "supervisor")

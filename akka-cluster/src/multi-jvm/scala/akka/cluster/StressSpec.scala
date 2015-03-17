@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster
 
@@ -246,21 +246,21 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   class ClusterResultAggregator(title: String, expectedResults: Int, settings: Settings) extends Actor with ActorLogging {
     import settings.reportMetricsInterval
     import settings.infolog
-    val cluster = Cluster(context.system)
-    var reportTo: Option[ActorRef] = None
-    var results = Vector.empty[ClusterResult]
-    var nodeMetrics = Set.empty[NodeMetrics]
-    var phiValuesObservedByNode = {
+    private val cluster = Cluster(context.system)
+    private var reportTo: Option[ActorRef] = None
+    private var results = Vector.empty[ClusterResult]
+    private var nodeMetrics = Set.empty[NodeMetrics]
+    private var phiValuesObservedByNode = {
       import akka.cluster.Member.addressOrdering
       immutable.SortedMap.empty[Address, immutable.SortedSet[PhiValue]]
     }
-    var clusterStatsObservedByNode = {
+    private var clusterStatsObservedByNode = {
       import akka.cluster.Member.addressOrdering
       immutable.SortedMap.empty[Address, CurrentInternalStats]
     }
 
     import context.dispatcher
-    val reportMetricsTask = context.system.scheduler.schedule(
+    private val reportMetricsTask = context.system.scheduler.schedule(
       reportMetricsInterval, reportMetricsInterval, self, ReportTick)
 
     // subscribe to ClusterMetricsChanged, re-subscribe when restart
@@ -441,9 +441,9 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
   }
 
   class StatsObserver extends Actor {
-    val cluster = Cluster(context.system)
-    var reportTo: Option[ActorRef] = None
-    var startStats: Option[GossipStats] = None
+    private val cluster = Cluster(context.system)
+    private var reportTo: Option[ActorRef] = None
+    private var startStats: Option[GossipStats] = None
 
     override def preStart(): Unit = cluster.subscribe(self, classOf[CurrentInternalStats])
     override def postStop(): Unit = cluster.unsubscribe(self)
@@ -986,7 +986,7 @@ abstract class StressSpec
             }
             val nextAddresses = clusterView.members.map(_.address) -- usedAddresses
             runOn(usedRoles: _*) {
-              nextAddresses.size should be(numberOfNodesJoinRemove)
+              nextAddresses.size should ===(numberOfNodesJoinRemove)
             }
 
             enterBarrier("join-remove-" + step)
@@ -1023,7 +1023,7 @@ abstract class StressSpec
   def exerciseRouters(title: String, duration: FiniteDuration, batchInterval: FiniteDuration,
                       expectDroppedMessages: Boolean, tree: Boolean): Unit =
     within(duration + 10.seconds) {
-      nbrUsedRoles should be(totalNumberOfNodes)
+      nbrUsedRoles should ===(totalNumberOfNodes)
       createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
       val (masterRoles, otherRoles) = roles.take(nbrUsedRoles).splitAt(3)
@@ -1040,7 +1040,7 @@ abstract class StressSpec
           workResult.sendCount should be > (0L)
           workResult.ackCount should be > (0L)
           if (!expectDroppedMessages)
-            workResult.retryCount should be(0)
+            workResult.retryCount should ===(0)
 
           enterBarrier("routers-done-" + step)
         }
@@ -1079,13 +1079,13 @@ abstract class StressSpec
               supervisor ! Props[RemoteChild].withDeploy(Deploy(scope = RemoteScope(address(r))))
             }
             supervisor ! GetChildrenCount
-            expectMsgType[ChildrenCount] should be(ChildrenCount(nbrUsedRoles, 0))
+            expectMsgType[ChildrenCount] should ===(ChildrenCount(nbrUsedRoles, 0))
 
             1 to 5 foreach { _ ⇒ supervisor ! new RuntimeException("Simulated exception") }
             awaitAssert {
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
-              c should be(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
+              c should ===(ChildrenCount(nbrUsedRoles, 5 * nbrUsedRoles))
             }
 
             // after 5 restart attempts the children should be stopped
@@ -1094,7 +1094,7 @@ abstract class StressSpec
               supervisor ! GetChildrenCount
               val c = expectMsgType[ChildrenCount]
               // zero children
-              c should be(ChildrenCount(0, 6 * nbrUsedRoles))
+              c should ===(ChildrenCount(0, 6 * nbrUsedRoles))
             }
             supervisor ! Reset
 
@@ -1116,9 +1116,9 @@ abstract class StressSpec
   def idleGossip(title: String): Unit = {
     createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = true)
     reportResult {
-      clusterView.members.size should be(nbrUsedRoles)
+      clusterView.members.size should ===(nbrUsedRoles)
       Thread.sleep(idleGossipDuration.toMillis)
-      clusterView.members.size should be(nbrUsedRoles)
+      clusterView.members.size should ===(nbrUsedRoles)
     }
     awaitClusterResult()
   }
@@ -1193,7 +1193,7 @@ abstract class StressSpec
             case Some(m) ⇒
               m.tell(End, testActor)
               val workResult = awaitWorkResult(m)
-              workResult.retryCount should be(0)
+              workResult.retryCount should ===(0)
               workResult.sendCount should be > (0L)
               workResult.ackCount should be > (0L)
             case None ⇒ fail("master not running")

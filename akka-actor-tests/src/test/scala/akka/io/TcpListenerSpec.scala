@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 
 package akka.io
@@ -159,8 +159,8 @@ class TcpListenerSpec extends AkkaSpec("""
     def expectWorkerForCommand: SocketChannel =
       selectorRouter.expectMsgPF() {
         case WorkerForCommand(RegisterIncoming(chan), commander, _) ⇒
-          chan.isOpen should be(true)
-          commander should be(listener)
+          chan.isOpen should ===(true)
+          commander should ===(listener)
           chan
       }
 

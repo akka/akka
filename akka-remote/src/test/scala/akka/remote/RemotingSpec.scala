@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.remote
 
@@ -249,7 +249,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       }
 
       within(5.seconds) {
-        receiveN(n * 2) foreach { reply ⇒ reply should be(("pong", testActor)) }
+        receiveN(n * 2) foreach { reply ⇒ reply should ===(("pong", testActor)) }
       }
 
       // then we shutdown all but one system to simulate broken connections
@@ -264,13 +264,13 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
 
       // ping messages to aliveEcho should go through even though we use many different broken connections
       within(5.seconds) {
-        receiveN(n) foreach { reply ⇒ reply should be(("pong", testActor)) }
+        receiveN(n) foreach { reply ⇒ reply should ===(("pong", testActor)) }
       }
     }
 
     "create and supervise children on remote node" in {
       val r = system.actorOf(Props[Echo1], "blub")
-      r.path.toString should be("akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
+      r.path.toString should ===("akka.test://remote-sys@localhost:12346/remote/akka.test/RemotingSpec@localhost:12345/user/blub")
       r ! 42
       expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
@@ -326,16 +326,16 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // grandchild is configured to be deployed on RemotingSpec (system)
       child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
-      grandchild.asInstanceOf[ActorRefScope].isLocal should be(true)
+      grandchild.asInstanceOf[ActorRefScope].isLocal should ===(true)
       grandchild ! 43
       expectMsg(43)
       val myref = system.actorFor(system / "looker1" / "child" / "grandchild")
-      myref.isInstanceOf[RemoteActorRef] should be(true)
+      myref.isInstanceOf[RemoteActorRef] should ===(true)
       myref ! 44
       expectMsg(44)
-      lastSender should be(grandchild)
+      lastSender should ===(grandchild)
       lastSender should be theSameInstanceAs grandchild
-      child.asInstanceOf[RemoteActorRef].getParent should be(l)
+      child.asInstanceOf[RemoteActorRef].getParent should ===(l)
       system.actorFor("/user/looker1/child") should be theSameInstanceAs child
       Await.result(l ? ActorForReq("child/.."), timeout.duration).asInstanceOf[AnyRef] should be theSameInstanceAs l
       Await.result(system.actorFor(system / "looker1" / "child") ? ActorForReq(".."), timeout.duration).asInstanceOf[AnyRef] should be theSameInstanceAs l
@@ -369,19 +369,19 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       // grandchild is configured to be deployed on RemotingSpec (system)
       child ! ((Props[Echo1], "grandchild"))
       val grandchild = expectMsgType[ActorRef]
-      grandchild.asInstanceOf[ActorRefScope].isLocal should be(true)
+      grandchild.asInstanceOf[ActorRefScope].isLocal should ===(true)
       grandchild ! 53
       expectMsg(53)
       val mysel = system.actorSelection(system / "looker2" / "child" / "grandchild")
       mysel ! 54
       expectMsg(54)
-      lastSender should be(grandchild)
+      lastSender should ===(grandchild)
       lastSender should be theSameInstanceAs grandchild
       mysel ! Identify(mysel)
       val grandchild2 = expectMsgType[ActorIdentity].ref
-      grandchild2 should be(Some(grandchild))
+      grandchild2 should ===(Some(grandchild))
       system.actorSelection("/user/looker2/child") ! Identify(None)
-      expectMsgType[ActorIdentity].ref should be(Some(child))
+      expectMsgType[ActorIdentity].ref should ===(Some(child))
       l ! ActorSelReq("child/..")
       expectMsgType[ActorSelection] ! Identify(None)
       expectMsgType[ActorIdentity].ref.get should be theSameInstanceAs l
@@ -430,7 +430,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       watch(child)
       child ! PoisonPill
       expectMsg("postStop")
-      expectMsgType[Terminated].actor should be(child)
+      expectMsgType[Terminated].actor should ===(child)
       l ! ((Props[Echo1], "child"))
       val child2 = expectMsgType[ActorRef]
       child2 ! Identify("idReq15")
@@ -453,7 +453,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "not fail ask across node boundaries" in within(5.seconds) {
       import system.dispatcher
       val f = for (_ ← 1 to 1000) yield here ? "ping" mapTo manifest[(String, ActorRef)]
-      Await.result(Future.sequence(f), timeout.duration).map(_._1).toSet should be(Set("pong"))
+      Await.result(Future.sequence(f), timeout.duration).map(_._1).toSet should ===(Set("pong"))
     }
 
     "be able to use multiple transports and use the appropriate one (TCP)" in {
@@ -586,16 +586,16 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           """).withFallback(config)
         val otherSelection = thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", probeSender)
-        probe.expectNoMsg(1 seconds)
+        probe.expectNoMsg(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          probe.expectNoMsg(2 seconds)
+          probe.expectNoMsg(2.seconds)
           otherSystem.actorOf(Props[Echo2], "echo")
-          within(5 seconds) {
+          within(5.seconds) {
             awaitAssert {
               otherSelection.tell("ping", probeSender)
-              assert(probe.expectMsgType[(String, ActorRef)](500 millis)._1 == "pong")
+              assert(probe.expectMsgType[(String, ActorRef)](500.millis)._1 == "pong")
             }
           }
         } finally {
@@ -624,18 +624,18 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           """).withFallback(config)
         val otherSelection = thisSystem.actorSelection(s"akka.tcp://other-system@localhost:${otherAddress.getPort}/user/echo")
         otherSelection.tell("ping", thisSender)
-        thisProbe.expectNoMsg(1 seconds)
+        thisProbe.expectNoMsg(1.seconds)
         val otherSystem = ActorSystem("other-system", otherConfig)
         try {
           muteSystem(otherSystem)
-          thisProbe.expectNoMsg(2 seconds)
+          thisProbe.expectNoMsg(2.seconds)
           val otherProbe = new TestProbe(otherSystem)
           val otherSender = otherProbe.ref
           val thisSelection = otherSystem.actorSelection(s"akka.tcp://this-system@localhost:${port(thisSystem, "tcp")}/user/echo")
-          within(5 seconds) {
+          within(5.seconds) {
             awaitAssert {
               thisSelection.tell("ping", otherSender)
-              assert(otherProbe.expectMsgType[(String, ActorRef)](500 millis)._1 == "pong")
+              assert(otherProbe.expectMsgType[(String, ActorRef)](500.millis)._1 == "pong")
             }
           }
         } finally {

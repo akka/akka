@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2009-2014 Typesafe Inc. <http://www.typesafe.com>
+ * Copyright (C) 2009-2015 Typesafe Inc. <http://www.typesafe.com>
  */
 package akka.cluster.routing
 
@@ -37,7 +37,7 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(debugConfig(on = false).
-    withFallback(ConfigFactory.parseString("""
+    withFallback(ConfigFactory.parseString(s"""
       common-router-settings = {
         router = consistent-hashing-pool
         nr-of-instances = 10
@@ -48,9 +48,9 @@ object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
       }
 
       akka.actor.deployment {
-        /router1 = ${common-router-settings}
-        /router3 = ${common-router-settings}
-        /router4 = ${common-router-settings}
+        /router1 = $${common-router-settings}
+        /router3 = $${common-router-settings}
+        /router4 = $${common-router-settings}
       }
       """)).
     withFallback(MultiNodeClusterSpec.clusterConfig))
@@ -88,9 +88,9 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
     "create routees from configuration" in {
       runOn(first) {
         // it may take some time until router receives cluster member events
-        awaitAssert { currentRoutees(router1).size should be(4) }
+        awaitAssert { currentRoutees(router1).size should ===(4) }
         val routees = currentRoutees(router1)
-        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should be(Set(address(first), address(second)))
+        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(Set(address(first), address(second)))
       }
       enterBarrier("after-2")
     }
@@ -111,9 +111,9 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
 
       runOn(first) {
         // it may take some time until router receives cluster member events
-        awaitAssert { currentRoutees(router1).size should be(6) }
+        awaitAssert { currentRoutees(router1).size should ===(6) }
         val routees = currentRoutees(router1)
-        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should be(roles.map(address).toSet)
+        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(roles.map(address).toSet)
       }
 
       enterBarrier("after-3")
@@ -126,9 +126,9 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
           props(Props[Echo]),
           "router2")
         // it may take some time until router receives cluster member events
-        awaitAssert { currentRoutees(router2).size should be(6) }
+        awaitAssert { currentRoutees(router2).size should ===(6) }
         val routees = currentRoutees(router2)
-        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should be(roles.map(address).toSet)
+        routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(roles.map(address).toSet)
       }
 
       enterBarrier("after-4")
@@ -168,9 +168,9 @@ abstract class ClusterConsistentHashingRouterSpec extends MultiNodeSpec(ClusterC
 
     def assertHashMapping(router: ActorRef): Unit = {
       // it may take some time until router receives cluster member events
-      awaitAssert { currentRoutees(router).size should be(6) }
+      awaitAssert { currentRoutees(router).size should ===(6) }
       val routees = currentRoutees(router)
-      routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should be(roles.map(address).toSet)
+      routees.map { case ActorRefRoutee(ref) ⇒ fullAddress(ref) }.toSet should ===(roles.map(address).toSet)
 
       router ! "a"
       val destinationA = expectMsgType[ActorRef]
