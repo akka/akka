@@ -401,7 +401,7 @@ class UriSpec extends WordSpec with Matchers {
       normalize("http://:80/foo") shouldEqual "http:///foo"
       normalize("http://:8080/foo") shouldEqual "http://:8080/foo"
       normalize("ftp://example.com:21") shouldEqual "ftp://example.com"
-      normalize("example.com:21") shouldEqual "example.com://21" // example.com is parsed as the SCHEME (which is correct)
+      normalize("example.com:21") shouldEqual "example.com:21" // example.com is parsed as the SCHEME (which is correct)
       normalize("//example.com:21") shouldEqual "//example.com:21"
       normalize("ftp://example.com:22") shouldEqual "ftp://example.com:22"
 
@@ -512,7 +512,7 @@ class UriSpec extends WordSpec with Matchers {
       def resolve(uri: String) = parseAndResolve(uri, base).toString
 
       "normal examples" in {
-        resolve("g:h") shouldEqual "g://h"
+        resolve("g:h") shouldEqual "g:h"
         resolve("g") shouldEqual "http://a/b/c/g"
         resolve("./g") shouldEqual "http://a/b/c/g"
         resolve("g/") shouldEqual "http://a/b/c/g/"
@@ -560,7 +560,7 @@ class UriSpec extends WordSpec with Matchers {
         resolve("g#s/./x") shouldEqual "http://a/b/c/g#s/./x"
         resolve("g#s/../x") shouldEqual "http://a/b/c/g#s/../x"
 
-        resolve("http:g") shouldEqual "http://g"
+        resolve("http:g") shouldEqual "http:g"
       }
     }
 

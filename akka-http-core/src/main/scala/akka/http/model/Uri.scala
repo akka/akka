@@ -790,12 +790,15 @@ object UriRendering {
   def renderUriWithoutFragment[R <: Rendering](r: R, value: Uri, charset: Charset): r.type = {
     import value._
     if (isAbsolute) r ~~ scheme ~~ ':'
-    renderAuthority(r, authority, scheme, charset)
+    renderAuthority(r, authority, path, scheme, charset)
     renderPath(r, path, charset, encodeFirstSegmentColons = isRelative)
     if (query.nonEmpty) renderQuery(r ~~ '?', query, charset) else r
   }
 
   def renderAuthority[R <: Rendering](r: R, authority: Authority, scheme: String, charset: Charset): r.type =
+    renderAuthority(r, authority, Path.Empty, scheme, charset)
+
+  def renderAuthority[R <: Rendering](r: R, authority: Authority, path: Path, scheme: String, charset: Charset): r.type =
     if (authority.nonEmpty) {
       import authority._
       r ~~ '/' ~~ '/'
@@ -804,7 +807,7 @@ object UriRendering {
       if (port != 0) r ~~ ':' ~~ port else r
     } else scheme match {
       case "" | "mailto" ⇒ r
-      case _             ⇒ r ~~ '/' ~~ '/'
+      case _             ⇒ if (path.isEmpty || path.startsWithSlash) r ~~ '/' ~~ '/' else r
     }
 
   def renderPath[R <: Rendering](r: R, path: Path, charset: Charset, encodeFirstSegmentColons: Boolean = false): r.type =
