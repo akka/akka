@@ -74,7 +74,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from client side" in new TestSetup {
+    "properly handle connection abort via PoisonPill from client side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       clientHandler.send(clientConnection, PoisonPill)
       verifyActorTermination(clientConnection)
@@ -83,7 +83,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from client side after chit-chat" in new TestSetup {
+    "properly handle connection abort via PoisonPill from client side after chit-chat" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
 
@@ -94,7 +94,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(serverConnection)
     }
 
-    "properly handle connection abort via PosionPill from server side" in new TestSetup {
+    "properly handle connection abort via PoisonPill from server side" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       serverHandler.send(serverConnection, PoisonPill)
       verifyActorTermination(serverConnection)
@@ -103,7 +103,7 @@ class TcpIntegrationSpec extends AkkaSpec("""
       verifyActorTermination(clientConnection)
     }
 
-    "properly handle connection abort via PosionPill from server side after chit-chat" in new TestSetup {
+    "properly handle connection abort via PoisonPill from server side after chit-chat" in new TestSetup {
       val (clientHandler, clientConnection, serverHandler, serverConnection) = establishNewClientConnection()
       chitchat(clientHandler, clientConnection, serverHandler, serverConnection)
 
