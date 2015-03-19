@@ -96,7 +96,7 @@ A Little Bit of Theory
 
 The `Actor Model`_ as defined by Hewitt, Bishop and Steiger in 1973 is a
 computational model that expresses exactly what it means for computation to be
-distributed. The processing units—Actors—can only community by exchanging
+distributed. The processing units—Actors—can only communicate by exchanging
 messages and upon reception of a message an Actor can do the following three
 fundamental actions:
 
@@ -125,7 +125,7 @@ a constrained operation: the successor must handle the same type of messages as
 its predecessor. This is necessary in order to not invalidate the addresses
 that refer to this Actor.
 
-What this enables is that wherever a message is sent to an Actor we can
+What this enables is that whenever a message is sent to an Actor we can
 statically ensure that the type of the message is one that the Actor declares
 to handle—we can avoid the mistake of sending completely pointless messages.
 What we cannot statically ensure, though, is that the behavior behind the
@@ -163,11 +163,11 @@ client Actors. The protocol definition could look like the following:
 
 Initially the client Actors only get access to an ``ActorRef[GetSession]``
 which allows them to make the first step. Once a client’s session has been
-established it gets a :class:`SessionGranted` message that contains a handle to
+established it gets a :class:`SessionGranted` message that contains a ``handle`` to
 unlock the next protocol step, posting messages. The :class:`PostMessage`
 command will need to be sent to this particular address that represents the
 session that has been added to the chat room. The other aspect of a session is
-that the client has revealed its own address so that subsequent
+that the client has revealed its own address, via the ``replyTo`` argument, so that subsequent
 :class:`MessagePosted` events can be sent to it.
 
 This illustrates how Actors can express more than just the equivalent of method
