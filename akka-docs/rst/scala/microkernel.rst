@@ -2,15 +2,15 @@
 .. _microkernel-scala:
 
 Microkernel
-===================
+===========
 
 The purpose of the Akka Microkernel is to offer a bundling mechanism so that you can distribute
 an Akka application as a single payload, without the need to run in a Java Application Server or manually
 having to create a launcher script.
 
-The Akka Microkernel is included in the Akka download found at `downloads`_.
-
-.. _downloads: http://akka.io/downloads
+.. warning:: Akka Microkernel will be deprecated and removed. It will be replaced by using an ordinary
+   user defined main class and packaging with `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_
+   or `Typesafe ConductR <http://typesafe.com/products/conductr>`_.
 
 To run an application with the microkernel you need to create a Bootable class 
 that handles the startup and shutdown the application.
@@ -20,28 +20,43 @@ of creating a Bootable):
 
 .. includecode:: ../../../akka-samples/akka-sample-hello-kernel/src/main/scala/sample/kernel/hello/HelloKernel.scala
 
+`sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ is the recommended tool for creating
+distributions of Akka applications when using sbt.
 
-Add `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ to the plugins.sbt
+Define sbt version in ``project/build.properties`` file: 
 
 .. code-block:: none
 
-   addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "0.8.0-M2")
+    sbt.version=0.13.7
 
-Use the package settings for ``akka_application``, and specify the mainClass in build.sbt
+Add `sbt-native-packager <https://github.com/sbt/sbt-native-packager>`_ in ``project/plugins.sbt`` file:
+
+.. code-block:: none
+
+   addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.0.0-RC1")
+
+Use the package settings and specify the mainClass in ``build.sbt`` file:
 
 .. includecode:: ../../../akka-samples/akka-sample-hello-kernel/build.sbt
 
 
-Use sbt task ``stage`` to generate the start script. Also you can use task ``universal:packageZipTarball`` to package the application.
+.. note:: Use the ``JavaServerAppPackaging``. Don't use ``AkkaAppPackaging`` (previously named 
+   ``packageArchetype.akka_application``, since it doesn't have the same flexibility and quality
+   as the ``JavaServerAppPackaging``.
+
+Use sbt task ``dist`` package the application.
 
 To start the application (on a unix-based system):
 
 .. code-block:: none
 
-   ./target/universal/stage/bin/hello-kernel
+   cd target/universal/
+   unzip hello-kernel-0.1.zip
+   chmod u+x hello-kernel-0.1/bin/hello-kernel
+   hello-kernel-0.1/bin/hello-kernel sample.kernel.hello.HelloKernel
 
 Use ``Ctrl-C`` to interrupt and exit the microkernel.
 
-On a Windows machine you can also use the ``target\universal\stage\bin\hello-kernel.bat`` script.
+On a Windows machine you can also use the ``bin\hello-kernel.bat`` script.
 
 
