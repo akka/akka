@@ -10,10 +10,9 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import akka.util.Timeout
 import akka.event.{ Logging, LoggingAdapter }
-import akka.http.model.parser.HeaderParser
 import akka.http.marshalling._
 import akka.http.model._
-import headers.{ HttpCredentials, RawHeader }
+import headers.HttpCredentials
 import HttpMethods._
 
 trait RequestBuilding extends TransformerPipelineSupport {
@@ -66,10 +65,11 @@ trait RequestBuilding extends TransformerPipelineSupport {
 
   def addHeader(header: HttpHeader): RequestTransformer = _.mapHeaders(header +: _)
 
-  def addHeader(headerName: String, headerValue: String): RequestTransformer = {
-    val rawHeader = RawHeader(headerName, headerValue)
-    addHeader(HeaderParser.parseHeader(rawHeader).left.flatMap(_ ⇒ Right(rawHeader)).right.get)
-  }
+  def addHeader(headerName: String, headerValue: String): RequestTransformer =
+    HttpHeader.parse(headerName, headerValue) match {
+      case HttpHeader.ParsingResult.Ok(h, Nil) ⇒ addHeader(h)
+      case result                              ⇒ throw new IllegalArgumentException(result.errors.head.formatPretty)
+    }
 
   def addHeaders(first: HttpHeader, more: HttpHeader*): RequestTransformer = _.mapHeaders(_ ++ (first +: more))
 
