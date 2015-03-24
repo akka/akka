@@ -142,6 +142,58 @@ For defining a ``Flow<T>`` we need to expose both an undefined source and sink:
 
 .. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/StreamPartialFlowGraphDocTest.java#flow-from-partial-flow-graph
 
+.. _bidi-flow-java:
+
+Bidirectional Flows
+-------------------
+
+A graph topology that is often useful is that of two flows going in opposite
+directions. Take for example a codec stage that serializes outgoing messages
+and deserializes incoming octet streams. Another such stage could add a framing
+protocol that attaches a length header to outgoing data and parses incoming
+frames back into the original octet stream chunks. These two stages are meant
+to be composed, applying one atop the other as part of a protocol stack. For
+this purpose exists the special type :class:`BidiFlow` which is a graph that
+has exactly two open inlets and two open outlets. The corresponding shape is
+called :ref:`BidiShape` and is defined like this:
+
+.. includecode:: ../../../akka-stream/src/main/scala/akka/stream/Shape.scala
+   :include: bidi-shape
+   :exclude: implementation-details-elided
+
+A bidirectional flow is defined just like a unidirectional :ref:`Flow` as
+demonstrated for the codec mentioned above:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java
+   :include: codec
+   :exclude: implementation-details-elided
+
+The first version resembles the partial graph constructor, while for the simple
+case of a functional 1:1 transformation there is a concise convenience method
+as shown on the last line. The implementation of the two functions is not
+difficult either:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java#codec-impl
+
+In this way you could easily integrate any other serialization library that
+turns an object into a sequence of bytes.
+
+The other stage that we talked about is a little more involved since reversing
+a framing protocol means that any received chunk of bytes may correspond to
+zero or more messages. This is best implemented using a :class:`PushPullStage`
+(see also :ref:`stream-using-push-pull-stage-java`).
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java#framing
+
+With these implementations we can build a protocol stack and test it:
+
+.. includecode:: ../../../akka-samples/akka-docs-java-lambda/src/test/java/docs/stream/BidiFlowDocTest.java#compose
+
+This example demonstrates how :class:`BidiFlow` subgraphs can be hooked 
+together and also turned around with the ``.reversed()`` method. The test
+simulates both parties of a network communication protocol without actually
+having to open a network connection—the flows can just be connected directly.
+
 .. _graph-cycles-java:
 
 Graph cycles, liveness and deadlocks

@@ -18,6 +18,7 @@ import scala.language.higherKinds
 import scala.language.implicitConversions
 import akka.stream.stage.Stage
 import akka.stream.impl.StreamLayout
+import scala.annotation.varargs
 
 /** Java API */
 object Source {
@@ -135,6 +136,12 @@ object Source {
     new Source(scaladsl.Source.single(element))
 
   /**
+   * Create a `Source` with the given elements.
+   */
+  def elements[T](elems: T*): Source[T, Unit] =
+    new Source(scaladsl.Source(() ⇒ elems.iterator))
+
+  /**
    * Create a `Source` that will continually emit the given element.
    */
   def repeat[T](element: T): Source[T, Unit] =
@@ -159,6 +166,12 @@ object Source {
    */
   def concat[T, M1, M2](first: Source[T, M1], second: Source[T, M2]): Source[T, (M1, M2)] =
     new Source(scaladsl.Source.concat(first.asScala, second.asScala))
+
+  /**
+   * A graph with the shape of a source logically is a source, this method makes
+   * it so also in type.
+   */
+  def wrap[T, M](g: Graph[SourceShape[T], M]): Source[T, M] = new Source(scaladsl.Source.wrap(g))
 }
 
 /**

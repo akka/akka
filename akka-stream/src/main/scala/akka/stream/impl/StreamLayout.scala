@@ -42,6 +42,7 @@ private[akka] object StreamLayout {
     def isSink: Boolean = (inPorts.size == 1) && outPorts.isEmpty
     def isSource: Boolean = (outPorts.size == 1) && inPorts.isEmpty
     def isFlow: Boolean = (inPorts.size == 1) && (outPorts.size == 1)
+    def isBidiFlow: Boolean = (inPorts.size == 2) && (outPorts.size == 2)
 
     def growConnect(that: Module, from: OutPort, to: InPort): Module =
       growConnect(that, from, to, Keep.left)
