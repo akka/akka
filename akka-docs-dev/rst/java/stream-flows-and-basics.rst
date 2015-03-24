@@ -33,7 +33,7 @@ Processing Stage
 
 Defining and running streams
 ----------------------------
-Linear processing pipelines can be expressed in Akka Streams using the following three core abstractions:
+Linear processing pipelines can be expressed in Akka Streams using the following core abstractions:
 
 Source
   A processing stage with *exactly one output*, emitting data elements whenever downstream processing stages are
