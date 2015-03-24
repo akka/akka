@@ -360,16 +360,25 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     create(write)
   }
 
-  def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Event, tail: WriteCommand): PendingBufferWrite = {
-    val buffer = bufferPool.acquire()
-    try {
-      val copied = data.copyToBuffer(buffer)
-      buffer.flip()
-      new PendingBufferWrite(commander, data.drop(copied), ack, buffer, tail)
-    } catch {
-      case NonFatal(e) ⇒
-        bufferPool.release(buffer)
-        throw e
+  //TODO: move canWrapAsByteBuffer into PendingBufferWrite#doWrite
+  //TODO: check chunk size
+  def PendingBufferWrite(commander: ActorRef, data: ByteString, ack: Any, tail: WriteCommand): PendingBufferWrite = {
+    if (data.headByteString.canWrapAsByteBuffer) {
+      val head = data.headByteString
+      val remaining = data.drop(head.length)
+
+      new PendingBufferWrite(commander, remaining, ack, head.asByteBuffer, tail)
+    } else {
+      val buffer = bufferPool.acquire()
+      try {
+        val copied = data.copyToBuffer(buffer)
+        buffer.flip()
+        new PendingBufferWrite(commander, data.drop(copied), ack, buffer, tail)
+      } catch {
+        case NonFatal(e) ⇒
+          bufferPool.release(buffer)
+          throw e
+      }
     }
   }
 
@@ -389,6 +398,12 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
           if (data eq remainingData) this
           else new PendingBufferWrite(commander, data, ack, buffer, tail) // copy with updated remainingData
 
+        } else if (data.nonEmpty && buffer.isReadOnly) {
+          val head = data.headByteString
+          val remaining = data.drop(head.length)
+
+          //we didnt have a temp buffer, but we might afterwards
+          PendingBufferWrite(commander, remaining, ack, tail).doWrite(info)
         } else if (data.nonEmpty) {
           buffer.clear()
           val copied = data.copyToBuffer(buffer)

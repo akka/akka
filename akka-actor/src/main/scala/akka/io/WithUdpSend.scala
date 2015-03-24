@@ -4,10 +4,12 @@
 package akka.io
 
 import java.net.InetSocketAddress
+import java.nio.ByteBuffer
 import java.nio.channels.{ SelectionKey, DatagramChannel }
 import akka.actor.{ ActorRef, ActorLogging, Actor }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
+import akka.util.ByteString
 
 import scala.util.control.NonFatal
 
@@ -67,11 +69,8 @@ private[io] trait WithUdpSend {
   }
 
   private def doSend(registration: ChannelRegistration): Unit = {
-    val buffer = udp.bufferPool.acquire()
+    val buffer = udp.bufferPool.readOnlyOrAcquireAndCopy(pendingSend.payload)
     try {
-      buffer.clear()
-      pendingSend.payload.copyToBuffer(buffer)
-      buffer.flip()
       val writtenBytes = channel.send(buffer, pendingSend.target)
       if (TraceLogging) log.debug("Wrote [{}] bytes to channel", writtenBytes)
 

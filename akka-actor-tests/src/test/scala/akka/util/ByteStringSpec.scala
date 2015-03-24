@@ -4,6 +4,7 @@
 
 package akka.util
 
+import akka.io.DirectByteBufferPool
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
 import org.scalatest.prop.Checkers
@@ -298,7 +299,37 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         }
       }
 
-      "asByteBuffers" in {
+      "asByteBuffer respects canWrapAsByteBuffer" in {
+        check { (slice: ArraySlice[Byte], isDense: Boolean) ⇒
+          val (arr, from, until) = slice
+          val len = until - from
+          val denseUnsafeBs = ByteString.ByteString1(arr)
+          val additionalBs = ByteString.ByteString1(Array[Byte](1, 2, 3))
+          val bs = if (isDense) denseUnsafeBs
+          else ByteString.ByteStrings(denseUnsafeBs, additionalBs)
+
+          //should directly use the underlying buffer
+          if (len < 1) true
+          else {
+            //make buffer before mutation
+            val testByteBuffer = bs.asByteBuffer
+
+            val origByte = arr(0)
+            val testByte = (origByte - 1).toByte
+            arr(0) = testByte
+
+            require(bs.canWrapAsByteBuffer == isDense, "all dense arrays should wrap!")
+
+            //test whether mutations to the underling array are visible
+            if (bs.canWrapAsByteBuffer)
+              bs(0) == testByte && testByteBuffer.get(0) == testByte
+            else
+              bs(0) == testByte && testByteBuffer.get(0) == origByte
+          }
+        }
+      }
+
+      "calling asByteBuffers" in {
         check { (a: ByteString) ⇒ if (a.isCompact) a.asByteBuffers.size == 1 && a.asByteBuffers.head == a.asByteBuffer else a.asByteBuffers.size > 0 }
         check { (a: ByteString) ⇒ a.asByteBuffers.foldLeft(ByteString.empty) { (bs, bb) ⇒ bs ++ ByteString(bb) } == a }
         check { (a: ByteString) ⇒ a.asByteBuffers.forall(_.isReadOnly) }
@@ -551,6 +582,40 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "encoding Float in little-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Double in big-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, BIG_ENDIAN) } }
       "encoding Double in little-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, LITTLE_ENDIAN) } }
+    }
+  }
+
+  "A DirectByteBufferPool" must {
+    "ignore read-only ByteBuffers" when {
+      "wrapped from ByteString" in {
+        val pool = new DirectByteBufferPool(10, 10)
+        val arr = Array[Byte](1, 2, 3, 4)
+        val compactBs = ByteString.ByteString1(arr)
+        val writeableByteBuffer = ByteBuffer.wrap(arr.clone())
+
+        require(compactBs.asByteBuffer.isReadOnly, "ByteString didnt produce a read-only buffer")
+
+        require(pool.size == 0, "started nonEmpty")
+        pool.release(compactBs.asByteBuffer)
+        require(pool.size == 0, "tried to repool a read-only buffer!")
+        pool.release(writeableByteBuffer)
+        require(pool.size == 1)
+      }
+    }
+  }
+
+  "A ByteBuffer" must {
+    "have equality in 'compactness' logic to ByteString" in {
+      check { slice: ArraySlice[Byte] ⇒
+        val (data, from, to) = slice
+        val len = to - from
+
+        val bs = ByteString.ByteString1(data, from, len)
+        val bb = bs.asByteBuffer
+        val bbCompact = !(bb.remaining < data.length)
+
+        bbCompact == bs.isCompact || len == 0
+      }
     }
   }
 }
