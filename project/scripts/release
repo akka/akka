@@ -155,7 +155,7 @@ while true; do
     -t | --run-tests ) run_tests=true; shift ;;
     -s | --server ) release_server=$2; shift 2 ;;
     -p | --path ) release_path=$2; shift 2 ;;
-    -e | --real-run) dry_run=false; shift ;;
+    -e | --real-run) unset dry_run; shift ;;
     -m | --no-mima) no_mima=true; shift ;;
     -r | --no-revert) no_revert=true; shift ;;
     * ) break ;;

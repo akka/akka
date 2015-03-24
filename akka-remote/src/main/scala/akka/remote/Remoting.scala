@@ -22,7 +22,6 @@ import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
 import java.util.concurrent.ConcurrentHashMap
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.event.AddressTerminatedTopic
 
 /**
  * INTERNAL API
@@ -419,10 +418,10 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
   var pendingReadHandoffs = Map[ActorRef, AkkaProtocolHandle]()
   var stashedInbound = Map[ActorRef, Vector[InboundAssociation]]()
 
-  def handleStashedInbound(endpoint: ActorRef) {
+  def handleStashedInbound(endpoint: ActorRef, writerIsIdle: Boolean) {
     val stashed = stashedInbound.getOrElse(endpoint, Vector.empty)
     stashedInbound -= endpoint
-    stashed foreach (handleInboundAssociation _)
+    stashed foreach (handleInboundAssociation(_, writerIsIdle))
   }
 
   def keepQuarantinedOr(remoteAddress: Address)(body: ⇒ Unit): Unit = endpoints.refuseUid(remoteAddress) match {
@@ -442,7 +441,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             remoteAddress, settings.RetryGateClosedFor.toMillis, reason.getMessage)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
-        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case ShutDownAssociation(localAddress, remoteAddress, _) ⇒
@@ -452,17 +450,17 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             remoteAddress, settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
-        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
-      case HopelessAssociation(localAddress, remoteAddress, Some(uid), _) ⇒
+      case HopelessAssociation(localAddress, remoteAddress, Some(uid), reason) ⇒
+        log.error(reason, "Association to [{}] with UID [{}] irrecoverably failed. Quarantining address.",
+          remoteAddress, uid)
         settings.QuarantineDuration match {
           case d: FiniteDuration ⇒
             endpoints.markAsQuarantined(remoteAddress, uid, Deadline.now + d)
             eventPublisher.notifyListeners(QuarantinedEvent(remoteAddress, uid))
           case _ ⇒ // disabled
         }
-        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case HopelessAssociation(localAddress, remoteAddress, None, _) ⇒
@@ -472,7 +470,6 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
             remoteAddress, settings.RetryGateClosedFor.toMillis)
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
-        AddressTerminatedTopic(context.system).publish(AddressTerminated(remoteAddress))
         Stop
 
       case NonFatal(e) ⇒
@@ -583,18 +580,20 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       }
 
     case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒
-      handleInboundAssociation(ia)
+      handleInboundAssociation(ia, writerIsIdle = false)
     case EndpointWriter.StoppedReading(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
     case Terminated(endpoint) ⇒
       acceptPendingReader(takingOverFrom = endpoint)
       endpoints.unregisterEndpoint(endpoint)
-      handleStashedInbound(endpoint)
+      handleStashedInbound(endpoint, writerIsIdle = false)
     case EndpointWriter.TookOver(endpoint, handle) ⇒
       removePendingReader(takingOverFrom = endpoint, withHandle = handle)
     case ReliableDeliverySupervisor.GotUid(uid, remoteAddress) ⇒
       endpoints.registerWritableEndpointUid(remoteAddress, uid)
-      handleStashedInbound(sender)
+      handleStashedInbound(sender(), writerIsIdle = false)
+    case ReliableDeliverySupervisor.Idle ⇒
+      handleStashedInbound(sender(), writerIsIdle = true)
     case Prune ⇒
       endpoints.prune()
     case ShutdownAndFlush ⇒
@@ -625,7 +624,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
     case Terminated(_)                             ⇒ // why should we care now?
   }
 
-  def handleInboundAssociation(ia: InboundAssociation): Unit = ia match {
+  def handleInboundAssociation(ia: InboundAssociation, writerIsIdle: Boolean): Unit = ia match {
     case ia @ InboundAssociation(handle: AkkaProtocolHandle) ⇒ endpoints.readOnlyEndpointFor(handle.remoteAddress) match {
       case Some(endpoint) ⇒
         pendingReadHandoffs.get(endpoint) foreach (_.disassociate())
@@ -636,7 +635,13 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
           handle.disassociate(AssociationHandle.Quarantined)
         else endpoints.writableEndpointWithPolicyFor(handle.remoteAddress) match {
           case Some(Pass(ep, None, _)) ⇒
-            stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
+            // Idle writer will never send a GotUid or a Terminated so we need to "provoke it"
+            // to get an unstash event
+            if (!writerIsIdle) {
+              ep ! ReliableDeliverySupervisor.IsIdle
+              stashedInbound += ep -> (stashedInbound.getOrElse(ep, Vector.empty) :+ ia)
+            } else
+              createAndRegisterEndpoint(handle, refuseUid = endpoints.refuseUid(handle.remoteAddress))
           case Some(Pass(ep, Some(uid), _)) ⇒
             if (handle.handshakeInfo.uid == uid) {
               pendingReadHandoffs.get(ep) foreach (_.disassociate())
@@ -669,7 +674,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter) extends
       endpoints.registerWritableEndpoint(handle.remoteAddress, Some(handle.handshakeInfo.uid), refuseUid, endpoint)
     else {
       endpoints.registerReadOnlyEndpoint(handle.remoteAddress, endpoint)
-      endpoints.removePolicy(handle.remoteAddress)
+      if (!endpoints.hasWritableEndpointFor(handle.remoteAddress))
+        endpoints.removePolicy(handle.remoteAddress)
     }
   }
 

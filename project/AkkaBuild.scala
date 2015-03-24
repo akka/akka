@@ -405,7 +405,7 @@ object AkkaBuild extends Build {
     aggregate = Seq(camelSampleJava, camelSampleScala, mainSampleJava, mainSampleScala, 
           remoteSampleJava, remoteSampleScala, clusterSampleJava, clusterSampleScala,
           fsmSampleScala, persistenceSampleJava, persistenceSampleScala,
-          multiNodeSampleScala, helloKernelSample, osgiDiningHakkersSample)
+          multiNodeSampleScala, osgiDiningHakkersSample)
   )
 
   lazy val camelSampleJava = Project(
@@ -443,12 +443,16 @@ object AkkaBuild extends Build {
     settings = sampleSettings
   ).setSbtFiles()
 
+  /* FIXME helloKernelSample is not included due to conflicting dependency to
+           bouncycastle openpgp from sbt-native-packager and sbt-pgp
+           java.lang.NoSuchMethodError: org.bouncycastle.openpgp.PGPSecretKeyRing
   lazy val helloKernelSample = Project(
     id = "akka-sample-hello-kernel",
     base = file("akka-samples/akka-sample-hello-kernel"),
     dependencies = Seq(kernel),
     settings = sampleSettings
   )
+  */
 
   lazy val remoteSampleJava = Project(
     id = "akka-sample-remote-java",
@@ -1064,7 +1068,44 @@ object AkkaBuild extends Build {
       ProblemFilters.exclude[MissingClassProblem]("akka.io.TcpConnection$UpdatePendingWrite"),
 
       // Change to optimize use of ForkJoin with Akka's Mailbox
-      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status")
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.Mailbox.status"),
+
+      // Changes introduced to internal remoting actors by #16623
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.unstashAcks"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.pendingAcks"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.scheduleAutoResend"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.autoResendTimer_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.rescheduleAutoResend"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.autoResendTimer"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck"),
+      ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.remote.ReliableDeliverySupervisor.bailoutAt"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.remote.ReliableDeliverySupervisor.lastCumulativeAck_="),
+      
+      // Change to improve cluster heartbeat sender, #16638
+      FilterAnyProblem("akka.cluster.HeartbeatNodeRing"),
+      FilterAnyProblem("akka.cluster.ClusterHeartbeatSenderState"),
+
+      //Changes to improve BatchingExecutor, bugfix #16327
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor.resubmitOnBlock"),
+      ProblemFilters.exclude[FinalClassProblem]("akka.dispatch.BatchingExecutor$Batch"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.initial"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.blockOn"),
+      ProblemFilters.exclude[FinalMethodProblem]("akka.dispatch.BatchingExecutor#Batch.run"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.akka$dispatch$BatchingExecutor$Batch$$parentBlockContext_="),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.dispatch.BatchingExecutor#Batch.this"),
+      
+      // Exclude observations from downed, #13875
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffReachable"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffSeen"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffUnreachable"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffRolesLeader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.ClusterEvent.diffLeader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.convergence"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.akka$cluster$Gossip$$convergenceMemberStatus"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.isLeader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.leader"),
+      ProblemFilters.exclude[MissingMethodProblem]("akka.cluster.Gossip.roleLeader")
     )
   }
 
@@ -1181,7 +1222,7 @@ object AkkaBuild extends Build {
       val packageName = "scala.*"
       val ScalaVersion = """(\d+)\.(\d+)\..*""".r
       val ScalaVersion(epoch, major) = version
-      versionedImport(packageName, s"$epoch.$major", s"$epoch.${major+1}")
+      versionedImport(packageName, s"$epoch.$major", s"$epoch.${major.toInt+1}")
     }
     def optionalResolution(packageName: String) = "%s;resolution:=optional".format(packageName)
     def versionedImport(packageName: String, lower: String, upper: String) = s"""$packageName;version="[$lower,$upper)""""
@@ -1196,7 +1237,7 @@ object Dependencies {
   import DependencyHelpers.ScalaVersionDependentModuleID._
 
   object Versions {
-    val crossScala = Seq("2.10.4", "2.11.4")
+    val crossScala = Seq("2.10.4", "2.11.5")
     val scala = crossScala.head
     val scalaStmVersion  = System.getProperty("akka.build.scalaStmVersion", "0.7")
     val genJavaDocVersion = System.getProperty("akka.build.genJavaDocVersion", "0.8")

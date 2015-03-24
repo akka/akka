@@ -586,6 +586,38 @@ private[akka] class VirtualPathContainer(
 
   private val children = new ConcurrentHashMap[String, InternalActorRef]
 
+  /**
+   * In [[ActorSelectionMessage]]s only [[SelectChildName]] elements
+   * are supported, otherwise messages are sent to [[EmptyLocalActorRef]].
+   */
+  override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = message match {
+    case sel @ ActorSelectionMessage(msg, elements, wildcardFanOut) ⇒ {
+      require(elements.nonEmpty)
+
+      def emptyRef = new EmptyLocalActorRef(provider, path / sel.elements.map(_.toString),
+        provider.systemGuardian.underlying.system.eventStream)
+
+      elements.head match {
+        case SelectChildName(name) ⇒
+          getChild(name) match {
+            case null ⇒
+              if (!wildcardFanOut)
+                emptyRef.tell(msg, sender)
+            case child ⇒
+              if (elements.tail.isEmpty) {
+                child ! msg
+              } else if (!wildcardFanOut) {
+                emptyRef.tell(msg, sender)
+              }
+          }
+        case _ ⇒
+          if (!wildcardFanOut)
+            emptyRef.tell(msg, sender)
+      }
+    }
+    case _ ⇒ super.!(message)
+  }
+
   def addChild(name: String, ref: InternalActorRef): Unit = {
     children.put(name, ref) match {
       case null ⇒ // okay
