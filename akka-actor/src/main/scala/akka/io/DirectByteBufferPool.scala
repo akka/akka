@@ -19,8 +19,12 @@ trait BufferPool {
  * A buffer pool which keeps a free list of direct buffers of a specified default
  * size in a simple fixed size stack.
  *
- * If the stack is full a buffer offered back is not kept but will be let for
- * being freed by normal garbage collection.
+ * If the stack is full the buffer is de-referenced and available to be
+ * freed by normal garbage collection.
+ *
+ * Using a direct ByteBuffer when dealing with NIO operations has been proven
+ * to be faster than wrapping on-heap Arrays. There is ultimately no performance
+ * benefit to wrapping in-heap JVM data when writing with NIO.
  */
 private[akka] class DirectByteBufferPool(defaultBufferSize: Int, maxPoolEntries: Int) extends BufferPool {
   private[this] val locked = new AtomicBoolean(false)
