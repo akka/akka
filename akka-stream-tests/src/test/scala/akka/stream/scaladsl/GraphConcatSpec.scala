@@ -103,8 +103,11 @@ class GraphConcatSpec extends TwoStreamsSetup {
       subscriber2.expectSubscriptionAndError(TestException)
     }
 
-    "work with one delayed failed and first nonempty publisher" in {
-      pending // FIXME: This relies on materialization order!!
+    "work with one nonempty and one delayed failed publisher" in {
+      // This test and the next one are materialization order dependent and rely on the fact
+      // that there are only 3 submodules in the graph that gets created and that an immutable
+      // set (what they are stored in internally) of size 4 or less is an optimized version that
+      // traverses in insertion order
       val subscriber = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
       subscriber.expectSubscription().request(5)
 
@@ -116,8 +119,11 @@ class GraphConcatSpec extends TwoStreamsSetup {
       if (!errorSignalled) subscriber.expectSubscriptionAndError(TestException)
     }
 
-    "work with one delayed failed and second nonempty publisher" in {
-      pending // FIXME: This relies on materialization order!!
+    "work with one delayed failed and one nonempty publisher" in {
+      // This test and the previous one are materialization order dependent and rely on the fact
+      // that there are only 3 submodules in the graph that gets created and that an immutable
+      // set (what they are stored in internally) of size 4 or less is an optimized version that
+      // traverses in insertion order
       val subscriber = setup(soonToFailPublisher, nonemptyPublisher(1 to 4))
       subscriber.expectSubscription().request(5)
 
