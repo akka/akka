@@ -4,6 +4,7 @@
 
 package akka.util
 
+import java.io.OutputStream
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
@@ -95,6 +96,7 @@ object ByteString {
 
   private[akka] object ByteString1C {
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
+    private[akka] val SerializationIdentity = 1.toByte
   }
 
   /**
@@ -125,6 +127,8 @@ object ByteString {
     override def slice(from: Int, until: Int): ByteString =
       if ((from != 0) || (until != length)) toByteString1.slice(from, until)
       else this
+
+    private[akka] def writeToOutputStream(os: OutputStream): Unit = os.write(bytes)
   }
 
   private[akka] object ByteString1 {
@@ -132,12 +136,14 @@ object ByteString {
     def apply(bytes: Array[Byte]): ByteString1 = ByteString1(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
       if (length == 0) empty else new ByteString1(bytes, startIndex, length)
+
+    private[akka] val SerializationIdentity = 0.toByte
   }
 
   /**
    * An unfragmented ByteString.
    */
-  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString {
+  final class ByteString1 private (private val bytes: Array[Byte], private val startIndex: Int, val length: Int) extends ByteString with Serializable {
 
     private def this(bytes: Array[Byte]) = this(bytes, 0, bytes.length)
 
@@ -152,6 +158,9 @@ object ByteString {
       else
         throw new IndexOutOfBoundsException(index.toString)
     }
+
+    private[akka] def writeToOutputStream(os: OutputStream): Unit =
+      os.write(bytes, startIndex, length)
 
     def isCompact: Boolean = (length == bytes.length)
 
@@ -181,6 +190,8 @@ object ByteString {
         case bs: ByteStrings ⇒ ByteStrings(this, bs)
       }
     }
+
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   private[akka] object ByteStrings {
@@ -222,12 +233,13 @@ object ByteString {
         if (b2.isEmpty) 0 else 2
       else if (b2.isEmpty) 1 else 3
 
+    private[akka] val SerializationIdentity = 2.toByte
   }
 
   /**
    * A ByteString with 2 or more fragments.
    */
-  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString {
+  final class ByteStrings private (private[akka] val bytestrings: Vector[ByteString1], val length: Int) extends ByteString with Serializable {
     if (bytestrings.isEmpty) throw new IllegalArgumentException("bytestrings must not be empty")
 
     def apply(idx: Int): Byte =
@@ -274,8 +286,44 @@ object ByteString {
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = bytestrings map { _.asByteBuffer }
 
     def decodeString(charset: String): String = compact.decodeString(charset)
+
+    private[akka] def writeToOutputStream(os: OutputStream): Unit =
+      bytestrings.foreach(_.writeToOutputStream(os))
+
+    protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
+  @SerialVersionUID(1L)
+  private class SerializationProxy(@transient private var orig: ByteString) extends Serializable {
+    private def writeObject(out: java.io.ObjectOutputStream) {
+      val serType = orig match {
+        case _: ByteString1  ⇒ ByteString1.SerializationIdentity
+        case _: ByteString1C ⇒ ByteString1C.SerializationIdentity
+        case _: ByteStrings  ⇒ ByteStrings.SerializationIdentity
+      }
+      out.writeByte(serType)
+      out.writeInt(orig.length)
+      orig.writeToOutputStream(out)
+    }
+
+    private def readObject(in: java.io.ObjectInputStream) {
+      val serType = in.readByte()
+      val s = in.readInt()
+
+      val arr = new Array[Byte](s)
+      val bs = ByteString1C(arr).toByteString1
+      in.read(arr, 0, s)
+
+      orig = serType match {
+        case ByteString1.SerializationIdentity  ⇒ ByteString1(arr)
+        case ByteString1C.SerializationIdentity ⇒ ByteString1C(arr)
+        case ByteStrings.SerializationIdentity  ⇒ ByteStrings(Vector(ByteString1(arr)))
+        case _                                  ⇒ throw new IllegalArgumentException("Invalid serialization id " + serType)
+      }
+    }
+
+    private def readResolve(): AnyRef = orig
+  }
 }
 
 /**
@@ -332,6 +380,8 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
     iterator.copyToArray(xs, start, len)
 
   override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
+
+  private[akka] def writeToOutputStream(os: OutputStream): Unit
 
   /**
    * Efficiently concatenate another ByteString.
