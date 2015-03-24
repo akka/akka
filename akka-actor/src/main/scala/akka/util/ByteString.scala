@@ -409,7 +409,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
   def asByteBuffers: immutable.Iterable[ByteBuffer]
 
   /**
-   * Indicates whether this ByteString can produce a wrapped ByteBuffer via [[asByteBuffer]].
+   * Indicates whether this ByteString can produce a wrapped ByteBuffer via [[ByteString#asByteBuffer]].
    */
   def canWrapAsByteBuffer: Boolean = isCompact
 
