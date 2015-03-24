@@ -8,9 +8,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 import org.scalatest.{ Matchers, FreeSpec }
 import akka.http.util.FastFuture._
-import akka.http.model.parser.HeaderParser
 import akka.http.model._
-import headers._
 import MediaTypes._
 import HttpCharsets._
 
@@ -116,9 +114,9 @@ class ContentNegotiationSpec extends FreeSpec with Matchers {
       if (example != "(without headers)") {
         example.split('\n').toList map { rawHeader ⇒
           val Array(name, value) = rawHeader.split(':')
-          HeaderParser.parseHeader(RawHeader(name.trim, value.trim)) match {
-            case Right(header) ⇒ header
-            case Left(err)     ⇒ fail(err.formatPretty)
+          HttpHeader.parse(name.trim, value) match {
+            case HttpHeader.ParsingResult.Ok(header, Nil) ⇒ header
+            case result                                   ⇒ fail(result.errors.head.formatPretty)
           }
         }
       } else Nil
