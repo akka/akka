@@ -6,8 +6,11 @@ package docs.actor
 import language.postfixOps
 
 //#testkit
-import akka.testkit.{ AkkaSpec, ImplicitSender, EventFilter }
-import akka.actor.{ ActorRef, Props, Terminated }
+import akka.testkit.{ TestActors, TestKit, ImplicitSender }
+import org.scalatest.{ WordSpecLike, Matchers, BeforeAndAfterAll }
+import akka.testkit.{ ImplicitSender, EventFilter }
+import akka.actor.{ ActorSystem, ActorRef, Props, Terminated }
+import com.typesafe.config.ConfigFactory
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -16,8 +19,6 @@ object FaultHandlingDocSpec {
   import akka.actor.Actor
 
   //#child
-  //#supervisor
-  //#supervisor
   class Supervisor extends Actor {
     //#strategy
     import akka.actor.OneForOneStrategy
@@ -79,7 +80,6 @@ object FaultHandlingDocSpec {
 
     def receive = Actor.emptyBehavior
   }
-  //#supervisor
 
   //#child
   class Child extends Actor {
@@ -94,7 +94,20 @@ object FaultHandlingDocSpec {
 }
 
 //#testkit
-class FaultHandlingDocSpec extends AkkaSpec with ImplicitSender {
+class FaultHandlingDocSpec(_system: ActorSystem) extends TestKit(_system)
+  with ImplicitSender with WordSpecLike with Matchers with BeforeAndAfterAll {
+
+  def this() = this(ActorSystem("FaultHandlingDocSpec",
+    ConfigFactory.parseString("""
+      akka {
+        loggers = ["akka.testkit.TestEventListener"]
+        loglevel = "WARNING"
+      }
+      """)))
+
+  override def afterAll {
+    TestKit.shutdownActorSystem(system)
+  }
   //#testkit
 
   import FaultHandlingDocSpec._

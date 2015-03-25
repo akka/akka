@@ -66,7 +66,7 @@ object ByteString {
    */
   @varargs
   def fromInts(array: Int*): ByteString =
-    apply(array:_*)(scala.math.Numeric.IntIsIntegral)
+    apply(array: _*)(scala.math.Numeric.IntIsIntegral)
 
   /**
    * Creates a new ByteString which will contain the UTF-8 representation of the given String
