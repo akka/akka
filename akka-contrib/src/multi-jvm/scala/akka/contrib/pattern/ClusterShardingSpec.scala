@@ -316,6 +316,26 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       enterBarrier("after-4")
     }
 
+    "support proxy only mode" in within(10.seconds) {
+      runOn(second) {
+        val proxy = system.actorOf(ShardRegion.proxyProps(
+          typeName = "counter",
+          role = None,
+          coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
+          retryInterval = 1.second,
+          bufferSize = 1000,
+          idExtractor = idExtractor,
+          shardResolver = shardResolver),
+          name = "regionProxy")
+
+        proxy ! Get(1)
+        expectMsg(2)
+        proxy ! Get(2)
+        expectMsg(4)
+      }
+      enterBarrier("after-5")
+    }
+
     "failover shards on crashed node" in within(30 seconds) {
       // mute logging of deadLetters during shutdown of systems
       if (!log.isDebugEnabled)
@@ -346,7 +366,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         }
       }
 
-      enterBarrier("after-5")
+      enterBarrier("after-6")
     }
 
     "use third and fourth node" in within(15 seconds) {
@@ -396,7 +416,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         lastSender.path should ===(region.path / "4" / "4")
       }
 
-      enterBarrier("after-6")
+      enterBarrier("after-7")
     }
 
     "recover coordinator state after coordinator crash" in within(60 seconds) {
@@ -427,7 +447,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
       }
 
-      enterBarrier("after-7")
+      enterBarrier("after-8")
     }
 
     "rebalance to nodes with less shards" in within(60 seconds) {
@@ -459,29 +479,9 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         }
       }
 
-      enterBarrier("after-8")
+      enterBarrier("after-9")
 
     }
-  }
-
-  "support proxy only mode" in within(10.seconds) {
-    runOn(sixth) {
-      val proxy = system.actorOf(ShardRegion.proxyProps(
-        typeName = "counter",
-        role = None,
-        coordinatorPath = "/user/counterCoordinator/singleton/coordinator",
-        retryInterval = 1.second,
-        bufferSize = 1000,
-        idExtractor = idExtractor,
-        shardResolver = shardResolver),
-        name = "regionProxy")
-
-      proxy ! Get(1)
-      expectMsg(2)
-      proxy ! Get(2)
-      expectMsg(4)
-    }
-    enterBarrier("after-9")
   }
 
   "easy to use with extensions" in within(50.seconds) {
@@ -532,7 +532,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
       }
     }
 
-    enterBarrier("after-9")
+    enterBarrier("after-10")
 
   }
   "easy API for starting" in within(50.seconds) {
@@ -549,7 +549,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
 
       counterRegionViaStart should equal(counterRegionViaGet)
     }
-    enterBarrier("after-10")
+    enterBarrier("after-11")
 
   }
 
@@ -611,7 +611,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         expectMsg(3 seconds, ActorIdentity(3, None))
 
       }
-      enterBarrier("after-11")
+      enterBarrier("after-12")
     }
 
     "permanently stop entries which passivate" in within(15.seconds) {
@@ -682,7 +682,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         expectMsgType[ActorIdentity](3 seconds).ref should not be (None)
       }
 
-      enterBarrier("after-12")
+      enterBarrier("after-13")
     }
 
     "restart entries which stop without passivating" in within(50.seconds) {
@@ -708,7 +708,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         }, 5.seconds, 500.millis)
       }
 
-      enterBarrier("after-13")
+      enterBarrier("after-14")
     }
 
     "be migrated to new regions upon region failure" in within(15.seconds) {
@@ -748,7 +748,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         expectMsg(2)
       }
 
-      enterBarrier("after-14")
+      enterBarrier("after-15")
     }
 
     "ensure rebalance restarts shards" in within(50.seconds) {
@@ -784,7 +784,7 @@ class ClusterShardingSpec extends MultiNodeSpec(ClusterShardingSpec) with STMult
         }
       }
 
-      enterBarrier("after-15")
+      enterBarrier("after-16")
     }
   }
 }
