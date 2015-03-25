@@ -32,8 +32,8 @@ object Dependencies {
     val uncommonsMath = "org.uncommons.maths"         % "uncommons-maths"              % "1.2.2a" exclude("jfree", "jcommon") exclude("jfree", "jfreechart")      // ApacheV2
     val osgiCore      = "org.osgi"                    % "org.osgi.core"                % "4.3.1"       // ApacheV2
     val osgiCompendium= "org.osgi"                    % "org.osgi.compendium"          % "4.3.1"       // ApacheV2
-    val levelDB       = "org.iq80.leveldb"            % "leveldb"                      % "0.7"         // ApacheV2
-    val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"               % "1.7"         // New BSD
+
+    // TODO remove with metrics from akka-cluster
     val sigar         = "org.fusesource"              % "sigar"                        % "1.6.4"       // ApacheV2
 
     object Test {
@@ -67,6 +67,9 @@ object Dependencies {
     object Provided {
       // TODO remove from "test" config
       val sigarLoader  = "io.kamon"         % "sigar-loader"        % "1.6.5-rev001"     %     "optional;provided;test" // ApacheV2
+      
+      val levelDB       = "org.iq80.leveldb"            % "leveldb"          % "0.7"    %  "optional;provided"     // ApacheV2
+      val levelDBNative = "org.fusesource.leveldbjni"   % "leveldbjni-all"   % "1.7"    %  "optional;provided"     // New BSD
     }
     
   }
@@ -91,7 +94,7 @@ object Dependencies {
 
   val agent = Seq(scalaStm, Test.scalatest, Test.junit)
 
-  val persistence = deps(levelDB, levelDBNative, protobuf, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
+  val persistence = deps(protobuf, Provided.levelDB, Provided.levelDBNative, Test.scalatest, Test.junit, Test.commonsIo, Test.scalaXml)
 
   val persistenceTck = Seq(Test.scalatest.copy(configurations = Some("compile")), Test.junit.copy(configurations = Some("compile")))
 

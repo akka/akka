@@ -48,6 +48,22 @@ Akka persistence is a separate jar file. Make sure that you have the following d
     <version>@version@</version>
   </dependency>
 
+Akka persistence extension comes with few built-in persistence plugins, including 
+in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
+
+LevelDB based plugins will require the following additional dependency declaration::
+
+  <dependency>
+    <groupId>org.iq80.leveldb</groupId>
+    <artifactId>leveldb</artifactId>
+    <version>0.7</version>
+  </dependency>
+  <dependency>
+    <groupId>org.fusesource.leveldbjni</groupId>
+    <artifactId>leveldbjni-all</artifactId>
+    <version>1.7</version>
+  </dependency>
+
 Architecture
 ============
 
@@ -64,18 +80,19 @@ Architecture
   case of sender and receiver JVM crashes.
 
 * *Journal*: A journal stores the sequence of messages sent to a persistent actor. An application can control which messages
-  are journaled and which are received by the persistent actor without being journaled. The storage backend of a journal is
-  pluggable. The default journal storage plugin writes to the local filesystem, replicated journals are available as
-  `Community plugins`_.
+  are journaled and which are received by the persistent actor without being journaled. The storage backend of a journal is pluggable. 
+  Persistence extension comes with a "leveldb" journal plugin, which writes to the local filesystem, 
+  and replicated journals are available as `Community plugins`_.
 
 * *Snapshot store*: A snapshot store persists snapshots of a persistent actor's or a view's internal state. Snapshots are
-  used for optimizing recovery times. The storage backend of a snapshot store is pluggable. The default snapshot
-  storage plugin writes to the local filesystem.
+  used for optimizing recovery times. The storage backend of a snapshot store is pluggable. 
+  Persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem,
+  and replicated snapshot stores are available as `Community plugins`_.
 
 * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
   development of event sourced applications (see section :ref:`event-sourcing-java-lambda`)
 
-.. _Community plugins: https://gist.github.com/krasserm/8612920#file-akka-persistence-plugins-md
+.. _Community plugins: http://akka.io/community/
 
 .. _event-sourcing-java-lambda:
 
@@ -474,11 +491,25 @@ configuration key. The method can be overridden by implementation classes to ret
 Storage plugins
 ===============
 
-Storage backends for journals and snapshot stores are pluggable in Akka persistence. The default journal plugin
-writes messages to LevelDB (see :ref:`local-leveldb-journal-java-lambda`). The default snapshot store plugin writes
-snapshots as individual files to the local filesystem (see :ref:`local-snapshot-store-java-lambda`). Applications can
-provide their own plugins by implementing a plugin API and activate them by configuration. Plugin development
-requires the following imports:
+Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
+
+Directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see `Community plugins`_
+
+Plugins can be selected either by "default", for all persistent actors and views,
+or "individually", when persistent actor or view defines it's own set of plugins.
+
+When persistent actor or view does NOT override ``journalPluginId`` and ``snapshotPluginId`` methods,
+persistense extension will use "default" journal and snapshot-store plugins configured in the ``reference.conf``::
+
+    akka.persistence.journal.plugin = ""
+    akka.persistence.snapshot-store.plugin = ""
+
+However, these entires are provided as empty "", and require explicit user configuration via override in the user ``application.conf``.
+For an example of journal plugin which writes messages to LevelDB see :ref:`local-leveldb-journal-java-lambda`. 
+For an example of snapshot store plugin which writes snapshots as individual files to the local filesystem see :ref:`local-snapshot-store-java-lambda`. 
+
+Applications can provide their own plugins by implementing a plugin API and activate them by configuration. 
+Plugin development requires the following imports:
 
 .. includecode:: ../../../akka-samples/akka-sample-persistence-java-lambda/src/main/java/doc/LambdaPersistencePluginDocTest.java#plugin-imports
 
@@ -530,7 +561,7 @@ Pre-packaged plugins
 Local LevelDB journal
 ---------------------
 
-The default journal plugin is ``akka.persistence.journal.leveldb`` which writes messages to a local LevelDB
+LevelDB journal plugin config entry is ``akka.persistence.journal.leveldb`` and it writes messages to a local LevelDB
 instance. The default location of the LevelDB files is a directory named ``journal`` in the current working
 directory. This location can be changed by configuration where the specified path can be relative or absolute:
 
@@ -579,7 +610,7 @@ i.e. only the first injection is used.
 Local snapshot store
 --------------------
 
-The default snapshot store plugin is ``akka.persistence.snapshot-store.local``. It writes snapshot files to
+Local snapshot store plugin config entry is ``akka.persistence.snapshot-store.local`` and it writes snapshot files to
 the local filesystem. The default storage location is a directory named ``snapshots`` in the current working
 directory. This can be changed by configuration where the specified path can be relative or absolute:
 
