@@ -126,9 +126,7 @@ This supervisor will be used to create a child, with which we can experiment:
 .. includecode:: code/docs/actor/FaultHandlingDocSpec.scala
    :include: child
 
-The test is easier by using the utilities described in :ref:`akka-testkit`,
-where ``AkkaSpec`` is a convenient mixture of
-``TestKit with WordSpec with MustMatchers``
+The test is easier by using the utilities described in :ref:`akka-testkit`.
 
 .. includecode:: code/docs/actor/FaultHandlingDocSpec.scala
    :include: testkit
