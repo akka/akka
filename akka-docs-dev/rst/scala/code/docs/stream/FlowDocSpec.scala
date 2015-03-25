@@ -98,7 +98,7 @@ class FlowDocSpec extends AkkaSpec {
     // Create a source from an Iterable
     Source(List(1, 2, 3))
 
-    // Create a source form a Future
+    // Create a source from a Future
     Source(Future.successful("Hello Streams!"))
 
     // Create a source from a single element
