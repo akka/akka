@@ -44,6 +44,7 @@ object ClusterShardingSpec extends MultiNodeConfig {
       native = off
       dir = "target/journal-ClusterShardingSpec"
     }
+    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
     akka.persistence.snapshot-store.local.dir = "target/snapshots-ClusterShardingSpec"
     akka.contrib.cluster.sharding {
       role = backend

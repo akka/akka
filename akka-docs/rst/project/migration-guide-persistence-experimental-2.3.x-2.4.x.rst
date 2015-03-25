@@ -178,3 +178,21 @@ persistent actor on the sending side.
 
 Read more about at-least-once delivery in the :ref:`documentation for Scala <at-least-once-delivery>` and 
 :ref:`documentation for Java <at-least-once-delivery-java>`.  
+
+Default persistence plugins
+===========================
+Previously default ``akka.persistence.journal.plugin`` was set to the LevelDB journal ``akka.persistence.journal.leveldb``
+and default ``akka.persistence.snapshot-store.plugin`` was set to the local file-system snapshot ``akka.persistence.snapshot-store.local``.
+Now default journal and default snapshot-store plugins are set to empty "" in the persistence extension ``reference.conf``, 
+and require explicit user configuration via override in the user ``application.conf``.
+This change was needed to decouple persistence extension from the LevelDB dependency, and to support multiple plugin configurations.
+Please see persistence extension ``reference.conf`` for details. 
+
+Converted LevelDB to an optional dependency
+===========================================
+Persistence extension uses LevelDB based plugins for own development and keeps related code in the published jar.
+However previously LevelDB was a ``compile`` scope dependency, and now it is an ``optional;provided`` dependency.
+To continue using LevelDB based persistence plugins it is now required for related user projects
+to include an additional explicit dependency declaration for the LevelDB artifacts. 
+This change allows production akka deployments to avoid need for the LevelDB provisioning. 
+Please see persistence extension ``reference.conf`` for details. 

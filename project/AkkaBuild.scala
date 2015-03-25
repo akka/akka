@@ -92,7 +92,7 @@ object AkkaBuild extends Build {
   lazy val benchJmh = Project(
     id = "akka-bench-jmh",
     base = file("akka-bench-jmh"),
-    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test")
+    dependencies = Seq(actor, persistence, testkit).map(_ % "compile;compile->test;provided->test")
   ).disablePlugins(ValidatePullRequest)
 
   lazy val remote = Project(
@@ -146,7 +146,7 @@ object AkkaBuild extends Build {
   lazy val persistenceTck = Project(
     id = "akka-persistence-experimental-tck",
     base = file("akka-persistence-tck"),
-    dependencies = Seq(persistence % "compile;test->test", testkit % "compile;test->test")
+    dependencies = Seq(persistence % "compile;provided->provided;test->test", testkit % "compile;test->test")
   )
 
   lazy val kernel = Project(
@@ -172,14 +172,14 @@ object AkkaBuild extends Build {
     base = file("akka-docs"),
     dependencies = Seq(actor, testkit % "test->test",
       remote % "compile;test->test", cluster, clusterMetrics, slf4j, agent, camel, osgi,
-      persistence % "compile;test->test", persistenceTck,
+      persistence % "compile;provided->provided;test->test", persistenceTck,
       typed % "compile;test->test")
   )
 
   lazy val contrib = Project(
     id = "akka-contrib",
     base = file("akka-contrib"),
-    dependencies = Seq(remote, remoteTests % "test->test", cluster, persistence)
+    dependencies = Seq(remote, remoteTests % "test->test", cluster, persistence % "compile;test->provided")
   ) configs (MultiJvm)
 
   lazy val samples = Project(
