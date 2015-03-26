@@ -94,11 +94,6 @@ object ByteString {
       def apply(): ByteStringBuilder = newBuilder
     }
 
-  private val ByteStringIdentityMap: Byte ⇒ Companion =
-    Seq(ByteString1, ByteString1C, ByteStrings).
-      map(x ⇒ x.SerializationIdentity -> x).toMap.
-      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
-
   private[akka] object ByteString1C extends Companion {
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
     val SerializationIdentity = 1.toByte
@@ -344,13 +339,20 @@ object ByteString {
     }
 
     private def readObject(in: ObjectInputStream) {
-      val serType = in.readByte()
-      val companion = ByteStringIdentityMap(serType)
+      val serializationId = in.readByte()
 
-      orig = companion.readFromInputStream(in)
+      orig = Companion(from = serializationId).readFromInputStream(in)
     }
 
     private def readResolve(): AnyRef = orig
+  }
+
+  private[akka] object Companion {
+    def apply(from: Byte): Companion = companionMap(from)
+
+    val companionMap = Seq(ByteString1, ByteString1C, ByteStrings).
+      map(x ⇒ x.SerializationIdentity -> x).toMap.
+      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
   }
 
   private[akka] sealed trait Companion {
