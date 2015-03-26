@@ -59,9 +59,10 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
   }
 
   def stopProxy(): Unit = {
-    proxy ! FSM.UnsubscribeTransitionCallBack(testActor)
-    system stop proxy
-    expectMsgType[Terminated]
+    val currentProxy = proxy
+    currentProxy ! FSM.UnsubscribeTransitionCallBack(testActor)
+    currentProxy ! PoisonPill
+    expectTerminated(currentProxy)
   }
 
   def expectState(s: State) = expectMsg(FSM.CurrentState(proxy, s))
@@ -91,7 +92,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         import akka.contrib.pattern.ReliableProxy
 
         idTarget()
-        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 5.seconds), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 5.seconds), "proxy1")
         watch(proxy)
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         expectState(Connecting)
@@ -289,7 +290,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
         stopProxy() // Stop previous proxy
 
         // Start new proxy with no reconnections
-        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis), "proxy2")
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         watch(proxy)
 
@@ -308,7 +309,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         within(5 seconds) {
           expectMsgType[ProxyTerminated]
-          expectMsgType[Terminated]
+          expectTerminated(proxy)
         }
       }
 
@@ -332,7 +333,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
       runOn(local) {
         // Proxy is not running after previous test
         // Start new proxy with 3 reconnections every 2 sec
-        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 2.seconds, 3), "proxy")
+        proxy = system.actorOf(ReliableProxy.props(target.path, 100.millis, 2.seconds, 3), "proxy3")
         proxy ! FSM.SubscribeTransitionCallBack(testActor)
         watch(proxy)
         expectState(Connecting)
@@ -364,7 +365,7 @@ class ReliableProxySpec extends MultiNodeSpec(ReliableProxySpec) with STMultiNod
           // Validate that the unsent messages are 50 ints
           val unsentInts = proxyTerm.outstanding.queue collect { case Message(i: Int, _, _) if i > 0 && i <= 50 ⇒ i }
           unsentInts should have size 50
-          expectMsgType[Terminated]
+          expectTerminated(proxy)
         }
       }
 
