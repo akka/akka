@@ -4,7 +4,7 @@
 
 package akka.util
 
-import java.io.OutputStream
+import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable ⇒ JIterable }
 
@@ -94,9 +94,16 @@ object ByteString {
       def apply(): ByteStringBuilder = newBuilder
     }
 
-  private[akka] object ByteString1C {
+  private[akka] object ByteString1C extends Companion {
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
     private[akka] val SerializationIdentity = 1.toByte
+
+    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString1C = {
+      val length = is.readInt()
+      val arr = new Array[Byte](length)
+      is.read(arr, 0, length)
+      ByteString1C(arr)
+    }
   }
 
   /**
@@ -111,6 +118,8 @@ object ByteString {
     override def iterator: ByteIterator.ByteArrayIterator = ByteIterator.ByteArrayIterator(bytes, 0, bytes.length)
 
     private[akka] def toByteString1: ByteString1 = ByteString1(bytes)
+
+    private[akka] def byteStringCompanion = ByteString1C
 
     def asByteBuffer: ByteBuffer = toByteString1.asByteBuffer
 
@@ -128,16 +137,20 @@ object ByteString {
       if ((from != 0) || (until != length)) toByteString1.slice(from, until)
       else this
 
-    private[akka] def writeToOutputStream(os: OutputStream): Unit = os.write(bytes)
+    private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit =
+      toByteString1.writeToOutputStream(os)
   }
 
-  private[akka] object ByteString1 {
+  private[akka] object ByteString1 extends Companion {
     val empty: ByteString1 = new ByteString1(Array.empty[Byte])
     def apply(bytes: Array[Byte]): ByteString1 = ByteString1(bytes, 0, bytes.length)
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
       if (length == 0) empty else new ByteString1(bytes, startIndex, length)
 
     private[akka] val SerializationIdentity = 0.toByte
+
+    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString1 =
+      ByteString1C.readFromInputStream(is).toByteString1
   }
 
   /**
@@ -159,10 +172,14 @@ object ByteString {
         throw new IndexOutOfBoundsException(index.toString)
     }
 
-    private[akka] def writeToOutputStream(os: OutputStream): Unit =
+    private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
+      os.writeInt(length)
       os.write(bytes, startIndex, length)
+    }
 
     def isCompact: Boolean = (length == bytes.length)
+
+    private[akka] def byteStringCompanion = ByteString1
 
     def compact: CompactByteString =
       if (isCompact) ByteString1C(bytes) else ByteString1C(toArray)
@@ -194,7 +211,7 @@ object ByteString {
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
-  private[akka] object ByteStrings {
+  private[akka] object ByteStrings extends Companion {
     def apply(bytestrings: Vector[ByteString1]): ByteString = new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
 
     def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
@@ -234,6 +251,23 @@ object ByteString {
       else if (b2.isEmpty) 1 else 3
 
     private[akka] val SerializationIdentity = 2.toByte
+
+    private[akka] def readFromInputStream(is: ObjectInputStream): ByteStrings = {
+      val nByteStrings = is.readInt()
+
+      val builder = new VectorBuilder[ByteString1]
+      var length = 0
+
+      builder.sizeHint(nByteStrings)
+
+      for (_ ← 0 until nByteStrings) {
+        val bs = ByteString1.readFromInputStream(is)
+        builder += bs
+        length += bs.length
+      }
+
+      new ByteStrings(builder.result(), length)
+    }
   }
 
   /**
@@ -266,6 +300,8 @@ object ByteString {
       }
     }
 
+    private[akka] def byteStringCompanion = ByteStrings
+
     def isCompact: Boolean = if (bytestrings.length == 1) bytestrings.head.isCompact else false
 
     def compact: CompactByteString = {
@@ -287,43 +323,40 @@ object ByteString {
 
     def decodeString(charset: String): String = compact.decodeString(charset)
 
-    private[akka] def writeToOutputStream(os: OutputStream): Unit =
+    private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
+      os.writeInt(bytestrings.length)
       bytestrings.foreach(_.writeToOutputStream(os))
+    }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
   @SerialVersionUID(1L)
   private class SerializationProxy(@transient private var orig: ByteString) extends Serializable {
-    private def writeObject(out: java.io.ObjectOutputStream) {
-      val serType = orig match {
-        case _: ByteString1  ⇒ ByteString1.SerializationIdentity
-        case _: ByteString1C ⇒ ByteString1C.SerializationIdentity
-        case _: ByteStrings  ⇒ ByteStrings.SerializationIdentity
-      }
-      out.writeByte(serType)
-      out.writeInt(orig.length)
+    private def writeObject(out: ObjectOutputStream) {
+      out.writeByte(orig.byteStringCompanion.SerializationIdentity)
       orig.writeToOutputStream(out)
     }
 
-    private def readObject(in: java.io.ObjectInputStream) {
+    private def readObject(in: ObjectInputStream) {
       val serType = in.readByte()
-      val s = in.readInt()
+      val companion = ByteStringIdentityMap(serType)
 
-      val arr = new Array[Byte](s)
-      val bs = ByteString1C(arr).toByteString1
-      in.read(arr, 0, s)
-
-      orig = serType match {
-        case ByteString1.SerializationIdentity  ⇒ ByteString1(arr)
-        case ByteString1C.SerializationIdentity ⇒ ByteString1C(arr)
-        case ByteStrings.SerializationIdentity  ⇒ ByteStrings(Vector(ByteString1(arr)))
-        case _                                  ⇒ throw new IllegalArgumentException("Invalid serialization id " + serType)
-      }
+      orig = companion.readFromInputStream(in)
     }
 
     private def readResolve(): AnyRef = orig
   }
+
+  sealed trait Companion {
+    private[akka] def SerializationIdentity: Byte
+    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString
+  }
+
+  private val ByteStringIdentityMap: Byte ⇒ Companion =
+    Seq(ByteString1, ByteString1C, ByteStrings).
+      map(x ⇒ x.SerializationIdentity -> x).toMap.
+      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
 }
 
 /**
@@ -336,6 +369,7 @@ object ByteString {
  */
 sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimized[Byte, ByteString] {
   def apply(idx: Int): Byte
+  private[akka] def byteStringCompanion: ByteString.Companion
 
   override protected[this] def newBuilder: ByteStringBuilder = ByteString.newBuilder
 
@@ -381,7 +415,7 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
 
   override def foreach[@specialized U](f: Byte ⇒ U): Unit = iterator foreach f
 
-  private[akka] def writeToOutputStream(os: OutputStream): Unit
+  private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit
 
   /**
    * Efficiently concatenate another ByteString.
