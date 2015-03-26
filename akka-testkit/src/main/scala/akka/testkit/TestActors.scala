@@ -3,7 +3,7 @@
  */
 package akka.testkit
 
-import akka.actor.{ Props, Actor }
+import akka.actor.{ Props, Actor, ActorRef }
 
 /**
  * A collection of common actor patterns used in tests.
@@ -19,6 +19,18 @@ object TestActors {
     }
   }
 
+  /**
+   * ForwardActor forwards all messages as-is to specified ActorRef.
+   *
+   * @param ref target ActorRef to forward messages to
+   */
+  class ForwardActor(ref: ActorRef) extends Actor {
+    override def receive = {
+      case message ⇒ ref forward message
+    }
+  }
+
   val echoActorProps = Props[EchoActor]()
+  def forwardActorProps(ref: ActorRef) = Props(classOf[ForwardActor], ref)
 
 }
