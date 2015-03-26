@@ -94,11 +94,16 @@ object ByteString {
       def apply(): ByteStringBuilder = newBuilder
     }
 
+  private val ByteStringIdentityMap: Byte ⇒ Companion =
+    Seq(ByteString1, ByteString1C, ByteStrings).
+      map(x ⇒ x.SerializationIdentity -> x).toMap.
+      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
+
   private[akka] object ByteString1C extends Companion {
     def apply(bytes: Array[Byte]): ByteString1C = new ByteString1C(bytes)
-    private[akka] val SerializationIdentity = 1.toByte
+    val SerializationIdentity = 1.toByte
 
-    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString1C = {
+    def readFromInputStream(is: ObjectInputStream): ByteString1C = {
       val length = is.readInt()
       val arr = new Array[Byte](length)
       is.read(arr, 0, length)
@@ -147,9 +152,9 @@ object ByteString {
     def apply(bytes: Array[Byte], startIndex: Int, length: Int): ByteString1 =
       if (length == 0) empty else new ByteString1(bytes, startIndex, length)
 
-    private[akka] val SerializationIdentity = 0.toByte
+    val SerializationIdentity = 0.toByte
 
-    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString1 =
+    def readFromInputStream(is: ObjectInputStream): ByteString1 =
       ByteString1C.readFromInputStream(is).toByteString1
   }
 
@@ -250,9 +255,9 @@ object ByteString {
         if (b2.isEmpty) 0 else 2
       else if (b2.isEmpty) 1 else 3
 
-    private[akka] val SerializationIdentity = 2.toByte
+    val SerializationIdentity = 2.toByte
 
-    private[akka] def readFromInputStream(is: ObjectInputStream): ByteStrings = {
+    def readFromInputStream(is: ObjectInputStream): ByteStrings = {
       val nByteStrings = is.readInt()
 
       val builder = new VectorBuilder[ByteString1]
@@ -348,15 +353,10 @@ object ByteString {
     private def readResolve(): AnyRef = orig
   }
 
-  sealed trait Companion {
-    private[akka] def SerializationIdentity: Byte
-    private[akka] def readFromInputStream(is: ObjectInputStream): ByteString
+  private[akka] sealed trait Companion {
+    def SerializationIdentity: Byte
+    def readFromInputStream(is: ObjectInputStream): ByteString
   }
-
-  private val ByteStringIdentityMap: Byte ⇒ Companion =
-    Seq(ByteString1, ByteString1C, ByteStrings).
-      map(x ⇒ x.SerializationIdentity -> x).toMap.
-      withDefault(x ⇒ throw new IllegalArgumentException("Invalid serialization id " + x))
 }
 
 /**
