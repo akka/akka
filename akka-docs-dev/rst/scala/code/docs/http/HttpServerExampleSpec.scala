@@ -6,8 +6,10 @@ package docs.http
 
 import akka.actor.ActorSystem
 import akka.http.model._
-import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl._
 import akka.stream.testkit.AkkaSpec
+import scala.concurrent.Future
+import akka.http.Http
 
 class HttpServerExampleSpec
   extends AkkaSpec("akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox") {
@@ -21,11 +23,13 @@ class HttpServerExampleSpec
     implicit val system = ActorSystem()
     implicit val materializer = ActorFlowMaterializer()
 
-    val serverSource = Http(system).bind(interface = "localhost", port = 8080)
-    serverSource.runForeach { connection => // foreach materializes the source
+    val serverSource: Source[Http.IncomingConnection, Future[Http.ServerBinding]] =
+      Http(system).bind(interface = "localhost", port = 8080)
+    val bindingFuture: Future[Http.ServerBinding] = serverSource.to(Sink.foreach { connection =>
+      // foreach materializes the source
       println("Accepted new connection from " + connection.remoteAddress)
       // ... and then actually handle the connection
-    }
+    }).run()
     //#bind-example
   }
 
@@ -48,12 +52,17 @@ class HttpServerExampleSpec
           entity = HttpEntity(MediaTypes.`text/html`,
             "<html><body>Hello world!</body></html>"))
 
-      case HttpRequest(GET, Uri.Path("/ping"), _, _, _)  => HttpResponse(entity = "PONG!")
-      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) => sys.error("BOOM!")
-      case _: HttpRequest                                => HttpResponse(404, entity = "Unknown resource!")
+      case HttpRequest(GET, Uri.Path("/ping"), _, _, _) =>
+        HttpResponse(entity = "PONG!")
+
+      case HttpRequest(GET, Uri.Path("/crash"), _, _, _) =>
+        sys.error("BOOM!")
+
+      case _: HttpRequest =>
+        HttpResponse(404, entity = "Unknown resource!")
     }
 
-    val bindingFuture = serverSource.to(Sink.foreach { connection =>
+    val bindingFuture: Future[Http.ServerBinding] = serverSource.to(Sink.foreach { connection =>
       println("Accepted new connection from " + connection.remoteAddress)
 
       connection handleWithSyncHandler requestHandler
