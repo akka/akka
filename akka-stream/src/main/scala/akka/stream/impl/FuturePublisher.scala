@@ -54,7 +54,7 @@ private[akka] class FuturePublisher(future: Future[Any], settings: ActorFlowMate
   var subscriptions = Map.empty[FutureSubscription, Subscriber[Any]]
   var subscriptionsReadyForPush = Set.empty[FutureSubscription]
   var futureValue: Option[Try[Any]] = future.value
-  var shutdownReason = ActorPublisher.NormalShutdownReason
+  var shutdownReason: Option[Throwable] = ActorPublisher.SomeNormalShutdownReason
 
   override val supervisorStrategy = SupervisorStrategy.stoppingStrategy
 

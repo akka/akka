@@ -42,8 +42,8 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
     if (!downstreamCompleted) {
       downstreamCompleted = true
       abortDownstream(e)
+      if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
     }
-    if (exposedPublisher ne null) exposedPublisher.shutdown(Some(e))
   }
 
   def isClosed: Boolean = downstreamCompleted
@@ -58,7 +58,7 @@ private[akka] abstract class FanoutOutputs(val maxBufferSize: Int, val initialBu
   override protected def shutdown(completed: Boolean): Unit = {
     if (exposedPublisher ne null) {
       if (completed) exposedPublisher.shutdown(None)
-      else exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+      else exposedPublisher.shutdown(ActorPublisher.SomeNormalShutdownReason)
     }
     afterShutdown()
   }

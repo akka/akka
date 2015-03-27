@@ -457,7 +457,7 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
       }
     }
 
-    "call future subscribers' onComplete instead of onSubscribed after initial upstream was completed" in {
+    "call future subscribers' onError after onSubscribe if initial upstream was completed" in {
       new ChainSetup(identity, settings.copy(initialInputBufferSize = 1),
         toFanoutPublisher(initialBufferSize = 1, maximumBufferSize = 1)) {
         val downstream2 = StreamTestKit.SubscriberProbe[Any]()
@@ -489,11 +489,10 @@ class FlowSpec extends AkkaSpec(ConfigFactory.parseString("akka.actor.debug.rece
         downstream2.expectNext("a3")
         downstream2.expectComplete()
 
-        // FIXME when adding a sleep before the following link this will fail with IllegalStateExc shut-down
-        // what is the expected shutdown behavior? Is the title of this test wrong?
-        //        val downstream3 = StreamTestKit.SubscriberProbe[Any]()
-        //        publisher.subscribe(downstream3)
-        //        downstream3.expectComplete()
+        val downstream3 = StreamTestKit.SubscriberProbe[Any]()
+        publisher.subscribe(downstream3)
+        downstream3.expectSubscription()
+        downstream3.expectError() should ===(ActorPublisher.NormalShutdownReason)
       }
     }
 

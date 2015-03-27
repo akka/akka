@@ -32,7 +32,7 @@ private[akka] object SubscriberManagement {
     def apply[T](subscriber: Subscriber[T]): Unit = tryOnError(subscriber, cause)
   }
 
-  val ShutDown = new ErrorCompleted(new IllegalStateException("Cannot subscribe to shut-down Publisher"))
+  val ShutDown = new ErrorCompleted(ActorPublisher.NormalShutdownReason)
 }
 
 /**

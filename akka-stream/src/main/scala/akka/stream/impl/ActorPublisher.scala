@@ -16,8 +16,10 @@ import org.reactivestreams.Subscription
  * INTERNAL API
  */
 private[akka] object ActorPublisher {
-  class NormalShutdownException extends IllegalStateException("Cannot subscribe to shut-down Publisher") with NoStackTrace
-  val NormalShutdownReason: Option[Throwable] = Some(new NormalShutdownException)
+  val NormalShutdownReasonMessage = "Cannot subscribe to shut-down Publisher"
+  class NormalShutdownException extends IllegalStateException(NormalShutdownReasonMessage) with NoStackTrace
+  val NormalShutdownReason: Throwable = new NormalShutdownException
+  val SomeNormalShutdownReason: Some[Throwable] = Some(NormalShutdownReason)
 
   def apply[T](impl: ActorRef): ActorPublisher[T] = {
     val a = new ActorPublisher[T](impl)
