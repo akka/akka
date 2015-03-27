@@ -60,16 +60,16 @@ Arguments to the ``Http.bind`` method specify the interface and port to bind to 
 HTTP connections. Additionally, the method also allows you to define socket options as well as a larger number
 of settings for configuring the server according to your needs.
 
-The result of the ``bind`` method is a ``Http.ServerBinding`` which is immediately returned. The ``ServerBinding.connections``
-returns a ``Source[IncomingConnection]`` which is used to handle incoming connections. The actual binding is only done when this
-source is materialized as part of a bigger processing pipeline. In case the bind fails (e.g. because the port is already
-busy) the error will be reported by flagging an error on the ``IncomingConnection`` stream.
+The result of the ``bind`` method is a ``Source[IncomingConnection]`` which is used to handle incoming connections.
+The actual binding is only done when this source is materialized as part of a bigger processing pipeline. In case the
+bind fails (e.g. because the port is already busy) the error will be reported by flagging an error on the materialized
+stream. The binding is released and the underlying listening socket is closed when all subscribers of the
+source have cancelled their subscription.
 
+Connections are handled by materializing a pipeline which uses the ``Source[IncomingConnection]``. This source
+materializes to ``Future[ServerBinding]`` which is completed when server successfully binds to the specified port.
 After materialization ``ServerBinding.localAddress`` returns the actual local address of the bound socket.
-
-Connections are handled by materializing a pipeline which uses the ``Source[IncomingConnection]`` returned by
-``ServerBinding.connections``. The binding is released and the underlying listening socket is closed when all
-subscribers of the ``connections`` source have cancelled their subscription.
+``ServerBinding.unbind()`` can be used to asynchronously trigger unbinding of the server port.
 
 (todo: explain even lower level serverFlowToTransport API)
 
@@ -79,9 +79,9 @@ subscribers of the ``connections`` source have cancelled their subscription.
 Request-Response Cycle
 ----------------------
 
-When a new connection has been accepted it will be published by by the ``ServerBinding.connections`` source as an
-``Http.IncomingConnection`` which consists of the remote address, and methods to provide a ``Flow[HttpRequest, HttpResponse]``
-to handle requests coming in over this connection.
+When a new connection has been accepted it will be published as an ``Http.IncomingConnection`` which consists
+of the remote address, and methods to provide a ``Flow[HttpRequest, HttpResponse]`` to handle requests coming in over
+this connection.
 
 Requests are handled by calling one of the ``IncomingConnection.handleWithX`` methods with a handler, which can either be
 
