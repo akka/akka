@@ -277,7 +277,7 @@ private[akka] abstract class TwoStreamInputProcessor(_settings: ActorFlowMateria
       case OtherStreamOnError(e)      ⇒ TwoStreamInputProcessor.this.onError(e)
     }
     override protected def completed: Actor.Receive = {
-      case OtherStreamOnSubscribe(_) ⇒ throw new IllegalStateException("Cannot subscribe shutdown subscriber")
+      case OtherStreamOnSubscribe(_) ⇒ throw ActorPublisher.NormalShutdownReason
     }
   }
 

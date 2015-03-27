@@ -124,7 +124,7 @@ private[akka] class TickPublisher(initialDelay: FiniteDuration, interval: Finite
     tickTask.foreach(_.cancel)
     cancelled.set(true)
     if (exposedPublisher ne null)
-      exposedPublisher.shutdown(ActorPublisher.NormalShutdownReason)
+      exposedPublisher.shutdown(ActorPublisher.SomeNormalShutdownReason)
     if (subscriber ne null)
       tryOnComplete(subscriber)
   }
