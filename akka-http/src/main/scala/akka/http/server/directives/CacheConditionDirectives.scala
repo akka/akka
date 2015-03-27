@@ -18,18 +18,57 @@ trait CacheConditionDirectives {
 
   /**
    * Wraps its inner route with support for Conditional Requests as defined
-   * by tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26
+   * by http://tools.ietf.org/html/rfc7232
    *
-   * In particular the algorithm defined by tools.ietf.org/html/draft-ietf-httpbis-p4-conditional-26#section-6
+   * In particular the algorithm defined by http://tools.ietf.org/html/rfc7232#section-6
    * is implemented by this directive.
    *
    * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
    * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
    * must be on a deeper level in your route structure in order to function correctly.
    */
-  def conditional(eTag: EntityTag, lastModified: DateTime): Directive0 = {
+  def conditional(eTag: EntityTag): Directive0 = conditional(Some(eTag), None)
+
+  /**
+   * Wraps its inner route with support for Conditional Requests as defined
+   * by http://tools.ietf.org/html/rfc7232
+   *
+   * In particular the algorithm defined by http://tools.ietf.org/html/rfc7232#section-6
+   * is implemented by this directive.
+   *
+   * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
+   * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
+   * must be on a deeper level in your route structure in order to function correctly.
+   */
+  def conditional(lastModified: DateTime): Directive0 = conditional(None, Some(lastModified))
+
+  /**
+   * Wraps its inner route with support for Conditional Requests as defined
+   * by http://tools.ietf.org/html/rfc7232
+   *
+   * In particular the algorithm defined by http://tools.ietf.org/html/rfc7232#section-6
+   * is implemented by this directive.
+   *
+   * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
+   * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
+   * must be on a deeper level in your route structure in order to function correctly.
+   */
+  def conditional(eTag: EntityTag, lastModified: DateTime): Directive0 = conditional(Some(eTag), Some(lastModified))
+
+  /**
+   * Wraps its inner route with support for Conditional Requests as defined
+   * by http://tools.ietf.org/html/rfc7232
+   *
+   * In particular the algorithm defined by http://tools.ietf.org/html/rfc7232#section-6
+   * is implemented by this directive.
+   *
+   * Note: if you want to combine this directive with `withRangeSupport(...)` you need to put
+   * it on the *outside* of the `withRangeSupport(...)` directive, i.e. `withRangeSupport(...)`
+   * must be on a deeper level in your route structure in order to function correctly.
+   */
+  def conditional(eTag: Option[EntityTag], lastModified: Option[DateTime]): Directive0 = {
     def addResponseHeaders: Directive0 =
-      mapResponse(_.withDefaultHeaders(List(ETag(eTag), `Last-Modified`(lastModified))))
+      mapResponse(_.withDefaultHeaders(eTag.map(ETag(_)).toList ++ lastModified.map(`Last-Modified`(_)).toList))
 
     // TODO: also handle Cache-Control and Vary
     def complete304(): Route = addResponseHeaders(complete(HttpResponse(NotModified)))
@@ -44,37 +83,40 @@ trait CacheConditionDirectives {
 
         def isGetOrHead = method == HEAD || method == GET
         def unmodified(ifModifiedSince: DateTime) =
-          lastModified <= ifModifiedSince && ifModifiedSince.clicks < System.currentTimeMillis()
+          lastModified.get <= ifModifiedSince && ifModifiedSince.clicks < System.currentTimeMillis()
 
         def step1(): Route =
           header[`If-Match`] match {
-            case Some(`If-Match`(im)) ⇒ if (matchesRange(eTag, im, weak = false)) step3() else complete412()
-            case None                 ⇒ step2()
+            case Some(`If-Match`(im)) if eTag.isDefined ⇒
+              if (matchesRange(eTag.get, im, weakComparison = false)) step3() else complete412()
+            case None ⇒ step2()
           }
         def step2(): Route =
           header[`If-Unmodified-Since`] match {
-            case Some(`If-Unmodified-Since`(ius)) if !unmodified(ius) ⇒ complete412()
+            case Some(`If-Unmodified-Since`(ius)) if lastModified.isDefined && !unmodified(ius) ⇒ complete412()
             case _ ⇒ step3()
           }
         def step3(): Route =
           header[`If-None-Match`] match {
-            case Some(`If-None-Match`(inm)) ⇒
-              if (!matchesRange(eTag, inm, weak = true)) step5()
+            case Some(`If-None-Match`(inm)) if eTag.isDefined ⇒
+              if (!matchesRange(eTag.get, inm, weakComparison = true)) step5()
               else if (isGetOrHead) complete304() else complete412()
             case None ⇒ step4()
           }
         def step4(): Route =
           if (isGetOrHead) {
             header[`If-Modified-Since`] match {
-              case Some(`If-Modified-Since`(ims)) if unmodified(ims) ⇒ complete304()
+              case Some(`If-Modified-Since`(ims)) if lastModified.isDefined && unmodified(ims) ⇒ complete304()
               case _ ⇒ step5()
             }
           } else step5()
         def step5(): Route =
           if (method == GET && header[Range].isDefined)
             header[`If-Range`] match {
-              case Some(`If-Range`(Left(tag))) if !matches(eTag, tag, weak = false) ⇒ innerRouteWithRangeHeaderFilteredOut
-              case Some(`If-Range`(Right(ims))) if !unmodified(ims) ⇒ innerRouteWithRangeHeaderFilteredOut
+              case Some(`If-Range`(Left(tag))) if eTag.isDefined && !matches(eTag.get, tag, weakComparison = false) ⇒
+                innerRouteWithRangeHeaderFilteredOut
+              case Some(`If-Range`(Right(ims))) if lastModified.isDefined && !unmodified(ims) ⇒
+                innerRouteWithRangeHeaderFilteredOut
               case _ ⇒ step6()
             }
           else step6()
