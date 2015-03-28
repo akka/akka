@@ -80,6 +80,8 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
     } yield (xs.slice(from, until), bytes)
   }
 
+  implicit val arbitraryByteStringBuilder: Arbitrary[ByteStringBuilder] = Arbitrary(ByteString.newBuilder)
+
   def likeVector(bs: ByteString)(body: IndexedSeq[Byte] ⇒ Any): Boolean = {
     val vec = Vector(bs: _*)
     body(bs) == body(vec)
@@ -551,6 +553,18 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       "encoding Float in little-endian" in { check { slice: ArraySlice[Float] ⇒ testFloatEncoding(slice, LITTLE_ENDIAN) } }
       "encoding Double in big-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, BIG_ENDIAN) } }
       "encoding Double in little-endian" in { check { slice: ArraySlice[Double] ⇒ testDoubleEncoding(slice, LITTLE_ENDIAN) } }
+    }
+
+    "have correct empty info" when {
+      "is empty" in {
+        check { a: ByteStringBuilder ⇒ a.isEmpty }
+      }
+      "is nonEmpty" in {
+        check { a: ByteStringBuilder ⇒
+          a.putByte(1.toByte)
+          a.nonEmpty
+        }
+      }
     }
   }
 }
