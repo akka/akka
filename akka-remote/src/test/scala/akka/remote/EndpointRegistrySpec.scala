@@ -34,13 +34,13 @@ class EndpointRegistrySpec extends AkkaSpec {
       val reg = new EndpointRegistry
       reg.readOnlyEndpointFor(address1) should be(None)
 
-      reg.registerReadOnlyEndpoint(address1, actorA) should be(actorA)
+      reg.registerReadOnlyEndpoint(address1, actorA, 0) should ===(actorA)
 
-      reg.readOnlyEndpointFor(address1) should be(Some(actorA))
+      reg.readOnlyEndpointFor(address1) should ===(Some((actorA, 0)))
       reg.writableEndpointWithPolicyFor(address1) should be(None)
-      reg.isWritable(actorA) should be(false)
-      reg.isReadOnly(actorA) should be(true)
-      reg.isQuarantined(address1, 42) should be(false)
+      reg.isWritable(actorA) should ===(false)
+      reg.isReadOnly(actorA) should ===(true)
+      reg.isQuarantined(address1, 42) should ===(false)
     }
 
     "be able to register a writable and a read-only endpoint correctly" in {
@@ -48,11 +48,11 @@ class EndpointRegistrySpec extends AkkaSpec {
       reg.readOnlyEndpointFor(address1) should be(None)
       reg.writableEndpointWithPolicyFor(address1) should be(None)
 
-      reg.registerReadOnlyEndpoint(address1, actorA) should be(actorA)
-      reg.registerWritableEndpoint(address1, None, None, actorB) should be(actorB)
+      reg.registerReadOnlyEndpoint(address1, actorA, 1) should ===(actorA)
+      reg.registerWritableEndpoint(address1, None, None, actorB) should ===(actorB)
 
-      reg.readOnlyEndpointFor(address1) should be(Some(actorA))
-      reg.writableEndpointWithPolicyFor(address1) should be(Some(Pass(actorB, None, None)))
+      reg.readOnlyEndpointFor(address1) should ===(Some((actorA, 1)))
+      reg.writableEndpointWithPolicyFor(address1) should ===(Some(Pass(actorB, None, None)))
 
       reg.isWritable(actorA) should be(false)
       reg.isWritable(actorB) should be(true)
@@ -77,7 +77,7 @@ class EndpointRegistrySpec extends AkkaSpec {
     "remove read-only endpoints if marked as failed" in {
       val reg = new EndpointRegistry
 
-      reg.registerReadOnlyEndpoint(address1, actorA)
+      reg.registerReadOnlyEndpoint(address1, actorA, 2)
       reg.markAsFailed(actorA, Deadline.now)
       reg.readOnlyEndpointFor(address1) should be(None)
     }
