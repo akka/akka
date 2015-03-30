@@ -7,13 +7,13 @@ import akka.stream.{ Shape, Inlet, Outlet, Graph }
 
 trait FlowApply {
 
-  def apply[I, O]()(block: FlowGraph.Builder ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Unit] = {
+  def apply[I, O]()(block: FlowGraph.Builder[Unit] ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Unit] = {
     val builder = new FlowGraph.Builder
     val (inlet, outlet) = block(builder)
     builder.buildFlow(inlet, outlet)
   }
 
-  def apply[I, O, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder => (g1.Shape) ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Mat] = {
+  def apply[I, O, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] => (g1.Shape) ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Mat] = {
     val builder = new FlowGraph.Builder
     val p = builder.add(g1, Keep.right)
     val (inlet, outlet) = buildBlock(builder)(p)
@@ -21,7 +21,7 @@ trait FlowApply {
   }
   
   [2..#def apply[I, O, [#M1#], Mat]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) => Mat)(
-    buildBlock: FlowGraph.Builder => ([#g1.Shape#]) ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Mat] = {
+    buildBlock: FlowGraph.Builder[Mat] => ([#g1.Shape#]) ⇒ (Inlet[I], Outlet[O])): Flow[I, O, Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val p##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))

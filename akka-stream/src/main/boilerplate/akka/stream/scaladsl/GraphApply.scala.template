@@ -8,20 +8,20 @@ import akka.stream.{ Graph, Shape }
 
 trait GraphApply {
 
-  def closed()(buildBlock: (FlowGraph.Builder) ⇒ Unit): RunnableFlow[Unit] = {
+  def closed()(buildBlock: (FlowGraph.Builder[Unit]) ⇒ Unit): RunnableFlow[Unit] = {
     val builder = new FlowGraph.Builder
     buildBlock(builder)
     builder.buildRunnable()
   }
 
-  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder ⇒ (g1.Shape) ⇒ Unit): RunnableFlow[Mat] = {
+  def closed[Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ Unit): RunnableFlow[Mat] = {
     val builder = new FlowGraph.Builder
     val p1 = builder.add(g1)
     buildBlock(builder)(p1)
     builder.buildRunnable()
   }
 
-  def partial[S <: Shape]()(buildBlock: FlowGraph.Builder ⇒ S): Graph[S, Unit] = {
+  def partial[S <: Shape]()(buildBlock: FlowGraph.Builder[Unit] ⇒ S): Graph[S, Unit] = {
     val builder = new FlowGraph.Builder
     val s = buildBlock(builder)
     val mod = builder.module.wrap().replaceShape(s)
@@ -32,7 +32,7 @@ trait GraphApply {
     }
   }
 
-  def partial[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
+  def partial[S <: Shape, Mat](g1: Graph[Shape, Mat])(buildBlock: FlowGraph.Builder[Mat] ⇒ (g1.Shape) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val s1 = builder.add(g1)
     val s = buildBlock(builder)(s1)
@@ -46,7 +46,7 @@ trait GraphApply {
 
 
 
-  [2..#def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableFlow[Mat] = {
+  [2..#def closed[Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ Unit): RunnableFlow[Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))
@@ -58,7 +58,7 @@ trait GraphApply {
 
   ]
 
-  [2..#def partial[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
+  [2..#def partial[S <: Shape, Mat, [#M1#]]([#g1: Graph[Shape, M1]#])(combineMat: ([#M1#]) ⇒ Mat)(buildBlock: FlowGraph.Builder[Mat] ⇒ ([#g1.Shape#]) ⇒ S): Graph[S, Mat] = {
     val builder = new FlowGraph.Builder
     val curried = combineMat.curried
     val s##1 = builder.add(g##1, (_: Any, m##1: M##1) ⇒ curried(m##1))

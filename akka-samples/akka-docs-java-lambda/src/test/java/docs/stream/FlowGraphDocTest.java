@@ -81,7 +81,7 @@ public class FlowGraphDocTest {
   public void demonstrateConnectErrors() {
     try {
       //#simple-graph
-      final Builder b = FlowGraph.builder();
+      final Builder<BoxedUnit> b = FlowGraph.builder();
       final Source<Integer, BoxedUnit> source1 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
       final Source<Integer, BoxedUnit> source2 = Source.from(Arrays.asList(1, 2, 3, 4, 5));
       final FanInShape2<Integer, Integer, Pair<Integer, Integer>> zip = b.graph(Zip.create());
@@ -121,5 +121,41 @@ public class FlowGraphDocTest {
     assertEquals(Integer.valueOf(2), Await.result(pair.first(), Duration.create(3, TimeUnit.SECONDS)));
     assertEquals(Integer.valueOf(2), Await.result(pair.second(), Duration.create(3, TimeUnit.SECONDS)));
   }
-  
+
+  @Test
+  public void demonstrateMatValue() throws Exception {
+    //#flow-graph-matvalue
+    final Sink<Integer, Future<Integer>> foldSink = Sink.<Integer, Integer>fold(0, (a, b) -> {
+      return a + b;
+    });
+
+    final Flow<Future<Integer>, Integer, BoxedUnit> flatten = Flow.<Future<Integer>>empty()
+      .mapAsync(x -> {
+        return x;
+      });
+
+    final Flow<Integer, Integer, Future<Integer>> foldingFlow = Flow.factory().create(foldSink,
+      (b, fold) -> {
+         return new Pair<>(
+           fold.inlet(),
+           b.from(b.matValue()).via(flatten).out()
+         );
+    });
+    //#flow-graph-matvalue
+
+    //#flow-graph-matvalue-cycle
+    // This cannot produce any value:
+    final Source<Integer, Future<Integer>> cyclicSource = Source.factory().create(foldSink,
+      (b, fold) -> {
+        // - Fold cannot complete until its upstream mapAsync completes
+        // - mapAsync cannot complete until the materialized Future produced by
+        //   fold completes
+        // As a result this Source will never emit anything, and its materialited
+        // Future will never complete
+        b.from(b.matValue()).via(flatten).to(fold);
+        return b.from(b.matValue()).via(flatten).out();
+      });
+
+    //#flow-graph-matvalue-cycle
+  }
 }
